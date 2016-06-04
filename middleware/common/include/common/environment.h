@@ -1,8 +1,5 @@
 //!
-//! casual_utility_environment.h
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_ENVIRONMENT_H_
@@ -12,6 +9,7 @@
 #include <sstream>
 
 #include "common/platform.h"
+#include "common/uuid.h"
 
 namespace casual
 {
@@ -56,7 +54,58 @@ namespace casual
 				   set( name, string);
 				}
 
-			}
+				namespace name
+            {
+				   //!
+				   //! @return variable name representing casual home. Where casual is installed
+				   //!
+				   const std::string& home();
+
+				   namespace domain
+               {
+				      const std::string& home();
+				      const std::string& id();
+				      const std::string& path();
+				      const std::string& name();
+
+
+
+               } // domain
+
+
+               //!
+               //! the name of the environment variables that holds ipc queue id:s
+               //! @{
+				   namespace ipc
+               {
+
+				      namespace domain
+                  {
+				         const std::string& manager();
+                  } // domain
+
+				      const std::string& broker();
+
+				      namespace transaction
+                  {
+				         const std::string& manager();
+                  } // transaction
+
+				      namespace queue
+                  {
+				         const std::string& broker();
+                  } // queue
+
+				      namespace gateway
+                  {
+				         const std::string& manager();
+                  } // gateway
+               } // ipc
+				   //! @}
+
+
+            } // name
+			} // variable
 
 			namespace directory
 			{
@@ -80,18 +129,6 @@ namespace casual
 			namespace file
 			{
 
-			   //void executable( const std::string& path);
-
-			   //const std::string& executable();
-
-			   namespace broker
-            {
-               std::string device();
-            } // broker
-
-
-			   //! @deprecated use file::broker::device
-			   std::string brokerQueue();
 
 			   //!
 			   //! @return domain configuration file path
@@ -105,21 +142,14 @@ namespace casual
 
 
 
-
-			//platform::seconds_type getTime();
-
 			namespace domain
          {
-			   //!
-			   //! @return the name of the casual domain.
-			   //!
-			   const std::string& name();
-
-			   void name( const std::string& value);
 
 			   namespace singleton
             {
 			      const std::string& path();
+
+               const std::string& file();
 
             } // singleton
 

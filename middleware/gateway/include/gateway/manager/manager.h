@@ -20,6 +20,7 @@ namespace casual
          struct Settings
          {
 
+            std::string configuration;
          };
 
 

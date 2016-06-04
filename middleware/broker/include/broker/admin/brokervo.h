@@ -16,8 +16,8 @@ namespace casual
       {
          struct Process
          {
-            sf::platform::pid_type pid;
-            sf::platform::queue_id_type queue;
+            sf::platform::pid::type pid;
+            sf::platform::ipc::id::type queue;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -98,7 +98,7 @@ namespace casual
             std::size_t id;
             std::string alias;
             std::string path;
-            std::vector< sf::platform::pid_type> instances;
+            std::vector< sf::platform::pid::type> instances;
             std::size_t configured_instances;
 
             bool restart;
@@ -136,7 +136,7 @@ namespace casual
          {
             std::string name;
             std::chrono::microseconds timeout;
-            std::vector< sf::platform::pid_type> instances;
+            std::vector< sf::platform::pid::type> instances;
             std::size_t lookedup = 0;
             std::size_t type = 0;
             std::size_t mode = 0;
@@ -187,7 +187,7 @@ namespace casual
 
          struct ShutdownVO
          {
-            using pids = std::vector< sf::platform::pid_type>;
+            using pids = std::vector< sf::platform::pid::type>;
 
             StateVO state;
 
@@ -209,22 +209,6 @@ namespace casual
             })
 
          };
-
-         namespace update
-         {
-            struct InstancesVO
-            {
-               std::string alias;
-               std::size_t instances;
-
-               template< typename A>
-               void serialize( A& archive)
-               {
-                  archive & CASUAL_MAKE_NVP( alias);
-                  archive & CASUAL_MAKE_NVP( instances);
-               }
-            };
-         } // update
 
 
 

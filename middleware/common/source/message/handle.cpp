@@ -20,7 +20,9 @@ namespace casual
 
             void Shutdown::operator () ( message_type& message)
             {
-               throw exception::Shutdown{ "shutdown " + process::path()};
+               log::internal::debug << "shutdown received from: " << message.process << '\n';
+
+               throw exception::Shutdown{ "shutdown " + common::process::path()};
             }
 
             void Ping::operator () ( server::ping::Request& message)
@@ -29,15 +31,23 @@ namespace casual
 
                server::ping::Reply reply;
                reply.correlation = message.correlation;
-               reply.process = process::handle();
-               reply.uuid = process::uuid();
+               reply.process = common::process::handle();
+               reply.uuid = common::process::uuid();
 
                communication::ipc::outbound::Device ipc{ message.process.queue};
 
                //
                // We ignore signals
                //
-               ipc.send( reply, communication::ipc::policy::ignore::signal::Blocking{});
+               try
+               {
+                  signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate, signal::Type::terminate})};
+                  ipc.send( reply, communication::ipc::policy::Blocking{});
+               }
+               catch( common::exception::queue::Unavailable&)
+               {
+                  log::internal::debug << "queue unavailable: " << message.process << " - action: ignore\n";
+               }
             }
 
          } // handle

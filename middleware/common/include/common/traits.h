@@ -63,6 +63,12 @@ namespace casual
 
          };
 
+         template<typename T>
+         struct function< std::reference_wrapper< T>> : public function< T>
+         {
+
+         };
+
          //!
          //! const functor specialization
          //!

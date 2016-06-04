@@ -30,7 +30,7 @@ namespace casual
          //!
          const std::string& parent() const;
 
-         common::platform::pid_type pid() const;
+         common::platform::pid::type pid() const;
          const common::Uuid& execution() const;
          const common::transaction::ID& transaction() const;
          const common::platform::time_point& start() const;
@@ -42,7 +42,7 @@ namespace casual
       private:
          virtual const std::string& get_service() const = 0;
          virtual const std::string& get_parent() const = 0;
-         virtual common::platform::pid_type get_pid() const = 0;
+         virtual common::platform::pid::type get_pid() const = 0;
          virtual const common::Uuid& get_execution() const = 0;
          virtual const common::transaction::ID& get_transaction() const = 0;
          virtual const common::platform::time_point& get_start() const = 0;

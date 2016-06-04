@@ -27,9 +27,9 @@ namespace casual
          bool operator == ( const State::Group& lhs, State::Group::id_type process) { return lhs.process == process;}
 
 
-         std::vector< common::platform::pid_type> State::processes() const
+         std::vector< common::platform::pid::type> State::processes() const
          {
-            std::vector< common::platform::pid_type> result;
+            std::vector< common::platform::pid::type> result;
 
             for( auto& group : groups)
             {

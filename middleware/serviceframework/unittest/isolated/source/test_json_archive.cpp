@@ -1,8 +1,5 @@
 //!
-//! test_json_archive.cpp
-//!
-//! Created on: Jul 10, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -114,6 +111,7 @@ namespace casual
 
    }
 
+   /*
    TEST( casual_sf_json_archive, complex_write_read)
    {
       std::string json;
@@ -135,6 +133,7 @@ namespace casual
 
       }
    }
+   */
 
    TEST( casual_sf_json_archive, load_invalid_document__expecting_exception)
    {

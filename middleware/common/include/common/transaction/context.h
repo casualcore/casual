@@ -168,24 +168,8 @@ namespace casual
 
             TRANSACTION_TIMEOUT m_timeout = 0;
 
-            //!
-            //! Attributes that is initialized from "manager"
-            //!
-            struct Manager
-            {
-               static const Manager& instance();
-
-               platform::queue_id_type queue() const;
-               std::vector< message::transaction::resource::Manager> resources;
-            private:
-               Manager();
-            };
-
-            const Manager& manager();
-
             void involved( const transaction::ID& xid, std::vector< int> resources);
 
-            void apply( const message::transaction::client::connect::Reply& configuration);
 
             Context();
 
@@ -196,7 +180,7 @@ namespace casual
 
             void resources_start( const Transaction& transaction, long flags);
             void resources_end( const Transaction& transaction, long flags);
-            int resource_commit( platform::resource::id_type rm, const Transaction& transaction, long flags);
+            int resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags);
 
             int pop_transaction();
 

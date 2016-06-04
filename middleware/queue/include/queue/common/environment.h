@@ -1,18 +1,11 @@
 //!
-//! environment.h
-//!
-//! Created on: Jul 9, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_ENVIRONMENT_H_
 #define CASUAL_QUEUE_ENVIRONMENT_H_
 
 
-#include "common/platform.h"
-#include "common/uuid.h"
-
-#include <string>
 
 
 
@@ -22,19 +15,7 @@ namespace casual
    {
       namespace environment
       {
-         namespace broker
-         {
-            const common::Uuid& identification();
 
-            namespace queue
-            {
-
-               common::platform::queue_id_type id();
-               common::platform::queue_id_type initialize();
-
-            } // queue
-
-         } // broker
 
       } // environment
    } // queue

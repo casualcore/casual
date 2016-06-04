@@ -72,20 +72,20 @@ install_bins.append( target)
 # admin-terminal
 #
 
-
-target = LinkExecutable( 'bin/casual-broker-admin',
-    [ Compile( 'source/admin/client.cpp')],
-    [ logic_archive, 'casual-common', 'casual-sf', 'casual-xatmi'])
-	
-
-Install( target,'$(CASUAL_HOME)/internal/bin')
+# 
+# target = LinkExecutable( 'bin/casual-broker-admin',
+#     [ Compile( 'source/admin/client.cpp')],
+#     [ logic_archive, 'casual-common', 'casual-sf', 'casual-xatmi'])
+# 	
+# 
+# Install( target,'$(CASUAL_HOME)/internal/bin')
 
 
  
 LinkUnittest( 'bin/test-casual-broker-isolated',
     [
-      Compile( 'unittest/isolated/source/test_broker.cpp'),
       Compile( 'unittest/isolated/source/test_forward_cache.cpp'),
+      Compile( 'unittest/isolated/source/test_broker.cpp'),
     ] + forward_objs,
     [
      logic_archive,

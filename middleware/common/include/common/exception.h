@@ -124,6 +124,15 @@ namespace casual
                using base::base;
             };
 
+            //!
+            //! Something is used in a way it's not design to support.
+            //!
+            //!
+            struct Semantic : base
+            {
+               using base::base;
+            };
+
             namespace environment
             {
                struct Variable : Argument
@@ -159,26 +168,34 @@ namespace casual
 
          } // limit
 
+
+         namespace communication
+         {
+            namespace no
+            {
+               struct Message : base
+               {
+                  using base::base;
+               };
+            } // no
+
+            struct Unavailable : base
+            {
+               using base::base;
+            };
+
+            struct Refused : base
+            {
+               using base::base;
+            };
+
+         } // communication
+
          namespace queue
          {
-
-            struct Unavailable : base
-            {
-               using base::base;
-            };
+            using Unavailable = communication::Unavailable;
 
          } // queue
-
-
-         namespace network
-         {
-
-            struct Unavailable : base
-            {
-               using base::base;
-            };
-
-         } // network
 
 
          namespace signal
@@ -188,7 +205,7 @@ namespace casual
                using common::exception::base::base;
             };
 
-            template< common::platform::signal_type signal>
+            template< common::signal::Type signal>
             struct basic_signal : signal::base
             {
 
@@ -197,20 +214,18 @@ namespace casual
                   : signal::base( description, make_nip( "signal", common::signal::type::string( signal)), std::forward< Args>( information)...) {}
 
                basic_signal()
-                  : signal::base( "signal: " + common::signal::type::string( signal)) {}
+                  : signal::base( "signal: " + common::signal::type::string( signal), make_nip( "signal", signal)) {}
 
             };
 
-            typedef basic_signal< common::signal::alarm> Timeout;
-
-            typedef basic_signal< common::signal::terminate> Terminate;
-
-            typedef basic_signal< common::signal::user> User;
-
+            using Timeout = basic_signal< common::signal::Type::alarm>;
+            using Terminate = basic_signal< common::signal::Type::terminate>;
+            using User = basic_signal< common::signal::Type::user>;
+            using Pipe = basic_signal< common::signal::Type::pipe>;
 
             namespace child
             {
-               typedef basic_signal< common::signal::child> Terminate;
+               using Terminate = basic_signal< common::signal::Type::child>;
             } // child
 
          } // signal

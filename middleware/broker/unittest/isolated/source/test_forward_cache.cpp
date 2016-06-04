@@ -1,11 +1,11 @@
 //!
 //! test_forward_cache.cpp
 //!
-//! Created on: Jun 28, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "broker/forward/cache.h"
@@ -23,10 +23,12 @@ namespace casual
 
       TEST( casual_broker_forward_cache, construction_destruction)
       {
+         CASUAL_UNITTEST_TRACE();
+
          //
          // Take care of the connect
          //
-         mockup::domain::Domain domain;
+         mockup::domain::minimal::Domain domain;
 
          EXPECT_NO_THROW({
             forward::Cache cache;
@@ -34,19 +36,22 @@ namespace casual
       }
 
 
-      TEST( casual_broker_forward_cache, forward_call_TPNOREPLY_TPNOTRAN)
+      TEST( casual_broker_forward_cache, forward_call_TPNOTRAN)
       {
-         mockup::domain::Domain domain;
+         CASUAL_UNITTEST_TRACE();
 
-         mockup::ipc::Instance caller;
+         mockup::domain::minimal::Domain domain;
+
+         mockup::ipc::Collector caller;
 
          message::service::call::callee::Request request;
 
          {
-            request.process = caller.process();
+            request.process.pid = 1;
+            request.process.queue = caller.id();
             request.service.name = "service3_2ms_timout";
-            request.trid = transaction::ID::create( caller.process());
-            request.flags = TPNOREPLY | TPNOTRAN;
+            request.trid = transaction::ID::create( process::handle());
+            request.flags = TPNOTRAN;
          }
 
          //
@@ -83,18 +88,19 @@ namespace casual
 
       TEST( casual_broker_forward_cache, forward_call__missing_ipc_queue__expect_error_reply)
       {
-         Trace trace{ "TEST casual_broker_forward_cache.forward_call__missing_ipc_queue__expect_error_reply", log::internal::debug};
+         CASUAL_UNITTEST_TRACE();
 
-         mockup::domain::Domain domain;
+         mockup::domain::minimal::Domain domain;
 
-         mockup::ipc::Instance caller;
+         mockup::ipc::Collector caller;
 
          message::service::call::callee::Request request;
 
          {
-            request.process = caller.process();
+            request.process.pid = 1;
+            request.process.queue = caller.id();;
             request.service.name = "removed_ipc_queue";
-            request.trid = transaction::ID::create( caller.process());
+            request.trid = transaction::ID::create( process::handle());
          }
 
 

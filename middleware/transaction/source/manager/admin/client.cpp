@@ -260,7 +260,7 @@ namespace casual
                {
                   struct format_pid
                   {
-                     platform::pid_type operator() ( const vo::resource::Instance& value) const
+                     platform::pid::type operator() ( const vo::resource::Instance& value) const
                      {
                         return value.process.pid;
                      }
@@ -268,7 +268,7 @@ namespace casual
 
                   struct format_queue
                   {
-                     platform::pid_type operator() ( const vo::resource::Instance& value) const
+                     platform::pid::type operator() ( const vo::resource::Instance& value) const
                      {
                         return value.process.queue;
                      }

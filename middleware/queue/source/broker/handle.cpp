@@ -1,8 +1,5 @@
 //!
-//! handle.cpp
-//!
-//! Created on: Jun 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/broker/handle.h"
@@ -37,7 +34,7 @@ namespace casual
                         // We put a dead process event on our own ipc device, that
                         // will be handled later on.
                         //
-                        common::message::dead::process::Event event{ exit};
+                        common::message::domain::process::termination::Event event{ exit};
                         common::communication::ipc::inbound::device().push( std::move( event));
                      }
                   }

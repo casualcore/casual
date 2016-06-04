@@ -1,8 +1,5 @@
 //!
-//! main.cpp
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "gateway/manager/manager.h"
@@ -27,7 +24,7 @@ namespace casual
                Settings settings;
                {
                   casual::common::Arguments parser{{
-
+                     casual::common::argument::directive( { "-c", "--configuration"}, "path to configuration file", settings.configuration),
                   }};
                   parser.parse( argc, argv);
                }

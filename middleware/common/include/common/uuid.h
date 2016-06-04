@@ -23,7 +23,7 @@ namespace casual
 
 		struct Uuid
 		{
-			typedef platform::uuid_type uuid_type;
+			typedef platform::uuid::type uuid_type;
 
 
 			Uuid();
@@ -84,7 +84,7 @@ namespace casual
 
       namespace uuid
       {
-         std::string string( const platform::uuid_type& uuid);
+         std::string string( const platform::uuid::type& uuid);
          std::string string( const Uuid& uuid);
 
          Uuid make();

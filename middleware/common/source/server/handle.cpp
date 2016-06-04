@@ -15,6 +15,7 @@ namespace casual
    {
       namespace server
       {
+         /*
          message::server::connect::Reply connect( const Uuid& identification)
          {
             return connect( communication::ipc::inbound::device(), identification, {});
@@ -33,23 +34,51 @@ namespace casual
 
             return reply;
          }
+         */
+
+         namespace local
+         {
+            namespace
+            {
+               void advertise( std::vector< message::Service> services)
+               {
+                  if( ! services.empty())
+                  {
+                     message::service::Advertise advertise;
+                     advertise.process = process::handle();
+                     advertise.services = std::move( services);
+
+                     communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
+                  }
+               }
+            } // <unnamed>
+         } // local
 
          namespace handle
          {
 
             namespace policy
             {
-               void Default::connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Default::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                {
+                  //
+                  // Connection to the domain has been done before...
+                  //
+
 
                   //
-                  // Let the broker know about us, and our services...
+                  // Let the broker know about our services...
                   //
-                  server::connect( ipc, std::move( services), resources);
+                  local::advertise( std::move( services));
+
+                  //
+                  // configure resources, if any.
+                  //
+                  transaction::Context::instance().set( resources);
 
                }
 
-               void Default::reply( platform::queue_id_type id, message::service::call::Reply& message)
+               void Default::reply( platform::ipc::id::type id, message::service::call::Reply& message)
                {
                   communication::ipc::blocking::send( id, message);
                }
@@ -60,11 +89,11 @@ namespace casual
                   ack.process = process::handle();
                   ack.service = message.service.name;
 
-                  communication::ipc::blocking::send( communication::ipc::broker::id(), ack);
+                  communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
                }
 
 
-               void Default::statistics( platform::queue_id_type id,  message::traffic::Event& event)
+               void Default::statistics( platform::ipc::id::type id,  message::traffic::Event& event)
                {
                   log::internal::debug << "policy::Default::statistics - event:" << event << std::endl;
 
@@ -186,23 +215,30 @@ namespace casual
                   communication::ipc::blocking::send( target.process.queue, request);
                }
 
-               Admin::Admin( const Uuid& identification, communication::error::type handler, communication::ipc::inbound::Device& ipc)
-                  : m_identification{ identification},
-                    m_error_handler{ std::move( handler)},
-                    m_inbound( ipc)
+               Admin::Admin( communication::error::type handler)
+                  : m_error_handler{ std::move( handler)}
                {}
 
-              Admin::Admin( const Uuid& identification, communication::error::type handler) : Admin( identification, std::move( handler), communication::ipc::inbound::device()) {}
 
-              Admin:: Admin( communication::error::type handler) : Admin( uuid::empty(), std::move( handler)) {}
-
-
-               void Admin::connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Admin::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
                {
-                  server::connect( m_inbound, m_identification, std::move( services), m_error_handler);
+                  //
+                  // Connection to the domain has been done before...
+                  //
+
+
+                  if( ! resources.empty())
+                  {
+                     throw common::exception::invalid::Semantic{ "can't build and link an administration server with resources"};
+                  }
+
+                  //
+                  // Let the broker know about our services...
+                  //
+                  local::advertise( std::move( services));
                }
 
-               void Admin::reply( platform::queue_id_type id, message::service::call::Reply& message)
+               void Admin::reply( platform::ipc::id::type id, message::service::call::Reply& message)
                {
                   communication::ipc::blocking::send( id, message, m_error_handler);
                }
@@ -213,11 +249,11 @@ namespace casual
                   ack.process = common::process::handle();
                   ack.service = message.service.name;
 
-                  communication::ipc::blocking::send( communication::ipc::broker::id(), ack, m_error_handler);
+                  communication::ipc::blocking::send( communication::ipc::broker::device(), ack, m_error_handler);
                }
 
 
-               void Admin::statistics( platform::queue_id_type id, message::traffic::Event&)
+               void Admin::statistics( platform::ipc::id::type id, message::traffic::Event&)
                {
                   // no-op
                }

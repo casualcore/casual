@@ -30,7 +30,7 @@ namespace casual
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
                      //
-                     common::message::dead::process::Event event{ exit};
+                     common::message::domain::process::termination::Event event{ exit};
                      common::communication::ipc::inbound::device().push( std::move( event));
                   }
                }
@@ -192,6 +192,8 @@ namespace casual
                      template< typename M, typename F>
                      void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
                      {
+                        common::trace::Scope trace{ "transaction::handle::send::resource::request", common::log::internal::transaction};
+
                         M message;
                         message.process = common::process::handle();
                         message.trid = transaction.trid;
@@ -221,6 +223,8 @@ namespace casual
                            // Could not send to all RM-proxy-instances. We put the request
                            // in pending.
                            //
+                           common::log::internal::transaction << "could not send to all RM-proxy-instances - action: try later\n";
+
                            state.pendingRequests.push_back( std::move( request));
                         }
                      }
@@ -348,6 +352,7 @@ namespace casual
 
          namespace resource
          {
+            /*
             namespace id
             {
                void Allocation::operator () ( message_type& message)
@@ -357,6 +362,7 @@ namespace casual
                }
 
             } // id
+            */
 
             void Involved::operator () ( message_type& message)
             {
@@ -486,12 +492,14 @@ namespace casual
                      // We now have enough resource proxies up and running to guarantee consistency
                      // notify broker
                      //
+                     /*
 
                      common::log::internal::transaction << "enough resources are connected - send connect to broker\n";
 
                      common::message::transaction::manager::Ready running;
                      running.process = common::process::handle();
-                     ipc::device().blocking_send( common::communication::ipc::broker::id(), running);
+                     ipc::device().blocking_send( common::communication::ipc::broker::device(), running);
+                     */
 
                      m_connected = true;
                   }

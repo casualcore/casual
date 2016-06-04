@@ -27,25 +27,80 @@ namespace casual
 	{
 		namespace environment
 		{
+         namespace local
+         {
+            namespace
+            {
+               namespace native
+               {
+                  struct Variable
+                  {
+                     using lock_type =  std::lock_guard< std::mutex>;
+
+                     static const Variable& instance()
+                     {
+                        static Variable singleton;
+                        return singleton;
+                     }
+
+                     bool exists( const std::string& name) const
+                     {
+                        lock_type lock{ m_mutex};
+
+                        return getenv( name.c_str()) != nullptr;
+                     }
+
+                     std::string get( const std::string& name) const
+                     {
+                        lock_type lock{ m_mutex};
+
+                        auto result = getenv( name.c_str());
+
+                        //
+                        // We need to return by value and copy the variable while
+                        // we have the lock
+                        //
+                        if( result)
+                        {
+                           return result;
+                        }
+                        return {};
+                     }
+
+                     void set( const std::string& name, const std::string& value) const
+                     {
+
+                        lock_type lock{ m_mutex};
+                        if( setenv( name.c_str(), value.c_str(), 1) == -1)
+                        {
+                           throw std::system_error{ error::last(), std::system_category()};
+                        }
+                     }
+                  private:
+                     Variable() = default;
+                     mutable std::mutex m_mutex;
+                  };
+
+               } // native
+
+            } // <unnamed>
+         } // local
+
 			namespace variable
 			{
+
 				bool exists( const std::string& name)
 				{
-					return getenv( name.c_str()) != nullptr;
+					return local::native::Variable::instance().exists( name);
 				}
 
 				std::string get( const std::string& name)
 				{
-				   const auto result = getenv( name.c_str());
-
-					if( result)
+					if( ! exists( name))
 					{
-						return result;
+					   throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
 					}
-					else
-					{
-						throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
-					}
+					return local::native::Variable::instance().get( name);
 				}
 
             std::string get( const std::string& name, std::string alternative)
@@ -59,16 +114,101 @@ namespace casual
 
 				void set( const std::string& name, const std::string& value)
 				{
-				   setenv( name.c_str(), value.c_str(), 1);
+				   local::native::Variable::instance().set( name, value);
+
+				   //log::internal::debug << "environment variable: " << name << " set to: " << value << std::endl;
 				}
-			}
+
+            namespace name
+            {
+               const std::string& home()
+               {
+                  static std::string name{ "CASUAL_HOME"};
+                  return name;
+               }
+
+               namespace domain
+               {
+                  const std::string& home()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_HOME"};
+                     return name;
+                  }
+
+                  const std::string& id()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_ID"};
+                     return name;
+                  }
+                  const std::string& path()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_PATH"};
+                     return name;
+                  }
+                  const std::string& name()
+                  {
+                     static std::string name{ "CASUAL_DOMAIN_NAME"};
+                     return name;
+                  }
+
+               } // domain
+
+               namespace ipc
+               {
+
+                  namespace domain
+                  {
+                     const std::string& manager()
+                     {
+                        static std::string name{ "CASUAL_DOMAIN_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // domain
+
+                  const std::string& broker()
+                  {
+                     static std::string name{ "CASUAL_BROKER_IPC_QUEUE"};
+                     return name;
+                  }
+
+                  namespace transaction
+                  {
+                     const std::string& manager()
+                     {
+                        static std::string name{ "CASUAL_TM_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // transaction
+
+                  namespace queue
+                  {
+                     const std::string& broker()
+                     {
+                        static std::string name{ "CASUAL_QUEUE_BROKER_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // queue
+
+                  namespace gateway
+                  {
+                     const std::string& manager()
+                     {
+                        static std::string name{ "CASUAL_GATEWAY_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // gateway
+               } // ipc
+
+            } // name
+
+			} // variable
 
 
 			namespace directory
 			{
 			   const std::string& domain()
             {
-               static const std::string result = variable::get( "CASUAL_DOMAIN_HOME");
+               static const std::string result = variable::get( variable::name::domain::home());
                return result;
             }
 
@@ -80,7 +220,7 @@ namespace casual
 
             const std::string& casual()
             {
-               static const std::string result = variable::get( "CASUAL_HOME");
+               static const std::string result = variable::get( variable::name::home());
                return result;
             }
 
@@ -89,18 +229,6 @@ namespace casual
 			namespace file
          {
 
-            namespace broker
-            {
-               std::string device()
-               {
-                  return domain::singleton::path() + "/.casual-broker-queue";
-               }
-            } // broker
-
-            std::string brokerQueue()
-            {
-               return broker::device();
-            }
 
             std::string configuration()
             {
@@ -115,30 +243,8 @@ namespace casual
          }
 
 
-			namespace local
-         {
-            namespace
-            {
-               std::string& domainName()
-               {
-                  static std::string path;
-                  return path;
-               }
-            }
-		   }
-
 			namespace domain
          {
-            const std::string& name()
-            {
-               return local::domainName();
-            }
-
-            void name( const std::string& value)
-            {
-               local::domainName() = value;
-            }
-
             namespace singleton
             {
                namespace local
@@ -158,6 +264,13 @@ namespace casual
                {
                   static const std::string path = local::path( directory::domain() + "/.singleton");
                   return path;
+               }
+
+               const std::string& file()
+               {
+                  static const std::string file = path() + "/.domain-singleton";
+                  return file;
+
                }
 
             } // singleton
@@ -295,6 +408,7 @@ namespace casual
          std::string string( const std::string& value)
          {
             std::string result;
+            result.reserve( value.size());
 
             for( auto& token : local::split( value, std::string{ "${"}, std::string{ "}"}))
             {

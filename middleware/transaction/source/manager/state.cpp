@@ -34,7 +34,7 @@ namespace casual
                {
                   struct Resource
                   {
-                     state::resource::Proxy operator () ( const message::transaction::resource::Manager& value) const
+                     state::resource::Proxy operator () ( const message::domain::configuration::transaction::Resource& value) const
                      {
                         trace::internal::Scope trace{ "transform::Resource"};
 
@@ -162,10 +162,8 @@ namespace casual
             }
          } // resource
 
-         void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file)
+         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file)
          {
-
-            common::environment::domain::name( configuration.domain);
 
             {
                trace::internal::Scope trace( "transaction manager xa-switch configuration", log::internal::transaction);
@@ -336,9 +334,9 @@ namespace casual
          return result;
       }
 
-      std::vector< common::platform::pid_type> State::processes() const
+      std::vector< common::platform::pid::type> State::processes() const
       {
-         std::vector< common::platform::pid_type> result;
+         std::vector< common::platform::pid::type> result;
 
          for( auto& resource : resources)
          {
@@ -377,7 +375,7 @@ namespace casual
          log::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
-      state::resource::Proxy& State::get_resource( common::platform::resource::id_type rm)
+      state::resource::Proxy& State::get_resource( common::platform::resource::id::type rm)
       {
          auto found = common::range::find( resources, rm);
 
@@ -388,7 +386,7 @@ namespace casual
          return *found;
       }
 
-      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid)
+      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id::type rm, common::platform::pid::type pid)
       {
          auto& resource = get_resource( rm);
 
@@ -403,7 +401,7 @@ namespace casual
          return *found;
       }
 
-      State::instance_range State::idle_instance( common::platform::resource::id_type rm)
+      State::instance_range State::idle_instance( common::platform::resource::id::type rm)
       {
          auto& resource = get_resource( rm);
 

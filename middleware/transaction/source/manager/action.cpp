@@ -1,8 +1,5 @@
 //!
-//! action.cpp
-//!
-//! Created on: Oct 20, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/action.h"
@@ -13,7 +10,7 @@
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/internal/trace.h"
-#include "common/message/handle.h"
+#include "common/server/handle.h"
 
 
 #include "sf/log.h"
@@ -33,36 +30,16 @@ namespace casual
          {
 
             {
-               common::Trace trace( "connect to broker", log::internal::transaction);
 
-               //
-               // Do the initialization dance with the broker
-               //
-               common::message::transaction::manager::connect::Request connect;
-
-               connect.path = common::process::path();
-               connect.process = common::process::handle();
-               connect.identification = common::process::instance::transaction::manager::identity();
-
-               auto correlation = ipc::device().blocking_send( communication::ipc::broker::id(), connect);
-
-               {
-                  common::message::transaction::manager::connect::Reply reply;
-                  ipc::device().blocking_receive( reply, correlation);
-
-                  common::message::handle::connect::reply( reply);
-               }
-
-            }
-
-            {
                common::Trace trace( "configure", log::internal::transaction);
 
-               //
-               // Wait for configuration
-               //
-               common::message::transaction::manager::Configuration configuration;
-               ipc::device().blocking_receive( configuration);
+               message::domain::configuration::transaction::resource::Request request;
+               request.scope = message::domain::configuration::transaction::resource::Request::Scope::all;
+               request.process = process::handle();
+
+
+               auto configuration = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+
 
                //
                // configure state
@@ -71,12 +48,12 @@ namespace casual
             }
 
             {
-               common::Trace trace( "event registration", log::internal::transaction);
+               Trace trace( "event registration", log::internal::transaction);
 
-               common::message::dead::process::Registration message;
+               message::domain::process::termination::Registration message;
                message.process = common::process::handle();
 
-               ipc::device().blocking_send( communication::ipc::broker::id(), message);
+               ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
             }
 
          }
@@ -111,7 +88,6 @@ namespace casual
                                  "--rm-openinfo", proxy.openinfo,
                                  "--rm-closeinfo", proxy.closeinfo,
                                  "--rm-id", std::to_string( proxy.id),
-                                 "--domain", common::environment::domain::name()
                            }
                         );
 

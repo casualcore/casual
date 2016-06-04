@@ -13,8 +13,12 @@
 
 #include "common/platform.h"
 #include "common/move.h"
+#include "common/internal/log.h"
+#include "common/algorithm.h"
+#include "common/thread.h"
 
 
+#include <atomic>
 #include <thread>
 
 // signal
@@ -27,9 +31,8 @@ namespace casual
    {
       namespace signal
       {
-         using set_type = sigset_t;
 
-         enum Type : platform::signal_type
+         enum class Type : platform::signal::type
          {
             alarm = SIGALRM,
             interupt = SIGINT,
@@ -41,33 +44,25 @@ namespace casual
             pipe = SIGPIPE,
          };
 
+         std::ostream& operator << ( std::ostream& out, signal::Type signal);
+
 		   namespace type
          {
-            using type = platform::signal_type;
-
-            std::string string( type signal);
+            std::string string( Type signal);
+            std::string string( platform::signal::type signal);
 
          } // type
 
 
+
 			//!
 			//! Throws if there has been a signal received.
+			//! And the signal is NOT blocked in the current
+			//! threads signal mask
 			//!
 			//! @throw subtype to exception::signal::Base
 			//!
 			void handle();
-
-
-			enum Filter
-			{
-			   exclude_none = 0,
-			   exclude_alarm = 1,
-			   exclude_child_terminate = 2,
-			   exclude_terminate = 4
-			};
-
-         void handle( Filter exclude);
-
 
 			//!
 			//! Clears all pending signals.
@@ -167,37 +162,198 @@ namespace casual
 			//!
 			//! @return true if the signal was sent
 			//!
-			bool send( platform::pid_type pid, type::type signal);
+			bool send( platform::pid::type pid, Type signal);
 
+			struct Set;
+         namespace set
+         {
+            signal::Set filled();
+         }
+
+         struct Set
+         {
+			   using type = sigset_t;
+
+			   Set();
+			   Set( type set);
+			   Set( std::initializer_list< Type> signals);
+
+            void add( Type signal);
+            void remove( Type signal);
+
+
+
+            friend signal::Set signal::set::filled();
+
+            type set;
+
+            //!
+            //! @return true if @signal is present in the mask
+            //!
+            bool exists( Type signal) const;
+
+            friend std::ostream& operator << ( std::ostream& out, const Set& value);
+
+         private:
+            struct filled_t{};
+            struct empty_t{};
+
+            Set( filled_t);
+            Set( empty_t);
+
+         };
+
+         //!
+         //! @return current pending signals that has been blocked
+         //!
+         Set pending();
+
+
+			namespace set
+         {
+			   using type = typename Set::type;
+
+            //!
+            //! @return a filled mask, that is, all signals are represented
+            //!
+			   signal::Set filled();
+
+            //!
+            //!
+            //! @param excluded the signals that is excluded from the mask
+            //!
+            //! @return filled() - excluded
+            //!
+            //Mask filled( std::initializer_list< Type> excluded);
+			   signal::Set filled( const std::vector< Type>& excluded);
+
+
+            //!
+            //! @return an empty set, that is, no signals are represented
+            //!
+			   signal::Set empty();
+
+         } // set
+
+			namespace mask
+         {
+			   //!
+			   //! Sets the current signal mask for current thread
+			   //!
+			   //! @param mask to replace the current mask
+			   //! @return the old mask
+			   //!
+			   signal::Set set( signal::Set mask);
+
+            //!
+            //! Adds @mask to the current signal mask for current thread
+            //!
+            //! @param mask to be added to the current mask
+            //! @return the old mask
+            //!
+			   signal::Set block( signal::Set mask);
+
+            //!
+            //! Removes @mask from the current signal mask for current thread
+            //!
+            //! @param mask to be removed from the current mask
+            //! @return the old mask
+            //!
+			   signal::Set unblock( signal::Set mask);
+
+            //!
+            //! Blocks all signals to current thread
+            //!
+            //! @return the old mask
+            //!
+			   signal::Set block();
+
+
+
+            //!
+            //! @return the current mask for current thread
+            //!
+			   signal::Set current();
+
+         } // mask
 
 			namespace thread
          {
+
+
+
 			   //!
 			   //! Send signal to thread
 			   //!
-			   void send( std::thread& thread, type::type signal);
+			   void send( std::thread& thread, Type signal);
 
-			   //!
-			   //! Blocks all signals to current thread
-			   //!
-			   set_type block();
 
-			   set_type mask( set_type set);
+            //!
+            //! Send signal to thread
+            //!
+            void send( common::thread::native::type thread, Type signal);
+
+            //!
+            //! Send signal to current thread
+            //!
+            void send( Type signal);
+
 
 			   namespace scope
             {
-			      //!
-			      //! Blocks all signals on construction, and
-			      //! resets original on destruction
-			      //!
-               struct Block
-               {
-                  Block();
-                  ~Block();
+               //!
+               //! Resets the signal mask on destruction
+               //!
+			      struct Reset
+			      {
+			         Reset( signal::Set mask);
+			         ~Reset();
+
+			         Reset( Reset&&) = default;
+			         Reset& operator = ( Reset&&) = default;
 
                private:
-                  set_type m_set;
+			         signal::Set m_mask;
+                  move::Moved m_moved;
+			      };
+
+               //!
+               //! Sets the signal mask, and
+               //! resets original on destruction
+               //!
+               struct Mask : Reset
+               {
+                  Mask( signal::Set mask);
                };
+
+
+               struct Block : Reset
+               {
+                  //!
+                  //! Blocks all signals on construction, and
+                  //! resets original on destruction
+                  //!
+                  Block();
+
+                  //!
+                  //! Adds @p mask to the current blocking mask,
+                  //! @param mask to be added to the blocking set
+                  //!
+                  Block( signal::Set mask);
+
+               };
+
+               struct Unblock : Reset
+               {
+
+                  //!
+                  //! remove @p mask from the current blocking mask,
+                  //! @param mask to be removed from the blocking set
+                  //!
+                  Unblock( signal::Set mask);
+
+               };
+
 
             } // scope
 

@@ -25,14 +25,15 @@ int main( int argc, char** argv)
 	   broker::Settings settings;
 
 	   {
-	      common::Arguments parser{
-	         { common::argument::directive( {"-c", "--configuration-file"}, "domain configuration file", settings.configurationfile)}};
+	      common::Arguments parser{ "casual broker", {}
 
+	      };
 
 	      parser.parse( argc, argv);
+
 	   }
 
-		casual::broker::Broker broker( settings);
+		casual::broker::Broker broker( std::move( settings));
 		broker.start();
 
 	}

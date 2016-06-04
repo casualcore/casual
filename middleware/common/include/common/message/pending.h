@@ -26,8 +26,8 @@ namespace casual
             //!
             struct Message
             {
-               using targets_type = std::vector< platform::queue_id_type>;
-               using target_type = platform::queue_id_type;
+               using targets_type = std::vector< platform::ipc::id::type>;
+               using target_type = platform::ipc::id::type;
 
                enum class Targets
                {
@@ -93,12 +93,12 @@ namespace casual
             template< typename P>
             bool send( Message& message, P&& policy, const communication::error::type& handler = nullptr)
             {
-               auto send = [&]( platform::queue_id_type ipc)
+               auto send = [&]( platform::ipc::id::type ipc)
                      {
                         try
                         {
                            communication::ipc::outbound::Device device{ ipc};
-                           return static_cast< bool>( device.put( message.complete, std::move( policy), handler));
+                           return static_cast< bool>( device.put( message.complete, policy, handler));
                         }
                         catch( const exception::queue::Unavailable&)
                         {

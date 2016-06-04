@@ -39,7 +39,7 @@ namespace casual
          void domain( const std::vector< std::string>& arguments)
          {
             common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
-            execute( "casual-broker-admin", arguments);
+            execute( "casual-domain-admin", arguments);
          }
 
          void queue( const std::vector< std::string>& arguments)

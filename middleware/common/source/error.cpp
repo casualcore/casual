@@ -35,6 +35,16 @@ namespace casual
       namespace error
       {
 
+         int last()
+         {
+            return errno;
+         }
+
+         std::error_condition condition()
+         {
+            return std::error_condition{ last(), std::system_category()};
+         }
+
 
          int handler()
          {

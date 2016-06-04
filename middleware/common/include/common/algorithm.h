@@ -1,8 +1,5 @@
 //!
-//! algorithm.h
-//!
-//! Created on: Nov 10, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_ALGORITHM_H_
@@ -12,6 +9,7 @@
 #include "common/traits.h"
 #include "common/error.h"
 #include "common/platform.h"
+#include "common/move.h"
 
 #include <algorithm>
 #include <numeric>
@@ -36,6 +34,11 @@ namespace casual
 
       namespace scope
       {
+         //!
+         //! executes an action ones.
+         //! If the action has not been executed the
+         //! destructor will perform the execution
+         //!
          struct Execute
          {
             Execute( std::function< void()> executer) : m_execute( std::move( executer)) {}
@@ -52,6 +55,10 @@ namespace casual
                }
             }
 
+            //!
+            //! executes the actions ones.
+            //! no-op if already executed
+            //!
             void operator () ()
             {
                if( m_execute)
@@ -62,6 +69,9 @@ namespace casual
                }
             }
 
+            //!
+            //! Removes the action
+            //!
             void release()
             {
                m_execute = nullptr;
@@ -71,6 +81,55 @@ namespace casual
 
             std::function< void()> m_execute;
          };
+
+         template< typename E>
+         struct basic_execute
+         {
+            using execute_type = E;
+
+            basic_execute( execute_type&& execute) : m_execute( std::move( execute)) {}
+
+            ~basic_execute()
+            {
+               try
+               {
+                  (*this)();
+               }
+               catch( ...)
+               {
+                  error::handler();
+               }
+            }
+
+            basic_execute( basic_execute&&) noexcept = default;
+            basic_execute& operator = ( basic_execute&&) noexcept = default;
+
+            //!
+            //! executes the actions ones.
+            //! no-op if already executed
+            //!
+            void operator () ()
+            {
+               if( ! m_moved)
+               {
+                  m_execute();
+                  release();
+               }
+            }
+
+            void release() { m_moved.release();}
+
+         private:
+            execute_type m_execute;
+            move::Moved m_moved;
+         };
+
+         template< typename E>
+         auto execute( E&& executor) -> decltype( basic_execute< E>{ std::forward< E>( executor)})
+         {
+            return basic_execute< E>{ std::forward< E>( executor)};
+         }
+
       } // scope
 
       namespace chain
@@ -231,6 +290,74 @@ namespace casual
          };
 
       } // compare
+
+      namespace detail
+      {
+         namespace coalesce
+         {
+            template< typename T>
+            bool empty( T& value) { return value.empty();}
+
+            template< typename T>
+            bool empty( T* value) { return value == nullptr;}
+
+            template< typename R, typename T>
+            R implementation( T&& value)
+            {
+               return std::forward< T>( value);
+            }
+
+            template< typename R, typename T, typename... Args>
+            R implementation( T&& value, Args&&... args)
+            {
+               if( empty( value)) { return implementation< R>( std::forward< Args>( args)...);}
+               return std::forward< T>( value);
+            }
+
+         } // coalesce
+
+      } // detail
+
+
+
+      template< typename T1, typename T2, typename... Args>
+      struct is_same : std::integral_constant< bool, is_same< T1, T2>::value && is_same< T2, Args...>::value>
+      {
+
+      };
+
+      template< typename T1, typename T2>
+      struct is_same< T1, T2> : std::is_same< T1, T2>
+      {
+      };
+
+
+      //!
+      //! Chooses the first argument that is not 'empty'
+      //!
+      //! @note if all parameters has exactly the same type the return type will be
+      //!  exactly that. Otherwise it will be the common type of all types
+      //!
+      //! @return the first argument that is not 'empty'
+      //!
+      template< typename T, typename... Args>
+      auto coalesce( T&& value,  Args&&... args)
+         -> typename std::conditional<
+               is_same< T, Args...>::value,
+               T, // only if T1 and T1 are exactly the same
+               typename std::common_type< T, Args...>::type
+            >::type
+
+
+      {
+         using return_type = typename std::conditional<
+               is_same< T, Args...>::value,
+               T, // only if T1 and T1 are exactly the same
+               typename std::common_type< T, Args...>::type
+            >::type;
+
+         return detail::coalesce::implementation< return_type>( std::forward< T>( value), std::forward< Args>( args)...);
+      }
 
 
       template< typename Enum>
@@ -781,11 +908,11 @@ namespace casual
          //! @return std::vector with the transformed values
          //!
          template< typename R, typename T>
-         auto transform( R&& range, T transform) -> std::vector< decltype( transform( *std::begin( range)))>
+         auto transform( R&& range, T transformer) -> std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type>
          {
-            std::vector< decltype( transform( *std::begin( range)))> result;
+            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
             result.reserve( range.size());
-            std::transform( std::begin( range), std::end( range), std::back_inserter( result), transform);
+            std::transform( std::begin( range), std::end( range), std::back_inserter( result), transformer);
             return result;
          }
 
@@ -831,6 +958,13 @@ namespace casual
             container.erase( std::begin( range), std::end( range));
             return container;
          }
+
+         template< typename R, typename T>
+         auto remove( R&& range, const T& value) -> decltype( make( std::forward< R>( range)))
+         {
+            return make( std::begin( range), std::remove( std::begin( range), std::end( range), value));
+         }
+
 
          template< typename R, typename P>
          auto remove_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
@@ -963,6 +1097,12 @@ namespace casual
             return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
          }
 
+         template< typename R1, typename R2>
+         auto search( R1&& range, R2&& to_find) -> decltype( make( range))
+         {
+            auto first = std::search( std::begin( range), std::end( range), std::begin( to_find), std::end( to_find));
+            return { first, std::end( range)};
+         }
 
 
          template< typename R1, typename R2, typename F>
@@ -1099,6 +1239,18 @@ namespace casual
 
             return make( std::min_element( std::begin( result), std::end( result), functor), std::end( result));
          }
+
+         template< typename R>
+         auto min( R&& range) -> decltype( make( range))
+         {
+            //
+            // Just to make sure range is not an rvalue container. we could use enable_if instead.
+            //
+            auto result = make( std::forward< R>( range));
+
+            return make( std::min_element( std::begin( result), std::end( result)), std::end( result));
+         }
+
 
          //!
          //! @return true if all elements in @p other is found in @p source
@@ -1283,6 +1435,12 @@ namespace casual
       bool operator == ( C& lhs, const Range< Iter>& rhs)
       {
          return range::equal( lhs, rhs);
+      }
+
+      template< typename Iter>
+      bool operator == ( const Range< Iter>& lhs, bool rhs)
+      {
+         return static_cast< bool>( lhs) ==  rhs;
       }
 
 

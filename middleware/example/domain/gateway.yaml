@@ -1,0 +1,35 @@
+
+gateway:
+  
+  #
+  # There can be [0..*] listernes. 
+  # It's probably not so useful to have more than one listener, or is it?
+  # 0 listeners is probably usefull though.
+  #
+  listeners:
+    - type: tcp  # casual only support tcp. udp in the future?
+      address: 127.0.0.1:7777
+
+  connections:
+    
+      #
+      # casual support the following protocols
+      # * tcp
+      # * ipc 
+      #
+    - type: tcp
+      address: dolittle.laz.se:3432
+      
+      #
+      # Services we "know" exists in the remote domain
+      #
+      services:
+        - service1
+        - service2
+        - service3
+        - service4
+      
+    - type: "ipc"
+      address: "/Users/Lazan/casual/domain2"
+
+

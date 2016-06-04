@@ -10,6 +10,9 @@
 #include "sf/archive/archive.h"
 
 
+#include "common/process.h"
+#include "common/domain.h"
+
 namespace casual
 {
    namespace sf
@@ -28,6 +31,46 @@ namespace casual
          void serialize( Writer& archive, const platform::Uuid& value, const char* name)
          {
             archive << sf::makeNameValuePair( name, common::uuid::string( value));
+         }
+
+         void serialize( Reader& archive, common::process::Handle& value, const char* name)
+         {
+            if( archive.serialtype_start( name))
+            {
+               archive >> sf::makeNameValuePair( "pid", value.pid);
+               archive >> sf::makeNameValuePair( "queue", value.queue);
+            }
+            archive.serialtype_end( name);
+         }
+         void serialize( Writer& archive, const common::process::Handle& value, const char* name)
+         {
+            if( archive.serialtype_start( name))
+            {
+               archive << sf::makeNameValuePair( "pid", value.pid);
+               archive << sf::makeNameValuePair( "queue", value.queue);
+            }
+            archive.serialtype_end( name);
+         }
+
+         void serialize( Reader& archive, common::domain::Identity& value, const char* name)
+         {
+            if( archive.serialtype_start( name))
+            {
+               archive >> sf::makeNameValuePair( "name", value.name);
+               archive >> sf::makeNameValuePair( "id", value.id);
+            }
+            archive.serialtype_end( name);
+
+         }
+
+         void serialize( Writer& archive, const common::domain::Identity& value, const char* name)
+         {
+            if( archive.serialtype_start( name))
+            {
+               archive << sf::makeNameValuePair( "name", value.name);
+               archive << sf::makeNameValuePair( "id", value.id);
+            }
+            archive.serialtype_end( name);
          }
 
 

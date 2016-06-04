@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Dec 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_SESRVER_HANDLE_H_
@@ -36,58 +33,9 @@ namespace casual
       namespace server
       {
 
-         message::server::connect::Reply connect( const Uuid& identification);
-
-         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services);
-
-         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
-
-
-         template< typename Policy = communication::ipc::policy::Blocking>
-         message::server::connect::Reply connect(
-               communication::ipc::inbound::Device& receive,
-               const Uuid& identification,
-               std::vector< message::Service> services,
-               const communication::error::type& handler = nullptr,
-               Policy&& policy = communication::ipc::policy::Blocking{})
-         {
-            Trace trace{ "server::connect", log::internal::ipc};
-
-            message::server::connect::Request message;
-
-            message.process.pid = common::process::handle().pid;
-            message.process.queue = receive.connector().id();
-            message.path = common::process::path();
-            message.services = std::move( services);
-            message.identification = identification;
-
-            log::internal::ipc << "connect::Request: " << message << '\n';
-
-            //
-            // Wait for the connect reply
-            //
-            return common::message::handle::connect::reply(
-                  communication::ipc::call( communication::ipc::broker::id(), message, policy, handler, receive));
-
-         }
-
-         template< typename Policy = communication::ipc::policy::Blocking>
-         message::server::connect::Reply connect(
-               communication::ipc::inbound::Device& receive,
-               std::vector< message::Service> services,
-               const communication::error::type& handler = nullptr,
-               Policy&& policy = communication::ipc::policy::Blocking{})
-         {
-            return connect( receive, uuid::empty(), std::move( services), handler, std::forward< Policy>( policy));
-         }
-
-
 
          namespace handle
          {
-
-
-
 
             //!
             //! Handles XATMI-calls
@@ -131,7 +79,8 @@ namespace casual
                //! coming XATMI-calls
                //!
                template< typename... Args>
-               basic_call( communication::ipc::inbound::Device& ipc, server::Arguments arguments, Args&&... args) : m_ipc( ipc), m_policy( std::forward< Args>( args)...)
+               basic_call( server::Arguments arguments, Args&&... args)
+                  : m_policy( std::forward< Args>( args)...)
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
@@ -155,7 +104,7 @@ namespace casual
                   //
                   // Connect to casual
                   //
-                  m_policy.connect( m_ipc, std::move( services), arguments.resources);
+                  m_policy.connect( std::move( services), arguments.resources);
 
                   //
                   // Call tpsrvinit
@@ -164,14 +113,6 @@ namespace casual
                   {
                      throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
-
-               }
-
-               template< typename... Args>
-               basic_call( server::Arguments arguments, Args&&... args)
-                  : basic_call( communication::ipc::inbound::device(), std::move( arguments), std::forward< Args>( args)...)
-               {
-
                }
 
 
@@ -204,7 +145,6 @@ namespace casual
                   //
                   // Set the call-chain-id for this "chain"
                   //
-                  //call::Context::instance().execution( message.execution);
 
                   trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
 
@@ -235,12 +175,12 @@ namespace casual
                   //
                   // Make sure we do some cleanup...
                   //
-                  scope::Execute execute_finalize{ [](){ server::Context::instance().finalize();}};
+                  auto execute_finalize = scope::execute( [](){ server::Context::instance().finalize();});
 
                   //
                   // Make sure we'll always send ACK to broker
                   //
-                  scope::Execute execute_ack{ [&](){ m_policy.ack( message); } };
+                  auto execute_ack = scope::execute( [&](){ m_policy.ack( message);});
 
 
                   //
@@ -252,21 +192,21 @@ namespace casual
                   //
                   // Make sure we always send reply to caller
                   //
-                  scope::Execute execute_reply{ [&](){
+                  auto execute_reply = scope::execute( [&](){
                      if( ! flag< TPNOREPLY>( message.flags))
                      {
                         //
                         // Send reply to caller.
                         //
                         m_policy.reply( message.process.queue, reply);
-                     } } };
+                     }});
 
 
                   //
                   // If something goes wrong, make sure to rollback before reply with error.
                   // this will execute before execute_reply
                   //
-                  scope::Execute execute_error_reply{ [&](){ m_policy.transaction( reply, TPESVCERR); } };
+                  auto execute_error_reply = scope::execute( [&](){ m_policy.transaction( reply, TPESVCERR); });
 
 
                   auto& state = server::Context::instance().state();
@@ -290,8 +230,8 @@ namespace casual
 
                   auto& service = found->second;
 
-                  execution::service( message.service.name);
-                  execution::parent::service( message.parent);
+                  execution::service::name( message.service.name);
+                  execution::service::parent::name( message.parent);
 
 
 
@@ -417,7 +357,7 @@ namespace casual
                   // Do transaction stuff...
                   // - commit/rollback transaction if service has "auto-transaction"
                   //
-                  scope::Execute execute_transaction{ [&](){ m_policy.transaction( reply, state.jump.state.value); } };
+                  auto execute_transaction = scope::execute( [&](){ m_policy.transaction( reply, state.jump.state.value); });
 
                   //
                   // Nothing did go wrong
@@ -428,7 +368,7 @@ namespace casual
                   //
                   // Take end time
                   //
-                  scope::Execute execute_monitor{ [&](){
+                  auto execute_monitor = scope::execute( [&](){
                      if( ! message.service.traffic_monitors.empty())
                      {
                         state.traffic.end = platform::clock_type::now();
@@ -442,7 +382,7 @@ namespace casual
                            m_policy.statistics( queue, state.traffic);
                         }
                      }
-                  }};
+                  });
 
 
 
@@ -521,7 +461,6 @@ namespace casual
 
                };
 
-               communication::ipc::inbound::Device& m_ipc;
                policy_type m_policy;
                move::Moved m_moved;
             };
@@ -536,13 +475,13 @@ namespace casual
                //!
                struct Default
                {
-                  void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
-                  void reply( platform::queue_id_type id, message::service::call::Reply& message);
+                  void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
                   void ack( const message::service::call::callee::Request& message);
 
-                  void statistics( platform::queue_id_type id, message::traffic::Event& event);
+                  void statistics( platform::ipc::id::type id, message::traffic::Event& event);
 
                   void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
                   void transaction( message::service::call::Reply& message, int return_state);
@@ -553,20 +492,17 @@ namespace casual
 
                struct Admin
                {
-                  Admin( const Uuid& identification, communication::error::type handler, communication::ipc::inbound::Device& ipc);
-
-                  Admin( const Uuid& identification, communication::error::type handler);
                   Admin( communication::error::type handler);
 
 
-                  void connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
 
-                  void reply( platform::queue_id_type id, message::service::call::Reply& message);
+                  void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
                   void ack( const message::service::call::callee::Request& message);
 
 
-                  void statistics( platform::queue_id_type id, message::traffic::Event&);
+                  void statistics( platform::ipc::id::type id, message::traffic::Event&);
 
                   void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&);
 
@@ -575,10 +511,7 @@ namespace casual
                   void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
 
                private:
-                  Uuid m_identification;
                   communication::error::type m_error_handler;
-                  communication::ipc::inbound::Device& m_inbound;
-
                };
 
 

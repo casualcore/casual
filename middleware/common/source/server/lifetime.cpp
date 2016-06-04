@@ -32,7 +32,7 @@ namespace casual
                   auto result = process::lifetime::ended();
 
 
-                  std::vector< platform::pid_type> requested;
+                  std::vector< platform::pid::type> requested;
 
                   for( auto& handle : servers)
                   {
@@ -72,7 +72,7 @@ namespace casual
                {
                   trace::internal::Scope trace{ "common::server::lifetime::hard::shutdown"};
 
-                  std::vector< platform::pid_type> origin;
+                  std::vector< platform::pid::type> origin;
 
                   for( auto& handle: servers)
                   {

@@ -1,11 +1,9 @@
 //!
-//! test_manager.cpp
-//!
-//! Created on: Jan 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "transaction/manager/handle.h"
@@ -13,8 +11,10 @@
 
 
 #include "common/mockup/ipc.h"
+#include "common/mockup/file.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/rm.h"
+#include "common/mockup/process.h"
 
 #include "common/trace.h"
 #include "common/message/dispatch.h"
@@ -55,128 +55,72 @@ namespace casual
             {
 
                Manager( const std::string& configuration)
-                  : m_filename{ common::file::name::unique( common::directory::temporary() + '/', ".yaml")}
+                  : m_filename{ common::mockup::file::temporary( ".yaml", configuration)},
+                    m_process{ "./bin/casual-transaction-manager",
+                     { "-c", m_filename,
+                       "-l", ":memory:",
+                     }}
                {
-                  {
-                     std::ofstream file{ m_filename};
-                     file << configuration;
-                  }
-
-                  m_process.pid = common::process::spawn( "./bin/casual-transaction-manager",
-                        { "-c", m_filename,
-                          "-l", ":memory:",
-                        }, {});
-
                   //
-                  // We need to re-initialize the tm-queue, since it's only done ones, otherwise
+                  // We wait until tm is up
                   //
-                  m_process.queue = common::process::instance::transaction::manager::refetch().queue;
-
-
-                  //
-                  // We need to wait until the TM is up and running. We send a ping.
-                  //
-                  EXPECT_TRUE( common::process::ping( m_process.queue) == m_process);
+                  common::process::ping(
+                        common::process::instance::fetch::handle(
+                              common::process::instance::identity::transaction::manager()).queue);
                }
-
-               ~Manager()
-               {
-                  common::process::lifetime::terminate( { m_process.pid});
-                  
-                  //
-                  // we clear all pending signals
-                  //
-                  common::signal::clear();
-               }
-
-               const common::process::Handle& process() const { return m_process;}
 
             private:
-               common::process::Handle m_process;
                common::file::scoped::Path m_filename;
+               common::mockup::Process m_process;
 
             };
 
             struct Domain
             {
                Domain( const std::string& configuration)
-                : broker{ create_handlers()}, tm{ configuration}
-                {
-                   //common::transaction::Resource resource{ "rm-mockup", &casual_mockup_xa_switch_static};
-                   //common::transaction::Context::instance().set( { resource});
+                  : manager
+                    {
+                        handle_resource_configuration{}
+                     },
+                    tm{ configuration}
+               {
 
-                }
+               }
 
+               common::mockup::domain::Manager manager;
                common::mockup::domain::Broker broker;
-
                Manager tm;
 
             private:
-               static common::mockup::reply::Handler create_handlers()
+
+               struct handle_resource_configuration
                {
-                  return common::mockup::reply::Handler{
-                     []( common::message::transaction::client::connect::Request r)
-                     {
-                        Trace trace{ "mockup transaction::client::connect::Request", log::internal::debug};
 
-                        std::vector< mockup::reply::result_t> result;
+                  void operator () ( common::message::domain::configuration::transaction::resource::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
 
-                        auto reply = common::message::reverse::type( r);
-                        reply.domain = "mockup-domain";
-                        reply.directive = decltype( reply)::Directive::start;
+                     reply.resources.emplace_back(
+                           []( common::message::domain::configuration::transaction::Resource& m)
+                           {
+                              m.id = 10;
+                              m.key = "rm-mockup";
+                              m.instances = 2;
+                              m.openinfo = "rm-10";
+                           });
+                     reply.resources.emplace_back(
+                           []( common::message::domain::configuration::transaction::Resource& m)
+                           {
+                              m.id = 11;
+                              m.key = "rm-mockup";
+                              m.instances = 2;
+                              m.openinfo = "rm-11";
+                           });
 
-                        reply.resources.emplace_back( []( common::message::transaction::resource::Manager& m)
-                                 {
-                                    m.id = 10;
-                                    m.key = "rm-mockup";
-                                    m.instances = 2;
-                                    m.openinfo = "rm-10";
-                                 });
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
 
-                        result.emplace_back( r.process, std::move( reply));
-                        return result;
-                     },
-                     []( common::message::transaction::manager::connect::Request r)
-                     {
-                        Trace trace{ "mockup transaction::manager::connect::Request", log::internal::debug};
-
-                        std::vector< mockup::reply::result_t> result;
-
-                        auto reply = common::message::reverse::type( r);
-                        reply.directive = decltype( reply)::Directive::start;
-
-                        result.emplace_back( r.process, std::move( reply));
-
-                        {
-
-                           common::message::transaction::manager::Configuration conf;
-                           conf.correlation = r.correlation;
-                           conf.domain = "mockup-domain";
-
-                           conf.resources.emplace_back( []( common::message::transaction::resource::Manager& m)
-                                 {
-                                    m.id = 10;
-                                    m.key = "rm-mockup";
-                                    m.instances = 2;
-                                    m.openinfo = "rm-10";
-                                 });
-
-                           conf.resources.emplace_back( []( common::message::transaction::resource::Manager& m)
-                                 {
-                                    m.id = 11;
-                                    m.key = "rm-mockup";
-                                    m.instances = 2;
-                                    m.openinfo = "rm-11";
-                                 });
-
-                           result.emplace_back( r.process, std::move( conf));
-                        }
-
-                        return result;
-                     },
-                  };
-
-               }
             };
 
             std::string configuration()
@@ -221,7 +165,7 @@ namespace casual
                void tm( M&& message)
                {
                   communication::ipc::blocking::send(
-                        common::process::instance::transaction::manager::handle().queue, message);
+                        common::communication::ipc::transaction::manager::device(), message);
                }
 
             } // send
@@ -246,6 +190,8 @@ namespace casual
 
       TEST( casual_transaction_manager, shutdown)
       {
+         CASUAL_UNITTEST_TRACE();
+
          EXPECT_NO_THROW({
             local::Domain domain{ local::configuration()};
          });
@@ -254,7 +200,8 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction)
       {
-         common::Trace trace{ "casual_transaction_manager, begin_transaction"};
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
              
 
@@ -271,7 +218,8 @@ namespace casual
 
       TEST( casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips)
       {
-         common::Trace trace{ "casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips"};
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
 
@@ -296,7 +244,8 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
-         common::Trace trace{ "casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization"};
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
 
@@ -334,6 +283,8 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -371,6 +322,8 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_rollback_transaction__2_resources_involved__expect_XA_OK)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -406,6 +359,8 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_commit_transaction__2_resources_involved__expect_two_phase_commit)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
 
@@ -449,6 +404,8 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction__2_resource_involved__owner_dies__expect_rollback)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -466,7 +423,7 @@ namespace casual
 
          // caller dies
          {
-            common::message::dead::process::Event event;
+            common::message::domain::process::termination::Event event;
             event.death.pid = process::handle().pid;
             event.death.reason = common::process::lifetime::Exit::Reason::core;
 

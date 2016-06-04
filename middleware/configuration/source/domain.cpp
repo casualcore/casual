@@ -20,6 +20,8 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace config
    {
       namespace domain
@@ -97,8 +99,71 @@ namespace casual
 
                }
 
-            } //
+               template< typename LHS, typename RHS>
+               void replace_or_add( LHS& lhs, RHS&& rhs)
+               {
+                  for( auto& value : rhs)
+                  {
+                     auto found = range::find( lhs, value);
+
+                     if( found)
+                     {
+                        *found = std::move( value);
+                     }
+                     else
+                     {
+                        lhs.push_back( std::move( value));
+                     }
+                  }
+               }
+
+               template< typename D>
+               Domain& append( Domain& lhs, D&& rhs)
+               {
+                  if( ! rhs.name.empty()) { lhs.name = std::move( rhs.name);}
+
+                  local::replace_or_add( lhs.groups, rhs.groups);
+                  local::replace_or_add( lhs.executables, rhs.executables);
+                  local::replace_or_add( lhs.servers, rhs.servers);
+                  local::replace_or_add( lhs.services, rhs.services);
+
+                  return lhs;
+               }
+
+            } // unnamed
          } // local
+
+         bool operator == ( const Executable& lhs, const Executable& rhs)
+         {
+            return coalesce( lhs.alias, lhs.path) == coalesce( rhs.alias, rhs.path);
+         }
+
+         bool operator == ( const Group& lhs, const Group& rhs)
+         {
+            return lhs.name == rhs.name;
+         }
+
+         bool operator == ( const Service& lhs, const Service& rhs)
+         {
+            return lhs.name == rhs.name;
+         }
+
+         Domain& Domain::operator += ( const Domain& rhs)
+         {
+            return local::append( *this, rhs);
+         }
+
+         Domain& Domain::operator += ( Domain&& rhs)
+         {
+            return local::append( *this, std::move( rhs));
+         }
+
+         Domain operator + ( const Domain& lhs, const Domain& rhs)
+         {
+            auto result = lhs;
+            result += rhs;
+            return result;
+         }
 
          Domain get( const std::string& file)
          {

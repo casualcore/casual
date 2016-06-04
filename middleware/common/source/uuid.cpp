@@ -9,6 +9,7 @@
 #include "common/uuid.h"
 #include "common/transcode.h"
 #include "common/memory.h"
+#include "common/exception.h"
 
 #include <cassert>
 #include <ostream>
@@ -22,7 +23,7 @@ namespace casual
 
       namespace uuid
       {
-         std::string string( const platform::uuid_type& uuid)
+         std::string string( const platform::uuid::type& uuid)
          {
             return transcode::hex::encode( uuid);
          }
@@ -60,7 +61,10 @@ namespace casual
 
 		Uuid::Uuid( const std::string& uuid)
 		{
-		   assert( uuid.size() == sizeof( uuid_type) * 2);
+		   if( uuid.size() !=  sizeof( uuid_type) * 2)
+		   {
+		      throw exception::invalid::Argument{ "invalid uuid string representation", CASUAL_NIP( uuid)};
+		   }
 
 		   transcode::hex::decode( uuid, m_uuid);
 		}

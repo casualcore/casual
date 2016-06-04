@@ -16,6 +16,7 @@
 #include "common/environment.h"
 #include "common/uuid.h"
 
+#include "common/message/domain.h"
 #include "common/message/server.h"
 #include "common/communication/ipc.h"
 #include "common/flag.h"
@@ -26,6 +27,8 @@
 #include <algorithm>
 #include <functional>
 #include <fstream>
+#include <system_error>
+
 
 // TODO: temp
 #include <iostream>
@@ -96,9 +99,9 @@ namespace casual
          }
 
 
-         platform::pid_type id()
+         platform::pid::type id()
          {
-            static const platform::pid_type pid = getpid();
+            static const platform::pid::type pid = getpid();
             return pid;
          }
 
@@ -119,6 +122,34 @@ namespace casual
                   return singleton;
                }
 
+               namespace forward
+               {
+                  const Uuid& cache()
+                  {
+                     const static Uuid singleton{ "f17d010925644f728d432fa4a6cf5257"};
+                     return singleton;
+                  }
+               } // forward
+
+
+               namespace gateway
+               {
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "b9624e2f85404480913b06e8d503fce5"};
+                     return singleton;
+                  }
+               } // domain
+
+               namespace queue
+               {
+                  const Uuid& broker()
+                  {
+                     const static Uuid singleton{ "c0c5a19dfc27465299494ad7a5c229cd"};
+                     return singleton;
+                  }
+               } // queue
+
                namespace traffic
                {
                   const Uuid& manager()
@@ -127,70 +158,124 @@ namespace casual
                      return singleton;
                   }
                } // traffic
-            } // identity
 
 
-            namespace transaction
-            {
-               namespace manager
+               namespace transaction
                {
-                  const Uuid& identity()
+                  const Uuid& manager()
                   {
                      const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
                      return singleton;
                   }
+               } // transaction
 
-                  namespace local
-                  {
-                     namespace
-                     {
-                        Handle& handle()
-                        {
-                           static Handle singleton = fetch::handle( manager::identity(), fetch::Directive::wait);
-                           return singleton;
-                        }
-                     } // <unnamed>
-                  } // local
+            } // identity
 
-                  const Handle& handle()
-                  {
-                     return local::handle();
-                  }
-
-                  const Handle& refetch()
-                  {
-                     local::handle() = fetch::handle( manager::identity(), fetch::Directive::wait);
-                     return handle();
-                  }
-
-
-
-               } // manager
-
-            } // transaction
 
             namespace fetch
             {
+               std::ostream& operator << ( std::ostream& out, Directive directive)
+               {
+                  switch( directive)
+                  {
+                     case Directive::wait: return out << "wait";
+                     case Directive::direct: return out << "direct";
+                  }
+                  return out << "unknown";
+               }
+
                Handle handle( const Uuid& identity, Directive directive)
                {
                   trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
 
-                  common::message::lookup::process::Request request;
-                  request.directive = static_cast< message::lookup::process::Request::Directive>( directive);
+                  log::internal::debug << "identity: " << identity << ", directive: " << directive << '\n';
+
+                  message::domain::process::lookup::Request request;
+                  request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
                   request.identification = identity;
                   request.process = common::process::handle();
 
-                  auto reply = communication::ipc::call( communication::ipc::broker::id(), request);
+                  auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+                  return reply.process;
+               }
 
-                  if( ! reply.domain.empty())
-                  {
-                     environment::domain::name( reply.domain);
-                  }
+               Handle handle( platform::pid::type pid , Directive directive)
+               {
+                  trace::Scope trace{ "instance::handle::fetch (pid)", log::internal::trace};
 
+                  log::internal::debug << "pid: " << pid << ", directive: " << directive << '\n';
+
+                  message::domain::process::lookup::Request request;
+                  request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
+                  request.pid = pid;
+                  request.process = common::process::handle();
+
+                  auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
                   return reply.process;
                }
 
             } // fetch
+
+            namespace local
+            {
+               namespace
+               {
+                  template< typename M>
+                  void connect_reply( M&& message)
+                  {
+                     switch( message.directive)
+                     {
+                        case M::Directive::singleton:
+                        {
+                           log::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
+                           throw exception::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
+                        }
+                        case M::Directive::shutdown:
+                        {
+                           log::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
+                           throw exception::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
+                        }
+                        default:
+                        {
+                           break;
+                        }
+                     }
+                  }
+
+               } // <unnamed>
+            } // local
+
+            void connect( const Uuid& identity, const Handle& process)
+            {
+               trace::Scope trace{ "process::instance::connect identity", log::internal::trace};
+
+               message::domain::process::connect::Request request;
+               request.identification = identity;
+               request.process = process;
+
+               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+            }
+
+            void connect( const Uuid& identity)
+            {
+               connect( identity, handle());
+            }
+
+            void connect( const Handle& process)
+            {
+               trace::Scope trace{ "process::instance::connect process", log::internal::trace};
+
+               message::domain::process::connect::Request request;
+               request.process = process;
+
+               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+            }
+
+            void connect()
+            {
+               connect( handle());
+            }
+
          } // instance
 
 
@@ -214,8 +299,78 @@ namespace casual
 
          void sleep( std::chrono::microseconds time)
          {
-            std::this_thread::sleep_for( time);
+            log::internal::debug << "process::sleep time: " << time.count() << "us\n";
+
+            //
+            // We check signals before we sleep
+            //
+            signal::handle();
+
+            timespec posix_time;
+            posix_time.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( time).count();
+            posix_time.tv_nsec = std::chrono::duration_cast< std::chrono::nanoseconds>(
+                  time - std::chrono::seconds{ posix_time.tv_sec}).count();
+
+
+
+            if( nanosleep( &posix_time, nullptr) == -1)
+            {
+               switch( std::errc( error::last()))
+               {
+                  case std::errc::interrupted:
+                  {
+                     signal::handle();
+                     break;
+                  }
+                  case std::errc::invalid_argument:
+                  {
+                     throw exception::invalid::Argument{ error::string()};
+                  }
+                  default:
+                  {
+                     throw std::system_error{ error::last(), std::system_category()};
+                  }
+               }
+            }
          }
+
+         namespace pattern
+         {
+            Sleep::Pattern::Pattern( std::chrono::microseconds time, std::size_t quantity)
+               : time{ time}, quantity{ quantity}
+            {}
+
+            Sleep::Pattern::Pattern() = default;
+
+
+            Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)) {}
+
+            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern{ std::move( pattern)} {}
+
+            void Sleep::operator () ()
+            {
+               if( m_offset < m_pattern.size())
+               {
+                  if( m_offset + 1 == m_pattern.size())
+                  {
+                     //
+                     // We're at the last pattern, we keep sleeping
+                     //
+                     sleep( m_pattern[ m_offset].time);
+                  }
+                  else
+                  {
+                     auto& pattern = m_pattern[ m_offset];
+                     sleep( pattern.time);
+
+                     if( pattern.quantity == 0 || --pattern.quantity == 0)
+                     {
+                        ++m_offset;
+                     }
+                  }
+               }
+            }
+         } // pattern
 
          namespace local
          {
@@ -262,12 +417,16 @@ namespace casual
             } // <unnamed>
          } // local
 
-         platform::pid_type spawn(
+
+      platform::pid::type spawn(
             std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
          {
             trace::Scope trace{ "process::spawn", log::internal::trace};
+
+            signal::thread::scope::Block block;
+
 
             path = environment::string( path);
 
@@ -324,11 +483,36 @@ namespace casual
 
             auto c_environment = local::current::environment( environment);
 
-            posix_spawnattr_t attributes;
+            struct attribute_t
+            {
+               attribute_t()
+               {
+                  check_error( posix_spawnattr_init( &attributes), "posix_spawnattr_init");
+                  check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
+                  auto mask = signal::set::empty();
+                  check_error( posix_spawnattr_setsigmask( &attributes, &mask.set), "posix_spawnattr_setsigmask");
+               }
+               ~attribute_t()
+               {
+                  check_error( posix_spawnattr_destroy( &attributes), "posix_spawnattr_destroy");
+               }
 
-            posix_spawnattr_init( &attributes);
+               posix_spawnattr_t attributes;
 
-            platform::pid_type pid;
+            private:
+               void check_error( int code, const char* message)
+               {
+                  if( code != 0)
+                  {
+                     log::error << "failed to " << message << " - " << error::string( code) << '\n';
+                  }
+               }
+            } spawn;
+
+
+
+
+            platform::pid::type pid = 0;
 
             log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
@@ -336,7 +520,7 @@ namespace casual
                   &pid,
                   path.c_str(),
                   nullptr,
-                  &attributes,
+                  &spawn.attributes,
                   const_cast< char* const*>( c_arguments.data()),
                   const_cast< char* const*>( c_environment.data())
                   );
@@ -350,6 +534,8 @@ namespace casual
                         exception::make_nip( "environment", range::make( environment)),
                         CASUAL_NIP( error::string( status)));
             }
+
+            log::internal::debug << "process::spawned pid: " << pid << '\n';
 
             //
             // Try to figure out if the process started correctly..
@@ -377,7 +563,7 @@ namespace casual
          }
 
 
-         platform::pid_type spawn( const std::string& path, std::vector< std::string> arguments)
+         platform::pid::type spawn( const std::string& path, std::vector< std::string> arguments)
          {
             return spawn( path, std::move( arguments), {});
          }
@@ -394,35 +580,41 @@ namespace casual
          {
             namespace
             {
-               lifetime::Exit wait( platform::pid_type pid, int flags = WNOHANG)
+               lifetime::Exit wait( platform::pid::type pid, int flags = WNOHANG)
                {
-                  log::internal::debug << "wait - pid: " << pid << " flags: " << flags << std::endl;
 
-                  if( ! common::flag< WNOHANG>( flags))
-                  {
-                     log::internal::debug << "current timeout (us): " << signal::timer::get().count() << std::endl;
-                  }
 
-                  signal::handle( signal::Filter::exclude_child_terminate);
+                  auto handle_signal = [](){
+                     try
+                     {
+                        signal::handle();
+                     }
+                     catch( const exception::signal::child::Terminate&)
+                     {
+                        // no-op
+                     }
+                  };
 
                   lifetime::Exit exit;
 
                   auto loop = [&]()
                   {
+                     handle_signal();
+
                      auto result = waitpid( pid, &exit.status, flags);
 
                      if( result == -1)
                      {
-                        switch( errno)
+                        switch( std::errc( error::last()))
                         {
-                           case ECHILD:
+                           case std::errc::no_child_process:
                            {
                               // no child
                               break;
                            }
-                           case EINTR:
+                           case std::errc::interrupted:
                            {
-                              signal::handle( signal::Filter::exclude_child_terminate);
+                              handle_signal();
 
                               //
                               // We do another turn in the loop
@@ -432,7 +624,7 @@ namespace casual
                            default:
                            {
                               log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
-                              throw exception::NotReallySureWhatToNameThisException( error::string());
+                              throw std::system_error{ error::last(), std::system_category()};
                            }
                         }
                      }
@@ -475,10 +667,12 @@ namespace casual
 
                   while( loop());
 
+                  //log::internal::debug << "wait exit: " << exit << '\n';
+
                   return exit;
                }
 
-               void wait( const std::vector< platform::pid_type> pids, std::vector< lifetime::Exit>& result)
+               void wait( const std::vector< platform::pid::type> pids, std::vector< lifetime::Exit>& result)
                {
                   while( result.size() < pids.size())
                   {
@@ -502,17 +696,24 @@ namespace casual
 
          } // local
 
-         int wait( platform::pid_type pid)
+         int wait( platform::pid::type pid)
          {
+            //
+            // We'll only handle child signals.
+            //
+            //signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+
             return local::wait( pid, 0).status;
          }
 
 
 
 
-         std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids)
+         std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids)
          {
-            std::vector< platform::pid_type> result;
+            log::internal::debug << "process::terminate pids: " << range::make( pids) << '\n';
+
+            std::vector< platform::pid::type> result;
             for( auto pid : pids)
             {
                if( terminate( pid))
@@ -525,90 +726,17 @@ namespace casual
 
 
 
-         bool terminate( platform::pid_type pid)
+         bool terminate( platform::pid::type pid)
          {
             return signal::send( pid, signal::Type::terminate);
          }
 
-         file::scoped::Path singleton( std::string path)
+
+
+         Handle ping( platform::ipc::id::type queue)
          {
-            std::ifstream file( path);
+            trace::Scope trace{ "process::ping", log::internal::trace};
 
-            if( file)
-            {
-               try
-               {
-
-                  common::signal::timer::Scoped alarm{ std::chrono::seconds( 5)};
-
-                  decltype( communication::ipc::inbound::id()) id;
-                  std::string uuid;
-                  file >> id;
-                  file >> uuid;
-
-                  {
-
-                     common::message::server::ping::Request request;
-                     request.process = handle();
-
-                     auto reply = communication::ipc::call( id, request, communication::ipc::policy::Blocking{});
-
-                     if( reply.uuid == Uuid( uuid))
-                     {
-
-                        //
-                        // There are another process for this domain - abort
-                        //
-                        throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
-                     }
-
-                     common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
-                  }
-
-               }
-               catch( const common::exception::signal::Timeout&)
-               {
-                  common::log::error << "failed to get ping response from potentially running process - to risky to start - action: terminate" << std::endl;
-                  throw common::exception::invalid::Process( "only a single process of this type is allowed in a domain", __FILE__, __LINE__);
-               }
-               catch( const common::exception::queue::Unavailable&)
-               {
-                  common::log::internal::debug << "process singleton queue file " << path << " is adopted by " << common::process::id() << std::endl;
-               }
-            }
-
-            file::scoped::Path result( std::move( path));
-
-
-            std::ofstream output( result);
-
-            if( output)
-            {
-               output << communication::ipc::inbound::id() << std::endl;
-               output << uuid() << std::endl;
-            }
-            else
-            {
-               throw common::exception::invalid::File( "failed to write process singleton queue file: " + path);
-            }
-
-            return result;
-         }
-
-
-
-         Handle singleton( const Uuid& identification, bool wait)
-         {
-            message::lookup::process::Request request;
-            request.directive = wait ? message::lookup::process::Request::Directive::wait : message::lookup::process::Request::Directive::direct;
-            request.identification = identification;
-            request.process = process::handle();
-
-            return communication::ipc::call( communication::ipc::broker::id(), request).process;
-         }
-
-         Handle ping( platform::queue_id_type queue)
-         {
             message::server::ping::Request request;
             request.process = process::handle();
 
@@ -624,50 +752,61 @@ namespace casual
                return reason == Reason::core || reason == Reason::exited || reason == Reason::signaled;
             }
 
-            bool operator == ( platform::pid_type pid, const Exit& rhs) { return pid == rhs.pid;}
-            bool operator == ( const Exit& lhs, platform::pid_type pid) { return pid == lhs.pid;}
+            bool operator == ( platform::pid::type pid, const Exit& rhs) { return pid == rhs.pid;}
+            bool operator == ( const Exit& lhs, platform::pid::type pid) { return pid == lhs.pid;}
             bool operator < ( const Exit& lhs, const Exit& rhs) { return lhs.pid < rhs.pid;}
 
-            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
+            std::ostream& operator << ( std::ostream& out, const Exit::Reason& value)
             {
-               out << "{pid: " << terminated.pid << ", reason: ";
-               switch( terminated.reason)
+               switch( value)
                {
-                  case Exit::Reason::unknown: out << "unknown"; break;
                   case Exit::Reason::exited: out << "exited"; break;
                   case Exit::Reason::stopped: out << "stopped"; break;
                   case Exit::Reason::continued: out << "continued"; break;
-                  case Exit::Reason::signaled: out <<  "signal[ " << signal::type::string( terminated.status) << ']'; break;
+                  case Exit::Reason::signaled: out <<  "signaled"; break;
                   case Exit::Reason::core: out <<  "core"; break;
+                  default: out << "unknown"; break;
                }
-               return out << '}';
+               return out;
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Exit& terminated)
+            {
+               return out << "{ pid: " << terminated.pid << ", reason: " << terminated.reason << '}';
             }
 
             std::vector< lifetime::Exit> ended()
             {
-               std::vector< lifetime::Exit> result;
+               trace::internal::Scope trace{ "process::lifetime::ended"};
 
-               Exit exit;
+               //
+               // We'll only handle child signals.
+               //
+               signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+
+               std::vector< lifetime::Exit> terminations;
 
                while( true)
                {
                   auto exit = local::wait( -1);
                   if( exit)
                   {
-                     result.push_back( exit);
+                     terminations.push_back( exit);
                   }
                   else
                   {
-                     return result;
+                     log::internal::debug << "terminations: " << range::make( terminations) << '\n';
+                     return terminations;
                   }
                }
-               return result;
             }
 
 
 
-            std::vector< Exit> wait( const std::vector< platform::pid_type> pids)
+            std::vector< Exit> wait( const std::vector< platform::pid::type> pids)
             {
+               log::internal::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
+
                std::vector< Exit> result;
 
                local::wait( pids, result);
@@ -675,7 +814,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> wait( const std::vector< platform::pid::type> pids, std::chrono::microseconds timeout)
             {
                trace::internal::Scope trace{ "common::process::lifetime::wait"};
 
@@ -701,12 +840,12 @@ namespace casual
             }
 
 
-            std::vector< Exit> terminate( std::vector< platform::pid_type> pids)
+            std::vector< Exit> terminate( std::vector< platform::pid::type> pids)
             {
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> terminate( std::vector< platform::pid::type> pids, std::chrono::microseconds timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

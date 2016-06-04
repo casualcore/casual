@@ -1,12 +1,9 @@
 //!
-//! casual_logger.h
-//!
-//! Created on: Jun 21, 2012
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef CASUAL_LOGGER_H_
-#define CASUAL_LOGGER_H_
+#ifndef COMMON_LOG_H
+#define COMMON_LOG_H
 
 
 
@@ -16,6 +13,7 @@
 #include <string>
 #include <ostream>
 #include <mutex>
+#include <bitset>
 
 namespace casual
 {
@@ -183,4 +181,4 @@ namespace casual
 
 } // casual
 
-#endif /* CASUAL_LOGGER_H_ */
+#endif // COMMON_LOG_H

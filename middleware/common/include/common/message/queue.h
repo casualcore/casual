@@ -52,7 +52,7 @@ namespace casual
             {
                struct Request : basic_message< Type::queue_lookup_request>
                {
-                  process::Handle process;
+                  common::process::Handle process;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -66,9 +66,9 @@ namespace casual
                struct base_reply
                {
                   base_reply() = default;
-                  base_reply( process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
+                  base_reply( common::process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
 
-                  process::Handle process;
+                  common::process::Handle process;
                   std::size_t queue = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
@@ -89,7 +89,7 @@ namespace casual
                {
                   using Message = base_message;
 
-                  process::Handle process;
+                  common::process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
 
@@ -137,7 +137,7 @@ namespace casual
 
                struct Request : basic_message< Type::queue_dequeue_request>
                {
-                  process::Handle process;
+                  common::process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
                   Selector selector;
@@ -185,7 +185,7 @@ namespace casual
                {
                   struct Request : basic_message< Type::queue_dequeue_forget_request>
                   {
-                     process::Handle process;
+                     common::process::Handle process;
                      std::size_t queue;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -281,7 +281,7 @@ namespace casual
                struct basic_information : basic_message< type>
                {
 
-                  process::Handle process;
+                  common::process::Handle process;
                   std::vector< Queue> queues;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -380,7 +380,7 @@ namespace casual
             {
                struct Request : basic_message< Type::queue_connect_request>
                {
-                  process::Handle process;
+                  common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -407,7 +407,7 @@ namespace casual
             {
                struct Involved : basic_message< Type::queue_group_involved>
                {
-                  process::Handle process;
+                  common::process::Handle process;
                   common::transaction::ID trid;
 
                   CASUAL_CONST_CORRECT_MARSHAL(

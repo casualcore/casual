@@ -1,18 +1,18 @@
 //!
-//! test_process.cpp
-//!
-//! Created on: May 12, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "common/process.h"
 #include "common/file.h"
 #include "common/exception.h"
 
 #include "common/signal.h"
+
+#include "common/trace.h"
 
 namespace casual
 {
@@ -32,7 +32,9 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process)
       {
-         platform::pid_type pid = process::spawn( local::processPath(), {});
+         CASUAL_UNITTEST_TRACE();
+
+         auto pid = process::spawn( local::processPath(), {});
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
@@ -45,8 +47,9 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process_with_argument)
       {
+         CASUAL_UNITTEST_TRACE();
 
-         platform::pid_type pid = process::spawn( local::processPath(), { "-r", "42" });
+         auto pid = process::spawn( local::processPath(), { "-r", "42" });
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
@@ -60,17 +63,24 @@ namespace casual
 
       TEST( casual_common_process, spawn_one_process_check_termination)
       {
-         platform::pid_type pid = process::spawn( local::processPath(), {});
+         CASUAL_UNITTEST_TRACE();
+
+         auto pid = process::spawn( local::processPath(), {});
 
          EXPECT_TRUE( pid != 0);
          EXPECT_TRUE( pid != process::id());
 
          auto terminated = process::lifetime::ended();
 
-
-         while( terminated.empty())
+         //
+         // We wait for signal that the child died
+         //
+         try
          {
-            process::sleep( std::chrono::milliseconds( 1));
+            process::sleep( std::chrono::seconds( 2));
+         }
+         catch( const exception::signal::child::Terminate&)
+         {
             terminated = process::lifetime::ended();
          }
 
@@ -83,7 +93,9 @@ namespace casual
 
       TEST( casual_common_process, spawn_10_process__children_terminate)
       {
-         std::vector< platform::pid_type> pids( 10);
+         CASUAL_UNITTEST_TRACE();
+
+         std::vector< platform::pid::type> pids( 10);
 
          for( auto& pid : pids)
          {
@@ -99,12 +111,12 @@ namespace casual
          signal::clear();
       }
 
-      /*
-       * doesnt work...
-       */
+
       TEST( casual_common_process, wait_timeout_non_existing_children)
       {
-         std::vector< platform::pid_type> pids( 10);
+         CASUAL_UNITTEST_TRACE();
+
+         std::vector< platform::pid::type> pids( 10);
 
          auto terminated = process::lifetime::wait( { 666});
 
@@ -113,21 +125,15 @@ namespace casual
          signal::clear();
       }
 
-
-
-
-      /*
-       * does not work right now...
       TEST( casual_common_process, spawn_non_existing_application__gives_exception)
       {
-         auto pid = process::spawn( local::processPath() + "_non_existing_file", {});
+         CASUAL_UNITTEST_TRACE();
 
          EXPECT_THROW({
-            process::wait( pid);
-         }, exception::Base);
-
+            process::spawn( local::processPath() + "_non_existing_file", {});
+         }, exception::base);
       }
-      */
+
    }
 }
 

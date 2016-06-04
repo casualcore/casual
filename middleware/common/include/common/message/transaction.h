@@ -19,6 +19,7 @@ namespace casual
       {
          namespace transaction
          {
+            /*
             namespace resource
             {
                struct Manager
@@ -48,6 +49,7 @@ namespace casual
 
             } // resource
 
+
             namespace client
             {
                namespace connect
@@ -61,24 +63,24 @@ namespace casual
                   struct Reply : server::connect::basic_reply< Type::transaction_client_connect_reply>
                   {
                      std::vector< resource::Manager> resources;
-                     std::string domain;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         server::connect::basic_reply< Type::transaction_client_connect_reply>::marshal( archive);
                         archive & resources;
-                        archive & domain;
                      })
                   };
                } // connect
 
             } // client
+            */
 
             namespace manager
             {
                //!
                //! Used to connect the transaction manager to broker
                //!
+               /*
                namespace connect
                {
                   using Request = server::connect::basic_request< Type::transaction_manager_connect_request>;
@@ -90,13 +92,11 @@ namespace casual
 
                struct Configuration : message::basic_message< Type::transaction_manager_configuration>
                {
-                  std::string domain;
                   std::vector< resource::Manager> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & domain;
                      archive & resources;
                   })
                };
@@ -104,7 +104,7 @@ namespace casual
 
                struct Ready : message::basic_message< Type::transaction_manager_ready>
                {
-                  process::Handle process;
+                  common::process::Handle process;
                   bool success = true;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -114,6 +114,7 @@ namespace casual
                      archive & success;
                   })
                };
+               */
             } // manager
 
 
@@ -122,7 +123,7 @@ namespace casual
             {
                using base_type = basic_transaction< type>;
 
-               process::Handle process;
+               common::process::Handle process;
                common::transaction::ID trid;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -160,7 +161,7 @@ namespace casual
             {
                struct Request : basic_request< Type::transaction_commit_request>
                {
-                  std::vector< platform::resource::id_type> resources;
+                  std::vector< platform::resource::id::type> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -194,7 +195,7 @@ namespace casual
             {
                struct Request : basic_request< Type::transaction_Rollback_request>
                {
-                  std::vector< platform::resource::id_type> resources;
+                  std::vector< platform::resource::id::type> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -224,11 +225,12 @@ namespace casual
 
             namespace resource
             {
+               /*
                namespace id
                {
                   struct Request : basic_message< Type::transaction_resource_id_request>
                   {
-                     process::Handle process;
+                     common::process::Handle process;
                      Uuid identifier;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -242,7 +244,7 @@ namespace casual
 
                   struct Reply : basic_message< Type::transaction_resource_id_reply>
                   {
-                     platform::resource::id_type resource = 0;
+                     platform::resource::id::type resource = 0;
                      Uuid identifier;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -255,11 +257,12 @@ namespace casual
 
 
                } // id
+               */
 
                template< message::Type type>
                struct basic_reply : transaction::basic_reply< type>
                {
-                  platform::resource::id_type resource = 0;
+                  platform::resource::id::type resource = 0;
                   Statistics statistics;
 
 
@@ -269,11 +272,21 @@ namespace casual
                      archive & resource;
                      archive & statistics;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const basic_reply& message)
+                  {
+                     return out << "{ trid: " << message.trid
+                           << ", process: " << message.process
+                           << ", resource: " << message.resource
+                           << ", state: " << message.state
+                           << ", statistics: " << message.statistics
+                           << '}';
+                  }
                };
 
                struct Involved : basic_transaction< Type::transaction_resource_involved>
                {
-                  std::vector< platform::resource::id_type> resources;
+                  std::vector< platform::resource::id::type> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -290,7 +303,7 @@ namespace casual
                {
                   using base_type = basic_request;
 
-                  platform::resource::id_type resource = 0;
+                  platform::resource::id::type resource = 0;
                   int flags = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -299,6 +312,15 @@ namespace casual
                      archive & resource;
                      archive & flags;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const basic_request& message)
+                  {
+                     return out << "{ trid: " << message.trid
+                           << ", process: " << message.process
+                           << ", resurce: " << message.resource
+                           << ", flags: " << message.flags
+                           << '}';
+                  }
 
                };
 
@@ -309,8 +331,8 @@ namespace casual
                   //!
                   struct Reply : basic_message< Type::transaction_resurce_connect_reply>
                   {
-                     process::Handle process;
-                     platform::resource::id_type resource = 0;
+                     common::process::Handle process;
+                     platform::resource::id::type resource = 0;
                      int state = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -404,10 +426,10 @@ namespace casual
          namespace reverse
          {
 
-            template<>
-            struct type_traits< transaction::manager::connect::Request> : detail::type< transaction::manager::connect::Reply> {};
-            template<>
-            struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
+           // template<>
+           // struct type_traits< transaction::manager::connect::Request> : detail::type< transaction::manager::connect::Reply> {};
+//            template<>
+ //           struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
 
 
             template<>

@@ -1,8 +1,5 @@
 //!
-//! casual_logger.cpp
-//!
-//! Created on: Jun 21, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/log.h"
@@ -18,6 +15,7 @@
 #include "common/execution.h"
 #include "common/algorithm.h"
 #include "common/string.h"
+#include "common/domain.h"
 
 //
 // std
@@ -63,14 +61,14 @@ namespace casual
                      const std::string basename{ file::name::base( process::path())};
 
                      m_output << chronology::local()
-                        << '|' << environment::domain::name()
+                        << '|' << common::domain::identity().name
                         << '|' << execution::id()
                         << '|' << transaction::Context::instance().current().trid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
-                        << '|' << execution::parent::service()
-                        << '|' << execution::service()
+                        << '|' << execution::service::parent::name()
+                        << '|' << execution::service::name()
                         << '|' << category
                         << '|' << message << std::endl;
                   }

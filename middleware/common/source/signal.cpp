@@ -1,8 +1,5 @@
 //!
-//! casual_utility_signal.cpp
-//!
-//! Created on: May 6, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/signal.h"
@@ -14,6 +11,7 @@
 #include "common/process.h"
 #include "common/chronology.h"
 #include "common/memory.h"
+#include "common/cast.h"
 
 
 
@@ -22,20 +20,12 @@
 
 
 #include <stack>
-#include <atomic>
-#include <condition_variable>
 #include <thread>
 #include <iomanip>
+#include <iostream>
 
 #include <sys/time.h>
 
-extern "C"
-{
-
-	void casual_child_terminate_signal_handler( int signal);
-	void casual_alarm_signal_handler( int signal);
-	void casual_terminate_signal_handler( int signal);
-}
 
 namespace casual
 {
@@ -47,117 +37,27 @@ namespace casual
          {
             namespace
             {
-               struct Cache
+
+               bool send( platform::pid::type pid, platform::signal::type signal)
                {
-                  static Cache& instance()
+
+                  log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
+
+                  if( ::kill( pid, signal) == -1)
                   {
-                     static Cache singleton;
-                     return singleton;
-                  }
-
-                  //!
-                  //! Indicate if a signal is present, and how many is "stacked".
-                  //! in the normal flow (signals are rare) we only check one atomic.
-                  //!
-                  std::atomic< long> signal_count;
-
-                  std::atomic< long> alarm_count;
-                  std::atomic< long> child_terminate_count;
-                  std::atomic< long> terminate_count;
-
-
-                  void clear()
-                  {
-                     signal_count = 0;
-
-                     alarm_count = 0;
-                     child_terminate_count = 0;
-                     terminate_count = 0;
-                  }
-
-
-                  void consume( Filter filter)
-                  {
-                     auto count = signal_count.load( std::memory_order_relaxed);
-                     if( count > 0)
+                     switch( errno)
                      {
-                        if( child_terminate_count > 0)
-                        {
-                           --child_terminate_count;
-                           --signal_count;
-
-                           if( ! flag< Filter::exclude_child_terminate>( filter))
-                           {
-                              throw exception::signal::child::Terminate();
-                           }
-                        }
-                        else if( alarm_count > 0)
-                        {
-                           --alarm_count;
-                           --signal_count;
-
-                           if( ! flag< Filter::exclude_alarm>( filter))
-                           {
-                              throw exception::signal::Timeout();
-                           }
-                        }
-                        else if( terminate_count > 0)
-                        {
-                           --terminate_count;
-                           --signal_count;
-
-                           if( ! flag< Filter::exclude_terminate>( filter))
-                           {
-                              throw exception::signal::Terminate();
-                           }
-                        }
+                        case ESRCH:
+                           log::internal::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                           break;
+                        default:
+                           log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                           break;
                      }
+                     return false;
                   }
-
-               private:
-
-
-                  Cache()
-                   : alarm_count( 0), child_terminate_count( 0), terminate_count( 0)
-                  {
-
-                     //
-                     // Register all the signals
-                     //
-
-
-                     resgistration( &casual_child_terminate_signal_handler, common::signal::Type::child, SA_NOCLDSTOP);
-
-                     resgistration( &casual_alarm_signal_handler, common::signal::Type::alarm);
-
-                     //
-                     // These we terminate on...
-                     //
-                     resgistration( &casual_terminate_signal_handler, common::signal::Type::terminate);
-                     resgistration( &casual_terminate_signal_handler, common::signal::Type::quit);
-                     resgistration( &casual_terminate_signal_handler, common::signal::Type::interupt);
-                     resgistration( &casual_terminate_signal_handler, common::signal::Type::user);
-                  }
-
-                  template< typename F>
-                  void resgistration( F function, int signal, int flags = 0)
-                  {
-                     struct sigaction sa;
-
-                     memory::set( sa);
-                     sa.sa_handler = function;
-                     sa.sa_flags = flags; // | SA_RESTART;
-
-                     sigaction( signal, &sa, 0);
-                  }
-               };
-
-
-               //
-               // We need to instantiate to register the signals
-               //
-               Cache& globalCrap = Cache::instance();
-
+                  return true;
+               }
 
             } // <unnamed>
          } // local
@@ -166,24 +66,6 @@ namespace casual
 } // casual
 
 
-
-void casual_child_terminate_signal_handler( int signal)
-{
-   ++casual::common::signal::local::globalCrap.child_terminate_count;
-   ++casual::common::signal::local::globalCrap.signal_count;
-}
-void casual_alarm_signal_handler( int signal)
-{
-   ++casual::common::signal::local::globalCrap.alarm_count;
-   ++casual::common::signal::local::globalCrap.signal_count;
-}
-
-void casual_terminate_signal_handler( int signal)
-{
-   ++casual::common::signal::local::globalCrap.terminate_count;
-   ++casual::common::signal::local::globalCrap.signal_count;
-}
-
 namespace casual
 {
 
@@ -191,32 +73,436 @@ namespace casual
 	{
 		namespace signal
 		{
+         std::ostream& operator << ( std::ostream& out, signal::Type signal)
+         {
+            switch( signal)
+            {
+               case Type::alarm: return out << "alarm";
+               case Type::interupt: return out << "interupt";
+               case Type::kill: return out << "kill";
+               case Type::quit: return out << "quit";
+               case Type::child: return out << "child";
+               case Type::terminate: return out << "terminate";
+               case Type::user: return out << "user";
+               case Type::pipe: return out << "pipe";
+            }
+            return out << cast::underlying( signal);
+         }
 
 		   namespace type
 		   {
 
-            std::string string( type signal)
+            std::string string( Type signal)
+            {
+               return type::string( cast::underlying( signal));
+            }
+
+            std::string string( platform::signal::type signal)
             {
                return strsignal( signal);
             }
 
          } // type
 
+
+		   namespace local
+         {
+            namespace
+            {
+               extern "C"
+               {
+                  void signal_callback( platform::signal::type signal);
+               }
+
+               namespace handler
+               {
+
+                  struct Type
+                  {
+                     Type( signal::Type signal) : signal( signal), flag( 0) {}
+                     Type( signal::Type signal, int flag) : signal( signal), flag( flag) {}
+
+                     signal::Type signal;
+                     int flag;
+
+                     operator signal::Type() const { return signal;}
+
+                     friend std::ostream& operator << ( std::ostream& out, const Type& value)
+                     {
+                        //return out << "{ signal: " << value.signal << ", flag: " << value.flag << '}';
+                        return out << value.signal;
+                     }
+                  };
+               }
+
+               template< typename F>
+               void resgistration( F function, handler::Type signal)
+               {
+                  struct sigaction sa;
+
+                  memory::set( sa);
+                  sa.sa_handler = function;
+                  sa.sa_flags = signal.flag;
+
+                  if( sigaction( cast::underlying( signal.signal), &sa, 0) == -1)
+                  {
+                     throw std::system_error{ error::last(), std::system_category()};
+                  }
+               }
+
+               namespace handler
+               {
+
+                  template< signal::Type Signal, typename Exception, typename Insurance = std::false_type, int flag = 0>
+                  struct basic_handler
+                  {
+
+                     using insurance_type = Insurance;
+                     using exception_type = Exception;
+
+                     static handler::Type signal() { return { Signal, flag};}
+
+                     void handle()
+                     {
+                        throw exception_type{};
+                     }
+                  };
+
+                  using Terminate = basic_handler< signal::Type::terminate, exception::signal::Terminate, std::true_type>;
+                  using Quit = basic_handler< signal::Type::quit, exception::signal::Terminate, std::true_type>;
+                  using Interupt = basic_handler< signal::Type::interupt, exception::signal::Terminate, std::true_type>;
+
+                  using Alarm = basic_handler< signal::Type::alarm, exception::signal::Timeout>;
+                  using Child = basic_handler< signal::Type::child, exception::signal::child::Terminate, std::false_type, SA_NOCLDSTOP>;
+
+                  using User = basic_handler< signal::Type::user, exception::signal::User>;
+
+                  using Pipe = basic_handler< signal::Type::pipe, exception::signal::Pipe>;
+
+
+               } // handler
+
+
+               struct Handler
+               {
+                  ~Handler() = default;
+
+                  static Handler& instance()
+                  {
+                     static Handler singleton{
+                        handler::Alarm{},
+                        handler::Child{},
+                        handler::User{},
+                        handler::Pipe{},
+                        handler::Terminate{},
+                        handler::Quit{},
+                        handler::Interupt{},
+                     };
+                     return singleton;
+                  }
+
+                  Handler( const Handler&) = delete;
+                  Handler& operator = ( const Handler&) = delete;
+
+                  void handle()
+                  {
+                     auto count = m_pendings.load();
+
+                     if( count > 0)
+                     {
+                        scope::Execute decrement{ [&](){
+                           ++m_pendings;
+                        }};
+                        auto current = signal::mask::current();
+
+                        log::internal::debug << "signal::Handler::handle - handler: " << *this << ", mask: " << current << '\n';
+
+                        for( auto& handler : m_handlers)
+                        {
+                           handler->handle( current);
+                        }
+                        decrement.release();
+                     }
+                  }
+
+
+                  void clear()
+                  {
+                     m_pendings.store( 0);
+                     range::for_each( m_handlers, std::mem_fn( &Handler::base_handle::clear));
+                     log::internal::debug << "signal::Handler::clear handler: " << *this << '\n';
+                  }
+
+
+                  friend std::ostream& operator << ( std::ostream& out, const Handler& value)
+                  {
+
+                     if( out)
+                     {
+                        out << "{ pending: [";
+
+                        bool empty = true;
+                        for( auto& handler : value.m_handlers)
+                        {
+                           if( handler->pending())
+                           {
+                              if( empty)
+                              {
+                                 out << handler->signal();
+                                 empty = false;
+                              }
+                              else
+                              {
+                                 out << ',' << handler->signal();
+                              }
+                           }
+                        }
+                        out << "], blocked: " << signal::pending() << '}';
+                     }
+                     return out;
+                  }
+
+               private:
+
+                  friend void signal_callback( platform::signal::type);
+
+                  template< typename... Handlers>
+                  Handler( Handlers&&... handlers) : Handler( create( std::forward< Handlers>( handlers)...))
+                  {
+
+                  }
+
+
+                  void signal( signal::Type signal)
+                  {
+                     ++m_pendings;
+
+                     for( auto& handler : m_handlers)
+                     {
+                        if( handler->signal() == signal)
+                        {
+                           handler->signal( signal);
+                           return;
+                        }
+                     }
+                  }
+
+                  static void signal_glitch_insurance_thread(
+                        const std::atomic< platform::signal::type>& pending,
+                        std::atomic< bool>& insurance,
+                        common::thread::native::type target)
+                  {
+                     //
+                     // We don't want any signals at all...
+                     //
+                     signal::mask::block();
+
+                     try
+                     {
+                        log::internal::debug << "signal glitch insurance created for signal: " << pending << '\n';
+
+                        scope::Execute done{ [&](){
+                           insurance.store( false);
+                        }};
+
+                        while( true)
+                        {
+                           std::this_thread::sleep_for( std::chrono::milliseconds{ 10});
+
+                           if( ! pending)
+                           {
+                              //
+                              // Something has consumed some signals while we was asleep,
+                              // and we don't need the insurance anymore
+                              // all good, and expected. We return and terminate this thread
+                              //
+                              return;
+                           }
+
+                           //
+                           // We've got "the glitch", send the signal again.
+                           //
+                           log::internal::debug << "signal glitch - send signal: " << pending << " again\n";
+
+                           signal::thread::send( target, signal::Type( pending.load()));
+                        }
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                     }
+                  }
+
+
+                  struct base_handle
+                  {
+                     virtual ~base_handle() = default;
+                     virtual void signal( signal::Type) = 0;
+                     virtual void handle( const signal::Set&) = 0;
+                     virtual void clear() = 0;
+                     virtual handler::Type signal() const = 0;
+                     virtual bool pending() const = 0;
+                  };
+
+                  template< typename T>
+                  struct glitch_base : base_handle
+                  {
+                     void glitch_insurance( const std::atomic< platform::signal::type>& pending)
+                     {
+                        // no-op
+                     }
+                  };
+
+
+
+                  template< typename H>
+                  struct basic_handle : glitch_base< typename H::insurance_type>
+                  {
+                     using handler_type = H;
+
+                     basic_handle( handler_type&& handler)
+                        : m_handler( std::move( handler)), m_pending( 0) {}
+
+                     basic_handle( const basic_handle&) = delete;
+                     basic_handle& operator = ( const basic_handle&) = delete;
+
+
+                     handler::Type signal() const override
+                     {
+                        return handler_type::signal();
+                     }
+
+                     void signal( signal::Type signal) override
+                     {
+                        if( m_pending.exchange( cast::underlying( signal)) == 0)
+                        {
+                           this->glitch_insurance( m_pending);
+                        }
+                     }
+
+                     void handle( const signal::Set& current) override
+                     {
+                        auto signal = m_pending.exchange( 0);
+
+                        if( signal)
+                        {
+                           if( ! current.exists( signal::Type( signal)))
+                           {
+                              //
+                              // Signalen är inte blockad
+                              //
+                              log::internal::debug << "signal: handling signal: " << signal << '\n';
+
+                              m_handler.handle();
+                           }
+                           else
+                           {
+                              m_pending.store( signal);
+                           }
+                        }
+                     }
+
+                     void clear() override
+                     {
+                        m_pending.store( 0);
+                     }
+
+                     bool pending() const override
+                     {
+                        return m_pending != 0;
+                      }
+
+                     handler_type m_handler;
+                     std::atomic< platform::signal::type> m_pending;
+                  };
+
+
+                  static std::vector< std::unique_ptr< base_handle>> create()
+                  {
+                     return {};
+                  }
+
+                  template< typename H, typename... Handlers>
+                  static std::vector< std::unique_ptr< base_handle>> create( H&& handler, Handlers&&... handlers)
+                  {
+                     auto result = create( std::forward< Handlers>( handlers)...);
+                     std::unique_ptr< base_handle> holder{ new basic_handle< H>( std::forward< H>( handler))};
+                     result.push_back( std::move( holder));
+                     return result;
+                  }
+
+                  Handler( std::vector< std::unique_ptr< base_handle>> handlers)
+                     : m_pendings( 0), m_handlers{ std::move( handlers)}
+                  {
+                     //thread::scope::Block block;
+
+                     for( auto& handler : m_handlers)
+                     {
+                        local::resgistration( &local::signal_callback, handler->signal());
+                     }
+
+                  }
+
+                  std::atomic< long> m_pendings;
+                  std::vector< std::unique_ptr< base_handle>> m_handlers;
+
+               };
+
+
+               template<>
+               struct Handler::glitch_base< std::true_type> : Handler::base_handle
+               {
+                  glitch_base() : m_insurance{ false} {}
+
+                  void glitch_insurance( const std::atomic< platform::signal::type>& pending)
+                  {
+                     if( ! m_insurance.exchange( true))
+                     {
+                        std::thread{ &signal_glitch_insurance_thread,
+                           std::ref( pending),
+                           std::ref( m_insurance),
+                           common::thread::native::current()}.detach();
+                     }
+                  }
+
+               private:
+                  std::atomic< bool> m_insurance;
+               };
+
+
+               void signal_callback( platform::signal::type signal)
+               {
+                  Handler::instance().signal( signal::Type( signal));
+               }
+
+
+            } // <unnamed>
+         } // local
+
+
+
+
+
+
+
+         namespace local
+         {
+            namespace
+            {
+
+
+               Handler& global_handler = Handler::instance();
+            } // <unnamed>
+         } // local
+
 			void handle()
 			{
-				local::Cache::instance().consume( Filter::exclude_none);
+			   local::global_handler.handle();
 			}
-
-         void handle( Filter exclude)
-         {
-            local::Cache::instance().consume( exclude);
-         }
 
          void clear()
          {
-            log::internal::debug << "signal clear" << std::endl;
-            local::Cache::instance().clear();
-
+            local::global_handler.clear();
          }
 
 
@@ -387,71 +673,204 @@ namespace casual
          } // timer
 
 
-         bool send( platform::pid_type pid, type::type signal)
+         bool send( platform::pid::type pid, Type signal)
+         {
+            return local::send( pid, cast::underlying( signal));
+         }
+
+
+         Set::Set() : Set( empty_t{})
          {
 
-            log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
-
-            if( ::kill( pid, signal) == -1)
-            {
-               switch( errno)
-               {
-                  case ESRCH:
-                     break;
-                  default:
-                     log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
-                     break;
-               }
-               return false;
-            }
-            return true;
          }
+
+         Set::Set( set::type set) : set( std::move( set))
+         {
+
+         }
+
+
+         Set::Set( std::initializer_list< Type> signals) : Set( empty_t{})
+         {
+            for( auto&& signal : signals)
+            {
+               add( signal);
+            }
+         }
+
+         void Set::add( Type signal)
+         {
+            sigaddset( &set, cast::underlying( signal));
+         }
+
+         void Set::remove( Type signal)
+         {
+            sigdelset( &set, cast::underlying( signal));
+         }
+
+
+         bool Set::exists( Type signal) const
+         {
+            return sigismember( &set, cast::underlying( signal)) == 1;
+         }
+
+
+
+         Set::Set( filled_t)
+         {
+            sigfillset( &set);
+         }
+         Set::Set( empty_t)
+         {
+            sigemptyset( &set);
+         }
+
+         std::ostream& operator << ( std::ostream& out, const Set& value)
+         {
+            out << "[";
+
+            bool exists = false;
+            for( auto& signal : { Type::alarm, Type::child, Type::interupt, Type::kill, Type::pipe, Type::quit, Type::terminate, Type::user})
+            {
+               if( value.exists( signal))
+               {
+                  if( exists)
+                     out << ", " << signal;
+                  else
+                  {
+                     out << signal;
+                     exists = true;
+                  }
+               }
+            }
+
+            return out << ']';
+         }
+
+
+         Set pending()
+         {
+            Set result;
+            sigpending( &result.set);
+            return result;
+         }
+
+         namespace set
+         {
+
+            signal::Set filled()
+            {
+               return { signal::Set::filled_t{}};
+            }
+
+            signal::Set filled( const std::vector< Type>& excluded)
+            {
+               auto mask = filled();
+
+               for( auto&& signal : excluded)
+               {
+                  mask.remove( signal);
+               }
+
+               return mask;
+            }
+
+            signal::Set empty()
+            {
+               return {};
+            }
+         } // set
+
+         namespace mask
+         {
+            signal::Set set( signal::Set mask)
+            {
+               pthread_sigmask( SIG_SETMASK, &mask.set, &mask.set);
+               return mask;
+            }
+
+            signal::Set block( signal::Set mask)
+            {
+               pthread_sigmask( SIG_BLOCK, &mask.set, &mask.set);
+               return mask;
+            }
+
+            signal::Set unblock( signal::Set mask)
+            {
+               pthread_sigmask( SIG_UNBLOCK, &mask.set, &mask.set);
+               return mask;
+            }
+
+            signal::Set block()
+            {
+               return set( set::filled());
+            }
+
+
+            signal::Set current()
+            {
+               signal::Set mask;
+               pthread_sigmask( SIG_SETMASK, nullptr, &mask.set);
+               return mask;
+            }
+
+         } // mask
 
 
          namespace thread
          {
-            //!
-            //! Send signal to thread
-            //!
-            void send( std::thread& thread, type::type signal)
+
+            void send( std::thread& thread, Type signal)
             {
                log::internal::debug << "signal::thread::send thread: " << thread.get_id() << " signal: " << signal << std::endl;
 
+               send( thread.native_handle(), signal);
+
                //if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
-               if( pthread_kill( thread.native_handle(), signal) != 0)
+            }
+
+            void send( common::thread::native::type thread, Type signal)
+            {
+               if( pthread_kill( thread, cast::underlying( signal)) != 0)
                {
-                  log::error << "failed to send signal (" << type::string( signal) << ") to thread: " << thread.get_id() << " - errno: " << errno << " - "<< error::string() << std::endl;
+                  log::error << "failed to send signal (" << type::string( signal) << ") to thread - errno: " << errno << " - "<< error::string() << std::endl;
                }
-
             }
 
-            set_type block()
+            void send( Type signal)
             {
-               sigset_t set;
-               sigfillset( &set);
-               sigset_t result;
-               pthread_sigmask( SIG_BLOCK, &set, &result);
-               return result;
+               log::internal::debug << "signal::thread::send current thread - signal: " << signal << std::endl;
+
+               send( common::thread::native::current(), signal);
             }
 
-            set_type mask( set_type set)
-            {
-               set_type result;
-               pthread_sigmask( SIG_SETMASK, &set, &result);
-               return result;
-            }
 
             namespace scope
             {
+               Reset::Reset( signal::Set mask) : m_mask( std::move( mask)) {}
 
-               Block::Block() : m_set( block())
+               Reset::~Reset()
                {
-
-
+                  if( ! m_moved)
+                  {
+                     mask::set( m_mask);
+                  }
                }
-               Block::~Block()
+
+               Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
+
+
+
+               Block::Block() : Reset( mask::block())
                {
-                  pthread_sigmask( SIG_SETMASK, &m_set, nullptr);
+               }
+
+               Block::Block( signal::Set mask) : Reset( mask::block( mask))
+               {
+               }
+
+               Unblock::Unblock( signal::Set mask) : Reset( mask::unblock( mask))
+               {
                }
 
             } // scope

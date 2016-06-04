@@ -40,11 +40,9 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
             casual::common::argument::directive( {"-o", "--rm-openinfo"}, "open info", state.rm_openinfo),
             casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "close info", state.rm_closeinfo),
             casual::common::argument::directive( {"-i", "--rm-id"}, "resource id", state.rm_id),
-            casual::common::argument::directive( {"-d", "--domain"}, "domain name", state.domain)
          }};
 
          arguments.parse( serverArguments->argc, serverArguments->argv);
-         casual::common::environment::domain::name( state.domain);
       }
 
       casual::common::log::internal::transaction << CASUAL_MAKE_NVP( state);

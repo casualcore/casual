@@ -15,13 +15,20 @@ using namespace casual::common;
 int main( int argc, char** argv)
 {
 
-   int returnValue = 0;
-   Arguments args{ { argument::directive( {"-r"}, "bla", returnValue)}};
+   try
+   {
+      int returnValue = 0;
+      Arguments args{ { argument::directive( {"-r"}, "bla", returnValue)}};
 
 
-   args.parse( argc, argv);
+      args.parse( argc, argv);
 
-   process::sleep( std::chrono::milliseconds( 100));
+      process::sleep( std::chrono::milliseconds( 100));
 
-   return returnValue;
+      return returnValue;
+   }
+   catch( ...)
+   {
+      return error::handler();
+   }
 }

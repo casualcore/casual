@@ -27,8 +27,8 @@ namespace casual
             {
                struct id_t
                {
-                  sf::platform::pid_type pid;
-                  sf::platform::queue_id_type queue;
+                  sf::platform::pid::type pid;
+                  sf::platform::ipc::id::type queue;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -51,7 +51,7 @@ namespace casual
 
             struct Queue
             {
-               sf::platform::pid_type group;
+               sf::platform::pid::type group;
                std::size_t id;
                std::string name;
                std::size_t type;
@@ -150,7 +150,7 @@ namespace casual
                struct GroupVO
                {
                   sf::platform::pid_type pid;
-                  sf::platform::queue_id_type queue_id;
+                  sf::platform::ipc::id::type queue_id;
                   std::string name;
 
                   std::vector< QueueVO> queues;

@@ -1,18 +1,16 @@
 //!
-//! platform.h
-//!
-//! Created on: Dec 23, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef PLATFORM_H_
-#define PLATFORM_H_
+#ifndef CASUAL_SF_PLATFORM_H_
+#define CASUAL_SF_PLATFORM_H_
 
 
 #include "common/uuid.h"
 #include "common/platform.h"
 #include "common/transaction/id.h"
 #include "common/algorithm.h"
+
 
 
 #include "sf/namevaluepair.h"
@@ -22,6 +20,19 @@
 
 namespace casual
 {
+   namespace common
+   {
+      namespace process
+      {
+         struct Handle;
+      } // process
+
+      namespace domain
+      {
+         struct Identity;
+      } // domain
+
+   } // common
    namespace sf
    {
 
@@ -45,9 +56,18 @@ namespace casual
 
          using time_point = common::platform::time_point;
 
-         using pid_type = common::platform::pid_type;
+         namespace pid
+         {
+            using type = common::platform::pid::type;
+         } // pid
 
-         using queue_id_type = common::platform::queue_id_type;
+         namespace ipc
+         {
+            namespace id
+            {
+               using type = common::platform::ipc::id::type;
+            } // id
+         } // ipc
 
       } // platform
 
@@ -58,6 +78,12 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name);
          void serialize( Writer& archive, const platform::Uuid& value, const char* name);
+
+         void serialize( Reader& archive, common::process::Handle& value, const char* name);
+         void serialize( Writer& archive, const common::process::Handle& value, const char* name);
+
+         void serialize( Reader& archive, common::domain::Identity& value, const char* name);
+         void serialize( Writer& archive, const common::domain::Identity& value, const char* name);
 
 
          void serialize( Reader& archive, platform::time_point& value, const char* name);

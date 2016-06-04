@@ -1,11 +1,9 @@
 //!
-//! test_queue.cpp
-//!
-//! Created on: Aug 15, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "queue/group/group.h"
 #include "queue/common/environment.h"
@@ -14,6 +12,9 @@
 #include "queue/rm/switch.h"
 
 #include "common/mockup/domain.h"
+#include "common/mockup/process.h"
+#include "common/mockup/file.h"
+
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 
@@ -36,80 +37,63 @@ namespace casual
             {
 
                Broker( const std::string& configuration)
-                  : m_filename{ common::file::name::unique( common::directory::temporary() + '/', ".yaml")}
+                  : m_filename{ common::mockup::file::temporary( ".yaml", configuration)},
+                    m_process{ "./bin/casual-queue-broker", {
+                        "-c", m_filename,
+                        "-g", "./bin/casual-queue-group",
+                      }}
                {
-                  {
-                     std::ofstream file{ m_filename};
-                     file << configuration;
-                  }
-
-                  m_process.pid = common::process::spawn( "./bin/casual-queue-broker",
-                        { "-c", m_filename,
-                          "-g", "./bin/casual-queue-group",
-                        }, {});
-
-                  //
-                  // We need to re-initialize the casual-queue ipc-queue, since it's only done ones otherwise
-                  //
-                  m_process.queue = queue::environment::broker::queue::initialize();
 
 
-                  //
-                  // We need to wait until the queue-broker is up and running. We send a ping.
-                  //
-                  EXPECT_TRUE( common::process::ping( m_process.queue) == m_process);
                }
 
-               ~Broker()
-               {
-                  common::process::lifetime::terminate( { m_process.pid});
-
-                  //
-                  // We clear all pending signals
-                  //
-                  common::signal::clear();
-               }
-
-               const common::process::Handle& process() const { return m_process;}
+               common::process::Handle process() const { return m_process.handle();}
 
             private:
-               common::process::Handle m_process;
                common::file::scoped::Path m_filename;
-
+               common::mockup::Process m_process;
             };
 
             struct Domain
             {
                Domain( const std::string& configuration)
-                : broker{ create_resources()}, queue_broker{ configuration}
-                {
-                   common::transaction::Resource resource{ "casual-queue-rm", &casual_queue_xa_switch_dynamic};
-                   common::transaction::Context::instance().set( { resource});
+               : manager{ handle_resource_configuration{}}, queue_broker{ configuration}
+               {
+                  common::transaction::Resource resource{ "casual-queue-rm", &casual_queue_xa_switch_dynamic};
+                  common::transaction::Context::instance().set( { resource});
 
-                }
+                  //
+                  // We make sure queue-broker is up'n running, we send ping
+                  //
+                  common::process::ping( queue_broker.process().queue);
+               }
 
+               common::mockup::domain::Manager manager;
                common::mockup::domain::Broker broker;
                common::mockup::domain::transaction::Manager tm;
 
                Broker queue_broker;
 
             private:
-               static common::mockup::domain::broker::transaction::client::Connect create_resources()
+
+               struct handle_resource_configuration
                {
-                  common::message::transaction::client::connect::Reply result;
+                  void operator () ( common::message::domain::configuration::transaction::resource::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
 
-                  result.directive = common::message::transaction::client::connect::Reply::Directive::start;
-                  decltype( result.resources)::value_type resource;
+                     reply.resources.emplace_back(
+                           []( common::message::domain::configuration::transaction::Resource& m)
+                           {
+                              m.id = 10;
+                              m.key = "casual-queue-rm";
+                              m.instances = 1;
+                              m.openinfo = "id:10";
+                           });
 
-                  resource.instances = 1;
-                  resource.id = 10;
-                  resource.key = "casual-queue-rm";
-
-                  result.resources.push_back( std::move( resource));
-
-
-                  return { result};
-               }
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
             };
 
             namespace call
@@ -181,6 +165,8 @@ domain:
 
       TEST( casual_queue, broker_startup)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
 
@@ -192,6 +178,8 @@ domain:
 
       TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
 
@@ -209,6 +197,8 @@ domain:
 
       TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain{ local::configuration()};
 
          auto count = 5;

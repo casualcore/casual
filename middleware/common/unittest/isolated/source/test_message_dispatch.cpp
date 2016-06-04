@@ -15,6 +15,10 @@
 #include "common/message/server.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
+
+#include "common/marshal/complete.h"
+
+
 #include <functional>
 
 

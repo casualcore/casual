@@ -16,6 +16,7 @@
 // tcp
 #include <sys/socket.h>
 
+
 // size_t
 #include <cstddef>
 
@@ -40,6 +41,8 @@
 // alarm
 #include <unistd.h>
 
+// SSIZE_MAX and others...
+#include <climits>
 
 #include <string.h>
 
@@ -108,45 +111,90 @@ namespace casual
          } // size
 
 
+		   namespace ipc
+         {
+		      namespace id
+            {
+               using type = long;
+            } // id
 
-			//
-			// ipc
-			//
-			using queue_id_type = int;
-			using message_type_type = long;
+            namespace message
+            {
 
+               using type = long;
 
 #ifdef __APPLE__
-
-			//
-			// OSX has very tight limits on IPC
-			//
-			constexpr std::size_t message_size = 1024;
+               //
+               // OSX has very tight limits on IPC
+               //
+               constexpr std::size_t size = 1024;
 #else
-			constexpr std::size_t message_size = 1024 * 8;
+               constexpr std::size_t size = 1024 * 8;
 #endif
+
+            } // message
+
+         } // ipc
+
+
+			namespace tcp
+         {
+            namespace message
+            {
+               namespace max
+               {
+                  constexpr std::size_t size = SSIZE_MAX;
+               } // max
+               constexpr std::size_t size = 1024 * 16;
+
+               static_assert( size <= max::size, "requested tcp message size is to big");
+
+            } // message
+
+            namespace descriptor
+            {
+               using type = int;
+            } // handle
+
+         } // tcp
+
+			namespace pid
+         {
+			   using type = pid_t;
+         } // pid
 
 			//
 			// uuid
 			//
-			using uuid_type = uuid_t;
-			using uuid_string_type = char[ 37];
+			namespace uuid
+         {
+			   using type = uuid_t;
 
-			using pid_type = pid_t;
+			   namespace string
+            {
+               using type = char[ 37];
+            } // string
+
+         } // uuid
 
 			//
 			// long jump
 			//
 			using long_jump_buffer_type = jmp_buf;
 
-			enum ipc_flags
-			{
-				cIPC_NO_WAIT = IPC_NOWAIT
-			};
-
 
 			namespace flag
          {
+			   enum class ipc
+			   {
+			      no_wait = IPC_NOWAIT
+			   };
+
+			   enum class tcp
+			   {
+			      no_wait = MSG_DONTWAIT
+			   };
+
             enum class msg : int
             {
 #ifdef __APPLE__
@@ -164,15 +212,19 @@ namespace casual
 
          } // flags
 
+			namespace signal
+         {
+			   using type = int;
 
-			using signal_type = int;
-
+         } // signal
 
 
 			namespace resource
          {
-			   using id_type = int;
-
+			   namespace id
+            {
+			      using type = int;
+            } // id
          } // resource
 
 
@@ -242,6 +294,8 @@ namespace casual
       value = common::platform::time_point( common::platform::time_point::duration( representation));
    }
    //! @}
+
+
 
 } // casual
 

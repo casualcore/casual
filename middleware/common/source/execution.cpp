@@ -24,22 +24,6 @@ namespace casual
                   static Uuid id = common::uuid::make();
                   return id;
                }
-
-               std::string& service()
-               {
-                  static std::string service;
-                  return service;
-               }
-
-               namespace parent
-               {
-                  std::string& service()
-                  {
-                     static std::string service;
-                     return service;
-                  }
-               } // parent
-
             } // <unnamed>
          } // local
 
@@ -54,30 +38,68 @@ namespace casual
          }
 
 
-         void service( const std::string& service)
+         namespace service
          {
-            local::service() = service;
-         }
-
-         const std::string& service()
-         {
-            return local::service();
-         }
-
-         namespace parent
-         {
-
-            void service( const std::string& service)
+            namespace local
             {
-               local::parent::service() = service;
+               namespace
+               {
+                  std::string& name()
+                  {
+                     static std::string name;
+                     return name;
+                  }
+               } // <unnamed>
+            } // local
+
+
+            void name( const std::string& service)
+            {
+               local::name() = service;
             }
 
-            const std::string& service()
+            const std::string& name()
             {
-               return local::parent::service();
+               return local::name();
             }
 
-         } // parent
+            void clear()
+            {
+               local::name().clear();
+            }
+
+
+            namespace parent
+            {
+               namespace local
+               {
+                  namespace
+                  {
+                     std::string& name()
+                     {
+                        static std::string name;
+                        return name;
+                     }
+                  } // <unnamed>
+               } // local
+
+               void name( const std::string& service)
+               {
+                  local::name() = service;
+               }
+
+               const std::string& name()
+               {
+                  return local::name();
+               }
+
+               void clear()
+               {
+                  local::name().clear();
+               }
+
+            } // parent
+         } // service
 
       } // execution
    } // common

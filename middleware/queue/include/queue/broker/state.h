@@ -48,7 +48,7 @@ namespace casual
             };
 
 
-            std::vector< common::platform::pid_type> processes() const;
+            std::vector< common::platform::pid::type> processes() const;
 
             std::string group_executable;
             std::string configuration;

@@ -78,8 +78,13 @@ int casual_start_server( casual_server_argument* serverArgument)
    {
       common::process::path( serverArgument->argv[ 0]);
 
+      //
+      // Connect to domain
+      //
+      common::process::instance::connect();
+
       common::message::dispatch::Handler handler{
-         common::server::handle::Call( common::communication::ipc::inbound::device(), local::transform::ServerArguments{}( *serverArgument)),
+         common::server::handle::Call( local::transform::ServerArguments{}( *serverArgument)),
          common::message::handle::Shutdown{},
       };
 

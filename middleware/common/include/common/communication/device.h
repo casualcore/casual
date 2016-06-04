@@ -12,12 +12,12 @@
 #include "common/communication/message.h"
 
 #include "common/marshal/binary.h"
+#include "common/marshal/complete.h"
 
 namespace casual
 {
    namespace common
    {
-
       namespace communication
       {
          namespace error
@@ -84,6 +84,9 @@ namespace casual
                using message_type = typename complete_type::message_type_type;
                using transport_type = typename connector_type::transport_type;
 
+               using blocking_policy = typename connector_type::blocking_policy;
+               using non_blocking_policy = typename connector_type::non_blocking_policy;
+
                using unmarshal_type = Unmarshal;
                using error_type = std::function<void()>;
 
@@ -93,8 +96,8 @@ namespace casual
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
-               Device( const Device&) = delete;
-               Device& operator = ( const Device&) = delete;
+               //Device( const Device&) = delete;
+               //Device& operator = ( const Device&) = delete;
 
 
 
@@ -193,10 +196,7 @@ namespace casual
                }
 
 
-               //!
-               //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
-               //!
-               void flush();
+
 
                //!
                //! Discards any message that correlates.
@@ -233,8 +233,13 @@ namespace casual
                //!
                inline Uuid put( message::Complete&& message)
                {
+                  //
+                  // Make sure we consume messages from the real queue first.
+                  //
+                  flush();
+
                   m_cache.push_back( std::move( message));
-                  return message.correlation;
+                  return m_cache.back().correlation;
                }
 
                template< typename M>
@@ -245,12 +250,40 @@ namespace casual
 
 
                //!
+               //! flushes the messages on the device into cache. (ie, make the device writable if it was full)
+               //!
+               void flush()
+               {
+                  //
+                  // We don't want to handle any signals while we're flushing
+                  //
+                  signal::thread::scope::Block block;
+
+                  while( next( message_type::flush_ipc, non_blocking_policy{}))
+                  {
+                     ;
+                  }
+               }
+
+               //!
                //! Clear and discard all messages in cache and on the device.
                //!
-               void clear();
+               void clear()
+               {
+                  flush();
+                  cache_type empty;
+                  std::swap( empty, m_cache);
+               }
 
                connector_type& connector() { return m_connector;}
                const connector_type& connector() const { return m_connector;}
+
+
+               inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
+               {
+                  return out << "{ connector: " << device.m_connector << ", cache: "
+                        << range::make( device.m_cache) << ", discarded: " << range::make( device.m_discarded) << "}";
+               }
 
             private:
 
@@ -268,17 +301,30 @@ namespace casual
                   return false;
                }
 
-               template< typename Policy>
-               bool apply( Policy&& policy, transport_type& transport, const error_type& handler)
+
+               template< typename Policy, typename Predicate>
+               range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
                   while( true)
                   {
                      try
                      {
-                        //
-                        // Delegate the invocation to the policy
-                        //
-                        return policy( m_connector, transport);
+                        transport_type transport;
+
+                        auto found = range::find_if( m_cache, predicate);
+
+                        while( ! found && policy( m_connector, transport))
+                        {
+                           //
+                           // Check if the message should be discarded
+                           //
+                           if( ! discard( transport))
+                           {
+                              cache( transport);
+                              found = range::find_if( m_cache, predicate);
+                           }
+                        }
+                        return found;
                      }
                      catch( ...)
                      {
@@ -292,28 +338,6 @@ namespace casual
                         handler();
                      }
                   }
-               }
-
-
-               template< typename Policy, typename Predicate>
-               range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
-               {
-                  transport_type transport;
-
-                  auto found = range::find_if( m_cache, predicate);
-
-                  while( ! found && apply( std::forward< Policy>( policy), transport, handler))
-                  {
-                     //
-                     // Check if the message should be discarded
-                     //
-                     if( ! discard( transport))
-                     {
-                        cache( transport);
-                        found = range::find_if( m_cache, predicate);
-                     }
-                  }
-                  return found;
                }
 
                template< typename Policy, typename... Predicates>
@@ -394,6 +418,8 @@ namespace casual
                using complete_type = message::Complete;
                using message_type = typename complete_type::message_type_type;
                using transport_type = typename connector_type::transport_type;
+               using blocking_policy = typename connector_type::blocking_policy;
+               using non_blocking_policy = typename connector_type::non_blocking_policy;
 
                using marshal_type = Marshal;
 
@@ -449,7 +475,7 @@ namespace casual
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
                //!
                template< typename M, typename P>
-               Uuid send( M& message, P&& policy, const error_type& handler = nullptr)
+               Uuid send( M&& message, P&& policy, const error_type& handler = nullptr)
                {
                   if( ! message.execution)
                   {
@@ -467,6 +493,23 @@ namespace casual
                         handler);
                }
 
+               template< typename M>
+               Uuid blocking_send( M&& message, const error_type& handler = nullptr)
+               {
+                  return send( message, blocking_policy{}, handler);
+               }
+
+               template< typename M>
+               Uuid non_blocking_send( M&& message, const error_type& handler = nullptr)
+               {
+                  return send( message, non_blocking_policy{}, handler);
+               }
+
+               inline friend std::ostream& operator << ( std::ostream& out, const Device& device)
+               {
+                  return out << "{ connector: " << device.m_connector << "}";
+               }
+
             private:
 
                template< typename Policy>
@@ -480,6 +523,13 @@ namespace casual
                         // Delegate the invocation to the policy
                         //
                         return policy( m_connector, transport);
+                     }
+                     catch( const exception::communication::Unavailable&)
+                     {
+                        //
+                        // Let connector take a crack at resolving this problem...
+                        //
+                       m_connector.reconnect();
                      }
                      catch( ...)
                      {

@@ -1,11 +1,9 @@
 //!
-//! test_xatmi.cpp
-//!
-//! Created on: Jan 7, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "xatmi.h"
 
@@ -35,51 +33,25 @@ namespace casual
          namespace
          {
 
+            //
+            // Represent a domain
+            //
             struct Domain
             {
-               //
-               // Set up a "broker" that transforms request to replies, set destination to our receive queue
-               //
-               // Link 'output' from mockup-broker-queue to our "broker"
-               //
                Domain()
-                  : server{ communication::ipc::inbound::id(), mockup::create::server({
-                     createService( "service_1"),
-                     createService( "timeout_2", TPESVCFAIL),
-                     createService( "service_user_code_1", 0, -1)
-                  })},
-                  broker{ communication::ipc::inbound::id(), mockup::create::broker({
-                     mockup::create::lookup::reply( "service_1", server.input()),
-                     mockup::create::lookup::reply( "timeout_2", server.input(), std::chrono::milliseconds{ 2}),
-                     mockup::create::lookup::reply( "service_user_code_1", server.input()),
-                  })},
-                  link_broker_reply{ mockup::ipc::broker::queue().output().connector().id(), broker.input()},
-                  tm{ communication::ipc::inbound::id(), mockup::create::transaction::manager()},
-                  // link the global mockup-transaction-manager-queue's output to 'our' tm
-                  link_tm_reply{ mockup::ipc::transaction::manager::queue().output().connector().id(), tm.input()}
+                  : server{ {
+                     mockup::domain::echo::create::service( "service_1"),
+                     mockup::domain::echo::create::service( "timeout_2"),
+                     mockup::domain::echo::create::service( "service_urcode"), // will echo with urcode = 42
+                  }}
                {
 
                }
 
-               mockup::ipc::Router server;
-               mockup::ipc::Router broker;
-               mockup::ipc::Link link_broker_reply;
-               mockup::ipc::Router tm;
-               mockup::ipc::Link link_tm_reply;
-
-            private:
-
-               static std::pair< std::string, common::message::service::call::Reply> createService(
-                     const std::string& service,
-                     int error = 0,
-                     long user_code = 0)
-               {
-                  common::message::service::call::Reply reply;
-                  reply.error = error;
-                  reply.code = user_code;
-
-                  return std::make_pair( service, std::move( reply));
-               }
+               mockup::domain::Manager manager;
+               mockup::domain::Broker broker;
+               mockup::domain::transaction::Manager tm;
+               mockup::domain::echo::Server server;
             };
 
          } // <unnamed>
@@ -90,6 +62,8 @@ namespace casual
 
       TEST( casual_xatmi, tpalloc_X_OCTET_binary__expect_ok)
       {
+         CASUAL_UNITTEST_TRACE();
+
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          EXPECT_TRUE( buffer != nullptr) << "tperrno: " << tperrno;
          tpfree( buffer);
@@ -97,6 +71,10 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_null__expect_TPEINVAL)
       {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain;
+
          char buffer[ 100];
          EXPECT_TRUE( tpacall( nullptr, buffer, 0, 0) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
@@ -104,16 +82,33 @@ namespace casual
 
 
 
-      TEST( casual_xatmi, tpacall_TPNOREPLY_without_TPNOTRAN__expect_TPEINVAL)
+      TEST( casual_xatmi, tpacall_TPNOREPLY_without_TPNOTRAN__in_transaction___expect_TPEINVAL)
       {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain;
+
+         tx_begin();
+
+         auto rollback = common::scope::execute( [](){
+            tx_rollback();
+         });
+
          char buffer[ 100];
-         EXPECT_TRUE( tpacall( "someServer", buffer, 100, TPNOREPLY) == -1);
+         EXPECT_TRUE( tpacall( "some-service", buffer, 100, TPNOREPLY) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
+
+
       }
+
 
 
       TEST( casual_xatmi, tpcancel_descriptor_42__expect_TPEBADDESC)
       {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain;
+
          EXPECT_TRUE( tpcancel( 42) == -1);
          EXPECT_TRUE( tperrno == TPEBADDESC) << "tperrno: " << tperrno;
       }
@@ -121,12 +116,20 @@ namespace casual
 
       TEST( casual_xatmi, tx_rollback__no_transaction__expect_TX_PROTOCOL_ERROR)
       {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain;
+
          EXPECT_TRUE( tx_rollback() == TX_PROTOCOL_ERROR);
       }
 
 
       TEST( casual_xatmi, tpgetrply_descriptor_42__expect_TPEBADDESC)
       {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain;
+
          int descriptor = 42;
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);
@@ -139,9 +142,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_XXX__expect_TPENOENT)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -155,9 +157,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_buffer_null__expect_expect_ok)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto descriptor = tpacall( "service_1", nullptr, 0, 0);
@@ -168,9 +169,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_service_1_TPNOREPLY_TPNOTRAN__expect_ok)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -182,9 +182,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_1_TPNOREPLY__no_current_transaction__expect_ok)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -196,7 +195,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL)
       {
-         common::Trace trace{ "tpacall_service_1_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL", common::log::internal::debug };
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -214,9 +214,8 @@ namespace casual
 
       TEST( casual_xatmi, tpcall_service_service_1__expect_ok)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -230,6 +229,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_service_1__no_transaction__tpcancel___expect_ok)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -244,6 +245,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_service_1__10_times__no_transaction__tpcancel_all___expect_ok)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
@@ -270,6 +273,8 @@ namespace casual
 
       TEST( casual_xatmi, tpacall_service_service_1__10_times___tpgetrply_any___expect_ok)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
 
@@ -302,6 +307,8 @@ namespace casual
 
       TEST( casual_xatmi, tx_begin__tpacall_service_service_1__10_times___tpgetrply_all__tx_commit__expect_ok)
       {
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          EXPECT_TRUE( tx_begin() == TX_OK);
@@ -334,9 +341,8 @@ namespace casual
 
       TEST( casual_xatmi, tx_begin__tpcall_service_service_1__tx_commit___expect_ok)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
 
@@ -354,9 +360,8 @@ namespace casual
 
       TEST( casual_xatmi, tx_begin__tpacall_service_service_1__tx_commit___expect_TX_PROTOCOL_ERROR)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
 
@@ -375,18 +380,17 @@ namespace casual
       }
 
 
-      TEST( casual_xatmi, tpcall_service_user_code_1__expect_ok__urcode_1)
+      TEST( casual_xatmi, tpcall_service_urcode__expect_ok__urcode_42)
       {
-         //
-         // Set up a "linked-domain" that transforms request to replies - see above
-         //
+         CASUAL_UNITTEST_TRACE();
+
          local::Domain domain;
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);
 
-         EXPECT_TRUE( tpcall( "service_user_code_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
-         EXPECT_TRUE( tpurcode == -1) << "urcode: " << tpurcode;
+         EXPECT_TRUE( tpcall( "service_urcode", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpurcode == 42) << "urcode: " << tpurcode;
          tpfree( buffer);
       }
 

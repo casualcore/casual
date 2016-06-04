@@ -17,6 +17,7 @@
 
 #include "common/marshal/marshal.h"
 
+
 //
 // std
 //
@@ -46,7 +47,7 @@ namespace casual
          //!
          //! @return process id (pid) for current process.
          //!
-         platform::pid_type id();
+         platform::pid::type id();
 
 
          //!
@@ -55,10 +56,11 @@ namespace casual
          struct Handle
          {
             Handle() = default;
-            Handle( platform::pid_type pid, platform::queue_id_type queue) : pid( pid), queue( queue) {}
+            Handle( platform::pid::type pid) : pid{ pid} {}
+            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
 
-            platform::pid_type pid = 0;
-            platform::queue_id_type queue = 0;
+            platform::pid::type pid = 0;
+            platform::ipc::id::type queue = 0;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
@@ -76,10 +78,21 @@ namespace casual
             {
                struct pid
                {
-                  pid( platform::pid_type pid) : m_pid( pid) {}
+                  pid( platform::pid::type pid) : m_pid( pid) {}
                   bool operator() ( const Handle& lhs) { return lhs.pid == m_pid;}
                private:
-                  platform::pid_type m_pid;
+                  platform::pid::type m_pid;
+               };
+            };
+
+            struct order
+            {
+               struct pid
+               {
+                  struct Ascending
+                  {
+                     bool operator() ( const Handle& lhs, const Handle& rhs) { return lhs.pid < rhs.pid;}
+                  };
                };
             };
 
@@ -93,7 +106,6 @@ namespace casual
                archive & pid;
                archive & queue;
             })
-
          };
 
          //!
@@ -107,11 +119,36 @@ namespace casual
             {
                const Uuid& broker();
 
+               namespace forward
+               {
+                  const Uuid& cache();
+               } // forward
+
                namespace traffic
                {
                   const Uuid& manager();
                } // traffic
+
+               namespace gateway
+               {
+                  const Uuid& manager();
+               } // domain
+
+               namespace queue
+               {
+                  const Uuid& broker();
+               } // queue
+
+               namespace transaction
+               {
+                  const Uuid& manager();
+               } // transaction
+
             } // identity
+
+
+
+
 
             namespace fetch
             {
@@ -121,29 +158,29 @@ namespace casual
                   direct
                };
 
-               Handle handle( const Uuid& identity, Directive directive);
+               std::ostream& operator << ( std::ostream& out, Directive directive);
+
+               Handle handle( const Uuid& identity, Directive directive = Directive::wait);
+
+               //!
+               //! Fetches the handle for a given pid
+               //!
+               //! @param pid
+               //! @param directive if caller waits for the process to register or not
+               //! @return handle to the process
+               //!
+               Handle handle( platform::pid::type pid , Directive directive = Directive::wait);
+
 
             } // fetch
 
-            namespace transaction
-            {
-               namespace manager
-               {
-                  const Uuid& identity();
-
-                  const Handle& handle();
-
-                  //!
-                  //! 'refetch' transaction managers process::Handle.
-                  //! @note only for unittest purpose?
-                  //!
-                  const Handle& refetch();
-
-               } // manager
-
-            } // transaction
 
 
+
+            void connect( const Uuid& identity, const Handle& process);
+            void connect( const Uuid& identity);
+            void connect( const Handle& process);
+            void connect();
 
          } // instance
 
@@ -156,6 +193,8 @@ namespace casual
 
          //!
          //! Sleep for a while
+         //!
+         //! @throws exception::signal::* when a signal is received
          //!
          //! @param time numbers of microseconds to sleep
          //!
@@ -173,11 +212,49 @@ namespace casual
          //! process::sleep( std::chrono::minutes( 2));
          //! ~~~~~~~~~~~~~~~
          //!
+         //! @throws exception::signal::* when a signal is received
+         //!
          template< typename R, typename P>
          void sleep( std::chrono::duration< R, P> time)
          {
             sleep( std::chrono::duration_cast< std::chrono::microseconds>( time));
          }
+
+         namespace pattern
+         {
+            struct Sleep
+            {
+               struct Pattern
+               {
+
+                  Pattern( std::chrono::microseconds time, std::size_t quantity);
+
+                  template< typename R, typename P>
+                  Pattern( std::chrono::duration< R, P> time, std::size_t quantity)
+                   : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
+                   {}
+
+                   Pattern();
+
+                  std::chrono::microseconds time;
+                  std::size_t quantity = 0;
+               };
+
+               Sleep( std::vector< Pattern> pattern);
+               Sleep( std::initializer_list< Pattern> pattern);
+
+               void operator () ();
+
+
+            private:
+
+               std::vector< Pattern> m_pattern;
+               std::size_t m_offset = 0;
+            };
+
+         } // pattern
+
+
 
 
          //!
@@ -187,10 +264,10 @@ namespace casual
          //! @param arguments 0..N arguments that is passed to the application
          //! @return process id of the spawned process
          //!
-         platform::pid_type spawn( const std::string& path, std::vector< std::string> arguments);
+         platform::pid::type spawn( const std::string& path, std::vector< std::string> arguments);
 
 
-         platform::pid_type spawn(
+         platform::pid::type spawn(
             std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment);
@@ -212,7 +289,7 @@ namespace casual
          //!
          //! @return return code from process
          //!
-         int wait( platform::pid_type pid);
+         int wait( platform::pid::type pid);
 
 
          //!
@@ -220,28 +297,13 @@ namespace casual
          //!
          //! @return pids that did received the signal
          //!
-         std::vector< platform::pid_type> terminate( const std::vector< platform::pid_type>& pids);
+         std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids);
 
          //!
          //! Tries to terminate pid
          //!
-         bool terminate( platform::pid_type pid);
+         bool terminate( platform::pid::type pid);
 
-         //!
-         //! @deprecated only used by broker, and should be moved there...
-         //!
-         file::scoped::Path singleton( std::string queue_id_file);
-
-         //!
-         //! Asks broker for the handle to a registered 'singleton' server(process)
-         //!
-         //! if wait is true (default) broker will not send a response until the requested server
-         //!  has register.
-         //!
-         //! @return a handle to the requested server if found, or a 'null' handle if @p wait is false
-         //!  and no server was found
-         //!
-         Handle singleton( const Uuid& identification, bool wait = true);
 
 
          //!
@@ -251,7 +313,7 @@ namespace casual
          //!
          //! @return the process handle
          //!
-         Handle ping( platform::queue_id_type queue);
+         Handle ping( platform::ipc::id::type queue);
 
          namespace lifetime
          {
@@ -267,7 +329,7 @@ namespace casual
                   unknown,
                };
 
-               platform::pid_type pid = 0;
+               platform::pid::type pid = 0;
                int status = 0;
                Reason reason = Reason::unknown;
 
@@ -279,10 +341,11 @@ namespace casual
                bool deceased() const;
 
 
-               friend bool operator == ( platform::pid_type pid, const Exit& rhs);
-               friend bool operator == ( const Exit& lhs, platform::pid_type pid);
+               friend bool operator == ( platform::pid::type pid, const Exit& rhs);
+               friend bool operator == ( const Exit& lhs, platform::pid::type pid);
                friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
+               friend std::ostream& operator << ( std::ostream& out, const Reason& value);
                friend std::ostream& operator << ( std::ostream& out, const Exit& terminated);
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -300,8 +363,8 @@ namespace casual
             //!
             //!
             //!
-            std::vector< Exit> wait( const std::vector< platform::pid_type> pids);
-            std::vector< Exit> wait( const std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> wait( const std::vector< platform::pid::type> pids);
+            std::vector< Exit> wait( const std::vector< platform::pid::type> pids, std::chrono::microseconds timeout);
 
 
             //!
@@ -310,8 +373,8 @@ namespace casual
             //! @return the terminated l
             //!
             //
-            std::vector< Exit> terminate( std::vector< platform::pid_type> pids);
-            std::vector< Exit> terminate( std::vector< platform::pid_type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( std::vector< platform::pid::type> pids);
+            std::vector< Exit> terminate( std::vector< platform::pid::type> pids, std::chrono::microseconds timeout);
 
          } // lifetime
 
@@ -327,7 +390,7 @@ namespace casual
             //! @param pids to terminate
             //!
             template< typename C>
-            void terminate( C&& callback, std::vector< platform::pid_type> pids)
+            void terminate( C&& callback, std::vector< platform::pid::type> pids)
             {
                for( auto& death : lifetime::terminate( std::move( pids)))
                {
@@ -337,6 +400,7 @@ namespace casual
 
 
          } // children
+
 
       } // process
    } // common

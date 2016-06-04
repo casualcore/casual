@@ -1,14 +1,14 @@
-//!
-//! state.h
-//!
-//! Created on: Jan 1, 2016
-//!     Author: Lazan
-//!
 
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_STATE_H_
 
-#include "common/uuid.h"
+
+#include "gateway/manager/listener.h"
+
+#include "common/process.h"
+#include "common/domain.h"
+
+#include "common/communication/tcp.h"
 
 namespace casual
 {
@@ -16,16 +16,106 @@ namespace casual
    {
       namespace manager
       {
+         namespace state
+         {
+            struct base_connection
+            {
+               enum class Type
+               {
+                  unknown,
+                  ipc,
+                  tcp
+               };
+
+               enum class Runlevel
+               {
+                  absent,
+                  booting,
+                  online,
+                  offline,
+                  error
+               };
+
+
+               bool running() const;
+
+               common::process::Handle process;
+               common::domain::Identity remote;
+               Type type = Type::unknown;
+               Runlevel runlevel = Runlevel::absent;
+
+
+
+               friend bool operator == ( const base_connection& lhs, common::platform::pid::type rhs);
+               inline friend bool operator == ( common::platform::pid::type lhs, const base_connection& rhs)
+               {
+                  return rhs == lhs;
+               }
+
+               friend std::ostream& operator << ( std::ostream& out, const Type& value);
+               friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);
+            };
+
+            namespace inbound
+            {
+               struct Connection : base_connection
+               {
+
+                  friend std::ostream& operator << ( std::ostream& out, const Connection& value);
+               };
+
+
+            } // inbound
+
+            namespace outbound
+            {
+               struct Connection : base_connection
+               {
+
+
+                  std::string address;
+
+                  bool restart = false;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Connection& value);
+               };
+
+
+            } // outbound
+
+            struct Connections
+            {
+               std::vector< outbound::Connection> outbound;
+               std::vector< inbound::Connection> inbound;
+            };
+
+
+
+         } // state
 
          struct State
          {
-
-            struct
+            enum class Runlevel
             {
-               common::Uuid id = common::uuid::make();
+               startup,
+               online,
+               shutdown
+            };
 
-            } domain;
+            //!
+            //! @return true if we have any running connections or listeners
+            //!
+            bool running() const;
 
+
+            void event( const message::manager::listener::Event& event);
+
+            state::Connections connections;
+            std::vector< Listener> listeners;
+            Runlevel runlevel = Runlevel::startup;
+
+            friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);
+            friend std::ostream& operator << ( std::ostream& out, const State& value);
          };
 
 

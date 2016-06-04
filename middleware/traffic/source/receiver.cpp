@@ -34,7 +34,7 @@ namespace casual
 
                const std::string& get_service() const { return message.service;};
                const std::string& get_parent() const { return message.parent;};
-               common::platform::pid_type get_pid() const { return message.process.pid;};
+               common::platform::pid::type get_pid() const { return message.process.pid;};
                const common::Uuid& get_execution() const { return message.execution;};
                const common::transaction::ID& get_transaction() const { return message.trid;};
                const common::platform::time_point& get_start() const { return message.start;};
@@ -71,69 +71,59 @@ namespace casual
 
       const std::string& Event::service() const { return get_service(); }
       const std::string& Event::parent() const { return get_parent(); }
-      common::platform::pid_type Event::pid() const { return get_pid(); }
+      common::platform::pid::type Event::pid() const { return get_pid(); }
       const common::Uuid& Event::execution() const { return get_execution(); }
       const common::transaction::ID& Event::transaction() const { return get_transaction(); }
       const common::platform::time_point& Event::start() const { return get_start(); }
       const common::platform::time_point& Event::end() const { return get_end(); }
 
-      namespace local
-      {
-         namespace
-         {
-            void connect()
-            {
 
-               message::traffic::monitor::connect::Request request;
-
-               request.path = common::process::path();
-               request.process = common::process::handle();
-
-               message::handle::connect::reply(
-                     communication::ipc::call( communication::ipc::broker::id(), request));
-
-            }
-         } // <unnamed>
-      } // local
-
-
-      Receiver::Receiver()
-      {
-         common::trace::internal::Scope trace( "traffic::Receiver::Receiver");
-
-         //
-         // Connect as a "regular" server
-         //
-         common::server::connect( communication::ipc::inbound::device(), {});
-
-         //
-         // Register this traffic-logger
-         //
-         local::connect();
-      }
 
       Receiver::Receiver( const common::Uuid& application)
       {
          common::trace::internal::Scope trace( "traffic::Receiver::Receiver( application)");
 
          //
-         // Connect as a singleton...
+         // Connect to domain
          //
-         common::server::connect( application);
+         process::instance::connect( application);
 
          //
-         // Register this traffic-logger
+         // Register this traffic-logger with the broker
          //
-         local::connect();
+         {
+            message::traffic::monitor::connect::Request request;
+            request.process = common::process::handle();
+
+            communication::ipc::call( communication::ipc::broker::device(), request);
+
+         }
+      }
+
+      Receiver::Receiver() : Receiver{ uuid::empty()}
+      {
+         common::trace::internal::Scope trace( "traffic::Receiver::Receiver");
+
+
       }
 
       Receiver::~Receiver()
       {
+         common::trace::internal::Scope trace( "traffic::Receiver::~Receiver");
+
          //
          // We could try to process pending traffic messages, but if this
          // is a shutdown of this instance of traffic-logger and the rest of the system
          // is running at peek, we may never consume all messages, hence never shutdown.
          //
+
+         //
+         // TODO: do we need disconnect? Broker will eventually know that this process
+         // has terminated.
+         //
+         message::traffic::monitor::Disconnect disconnect;
+         disconnect.process = common::process::handle();
+         communication::ipc::blocking::send( communication::ipc::broker::device(), disconnect);
       }
 
 

@@ -10,8 +10,9 @@
 
 #include "common/platform.h"
 #include "common/message/transaction.h"
+#include "common/message/domain.h"
 #include "common/algorithm.h"
-#include "common/marshal/binary.h"
+#include "common/marshal/complete.h"
 
 #include "config/xa_switch.h"
 
@@ -64,7 +65,7 @@ namespace casual
          {
             struct Proxy
             {
-               using id_type = common::platform::resource::id_type;
+               using id_type = common::platform::resource::id::type;
 
                struct Instance
                {
@@ -166,7 +167,7 @@ namespace casual
 
             struct Reply : base_message
             {
-               typedef common::platform::queue_id_type queue_id_type;
+               typedef common::platform::ipc::id::type queue_id_type;
 
                template< typename M>
                Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}
@@ -176,7 +177,7 @@ namespace casual
 
             struct Request : base_message
             {
-               using id_type = common::platform::resource::id_type;
+               using id_type = common::platform::resource::id::type;
 
                using base_message::base_message;
 
@@ -188,7 +189,7 @@ namespace casual
             {
                struct Request
                {
-                  using id_type = common::platform::resource::id_type;
+                  using id_type = common::platform::resource::id::type;
 
                   Request( id_type id) : m_id( id) {}
 
@@ -209,7 +210,7 @@ namespace casual
       {
          struct Resource
          {
-            using id_type = common::platform::resource::id_type;
+            using id_type = common::platform::resource::id::type;
 
             enum class Stage
             {
@@ -402,7 +403,7 @@ namespace casual
             struct ID
             {
                template< typename T>
-               common::platform::resource::id_type operator () ( const T& value) const
+               common::platform::resource::id::type operator () ( const T& value) const
                {
                   return value.id;
                }
@@ -472,15 +473,15 @@ namespace casual
          //!
          std::size_t instances() const;
 
-         std::vector< common::platform::pid_type> processes() const;
+         std::vector< common::platform::pid::type> processes() const;
 
          void operator () ( const common::process::lifetime::Exit& death);
 
-         state::resource::Proxy& get_resource( common::platform::resource::id_type rm);
-         state::resource::Proxy::Instance& get_instance( common::platform::resource::id_type rm, common::platform::pid_type pid);
+         state::resource::Proxy& get_resource( common::platform::resource::id::type rm);
+         state::resource::Proxy::Instance& get_instance( common::platform::resource::id::type rm, common::platform::pid::type pid);
 
          using instance_range = decltype( common::range::make( std::declval< state::resource::Proxy>().instances.begin(), std::declval< state::resource::Proxy>().instances.end()));
-         instance_range idle_instance( common::platform::resource::id_type rm);
+         instance_range idle_instance( common::platform::resource::id::type rm);
 
 
       private:
@@ -498,13 +499,13 @@ namespace casual
 
             struct Instance
             {
-               Instance( common::platform::pid_type pid) : m_pid( pid) {}
+               Instance( common::platform::pid::type pid) : m_pid( pid) {}
                bool operator () ( const resource::Proxy::Instance& instance) const
                {
                   return instance.process.pid == m_pid;
                }
             private:
-               common::platform::pid_type m_pid;
+               common::platform::pid::type m_pid;
 
             };
 
@@ -555,7 +556,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file);
+         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file);
 
 
 

@@ -1,11 +1,9 @@
 //!
-//! test_server_context.cpp
-//!
-//! Created on: Dec 8, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "common/server/handle.h"
@@ -99,7 +97,7 @@ namespace casual
             }
 
 
-            message::service::call::callee::Request callMessage( platform::queue_id_type id)
+            message::service::call::callee::Request call_request( platform::ipc::id::type id)
             {
                message::service::call::callee::Request message;
 
@@ -118,6 +116,8 @@ namespace casual
 
       TEST( casual_common_server_context, arguments)
       {
+         CASUAL_UNITTEST_TRACE();
+
          server::Arguments arguments{ { "arg1", "arg2"}};
 
          ASSERT_TRUE( arguments.argc == 2);
@@ -130,6 +130,8 @@ namespace casual
 
       TEST( casual_common_server_context, arguments_move)
       {
+         CASUAL_UNITTEST_TRACE();
+
          server::Arguments origin{ { "arg1", "arg2"}};
 
          server::Arguments arguments = std::move( origin);
@@ -147,9 +149,9 @@ namespace casual
 
       TEST( casual_common_server_context, connect)
       {
-         common::Trace trace{ "TEST casual_common_server_context.connect", log::internal::debug};
-         mockup::ipc::clear();
+         CASUAL_UNITTEST_TRACE();
 
+         mockup::domain::Manager manager;
          mockup::domain::Broker broker;
 
          EXPECT_NO_THROW({
@@ -161,17 +163,17 @@ namespace casual
 
       TEST( casual_common_server_context, call_service__gives_reply)
       {
-         common::Trace trace{ "TEST casual_common_server_context.call_service__gives_reply", log::internal::debug};
-         mockup::ipc::clear();
+         CASUAL_UNITTEST_TRACE();
 
-         mockup::ipc::Instance caller;
-         mockup::domain::Domain domain;
+         mockup::domain::Manager manager;
+         mockup::domain::minimal::Domain domain;
+         mockup::ipc::Collector caller;
 
          {
 
             server::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage( caller.id());
+            auto message = local::call_request( caller.id());
             callHandler( message);
          }
 
@@ -182,10 +184,11 @@ namespace casual
 
       }
 
+      /*
 
       TEST( casual_common_server_context, call_service__gives_broker_ack)
       {
-         common::Trace trace{ "TEST casual_common_server_context.call_service__gives_broker_ack", log::internal::debug};
+         CASUAL_UNITTEST_TRACE();
 
          mockup::ipc::clear();
          mockup::ipc::Instance caller{ 42};
@@ -201,7 +204,7 @@ namespace casual
 
          {
             auto callHandler = prepare_caller();
-            auto message = local::callMessage( caller.id());
+            auto message = local::call_request( caller.id());
             callHandler( message);
          }
 
@@ -229,7 +232,7 @@ namespace casual
 
             server::handle::Call callHandler( local::arguments());
 
-            auto message = local::callMessage( caller.id());
+            auto message = local::call_request( caller.id());
             message.service.traffic_monitors = { traffic.id()};
             callHandler( message);
          }
@@ -241,6 +244,8 @@ namespace casual
 
       }
 
+      */
+
 
       namespace local
       {
@@ -249,14 +254,17 @@ namespace casual
 
             struct Domain
             {
+               mockup::domain::Manager manager;
                mockup::domain::Broker broker;
                mockup::domain::transaction::Manager tm;
-
             };
 
             namespace call
             {
-               message::service::call::callee::Request request( platform::queue_id_type queue, std::string service, common::transaction::ID trid = common::transaction::ID{})
+               message::service::call::callee::Request request(
+                     platform::ipc::id::type queue,
+                     std::string service,
+                     common::transaction::ID trid = common::transaction::ID{})
                {
                   message::service::call::callee::Request message;
 
@@ -297,54 +305,24 @@ namespace casual
             } // transaction
 
 
-            namespace crete
-            {
-               struct handle_holder
-               {
-                  handle_holder() : m_handler( local::arguments()) {}
-
-                  handle_holder(handle_holder&&) noexcept = default;
-                  handle_holder& operator = (handle_holder&&) noexcept = default;
-
-                  std::vector< mockup::reply::result_t> operator () ( message::service::call::callee::Request request)
-                  {
-                     m_handler( request);
-
-                     return {};
-                  }
-
-                  server::handle::Call m_handler;
-               };
-
-               mockup::ipc::Replier server()
-               {
-                  return mockup::ipc::Replier{
-                     mockup::reply::Handler{
-                        handle_holder{}
-                     }
-                  };
-               }
-            } // crete
-
-
 
          } // <unnamed>
       } // local
 
-
-      TEST( casual_common_server_context, connect_server)
+      TEST( casual_common_server_context, mockup_domain_startup)
       {
-         mockup::domain::Broker broker;
+         CASUAL_UNITTEST_TRACE();
 
-         auto server = local::crete::server();
+         EXPECT_NO_THROW({
+            local::Domain domain;
+         });
       }
-
 
       TEST( casual_common_server_context, call_server__non_existing__gives_TPESVCERR)
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -358,11 +336,12 @@ namespace casual
       }
 
 
+
       TEST( casual_common_server_context, call_server__test_service_none_TPSUCCESS)
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS");
@@ -378,7 +357,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_atomic_TPSUCCESS");
@@ -390,11 +369,13 @@ namespace casual
          EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
       }
 
+
+
       TEST( casual_common_server_context, call_server__test_service_join_TPSUCCESS)
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -411,7 +392,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -425,11 +406,13 @@ namespace casual
       }
 
 
+
+
       TEST( casual_common_server_context, call_server_in_transaction__test_service_none_TPSUCCESS)
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_none_TPSUCCESS", local::transaction::ongoing());
@@ -446,7 +429,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -465,7 +448,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -484,7 +467,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -504,7 +487,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_none_TPFAIL");
@@ -519,7 +502,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -536,7 +519,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -553,7 +536,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -571,7 +554,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_none_TPFAIL", local::transaction::ongoing());
@@ -588,7 +571,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
 
          server::handle::Call server( local::arguments());
@@ -607,7 +590,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_join_TPFAIL", local::transaction::ongoing());
@@ -624,7 +607,7 @@ namespace casual
       {
          local::Domain domain;
 
-         mockup::ipc::Instance caller{ 10};
+         mockup::ipc::Collector caller;
 
          server::handle::Call server( local::arguments());
          auto message = local::call::request( caller.id(), "test_service_auto_TPFAIL", local::transaction::ongoing());
@@ -652,6 +635,7 @@ namespace casual
          state.pending.unreserve( first.descriptor);
          state.pending.unreserve( second.descriptor);
       }
+
 
    } // common
 } // casual

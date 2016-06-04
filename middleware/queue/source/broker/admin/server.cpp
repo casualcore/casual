@@ -1,8 +1,5 @@
 //!
-//! server.cpp
-//!
-//! Created on: Oct 2, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/broker/admin/server.h"

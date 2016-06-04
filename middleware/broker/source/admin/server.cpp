@@ -3,7 +3,6 @@
 //## includes protected section begin [.10]
 
 #include "broker/admin/server.h"
-#include "broker/admin/transform.h"
 
 
 #include "broker/broker.h"
@@ -60,6 +59,7 @@ namespace broker
 
 
 
+      /*
       void service_update_instances( TPSVCINFO *serviceInfo, broker::State& state)
       {
          casual::sf::service::reply::State reply;
@@ -74,7 +74,7 @@ namespace broker
 
             service_io >> CASUAL_MAKE_NVP( instances);
 
-            broker::update::instances( state, instances);
+            //broker::update::instances( state, instances);
 
             reply = service_io.finalize();
          }
@@ -90,6 +90,7 @@ namespace broker
             reply.size,
             reply.flags);
       }
+
 
 
       void service_shutdown( TPSVCINFO *serviceInfo, broker::State& state)
@@ -104,9 +105,9 @@ namespace broker
 
             service_io >> CASUAL_MAKE_NVP( broker);
 
-            auto serviceReturn = broker::shutdown( state, broker);
+            //auto serviceReturn = broker::shutdown( state, broker);
 
-            service_io << CASUAL_MAKE_NVP( serviceReturn);
+            //service_io << CASUAL_MAKE_NVP( serviceReturn);
 
             reply = service_io.finalize();
          }
@@ -122,7 +123,7 @@ namespace broker
             reply.size,
             reply.flags);
       }
-
+   */
 
 
 
@@ -162,6 +163,7 @@ namespace broker
       {
          admin::StateVO result;
 
+         /*
          {
             common::range::transform( state.groups, result.groups,
                   admin::transform::Group{});
@@ -201,6 +203,7 @@ namespace broker
                   admin::transform::Pending{});
          }
 
+         */
          return result;
       }
 
@@ -220,8 +223,8 @@ namespace broker
          result.server_done = &tpsvrdone;
 
          result.services.emplace_back( ".casual.broker.state", std::bind( &service_broker_state, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-         result.services.emplace_back( ".casual.broker.update.instances", std::bind( &service_update_instances, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-         result.services.emplace_back( ".casual.broker.shutdown", std::bind( &service_shutdown, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+         //result.services.emplace_back( ".casual.broker.update.instances", std::bind( &service_update_instances, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+         //result.services.emplace_back( ".casual.broker.shutdown", std::bind( &service_shutdown, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
 
          //result.services.push_back( common::server::Service{ ".casual.test", std::bind( &test1, std::placeholders::_1), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none});
 

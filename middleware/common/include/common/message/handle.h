@@ -37,6 +37,9 @@ namespace casual
                }
             };
 
+            //!
+            //! Replies to a ping message
+            //!
             struct Ping
             {
                void operator () ( server::ping::Request& message);
@@ -49,6 +52,10 @@ namespace casual
             }
 
 
+
+            //!
+            //! @throws exception::Shutdown if message::shutdown::Request is dispatched
+            //!
             struct Shutdown
             {
                using message_type = message::shutdown::Request;
@@ -56,66 +63,32 @@ namespace casual
                void operator () ( message_type& message);
             };
 
-
-
-            namespace connect
+            //!
+            //! Dispatch and assigns a given message
+            //!
+            template< typename M>
+            struct Assign
             {
-               /*
-               template< typename D, typename C, typename M>
-               auto reply( D&& device, C&& correlation, M&& message) -> decltype( std::forward< M>( message))
+               using message_type = M;
+
+               Assign( message_type& message) : m_message( message) {}
+
+               void operator () ( message_type& message)
                {
-                  queue( message, correlation);
-
-                  switch( message.directive)
-                  {
-                     case M::Directive::singleton:
-                     {
-                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
-                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
-                     }
-                     case M::Directive::shutdown:
-                     {
-                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
-                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
-                     }
-                     default:
-                     {
-                        break;
-                     }
-                  }
-                  return std::forward< M>( message);
+                  m_message = message;
                }
-               */
+            private:
+               message_type& m_message;
+            };
 
-               template< typename M>
-               auto reply( M&& message) -> decltype( std::forward< M>( message))
-               {
-                  using message_type = typename std::decay< M>::type;
+            template< typename M>
+            Assign< M> assign( M& message)
+            {
+               return Assign< M>{ message};
+            }
 
-                  switch( message.directive)
-                  {
-                     case message_type::Directive::singleton:
-                     {
-                        log::error << "broker denied startup - reason: executable is a singleton - action: terminate\n";
-                        throw exception::Shutdown{ "broker denied startup - reason: process is regarded a singleton - action: terminate"};
-                     }
-                     case message_type::Directive::shutdown:
-                     {
-                        log::error << "broker denied startup - reason: broker is in shutdown mode - action: terminate\n";
-                        throw exception::Shutdown{ "broker denied startup - reason: broker is in shutdown mode - action: terminate"};
-                     }
-                     default:
-                     {
-                        break;
-                     }
-                  }
-                  return std::forward< M>( message);
-               }
-            } // connect
 
          } // handle
-
-
       } // message
    } // common
 

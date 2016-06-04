@@ -33,28 +33,29 @@ namespace casual
                   archive & trid;
                   archive & state;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
 
 
             struct Advertise : basic_message< Type::service_advertise>
             {
-
-               std::string serverPath;
-               process::Handle process;
+               common::process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
-                  archive & serverPath;
                   archive & process;
                   archive & services;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
             };
 
             struct Unadvertise : basic_message< Type::service_unadvertise>
             {
-               process::Handle process;
+               common::process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -77,14 +78,15 @@ namespace casual
                   {
                      regular,
                      no_reply,
-                     forward
+                     forward,
+                     gateway,
                   };
                   Request() = default;
                   Request( Request&&) = default;
                   Request& operator = ( Request&&) = default;
 
                   std::string requested;
-                  process::Handle process;
+                  common::process::Handle process;
                   Context context = Context::regular;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -102,7 +104,7 @@ namespace casual
                struct Reply : basic_message< Type::service_name_lookup_reply>
                {
                   Service service;
-                  process::Handle process;
+                  common::process::Handle process;
 
                   enum class State : char
                   {
@@ -143,7 +145,7 @@ namespace casual
                   base_call& operator = ( const base_call&) = delete;
 
                   platform::descriptor_type descriptor = 0;
-                  process::Handle process;
+                  common::process::Handle process;
 
                   Service service;
                   std::string parent;
@@ -233,7 +235,6 @@ namespace casual
 
                //!
                //! Represent service reply.
-               //! @todo: change to service::call::Reply
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
@@ -260,6 +261,8 @@ namespace casual
                      archive & transaction;
                   })
 
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& message);
+
                };
 
                //!
@@ -270,7 +273,7 @@ namespace casual
                {
 
                   std::string service;
-                  process::Handle process;
+                  common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

@@ -12,6 +12,7 @@
 
 #include "common/message/queue.h"
 #include "common/message/transaction.h"
+#include "common/message/domain.h"
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -50,7 +51,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  using message_type = common::message::dead::process::Event;
+                  using message_type = common::message::domain::process::termination::Event;
 
                   void operator () ( message_type& message);
 

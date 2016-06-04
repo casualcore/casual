@@ -13,6 +13,7 @@
 #include "transaction/manager/action.h"
 
 #include "common/message/transaction.h"
+#include "common/message/domain.h"
 #include "common/log.h"
 #include "common/exception.h"
 #include "common/process.h"
@@ -52,7 +53,7 @@ namespace casual
             {
                using Base::Base;
 
-               using message_type = common::message::dead::process::Event;
+               using message_type = common::message::domain::process::termination::Event;
 
                void operator () ( message_type& message);
 
@@ -65,6 +66,7 @@ namespace casual
 
          namespace resource
          {
+            /*
             namespace id
             {
                //!
@@ -81,6 +83,7 @@ namespace casual
                };
 
             } // id
+            */
 
             //!
             //! Sent by a server when resource(s) is involved

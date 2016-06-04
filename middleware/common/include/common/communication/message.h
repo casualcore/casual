@@ -32,8 +32,8 @@ namespace casual
             template< std::size_t message_size>
             struct basic_transport
             {
-               typedef platform::message_type_type message_type_type;
-               typedef Uuid::uuid_type correalation_type;
+               using message_type = platform::ipc::message::type;
+               using correalation_type = Uuid::uuid_type;
 
 
 
@@ -60,6 +60,7 @@ namespace casual
                enum
                {
                   message_max_size = message_size,
+                  message_type_size = sizeof( message_type),
                   header_size = sizeof( header_t),
                   payload_max_size = message_max_size - header_size,
 
@@ -75,7 +76,7 @@ namespace casual
                   //
                   // type has to be first!
                   //
-                  message_type_type type;
+                  message_type type;
                   header_t header;
                   payload_type payload;
 
@@ -84,7 +85,7 @@ namespace casual
 
                static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
                static_assert( std::is_pod< message_t>::value, "Message has be a POD");
-               static_assert( sizeof( message_t) - sizeof( message_type_type) == message_max_size, "something is wrong with padding");
+               static_assert( sizeof( message_t) - message_type_size == message_max_size, "something is wrong with padding");
 
 
                basic_transport() { memory::set( message);}
@@ -121,7 +122,7 @@ namespace casual
                //!
                //! @return true if this transport message is the last of the logical message.
                //!
-               //! @attention this gives not any guarantees that no more transport messages will arrive...
+               //! @attention this does not give any guarantees that no more transport messages will arrive...
                //!
                bool last() const { return message.header.offset + message.header.count == message.header.complete_size;}
 
@@ -135,22 +136,8 @@ namespace casual
                   std::copy( first, last, std::begin( message.payload));
                }
 
-               //template< std::size_t message_size>
-               //friend std::ostream& operator << ( std::ostream& out, const basic_transport< message_size>& value);
                template< std::size_t m_size>
                friend std::ostream& operator << ( std::ostream& out, const basic_transport< m_size>& value);
-
-               /*
-               friend bool send( id_type id, const Transport& transport, long flags);
-               friend bool receive( id_type id, Transport& transport, long flags);
-               friend bool ignore::signal::send( id_type id, const Transport& transport, long flags);
-               friend bool ignore::signal::receive( id_type id, Transport& transport, long flags);
-               */
-
-
-            private:
-
-               //std::size_t m_size = 0;
             };
 
 
@@ -174,9 +161,8 @@ namespace casual
                using payload_type = platform::binary_type;
                using range_type = decltype( range::make( payload_type::iterator(), 0));
 
-               Complete() = default;
-
-               Complete( message_type_type type, const Uuid& correlation) : type{ type}, correlation{ correlation} {}
+               Complete();
+               Complete( message_type_type type, const Uuid& correlation);
 
                template< typename T>
                Complete( T&& transport) :
@@ -202,7 +188,7 @@ namespace casual
                Uuid correlation;
                payload_type payload;
 
-               friend std::ostream& operator << ( std::ostream& out, const Complete& value);
+
 
 
                //! @param transport
@@ -230,7 +216,7 @@ namespace casual
                      if( splitted)
                      {
                         //
-                        // transport message came out of orderl
+                        // transport message came out of order
                         //
                         m_unhandled.push_back( splitted);
                      }
@@ -243,9 +229,31 @@ namespace casual
                   m_unhandled.erase( last, std::end( m_unhandled));
                }
 
-               friend void swap( Complete& lhs, Complete& rhs);
+
 
                const std::vector< range_type>& unhandled() { return m_unhandled;}
+
+               //!
+               //! So we can send complete messages as part of other
+               //! messages
+               //!
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & type;
+                  archive & correlation;
+                  archive & payload;
+               })
+
+
+               friend std::ostream& operator << ( std::ostream& out, const Complete& value);
+               friend void swap( Complete& lhs, Complete& rhs);
+
+
+               friend bool operator == ( const Complete& complete, const Uuid& correlation);
+               friend inline bool operator == ( const Uuid& correlation, const Complete& complete)
+               {
+                  return complete == correlation;
+               }
 
             private:
 

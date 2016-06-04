@@ -22,7 +22,7 @@ namespace casual
    {
       namespace message
       {
-         enum class Type : platform::message_type_type
+         enum class Type : platform::ipc::message::type
          {
             //
             // message type can't be 0!
@@ -36,13 +36,28 @@ namespace casual
             shutdownd_reply,
             forward_connect_request,
             forward_connect_reply,
-            process_death_registration,
-            process_death_event,
-            lookup_process_request,
-            lookup_process_reply,
+            delay_message,
+            inbound_ipc_connect,
+
+            process_spawn_request = 600,
+            process_lookup_request,
+            process_lookup_reply,
+
+            DOMAIN_BASE = 1000,
+            domain_discover_request,
+            domain_discover_reply,
+            domain_scale_executable,
+            domain_process_connect_request,
+            domain_process_connect_reply,
+            domain_process_termination_registration,
+            domain_process_termination_event,
+            domain_process_lookup_request,
+            domain_process_lookup_reply,
+            domain_configuration_transaction_resource_request,
+            domain_configuration_transaction_resource_reply,
 
             // Server
-            SERVER_BASE = 1000,
+            SERVER_BASE = 2000,
             server_connect_request,
             server_connect_reply,
             server_disconnect,
@@ -50,7 +65,7 @@ namespace casual
             server_ping_reply,
 
             // Service
-            SERVICE_BASE = 2000,
+            SERVICE_BASE = 3000,
             service_advertise,
             service_unadvertise,
             service_name_lookup_request,
@@ -60,14 +75,14 @@ namespace casual
             service_acknowledge,
 
             // Monitor
-            TRAFFICMONITOR_BASE = 3000,
+            TRAFFICMONITOR_BASE = 4000,
             traffic_monitor_connect_request,
             traffic_monitor_connect_reply,
             traffic_monitor_disconnect,
             traffic_event,
 
             // Transaction
-            TRANSACTION_BASE = 4000,
+            TRANSACTION_BASE = 5000,
             transaction_client_connect_request,
             transaction_client_connect_reply,
             transaction_manager_connect_request,
@@ -103,7 +118,7 @@ namespace casual
             transaction_resource_id_reply,
 
             // casual queue
-            QUEUE_BASE = 5000,
+            QUEUE_BASE = 6000,
             queue_connect_request,
             queue_connect_reply,
             queue_enqueue_request = QUEUE_BASE + 100,
@@ -122,7 +137,15 @@ namespace casual
             queue_group_involved = QUEUE_BASE + 500,
 
 
-            GATEWAY_BASE = 6000,
+            GATEWAY_BASE = 7000,
+            gateway_manager_listener_event,
+            gateway_manager_tcp_connect,
+            gateway_outbound_connect,
+            gateway_inbound_connect,
+            gateway_worker_connect,
+            gateway_worker_disconnect,
+            gateway_ipc_connect_request,
+            gateway_ipc_connect_reply,
 
 
 
@@ -222,9 +245,10 @@ namespace casual
                archive & start;
                archive & end;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const Statistics& message);
+
          };
-
-
 
 
 
@@ -243,12 +267,16 @@ namespace casual
          {
             struct Request : basic_message< Type::shutdownd_request>
             {
-               process::Handle process;
+               inline Request() = default;
+               inline Request( common::process::Handle process) : process{ std::move( process)} {}
+
+               common::process::Handle process;
                bool reply = false;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
+                  archive & process;
                   archive & reply;
                })
             };
@@ -268,8 +296,8 @@ namespace casual
                   })
                };
 
-               holder_t< platform::pid_type> executables;
-               holder_t< process::Handle> servers;
+               holder_t< platform::pid::type> executables;
+               holder_t< common::process::Handle> servers;
 
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -307,7 +335,7 @@ namespace casual
             std::string name;
             std::uint64_t type = 0;
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            std::vector< platform::queue_id_type> traffic_monitors;
+            std::vector< platform::ipc::id::type> traffic_monitors;
             std::uint64_t transaction = 0;
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -328,7 +356,7 @@ namespace casual
             template< message::Type type>
             struct basic_id : basic_message< type>
             {
-               process::Handle process;
+               common::process::Handle process;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -384,68 +412,37 @@ namespace casual
 
          } // server
 
-         namespace dead
+
+         namespace process
          {
-            namespace process
+            namespace spawn
             {
-               using Registration = server::basic_id< Type::process_death_registration>;
-
-               struct Event : basic_message< Type::process_death_event>
+               struct Request : basic_message< Type::process_spawn_request>
                {
-                  Event() = default;
-                  Event( common::process::lifetime::Exit death) : death{ std::move( death)} {}
-
-                  common::process::lifetime::Exit death;
+                  std::string executable;
+                  std::vector< std::string> arguments;
+                  std::vector< std::string> environment;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_message< Type::process_death_event>::marshal( archive);
-                     archive & death;
+                     basic_message< Type::process_spawn_request>::marshal( archive);
+                     archive & executable;
+                     archive & arguments;
+                     archive & environment;
                   })
+
                };
 
-            } // process
-         } // dead
+            } // spawn
 
-         namespace lookup
-         {
-            namespace process
-            {
-               struct Request : server::basic_id< Type::lookup_process_request>
-               {
-                  enum class Directive : char
-                  {
-                     wait,
-                     direct
-                  };
 
-                  Uuid identification;
-                  Directive directive;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     server::basic_id< Type::lookup_process_request>::marshal( archive);
-                     archive & identification;
-                     archive & directive;
-                  })
-               };
 
-               struct Reply : server::basic_id< Type::lookup_process_reply>
-               {
-                  Uuid identification;
-                  std::string domain;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     server::basic_id< Type::lookup_process_reply>::marshal( archive);
-                     archive & identification;
-                     archive & domain;
-                  })
-               };
 
-            } // process
+         } // process
 
-         } // lookup
+
 
          namespace forward
          {
@@ -462,7 +459,7 @@ namespace casual
 
 
             //!
-            //! declaration of helper tratis to get the
+            //! declaration of helper traits to get the
             //! "reverse type". Normally to get the Reply-type
             //! from a Request-type, and vice versa.
             //!
@@ -485,8 +482,6 @@ namespace casual
             template<>
             struct type_traits< forward::connect::Request> : detail::type< forward::connect::Reply> {};
 
-            template<>
-            struct type_traits< lookup::process::Request> : detail::type< lookup::process::Reply> {};
 
 
             template< typename T>

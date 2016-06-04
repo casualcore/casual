@@ -34,7 +34,6 @@ namespace casual
 		struct Settings
 		{
 
-		   std::string configurationfile = common::environment::file::configuration();
 
 		};
 
@@ -42,7 +41,7 @@ namespace casual
 		{
 		public:
 
-		   Broker( const Settings& arguments);
+		   Broker( Settings&& settings);
 			~Broker();
 
 			void start();
@@ -57,20 +56,9 @@ namespace casual
 
 		private:
 
-			void terminate();
-
-			common::file::scoped::Path m_brokerQueueFile;
 			State m_state;
 
 		};
-
-		namespace update
-      {
-         void instances( State& state, const std::vector< admin::update::InstancesVO>& instances);
-
-      } // update
-
-      admin::ShutdownVO shutdown( State& state, bool broker);
 
 
 		namespace message

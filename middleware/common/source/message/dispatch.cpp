@@ -1,8 +1,5 @@
 //!
-//! dispatch.cpp
-//!
-//! Created on: Dec 21, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/message/dispatch.h"
