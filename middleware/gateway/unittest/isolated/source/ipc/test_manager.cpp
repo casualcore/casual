@@ -197,6 +197,39 @@ gateway:
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace inbound
+            {
+               auto online() -> decltype( local::call::wait::ready::state())
+               {
+                  auto state = local::call::wait::ready::state();
+
+                  auto check_state = [&]()
+                  {
+                     if( state.connections.inbound.empty()) { return false;}
+
+                     using inbound_type = manager::admin::vo::inbound::Connection;
+
+                     return range::all_of( state.connections.inbound, []( const inbound_type& inbound){
+                        return inbound.runlevel == manager::admin::vo::inbound::Connection::Runlevel::online;
+                     });
+                  };
+
+                  while( ! check_state())
+                  {
+                     process::sleep( std::chrono::milliseconds{ 5});
+                     state = local::call::state();
+                  }
+
+                  return state;
+               }
+            } // inbound
+         } // <unnamed>
+      } // local
+
       TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
       {
          CASUAL_UNITTEST_TRACE();
@@ -212,7 +245,9 @@ gateway:
          //
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::inbound::online();
+
+
 
          ASSERT_TRUE( state.connections.outbound.size() == 1) << CASUAL_MAKE_NVP( state);
          auto& outbound = state.connections.outbound.at( 0);

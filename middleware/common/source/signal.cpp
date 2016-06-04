@@ -1,8 +1,5 @@
 //!
-//! casual_utility_signal.cpp
-//!
-//! Created on: May 6, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/signal.h"
