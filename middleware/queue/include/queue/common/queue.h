@@ -1,8 +1,5 @@
 //!
-//! queue.h
-//!
-//! Created on: Nov 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CAUSUAL_QUEUE_COMMON_QUEUE_H_

@@ -1,8 +1,5 @@
 //!
-//! casual_utility_environment.h
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_ENVIRONMENT_H_
@@ -71,11 +68,42 @@ namespace casual
 				      const std::string& path();
 				      const std::string& name();
 
-				      //!
-				      //! @return the name of the domain-ipc-queue environment variable
-				      //!
-				      const std::string& ipc();
+
+
                } // domain
+
+
+               //!
+               //! the name of the environment variables that holds ipc queue id:s
+               //! @{
+				   namespace ipc
+               {
+
+				      namespace domain
+                  {
+				         const std::string& manager();
+                  } // domain
+
+				      const std::string& broker();
+
+				      namespace transaction
+                  {
+				         const std::string& manager();
+                  } // transaction
+
+				      namespace queue
+                  {
+				         const std::string& broker();
+                  } // queue
+
+				      namespace gateway
+                  {
+				         const std::string& manager();
+                  } // gateway
+               } // ipc
+				   //! @}
+
+
             } // name
 			} // variable
 
@@ -101,11 +129,6 @@ namespace casual
 			namespace file
 			{
 
-			   namespace broker
-            {
-               std::string device();
-            } // broker
-
 
 			   //!
 			   //! @return domain configuration file path
@@ -119,13 +142,14 @@ namespace casual
 
 
 
-
 			namespace domain
          {
 
 			   namespace singleton
             {
 			      const std::string& path();
+
+               const std::string& file();
 
             } // singleton
 

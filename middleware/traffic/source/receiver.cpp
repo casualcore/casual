@@ -77,64 +77,53 @@ namespace casual
       const common::platform::time_point& Event::start() const { return get_start(); }
       const common::platform::time_point& Event::end() const { return get_end(); }
 
-      namespace local
-      {
-         namespace
-         {
-            void connect()
-            {
 
-               message::traffic::monitor::connect::Request request;
-
-               request.path = common::process::path();
-               request.process = common::process::handle();
-
-               server::handle::connect::reply(
-                     communication::ipc::call( communication::ipc::broker::id(), request));
-
-            }
-         } // <unnamed>
-      } // local
-
-
-      Receiver::Receiver()
-      {
-         common::trace::internal::Scope trace( "traffic::Receiver::Receiver");
-
-         //
-         // Connect as a "regular" server
-         //
-         server::handle::connect::reply(
-               common::server::connect( communication::ipc::inbound::device(), {}));
-
-         //
-         // Register this traffic-logger
-         //
-         local::connect();
-      }
 
       Receiver::Receiver( const common::Uuid& application)
       {
          common::trace::internal::Scope trace( "traffic::Receiver::Receiver( application)");
 
          //
-         // Connect as a singleton...
+         // Connect to domain
          //
-         common::server::connect( application);
+         process::instance::connect( application);
 
          //
-         // Register this traffic-logger
+         // Register this traffic-logger with the broker
          //
-         local::connect();
+         {
+            message::traffic::monitor::connect::Request request;
+            request.process = common::process::handle();
+
+            communication::ipc::call( communication::ipc::broker::device(), request);
+
+         }
+      }
+
+      Receiver::Receiver() : Receiver{ uuid::empty()}
+      {
+         common::trace::internal::Scope trace( "traffic::Receiver::Receiver");
+
+
       }
 
       Receiver::~Receiver()
       {
+         common::trace::internal::Scope trace( "traffic::Receiver::~Receiver");
+
          //
          // We could try to process pending traffic messages, but if this
          // is a shutdown of this instance of traffic-logger and the rest of the system
          // is running at peek, we may never consume all messages, hence never shutdown.
          //
+
+         //
+         // TODO: do we need disconnect? Broker will eventually know that this process
+         // has terminated.
+         //
+         message::traffic::monitor::Disconnect disconnect;
+         disconnect.process = common::process::handle();
+         communication::ipc::blocking::send( communication::ipc::broker::device(), disconnect);
       }
 
 

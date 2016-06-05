@@ -19,6 +19,7 @@ namespace casual
       {
          namespace transaction
          {
+            /*
             namespace resource
             {
                struct Manager
@@ -48,6 +49,7 @@ namespace casual
 
             } // resource
 
+
             namespace client
             {
                namespace connect
@@ -71,12 +73,14 @@ namespace casual
                } // connect
 
             } // client
+            */
 
             namespace manager
             {
                //!
                //! Used to connect the transaction manager to broker
                //!
+               /*
                namespace connect
                {
                   using Request = server::connect::basic_request< Type::transaction_manager_connect_request>;
@@ -110,6 +114,7 @@ namespace casual
                      archive & success;
                   })
                };
+               */
             } // manager
 
 
@@ -220,6 +225,7 @@ namespace casual
 
             namespace resource
             {
+               /*
                namespace id
                {
                   struct Request : basic_message< Type::transaction_resource_id_request>
@@ -251,6 +257,7 @@ namespace casual
 
 
                } // id
+               */
 
                template< message::Type type>
                struct basic_reply : transaction::basic_reply< type>
@@ -419,10 +426,10 @@ namespace casual
          namespace reverse
          {
 
-            template<>
-            struct type_traits< transaction::manager::connect::Request> : detail::type< transaction::manager::connect::Reply> {};
-            template<>
-            struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
+           // template<>
+           // struct type_traits< transaction::manager::connect::Request> : detail::type< transaction::manager::connect::Reply> {};
+//            template<>
+ //           struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
 
 
             template<>

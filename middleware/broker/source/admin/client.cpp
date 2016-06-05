@@ -1,8 +1,5 @@
 //!
-//! broker_admin.cpp
-//!
-//! Created on: Jul 9, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -779,8 +776,6 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &casual::broker::action::shutdown),
          casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &casual::broker::action::boot)}
    };
-
-
 
 
    try

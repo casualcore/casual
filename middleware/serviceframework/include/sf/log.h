@@ -1,8 +1,5 @@
 //!
-//! log.h
-//!
-//! Created on: Dec 14, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SF_LOG_H_

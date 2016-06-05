@@ -81,7 +81,7 @@ namespace casual
 
 
             Yaml::Yaml( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Yaml::doYaml"};
 
@@ -111,7 +111,7 @@ namespace casual
 
 
                std::string yaml;
-               m_save.serialize( yaml);
+               m_save( yaml);
 
                buffer::Binary buffer{ buffer::type::yaml(), yaml.size()};
                buffer.str( yaml);
@@ -124,7 +124,7 @@ namespace casual
             }
 
             Json::Json( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Json::Json"};
 
@@ -153,7 +153,7 @@ namespace casual
                //
 
                std::string json;
-               m_save.serialize( json);
+               m_save( json);
 
                buffer::Binary buffer{ buffer::type::json(), json.size()};
                buffer.str( json);
@@ -167,7 +167,7 @@ namespace casual
 
 
             Xml::Xml( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data)), m_writer( m_save())
+               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
                const common::trace::internal::Scope trace{ "Xml::Xml"};
 
@@ -197,7 +197,7 @@ namespace casual
                //
 
                std::string xml;
-               m_save.serialize( xml);
+               m_save( xml);
 
                buffer::Binary buffer{ common::buffer::type::xml(), xml.size()};
                buffer.str( xml);

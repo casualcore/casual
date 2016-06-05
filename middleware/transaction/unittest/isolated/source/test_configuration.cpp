@@ -1,12 +1,10 @@
 //!
-//! test_configuration.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "transaction/manager/manager.h"
@@ -26,56 +24,48 @@ namespace casual
    {
       namespace
       {
-         common::message::transaction::manager::Configuration configuration()
+         common::message::domain::configuration::transaction::resource::Reply configuration()
          {
-            common::message::transaction::manager::Configuration result;
+            common::message::domain::configuration::transaction::resource::Reply result;
 
-            common::message::transaction::resource::Manager manager;
-            manager.id = 1;
-            manager.key = "rm-mockup";
-            manager.instances = 3;
-            manager.openinfo = "some open info 1";
-            manager.closeinfo = "some close info 1";
-            result.resources.push_back( manager);
 
-            manager.id = 2;
-            manager.key = "rm-mockup";
-            manager.instances = 3;
-            manager.openinfo = "some open info 2";
-            manager.closeinfo = "some close info 2";
-            result.resources.push_back( manager);
+            common::message::domain::configuration::transaction::Resource resource;
+            resource.id = 1;
+            resource.key = "rm-mockup";
+            resource.instances = 3;
+            resource.openinfo = "some open info 1";
+            resource.closeinfo = "some close info 1";
+            result.resources.push_back( resource);
+
+            resource.id = 2;
+            resource.key = "rm-mockup";
+            resource.instances = 3;
+            resource.openinfo = "some open info 2";
+            resource.closeinfo = "some close info 2";
+            result.resources.push_back( resource);
 
             return result;
          }
 
          struct Domain
          {
-            Domain()
-             : broker{
-               []( common::message::transaction::manager::connect::Request r)
-               {
+
+            Domain() : manager{
+               []( common::message::domain::configuration::transaction::resource::Request& r){
+
                   common::Trace trace{ "mockup transaction::manager::connect::Request", common::log::internal::debug};
 
-                  auto reply = common::message::reverse::type( r);
-                  reply.directive = decltype( reply)::Directive::start;
+                  auto reply = configuration();
+                  reply.correlation = r.correlation;
 
-                  std::vector< common::mockup::reply::result_t> result;
-                  result.emplace_back( r.process.queue, reply);
-
-                  auto conf = configuration();
-
-                  conf.correlation = r.correlation;
-
-                  result.emplace_back( r.process.queue, conf);
-
-                  return result;
+                  common::mockup::ipc::eventually::send( r.process.queue, reply);
                }
             }
             {
 
             }
 
-
+            common::mockup::domain::Manager manager;
             common::mockup::domain::Broker broker;
          };
 
@@ -84,7 +74,7 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_xa_config__expect_2_resources)
    {
-      common::mockup::ipc::clear();
+      CASUAL_UNITTEST_TRACE();
 
       local::Domain domain;
 
@@ -99,7 +89,7 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_resource__expect_2_resources)
    {
-      common::mockup::ipc::clear();
+      CASUAL_UNITTEST_TRACE();
 
       local::Domain domain;
 

@@ -10,6 +10,7 @@
 
 
 
+#include "common/message/domain.h"
 #include "common/message/server.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
@@ -64,162 +65,71 @@ namespace casual
 
          }
 
-         struct Group : internal::Id< Group>
-         {
-            Group() = default;
-            Group( std::string name, std::string note = "") : name( std::move( name)), note( std::move( note)) {}
-
-            struct Resource : internal::Id< Resource>
-            {
-               Resource() = default;
-               //Resource( Resource&&) = default;
-
-               Resource( std::size_t instances, const std::string& key, const std::string& openinfo, const std::string& closeinfo)
-               : instances{ instances}, key{ key}, openinfo{ openinfo}, closeinfo{ closeinfo} {}
-
-
-               std::size_t instances;
-               std::string key;
-               std::string openinfo;
-               std::string closeinfo;
-
-               CASUAL_CONST_CORRECT_SERIALIZE({
-                  archive & CASUAL_MAKE_NVP( instances);
-                  archive & CASUAL_MAKE_NVP( key);
-                  archive & CASUAL_MAKE_NVP( openinfo);
-                  archive & CASUAL_MAKE_NVP( closeinfo);
-               })
-            };
-
-
-            std::string name;
-            std::string note;
-
-            std::vector< Resource> resources;
-            std::vector< id_type> dependencies;
-
-            CASUAL_CONST_CORRECT_SERIALIZE({
-               archive & CASUAL_MAKE_NVP( id);
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( resources);
-               archive & CASUAL_MAKE_NVP( dependencies);
-            })
-
-            friend bool operator == ( const Group& lhs, const Group& rhs);
-            friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
-            friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
-
-            friend bool operator < ( const Group& lhs, const Group& rhs);
-         };
-
-
-         struct Executable : internal::Id< Executable>
-         {
-            typedef common::platform::pid::type pid_type;
-
-            std::string alias;
-            std::string path;
-            std::vector< std::string> arguments;
-            std::string note;
-
-            std::vector< pid_type> instances;
-
-            std::vector< Group::id_type> memberships;
-
-            struct Environment
-            {
-               std::vector< std::string> variables;
-            } environment;
-
-
-            std::size_t configured_instances = 0;
-
-            bool restart = false;
-
-            //!
-            //! Number of instances that has died in some way.
-            //!
-            std::size_t deaths = 0;
-
-
-            bool remove( pid_type instance);
-
-            friend std::ostream& operator << ( std::ostream& out, const Executable& value);
-
-         };
-
-
          struct Service;
 
-         struct Server : Executable
+         struct Instance
          {
-            typedef common::platform::pid::type pid_type;
-
-            struct Instance
+            enum class State
             {
-
-               enum class State
-               {
-                  booted = 1,
-                  idle,
-                  busy,
-                  shutdown
-               };
-
-               void alterState( State state)
-               {
-                  this->state = state;
-                  last = common::platform::clock_type::now();
-               }
-
-
-               common::process::Handle process;
-               std::size_t invoked = 0;
-               common::platform::time_point last = common::platform::time_point::min();
-               Server::id_type server = 0;
-               std::vector< std::reference_wrapper< Service>> services;
-
-               void remove( const Service& service);
-
-               friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
-               friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
-
-            //private:
-               State state = State::booted;
+               idle,
+               busy,
             };
 
-            using Executable::Executable;
+            inline void state( State state)
+            {
+               m_state = state;
+               m_last = common::platform::clock_type::now();
+            }
 
+            inline State state() const { return m_state;}
 
-            //!
-            //! if not empty, only these services are allowed to be publish
-            //!
-            std::vector< std::string> restrictions;
+            const common::platform::time_point& last() const { return m_last;}
 
-            //!
-            //! If an instance terminates, it's invoke-count is added to this variable. So
-            //! we can give an accurate invoke-figure to users.
-            //! Hence, the total number of invocation for a server is the sum of all instances
-            //! invoke-count + this variable
-            //!
+            common::process::Handle process;
             std::size_t invoked = 0;
 
-            friend std::ostream& operator << ( std::ostream& out, const Server& value);
-         };
 
+            friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
+            friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
+
+         private:
+            common::platform::time_point m_last = common::platform::time_point::min();
+            State m_state = State::idle;
+
+         };
 
          struct Service
          {
-            Service( const std::string& name) : information( name) {}
+            struct Instance
+            {
+               using State = state::Instance::State;
 
+               Instance( state::Instance& instance) : instance{ instance} {}
+               std::size_t invoked = 0;
+               std::reference_wrapper< state::Instance> instance;
+
+               bool idle() const;
+               inline void state( State state) { instance.get().state( state);}
+               inline const common::process::Handle& process() const  { return instance.get().process;}
+
+               friend bool operator == ( const Instance& lhs, common::platform::pid::type rhs);
+            };
+
+
+            Service( common::message::Service information) : information( std::move( information)) {}
             Service() {}
 
+            std::vector< Instance> instances;
             common::message::Service information;
             std::size_t lookedup = 0;
-            std::vector< std::reference_wrapper< Server::Instance>> instances;
 
-            void remove( const Server::Instance& instance);
+            //!
+            //! @return an idle instance or nullptr if no one is found.
+            //!
+            Instance* idle();
+
+            void add( state::Instance& instance);
+            void remove( common::platform::pid::type instance);
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
             friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.information.name < rhs.information.name;}
@@ -234,12 +144,7 @@ namespace casual
 
       struct State
       {
-         enum class Mode
-         {
-            boot,
-            running,
-            shutdown
-         };
+
 
          State() = default;
 
@@ -249,109 +154,66 @@ namespace casual
          State( const State&) = delete;
 
 
-         typedef std::unordered_map< state::Server::id_type, state::Server> server_mapping_type;
-         typedef std::unordered_map< state::Executable::id_type, state::Executable> executable_mapping_type;
-         typedef std::unordered_map< state::Server::pid_type, state::Server::Instance> instance_mapping_type;
+         typedef std::unordered_map< common::platform::pid::type, state::Instance> instance_mapping_type;
          typedef std::unordered_map< std::string, state::Service> service_mapping_type;
-         typedef std::deque< common::message::service::lookup::Request> pending_requests_type;
 
-
-
-         server_mapping_type servers;
          instance_mapping_type instances;
          service_mapping_type services;
-         executable_mapping_type executables;
-         std::vector< state::Group> groups;
-
-         state::Group::id_type casual_group_id = 0;
-
-         std::map< common::Uuid, common::process::Handle> singeltons;
-
-         //
-         // Will be handled by domain-module, as a lot of other stuff.
-         //
-         std::vector< common::process::Handle> inbounds;
 
 
-         struct pending_t
+         struct
          {
-            pending_requests_type requests;
+            std::deque< common::message::service::lookup::Request> requests;
             std::vector< common::message::pending::Message> replies;
-            std::vector< common::message::process::lookup::Request> process_lookup;
          } pending;
-
-
-         struct standard_t
-         {
-            state::Service service;
-
-            std::vector< std::string> environment;
-
-         } standard;
 
 
 
          struct traffic_t
          {
-            std::vector< common::platform::ipc::id::type> monitors;
+            struct monitors_t
+            {
+               void add( common::process::Handle process);
+               void remove( common::platform::pid::type pid);
+
+               std::vector< common::platform::ipc::id::type> get() const;
+
+            private:
+               std::vector< common::process::Handle> processes;
+            } monitors;
+
          } traffic;
 
-         common::platform::ipc::id::type transaction_manager = 0;
 
          common::process::Handle forward;
 
-         struct dead_t
-         {
-            struct process_t
-            {
-               std::vector< common::process::Handle> listeners;
-            } process;
-         } dead;
-
-         Mode mode = Mode::boot;
 
 
+         state::Service& service( const std::string& name);
+         state::Instance& instance( common::platform::pid::type pid);
 
-         state::Group& getGroup( state::Group::id_type id);
+         void remove_process( common::platform::pid::type pid);
 
-         state::Service& getService( const std::string& name);
-         void addServices( state::Server::pid_type pid, std::vector< state::Service> services);
-         void removeServices( state::Server::pid_type pid, std::vector< state::Service> services);
+         void add( common::process::Handle process, std::vector< common::message::Service> services);
+         void remove( common::process::Handle process, const std::vector< common::message::Service>& services);
 
-         state::Server::Instance& getInstance( state::Server::pid_type pid);
-         const state::Server::Instance& getInstance( state::Server::pid_type pid) const;
-
-
-         void remove_process( state::Server::pid_type pid);
+         state::Service* find_service(  const std::string& name);
 
 
-         void addInstances( state::Executable::id_type id, const std::vector< state::Server::pid_type>& pids);
+         //!
+         //! finds or adds an instance
+         //!
+         //! @param process
+         //! @return the instance
+         state::Instance& find_or_add( common::process::Handle process);
 
-         state::Server::Instance& add( state::Server::Instance instance);
-         state::Service& add( state::Service service);
-         state::Server& add( state::Server server);
-         state::Executable& add( state::Executable executable);
-
-         state::Server& getServer( state::Server::id_type id);
-
-         state::Executable& getExecutable( state::Executable::id_type id);
-
-
-         void connect_broker( std::vector< common::message::Service> services);
-
-         struct Batch
-         {
-            std::string group;
-            std::vector< std::reference_wrapper< state::Server>> servers;
-            std::vector< std::reference_wrapper< state::Executable>> executables;
-         };
-
-         std::vector< Batch> bootOrder();
+         state::Service& find_or_add( common::message::Service service);
 
 
          std::size_t size() const;
 
-         std::vector< common::platform::pid::type> processes() const;
+         void connect_broker( std::vector< common::message::Service> services);
+
 
 
       private:

@@ -1,8 +1,5 @@
 //!
-//! ipc.cpp
-//!
-//! Created on: May 30, 2014
-//!     Author: Lazan
+//! causal
 //!
 
 #include "common/mockup/ipc.h"
@@ -70,433 +67,288 @@ namespace casual
 
       namespace mockup
       {
+
+         namespace pid
+         {
+            platform::pid::type next()
+            {
+               static auto pid = process::id() + 1000;
+               return ++pid;
+            }
+
+         } // pid
+
+
          namespace ipc
          {
+
+
+
+
             namespace local
             {
                namespace
                {
-                  namespace message
+
+                  template< typename T>
+                  struct Queue
                   {
-                     using Disconnect =  common::message::basic_message< common::message::Type::mockup_disconnect>;
-                     using Clear =  common::message::basic_message< common::message::Type::mockup_clear>;
-                  }
-               }
-            }
+                     using value_type = T;
+                     using lock_type = std::unique_lock< std::mutex>;
 
-            namespace implementation
-            {
-
-               struct Disconnect : common::exception::base
-               {
-                  using common::exception::base::base;
-               };
-
-               struct Worker
-               {
-
-                  using cache_type = std::deque< communication::message::Complete>;
-
-                  using transform_type = ipc::transform_type;
-
-                  struct State
-                  {
-
-                     State( communication::ipc::inbound::Device&& source, common::platform::ipc::id::type destination, transform_type transform)
-                        : source( std::move( source)), destination( destination), transform( std::move( transform)) {}
-
-                     communication::ipc::inbound::Device source;
-                     //common::ipc::receive::Queue source;
-                     communication::ipc::outbound::Device destination;
-                     //common::ipc::send::Queue destination;
-                     transform_type transform;
-
-                     cache_type cache;
-                  };
-
-                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::ipc::id::type destination)
-                  {
-                     (*this)( std::move( source), destination, nullptr);
-                  }
-
-                  void operator () ( communication::ipc::inbound::Device&& source, common::platform::ipc::id::type destination, transform_type transform)
-                  {
-                     //!
-                     //! Block all signals
-                     //!
-                     common::signal::thread::scope::Block block;
-
-                     State state( std::move( source), destination, std::move( transform));
-
-                     try
+                     enum class State
                      {
-                        Trace trace{ "implemenation::Worker::operator()", log::internal::ipc};
-
-                        while( true)
-                        {
-                           read( state);
-                           process::sleep( std::chrono::microseconds( 10));
-                           write( state);
-                           process::sleep( std::chrono::microseconds( 10));
-                        }
-                     }
-                     catch( const Disconnect&)
-                     {
-                        log::internal::ipc << "thread " << std::this_thread::get_id() << " disconnects - source: "
-                              <<  state.source.connector() << " destination: " << state.destination.connector() << std::endl;
-                     }
-                     catch( ...)
-                     {
-                        // todo: Temp
-                        std::cerr << "thread " << std::this_thread::get_id() << " got exception" << std::endl;
-                        common::error::handler();
-                     }
-                  }
-
-               private:
-
-                  void read( State& state)
-                  {
-
-                     // We block if the queue is empty
-                     auto next = [&](){
-                        if( state.cache.empty())
-                        {
-                           return state.source.next( communication::ipc::policy::Blocking{});
-                        }
-                        return  state.source.next( communication::ipc::policy::non::Blocking{});
+                        empty,
+                        content,
+                        terminate,
                      };
 
-
-                     auto message = next();
-
-                     if( ! message)
-                        return;
-
-                     log::internal::ipc << "read from source: " <<  state.source.connector() << " - message: " << message << std::endl;
+                     Queue() = default;
 
 
-                     if( check( state, message))
+                     ~Queue()
                      {
-                        if( state.transform)
-                        {
-                           auto transformed = state.transform( message);
+                        terminate();
+                     }
 
-                           if( transformed.empty())
-                           {
-                              state.cache.push_back( std::move( message));
-                           }
-                           else
-                           {
-                              for( auto& complete : state.transform( message))
-                              {
-                                 state.cache.push_back( std::move( complete));
-                              }
-                           }
 
-                        }
-                        else
+                     void terminate() const
+                     {
+                        lock_type lock{ m_mutex};
+
+                        m_state = State::terminate;
+                        lock.unlock();
+                        m_condition.notify_all();
+                     }
+
+                     void add( value_type&& message) const
+                     {
+                        lock_type lock{ m_mutex};
+
+                        m_queue.push_back( std::move( message));
+
+                        if( m_state == State::empty)
                         {
-                           state.cache.push_back( std::move( message));
+                           m_state = State::content;
+
+                           lock.unlock();
+                           m_condition.notify_one();
                         }
                      }
 
-                  }
 
-                  void write( State& state)
-                  {
-                     if( ! state.cache.empty())
+                     //!
+                     //! Will block until there is something to get
+                     //!
+                     //! @return
+                     value_type get() const
                      {
-                        log::internal::ipc << "write to destination: " <<  state.destination.connector() << " - message: " << state.cache.front() << std::endl;
+                        lock_type lock{ m_mutex};
 
-                        if( state.destination.put( state.cache.front(), communication::ipc::policy::non::Blocking{}))
+                        m_condition.wait( lock, [&]{ return m_state != State::empty;});
+
+                        if( m_state == State::terminate)
                         {
-                           state.cache.pop_front();
+                           throw exception::Shutdown{ "conditional variable wants to shutdown..."};
+                        }
+
+                        auto result = std::move( m_queue.front());
+                        m_queue.pop_front();
+
+                        m_state = m_queue.empty() ? State::empty : State::content;
+
+                        return result;
+                     }
+
+                     bool empty() const
+                     {
+                        lock_type lock{ m_mutex};
+                        return m_queue.empty();
+                     }
+
+                     void clear() const
+                     {
+                        lock_type lock{ m_mutex};
+                        m_queue.clear();
+
+                        if( m_state == State::content)
+                        {
+                           m_state = State::empty;
+
+                           lock.unlock();
+                           m_condition.notify_one();
                         }
                      }
-                  }
 
-                  bool check( State& state, const communication::message::Complete& message)
+                  private:
+                     mutable std::mutex m_mutex;
+                     mutable std::condition_variable m_condition;
+                     mutable std::deque< value_type> m_queue;
+                     mutable State m_state = State::empty;
+                  };
+
+
+                  void shutdown_thread( std::thread& thread, id_type input)
                   {
-                     switch( message.type)
-                     {
-                        case local::message::Disconnect::type():
-                        {
-                           throw Disconnect( "disconnect", __FILE__, __LINE__);
-                        }
-                        case local::message::Clear::type():
-                        {
-                           Trace trace{ "Worker::check clear queue", log::internal::ipc};
+                     Trace trace{ "shutdown_thread", log::internal::ipc};
 
-                           decltype( state.cache) empty;
-                           std::swap( state.cache, empty);
+                     log::internal::ipc << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
 
-                           do
-                           {
-                              process::sleep( std::chrono::microseconds( 10));
-                           }
-                           while( state.source.next( communication::ipc::policy::non::Blocking{}));
-
-                           return false;
-                        }
-                        default: return true;
-                     }
-                  }
-               };
-
-
-
-               void shutdown_thread( std::thread& thread, id_type input)
-               {
-                  Trace trace{ "shutdown_thread", log::internal::ipc};
-
-                  log::internal::ipc << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
-
-                  signal::thread::scope::Block block;
-
-                  try
-                  {
-                     Trace trace{ "send disconnect message", log::internal::ipc};
-                     local::message::Disconnect message;
-
-                     communication::ipc::outbound::Device ipc{ input};
-                     ipc.send( message, communication::ipc::policy::Blocking{});
-                  }
-                  catch( const std::exception& exception)
-                  {
-                     log::internal::ipc << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << std::endl;
-                  }
-                  catch( ...)
-                  {
-                     error::handler();
-                  }
-
-                  try
-                  {
-                     Trace trace{ "thread join", log::internal::ipc};
-                     thread.join();
-                  }
-                  catch( const std::exception& exception)
-                  {
-                     log::internal::ipc << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << std::endl;
-                  }
-               }
-
-
-               class Router
-               {
-               public:
-
-                  Router( id_type output, Worker::transform_type transform)
-                     : output( output)
-                  {
-                     //
-                     // We use an ipc-queue that does not check signals
-                     //
-                     communication::ipc::inbound::Device ipc;
-                     input = ipc.connector().id();
-
-                     m_thread = std::thread{ implementation::Worker{}, std::move( ipc), output, std::move( transform)};
-                  }
-
-                  Router( id_type output)
-                     : Router( output, nullptr)
-                  {
-                  }
-
-                  ~Router()
-                  {
-                     Trace trace{ "~Router()", log::internal::ipc};
-
-                     shutdown_thread( m_thread, input);
-                  }
-
-                  id_type input;
-                  id_type output;
-                  std::thread m_thread;
-               };
-
-               struct Replier
-               {
-
-                  void operator () ( communication::ipc::inbound::Device&& input, reply::Handler replier)
-                  {
-                     //
-                     // we need to block all signals
-                     //
                      signal::thread::scope::Block block;
-
 
                      try
                      {
-                        while( true)
-                        {
-                           auto check_message = [&]( communication::message::Complete& message)
-                              {
-                                 switch( message.type)
-                                 {
-                                    case local::message::Disconnect::type():
-                                    {
-                                       throw Disconnect( "disconnect", __FILE__, __LINE__);
-                                    }
-                                    case local::message::Clear::type():
-                                    {
-                                       m_pending.clear();
+                        Trace trace{ "send disconnect message", log::internal::ipc};
+                        message::mockup::Disconnect message;
 
-                                       do
-                                       {
-                                          process::sleep( std::chrono::microseconds{ 10});
-                                       }
-                                       while( ! input.next( communication::ipc::policy::non::Blocking{}));
-                                       break;
-                                    }
-                                    default:
-                                    {
-                                       // no -op
-                                       break;
-                                    }
-                                 }
-                              };
-
-                           auto send_messages = [&]( std::vector< reply::result_t> messages)
-                              {
-                                 for( auto& message : messages)
-                                 {
-                                    communication::ipc::outbound::Device send{ message.queue};
-                                    if( ! send.put( message.complete, communication::ipc::policy::non::Blocking{}))
-                                    {
-                                       m_pending.push_back( std::move( message));
-                                    }
-                                 }
-                              };
-
-                           if( m_pending.empty())
-                           {
-                              auto message = input.next( communication::ipc::policy::Blocking{});
-
-                              check_message( message);
-
-                              send_messages( replier( message));
-                           }
-                           else
-                           {
-
-                              auto message = input.next( communication::ipc::policy::non::Blocking{});
-
-                              if( message)
-                              {
-                                 check_message( message);
-
-                                 send_messages( replier( message));
-                              }
-                              process::sleep( std::chrono::microseconds{ 10});
-
-                              //
-                              // Try to send all pending
-                              //
-                              {
-                                 std::vector< reply::result_t> pending;
-                                 std::swap( m_pending, pending);
-
-                                 send_messages( std::move( pending));
-                              }
-                           }
-
-                        }
+                        communication::ipc::outbound::Device ipc{ input};
+                        ipc.send( message, communication::ipc::policy::Blocking{});
                      }
-                     catch( const Disconnect&)
+                     catch( const std::exception& exception)
                      {
-                        log::internal::ipc << "mockup::ipc::implementation::Replier disconnect\n";
+                        log::internal::ipc << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << std::endl;
                      }
                      catch( ...)
                      {
                         error::handler();
                      }
+
+                     try
+                     {
+                        Trace trace{ "thread join", log::internal::ipc};
+                        thread.join();
+                     }
+                     catch( const std::exception& exception)
+                     {
+                        log::internal::ipc << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                     }
                   }
 
-                  std::vector< reply::result_t> m_pending;
-               };
 
-            } // implementation
+                  namespace eventually
+                  {
 
-            class Router::Implementation : public implementation::Router
+
+                     struct Sender
+                     {
+
+                        struct Message
+                        {
+                           id_type destination;
+                           communication::message::Complete message;
+                        };
+
+                        using queue_type = local::Queue< Message>;
+
+                        static const Sender& instance()
+                        {
+                           static Sender singleton;
+                           return singleton;
+                        }
+
+                        void send( id_type destination, communication::message::Complete&& complete) const
+                        {
+                           m_queue.add( { destination, std::move( complete)});
+                        }
+
+                        ~Sender()
+                        {
+                           Trace trace{ "mockup ipc::ventually::Sender dtor", log::internal::ipc};
+
+                           m_queue.terminate();
+                           m_sender.join();
+                        }
+
+
+                     private:
+                        Sender() : m_sender{ &worker_thread, std::ref( m_queue)}
+                        {
+
+                        }
+
+                        static void worker_thread( const queue_type& queue)
+                        {
+                           signal::thread::scope::Block block;
+
+                           try
+                           {
+
+                              Trace trace{ "mockup ipc::eventually::Sender::worker_thread", log::internal::ipc};
+
+                              std::vector< Message> cache;
+
+                              while( true)
+                              {
+                                 if( cache.empty() || ! queue.empty())
+                                 {
+                                    cache.push_back( queue.get());
+                                 }
+
+                                 range::trim( cache, range::remove_if( cache, []( Message& message){
+                                    try
+                                    {
+                                       communication::ipc::outbound::Device ipc{ message.destination};
+
+                                       return static_cast< bool>(
+                                             ipc.put( message.message, communication::ipc::policy::non::Blocking{}));
+                                    }
+                                    catch( const exception::queue::Unavailable&)
+                                    {
+                                       return true;
+                                    }
+                                 }));
+                              }
+                           }
+                           catch( ...)
+                           {
+                              error::handler();
+                           }
+                        }
+
+                        queue_type m_queue;
+                        std::thread m_sender;
+                     };
+                  } // eventually
+
+               } // unnamed
+            } // local
+
+
+            namespace eventually
             {
-            public:
-               using implementation::Router::Router;
-            };
-
-            Router::Router( id_type destination, transform_type transform)
-              : m_implementation( destination, std::move( transform))
-            {
-               log::internal::ipc << "Router created - input: " << m_implementation->input
-                     << ", output: " << m_implementation->output << std::endl;
-            }
-            Router::Router( id_type destination) : m_implementation( destination)
-            {
-               log::internal::ipc << "Router created - input: " << m_implementation->input
-                     << ", output: " << m_implementation->output << std::endl;
-            }
-            Router::~Router()
-            {
-               log::internal::ipc << "Router destroyed with destination: " << m_implementation->output << std::endl;
-            }
-
-            Router::Router( Router&&) noexcept = default;
-            Router& Router::operator = ( Router&&) noexcept = default;
-
-            id_type Router::input() const { return m_implementation->input;}
-            id_type Router::output() const { return m_implementation->output;}
 
 
-
-
-            struct Replier::Implementation
-            {
-               Implementation( reply::Handler replier)
+               void send( id_type destination, communication::message::Complete&& complete)
                {
-                  communication::ipc::inbound::Device ipc;
-                  input = ipc.connector().id();
+                  Trace trace{ "mockup ipc::eventually::send", log::internal::ipc};
 
-                  m_thread = std::thread{ implementation::Replier{}, std::move( ipc), std::move( replier)};
+                  local::eventually::Sender::instance().send( destination, std::move( complete));
                }
 
-               ~Implementation()
-               {
-                  Trace trace{ "Replier::~Implementation()", log::internal::ipc};
 
-                  implementation::shutdown_thread( m_thread, input);
-               }
-
-               id_type input;
-            private:
-               std::thread m_thread;
-
-            };
-
-            Replier::Replier( reply::Handler replier) : m_implementation{ std::move( replier)} {}
-
-            Replier::~Replier() = default;
-
-
-            Replier::Replier( Replier&&) noexcept = default;
-            Replier& Replier::operator = ( Replier&&) noexcept = default;
-
-            //!
-            //! input-queue is owned by the Replier
-            //!
-            id_type Replier::input() const { return m_implementation->input;}
-
+            } // eventually
 
 
 
             class Link::Implementation
             {
             public:
+
+               using message_type = communication::ipc::message::Transport;
+               using queue_type = local::Queue< message_type>;
+
+
                Implementation( id_type input, id_type output)
                  : input( input), output( output)
                {
 
-                  m_thread = std::thread{ []( id_type input, id_type output)
+                  if( ! ( communication::ipc::exists( input) && communication::ipc::exists( output)))
+                  {
+                     log::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << std::endl;
+                     return;
+                  }
+
+                  m_input_worker = std::thread{ []( id_type input, const queue_type& queue)
                   {
                      //
                      // We block all signals.
@@ -505,55 +357,34 @@ namespace casual
 
                      try
                      {
-                        Trace trace{ "Link::Implementation thread function", log::internal::ipc};
+                        Trace trace{ "Link::input_worker", log::internal::ipc};
 
-                        signal::thread::scope::Block block_signals;
-
-
-                        if( ! ( communication::ipc::exists( input) && communication::ipc::exists( output)))
-                        {
-                           log::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << std::endl;
-                           return;
-                        }
-                        log::internal::ipc << "mockup link between [" << input << "] --> [" << output << "] established" << std::endl;
-
-                        using message_type = communication::ipc::message::Transport;
-                        std::deque< message_type> cache;
-
-                        message_type transport;
+                        auto terminate = scope::execute( [&](){ queue.terminate();});
 
                         while( true)
                         {
-                           if( cache.empty())
-                           {
-                              //
-                              // We block
-                              //
+                           message_type transport;
 
-                              communication::ipc::native::receive( input, transport, {});
-                              cache.push_back( transport);
-                           }
-                           else if( communication::ipc::native::receive( input, transport, communication::ipc::native::Flag::non_blocking))
-                           {
-                              cache.push_back( transport);
-                           }
-                           else
-                           {
-                              common::process::sleep( std::chrono::microseconds{ 10});
-                           }
+                           communication::ipc::native::receive( input, transport, {});
 
-                           if( transport.type() == local::message::Disconnect::type())
+                           if( transport.type() == message::mockup::Disconnect::type())
                            {
-                              //communication::ipc::native::send( output, transport, communication::ipc::native::c_non_blocking);
-
-                              //log::internal::ipc << "mockup link got disconnect messsage - send it forward to [" << output << "] and return from thread\n";
                               log::internal::ipc << "mockup link got disconnect message - action: shutdown thread\n";
                               return;
                            }
-
-                           if( ! cache.empty() && communication::ipc::native::send( output, cache.front(), communication::ipc::native::Flag::non_blocking))
+                           else if( transport.type() == message::mockup::Clear::type())
                            {
-                              cache.pop_front();
+                              queue.clear();
+
+                              while( communication::ipc::native::receive( input, transport, communication::ipc::native::Flag::non_blocking))
+                                 ;
+
+                              queue.add( std::move( transport));
+
+                           }
+                           else
+                           {
+                              queue.add( std::move( transport));
                            }
                         }
                      }
@@ -561,19 +392,56 @@ namespace casual
                      {
                         error::handler();
                      }
-                  }, input, output};
+                  }, input, std::ref( m_queue)};
+
+
+                  m_output_worker = std::thread{ []( id_type output, const queue_type& queue)
+                  {
+                     //
+                     // We block all signals.
+                     //
+                     signal::thread::scope::Block block;
+
+                     try
+                     {
+                        Trace trace{ "Link::output_worker", log::internal::ipc};
+
+                        while( true)
+                        {
+                           auto transport = queue.get();
+
+                           if( transport.type() == message::mockup::Clear::type())
+                           {
+                              while( communication::ipc::native::receive( output, transport, communication::ipc::native::Flag::non_blocking))
+                                 ;
+                           }
+                           else
+                           {
+                              communication::ipc::native::send( output, transport, {});
+                           }
+                        }
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                     }
+                  }, output, std::ref( m_queue)};
                }
 
                ~Implementation()
                {
                   Trace trace{ "Link::~Implementation()", log::internal::ipc};
 
-                  implementation::shutdown_thread( m_thread, input);
+                  local::shutdown_thread( m_input_worker, input);
+                  m_output_worker.join();
                }
+
 
                id_type input;
                id_type output;
-               std::thread m_thread;
+               queue_type m_queue;
+               std::thread m_input_worker;
+               std::thread m_output_worker;
 
             };
 
@@ -589,159 +457,107 @@ namespace casual
             id_type Link::input() const { return m_implementation->input;}
             id_type Link::output() const { return m_implementation->output;}
 
-
-
-
-
-
-
-            struct Instance::Implementation
+            void Link::clear() const
             {
-               Implementation( platform::pid::type pid, transform_type transform)
-                   : router( output.connector().id(), std::move( transform)), process{ pid, router.input()}
+               communication::ipc::outbound::Device ipc{ input()};
+               ipc.send( message::mockup::Clear{}, communication::ipc::policy::Blocking{});
+            }
+
+
+            struct Collector::Implementation
+            {
+               Implementation() : m_link{ m_input.connector().id(), m_output.connector().id()}, m_pid( mockup::pid::next()) {}
+
+               void clear()
                {
+                  m_link.clear();
+                  m_input.clear();
+                  m_output.clear();
                }
 
-               communication::ipc::inbound::Device output;
-               Router router;
-               common::process::Handle process;
+               communication::ipc::inbound::Device m_input;
+               communication::ipc::inbound::Device m_output;
+               Link m_link;
+               platform::pid::type m_pid;
             };
 
-            Instance::Instance( platform::pid::type pid, transform_type transform) : m_implementation( pid, std::move( transform))
+
+
+            Collector::Collector()
             {
-               log::internal::ipc << "Instance created - process: " << m_implementation->process
-                     << ", output: " << m_implementation->output.connector().id()
-                     << ", router.input: " << m_implementation->router.input()
-                     << ", router.output: " << m_implementation->router.output() << std::endl;
+
             }
-            Instance::Instance( platform::pid::type pid) : Instance( pid, nullptr) {}
+            Collector::~Collector() = default;
+
+            id_type Collector::input() const { return m_implementation->m_input.connector().id();}
+            communication::ipc::inbound::Device& Collector::output() const { return m_implementation->m_output;}
 
 
-            Instance::Instance( transform_type transform) : Instance( process::id(), std::move( transform)) {}
-            Instance::Instance() : Instance( process::id(), nullptr) {}
-
-            Instance::~Instance()
+            process::Handle Collector::process() const
             {
-               log::internal::ipc << "Instance destroyed with process: " << m_implementation->process << std::endl;
-            }
-
-            Instance::Instance( Instance&&) noexcept = default;
-            Instance& Instance::operator = ( Instance&&) noexcept = default;
-
-
-            const common::process::Handle& Instance::process() const
-            {
-               return m_implementation->process;
+               return { m_implementation->m_pid, input()};
             }
 
-            id_type Instance::input() const
+            void Collector::clear()
             {
-               return m_implementation->router.input();
+               m_implementation->clear();
             }
 
-            communication::ipc::inbound::Device& Instance::output()
+
+            struct Replier::Implementation
             {
-               return m_implementation->output;
-            }
-
-            void Instance::clear()
-            {
-               Trace trace{ "mockup::Instance::clear", log::internal::ipc };
-
-               signal::thread::scope::Block block;
-
-               communication::ipc::outbound::Device ipc{ input()};
-               local::message::Clear message;
-               ipc.send( message, communication::ipc::policy::Blocking{});
-
-               std::size_t count = 0;
-
-               do
+               Implementation( message::dispatch::Handler&& replier) : process{ mockup::pid::next()}
                {
-                  ++count;
-                  process::sleep( std::chrono::milliseconds( 10));
+                  communication::ipc::inbound::Device ipc;
+                  process.queue = ipc.connector().id();
+
+                  m_thread = std::thread{ &worker_thread, std::move( ipc), std::move( replier)};
                }
-               while( m_implementation->output.next( communication::ipc::policy::non::Blocking{}));
 
-
-               log::internal::ipc << "mockup - cleared " << count - 1 << " messages" << std::endl;
-            }
-
-
-
-            namespace broker
-            {
-               namespace local
+               ~Implementation()
                {
-                  namespace
+                  Trace trace{ "Replier::~Implementation()", log::internal::ipc};
+
+                  local::shutdown_thread( m_thread, process.queue);
+               }
+
+               static void worker_thread( communication::ipc::inbound::Device&& ipc, message::dispatch::Handler&& replier)
+               {
+                  Trace trace{ "Replier::worker_thread", log::internal::ipc};
+
+                  try
                   {
-                     struct Instance : ipc::Instance
-                     {
-                        Instance() : ipc::Instance( 6666)
-                        {
-                           //
-                           // Set domain ipc queue environment variable
-                           //
-                           environment::variable::set( environment::variable::name::domain::ipc(), id());
+                     replier.insert( []( message::mockup::Disconnect&){
+                        log::internal::ipc << "Replier::worker_thread disconnect\n";
+                        throw exception::Shutdown{ "worker_thread disconnect"};
+                     });
 
-                           log::debug << environment::variable::name::domain::ipc() << " set to: "
-                                 << environment::variable::get( environment::variable::name::domain::ipc()) << std::endl;
-                        }
-                     };
-                  } // <unnamed>
-               } // local
-
-
-
-
-               ipc::Instance& queue()
-               {
-                  static local::Instance singleton;
-                  return singleton;
-               }
-
-               platform::pid::type pid()
-               {
-                  return queue().process().pid;
-               }
-
-               id_type id()
-               {
-                  return queue().input();
-               }
-
-            } // broker
-
-            namespace transaction
-            {
-               namespace manager
-               {
-                  platform::pid::type pid()
-                  {
-                     return queue().process().pid;
+                     message::dispatch::blocking::pump( replier, ipc);
                   }
-
-
-                  ipc::Instance& queue()
+                  catch( ...)
                   {
-                     static Instance singleton( 7777);
-                     return singleton;
+                     error::handler();
                   }
+               }
 
-                  id_type id()
-                  {
-                     return queue().input();
-                  }
+               process::Handle process;
 
-               } // manager
+            private:
+               std::thread m_thread;
 
-            } // transaction
+            };
 
-            void clear()
-            {
-               broker::queue().clear();
-               transaction::manager::queue().clear();
-            }
+            Replier::Replier( message::dispatch::Handler&& replier) : m_implementation{ std::move( replier)} {}
+
+            Replier::~Replier() = default;
+
+
+            Replier::Replier( Replier&&) noexcept = default;
+            Replier& Replier::operator = ( Replier&&) noexcept = default;
+
+            process::Handle Replier::process() const { return m_implementation->process;}
+            id_type Replier::input() const { return m_implementation->process.queue;}
+
 
          } // ipc
       } // mockup

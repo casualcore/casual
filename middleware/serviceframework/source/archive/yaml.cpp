@@ -24,7 +24,13 @@ namespace casual
             Load::Load() = default;
             Load::~Load() = default;
 
-            const YAML::Node& Load::serialize( std::istream& stream)
+            const YAML::Node& Load::operator() () const noexcept
+            {
+               return m_document;
+            }
+
+
+            const YAML::Node& Load::operator() ( std::istream& stream)
             {
                try
                {
@@ -39,24 +45,26 @@ namespace casual
                   throw exception::archive::invalid::Document{ e.what()};
                }
 
-               return source();
-            }
-
-            const YAML::Node& Load::serialize( const std::string& yaml)
-            {
-               std::istringstream stream( yaml);
-               return serialize( stream);
-            }
-
-            const YAML::Node& Load::serialize( const char* const yaml)
-            {
-               std::istringstream stream( yaml);
-               return serialize( stream);
-            }
-
-            const YAML::Node& Load::source() const
-            {
                return m_document;
+            }
+
+            const YAML::Node& Load::operator() ( const std::string& yaml)
+            {
+               std::istringstream stream( yaml);
+               return (*this)( stream);
+            }
+
+            const YAML::Node& Load::operator() ( const char* const yaml, const std::size_t size)
+            {
+               std::istringstream stream( std::string( yaml, size));
+               return (*this)( stream);
+            }
+
+
+            const YAML::Node& Load::operator() ( const char* const yaml)
+            {
+               std::istringstream stream( yaml);
+               return (*this)( stream);
             }
 
             namespace reader
@@ -72,23 +80,31 @@ namespace casual
 
                   const auto& node = *m_stack.back();
 
-                  if( m_stack.back()->Type() != YAML::NodeType::Sequence)
-                  {
-                     throw exception::archive::invalid::Node{ "expected sequence"};
-                  }
-
-                  //
-                  // We stack 'em in reverse order
-                  //
-
                   size = node.size();
 
-                  for( auto index = size; index > 0; --index)
+                  if( size)
                   {
-                     m_stack.push_back( &node[ index - 1]);
+                     //
+                     // If there are elements, it must me a sequence
+                     //
+
+                     if( node.Type() != YAML::NodeType::Sequence)
+                     {
+                        throw exception::archive::invalid::Node{ "expected sequence"};
+                     }
+
+                     //
+                     // We stack 'em in reverse order
+                     //
+
+                     for( auto index = size; index > 0; --index)
+                     {
+                        m_stack.push_back( &node[ index - 1]);
+                     }
                   }
 
                   return std::make_tuple( size, true);
+
                }
 
                void Implementation::container_end( const char* const name)
@@ -197,21 +213,19 @@ namespace casual
             Save::Save() = default;
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& stream) const
-            {
-               stream << m_emitter.c_str();
-            }
-
-            void Save::serialize( std::string& yaml) const
-            {
-               yaml = m_emitter.c_str();
-            }
-
-            YAML::Emitter& Save::target()
+            YAML::Emitter& Save::operator() () noexcept
             {
                return m_emitter;
             }
+            void Save::operator() ( std::ostream& yaml) const
+            {
+               yaml << m_emitter.c_str();
+            }
 
+            void Save::operator() ( std::string& yaml) const
+            {
+               yaml = m_emitter.c_str();
+            }
 
             namespace writer
             {

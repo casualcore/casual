@@ -39,7 +39,7 @@ namespace casual
                      involved.process = common::process::handle();
                      involved.trid = message.trid;
 
-                     common::communication::ipc::blocking::send( environment::broker::queue::id(), involved);
+                     common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), involved);
                   }
 
                   namespace pending
@@ -83,13 +83,49 @@ namespace casual
 
 
 
+                  namespace ipc
+                  {
+
+                     namespace blocking
+                     {
+                        template< typename D, typename M>
+                        common::Uuid send( D&& device, M&& message)
+                        {
+                           try
+                           {
+                              return common::communication::ipc::blocking::send( device, std::forward< M>( message));
+                           }
+                           catch( const common::exception::communication::Unavailable&)
+                           {
+                              return common::uuid::empty();
+                           }
+                        }
+                     } // blocking
+
+
+                  } // ipc
 
                } // <unnamed>
             } // local
 
+
+            void shutdown( State& state)
+            {
+               common::trace::Scope trace{ "queue::handle::shutdown", common::log::internal::queue};
+
+               for( auto& pending : state.pending.requests)
+               {
+                  common::message::queue::dequeue::forget::Request forget;
+                  forget.process = common::process::handle();
+                  forget.queue = pending.queue;
+
+                  local::ipc::blocking::send( pending.process.queue, forget);
+               }
+            }
+
             namespace dead
             {
-               void Process::operator() ( const common::message::process::termination::Event& message)
+               void Process::operator() ( const common::message::domain::process::termination::Event& message)
                {
                   common::trace::Scope trace{ "queue::handle::dead::Process", common::log::internal::queue};
 

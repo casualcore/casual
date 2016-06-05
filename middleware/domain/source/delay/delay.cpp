@@ -26,11 +26,7 @@ namespace casual
             //
             // Connect to domain
             //
-            {
-               server::handle::connect::reply(
-                     server::connect( identification()));
-
-            }
+            process::instance::connect( identification());
 
             message::pump( state);
 
@@ -185,10 +181,6 @@ namespace casual
 
          int main( int argc, char **argv)
          {
-            //
-            // Connect to domain
-            //
-            process::connect();
 
             try
             {

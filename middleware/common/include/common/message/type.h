@@ -40,14 +40,21 @@ namespace casual
             inbound_ipc_connect,
 
             process_spawn_request = 600,
-            process_termination_registration,
-            process_termination_event,
             process_lookup_request,
             process_lookup_reply,
 
             DOMAIN_BASE = 1000,
             domain_discover_request,
             domain_discover_reply,
+            domain_scale_executable,
+            domain_process_connect_request,
+            domain_process_connect_reply,
+            domain_process_termination_registration,
+            domain_process_termination_event,
+            domain_process_lookup_request,
+            domain_process_lookup_reply,
+            domain_configuration_transaction_resource_request,
+            domain_configuration_transaction_resource_reply,
 
             // Server
             SERVER_BASE = 2000,
@@ -243,25 +250,6 @@ namespace casual
 
          };
 
-         namespace inbound
-         {
-            namespace ipc
-            {
-               struct Connect : basic_message< Type::inbound_ipc_connect>
-               {
-                  common::process::Handle process;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & process;
-                  })
-
-               };
-            } // ipc
-         } // inbound
-
-
 
 
          template< typename M>
@@ -448,61 +436,9 @@ namespace casual
             } // spawn
 
 
-            namespace termination
-            {
-               using Registration = server::basic_id< Type::process_termination_registration>;
 
-               struct Event : basic_message< Type::process_termination_event>
-               {
-                  Event() = default;
-                  Event( common::process::lifetime::Exit death) : death{ std::move( death)} {}
 
-                  common::process::lifetime::Exit death;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     basic_message< Type::process_termination_event>::marshal( archive);
-                     archive & death;
-                  })
-               };
-
-            } // termination
-
-            namespace lookup
-            {
-               struct Request : server::basic_id< Type::process_lookup_request>
-               {
-                  enum class Directive : char
-                  {
-                     wait,
-                     direct
-                  };
-
-                  Uuid identification;
-                  platform::pid::type pid = 0;
-                  Directive directive;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     server::basic_id< Type::process_lookup_request>::marshal( archive);
-                     archive & identification;
-                     archive & pid;
-                     archive & directive;
-                  })
-               };
-
-               struct Reply : server::basic_id< Type::process_lookup_reply>
-               {
-                  Uuid identification;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     server::basic_id< Type::process_lookup_reply>::marshal( archive);
-                     archive & identification;
-                  })
-               };
-
-            } // lookup
 
          } // process
 
@@ -546,8 +482,6 @@ namespace casual
             template<>
             struct type_traits< forward::connect::Request> : detail::type< forward::connect::Reply> {};
 
-            template<>
-            struct type_traits< process::lookup::Request> : detail::type< process::lookup::Reply> {};
 
 
             template< typename T>

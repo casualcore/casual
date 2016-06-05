@@ -40,18 +40,17 @@ namespace casual
 
             struct Advertise : basic_message< Type::service_advertise>
             {
-
-               std::string serverPath;
                common::process::Handle process;
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
-                  archive & serverPath;
                   archive & process;
                   archive & services;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
             };
 
             struct Unadvertise : basic_message< Type::service_unadvertise>

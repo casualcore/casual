@@ -18,7 +18,7 @@
 
 #include <cstdlib>
 #include <ctime>
-#include <wordexp.h>
+//#include <wordexp.h>
 
 
 namespace casual
@@ -151,13 +151,54 @@ namespace casual
                      return name;
                   }
 
+               } // domain
 
-                  const std::string& ipc()
+               namespace ipc
+               {
+
+                  namespace domain
                   {
-                     static std::string name{ "CASUAL_DOMAIN_IPC_QUEUE"};
+                     const std::string& manager()
+                     {
+                        static std::string name{ "CASUAL_DOMAIN_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // domain
+
+                  const std::string& broker()
+                  {
+                     static std::string name{ "CASUAL_BROKER_IPC_QUEUE"};
                      return name;
                   }
-               } // domain
+
+                  namespace transaction
+                  {
+                     const std::string& manager()
+                     {
+                        static std::string name{ "CASUAL_TM_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // transaction
+
+                  namespace queue
+                  {
+                     const std::string& broker()
+                     {
+                        static std::string name{ "CASUAL_QUEUE_BROKER_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // queue
+
+                  namespace gateway
+                  {
+                     const std::string& manager()
+                     {
+                        static std::string name{ "CASUAL_GATEWAY_IPC_QUEUE"};
+                        return name;
+                     }
+                  } // gateway
+               } // ipc
+
             } // name
 
 			} // variable
@@ -188,13 +229,6 @@ namespace casual
 			namespace file
          {
 
-            namespace broker
-            {
-               std::string device()
-               {
-                  return domain::singleton::path() + "/.casual-broker-queue";
-               }
-            } // broker
 
             std::string configuration()
             {
@@ -230,6 +264,13 @@ namespace casual
                {
                   static const std::string path = local::path( directory::domain() + "/.singleton");
                   return path;
+               }
+
+               const std::string& file()
+               {
+                  static const std::string file = path() + "/.domain-singleton";
+                  return file;
+
                }
 
             } // singleton

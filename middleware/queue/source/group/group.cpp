@@ -1,8 +1,5 @@
 //!
-//! queue.cpp
-//!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/group/group.h"
@@ -12,6 +9,7 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/trace.h"
 
 
 namespace casual
@@ -162,14 +160,9 @@ namespace casual
                   //
                   // queuebase is persistent - send pending persistent replies
                   //
-                  //group::queue::non_blocking::Send send{ state};
-
-                  auto remain = common::range::remove_if(
+                  common::range::trim( state.persistent, common::range::remove_if(
                      state.persistent,
-                     common::message::pending::sender( common::communication::ipc::policy::non::Blocking{}));
-
-                  state.persistent.erase( std::end( remain), std::end( state.persistent));
-
+                     common::message::pending::sender( common::communication::ipc::policy::non::Blocking{})));
 
                }
 
@@ -188,7 +181,7 @@ namespace casual
                common::message::queue::connect::Request request;
                request.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( environment::broker::queue::id(), request);
+               common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), request);
             }
 
             //
@@ -196,10 +189,10 @@ namespace casual
             // TODO: we could wait until we know there's a blocking dequeue
             //
             {
-               common::message::process::termination::Registration registration;
+               common::message::domain::process::termination::Registration registration;
                registration.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::broker::id(), registration);
+               common::communication::ipc::blocking::send( common::communication::ipc::domain::manager::device(), registration);
             }
 
             {
@@ -241,7 +234,21 @@ namespace casual
                information.process = common::process::handle();
                information.queues = m_state.queuebase.queues();
 
-               common::communication::ipc::blocking::send( environment::broker::queue::id(), information);
+               common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+            }
+         }
+
+         Server::~Server()
+         {
+            common::trace::Scope trace{ "queue::server::Server dtor", common::log::internal::queue};
+
+            try
+            {
+               handle::shutdown( m_state);
+            }
+            catch( ...)
+            {
+               common::error::handler();
             }
          }
 

@@ -229,6 +229,8 @@ namespace casual
                struct Connector : base_connector
                {
                   using base_connector::base_connector;
+
+                  inline void reconnect() const { throw; }
                };
 
                using Device = communication::outbound::Device< Connector>;

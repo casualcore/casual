@@ -41,18 +41,6 @@ namespace casual
 
                }
 
-               struct prepare_environment_type
-               {
-                  prepare_environment_type()
-                  {
-                     common::environment::variable::set(
-                           common::environment::variable::name::home(),
-                           "./" );
-                           //directory::name::base( __FILE__) + "../../../../" );
-                  }
-
-
-               } prepare_environment;
 
                file::scoped::Path file;
                mockup::Process process;
@@ -65,8 +53,17 @@ namespace casual
 
                }
 
-               common::mockup::domain::Broker broker;
-               common::mockup::domain::transaction::Manager tm;
+               struct set_environment_t
+               {
+                  set_environment_t()
+                  {
+                     environment::variable::set( environment::variable::name::home(), "./" );
+                  }
+               } set_environment;
+
+               mockup::domain::Manager manager;
+               mockup::domain::Broker broker;
+               mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
             };
@@ -200,6 +197,39 @@ gateway:
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace inbound
+            {
+               auto online() -> decltype( local::call::wait::ready::state())
+               {
+                  auto state = local::call::wait::ready::state();
+
+                  auto check_state = [&]()
+                  {
+                     if( state.connections.inbound.empty()) { return false;}
+
+                     using inbound_type = manager::admin::vo::inbound::Connection;
+
+                     return range::all_of( state.connections.inbound, []( const inbound_type& inbound){
+                        return inbound.runlevel == manager::admin::vo::inbound::Connection::Runlevel::online;
+                     });
+                  };
+
+                  while( ! check_state())
+                  {
+                     process::sleep( std::chrono::milliseconds{ 5});
+                     state = local::call::state();
+                  }
+
+                  return state;
+               }
+            } // inbound
+         } // <unnamed>
+      } // local
+
       TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
       {
          CASUAL_UNITTEST_TRACE();
@@ -215,7 +245,9 @@ gateway:
          //
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
-         auto state = local::call::wait::ready::state();
+         auto state = local::inbound::online();
+
+
 
          ASSERT_TRUE( state.connections.outbound.size() == 1) << CASUAL_MAKE_NVP( state);
          auto& outbound = state.connections.outbound.at( 0);

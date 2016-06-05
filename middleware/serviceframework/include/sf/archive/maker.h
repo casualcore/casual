@@ -5,8 +5,8 @@
 //!     Author: Lazan
 //!
 
-#ifndef CASUAL_SF_ARCHIVEBUFFER_H_
-#define CASUAL_SF_ARCHIVEBUFFER_H_
+#ifndef CASUAL_SF_ARCHIVE_MAKER_H_
+#define CASUAL_SF_ARCHIVE_MAKER_H_
 
 
 #include <memory>
@@ -19,76 +19,121 @@ namespace casual
    {
       namespace archive
       {
-         namespace holder
+
+         namespace maker
          {
-            template< typename A>
-            class base
+
+            template<typename A>
+            class Base
             {
             public:
                typedef A archive_type;
 
-               base() = default;
-               virtual ~base() = default;
+               virtual ~Base() = default;
                virtual archive_type& archive() = 0;
+               virtual void serialize() = 0;
             };
 
 
-            template< typename A>
-            class holder
+            namespace holder
+            {
+
+               template<typename T>
+               class Base
+               {
+               public:
+                  typedef std::unique_ptr<maker::Base<T>> base_type;
+
+                  Base( base_type&& base) : m_base( std::move( base)) {}
+                  Base( Base&& rhs) = default;
+                  ~Base() = default;
+
+               protected:
+                  base_type m_base;
+               };
+
+            } // holder
+
+
+         } // maker
+
+
+         namespace reader
+         {
+            typedef maker::holder::Base<Reader> Base;
+
+            class Holder : public Base
             {
             public:
-               typedef A archive_type;
-               typedef base< archive_type> base_type;
-               typedef std::unique_ptr< base_type> base_value_type;
 
-
-               holder( base_value_type&& base) : m_base( std::move( base)) {}
-               holder( holder&& rhs) = default;
-               ~holder() {}
+               using Base::Base;
 
                template< typename T>
-               holder& operator & ( T&& value)
+               Holder& operator & ( T&& value)
                {
+                  m_base->serialize();
                   m_base->archive() & std::forward< T>( value);
                   return *this;
                }
 
                template< typename T>
-               holder& operator >> ( T&& value)
+               Holder& operator >> ( T&& value)
                {
+                  m_base->serialize();
                   m_base->archive() >> std::forward< T>( value);
                   return *this;
                }
-
-            private:
-               base_value_type m_base;
             };
-         }
-
-         namespace reader
-         {
-
-            typedef holder::holder< Reader> Holder;
 
             namespace from
             {
-               Holder file( const std::string& filename);
+               Holder file( const std::string& name);
             } // from
+
          } // reader
+
 
          namespace writer
          {
-            typedef holder::holder< Writer> Holder;
+            typedef maker::holder::Base<Writer> Base;
 
+            class Holder : public Base
+            {
+            public:
 
+               using Base::Base;
 
-         }
+               template< typename T>
+               Holder& operator & ( T&& value)
+               {
+                  m_base->archive() & std::forward< T>( value);
+                  m_base->serialize();
+                  return *this;
+               }
 
+               template< typename T>
+               Holder& operator << ( T&& value)
+               {
+                  m_base->archive() << std::forward< T>( value);
+                  m_base->serialize();
+                  return *this;
+               }
+
+            };
+
+            namespace from
+            {
+               Holder file( const std::string& name);
+            } // from
+
+         } // writer
 
       } // archive
+
    } // sf
+
 } // casual
 
 
 
-#endif /* CASUAL_SF_ARCHIVEBUFFER_H_ */
+#endif /* CASUAL_SF_ARCHIVE_MAKER_H_ */

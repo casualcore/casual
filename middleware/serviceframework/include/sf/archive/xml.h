@@ -48,19 +48,12 @@ namespace casual
                Load();
                ~Load();
 
-               const pugi::xml_document& serialize( std::istream& stream);
-               const pugi::xml_document& serialize( const std::string& xml);
-               // TODO: make this a binary::Stream instead
-               const pugi::xml_document& serialize( const char* xml);
+               const pugi::xml_document& operator() () const noexcept;
 
-               const pugi::xml_document& source() const;
-
-
-               template<typename T>
-               const pugi::xml_document& operator() ( T&& xml)
-               {
-                  return serialize( std::forward<T>( xml));
-               }
+               const pugi::xml_document& operator() ( std::istream& stream);
+               const pugi::xml_document& operator() ( const std::string& xml);
+               const pugi::xml_document& operator() ( const char* xml, std::size_t size);
+               const pugi::xml_document& operator() ( const char* xml);
 
             private:
 
@@ -142,16 +135,10 @@ namespace casual
                Save();
                ~Save();
 
-               void serialize( std::ostream& stream) const;
-               void serialize( std::string& xml) const;
-               // TODO: make a binary::Stream overload
+               pugi::xml_document& operator() () noexcept;
 
-               const pugi::xml_document& target() const;
-
-               const pugi::xml_document& operator() () const
-               {
-                  return target();
-               }
+               void operator() ( std::ostream& xml) const;
+               void operator() ( std::string& xml) const;
 
 
             private:

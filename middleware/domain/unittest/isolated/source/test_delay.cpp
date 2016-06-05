@@ -25,7 +25,7 @@ namespace casual
             {
                struct Domain
                {
-                  common::mockup::domain::Broker broker;
+                  common::mockup::domain::Manager manager;
                };
 
                namespace process
@@ -67,13 +67,13 @@ namespace casual
             auto start = common::platform::clock_type::now();
 
             {
-               common::message::process::lookup::Request message;
+               common::message::domain::process::lookup::Request message;
                message.identification = id;
                message::send( message, ipc.id(), std::chrono::milliseconds{ 10});
             }
 
             {
-               common::message::process::lookup::Request message;
+               common::message::domain::process::lookup::Request message;
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
@@ -97,13 +97,13 @@ namespace casual
             auto start = common::platform::clock_type::now();
 
             {
-               common::message::process::lookup::Request message;
+               common::message::domain::process::lookup::Request message;
                message.identification = id;
                message::send( message, ipc.id(), std::chrono::milliseconds{ 0});
             }
 
             {
-               common::message::process::lookup::Request message;
+               common::message::domain::process::lookup::Request message;
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);

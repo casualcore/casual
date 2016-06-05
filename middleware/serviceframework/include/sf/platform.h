@@ -1,12 +1,9 @@
 //!
-//! platform.h
-//!
-//! Created on: Dec 23, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef PLATFORM_H_
-#define PLATFORM_H_
+#ifndef CASUAL_SF_PLATFORM_H_
+#define CASUAL_SF_PLATFORM_H_
 
 
 #include "common/uuid.h"

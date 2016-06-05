@@ -26,8 +26,8 @@ namespace casual
                   //!
                   //! Used to advertise the monitorserver
                   //!
-                  using Request = server::connect::basic_request< Type::traffic_monitor_connect_request>;
-                  using Reply = server::connect::basic_reply< Type::traffic_monitor_connect_reply>;
+                  using Request = server::basic_id< Type::traffic_monitor_connect_request>;
+                  using Reply = server::basic_id< Type::traffic_monitor_connect_reply>;
 
                } // connect
 
@@ -35,7 +35,7 @@ namespace casual
                //!
                //! Used to unadvertise the monitorserver
                //!
-               typedef server::basic_disconnect< Type::traffic_monitor_disconnect> Disconnect;
+               using Disconnect = server::basic_id< Type::traffic_monitor_disconnect> ;
 
 
             } // monitor

@@ -22,10 +22,23 @@ namespace casual
    {
       namespace transaction
       {
+         namespace local
+         {
+            namespace
+            {
+               struct Domain
+               {
+                  mockup::domain::Manager manager;
+                  mockup::domain::Broker broker;
+                  mockup::domain::transaction::Manager tm;
+
+               };
+            } // <unnamed>
+         } // local
 
          TEST( casual_common_transaction, context_current__expect_null_transaction)
          {
-            mockup::domain::Domain domain;
+            local::Domain domain;
 
             EXPECT_TRUE( Context::instance().current().trid.null());
 
@@ -33,7 +46,7 @@ namespace casual
 
          TEST( casual_common_transaction, context_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
-            mockup::domain::Domain domain;
+            local::Domain domain;
 
             XID xid;
 
@@ -44,7 +57,7 @@ namespace casual
          {
             Trace trace{ "casual_common_transaction.context_begin__expect_transaction", log::internal::debug};
 
-            mockup::domain::Domain domain;
+            local::Domain domain;
 
 
             ASSERT_TRUE( Context::instance().begin() == TX_OK);
@@ -54,7 +67,7 @@ namespace casual
 
          TEST( casual_common_transaction, context__two_begin__expect_TX_PROTOCOLL_ERROR)
          {
-            mockup::domain::Domain domain;
+            local::Domain domain;
 
             ASSERT_TRUE( Context::instance().begin() == TX_OK);
             EXPECT_THROW( Context::instance().begin(), exception::tx::Protocol);
@@ -63,7 +76,7 @@ namespace casual
 
          TEST( casual_common_transaction, context__begin_suspend_resume__rollback__expect_TX_OK)
          {
-            mockup::domain::Domain domain;
+            local::Domain domain;
 
             XID xid;
 
@@ -76,7 +89,7 @@ namespace casual
 
          TEST( casual_common_transaction, context__begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
          {
-            mockup::domain::Domain domain;
+            local::Domain domain;
 
             // global...
             ASSERT_TRUE( Context::instance().begin() == TX_OK);

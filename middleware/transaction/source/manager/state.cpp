@@ -34,7 +34,7 @@ namespace casual
                {
                   struct Resource
                   {
-                     state::resource::Proxy operator () ( const message::transaction::resource::Manager& value) const
+                     state::resource::Proxy operator () ( const message::domain::configuration::transaction::Resource& value) const
                      {
                         trace::internal::Scope trace{ "transform::Resource"};
 
@@ -162,7 +162,7 @@ namespace casual
             }
          } // resource
 
-         void configure( State& state, const common::message::transaction::manager::Configuration& configuration, const std::string& resource_file)
+         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file)
          {
 
             {

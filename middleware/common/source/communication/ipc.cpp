@@ -1,13 +1,11 @@
 //!
-//! ipc.cpp
-//!
-//! Created on: Jan 5, 2016
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/communication/ipc.h"
 #include "common/environment.h"
 #include "common/error.h"
+#include "common/trace.h"
 
 
 #include <fstream>
@@ -215,6 +213,122 @@ namespace casual
                   return out << "{ id: " << rhs.m_id << '}';
                }
 
+
+               namespace instance
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+                        platform::ipc::id::type fetch( const Uuid& identity, const std::string& environment)
+                        {
+                           if( environment::variable::exists( environment))
+                           {
+                              auto result = environment::variable::get< platform::ipc::id::type>( environment);
+
+                              if( communication::ipc::exists( result))
+                              {
+                                 return result;
+                              }
+                           }
+
+                           auto result = process::instance::fetch::handle( identity).queue;
+
+                           if( ! environment.empty())
+                           {
+                              environment::variable::set( environment, result);
+                           }
+                           return result;
+                        }
+
+                     } // <unnamed>
+                  } // local
+
+
+                  Connector::Connector( const Uuid& identity, std::string environment)
+                     : outbound::Connector( local::fetch( identity, environment)),
+                       m_identity{ identity}, m_environment{ std::move( environment)}
+                  {
+
+                  }
+
+                  void Connector::reconnect()
+                  {
+                     Trace trace{ "ipc::outbound::instance::Connector::reconnect", log::internal::ipc};
+
+                     m_id = local::fetch( m_identity, m_environment);
+                  }
+
+               } // instance
+
+               namespace domain
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+
+                        platform::ipc::id::type reconnect()
+                        {
+                           auto from_environment = []()
+                                 {
+                                    if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
+                                    {
+                                       return environment::variable::get< platform::ipc::id::type>( environment::variable::name::ipc::domain::manager());
+                                    }
+                                    return platform::ipc::id::type( 0);
+                                 };
+
+                           auto queue = from_environment();
+
+
+                           if( ipc::exists( queue))
+                           {
+                              return queue;
+                           }
+
+                           log::internal::ipc << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
+
+                           auto from_singleton_file = []()
+                                 {
+                                    std::ifstream file{ common::environment::domain::singleton::file()};
+
+                                    platform::ipc::id::type ipc = 0;
+
+                                    if( file)
+                                    {
+                                       file >> ipc;
+                                       environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
+                                    }
+                                    return ipc;
+                                 };
+
+                           queue = from_singleton_file();
+
+                           if( ! ipc::exists( queue))
+                           {
+                              throw exception::invalid::Semantic{ "failed to locate domain manager"};
+                           }
+
+                           return queue;
+                        }
+
+                     } // <unnamed>
+                  } // local
+
+                  Connector::Connector() : outbound::Connector{ local::reconnect()}
+                  {
+
+                  }
+
+                  void Connector::reconnect()
+                  {
+                     Trace trace{ "ipc::outbound::domain::Connector::reconnect", log::internal::ipc};
+
+                     m_id = local::reconnect();
+                  }
+               } // domain
+
             } // outbound
 
 
@@ -251,54 +365,78 @@ namespace casual
 
             namespace broker
             {
-               namespace local
+               outbound::instance::Device& device()
                {
-                  namespace
-                  {
-                     namespace ipc
-                     {
-                        platform::ipc::id::type id()
-                        {
-                           if( environment::variable::exists( environment::variable::name::domain::ipc()))
-                           {
-                              return environment::variable::get< platform::ipc::id::type>( environment::variable::name::domain::ipc());
-                           }
-                           else
-                           {
-                              log::internal::ipc << environment::variable::name::domain::ipc() << " not set - trying to find 'singleton file'\n";
+                  static outbound::instance::Device singelton{
+                     process::instance::identity::broker(),
+                     environment::variable::name::ipc::broker()};
 
-                              std::ifstream file{ common::environment::file::broker::device()};
-
-                              if( file)
-                              {
-                                 platform::ipc::id::type ipc = 0;
-                                 file >> ipc;
-                                 environment::variable::set( environment::variable::name::domain::ipc(), ipc);
-
-                                 return ipc;
-                              }
-                              else
-                              {
-                                 throw exception::invalid::Semantic{ "failed to locate broker"};
-                              }
-                           }
-                        }
-                     } // ipc
-
-                  } // <unnamed>
-               } // local
-               outbound::Device& device()
-               {
-                  static outbound::Device singelton{ local::ipc::id()};
                   return singelton;
                }
 
-               handle_type id()
-               {
-                  return device().connector().id();
-               }
-
             } // broker
+
+            namespace transaction
+            {
+               namespace manager
+               {
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::transaction::manager(),
+                        environment::variable::name::ipc::transaction::manager()};
+                     return singelton;
+                  }
+
+               } // manager
+            } // transaction
+
+            namespace gateway
+            {
+               namespace manager
+               {
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::gateway::manager(),
+                        environment::variable::name::ipc::gateway::manager()};
+
+                     return singelton;
+                  }
+               } // manager
+            } // gateway
+
+            namespace queue
+            {
+               namespace broker
+               {
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::queue::broker(),
+                        environment::variable::name::ipc::queue::broker()};
+
+                     return singelton;
+                  }
+               } // broker
+            } // queue
+
+
+            namespace domain
+            {
+               namespace manager
+               {
+                  outbound::domain::Device& device()
+                  {
+                     static outbound::domain::Device singelton;
+                     return singelton;
+                  }
+
+               } // manager
+            } // domain
+
+
+
 
             bool exists( handle_type id)
             {

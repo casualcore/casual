@@ -1,8 +1,5 @@
 //!
-//! casual_utility_file.cpp
-//!
-//! Created on: May 5, 2012
-//!     Author: Lazan, Jon-Erik
+//! casual
 //!
 
 #include "common/file.h"
@@ -34,9 +31,16 @@ namespace casual
 
          void remove( const std::string& path)
          {
-            if( !path.empty())
+            if( ! path.empty())
             {
-               std::remove( path.c_str());
+               if( std::remove( path.c_str()))
+               {
+                  log::error << "failed to remove file: " << path << '\n';
+               }
+               else
+               {
+                  log::internal::debug << "removed file: " << path << '\n';
+               }
             }
          }
 
@@ -59,7 +63,10 @@ namespace casual
                }
             }
 
-            Path::Path( Path&&) noexcept = default;
+            Path::Path( Path&& rhs) noexcept : m_path( std::move( rhs.m_path))
+            {
+
+            }
 
 
             Path& Path::operator = ( Path&& rhs) noexcept

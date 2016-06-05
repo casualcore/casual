@@ -1,11 +1,9 @@
 //!
-//! test_queue.cpp
-//!
-//! Created on: Aug 15, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "queue/group/group.h"
 #include "queue/common/environment.h"
@@ -46,17 +44,10 @@ namespace casual
                       }}
                {
 
-                  //
-                  // We need to wait for casual-broker to get ready, we ping it
-                  //
-                  common::process::ping( m_process.handle().queue);
 
-                  //
-                  // We need to re-initialize the casual-queue ipc-queue, since it's only done once otherwise
-                  //
-                  queue::environment::broker::queue::initialize();
                }
 
+               common::process::Handle process() const { return m_process.handle();}
 
             private:
                common::file::scoped::Path m_filename;
@@ -66,35 +57,43 @@ namespace casual
             struct Domain
             {
                Domain( const std::string& configuration)
-                : broker{ create_resources()}, queue_broker{ configuration}
-                {
-                   common::transaction::Resource resource{ "casual-queue-rm", &casual_queue_xa_switch_dynamic};
-                   common::transaction::Context::instance().set( { resource});
+               : manager{ handle_resource_configuration{}}, queue_broker{ configuration}
+               {
+                  common::transaction::Resource resource{ "casual-queue-rm", &casual_queue_xa_switch_dynamic};
+                  common::transaction::Context::instance().set( { resource});
 
-                }
+                  //
+                  // We make sure queue-broker is up'n running, we send ping
+                  //
+                  common::process::ping( queue_broker.process().queue);
+               }
 
+               common::mockup::domain::Manager manager;
                common::mockup::domain::Broker broker;
                common::mockup::domain::transaction::Manager tm;
 
                Broker queue_broker;
 
             private:
-               static common::mockup::domain::broker::transaction::client::Connect create_resources()
+
+               struct handle_resource_configuration
                {
-                  common::message::transaction::client::connect::Reply result;
+                  void operator () ( common::message::domain::configuration::transaction::resource::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
 
-                  result.directive = common::message::transaction::client::connect::Reply::Directive::start;
-                  decltype( result.resources)::value_type resource;
+                     reply.resources.emplace_back(
+                           []( common::message::domain::configuration::transaction::Resource& m)
+                           {
+                              m.id = 10;
+                              m.key = "casual-queue-rm";
+                              m.instances = 1;
+                              m.openinfo = "id:10";
+                           });
 
-                  resource.instances = 1;
-                  resource.id = 10;
-                  resource.key = "casual-queue-rm";
-
-                  result.resources.push_back( std::move( resource));
-
-
-                  return { result};
-               }
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
             };
 
             namespace call
@@ -166,7 +165,7 @@ domain:
 
       TEST( casual_queue, broker_startup)
       {
-         common::Trace trace{ "TEST( casual_queue, broker_startup)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain{ local::configuration()};
 
@@ -179,7 +178,7 @@ domain:
 
       TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)
       {
-         common::Trace trace{ "TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain{ local::configuration()};
 
@@ -198,7 +197,7 @@ domain:
 
       TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)
       {
-         common::Trace trace{ "TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)"};
+         CASUAL_UNITTEST_TRACE();
 
          local::Domain domain{ local::configuration()};
 

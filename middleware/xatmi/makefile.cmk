@@ -38,7 +38,7 @@ LinkUnittest( 'bin/test-casual-xatmi',
     [
        Compile( 'unittest/isolated/source/test_buffer.cpp'),
        Compile( 'unittest/isolated/source/test_xatmi.cpp'),
-       Compile( 'unittest/isolated/source/test_tx.cpp'),
+       #Compile( 'unittest/isolated/source/test_tx.cpp'),
     ],
     [ lib_xatmi, 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment'])
 

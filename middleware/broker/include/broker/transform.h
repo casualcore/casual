@@ -32,51 +32,6 @@ namespace casual
             };
 
 
-            struct Executable
-            {
-               using groups_type = const std::vector< state::Group>&;
-
-               Executable( groups_type groups) : m_groups( groups) {}
-
-               state::Executable operator () ( const config::domain::Executable& executable) const;
-
-            protected:
-               groups_type m_groups;
-            };
-
-
-            struct Server : Executable
-            {
-               using Executable::Executable;
-
-               state::Server operator () ( const config::domain::Server& server) const;
-            };
-
-            struct Resource
-            {
-               state::Group::Resource operator () ( const config::domain::Resource& resource) const;
-            };
-
-            struct Group
-            {
-               state::Group operator () ( const config::domain::Group& group) const;
-            };
-
-
-            struct Domain
-            {
-               broker::State operator () ( const config::domain::Domain& domain) const;
-            };
-
-            namespace transaction
-            {
-               struct Manager
-               {
-                  state::Server operator () ( const config::domain::transaction::Manager& manager) const;
-               };
-
-            } // transaction
-
          } // configuration
 
 
@@ -88,29 +43,11 @@ namespace casual
 
          struct Instance
          {
-            state::Server::Instance operator () ( const common::message::server::connect::Request& message) const;
+            //state::Instance operator () ( const common::message::server::connect::Request& message) const;
 
-            common::process::Handle operator () ( const state::Server::Instance& value) const;
+            common::process::Handle operator () ( const state::Instance& value) const;
 
          };
-
-         namespace transaction
-         {
-            struct Resource
-            {
-               inline common::message::transaction::resource::Manager operator () ( const state::Group::Resource& resource) const;
-            };
-
-            common::message::transaction::manager::Configuration configuration( const broker::State& state);
-
-            namespace client
-            {
-
-               common::message::transaction::client::connect::Reply reply( broker::State& state, const state::Server::Instance& instance);
-
-            } // client
-         } // transaction
-
 
 
 

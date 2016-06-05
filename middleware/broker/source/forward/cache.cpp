@@ -42,6 +42,8 @@ namespace casual
                   {
                      void reply( State& state, common::message::service::call::callee::Request& message)
                      {
+                        Trace trace{ "broker::forward::handle::service::send::error::reply", log::internal::debug};
+
                         if( ! common::flag< TPNOREPLY>( message.flags))
                         {
                            common::message::service::call::Reply reply;
@@ -127,9 +129,9 @@ namespace casual
                         //
                         // If something goes wrong, we try to send error reply to caller
                         //
-                        scope::Execute error_reply{ [&](){
+                        auto error_reply = scope::execute( [&](){
                            send::error::reply( m_state, request);
-                        }};
+                        });
 
 
                         if( message.state == message::service::lookup::Reply::State::absent)
@@ -175,7 +177,7 @@ namespace casual
                         request.requested = message.service.name;
                         request.process = process::handle();
 
-                        communication::ipc::blocking::send( communication::ipc::broker::id(), request);
+                        communication::ipc::blocking::send( communication::ipc::broker::device(), request);
                      }
 
                      m_state.reqested[ message.service.name].push_back( std::move( message));
@@ -190,26 +192,10 @@ namespace casual
          Cache::Cache()
          {
             //
-            // Connect to broker
+            // Connect to domain
             //
-            server::connect( communication::ipc::inbound::device(), {});
+            process::instance::connect( process::instance::identity::forward::cache());
 
-            {
-               message::forward::connect::Request connect;
-               connect.process = process::handle();
-               connect.identification = common::Uuid{ "f17d010925644f728d432fa4a6cf5257"};
-
-               auto reply = communication::ipc::call(
-                     communication::ipc::broker::id(),
-                     connect,
-                     communication::ipc::policy::Blocking{});
-
-               if( reply.directive != decltype( reply)::Directive::start)
-               {
-                  throw exception::Shutdown{ "broker denied startup"};
-               }
-
-            }
          }
 
          Cache::~Cache()

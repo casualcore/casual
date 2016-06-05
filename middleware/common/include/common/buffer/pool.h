@@ -20,9 +20,6 @@
 #include <memory>
 #include <map>
 
-// TODO: temp
-#include <sstream>
-
 namespace casual
 {
    namespace common
@@ -357,8 +354,15 @@ namespace casual
                static P& pool;
             };
 
+
+#ifdef __GNUC__
             template< typename P>
+            __attribute__((__unused__)) P& Registration< P>::pool = Holder::instance().registration( P{});
+#else
+            template< typename P>
+            //[[maybe_unused]] P& Registration< P>::pool = Holder::instance().registration( P{});
             P& Registration< P>::pool = Holder::instance().registration( P{});
+#endif
 
          } // pool
       } // buffer

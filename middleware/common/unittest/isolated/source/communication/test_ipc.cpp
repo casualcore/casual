@@ -1,14 +1,12 @@
 //!
-//! test_communication.cpp
-//!
-//! Created on: Jan 5, 2016
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "common/communication/ipc.h"
-#include "common/message/type.h"
+#include "common/message/domain.h"
 
 #include <random>
 
@@ -86,6 +84,8 @@ namespace casual
 
          TEST( casual_common_communication_message, complete_add__ordered)
          {
+            CASUAL_UNITTEST_TRACE();
+
             auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::traffic_event));
 
             EXPECT_TRUE( static_cast< bool>( complete));
@@ -103,6 +103,8 @@ namespace casual
 
          TEST( casual_common_communication_message, complete_add__reverse_ordered)
          {
+            CASUAL_UNITTEST_TRACE();
+
             auto parts = local::payload::parts( 100, common::message::Type::traffic_event);
             range::reverse( parts);
             auto complete = local::payload::complete( parts);
@@ -122,11 +124,15 @@ namespace casual
 
          TEST( casual_common_communication_ipc, instanciate)
          {
+            CASUAL_UNITTEST_TRACE();
+
             ipc::inbound::Device device;
          }
 
          TEST( casual_common_communication_ipc, exists)
          {
+            CASUAL_UNITTEST_TRACE();
+
             ipc::inbound::Device device;
             EXPECT_TRUE( ipc::exists( device.connector().id()));
 
@@ -134,28 +140,32 @@ namespace casual
 
          TEST( casual_common_communication_ipc, non_blocking_receive__expect_no_messages)
          {
+            CASUAL_UNITTEST_TRACE();
+
             ipc::inbound::Device device;
 
-            common::message::process::lookup::Reply message;
+            common::message::domain::process::lookup::Reply message;
             EXPECT_FALSE( ( device.receive( message, ipc::policy::non::Blocking{})));
 
          }
 
          TEST( casual_common_communication_ipc, send_receivce__small_message)
          {
+            CASUAL_UNITTEST_TRACE();
+
             ipc::inbound::Device destination;
 
 
             auto send = []( ipc::handle_type id)
             {
-               common::message::process::lookup::Reply message;
+               common::message::domain::process::lookup::Reply message;
                return ipc::non::blocking::send( id, message);
             };
 
             auto correlation = send( destination.connector().id());
 
 
-            common::message::process::lookup::Reply message;
+            common::message::domain::process::lookup::Reply message;
             EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
 
          }

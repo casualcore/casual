@@ -35,9 +35,6 @@ namespace casual
                } // local
             } //
 
-            Load::Load() = default;
-            Load::~Load() = default;
-
             namespace
             {
                namespace local
@@ -255,24 +252,26 @@ namespace casual
 
             } //
 
-            const tree& Load::serialize( std::istream& stream)
-            {
-               local::parse_flat( m_document, stream);
-               return source();
-            }
+            Load::Load() = default;
+            Load::~Load() = default;
 
-            const tree& Load::serialize( const std::string& ini)
-            {
-               std::istringstream stream( ini);
-               return serialize( stream);
-            }
-
-
-            const tree& Load::source() const
+            const tree& Load::operator() () const noexcept
             {
                return m_document;
             }
 
+            const tree& Load::operator() ( std::istream& stream)
+            {
+               local::parse_flat( m_document, stream);
+               return m_document;
+            }
+
+            const tree& Load::operator() ( const std::string& ini)
+            {
+               std::istringstream stream( ini);
+               local::parse_flat( m_document, stream);
+               return m_document;
+            }
 
             namespace reader
             {
@@ -545,30 +544,29 @@ namespace casual
 */
 
                } // local
+
             } //
 
 
             Save::Save() = default;
             Save::~Save() = default;
 
-            void Save::serialize( std::ostream& stream) const
-            {
-               local::write_flat( m_document, stream);
-            }
-
-            void Save::serialize( std::string& ini) const
-            {
-               std::ostringstream stream;
-               serialize( stream);
-               ini.assign( stream.str());
-            }
-
-
-            tree& Save::target()
+            tree& Save::operator() () noexcept
             {
                return m_document;
             }
 
+            void Save::operator() ( std::ostream& ini) const
+            {
+               local::write_flat( m_document, ini);
+            }
+
+            void Save::operator() ( std::string& ini) const
+            {
+               std::ostringstream stream;
+               local::write_flat( m_document, stream);
+               ini.assign( stream.str());
+            }
 
             namespace writer
             {

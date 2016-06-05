@@ -45,35 +45,26 @@ namespace casual
             };
 
 
-            file::scoped::Path get_domain_file( platform::ipc::id::type queue)
+            file::scoped::Path create_domain_file( platform::ipc::id::type queue)
             {
-               return mockup::file::temporary( "", std::to_string( queue));
+               Trace trace{ "create_domain_file"};
+
+               auto file = mockup::file::temporary( "", std::to_string( queue));
+
+               log::internal::debug << "created domain file: " << file << " - qid: " << queue << '\n';
+
+               return file;
             }
 
             struct Domain
             {
 
                Domain()
-                  : path{ get_domain_file( communication::ipc::broker::id())},
+                  : path{ create_domain_file( manager.process().queue)},
                      outbound{ path}
                {
                   try
                   {
-
-                     //
-                     // We'll act as the remote gateway our self
-                     //
-                     {
-                        Trace trace{ "register remote gateway"};
-
-                        common::message::server::connect::Request request;
-                        request.identification = environment::identification();
-                        request.process = process::handle();
-
-                        communication::ipc::blocking::send( communication::ipc::broker::id(), request);
-
-                     }
-
 
                      //
                      // Wait for the outbound to connect (which it think we are it's remote gateway)
@@ -106,10 +97,29 @@ namespace casual
 
                }
 
+
+               common::mockup::domain::Manager manager;
+
                file::scoped::Path path;
 
-               common::mockup::domain::Domain domain;
-               common::mockup::ipc::Instance remote;
+
+               struct connect_gateway_t
+               {
+                  connect_gateway_t()
+                  {
+                     Trace trace{ "register remote gateway"};
+
+                     //
+                     // We'll act as the remote gateway our self
+                     //
+                     process::instance::connect( process::instance::identity::gateway::manager());
+                  }
+
+               } connect_gateway;
+
+               common::mockup::domain::Broker broker;
+               common::mockup::domain::transaction::Manager tm;
+               common::mockup::ipc::Collector remote;
                Outbound outbound;
                process::Handle external;
             };
@@ -122,10 +132,10 @@ namespace casual
          CASUAL_UNITTEST_TRACE();
 
          //
-         // We need to have a broker to 'connect the process'
+         // We need to have a domain manager to 'connect the process'
          //
-         common::mockup::domain::Broker broker;
-         auto path = local::get_domain_file( communication::ipc::inbound::id());
+         common::mockup::domain::Manager manager;
+         auto path = local::create_domain_file( communication::ipc::inbound::id());
 
          EXPECT_NO_THROW({
             local::Outbound outbound{ path};

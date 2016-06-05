@@ -56,6 +56,7 @@ namespace casual
          struct Handle
          {
             Handle() = default;
+            Handle( platform::pid::type pid) : pid{ pid} {}
             Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
 
             platform::pid::type pid = 0;
@@ -84,6 +85,17 @@ namespace casual
                };
             };
 
+            struct order
+            {
+               struct pid
+               {
+                  struct Ascending
+                  {
+                     bool operator() ( const Handle& lhs, const Handle& rhs) { return lhs.pid < rhs.pid;}
+                  };
+               };
+            };
+
             explicit operator bool() const
             {
                return pid != 0 && queue != 0;
@@ -107,11 +119,36 @@ namespace casual
             {
                const Uuid& broker();
 
+               namespace forward
+               {
+                  const Uuid& cache();
+               } // forward
+
                namespace traffic
                {
                   const Uuid& manager();
                } // traffic
+
+               namespace gateway
+               {
+                  const Uuid& manager();
+               } // domain
+
+               namespace queue
+               {
+                  const Uuid& broker();
+               } // queue
+
+               namespace transaction
+               {
+                  const Uuid& manager();
+               } // transaction
+
             } // identity
+
+
+
+
 
             namespace fetch
             {
@@ -121,29 +158,29 @@ namespace casual
                   direct
                };
 
-               Handle handle( const Uuid& identity, Directive directive);
+               std::ostream& operator << ( std::ostream& out, Directive directive);
+
+               Handle handle( const Uuid& identity, Directive directive = Directive::wait);
+
+               //!
+               //! Fetches the handle for a given pid
+               //!
+               //! @param pid
+               //! @param directive if caller waits for the process to register or not
+               //! @return handle to the process
+               //!
+               Handle handle( platform::pid::type pid , Directive directive = Directive::wait);
+
 
             } // fetch
 
-            namespace transaction
-            {
-               namespace manager
-               {
-                  const Uuid& identity();
-
-                  const Handle& handle();
-
-                  //!
-                  //! 'refetch' transaction managers process::Handle.
-                  //! @note only for unittest purpose?
-                  //!
-                  const Handle& refetch();
-
-               } // manager
-
-            } // transaction
 
 
+
+            void connect( const Uuid& identity, const Handle& process);
+            void connect( const Uuid& identity);
+            void connect( const Handle& process);
+            void connect();
 
          } // instance
 
@@ -267,28 +304,6 @@ namespace casual
          //!
          bool terminate( platform::pid::type pid);
 
-         //!
-         //! @deprecated only used by broker, and should be moved there...
-         //!
-         file::scoped::Path singleton( std::string queue_id_file);
-
-         //!
-         //! Asks broker for the handle to a registered 'singleton' server(process)
-         //!
-         //! if wait is true (default) broker will not send a response until the requested server
-         //!  has register.
-         //!
-         //! @return a handle to the requested server if found, or a 'null' handle if @p wait is false
-         //!  and no server was found
-         //!
-         Handle singleton( const Uuid& identification, bool wait = true);
-
-         //!
-         //! @param pid the pid to lookup
-         //!
-         //! @return handle to the process, if not found Handle::pid/queue will be 0
-         //!
-         Handle lookup( platform::pid::type pid, bool wait = true);
 
 
          //!
@@ -386,20 +401,6 @@ namespace casual
 
          } // children
 
-
-         //!
-         //! Connect the process @handle to the local domain. That is,
-         //! let the domain know which ipc-queue is bound to which pid
-         //!
-         //! @param handle
-         //!
-         void connect( const Handle& handle);
-
-         //!
-         //! Connect the current process to the local domain. That is,
-         //! let the domain know which ipc-queue is bound to which pid
-         //!
-         void connect();
 
       } // process
    } // common

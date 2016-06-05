@@ -5,7 +5,7 @@
 //      Author: Kristone
 //
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include "common/environment.h"
@@ -27,11 +27,11 @@ namespace casual
             // Defined in field.cpp
             //
 
-            std::map<std::string,int> name_to_type();
-            std::map<int,std::string> type_to_name();
+            std::unordered_map<std::string,int> name_to_type();
+            std::unordered_map<int,std::string> type_to_name();
 
-            std::map<std::string,long> name_to_id();
-            std::map<long,std::string> id_to_name();
+            std::unordered_map<std::string,long> name_to_id();
+            std::unordered_map<long,std::string> id_to_name();
          }
 
       }
@@ -43,16 +43,18 @@ namespace casual
 
 int main( int argc, char* argv[])
 {
-   if( argc > 1)
-   {
-      casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", argv[1]);
-   }
-
    try
    {
+      if( argc > 1)
+      {
+         casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", argv[1]);
+      }
+
       const auto types = casual::buffer::field::repository::type_to_name();
 
+
       const auto names = casual::buffer::field::repository::name_to_id();
+
 
       for( const auto& pair : names)
       {
@@ -70,6 +72,10 @@ int main( int argc, char* argv[])
    catch( const std::exception& e)
    {
       std::cerr << e.what() << std::endl;
+   }
+   catch( ...)
+   {
+      std::cerr << "Unknown failure" << std::endl;
    }
 
    return -1;
