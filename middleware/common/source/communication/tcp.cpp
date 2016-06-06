@@ -95,7 +95,7 @@ namespace casual
                            if( address.port.empty()) { return nullptr;}
                            return address.port.c_str();
                         }
-                     };
+                     }
 
                      template< typename F>
                      Socket create( const Address& address, F binder, Flags< Flag> flags = {})

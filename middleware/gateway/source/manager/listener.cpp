@@ -104,7 +104,8 @@ namespace casual
          }
 
          Listener::Listener( Listener&&) noexcept = default;
-         Listener& Listener::operator = ( Listener&&) noexcept = default;
+         //Listener& Listener::operator = ( Listener&&) noexcept = default;
+         Listener& Listener::operator = ( Listener&&) = default;
 
 
          void Listener::start()

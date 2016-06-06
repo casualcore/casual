@@ -35,7 +35,8 @@ namespace casual
             ~Listener();
 
             Listener( Listener&&) noexcept;
-            Listener& operator = ( Listener&&) noexcept;
+            //Listener& operator = ( Listener&&) noexcept;
+            Listener& operator = ( Listener&&);
 
 
             void start();
@@ -58,8 +59,6 @@ namespace casual
             friend std::ostream& operator << ( std::ostream& out, const Listener& value);
 
          private:
-
-
 
             common::Uuid m_correlation = common::uuid::make();
             State m_state = State::absent;

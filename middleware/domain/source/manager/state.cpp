@@ -108,7 +108,7 @@ namespace casual
                      << '}';
             }
 
-            Batch::Batch( const Group& group) : group{ group} {};
+            Batch::Batch( const Group& group) : group{ group} {}
 
             std::chrono::milliseconds Batch::timeout() const
             {

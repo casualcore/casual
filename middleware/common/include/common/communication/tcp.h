@@ -195,8 +195,8 @@ namespace casual
             {
                using handle_type = tcp::Socket;
                using transport_type = tcp::message::Transport;
-               using blocking_policy = typename policy::Blocking;
-               using non_blocking_policy = typename policy::non::Blocking;
+               using blocking_policy = policy::Blocking;
+               using non_blocking_policy = policy::non::Blocking;
 
                base_connector() noexcept;
                base_connector( tcp::Socket&& socket) noexcept;
