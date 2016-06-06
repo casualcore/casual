@@ -73,11 +73,13 @@ namespace casual
             std::string empty_configuration()
             {
                return R"yaml(
-gateway:
-  
-  listeners:
 
-  connections:
+domain:
+  gateway:
+  
+    listeners:
+
+    connections:
 
 )yaml";
 
@@ -87,13 +89,14 @@ gateway:
             std::string one_connector_configuration()
             {
                return R"yaml(
-gateway:
+domain:
+  gateway:
   
-  listeners:
+    listeners:
 
-  connections:
-    - type: "ipc"
-      address: "${CASUAL_UNITTEST_IPC_PATH}"
+    connections:
+      - type: "ipc"
+        address: "${CASUAL_UNITTEST_IPC_PATH}"
 
 )yaml";
 
@@ -137,9 +140,11 @@ gateway:
                      {
                         auto state = local::call::state();
 
-                        while( ! manager_ready( state))
+                        auto count = 100;
+
+                        while( ! manager_ready( state) && count-- > 0)
                         {
-                           common::process::sleep( std::chrono::milliseconds{ 5});
+                           common::process::sleep( std::chrono::milliseconds{ 10});
                            state = local::call::state();
                         }
 

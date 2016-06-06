@@ -1,8 +1,5 @@
 //!
-//! service.h
-//!
-//! Created on: Jul 2, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_MESSAGE_SERVICE_H_
@@ -37,17 +34,24 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
 
+            enum class Location : char
+            {
+               local,
+               remote
+            };
 
             struct Advertise : basic_message< Type::service_advertise>
             {
                common::process::Handle process;
                std::vector< Service> services;
+               Location location = Location::local;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
                   archive & process;
                   archive & services;
+                  archive & location;
                })
 
                friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
@@ -57,14 +61,19 @@ namespace casual
             {
                common::process::Handle process;
                std::vector< Service> services;
+               Location location = Location::local;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
                   archive & process;
                   archive & services;
+                  archive & location;
                })
             };
+
+
+
 
 
             namespace lookup

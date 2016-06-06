@@ -166,7 +166,7 @@ namespace casual
                   {
 
                      //
-                     // We send sig-term to worker thread, and we make sure we can't get the
+                     // We send user-signal to worker thread, and we make sure we can't get the
                      // signal
                      //
                      common::signal::thread::scope::Block block;
@@ -274,7 +274,7 @@ namespace casual
             static void reply_thread( const Routing& routing, S&& settings)
             {
                //
-               // We're only interested in sig-term
+               // We're only interested in sig-user
                //
                common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
 

@@ -73,6 +73,44 @@ namespace casual
 
                } // transaction
 
+               namespace gateway
+               {
+
+                  std::ostream& operator << ( std::ostream& out, const Listener& value)
+                  {
+                     return out << "{ adress: " << value.address
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, Connection::Type value)
+                  {
+                     switch( value)
+                     {
+                        case Connection::Type::ipc: return out << "ipc";
+                        case Connection::Type::tcp: return out << "tcp";
+                        default: return out << "unknown";
+                     }
+
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Connection& value)
+                  {
+                     return out << "{ name: " << value.name
+                           << ", address: " << value.address
+                           << ", type: " << value.type
+                           << ", restart: " << value.restart
+                           << ", services: " << range::make( value.services)
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ listeners: " << range::make( value.listeners)
+                           << ", connections: " << range::make( value.connections)
+                           << '}';
+                  }
+               } // gateway
+
             } // configuration
 
 

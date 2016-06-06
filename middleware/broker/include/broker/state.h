@@ -1,8 +1,5 @@
 //!
-//! state.h
-//!
-//! Created on: Sep 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BROKER_STATE_H_
@@ -67,74 +64,116 @@ namespace casual
 
          struct Service;
 
+
          struct Instance
          {
             enum class State
             {
                idle,
                busy,
+               remote,
             };
 
-            inline void state( State state)
-            {
-               m_state = state;
-               m_last = common::platform::clock_type::now();
-            }
-
-            inline State state() const { return m_state;}
-
-            const common::platform::time_point& last() const { return m_last;}
+            Instance() = default;
+            Instance( common::process::Handle process, State state) : process( std::move( process)), m_state{ state} {}
+            Instance( common::process::Handle process) : process( std::move( process)) {}
 
             common::process::Handle process;
             std::size_t invoked = 0;
 
+            void lock( const common::platform::time_point& when);
+            void unlock( const common::platform::time_point& when);
 
-            friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
-            friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
+
+            inline bool idle() const { return m_state != State::busy;}
+
+            inline State state() const { return m_state;}
+
+
+            inline const common::platform::time_point& last() const { return m_last;}
+
+            inline friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
+            inline friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
+
 
          private:
-            common::platform::time_point m_last = common::platform::time_point::min();
             State m_state = State::idle;
+            common::platform::time_point m_last = common::platform::time_point::min();
 
          };
 
-         struct Service
+
+
+         namespace service
          {
             struct Instance
             {
                using State = state::Instance::State;
 
-               Instance( state::Instance& instance) : instance{ instance} {}
                std::size_t invoked = 0;
+
+               Instance( state::Instance& instance) : instance{ instance} {}
                std::reference_wrapper< state::Instance> instance;
 
-               bool idle() const;
-               inline void state( State state) { instance.get().state( state);}
-               inline const common::process::Handle& process() const  { return instance.get().process;}
+               inline bool idle() const { return instance.get().idle();}
 
-               friend bool operator == ( const Instance& lhs, common::platform::pid::type rhs);
+               void lock( const common::platform::time_point& when);
+               void unlock( const common::platform::time_point& when);
+
+               //inline void state( State state) { instance.get().state( state);}
+               inline State state() const { return instance.get().state();}
+
+               inline const common::process::Handle& process() const { return instance.get().process;}
+
+               friend bool operator == ( const Instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
             };
+         } // service
+
+
+
+         struct Service
+         {
 
 
             Service( common::message::Service information) : information( std::move( information)) {}
             Service() {}
 
-            std::vector< Instance> instances;
+            using instances_type = std::vector< service::Instance>;
+
+            using range_type = common::range::traits< instances_type>::type;
+
+            struct
+            {
+               range_type local;
+               range_type remote;
+
+            } instances;
+
             common::message::Service information;
             std::size_t lookedup = 0;
 
             //!
             //! @return an idle instance or nullptr if no one is found.
             //!
-            Instance* idle();
+            service::Instance* idle();
 
             void add( state::Instance& instance);
+
             void remove( common::platform::pid::type instance);
+
+            bool has( common::platform::pid::type instance);
+
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
             friend bool operator < ( const Service& lhs, const Service& rhs) { return lhs.information.name < rhs.information.name;}
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
+
+         private:
+
+            void partition_instances();
+
+            instances_type m_instances;
          };
       } // state
 
@@ -154,8 +193,8 @@ namespace casual
          State( const State&) = delete;
 
 
-         typedef std::unordered_map< common::platform::pid::type, state::Instance> instance_mapping_type;
-         typedef std::unordered_map< std::string, state::Service> service_mapping_type;
+         using instance_mapping_type = std::unordered_map< common::platform::pid::type, state::Instance>;
+         using service_mapping_type = std::unordered_map< std::string, state::Service>;
 
          instance_mapping_type instances;
          service_mapping_type services;
@@ -194,23 +233,13 @@ namespace casual
 
          void remove_process( common::platform::pid::type pid);
 
-         void add( common::process::Handle process, std::vector< common::message::Service> services);
-         void remove( common::process::Handle process, const std::vector< common::message::Service>& services);
+         void add( common::message::service::Advertise& message);
+         void remove( const common::message::service::Unadvertise& message);
+
 
          state::Service* find_service(  const std::string& name);
 
 
-         //!
-         //! finds or adds an instance
-         //!
-         //! @param process
-         //! @return the instance
-         state::Instance& find_or_add( common::process::Handle process);
-
-         state::Service& find_or_add( common::message::Service service);
-
-
-         std::size_t size() const;
 
          void connect_broker( std::vector< common::message::Service> services);
 

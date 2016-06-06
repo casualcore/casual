@@ -406,6 +406,16 @@ namespace casual
                         m_error_handler);
                }
 
+               template< typename D, typename M>
+               auto call( D&& ipc, M&& message) const -> decltype( common::message::reverse::type( std::forward< M>( message)))
+               {
+                  return ipc::call(
+                        std::forward< D>( ipc),
+                        std::forward< M>( message),
+                        common::communication::ipc::policy::Blocking{},
+                        m_error_handler);
+               }
+
 
                inbound::Device& device() const { return inbound::device();}
                platform::ipc::id::type id() const { return inbound::device().connector().id();}

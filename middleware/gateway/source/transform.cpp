@@ -20,23 +20,30 @@ namespace casual
          {
             namespace
             {
-               manager::state::outbound::Connection::Type type( const std::string& value)
+               manager::state::outbound::Connection::Type type( common::message::domain::configuration::gateway::Connection::Type value)
                {
-                  if( value == "ipc") return manager::state::outbound::Connection::Type::ipc;
-                  if( value == "tcp") return manager::state::outbound::Connection::Type::tcp;
+                  using connectino_type = common::message::domain::configuration::gateway::Connection::Type;
+
+                  switch( value)
+                  {
+                     case connectino_type::ipc: return manager::state::outbound::Connection::Type::ipc;
+                     case connectino_type::tcp: return manager::state::outbound::Connection::Type::tcp;
+                  }
+
                   return manager::state::outbound::Connection::Type::unknown;
                }
 
                struct Connection
                {
 
-                  manager::state::outbound::Connection operator () ( const config::gateway::Connection& connection) const
+                  manager::state::outbound::Connection operator () ( const common::message::domain::configuration::gateway::Connection& connection) const
                   {
                      manager::state::outbound::Connection result;
 
                      result.type = local::type( connection.type);
                      result.address = common::environment::string( connection.address);
-                     result.restart = connection.restart == "true";
+                     result.restart = connection.restart;
+                     result.services = connection.services;
 
                      return result;
                   }
@@ -45,7 +52,7 @@ namespace casual
                struct Listener
                {
 
-                  communication::tcp::Address operator () ( const config::gateway::Listener& value) const
+                  communication::tcp::Address operator () ( const common::message::domain::configuration::gateway::Listener& value) const
                   {
                      return { value.address};
                   }
@@ -92,7 +99,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         manager::State state( const config::gateway::Gateway& configuration)
+         manager::State state( const common::message::domain::configuration::gateway::Reply& configuration)
          {
             Trace trace{ "gateway::transform::state", log::internal::gateway};
 

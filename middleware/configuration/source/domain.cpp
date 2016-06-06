@@ -88,8 +88,8 @@ namespace casual
 
                   inline void defaultValues( Domain& domain)
                   {
-                     Default applyDefaults( domain.casual_default);
-                     applyDefaults( domain);
+                     Default defaults( domain.casual_default);
+                     defaults( domain);
                   }
 
                } // complement
@@ -127,7 +127,24 @@ namespace casual
                   local::replace_or_add( lhs.servers, rhs.servers);
                   local::replace_or_add( lhs.services, rhs.services);
 
+                  lhs.gateway += std::move( rhs.gateway);
+
                   return lhs;
+               }
+
+               Domain get( Domain domain, const std::string& file)
+               {
+                  //
+                  // Create the reader and deserialize configuration
+                  //
+                  auto reader = sf::archive::reader::from::file( file);
+
+                  reader >> CASUAL_MAKE_NVP( domain);
+
+                  finalize( domain);
+
+                  return domain;
+
                }
 
             } // unnamed
@@ -165,32 +182,38 @@ namespace casual
             return result;
          }
 
-         Domain get( const std::string& file)
+         void finalize( Domain& configuration)
          {
-            Domain domain;
-
-            //
-            // Create the reader and deserialize configuration
-            //
-            auto reader = sf::archive::reader::from::file( file);
-
-            reader >> CASUAL_MAKE_NVP( domain);
-
-            //local::normalize::path( domain);
-
             //
             // Complement with default values
             //
-            local::complement::defaultValues( domain);
+            local::complement::defaultValues( configuration);
 
             //
             // Make sure we've got valid configuration
             //
-            local::validate( domain);
+            local::validate( configuration);
 
-            return domain;
+            configuration.gateway.finalize();
 
          }
+
+
+         Domain get( const std::string& file)
+         {
+            return local::get( Domain{}, file);
+         }
+
+         Domain get( const std::vector< std::string>& files)
+         {
+            if( files.empty())
+            {
+               return get();
+            }
+
+            return range::accumulate( files, Domain{}, &local::get);
+         }
+
 
          Domain get()
          {

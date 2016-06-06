@@ -74,7 +74,12 @@ namespace casual
             {
                std::ostream& operator << ( std::ostream& out, const Connection& value)
                {
-                  return out << "{ type: " << value.type << ", runlevel: " << value.runlevel << ", process: " << value.process << ", remote: " << value.remote << '}';
+                  return out << "{ type: " << value.type
+                        << ", runlevel: " << value.runlevel
+                        << ", process: " << value.process
+                        << ", remote: " << value.remote
+                        << ", services: " << range::make( value.services)
+                        << '}';
                }
             }
 

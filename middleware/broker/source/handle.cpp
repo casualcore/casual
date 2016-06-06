@@ -94,14 +94,14 @@ namespace casual
          {
             trace::internal::Scope trace{ "broker::handle::Advertise"};
 
-            m_state.add( message.process, message.services);
+            m_state.add( message);
          }
 
          void Unadvertise::operator () ( message_type& message)
          {
             trace::internal::Scope trace{ "broker::handle::Unadvertise"};
 
-            m_state.remove( message.process, message.services);
+            m_state.remove( message);
          }
 
 
@@ -114,6 +114,8 @@ namespace casual
 
                try
                {
+                  auto now = platform::clock_type::now();
+
                   auto& service = m_state.service( message.requested);
 
                   auto instance = service.idle();
@@ -123,13 +125,13 @@ namespace casual
                      //
                      // flag it as busy.
                      //
-                     instance->state( state::Instance::State::busy);
+                     instance->lock( now);
 
                      auto reply = common::message::reverse::type( message);
                      reply.service = service.information;
                      reply.service.traffic_monitors = m_state.traffic.monitors.get();
                      reply.state = decltype( reply.state)::idle;
-                     reply.process = instance->instance.get().process;
+                     reply.process = instance->process();
 
                      ipc::device().blocking_send( message.process.queue, reply);
 
@@ -222,7 +224,9 @@ namespace casual
             {
                auto& instance = m_state.instance( message.process.pid);
 
-               instance.state( state::Instance::State::idle);
+               auto now = platform::clock_type::now();
+
+               instance.unlock( now);
                ++instance.invoked;
 
                //
@@ -237,13 +241,8 @@ namespace casual
 
                   auto pending = common::range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
                      auto service = m_state.find_service( r.requested);
-                     if( service)
-                     {
-                        return range::any_of( service->instances, [&]( const state::Service::Instance& i){
-                           return i.process() == message.process;
-                        });
-                     }
-                     return false;
+
+                     return service && service->has( message.process.pid);
                   });
 
                   if( pending)

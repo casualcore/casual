@@ -13,6 +13,7 @@
 #include "common/platform.h"
 #include "common/process.h"
 
+#include "config/domain.h"
 
 #include  "sf/namevaluepair.h"
 
@@ -226,6 +227,13 @@ namespace casual
 
 
             friend std::ostream& operator << ( std::ostream& out, const State& state);
+
+            //!
+            //! this domain's original configuration.
+            //!
+            //! @todo How do we handle configuration?
+            //!
+            config::domain::Domain configuration;
 
          private:
             Runlevel m_runlevel = Runlevel::startup;

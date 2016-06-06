@@ -228,7 +228,7 @@ namespace casual
 
                      };
 
-                     using base_reply = server::basic_id< Type::domain_configuration_transaction_resource_request>;
+                     using base_reply = server::basic_id< Type::domain_configuration_transaction_resource_reply>;
                      struct Reply : base_reply
                      {
                         std::vector< Resource> resources;
@@ -247,6 +247,74 @@ namespace casual
 
                } // transaction
 
+
+               namespace gateway
+               {
+                  struct Listener
+                  {
+                     std::string address;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive &  address;
+                     )
+
+                     friend std::ostream& operator << ( std::ostream& out, const Listener& value);
+                  };
+
+
+                  struct Connection
+                  {
+                     enum class Type : char
+                     {
+                        tcp,
+                        ipc,
+                     };
+
+                     std::string name;
+                     std::string address;
+                     Type type = Type::tcp;
+                     bool restart = false;
+                     std::vector< std::string> services;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & name;
+                        archive & type;
+                        archive & address;
+                        archive & restart;
+                        archive & services;
+                     )
+
+                     friend std::ostream& operator << ( std::ostream& out, Type value);
+                     friend std::ostream& operator << ( std::ostream& out, const Connection& value);
+                  };
+
+                  using base_request = server::basic_id< Type::domain_configuration_gateway_request>;
+                  struct Request : base_request
+                  {
+
+                  };
+
+                  using base_reply = server::basic_id< Type::domain_configuration_gateway_reply>;
+                  struct Reply : base_reply
+                  {
+                     std::vector< Listener> listeners;
+                     std::vector< Connection> connections;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & listeners;
+                        archive & connections;
+                     )
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+
+
+               } // gateway
+
+
             } // configuration
 
          } // domain
@@ -261,6 +329,10 @@ namespace casual
 
             template<>
             struct type_traits< domain::configuration::transaction::resource::Request> : detail::type< domain::configuration::transaction::resource::Reply> {};
+
+            template<>
+            struct type_traits< domain::configuration::gateway::Request> : detail::type< domain::configuration::gateway::Reply> {};
+
 
          } // reverse
 

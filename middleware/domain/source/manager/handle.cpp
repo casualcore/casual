@@ -584,6 +584,20 @@ namespace casual
 
                } // transaction
 
+
+               void Gateway::operator () ( const common::message::domain::configuration::gateway::Request& message)
+               {
+                  Trace trace{ "domain::manager::handle::configuration:::Gateway"};
+
+                  auto reply = config::gateway::transform::gateway( state().configuration.gateway);
+
+                  log << "reply: " << reply << '\n';
+
+                  manager::local::ipc::send( state(), message.process, reply);
+
+               }
+
+
             } // configuration
 
 
@@ -626,6 +640,7 @@ namespace casual
                manager::handle::process::Connect{ state},
                manager::handle::process::Lookup{ state},
                manager::handle::configuration::transaction::Resource{ state},
+               manager::handle::configuration::Gateway{ state},
                handle::local::server::Handle{
                   manager::admin::services( state),
                   ipc::device().error_handler()}

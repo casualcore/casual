@@ -75,6 +75,10 @@ namespace casual
 
                   std::string address;
 
+                  //!
+                  //! configured services
+                  //!
+                  std::vector< std::string> services;
                   bool restart = false;
 
                   friend std::ostream& operator << ( std::ostream& out, const Connection& value);

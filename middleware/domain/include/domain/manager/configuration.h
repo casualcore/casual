@@ -17,8 +17,10 @@ namespace casual
          namespace configuration
          {
 
-
             State state( const Settings& settings);
+
+
+
 
 
          } // configuration

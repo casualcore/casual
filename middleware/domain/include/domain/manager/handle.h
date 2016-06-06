@@ -123,6 +123,13 @@ namespace casual
 
                } // transaction
 
+               struct Gateway : public Base
+               {
+                  using Base::Base;
+
+                  void operator () ( const common::message::domain::configuration::gateway::Request& message);
+               };
+
             } // configuration
 
          } // handle

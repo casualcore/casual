@@ -1,8 +1,5 @@
 //!
-//! manager.h
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_MANAGER_H_

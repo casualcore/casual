@@ -17,29 +17,10 @@ namespace casual
       {
          namespace configuration
          {
-            namespace local
-            {
-               namespace
-               {
-                  config::domain::Domain configuration( const Settings& settings)
-                  {
-
-                     if( settings.configurationfiles.empty())
-                     {
-                        return config::domain::get();
-                     }
-
-                     return range::accumulate(
-                           range::transform( settings.configurationfiles, []( const std::string& f){ return config::domain::get( f);}),
-                           config::domain::Domain{}
-                           );
-                  }
-               } // <unnamed>
-            } // local
 
             State state( const Settings& settings)
             {
-               return transform::state( local::configuration( settings));
+               return transform::state( config::domain::get( settings.configurationfiles));
             }
 
 

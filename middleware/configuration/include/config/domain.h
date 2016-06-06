@@ -1,8 +1,5 @@
 //!
-//! domain.h
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CONFIG_DOMAIN_H_
@@ -10,6 +7,7 @@
 
 
 #include "config/environment.h"
+#include "config/gateway.h"
 
 
 #include "sf/namevaluepair.h"
@@ -172,6 +170,9 @@ namespace casual
             std::vector< Executable> executables;
             std::vector< Service> services;
 
+            gateway::Gateway gateway;
+
+
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                archive & CASUAL_MAKE_NVP( name);
@@ -181,6 +182,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( executables);
                archive & CASUAL_MAKE_NVP( services);
+               archive & CASUAL_MAKE_NVP( gateway);
+
             )
 
             Domain& operator += ( const Domain& rhs);
@@ -189,7 +192,9 @@ namespace casual
             friend Domain operator + ( const Domain& lhs, const Domain& rhs);
          };
 
+
          Domain get( const std::string& file);
+         Domain get( const std::vector< std::string>& files);
 
          //!
          //! Deserialize the domain configuration
@@ -197,6 +202,13 @@ namespace casual
          //! @return domain configuration
          //!
          Domain get();
+
+         //!
+         //! Complement with defaults and validates
+         //!
+         //! @param configuration domain configuration
+         //!
+         void finalize( Domain& configuration);
 
 
          namespace filter

@@ -10,8 +10,7 @@
 #include "gateway/manager/admin/vo.h"
 
 
-
-#include "config/gateway.h"
+#include "common/message/domain.h"
 
 
 namespace casual
@@ -21,7 +20,7 @@ namespace casual
       namespace transform
       {
 
-         manager::State state( const config::gateway::Gateway& configuration);
+         manager::State state( const common::message::domain::configuration::gateway::Reply& configuration);
 
          manager::admin::vo::State state( const manager::State& state);
 

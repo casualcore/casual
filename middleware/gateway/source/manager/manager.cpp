@@ -1,14 +1,13 @@
 //!
-//! manager.cpp
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "gateway/manager/manager.h"
 #include "gateway/manager/handle.h"
 #include "gateway/environment.h"
 #include "gateway/transform.h"
+
+#include "config/domain.h"
 
 
 #include "common/trace.h"
@@ -23,35 +22,57 @@ namespace casual
 
       namespace manager
       {
-         namespace transform
+         namespace local
          {
-
-            State settings( Settings settings)
+            namespace
             {
-               Trace trace{ "gateway::manager::transform::settings", log::internal::gateway};
-
-               if( settings.configuration.empty())
+               manager::State connect( manager::Settings settings)
                {
-                  return gateway::transform::state( config::gateway::get());
-               }
-               return gateway::transform::state( config::gateway::get( settings.configuration));
-            }
+                  Trace trace{ "gateway::manager::local::connect", log::internal::gateway};
 
-         } // transform
+                  //
+                  // Connect to domain
+                  //
+                  process::instance::connect( process::instance::identity::gateway::manager());
+
+
+                  if( ! settings.configuration.empty())
+                  {
+                     return gateway::transform::state(
+                           config::gateway::transform::gateway(
+                                 config::domain::get( settings.configuration).gateway));
+                  }
+
+
+                  //
+                  // Ask domain manager for configuration
+                  //
+                  common::message::domain::configuration::gateway::Request request;
+                  request.process = process::handle();
+
+                  return gateway::transform::state(
+                        manager::ipc::device().call(
+                              communication::ipc::domain::manager::device(),
+                              request));
+
+               }
+
+            } // <unnamed>
+         } // local
 
       } // manager
 
 
 
+
+
+
       Manager::Manager( manager::Settings settings)
-        : m_state{ manager::transform::settings( std::move( settings))}
+        : m_state{ manager::local::connect( std::move( settings))}
       {
          Trace trace{ "gateway::Manager::Manager", log::internal::gateway};
 
-         //
-         // Connect to domain
-         //
-         process::instance::connect( process::instance::identity::gateway::manager());
+
       }
 
       Manager::~Manager()

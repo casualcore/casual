@@ -53,8 +53,10 @@ namespace casual
             domain_process_termination_event,
             domain_process_lookup_request,
             domain_process_lookup_reply,
-            domain_configuration_transaction_resource_request,
+            domain_configuration_transaction_resource_request = DOMAIN_BASE + 100,
             domain_configuration_transaction_resource_reply,
+            domain_configuration_gateway_request,
+            domain_configuration_gateway_reply,
 
             // Server
             SERVER_BASE = 2000,
@@ -146,6 +148,8 @@ namespace casual
             gateway_worker_disconnect,
             gateway_ipc_connect_request,
             gateway_ipc_connect_reply,
+            gateway_service_discover_request,
+            gateway_service_discover_reply,
 
 
 

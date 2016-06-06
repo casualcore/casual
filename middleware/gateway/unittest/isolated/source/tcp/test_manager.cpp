@@ -1,8 +1,5 @@
 //!
-//! test_manager.cpp
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -16,6 +13,7 @@
 
 #include "common/environment.h"
 #include "common/trace.h"
+#include "common/call/lookup.h"
 
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
@@ -72,11 +70,13 @@ namespace casual
             std::string empty_configuration()
             {
                return R"yaml(
-gateway:
-  
-  listeners:
 
-  connections:
+domain:
+  gateway:
+  
+    listeners:
+
+    connections:
 
 )yaml";
 
@@ -86,13 +86,14 @@ gateway:
             std::string one_listener_configuration()
             {
                return R"yaml(
-gateway:
+domain:
+  gateway:
   
-  listeners:
-    - address: 127.0.0.1:6666
+    listeners:
+      - address: 127.0.0.1:6666
 
-  connections:
-    - address: 127.0.0.1:6666
+    connections:
+      - address: 127.0.0.1:6666
 
 )yaml";
 
@@ -137,9 +138,11 @@ gateway:
                      {
                         auto state = local::call::state();
 
-                        while( ! manager_ready( state))
+                        auto count = 100;
+
+                        while( ! manager_ready( state) && count-- > 0)
                         {
-                           common::process::sleep( std::chrono::milliseconds{ 5});
+                           common::process::sleep( std::chrono::milliseconds{ 10});
                            state = local::call::state();
                         }
 
@@ -156,6 +159,18 @@ gateway:
 
          } // <unnamed>
       } // local
+
+
+      TEST( casual_gateway_manager_tcp, empty_configuration)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::empty_configuration()};
+
+         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
+
+         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+      }
 
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666)
@@ -184,6 +199,65 @@ gateway:
 
          EXPECT_TRUE( ! state.connections.outbound.empty());
          EXPECT_TRUE( ! state.connections.inbound.empty());
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace configuration
+            {
+
+               std::string connect_to_our_self_services_service1()
+               {
+                  return R"yaml(
+domain:
+  gateway:
+  
+    listeners:
+      - address: 127.0.0.1:6666
+
+    connections:
+      - address: 127.0.0.1:6666
+        services: [ "remote1"]
+
+)yaml";
+
+               }
+
+
+
+            } // configuration
+         } // <unnamed>
+      } // local
+
+
+      TEST( casual_gateway_manager_tcp,  connect_to_our_self__remote1_advertise__expect_service_remote1)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::configuration::connect_to_our_self_services_service1()};
+
+         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
+
+
+         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+
+         auto state = local::call::wait::ready::state();
+
+         ASSERT_TRUE( ! state.connections.outbound.empty());
+         EXPECT_TRUE( ! state.connections.inbound.empty());
+
+         //
+         // Expect service remote1 to be available from the outbound connection
+         //
+         {
+            auto reply = common::call::service::Lookup{ "remote1"}();
+
+            EXPECT_TRUE( reply.service.name == "remote1");
+            EXPECT_TRUE( reply.process == state.connections.outbound.at( 0).process);
+         }
+
       }
 
 

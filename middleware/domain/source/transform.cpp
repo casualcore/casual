@@ -271,6 +271,9 @@ namespace casual
          {
             manager::State result;
 
+            result.configuration = domain;
+
+
             //
             // Handle groups
             //
@@ -278,8 +281,6 @@ namespace casual
                manager::state::Group global;
                global.name = "global";
                global.note = "global group - the group that everything has dependency to";
-
-               //result.casual_group_id = casual_group.id;
 
                result.groups = local::groups( domain.groups, std::move( global));
             }
@@ -317,6 +318,8 @@ namespace casual
                   return result;
                }
             } // transaction
+
+
 
 
          } // configuration

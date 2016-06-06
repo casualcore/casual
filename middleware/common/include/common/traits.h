@@ -1,8 +1,5 @@
 //!
-//! traits.h
-//!
-//! Created on: Jun 29, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMON_TRAITS_H_
@@ -233,6 +230,19 @@ namespace casual
 
 #endif
 
+         //!
+         //! SFINAE friendly underlying_type
+         //! @{
+
+         template<class T, bool = std::is_enum< T>::value>
+         struct underlying_type : std::underlying_type<T> {};
+
+         template<class T>
+         struct underlying_type<T, false> {};
+
+         template< typename T>
+         using underlying_type_t = typename underlying_type< T>::type;
+         //! @}
 
       } // traits
    } // common

@@ -12,6 +12,7 @@
 #include "common/trace.h"
 #include "common/environment.h"
 #include "common/process.h"
+#include "common/cast.h"
 
 namespace casual
 {
@@ -252,6 +253,31 @@ namespace casual
             } // process
 
 
+            namespace local
+            {
+               namespace
+               {
+                  void advertise( const common::process::Handle& process, std::vector< std::string> services)
+                  {
+                     common::message::service::Advertise message;
+                     message.process = process;
+                     message.location = common::message::service::Location::remote;
+
+                     range::transform( services, message.services, []( std::string& s){
+                        return common::message::Service{
+                           std::move( s),
+                           common::server::Service::Type::cXATMI,
+                           cast::underlying( common::server::Service::Transaction::join)
+                        };
+
+                     });
+
+                     manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
+                  }
+
+               } // <unnamed>
+            } // local
+
             namespace outbound
             {
                void Connect::operator () ( message_type& message)
@@ -269,10 +295,12 @@ namespace casual
                         found->process = message.process;
                         found->remote = message.remote;
                         found->runlevel = state::outbound::Connection::Runlevel::online;
+
+                        local::advertise( message.process, found->services);
                      }
                      else
                      {
-                        log::internal::gateway << "outbound connected is in wrong state: " << *found << " - action: discard\n";
+                        log::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
                      }
 
                   }

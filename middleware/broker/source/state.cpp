@@ -52,36 +52,86 @@ namespace casual
       namespace state
       {
 
-
-         bool operator == ( const Service::Instance& lhs, common::platform::pid::type rhs)
+         void Instance::lock( const common::platform::time_point& when)
          {
-            return lhs.instance.get().process.pid == rhs;
+            assert( m_state != State::busy);
+
+            if( m_state == State::idle)
+            {
+               m_state = State::busy;
+            }
+
+            m_last = when;
          }
 
-         bool Service::Instance::idle() const
+         void Instance::unlock( const common::platform::time_point& when)
          {
-            return instance.get().state() == state::Instance::State::idle;
+            assert( m_state != State::idle);
+
+            if( m_state == State::busy)
+            {
+               m_state = State::idle;
+            }
+
+            m_last = when;
          }
+
+         namespace service
+         {
+            void Instance::lock( const common::platform::time_point& when)
+            {
+               instance.get().lock( when);
+            }
+
+            void Instance::unlock( const common::platform::time_point& when)
+            {
+               instance.get().unlock( when);
+            }
+
+         } // service
 
          void Service::remove( common::platform::pid::type instance)
          {
-            range::trim( instances, range::remove( instances, instance));
+            range::trim( m_instances, range::remove( m_instances, instance));
+            partition_instances();
+         }
+
+         bool Service::has( common::platform::pid::type instance)
+         {
+            return range::find( m_instances, instance);
          }
 
          void Service::add( state::Instance& instance)
          {
-            instances.emplace_back( instance);
+            m_instances.emplace_back( instance);
+
+            partition_instances();
          }
 
-
-         Service::Instance* Service::idle()
+         void Service::partition_instances()
          {
-            auto found = range::find_if( instances, std::mem_fn( &Service::Instance::idle));
+            auto partition = range::stable_partition( m_instances, []( const service::Instance& i){
+               return i.state() != state::Instance::State::remote;
+            });
+
+            instances.local = std::get< 0>( partition);
+            instances.remote = std::get< 1>( partition);
+         }
+
+         service::Instance* Service::idle()
+         {
+            auto found = range::find_if( instances.local, std::mem_fn( &service::Instance::idle));
 
             if( found)
             {
                return &(*found);
             }
+
+            if( instances.local.empty() && ! instances.remote.empty())
+            {
+               return &(*instances.remote);
+            }
+
             return nullptr;
          }
 
@@ -124,55 +174,130 @@ namespace casual
       }
 
 
+      namespace local
+      {
+         namespace
+         {
+            template< typename I, typename S>
+            void remove_process( I& instances, S& services, common::platform::pid::type pid)
+            {
+               Trace trace{ "broker::local::remove_process", log::internal::debug};
+
+               auto found = common::range::find( instances, pid);
+
+               if( found)
+               {
+                  log::internal::debug << "remove process pid: " << pid << std::endl;
+
+                  for( auto& s : services)
+                  {
+                     s.second.remove( pid);
+                  }
+
+                  instances.erase( std::begin( found));
+               }
+            }
+
+
+
+
+            template< typename I>
+            auto find_or_add( I& instances, common::process::Handle process, state::Instance::State execution) -> decltype( instances.at( process.pid))
+            {
+               Trace trace{ "broker::local::find_or_add", log::internal::debug};
+
+               auto found = range::find( instances, process.pid);
+
+               if( found)
+               {
+                  log::internal::debug << "process found\n";
+                  return found->second;
+               }
+
+               return instances.emplace(
+                     std::piecewise_construct,
+                     std::forward_as_tuple( process.pid),
+                     std::forward_as_tuple( process, execution)).first->second;
+            }
+
+            template< typename S>
+            auto find_or_add( S& services, common::message::Service&& service) -> decltype( services.at( service.name))
+            {
+               Trace trace{ "broker::local::find_or_add service", log::internal::debug};
+
+               auto found = range::find( services, service.name);
+
+               if( found)
+               {
+                  return found->second;
+               }
+
+               return services.emplace( service.name, std::move( service)).first->second;
+            }
+
+            template< typename I, typename S>
+            void add_services( State& state, I& instances, S&& services, common::process::Handle process, state::Instance::State execution)
+            {
+               Trace trace{ "broker::local::add_services", log::internal::debug};
+
+               auto& instance = local::find_or_add( instances, process, execution);
+
+               for( auto& s : services)
+               {
+                  auto& service = find_or_add( state.services, std::move( s));
+                  service.add( instance);
+               }
+            }
+
+            template< typename I, typename S>
+            void remove_services( State& state, I& instances, S& services, common::process::Handle process, state::Instance::State execution)
+            {
+               Trace trace{ "broker::local::remove_services", log::internal::debug};
+
+               auto& instance = find_or_add( instances, process, execution);
+
+               for( auto& s : services)
+               {
+                  auto service = state.find_service( s.name);
+
+                  if( service)
+                  {
+                     service->remove( instance.process.pid);
+                  }
+               }
+            }
+
+         } // <unnamed>
+      } // local
 
       void State::remove_process( common::platform::pid::type pid)
       {
          Trace trace{ "broker::State::remove_process", log::internal::debug};
 
-         auto found = common::range::find( instances, pid);
-
-         if( found)
-         {
-            log::internal::debug << "remove process pid: " << pid << std::endl;
-
-            for( auto& s : services)
-            {
-               s.second.remove( pid);
-            }
-
-            instances.erase( std::begin( found));
-         }
+         local::remove_process( instances, services, pid);
       }
 
-      void State::add( common::process::Handle process, std::vector< common::message::Service> services)
+
+      void State::add( common::message::service::Advertise& message)
       {
-         Trace trace{ "broker::State::add services", log::internal::debug};
+         Trace trace{ "broker::State::add", log::internal::debug};
 
-         auto& instance = find_or_add( process);
+         auto execution = message.location == common::message::service::Location::remote ?
+               state::Instance::State::remote : state::Instance::State::idle;
 
-         for( auto& s : services)
-         {
-            auto& service = find_or_add( std::move( s));
-            service.add( instance);
-         }
+         local::add_services( *this, instances, std::move( message.services), message.process, execution);
       }
 
-      void State::remove( common::process::Handle process, const std::vector< common::message::Service>& services)
+      void State::remove( const common::message::service::Unadvertise& message)
       {
          Trace trace{ "broker::State::remove", log::internal::debug};
 
-         auto& instance = find_or_add( process);
+         auto execution = message.location == common::message::service::Location::remote ?
+               state::Instance::State::remote : state::Instance::State::idle;
 
-         for( auto& s : services)
-         {
-            auto service = find_service( s.name);
-
-            if( service)
-            {
-               service->remove( instance.process.pid);
-            }
-         }
+         local::remove_services( *this, instances, message.services, message.process, execution);
       }
+
 
       state::Service* State::find_service(  const std::string& name)
       {
@@ -185,24 +310,9 @@ namespace casual
          return nullptr;
       }
 
-      state::Instance& State::find_or_add( common::process::Handle process)
-      {
-         Trace trace{ "broker::State::add process", log::internal::debug};
 
-         auto found = range::find( instances, process.pid);
 
-         if( found)
-         {
-            log::internal::debug << "process found\n";
-            return found->second;
-         }
-
-         state::Instance instance;
-         instance.process = process;
-
-         return instances.emplace( process.pid, std::move( instance)).first->second;
-      }
-
+      /*
       state::Service& State::find_or_add( common::message::Service message)
       {
          auto found = range::find( services, message.name);
@@ -214,18 +324,14 @@ namespace casual
          state::Service service{ message};
          return services.emplace( message.name, std::move( service)).first->second;
       }
+      */
 
 
       void State::connect_broker( std::vector< common::message::Service> services)
       {
-         add( common::process::handle(), std::move( services));
+         local::add_services( *this, instances, std::move( services), common::process::handle(), state::Instance::State::idle);
       }
 
-
-      std::size_t State::size() const
-      {
-         return instances.size();
-      }
 
 
    } // broker
