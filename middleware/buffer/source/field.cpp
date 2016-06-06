@@ -15,6 +15,7 @@
 #include "common/log.h"
 #include "common/platform.h"
 #include "common/internal/trace.h"
+#include "common/algorithm.h"
 
 
 #include "sf/namevaluepair.h"
@@ -286,29 +287,6 @@ namespace casual
                }
             }
 
-            namespace scope
-            {
-
-               namespace guard
-               {
-                  template<typename lambda>
-                  struct exit
-                  {
-                     const lambda function;
-                     ~exit() { function();}
-                  };
-
-                  template<typename lambda>
-                  exit<lambda> make( const lambda& function)
-                  {
-                     return { function};
-                  }
-
-               } // guard
-            } // scope
-
-
-
             namespace add
             {
 
@@ -395,7 +373,7 @@ namespace casual
                      //
                      // Make sure to update the handle regardless
                      //
-                     const auto synchronize = scope::guard::make
+                     const auto synchronize = common::scope::execute
                      ( [&]() { *handle = buffer.handle();});
 
                      //
@@ -648,7 +626,7 @@ namespace casual
                      //
                      // Make sure to update the handle regardless
                      //
-                     const auto synchronize = scope::guard::make
+                     const auto synchronize = common::scope::execute
                      ( [&]() { *handle = buffer.handle();});
 
                      //
@@ -850,7 +828,7 @@ namespace casual
                      auto& target = pool_type::pool.get( *target_handle);
                      const auto& source = pool_type::pool.get( source_handle);
 
-                     const auto synchronize = scope::guard::make
+                     const auto synchronize = common::scope::execute
                      ( [&]() { *target_handle = target.handle();});
 
                      auto index = source.index;
@@ -874,7 +852,7 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-                     const auto synchronize = scope::guard::make
+                     const auto synchronize = common::scope::execute
                      ( [&]() { *handle = buffer.handle();});
 
                      const auto data = static_cast<const_data_type>(source);
