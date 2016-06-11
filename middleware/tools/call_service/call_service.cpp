@@ -15,28 +15,29 @@
 #include "common/error.h"
 #include "common/arguments.h"
 
-
-
 std::string type_from_input( const std::string& input)
 {
    //
    // TODO: More fancy
    //
 
-   const std::map<std::string::value_type,std::string> mappings
+   if( ! input.empty())
    {
-      { '[', CASUAL_BUFFER_INI_TYPE},
-      { '{', CASUAL_BUFFER_JSON_TYPE},
-      { '<', CASUAL_BUFFER_XML_TYPE},
-      { '%', CASUAL_BUFFER_YAML_TYPE},
-   };
+      const std::map<std::string::value_type,std::string> mappings
+      {
+         { '[', CASUAL_BUFFER_INI_TYPE},
+         { '{', CASUAL_BUFFER_JSON_TYPE},
+         { '<', CASUAL_BUFFER_XML_TYPE},
+         { '%', CASUAL_BUFFER_YAML_TYPE},
+      };
 
-   const auto result = mappings.find( input.at( 0));
+      const auto result = mappings.find( input.at( 0));
 
-   if( result != mappings.end())
-   {
-      std::clog << "assuming type " << result->second << std::endl;
-      return result->second;
+      if( result != mappings.end())
+      {
+         std::clog << "assuming type " << result->second << std::endl;
+         return result->second;
+      }
    }
 
    throw std::invalid_argument( "failed to deduce type from input");
@@ -68,6 +69,7 @@ int main( int argc, char* argv[])
       std::string service;
       std::string type;
 
+      // scope
       {
          casual::common::Arguments parser{ "client to call an XATMI-service (request from stdin and response to stdout)",
          {
@@ -75,10 +77,24 @@ int main( int argc, char* argv[])
             casual::common::argument::directive( { "-f", "--format"}, "(semi-optional) type of buffer " + types, type),
          }};
 
-         //
-         // TODO: See tickets #45 and #46
-         //
          parser.parse( argc, argv);
+
+         //
+         // Hotfix - See tickets #45 and #46
+         //
+         if( service.empty())
+         {
+            const std::string help{ "--help"};
+
+            const auto where = std::find( argv + 1, argv + argc, help);
+
+            if( where == (argv + argc))
+            {
+               parser.parse( { help});
+            }
+
+            return 0;
+         }
       }
 
       //

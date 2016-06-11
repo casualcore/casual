@@ -205,7 +205,7 @@ namespace casual
 
                   std::ostream& description( std::ostream& out, const std::string& description, int indent = 6)
                   {
-                     for( auto& row : string::split( description, '\n'))
+                     for( const auto& row : string::split( description, '\n'))
                      {
                         out << std::string( indent, ' ') << row << "\n";
                      }
@@ -235,13 +235,12 @@ namespace casual
                {
                public:
 
-                  Help( const Group* group, std::string description, std::ostream& out = std::cout)
+                  Help( const Group* group, std::string description, std::ostream& out = std::clog)
                      : m_group( group), m_description( std::move( description)), m_out( out)
                   {
                   }
-                  Help( const Group* group) : Help( group, "") {}
 
-
+                  //Help( const Group* group) : Help( group, "") {}
 
                   void do_visit( const internal::base_directive& option) override
                   {
@@ -251,7 +250,7 @@ namespace casual
                   void do_visit( const Group& group) override
                   {
                      //format::help( m_out, group);
-                     std::cout << "---group ---" << std::endl;
+                     std::clog << "---group ---" << std::endl;
 
                      //internal::format::help( m_out, *this);
 
@@ -271,7 +270,7 @@ namespace casual
 
                private:
                   const Group* m_group = nullptr;
-                  std::string m_description;
+                  const std::string m_description;
                   std::ostream& m_out;
                };
 
