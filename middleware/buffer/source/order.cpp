@@ -284,19 +284,26 @@ namespace casual
                   // Make sure to reset the size in case of exception since
                   // this is not an atomic operation
                   //
-                  // TODO: Maybe we should remove this safety-net since it is a
-                  // bit expencive
-                  //
 
+                  //
+                  // capture current size
+                  //
                   const auto used = memory.size();
 
+                  //
+                  // create potential rollback
+                  //
                   const auto reset = common::scope::execute
                   ( [&](){ if( std::uncaught_exception()) memory.resize( used);});
 
-
-
+                  //
+                  // append first size chunk
+                  //
                   append( memory, size);
 
+                  //
+                  // append other data chunk
+                  //
                   memory.insert( memory.end(), data, data + size);
                }
 
