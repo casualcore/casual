@@ -99,7 +99,10 @@ namespace casual
 
                   inbound_device_type& inbound() { return m_inbound;}
 
-                  const domain::Identity& remote() const { return m_remote;}
+                  std::vector< std::string> address() const
+                  {
+                     return { m_adress.host + ':' + m_adress.port};
+                  }
 
 
                   configuration_type configuration() const
@@ -109,7 +112,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const external_type& value)
                   {
-                     return out << "{ adress: " << value.m_adress << ", remote: " << value.m_remote
+                     return out << "{ adress: " << value.m_adress
                            << ", inbound: " << value.m_inbound
                            << '}';
                   }
@@ -117,7 +120,6 @@ namespace casual
                private:
                   communication::tcp::Address m_adress;
                   inbound_device_type m_inbound;
-                  domain::Identity m_remote;
 
                };
             };

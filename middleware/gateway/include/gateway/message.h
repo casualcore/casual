@@ -75,18 +75,15 @@ namespace casual
          struct basic_connect : common::message::basic_message< type>
          {
             common::process::Handle process;
-            common::domain::Identity remote;
 
             CASUAL_CONST_CORRECT_MARSHAL({
                common::message::basic_message< type>::marshal( archive);
                archive & process;
-               archive & remote;
             })
 
             friend std::ostream& operator << ( std::ostream& out, const basic_connect& value)
             {
                return out << "{ process: " << value.process
-                     << ", remote: " << value.remote
                      << '}';
             }
          };
@@ -142,63 +139,16 @@ namespace casual
          } // tcp
 
 
-         namespace connection
-         {
-            namespace information
-            {
-               template< common::message::Type type>
-               struct basic_information : common::message::basic_message< type>
-               {
-                  common::process::Handle process;
-                  common::domain::Identity remote;
-                  std::vector< std::string> addresses;
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     common::message::basic_message< type>::marshal( archive);
-                     archive & process;
-                     archive & remote;
-                     archive & addresses;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const basic_information& value)
-                  {
-                     return out << "{ process: " << value.process
-                           << ", remote: " << value.remote
-                           << ", addresses: " << common::range::make( value.addresses)
-                           << '}';
-                  }
-               };
-
-               //!
-               //! Used to exchange domain information between domains
-               //!
-               //! outbound is always the one who sends the request
-               //!
-               //! @{
-               using Request =  basic_information< common::message::Type::gateway_connection_information_request>;
-               using Reply =  basic_information< common::message::Type::gateway_connection_information_reply>;
-               //! @}
-
-            } // information
-
-         } // connection
-
-
-
-
-
          namespace worker
          {
 
             struct Connect : common::message::basic_message< common::message::Type::gateway_worker_connect>
             {
                common::platform::binary_type information;
-               common::domain::Identity remote;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);
                   archive & information;
-                  archive & remote;
                })
 
             };
@@ -245,10 +195,6 @@ namespace casual
          {
             template<>
             struct type_traits< gateway::message::ipc::connect::Request> : detail::type<  gateway::message::ipc::connect::Reply> {};
-
-            template<>
-            struct type_traits< gateway::message::connection::information::Request> : detail::type< gateway::message::connection::information::Reply> {};
-
 
          } // reverse
       } // message

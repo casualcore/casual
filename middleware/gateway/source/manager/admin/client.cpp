@@ -97,12 +97,31 @@ namespace casual
                }
             };
 
+            auto format_runlevel = []( const manager::admin::vo::base_connection& c)
+            {
+               switch( c.runlevel)
+               {
+                  case manager::admin::vo::base_connection::Runlevel::booting: return "booting";
+                  case manager::admin::vo::base_connection::Runlevel::online: return "online";
+                  case manager::admin::vo::base_connection::Runlevel::shutdown: return "shutdown";
+                  case manager::admin::vo::base_connection::Runlevel::error: return "error";
+                  default: return "absent";
+               }
+            };
+
+            auto format_address = []( const manager::admin::vo::base_connection& c)
+            {
+               return string::join( c.address, " ");
+            };
+
             return {
                { global::porcelain, global::color, global::header},
                terminal::format::column( "name", format_domain_name, terminal::color::yellow),
                terminal::format::column( "id", format_domain_id, terminal::color::blue),
                terminal::format::column( "pid", format_pid, terminal::color::white),
                terminal::format::column( "type", format_type, terminal::color::cyan),
+               terminal::format::column( "runlevel", format_runlevel, terminal::color::no_color),
+               terminal::format::column( "address", format_address, terminal::color::blue),
             };
 
          }

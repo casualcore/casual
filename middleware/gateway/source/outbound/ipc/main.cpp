@@ -59,7 +59,6 @@ namespace casual
                      message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
-                     request.remote = domain::identity();
 
                      log::internal::gateway << "reguest: " << request << '\n';
 
@@ -175,7 +174,6 @@ namespace casual
                            sleep();
 
                            auto result = local::connect_domain( m_inbound, m_domain_file);
-                           m_remote = result.remote;
                            m_process = result.process;
                         }
                      }
@@ -183,7 +181,7 @@ namespace casual
 
                   inbound_device_type& inbound() { return m_inbound;}
 
-                  const domain::Identity& remote() const { return m_remote;}
+                  std::vector< std::string> address() const { return {};}
 
 
                   configuration_type configuration() const
@@ -193,7 +191,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const external_type& value)
                   {
-                     return out << "{ path: " << value.m_domain_file << ", remote: " << value.m_remote
+                     return out << "{ path: " << value.m_domain_file
                            << ", inbound: " << value.m_inbound
                            << ", process: " << value.m_process
                            << '}';
@@ -204,7 +202,6 @@ namespace casual
                   inbound_device_type m_inbound;
 
                   process::Handle m_process;
-                  domain::Identity m_remote;
 
                };
             };

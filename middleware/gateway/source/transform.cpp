@@ -41,7 +41,7 @@ namespace casual
                      manager::state::outbound::Connection result;
 
                      result.type = local::type( connection.type);
-                     result.address = common::environment::string( connection.address);
+                     result.address.push_back( common::environment::string( connection.address));
                      result.restart = connection.restart;
                      result.services = connection.services;
 
@@ -88,6 +88,7 @@ namespace casual
                         result.remote = value.remote;
                         result.runlevel = static_cast< typename R::Runlevel>( value.runlevel);
                         result.type = static_cast< typename R::Type>( value.type);
+                        result.address = value.address;
 
                         return result;
                      }

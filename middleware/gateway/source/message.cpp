@@ -49,14 +49,12 @@ namespace casual
                std::ostream& operator << ( std::ostream& out, const Request& value)
                {
                   return out << "{ process: " << value.process
-                        << ", remote: " << value.remote
                         << '}';
                }
 
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {
                   return out << "{ process: " << value.process
-                        << ", remote: " << value.remote
                         << '}';
                }
 

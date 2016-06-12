@@ -180,9 +180,9 @@ namespace casual
                {
                   using device_type = typename std::decay< decltype( device)>::type;
 
-                  while( handler( device.next( typename device_type::blocking_policy{})))
+                  while( true)
                   {
-                     ;
+                     handler( device.next( typename device_type::blocking_policy{}));
                   }
                }
 

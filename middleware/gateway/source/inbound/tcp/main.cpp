@@ -74,13 +74,14 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const external_type& external)
                   {
-                     return out << "{ remote: " << external.m_remote
-                           << ", inbound: " << external.m_inbound << "}";
+                     return out << "{ inbound: " << external.m_inbound
+                           << "}";
                   }
 
                   inbound_device_type& device() { return m_inbound;}
 
-                  const domain::Identity& remote() const { return m_remote;}
+                  std::vector< std::string> address() const { return {};}
+
 
                   configuration_type configuration() const
                   {
@@ -89,7 +90,6 @@ namespace casual
 
                private:
                   inbound_device_type m_inbound;
-                  domain::Identity m_remote;
                };
 
             };

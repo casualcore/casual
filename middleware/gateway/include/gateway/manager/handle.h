@@ -13,6 +13,7 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/domain.h"
+#include "common/message/gateway.h"
 
 #include "common/communication/ipc.h"
 
@@ -73,6 +74,21 @@ namespace casual
 
 
             } // process
+
+            namespace domain
+            {
+               namespace discover
+               {
+                  struct Reply : Base
+                  {
+                     using Base::Base;
+                     using message_type = common::message::gateway::domain::discover::Reply;
+
+                     void operator () ( message_type& message);
+                  };
+
+               } // discovery
+            } // domain
 
             namespace outbound
             {

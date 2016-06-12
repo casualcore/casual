@@ -44,6 +44,7 @@ namespace casual
 
                      common::process::Handle process;
                      common::domain::Identity remote;
+                     std::vector< std::string> address;
                      Type type = Type::unknown;
                      Runlevel runlevel = Runlevel::absent;
 
@@ -52,6 +53,7 @@ namespace casual
                      {
                         archive & CASUAL_MAKE_NVP( process);
                         archive & CASUAL_MAKE_NVP( remote);
+                        archive & CASUAL_MAKE_NVP( address);
                         archive & CASUAL_MAKE_NVP( type);
                         archive & CASUAL_MAKE_NVP( runlevel);
                      })

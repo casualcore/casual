@@ -62,6 +62,7 @@ casual_common_objectfiles = [
     Compile( 'source/message/queue.cpp'),
     Compile( 'source/message/transaction.cpp'),
     Compile( 'source/message/domain.cpp'),
+    Compile( 'source/message/gateway.cpp'),
     
     Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),

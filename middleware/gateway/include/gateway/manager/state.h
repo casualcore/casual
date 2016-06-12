@@ -41,6 +41,7 @@ namespace casual
 
                common::process::Handle process;
                common::domain::Identity remote;
+               std::vector< std::string> address;
                Type type = Type::unknown;
                Runlevel runlevel = Runlevel::absent;
 
@@ -71,9 +72,6 @@ namespace casual
             {
                struct Connection : base_connection
                {
-
-
-                  std::string address;
 
                   //!
                   //! configured services

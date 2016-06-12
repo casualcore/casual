@@ -23,12 +23,6 @@ namespace casual
             {
                platform::ipc::id::type ipc = 0;
                std::string correlation;
-               struct
-               {
-                  std::string id;
-                  std::string name;
-               } remote;
-
             };
 
             struct Policy
@@ -72,8 +66,6 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::external_type ctor", log::internal::gateway};
 
-                     m_remote.name = std::move( settings.remote.name);
-                     m_remote.id = Uuid{ settings.remote.id};
                      m_process.queue = settings.ipc;
 
                      //
@@ -84,7 +76,6 @@ namespace casual
                         reply.correlation = Uuid{ settings.correlation};
                         reply.process.pid = common::process::id();
                         reply.process.queue = m_inbound.connector().id();
-                        reply.remote = common::domain::identity();
 
                         log::internal::gateway << "reply: " << reply << '\n';
 
@@ -94,14 +85,13 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const external_type& external)
                   {
-                     return out << "{ remote: " << external.m_remote
-                           << ", process: " << external.m_process
+                     return out << "{ process: " << external.m_process
                            << ", inbound: " << external.m_inbound << "}";
                   }
 
                   inbound_device_type& device() { return m_inbound;}
 
-                  const domain::Identity& remote() const { return m_remote;}
+                  std::vector< std::string> address() const { return {};}
 
                   configuration_type configuration() const
                   {
@@ -111,7 +101,6 @@ namespace casual
                private:
                   inbound_device_type m_inbound;
                   common::process::Handle m_process;
-                  domain::Identity m_remote;
                };
 
             };
@@ -134,8 +123,6 @@ int main( int argc, char **argv)
       casual::gateway::inbound::ipc::Settings settings;
       {
          casual::common::Arguments parser{{
-            casual::common::argument::directive( { "--remote-name"}, "romote domain name", settings.remote.name),
-            casual::common::argument::directive( { "--remote-id"}, "romote domain id", settings.remote.id),
             casual::common::argument::directive( { "--remote-ipc-queue"}, "romote domain ipc queue", settings.ipc),
             casual::common::argument::directive( { "--correlation"}, "message connect correlation", settings.correlation),
          }};

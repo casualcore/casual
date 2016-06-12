@@ -9,6 +9,7 @@
 #include "common/server/handle.h"
 #include "common/message/handle.h"
 
+
 #include "common/trace.h"
 #include "common/environment.h"
 #include "common/process.h"
@@ -128,7 +129,7 @@ namespace casual
                            {
                               connection.process.pid = common::process::spawn(
                                     local::executable( connection),
-                                    { "--address", connection.address});
+                                    { "--address", common::string::join( connection.address, " ")});
 
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::booting;
                            }
@@ -253,6 +254,8 @@ namespace casual
             } // process
 
 
+
+
             namespace local
             {
                namespace
@@ -275,8 +278,79 @@ namespace casual
                      manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
                   }
 
+                  namespace discover
+                  {
+                     void send( const common::process::Handle& process, std::vector< std::string> services)
+                     {
+                        Trace trace{ "gateway::manager::handle::local::discover send", log::internal::gateway};
+
+                        common::message::gateway::domain::discover::Request request;
+                        request.process = common::process::handle();
+                        request.services = std::move( services);
+
+                        manager::ipc::device().blocking_send( process.queue, request);
+                     }
+
+                     template< typename C>
+                     void reply( C& connection, const common::message::gateway::domain::discover::Reply& message)
+                     {
+                        if( connection.runlevel == state::outbound::Connection::Runlevel::booting)
+                        {
+                           connection.process = message.process;
+                           connection.runlevel = state::outbound::Connection::Runlevel::online;
+                           connection.remote = message.remote;
+                           connection.address = message.address;
+                        }
+                        else
+                        {
+                           log::error << "connection is in wrong state: " << connection << " - action: discard\n";
+                        }
+                     }
+
+                  } // discover
+
+
                } // <unnamed>
             } // local
+
+            namespace domain
+            {
+               namespace discover
+               {
+                  void Reply::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::domain::discover::Reply", log::internal::gateway};
+
+                     log::internal::gateway << "message: " << message << '\n';
+
+                     {
+                        auto found = range::find( state().connections.outbound, message.process.pid);
+
+                        if( found)
+                        {
+                           local::discover::reply( *found, message);
+                           local::advertise( message.process, found->services);
+
+                           return;
+                        }
+                     }
+
+                     {
+                        auto found = range::find( state().connections.inbound, message.process.pid);
+
+                        if( found)
+                        {
+                           local::discover::reply( *found, message);
+
+                           return;
+                        }
+                     }
+                     log::error << "discovery reply from unknown connection " << message << " - action: discard\n";
+                  }
+
+
+               } // discovery
+            } // domain
 
             namespace outbound
             {
@@ -293,16 +367,12 @@ namespace casual
                      if( found->runlevel == state::outbound::Connection::Runlevel::booting)
                      {
                         found->process = message.process;
-                        found->remote = message.remote;
-                        found->runlevel = state::outbound::Connection::Runlevel::online;
-
-                        local::advertise( message.process, found->services);
+                        local::discover::send( message.process, found->services);
                      }
                      else
                      {
                         log::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
                      }
-
                   }
                   else
                   {
@@ -324,9 +394,8 @@ namespace casual
                   if( found)
                   {
                      found->process = message.process;
-                     found->remote = message.remote;
-                     found->runlevel = state::inbound::Connection::Runlevel::online;
 
+                     local::discover::send( message.process, {});
                   }
                   else
                   {
@@ -354,8 +423,6 @@ namespace casual
                         connection.process.pid = common::process::spawn(
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
                               {
-                                    "--remote-name", message.remote.name,
-                                    "--remote-id", uuid::string( message.remote.id),
                                     "--remote-ipc-queue", std::to_string( message.process.queue),
                                     "--correlation", uuid::string( message.correlation),
                               });
@@ -386,6 +453,7 @@ namespace casual
                      if( state().runlevel != State::Runlevel::shutdown )
                      {
                         state::inbound::Connection connection;
+                        connection.runlevel = state::inbound::Connection::Runlevel::booting;
                         connection.type = state::inbound::Connection::Type::tcp;
 
                         connection.process.pid = common::process::spawn(
@@ -422,6 +490,7 @@ namespace casual
                manager::handle::outbound::Connect{ state},
                manager::handle::inbound::ipc::Connect{ state},
                manager::handle::inbound::tcp::Connect{ state},
+               handle::domain::discover::Reply{ state},
                std::ref( admin),
 
             };

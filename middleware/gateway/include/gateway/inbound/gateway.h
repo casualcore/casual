@@ -16,6 +16,7 @@
 #include "common/communication/ipc.h"
 
 #include "common/message/service.h"
+#include "common/message/gateway.h"
 #include "common/message/transaction.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -171,12 +172,12 @@ namespace casual
 
 
             template< typename M, typename D>
-            struct basic_reply
+            struct basic_forward
             {
                using message_type = M;
                using device_type = D;
 
-               basic_reply( device_type& device) : m_device( device) {}
+               basic_forward( device_type& device) : m_device( device) {}
 
                void operator() ( message_type& message)
                {
@@ -193,13 +194,61 @@ namespace casual
             namespace create
             {
                template< typename M, typename D>
-               auto reply( D& device) -> basic_reply< M, D>
+               auto forward( D& device) -> basic_forward< M, D>
                {
-                  return basic_reply< M, D>{ device};
+                  return basic_forward< M, D>{ device};
                }
 
             } // create
 
+            namespace domain
+            {
+               namespace discover
+               {
+                  struct Request
+                  {
+                     Request( std::vector< std::string> address) : address( std::move( address)) {}
+
+                     void operator () ( common::message::gateway::domain::discover::Request& request) const
+                     {
+                        common::Trace trace{ "gateway::inbound::handle::connection::information::Request", common::log::internal::gateway};
+
+                        auto reply = common::message::reverse::type( request);
+
+                        reply.process = common::process::handle();
+                        reply.remote = common::domain::identity();
+                        reply.address = address;
+
+                        //
+                        // Send to main thread, for forward to remote domain
+                        //
+                        common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), reply);
+
+                     }
+
+                     std::vector< std::string> address;
+                  };
+
+                  //!
+                  //! Assumes it's the gateway-manager that has sent the request
+                  //!
+                  //! @todo: make this more generic?
+                  //!
+                  struct Reply
+                  {
+                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
+                     {
+                        common::Trace trace{ "gateway::inbound::handle::connection::information::Reply", common::log::internal::gateway};
+
+                        reply.process = common::process::handle();
+                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), reply);
+                     }
+                  };
+
+
+               } // discover
+
+            } // domain
 
 
          } // handle
@@ -297,7 +346,6 @@ namespace casual
 
                   message::inbound::Connect connect;
                   connect.process = common::process::handle();
-                  connect.remote = m_remote;
                   common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
                }
 
@@ -307,10 +355,20 @@ namespace casual
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
                   handle::call::lookup::Reply{ m_cache},
-                  handle::create::reply< common::message::service::call::Reply>( outbound_device),
-                  handle::create::reply< common::message::transaction::resource::domain::prepare::Request>( outbound_device),
-                  handle::create::reply< common::message::transaction::resource::domain::commit::Request>( outbound_device),
-                  handle::create::reply< common::message::transaction::resource::domain::rollback::Request>( outbound_device),
+                  handle::create::forward< common::message::service::call::Reply>( outbound_device),
+                  handle::create::forward< common::message::transaction::resource::domain::prepare::Reply>( outbound_device),
+                  handle::create::forward< common::message::transaction::resource::domain::commit::Reply>( outbound_device),
+                  handle::create::forward< common::message::transaction::resource::domain::rollback::Reply>( outbound_device),
+
+                  //
+                  // Sent from this domain to get information about the other
+                  //
+                  handle::create::forward< common::message::gateway::domain::discover::Request>( outbound_device),
+
+                  //
+                  // Sent from worker thread to reply to a connection information request
+                  //
+                  handle::create::forward< common::message::gateway::domain::discover::Reply>( outbound_device),
                };
 
                common::log::internal::gateway << "start internal message pump\n";
@@ -337,8 +395,6 @@ namespace casual
                {
                   handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                }
-
-               m_remote = message.remote;
 
                configuration_type configuration;
                common::marshal::binary::Input marshal{ message.information};
@@ -396,8 +452,6 @@ namespace casual
 
                      message::worker::Connect message;
 
-                     message.remote = policy.remote();
-
                      {
                         auto configuration = policy.configuration();
                         common::marshal::binary::Output marshal{ message.information};
@@ -417,6 +471,14 @@ namespace casual
                      handle::basic_transaction_request< common::message::transaction::resource::domain::prepare::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::domain::commit::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::domain::rollback::Request>{},
+
+                     handle::domain::discover::Request{ policy.address()},
+
+                     //
+                     // Assumes that the reply should be sent to domain-manager
+                     //
+                     handle::domain::discover::Reply{},
+
                   };
              
                   common::log::internal::gateway << "start external message pump\n";
@@ -436,7 +498,6 @@ namespace casual
 
             Cache m_cache;
             std::thread m_request_thread;
-            common::domain::Identity m_remote;
          };
 
       } // inbound
