@@ -7,6 +7,8 @@
 
 #include "config/domain.h"
 
+#include "common/domain.h"
+
 
 namespace casual
 {
@@ -269,6 +271,12 @@ namespace casual
 
          manager::State state( const config::domain::Domain& domain)
          {
+
+            //
+            // Set the domain
+            //
+            common::domain::identity( common::domain::Identity{ domain.name});
+
             manager::State result;
 
             result.configuration = domain;

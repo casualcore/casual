@@ -34,6 +34,28 @@ install_bin.append( target)
 #
 Install( install_bin,'$(CASUAL_HOME)/example/bin')
 
-# minimal example
-Install( [ 'domain/minimal/minimal.md', 'domain/minimal/domain.env'],'$(CASUAL_HOME)/example/domain/minimal')
-Install( [ 'domain/minimal/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/minimal/configuration')
+
+# domain examples
+Install( [ 'domain/domain.md'],'$(CASUAL_HOME)/example/domain')
+
+
+# single domain minimal example
+Install( [ 'domain/single/minimal/minimal.md', 'domain/single/minimal/domain.env'],'$(CASUAL_HOME)/example/domain/single/minimal')
+Install( [ 'domain/single/minimal/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/single/minimal/configuration')
+
+# multi domian minimal example
+Install( [ 'domain/multiple/minimal/minimal.md'],'$(CASUAL_HOME)/example/domain/multiple/minimal')
+
+Install( [ 'domain/multiple/minimal/domain1/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain1')
+Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain1/configuration')
+
+Install( [ 'domain/multiple/minimal/domain2/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain2')
+Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain2/configuration')
+
+
+
+
+
+
+
+

@@ -1,13 +1,9 @@
 
-# minimal domain example
+# minimal single domain example
 
 ## pre requirements
 
-Make sure you have casual installed and `CASUAL_HOME` set to the installed directory
-
-Make susre you have a resource configuration. If not, copy the example resorce file:
-    
-    >$ cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/
+see [domain example]( ../../domain.md)
 
 
 ## create domain

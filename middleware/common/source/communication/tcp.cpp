@@ -45,7 +45,14 @@ namespace casual
                               case ENOMEM:
                                  throw common::exception::limit::Memory( common::error::string());
                               case EAGAIN:
+#if EAGAIN != EWOULDBLOCK
+                              case EWOULDBLOCK:
+#endif
                                  throw common::exception::communication::no::Message{ common::error::string()};
+                              case EINVAL:
+                                 throw common::exception::invalid::Argument{ "invalid arguments"};
+                              case ENOTSOCK:
+                                 throw common::exception::invalid::Argument{ "bad socket"};
                               case EINTR:
                               {
                                  common::signal::handle();
@@ -412,6 +419,8 @@ namespace casual
 
                      ssize_t receive( socket::descriptor_type descriptor, void* const data, const std::size_t size, common::Flags< Flag> flags)
                      {
+                       log::internal::debug << "descriptor: " << descriptor << ", data: " << static_cast< void*>( data) << ", size: " << size << ", flags: " << flags << '\n';
+
                         common::signal::handle();
 
                         const auto bytes = tcp::local::socket::check::result(
@@ -466,9 +475,8 @@ namespace casual
                {
                   Trace trace{ "tcp::native::receive", log::internal::debug};
 
-                  const auto first = &transport.message;
+                  const auto first = reinterpret_cast< char*>( &transport.message);
                   auto current = first;
-                  auto last = first + message::Transport::message_max_size + message::Transport::message_type_size;
                   const auto header_end = first + message::Transport::header_size + message::Transport::message_type_size;
 
                   try
@@ -476,11 +484,11 @@ namespace casual
                      //
                      // First we make sure we got the header
                      //
-                     while( current < header_end)
+                     while( current != header_end)
                      {
-                        const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, last), flags);
+                        const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, header_end), flags);
 
-                        if( bytes > std::distance( first, last))
+                        if( bytes > std::distance( current, header_end))
                         {
                            throw exception::Casual( "somehow more bytes was received over the socket than requested");
                         }
@@ -488,7 +496,7 @@ namespace casual
                         current += bytes;
                      }
 
-                     last = header_end + transport.message.header.count;
+                     auto last = current + transport.message.header.count;
 
                      //
                      // Keep going until we've read the whole message
@@ -497,8 +505,7 @@ namespace casual
                      {
                         const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, last), flags);
 
-
-                        if( bytes > std::distance( first, last))
+                        if( bytes > std::distance( current, last))
                         {
                            throw exception::Casual( "somehow more bytes was received over the socket than requested");
                         }

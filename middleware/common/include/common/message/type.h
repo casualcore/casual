@@ -148,6 +148,8 @@ namespace casual
             gateway_worker_disconnect,
             gateway_ipc_connect_request,
             gateway_ipc_connect_reply,
+            gateway_connection_information_request,
+            gateway_connection_information_reply,
             gateway_service_discover_request,
             gateway_service_discover_reply,
 

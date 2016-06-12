@@ -51,6 +51,11 @@ class Target:
             self.name = target_name( filename)
         
         #
+        # target
+        #
+        self.target = 'target_' + normalize_string( filename)
+        
+        #
         # source
         #
         if isinstance( source, Output):

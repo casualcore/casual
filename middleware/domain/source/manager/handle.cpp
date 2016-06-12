@@ -147,9 +147,22 @@ namespace casual
 
                      state.executables.push_back( std::move( tm));
                   }
+
+                  if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
+                  {
+                     state::Executable gateway;
+                     gateway.alias = "casual-gateway-manager";
+                     gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
+                     gateway.configured_instances = 1;
+                     gateway.memberships.push_back( state.groups.at( 0).id);
+                     gateway.note = "manage connections to and from other domains";
+
+                     state.executables.push_back( std::move( gateway));
+                  }
                }
 
             } // mandatory
+
 
             void boot( State& state)
             {
@@ -590,6 +603,7 @@ namespace casual
                   Trace trace{ "domain::manager::handle::configuration:::Gateway"};
 
                   auto reply = config::gateway::transform::gateway( state().configuration.gateway);
+                  reply.correlation = message.correlation;
 
                   log << "reply: " << reply << '\n';
 

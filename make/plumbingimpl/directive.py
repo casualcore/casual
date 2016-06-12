@@ -623,7 +623,7 @@ def install(target, destination):
         
         filename = target.file
 
-        target.name = 'install_' + target.name
+        target.name = 'install_' + target.target
         
         register_path_for_create( destination);
         

@@ -60,6 +60,18 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
 
 install_bin.append( target)
 
+gateway_admin = LinkExecutable( 'bin/casual-gateway-admin',
+    [
+      Compile( 'source/manager/admin/client.cpp'),
+    ],
+    [
+      common_archive,
+      'casual-sf', 
+      'casual-common', 
+    ])
+
+Install( gateway_admin, '$(CASUAL_HOME)/internal/bin')
+
 
 
 #

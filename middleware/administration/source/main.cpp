@@ -55,6 +55,12 @@ namespace casual
             execute( "casual-transaction-admin", arguments);
          }
 
+         void gateway( const std::vector< std::string>& arguments)
+         {
+            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            execute( "casual-gateway-admin", arguments);
+         }
+
 
 
       } // dispatch
@@ -79,7 +85,8 @@ The following categories are supported:
             {
                common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
                common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue),
-               common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction)
+               common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction),
+               common::argument::directive( { "gateway" }, "gateway related administration", &dispatch::gateway)
             }};
 
             arguments.parse( argc, argv);
