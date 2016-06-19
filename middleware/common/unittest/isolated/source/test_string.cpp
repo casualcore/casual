@@ -15,42 +15,49 @@ namespace casual
 
    namespace common
    {
-      TEST( casual_common_string, split_bla_bla_bla__gives_3_occurencies)
+      TEST( casual_common_string, split_bla_bla_bla__gives_3_occurences)
       {
          auto splittet = string::split( "bla bla bla");
 
          EXPECT_TRUE( splittet.size() == 3);
       }
 
-      TEST( casual_common_string, adjacant_split__bla_bla_bla___gives_3_occurencies)
+      TEST( casual_common_string, split_bla_bla_bla_with_new_line_delimiter__gives_1_occurence)
+      {
+         auto splittet = string::split( "bla bla bla", '\n');
+
+         EXPECT_TRUE( splittet.size() == 1);
+      }
+
+      TEST( casual_common_string, adjacant_split__bla_bla_bla___gives_3_occurences)
       {
          auto splittet = string::adjacent::split( "bla bla bla");
 
          EXPECT_TRUE( splittet.size() == 3) << "splittet.size(): " << splittet.size();
       }
 
-      TEST( casual_common_string, split_oneword__gives_1_occurencies)
+      TEST( casual_common_string, split_oneword__gives_1_occurrences)
       {
          auto splittet = string::split( "oneword");
 
          EXPECT_TRUE( splittet.size() == 1);
       }
 
-      TEST( casual_common_string, adjacent_split_bla___bla_bla__gives_3_occurencies)
+      TEST( casual_common_string, adjacent_split_bla___bla_bla__gives_3_occurrences)
       {
          auto splittet = string::adjacent::split( "bla    bla bla");
 
          EXPECT_TRUE( splittet.size() == 3);
       }
 
-      TEST( casual_common_string, adjacent_split_bla___bla_bla__traling_ws__gives_3_occurencies)
+      TEST( casual_common_string, adjacent_split_bla___bla_bla__traling_ws__gives_3_occurrences)
       {
          auto splittet = string::adjacent::split( "  bla    bla bla  ");
 
          EXPECT_TRUE( splittet.size() == 3);
       }
 
-      TEST( casual_common_string, split_casual_log_with_comma__gives_7_occurencies)
+      TEST( casual_common_string, split_casual_log_with_comma__gives_7_occurrences)
       {
          auto splittet = string::split( "error,warning,debug,information,casual.debug,casual.trace,casual.transaction", ',');
 

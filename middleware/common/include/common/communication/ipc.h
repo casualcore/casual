@@ -90,8 +90,8 @@ namespace casual
                {
                   using handle_type = ipc::handle_type;
                   using transport_type = ipc::message::Transport;
-                  using blocking_policy = typename policy::Blocking;
-                  using non_blocking_policy = typename policy::non::Blocking;
+                  using blocking_policy = policy::Blocking;
+                  using non_blocking_policy = policy::non::Blocking;
 
 
                   Connector();
@@ -134,8 +134,8 @@ namespace casual
                {
                   using handle_type = ipc::handle_type;
                   using transport_type = ipc::message::Transport;
-                  using blocking_policy = typename policy::Blocking;
-                  using non_blocking_policy = typename policy::non::Blocking;
+                  using blocking_policy = policy::Blocking;
+                  using non_blocking_policy = policy::non::Blocking;
 
                   Connector( handle_type id);
 

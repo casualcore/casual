@@ -14,6 +14,7 @@
 #include "common/platform.h"
 #include "common/log.h"
 #include "common/internal/trace.h"
+#include "common/algorithm.h"
 
 #include <cstring>
 #include <utility>
@@ -238,26 +239,6 @@ namespace casual
             } // explore
 
 
-            namespace scope
-            {
-               namespace quard
-               {
-                  template<typename lambda>
-                  struct exit
-                  {
-                     const lambda function;
-                     ~exit() { function();}
-                  };
-
-                  template<typename lambda>
-                  exit<lambda> make( const lambda& function)
-                  {
-                     return { function};
-                  }
-
-               } // quard
-            } // scope
-
             namespace add
             {
 
@@ -299,8 +280,30 @@ namespace casual
                template<typename M>
                void append( M& memory, const_data_type data, const long size)
                {
+                  //
+                  // Make sure to reset the size in case of exception since
+                  // this is not an atomic operation
+                  //
+
+                  //
+                  // capture current size
+                  //
+                  const auto used = memory.size();
+
+                  //
+                  // create potential rollback
+                  //
+                  const auto reset = common::scope::execute
+                  ( [&](){ if( std::uncaught_exception()) memory.resize( used);});
+
+                  //
+                  // append first size chunk
+                  //
                   append( memory, size);
 
+                  //
+                  // append other data chunk
+                  //
                   memory.insert( memory.end(), data, data + size);
                }
 
@@ -313,22 +316,10 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-
-                     //
-                     // Make sure to reset the size in case of exception
-                     //
-                     const auto used = buffer.utilized();
-                     //const exit reset
-                     //{ [&](){ if( std::uncaught_exception()) buffer.utilized( used);}};
-
-                     const auto guard = scope::quard::make
-                     ( [&](){ if( std::uncaught_exception()) buffer.utilized( used);});
-
-
                      //
                      // Make sure to update the handle regardless
                      //
-                     const auto synchronize = scope::quard::make
+                     const auto synchronize = common::scope::execute
                      ( [&]() { *handle = buffer.handle();});
 
 
