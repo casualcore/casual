@@ -15,6 +15,8 @@
 
 
 #include <iostream>
+#include <typeindex>
+
 
 namespace casual
 {
@@ -47,15 +49,27 @@ namespace casual
                      Type network;
                   };
 
-                  constexpr const char* name( short) { return "short";}
-                  constexpr const char* name( int) { return "int";}
-                  constexpr const char* name( long) { return "long";}
-                  constexpr const char* name( std::uint64_t) { return "uint64";}
-                  constexpr const char* name( std::int64_t) { return "int64";}
-                  constexpr const char* name( std::size_t) { return "size_t";}
-
                   template< typename T>
-                  constexpr const char* name( T) { return "unknown";}
+                  const char* name( T&& value)
+                  {
+                     static std::unordered_map< std::type_index, const char*> names{
+                        { typeid( short), "short"},
+                        { typeid( int), "int"},
+                        { typeid( long), "long"},
+                        { typeid( size_t), "size"},
+                        { typeid( std::uint64_t), "uint64"},
+                        { typeid( std::int64_t), "int64"},
+                     };
+
+                     auto found = common::range::find( names, typeid( value));
+
+                     if( found)
+                     {
+                        return found->second;
+                     }
+
+                     return "unknown";
+                  }
 
 
                   template< typename T>
