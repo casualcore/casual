@@ -1,8 +1,5 @@
 //!
-//! main.cpp
-//!
-//! Created on: Dec 19, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -40,6 +37,12 @@ namespace casual
          {
             common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
             execute( "casual-domain-admin", arguments);
+         }
+
+         void broker( const std::vector< std::string>& arguments)
+         {
+            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            execute( "casual-broker-admin", arguments);
          }
 
          void queue( const std::vector< std::string>& arguments)
@@ -84,6 +87,7 @@ The following categories are supported:
 )", { "help"},
             {
                common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
+               common::argument::directive( { "broker" }, "broker related administration", &dispatch::broker),
                common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue),
                common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction),
                common::argument::directive( { "gateway" }, "gateway related administration", &dispatch::gateway)

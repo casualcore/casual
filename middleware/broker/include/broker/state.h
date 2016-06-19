@@ -67,7 +67,7 @@ namespace casual
 
          struct Instance
          {
-            enum class State
+            enum class State : char
             {
                idle,
                busy,

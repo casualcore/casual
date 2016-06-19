@@ -9,12 +9,14 @@
 #define CASUAL_BROKERTRANSFORM_H_
 
 #include "broker/state.h"
-
+#include "broker/admin/brokervo.h"
 
 #include "config/domain.h"
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+
+
 
 
 namespace casual
@@ -49,6 +51,8 @@ namespace casual
 
          };
 
+
+         admin::StateVO state( const broker::State& state);
 
 
       } // transform
