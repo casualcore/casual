@@ -89,8 +89,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				<div class="content">
 					<iron-pages attr-for-selected="data-route" selected="{{route}}">
 
+					<!-- url="http://casual.laz.se/casual/casual?service=.casual.broker.state" -->
+
 						<iron-ajax id="serviceReturn"
-							url="/assets/reply.json"
+							url="http://casual.laz.se/casual/casual?service=.casual.broker.state"
 							handle-as="json" 
 							method="GET"
 							last-response="{{response}}">
@@ -98,47 +100,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 						<section data-route="servers" tabindex="-1">
 							<paper-material elevation="1">
-								<h1 class="page-title" tabindex="-1">Servers</h1>
-								<casual-server serverdata={{response.serviceReturn.servers}}></casual-server>
+								<casual-list listname="Servers" listdata="{{response.serviceReturn.servers}}" listattribute="serverdata">
+									<casual-server></casual-server>
+								</casual-list>
 						</section>
 
 						<section data-route="groups" tabindex="-1">
-							<paper-material elevation="1">
-								<h1 class="page-title" tabindex="-1">Groups</h1>
-								<paper-datatable data="{{response.serviceReturn.groups}}" resize-behavior="overflow">
-									<paper-datatable-column header="Id" property="id" sortable></paper-datatable-column>
-									<paper-datatable-column header="Name" property="name" sortable></paper-datatable-column>
-									<paper-datatable-column header="Note" property="note" sortable></paper-datatable-column>
-									<paper-datatable-column header="Resources" property="resources" sortable></paper-datatable-column>
-									<paper-datatable-column header="Dependencies" property="dependencies" sortable></paper-datatable-column>
-								</paper-datatable>
-							</paper-material> 
+							<paper-material elevation="1"> 
+								<casual-list listname="Groups" listdata="{{response.serviceReturn.groups}}" listattribute="groupdata">
+									<casual-group></casual-group>
+								</casual-list>
+							</paper-material>
 						</section>
 
 						<section data-route="instances" tabindex="-1">
 							<paper-material elevation="1">
-								<h1 class="page-title" tabindex="-1">Instances</h1>
-								<paper-datatable data="{{response.serviceReturn.instances}}" resize-behavior="overflow">
-									<paper-datatable-column header="Server" property="server" sortable></paper-datatable-column>
-									<paper-datatable-column header="Process" property="process" sortable></paper-datatable-column>
-									<paper-datatable-column header="State" property="state" sortable></paper-datatable-column>
-									<paper-datatable-column header="Invoked" property="invoked" sortable></paper-datatable-column>
-									<paper-datatable-column header="Last" property="last" sortable></paper-datatable-column>
-								</paper-datatable>
-							</paper-material>
+								<casual-list listname="Instances" listdata="{{response.serviceReturn.instances}}" listattribute="instancedata">
+									<casual-instance></casual-instance>
+								</casual-list>
 						</section>
 
 						<section data-route="services" tabindex="-1">
-							<paper-material elevation="1"> 
-								<h1 class="page-title" tabindex="-1">Services</h1>
-								<paper-datatable data="{{response.serviceReturn.services}}" resize-behavior="overflow">
-									<paper-datatable-column header="Name" property="name" sortable></paper-datatable-column>
-									<paper-datatable-column header="Instances" property="instances" sortable></paper-datatable-column>
-									<paper-datatable-column header="Type" property="type" sortable></paper-datatable-column>
-									<paper-datatable-column header="Mode" property="mode" sortable></paper-datatable-column>
-									<paper-datatable-column header="Lookedup" property="lookedup" sortable></paper-datatable-column>
-									<paper-datatable-column header="Timeout" property="timeout" sortable></paper-datatable-column>
-								</paper-datatable>
+							<paper-material elevation="1">
+								<casual-list listname="Services" listdata="{{response.serviceReturn.services}}" listattribute="servicedata">
+										<casual-service></casual-service>
+									</casual-list>
 							</paper-material>
 						</section>
 

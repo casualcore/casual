@@ -35,19 +35,22 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 	function setFocus(selected){
 	  //var section = document.querySelector('section[data-route="' + selected + '"] .page-title');
 	  document.querySelector('section[data-route="' + selected + '"]').focus();
-
 	  switch(selected){
 		case 'servers':{
 		  document.querySelector("#serviceReturn").generateRequest();
+		  break;
 		}
 		case 'groups':{
 		  document.querySelector("#serviceReturn").generateRequest();
+		  break;
 		}
 		case 'instances':{
 		  document.querySelector("#serviceReturn").generateRequest();
+		  break;
 		}
 		case 'services':{
 		  document.querySelector("#serviceReturn").generateRequest();
+		  break;
 		}
 		default:
 		  break;

@@ -1,0 +1,194 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="casual-group">
+  <template>
+    <style>
+
+    	#group-content{
+    		min-height: 50px;
+    		width: 100%;
+    		overflow: hidden;
+            flex-direction: column;
+            border-bottom: 1px solid #ECEFF1;
+    	}
+
+        #group-content:hover{
+            background-color: #ECEFF1;
+        }
+
+        #group-content:hover table{
+            background-color: #fff;
+        }
+
+        #top-content{
+            height: 100%;
+            width: 100%;
+            vertical-align: middle;
+            display: table;
+            padding-left: 5px;
+        }
+
+        #top-content ul{
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #bottom-content{
+            width: 100%;
+            padding-left: 5px;
+            padding-right: 5px;
+            padding-bottom: 5px;
+            overflow-x: auto;
+        }
+
+        #group-data{
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        #group-name{
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        #group-note{
+
+        }
+
+        #group-resources-text:hover{
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #group-resources-counter{
+
+        }
+
+        #group-resources-field{
+            color: grey;
+            font-size: 0.8em;
+            vertical-align: middle;
+        }
+
+        #group-resources-table{
+            border-collapse: collapse;
+            width: calc(100% - 10px);
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        #group-resources-table thead{
+             font-weight: bold;
+        }
+
+        #group-resources-table, td, th{
+             border: 1px solid #ddd;
+        }
+
+        .group-resources-table-info{
+            max-width: 400px;
+        }
+
+        #group-resources-table span{
+            white-space: normal;
+        }
+
+        #group-resources-table .group-resources-table-tr:hover{
+            background-color: #ECEFF1;
+        }
+
+    </style>
+
+    <div class="group" id="casual-group-{{groupdata.id}}">
+    	<div id="group-content">
+            <div id="top-content">
+                <div id="group-data">
+                    <ul>
+                        <li>
+                            <span id="group-name">{{groupdata.name}}</span>
+                            <span id="group-note"> - {{groupdata.note}}</span>
+                        </li>
+                        <li>
+                            <span id="group-resources-text">Resources:</span>
+                            <span id="group-resources-counter"> {{groupdata.resources.length}}</span>
+                            <template is="dom-if" if="{{groupdata.resources.length}}">
+                                <span id="group-resources-field">
+                                    <template is="dom-if" if="{{expanded}}">[ - ]</template>
+                                    <template is="dom-if" if="{{!expanded}}">[ + ]</template>
+                                </span>
+                            </template>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="bottom-content">
+                <template is="dom-if" if="{{expanded}}">
+                    <template is="dom-if" if="{{groupdata.resources.length}}">
+                        <table id="group-resources-table">
+                            <thead>
+                                <tr>
+                                    <td>Id</td>
+                                    <td>Instances</td>
+                                    <td>Key</td>
+                                    <td class="group-resources-table-info">Open info</td>
+                                    <td class="group-resources-table-info">Close info</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template is="dom-repeat" items="{{groupdata.resources}}">
+                                    <tr class="group-resources-table-tr">
+                                        <td>{{item.id}}</td>
+                                        <td>{{item.instances}}</td>
+                                        <td>{{item.key}}</td>
+                                        <td class="group-resources-table-info"><span>{{item.openinfo}}</span></td>
+                                        <td class="group-resources-table-info"><span>{{item.closeinfo}}</span></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </template>
+                </template>
+            </div>
+        </div>
+    </div>
+
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'casual-group',
+
+        properties: {
+          groupdata: {
+            type: Object,
+            notify: true,
+            value: function(d){
+                return d.groupdata;
+            }
+          },
+
+          expanded: {
+            type: Boolean,
+            notify: true,
+            value: function(){
+                return false;
+            }
+          }
+        },
+
+        listeners: {
+            'tap': 'regularTap'
+        },
+
+        regularTap: function(event) {
+            this.expanded = this.expanded ? false : true;
+        }
+
+      });
+    })();
+  </script>
+</dom-module>

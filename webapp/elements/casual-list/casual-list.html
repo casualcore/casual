@@ -1,0 +1,145 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="casual-list">
+    <template>
+        <style>
+
+        .listHead {
+            width: 100%;
+            border: 1px solid #d0d0d0;
+            overflow: hidden;
+
+            /* Display divs in a row */
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-between; 
+        }
+
+        .listName,.listActions {
+            padding: 10px;
+        }
+
+        .listName {
+            font-size: 1.5em;
+        }
+
+        .listActions {
+            
+        }
+
+        .list {
+            width: 100%;
+            border-top: 0;
+            border-right: 1px;
+            border-bottom: 1px;
+            border-left: 1px;
+            border-style: solid;
+            border-color: #d0d0d0;
+        }
+
+        </style>
+
+        <div class="listHead">
+            <div class="listName">{{listname}}</div>
+            <div class="listActions">Sort to be here!</div>
+        </div>
+
+        <content id="content" select="*"></content>
+
+        <div class="list" id="list"></div>
+
+    </template>
+
+    <script>
+        (function() {
+            'use strict';
+
+            Polymer({
+                is: 'casual-list',
+
+                properties: {
+                    listname: {
+                        type: String
+                    },
+
+                    listdata: {
+                        type: Array,
+                        notify: true,
+                        observer: "listdataChanged"
+                    },
+
+                    listattribute: {
+                        type: String,
+                        value: function() {
+                            return "data";
+                        }
+                    },
+
+                    listelementname: {
+                        type: String
+                    },
+
+                    listelementattributes: {
+                        type: Object,
+                        vaule: function() {
+                            return {};
+                        }
+                    }
+                },
+
+                attached: function() {
+                    this.setListElement();
+                    this.removeEffectiveElements();
+                },
+
+                setListElement: function(elements) {
+                    var elements = this.queryAllEffectiveChildren("*");
+                    if(elements.length > 0) {
+                        var element = elements[0];
+                        this.listelementname = (element.tagName).toLowerCase();
+                        for(var attribute in element.attributes) {
+                            if(attribute == "length")
+                                break;
+                            this.listelementattributes[element.attributes[attribute].name] = element.attributes[attribute].value;
+                        }
+                    }
+                },
+
+                removeEffectiveElements: function(element) {
+                    var elements = this.queryAllEffectiveChildren("*");
+                    if(elements.length > 0) {
+                        for(var element in elements) {
+                            this.removeChild(elements[element]);
+                        }
+                    }
+                    
+                },
+
+                removeElements: function(element) {
+                    var elements = Polymer.dom(element).childNodes;
+                    if(elements.length > 0) {
+                        for(var e in elements) {
+                            element.removeChild(elements[e]);
+                        }
+                    }
+                },
+
+                listdataChanged: function(name, type) {
+                    var list = (this.$.list);
+                    this.removeElements(list);
+                    for(var item in this.listdata) {
+                        var listItem = document.createElement(this.listelementname);
+                        for(var attribute in this.listelementattributes) {
+                            listItem.setAttribute(attribute, '');
+                            listItem[attribute] = this.listelementattributes[attribute];
+                        }
+                        listItem.setAttribute(this.listattribute, '');
+                        listItem[this.listattribute] = this.listdata[item];
+                        list.appendChild(listItem);
+                    }
+                }
+            });
+        })();
+    </script>
+</dom-module>
