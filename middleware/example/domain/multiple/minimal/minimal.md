@@ -28,6 +28,8 @@ If you chose another base directore for this example, please update the followin
  
 
 ## start domain1
+
+In terminal 1    
     
     >$ cd $HOME/casual/example/domain/multiple/minimal/domain1
     >$ source domain.env
@@ -36,11 +38,67 @@ If you chose another base directore for this example, please update the followin
     
 ## start domain2
 
+In terminal 2
+
     >$ cd $HOME/casual/example/domain/multiple/minimal/domain2
     >$ source domain.env
     >$ casual-admin domain --boot 
 
 
+## interact with the domain
 
+### In terminal 2
+    
+List the outbound connection
+    
+    >$ casual-admin gateway --list-outbound
+    >$ name                             id                                pid  type  runlevel  address
+    >$ -------------------------------  --------------------------------  ---  ----  --------  -------
+    >$ multiple-domain-example-domain1  766d151cabaa40d584ffe7e0fd7a869f  737  tcp   online
+    
+List services
+
+    >$ casual-admin broker --list-services
+    >$ name                                  type  mode  timeout  requested  #  state
+    >$ ------------------------------------  ----  ----  -------  ---------  -  -----
+    >$ .casual.broker.state                    10  none        0          1  1  *    
+    >$ .casual.domain.scale.instances          10  none        0          0  1  +    
+    >$ .casual.domain.shutdown                 10  none        0          0  1  +    
+    >$ .casual.domain.state                    10  none        0          2  1  +    
+    >$ .casual.gateway.state                   10  none        0          2  1  +    
+    >$ .casual.transaction.state               10  none        0          0  1  +    
+    >$ .casual.transaction.update.instances    10  none        0          0  1  +    
+    >$ casual.example.echo                      0  join        0          0  1  -      
+                     
+                     
+`casual.example.echo` is a remote service in this domain
+               
+
+### In terminal 1
+
+    >$ casual-admin gateway --list-inbound
+    >$ name                             id                                pid  type  runlevel  address       
+    >$ -------------------------------  --------------------------------  ---  ----  --------  --------------
+    >$ multiple-domain-example-domain2  bdd72ed739f94420bb28b7e98ee1a472  738  tcp   online    127.0.0.1:7771 
+
+List services
+
+    
+    >$ casual-admin broker --list-services
+    >$ name                                  type  mode  timeout  requested  #  state
+    >$ ------------------------------------  ----  ----  -------  ---------  -  -----
+    >$ .casual.broker.state                    10  none        0          1  1  *    
+    >$ .casual.domain.scale.instances          10  none        0          0  1  +    
+    >$ .casual.domain.shutdown                 10  none        0          0  1  +    
+    >$ .casual.domain.state                    10  none        0          0  1  +    
+    >$ .casual.gateway.state                   10  none        0          1  1  +    
+    >$ .casual.transaction.state               10  none        0          0  1  +    
+    >$ .casual.transaction.update.instances    10  none        0          0  1  +    
+    >$ casual.example.echo                      0  join        0          0  1  + 
+
+`casual.example.echo` is a local service in this domain
+
+
+## TODO example clients to call the echo server and stuff...
 
 
