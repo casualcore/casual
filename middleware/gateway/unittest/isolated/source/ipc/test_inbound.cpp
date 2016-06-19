@@ -41,8 +41,6 @@ namespace casual
                   {
                      "--remote-ipc-queue", std::to_string( ipc),
                      "--correlation", uuid::string( correlation),
-                     "--remote-name", "unittest",
-                     "--remote-id", uuid::string( correlation),
                  }}
                {
 

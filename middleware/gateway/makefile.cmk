@@ -160,6 +160,18 @@ Dependencies( target_unittest, install_bin)
 
 
 
+tartet = LinkExecutable( "docs/bin/print-protocol",
+     [
+        Compile( 'docs/source/protocol.cpp')
+      ],
+     [
+      'casual-common'
+      ]
+     )
+
+
+
+
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')
 Install( install_headers,'$(CASUAL_HOME)/include')

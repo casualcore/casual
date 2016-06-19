@@ -169,7 +169,6 @@ namespace casual
                      archive & process;
                      archive & service;
                      archive & parent;
-                     archive & execution;
                      archive & trid;
                      archive & flags;
                   })
@@ -257,8 +256,8 @@ namespace casual
                   int descriptor = 0;
                   int error = 0;
                   long code = 0;
-                  buffer::Payload buffer;
                   Transaction transaction;
+                  buffer::Payload buffer;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -266,8 +265,8 @@ namespace casual
                      archive & descriptor;
                      archive & error;
                      archive & code;
-                     archive & buffer;
                      archive & transaction;
+                     archive & buffer;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& message);
