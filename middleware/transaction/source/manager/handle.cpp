@@ -90,7 +90,7 @@ namespace casual
                         message.trid = request.trid;
                         message.state = code;
 
-                        state.persistentReplies.emplace_back( target.queue, std::move( message));
+                        state.persistent.replies.emplace_back( target.queue, std::move( message));
                      }
 
                      template< typename R, typename M>
@@ -102,7 +102,7 @@ namespace casual
                      template< typename M>
                      void reply( State& state, M&& message, const common::process::Handle& target)
                      {
-                        state.persistentReplies.emplace_back( target.queue, std::move( message));
+                        state.persistent.replies.emplace_back( target.queue, std::move( message));
                      }
 
                   } // persistent
@@ -128,7 +128,7 @@ namespace casual
                         if( ! send( reply))
                         {
                            common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
-                           m_state.persistentReplies.push_back( std::move( reply));
+                           m_state.persistent.replies.push_back( std::move( reply));
                         }
 
                      }
@@ -152,7 +152,7 @@ namespace casual
                      if( ! send( reply))
                      {
                         common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
-                        state.persistentReplies.push_back( std::move( reply));
+                        state.persistent.replies.push_back( std::move( reply));
                      }
                   }
 
@@ -183,7 +183,7 @@ namespace casual
                               std::mem_fn( &resource_type::id));
 
 
-                           state.persistentRequests.push_back( std::move( request));
+                           state.persistent.requests.push_back( std::move( request));
                         }
 
                      } // persistent
@@ -225,7 +225,7 @@ namespace casual
                            //
                            common::log::internal::transaction << "could not send to all RM-proxy-instances - action: try later\n";
 
-                           state.pendingRequests.push_back( std::move( request));
+                           state.pending.requests.push_back( std::move( request));
                         }
                      }
                   } // resource
@@ -237,7 +237,7 @@ namespace casual
                   void done( State& state, state::resource::Proxy::Instance& instance)
                   {
                      auto request = common::range::find_if(
-                           state.pendingRequests,
+                           state.pending.requests,
                            state::pending::filter::Request{ instance.id});
 
                      instance.state( state::resource::Proxy::Instance::State::idle);
@@ -260,7 +260,7 @@ namespace casual
 
                            if( std::begin( request)->resources.empty())
                            {
-                              state.pendingRequests.erase( std::begin( request));
+                              state.pending.requests.erase( std::begin( request));
                            }
                         }
                         else
@@ -289,7 +289,7 @@ namespace casual
                      {
                         if( common::range::find( state.resources, resource))
                         {
-                           transaction.resources.push_back( resource);
+                           transaction.resources.emplace_back( resource);
                         }
                         else
                         {
@@ -364,7 +364,7 @@ namespace casual
             } // id
             */
 
-            void Involved::operator () ( message_type& message)
+            void Involved::operator () ( common::message::transaction::resource::Involved& message)
             {
                common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
 
@@ -420,7 +420,7 @@ namespace casual
                      auto& transaction = *found;
 
                      auto resource = common::range::find_if(
-                           common::range::make( transaction.resources),
+                           transaction.resources,
                            Transaction::Resource::filter::ID{ message.resource});
 
                      if( resource)
@@ -472,7 +472,7 @@ namespace casual
                      else
                      {
                         common::log::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
-                        instance.state( state::resource::Proxy::Instance::State::startupError);
+                        instance.state( state::resource::Proxy::Instance::State::error);
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
                      }
@@ -519,13 +519,13 @@ namespace casual
                   {
                      resource.result = Transaction::Resource::convert( message.state);
 
-                     if( resource.result == Transaction::Resource::Result::cXA_RDONLY)
+                     if( resource.result == Transaction::Resource::Result::xa_RDONLY)
                      {
-                        resource.stage = Transaction::Resource::Stage::cNotInvolved;
+                        resource.stage = Transaction::Resource::Stage::not_involved;
                      }
                      else
                      {
-                        resource.stage = Transaction::Resource::Stage::cPrepareReplied;
+                        resource.stage = Transaction::Resource::Stage::prepare_replied;
                      }
                   }
 
@@ -535,7 +535,7 @@ namespace casual
                   //
                   // Are we in a prepared state?
                   //
-                  if( stage == Transaction::Resource::Stage::cPrepareReplied)
+                  if( stage == Transaction::Resource::Stage::prepare_replied)
                   {
 
                      using reply_type = common::message::transaction::commit::Reply;
@@ -547,7 +547,7 @@ namespace casual
 
                      switch( result)
                      {
-                        case Transaction::Resource::Result::cXA_RDONLY:
+                        case Transaction::Resource::Result::xa_RDONLY:
                         {
                            common::log::internal::transaction << "prepare completed - " << transaction << " XA_RDONLY\n";
 
@@ -574,7 +574,7 @@ namespace casual
                            //
                            return true;
                         }
-                        case Transaction::Resource::Result::cXA_OK:
+                        case Transaction::Resource::Result::xa_OK:
                         {
                            common::log::internal::transaction << "prepare completed - " << transaction << " XA_OK\n";
 
@@ -604,11 +604,11 @@ namespace casual
                            // (could be that some has read-only)
                            //
                            auto filter = common::chain::And::link(
-                                 Transaction::Resource::filter::Result{ Transaction::Resource::Result::cXA_OK},
-                                 Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied});
+                                 Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
+                                 Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
 
                            local::send::resource::request<
-                              common::message::transaction::resource::commit::Request>( m_state, transaction, filter, Transaction::Resource::Stage::cPrepareRequested);
+                              common::message::transaction::resource::commit::Request>( m_state, transaction, filter, Transaction::Resource::Stage::prepare_requested);
 
 
                            break;
@@ -623,8 +623,8 @@ namespace casual
                            local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                               m_state,
                               transaction,
-                              Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
-                              Transaction::Resource::Stage::cRollbackRequested);
+                              Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                              Transaction::Resource::Stage::rollback_requested);
 
                            break;
                         }
@@ -643,7 +643,7 @@ namespace casual
 
                   common::log::internal::transaction << "commit reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
-                  resource.stage = Transaction::Resource::Stage::cCommitReplied;
+                  resource.stage = Transaction::Resource::Stage::commit_replied;
 
                   auto stage = transaction.stage();
 
@@ -651,7 +651,7 @@ namespace casual
                   //
                   // Are we in a commited state?
                   //
-                  if( stage == Transaction::Resource::Stage::cCommitReplied)
+                  if( stage == Transaction::Resource::Stage::commit_replied)
                   {
 
                      using reply_type = common::message::transaction::commit::Reply;
@@ -663,7 +663,7 @@ namespace casual
 
                      switch( result)
                      {
-                        case Transaction::Resource::Result::cXA_OK:
+                        case Transaction::Resource::Result::xa_OK:
                         {
                            common::log::internal::transaction << "commit completed - " << transaction << " XA_OK\n";
 
@@ -727,7 +727,7 @@ namespace casual
 
                   common::log::internal::transaction << "rollback reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
-                  resource.stage = Transaction::Resource::Stage::cRollbackReplied;
+                  resource.stage = Transaction::Resource::Stage::rollback_replied;
 
                   auto stage = transaction.stage();
 
@@ -735,7 +735,7 @@ namespace casual
                   //
                   // Are we in a rolled back state?
                   //
-                  if( stage == Transaction::Resource::Stage::cRollbackReplied)
+                  if( stage == Transaction::Resource::Stage::rollback_replied)
                   {
 
                      using reply_type = common::message::transaction::rollback::Reply;
@@ -747,9 +747,9 @@ namespace casual
 
                      switch( result)
                      {
-                        case Transaction::Resource::Result::cXA_OK:
-                        case Transaction::Resource::Result::cXAER_NOTA:
-                        case Transaction::Resource::Result::cXA_RDONLY:
+                        case Transaction::Resource::Result::xa_OK:
+                        case Transaction::Resource::Result::xaer_NOTA:
+                        case Transaction::Resource::Result::xa_RDONLY:
                         {
                            common::log::internal::transaction << "rollback completed - " << transaction << " XA_OK\n";
 
@@ -868,8 +868,8 @@ namespace casual
 
                switch( transaction.stage())
                {
-                  case Transaction::Resource::Stage::cInvolved:
-                  case Transaction::Resource::Stage::cNotInvolved:
+                  case Transaction::Resource::Stage::involved:
+                  case Transaction::Resource::Stage::not_involved:
                   {
                      break;
                   }
@@ -923,8 +923,8 @@ namespace casual
                      local::send::resource::request< common::message::transaction::resource::commit::Request>(
                         m_state,
                         transaction,
-                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
-                        Transaction::Resource::Stage::cCommitRequested,
+                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                        Transaction::Resource::Stage::commit_requested,
                         TMONEPHASE
                      );
 
@@ -945,8 +945,8 @@ namespace casual
                      local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                         m_state,
                         transaction,
-                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
-                        Transaction::Resource::Stage::cPrepareRequested
+                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                        Transaction::Resource::Stage::prepare_requested
                      );
 
                      break;
@@ -1020,8 +1020,8 @@ namespace casual
                   local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
-                     Transaction::Resource::Stage::cRollbackRequested
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                     Transaction::Resource::Stage::rollback_requested
                   );
                }
             }
@@ -1032,7 +1032,7 @@ namespace casual
 
          namespace domain
          {
-            void Involved::operator () ( message_type& message)
+            void Involved::operator () (common::message::transaction::resource::domain::Involved& message)
             {
                common::trace::Scope trace{ "transaction::handle::domain::Involved", common::log::internal::transaction};
 
@@ -1057,8 +1057,8 @@ namespace casual
                   local::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cInvolved},
-                     Transaction::Resource::Stage::cPrepareRequested,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                     Transaction::Resource::Stage::prepare_requested,
                      message.flags
                   );
                }
@@ -1105,8 +1105,8 @@ namespace casual
                   local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
-                     Transaction::Resource::Stage::cCommitRequested,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                     Transaction::Resource::Stage::commit_requested,
                      message.flags
                   );
                }
@@ -1144,8 +1144,8 @@ namespace casual
                   local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied},
-                     Transaction::Resource::Stage::cRollbackRequested,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                     Transaction::Resource::Stage::rollback_requested,
                      message.flags
                   );
                }
@@ -1174,11 +1174,11 @@ namespace casual
                      common::trace::Scope trace{ "transaction::handle::domain::resource::prepare reply", common::log::internal::transaction};
 
                      resource.result = Transaction::Resource::convert( message.state);
-                     resource.stage = Transaction::Resource::Stage::cPrepareReplied;
+                     resource.stage = Transaction::Resource::Stage::prepare_replied;
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cPrepareReplied}))
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied}))
                      {
 
                         //
@@ -1215,11 +1215,11 @@ namespace casual
                      common::trace::Scope trace{ "transaction::handle::domain::resource::commit reply", common::log::internal::transaction};
 
                      resource.result = Transaction::Resource::convert( message.state);
-                     resource.stage = Transaction::Resource::Stage::cCommitReplied;
+                     resource.stage = Transaction::Resource::Stage::commit_replied;
 
 
                      if( common::range::all_of( transaction.resources,
-                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::cCommitReplied}))
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::commit_replied}))
                      {
 
                         //

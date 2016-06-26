@@ -82,9 +82,9 @@ namespace casual
 
       transaction::action::configure( state, "../example/resources/resources.yaml");
 
-      ASSERT_TRUE( state.xaConfig.size() >= 2) << "state.xaConfig.size(): " << state.xaConfig.size();
-      EXPECT_TRUE( state.xaConfig.at( "db2").xa_struct_name == "db2xa_switch_static_std");
-      EXPECT_TRUE( state.xaConfig.at( "rm-mockup").xa_struct_name == "casual_mockup_xa_switch_static");
+      ASSERT_TRUE( state.xa_switch_configuration.size() >= 2) << "state.xaConfig.size(): " << state.xa_switch_configuration.size();
+      EXPECT_TRUE( state.xa_switch_configuration.at( "db2").xa_struct_name == "db2xa_switch_static_std");
+      EXPECT_TRUE( state.xa_switch_configuration.at( "rm-mockup").xa_struct_name == "casual_mockup_xa_switch_static");
    }
 
    TEST( casual_transaction_configuration, configure_resource__expect_2_resources)

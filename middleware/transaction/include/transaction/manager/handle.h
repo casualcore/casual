@@ -66,35 +66,15 @@ namespace casual
 
          namespace resource
          {
-            /*
-            namespace id
-            {
-               //!
-               //! Sent from resource proxies to require a rm-id.
-               //!
-               struct Allocation : public state::Base
-               {
-                  typedef common::message::transaction::resource::id::Request message_type;
-
-                  using Base::Base;
-
-                  void operator () ( message_type& message);
-
-               };
-
-            } // id
-            */
 
             //!
             //! Sent by a server when resource(s) is involved
             //!
             struct Involved : public state::Base
             {
-               typedef common::message::transaction::resource::Involved message_type;
-
                using Base::Base;
 
-               void operator () ( message_type& message);
+               void operator () ( common::message::transaction::resource::Involved& message);
             };
 
             namespace reply
@@ -211,11 +191,9 @@ namespace casual
          {
             struct Involved : public state::Base
             {
-               typedef common::message::transaction::resource::domain::Involved message_type;
-
                using Base::Base;
 
-               void operator () ( message_type& message);
+               void operator () ( common::message::transaction::resource::domain::Involved& message);
             };
 
             struct Prepare : public state::Base

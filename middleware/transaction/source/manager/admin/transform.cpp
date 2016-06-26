@@ -173,9 +173,9 @@ namespace casual
             common::range::transform( state.resources, result.resources, transform::resource::Proxy{});
             common::range::transform( state.transactions, result.transactions, transform::Transaction{});
 
-            common::range::transform( state.pendingRequests, result.pending.requests, transform::pending::Reqeust{});
-            common::range::transform( state.persistentRequests, result.persistent.requests, transform::pending::Reqeust{});
-            common::range::transform( state.persistentReplies, result.persistent.replies, transform::pending::Reply{});
+            common::range::transform( state.pending.requests, result.pending.requests, transform::pending::Reqeust{});
+            common::range::transform( state.persistent.requests, result.persistent.requests, transform::pending::Reqeust{});
+            common::range::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
 
             result.log = transform::log( state.log.stats());
 

@@ -29,15 +29,21 @@ namespace casual
    {
       namespace outbound
       {
+
          namespace handle
          {
+            struct State
+            {
+               const Routing routing;
+               common::domain::Identity remote;
+            };
 
 
             struct Base
             {
-               Base( const Routing& routing) : routing( routing) {}
+               Base( const State& state) : state( state) {}
 
-               const Routing& routing;
+               const State& state;
             };
 
             template< typename M, typename D>
@@ -74,23 +80,23 @@ namespace casual
                using device_type = D;
 
 
-               basic_request( const Routing& routing, device_type& device)
-                  : routing( routing), forward( device) {}
+               basic_request( const State& state, device_type& device)
+                  : state( state), forward( device) {}
 
                void operator() ( message_type& message)
                {
                   forward( message);
-                  routing.add( message.correlation, message.process);
+                  state.routing.add( message.correlation, message.process);
                }
 
-               const Routing& routing;
+               const State& state;
                basic_forward< message_type, device_type> forward;
             };
 
             template< typename M, typename D>
-            basic_request< M, D> create( const Routing& routing, D& device)
+            basic_request< M, D> create( const State& state, D& device)
             {
-               return basic_request< M, D>{ routing, device};
+               return basic_request< M, D>{ state, device};
             }
 
             namespace call
@@ -105,19 +111,23 @@ namespace casual
                   {
                      common::log::internal::gateway << "call request: " << message << '\n';
 
-                     if( message.trid)
-                     {
-                        //
-                        // We need to notify TM that this gateway is involved in the
-                        // transaction
-                        //
-                        // TODO!
-                     }
+
                      this->forward( message);
 
                      if( ! common::flag< TPNOREPLY>( message.flags))
                      {
-                        this->routing.add( message.correlation, message.process);
+                        if( message.trid)
+                        {
+                           //
+                           // Notify TM that this "resource" is involved in the transaction
+                           //
+                           common::communication::ipc::blocking::send(
+                                 common::communication::ipc::transaction::manager::device(),
+                                 common::message::transaction::resource::domain::involved::create(
+                                    this->state.remote.id, message));
+                        }
+
+                        this->state.routing.add( message.correlation, message.process);
                      }
                   }
                };
@@ -131,20 +141,19 @@ namespace casual
                using message_type = M;
                using Base::Base;
 
-               void operator() ( message_type& message)
+               void operator() ( message_type& message) const
                {
                   common::log::internal::gateway << "reply: " << message << '\n';
 
                   try
                   {
-                     auto destination = routing.get( message.correlation);
+                     auto destination = state.routing.get( message.correlation);
                      process( message);
                      common::communication::ipc::blocking::send( destination.destination.queue, message);
                   }
                   catch( const common::exception::queue::Unavailable&)
                   {
-                     common::log::internal::gateway << "destination queue: " << routing.get( message.correlation)
-                           << " unavailable for correlation: " << message.correlation << " - action: discard\n";
+                     common::log::internal::gateway << "destination queue unavailable for correlation: " << message.correlation << " - action: discard\n";
                   }
                   catch( const common::exception::invalid::Argument&)
                   {
@@ -153,15 +162,45 @@ namespace casual
                }
 
             private:
-               void process( common::message::service::call::Reply& message) { }
+               void process( common::message::service::call::Reply& message) const { }
 
                template< typename T>
-               void process( T& message) { message.process = common::process::handle();}
+               void process( T& message) const { message.process = common::process::handle();}
 
             };
 
             namespace domain
             {
+               namespace id
+               {
+                  struct Message : common::message::basic_message< common::message::Type::gateway_domain_id>
+                  {
+                     common::domain::Identity id;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & id;
+                     })
+                  };
+
+
+               } // id
+
+               struct Identity
+               {
+                  Identity( common::domain::Identity& id) : id( id) {}
+
+                  void operator () ( id::Message& message)
+                  {
+                     common::Trace trace{ "gateway::outbound::handle::domain::Identity", common::log::internal::gateway};
+
+                     id = message.id;
+                  }
+
+                  common::domain::Identity& id;
+               };
+
                namespace discover
                {
                   struct Request
@@ -188,11 +227,30 @@ namespace casual
                      std::vector< std::string> address;
                   };
 
+                  using reply_base = basic_reply< common::message::gateway::domain::discover::Reply>;
+                  struct Reply : reply_base
+                  {
+                     using reply_base::reply_base;
 
-               } // information
+                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
+                     {
+                        //
+                        // Send information about remote id to main thread
+                        //
+                        {
+                           domain::id::Message message;
+                           message.id = reply.remote;
+                           common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
+                        }
+                        reply_base::operator() ( reply);
 
-            } // connection
+                     }
 
+                  };
+
+
+               } // discover
+            } // domain
          } // handle
 
          template< typename Policy>
@@ -208,7 +266,6 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
-                //: m_reply_thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)}
             {
 
                //
@@ -216,7 +273,7 @@ namespace casual
                //
                common::process::instance::connect();
 
-               m_reply_thread = std::thread{ reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)};
+               m_reply_thread = std::thread{ &reply_thread< S>, std::ref( m_state), std::forward< S>( settings)};
             }
 
 
@@ -296,16 +353,19 @@ namespace casual
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_reply_thread},
-                  handle::call::Request< outbound_device_type>{ m_routing, outbound_device},
-                  handle::create< common::message::transaction::resource::domain::prepare::Request>( m_routing, outbound_device),
-                  handle::create< common::message::transaction::resource::domain::commit::Request>( m_routing, outbound_device),
-                  handle::create< common::message::transaction::resource::domain::rollback::Request>( m_routing, outbound_device),
-                  handle::create< common::message::gateway::domain::discover::Request>( m_routing, outbound_device),
+                  handle::call::Request< outbound_device_type>{ m_state, outbound_device},
+                  handle::create< common::message::transaction::resource::domain::prepare::Request>( m_state, outbound_device),
+                  handle::create< common::message::transaction::resource::domain::commit::Request>( m_state, outbound_device),
+                  handle::create< common::message::transaction::resource::domain::rollback::Request>( m_state, outbound_device),
+                  handle::create< common::message::gateway::domain::discover::Request>( m_state, outbound_device),
 
                   //
                   // This is a message from worker thread to reply to an information request from other domain
                   //
                   handle::forward::create< common::message::gateway::domain::discover::Reply>( outbound_device),
+
+                  handle::domain::Identity{ m_state.remote},
+
                };
 
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
@@ -339,7 +399,7 @@ namespace casual
             }
 
             template< typename S>
-            static void reply_thread( const Routing& routing, S&& settings)
+            static void reply_thread( const handle::State& state, S&& settings)
             {
                //
                // We're only interested in sig-user
@@ -396,11 +456,11 @@ namespace casual
                   // we start our reply-message-pump
                   //
                   common::message::dispatch::Handler handler{
-                     handle::basic_reply< common::message::service::call::Reply>{ routing},
-                     handle::basic_reply< common::message::transaction::resource::domain::prepare::Reply>{ routing},
-                     handle::basic_reply< common::message::transaction::resource::domain::commit::Reply>{ routing},
-                     handle::basic_reply< common::message::transaction::resource::domain::rollback::Reply>{ routing},
-                     handle::basic_reply< common::message::gateway::domain::discover::Reply>{ routing},
+                     handle::basic_reply< common::message::service::call::Reply>{ state},
+                     handle::basic_reply< common::message::transaction::resource::domain::prepare::Reply>{ state},
+                     handle::basic_reply< common::message::transaction::resource::domain::commit::Reply>{ state},
+                     handle::basic_reply< common::message::transaction::resource::domain::rollback::Reply>{ state},
+                     handle::domain::discover::Reply{ state},
 
                      handle::domain::discover::Request{ policy.address()},
                   };
@@ -421,7 +481,7 @@ namespace casual
                }
             }
 
-            Routing m_routing;
+            handle::State m_state;
             std::thread m_reply_thread;
          };
 

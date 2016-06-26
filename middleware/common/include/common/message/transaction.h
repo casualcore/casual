@@ -19,104 +19,6 @@ namespace casual
       {
          namespace transaction
          {
-            /*
-            namespace resource
-            {
-               struct Manager
-               {
-                  Manager() = default;
-
-                  Manager( std::function<void(Manager&)> initializer)
-                  {
-                     initializer( *this);
-                  }
-
-                  std::size_t instances = 0;
-                  std::size_t id = 0;
-                  std::string key;
-                  std::string openinfo;
-                  std::string closeinfo;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     archive & instances;
-                     archive & id;
-                     archive & key;
-                     archive & openinfo;
-                     archive & closeinfo;
-                  })
-               };
-
-            } // resource
-
-
-            namespace client
-            {
-               namespace connect
-               {
-
-                  using Request = server::connect::basic_request< Type::transaction_client_connect_request>;
-
-                  //!
-                  //! Sent from the broker with "transaction-information" for a server/client
-                  //!
-                  struct Reply : server::connect::basic_reply< Type::transaction_client_connect_reply>
-                  {
-                     std::vector< resource::Manager> resources;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        server::connect::basic_reply< Type::transaction_client_connect_reply>::marshal( archive);
-                        archive & resources;
-                     })
-                  };
-               } // connect
-
-            } // client
-            */
-
-            namespace manager
-            {
-               //!
-               //! Used to connect the transaction manager to broker
-               //!
-               /*
-               namespace connect
-               {
-                  using Request = server::connect::basic_request< Type::transaction_manager_connect_request>;
-                  using Reply = server::connect::basic_reply< Type::transaction_manager_connect_reply>;
-
-               } // connect
-
-
-
-               struct Configuration : message::basic_message< Type::transaction_manager_configuration>
-               {
-                  std::vector< resource::Manager> resources;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & resources;
-                  })
-               };
-
-
-               struct Ready : message::basic_message< Type::transaction_manager_ready>
-               {
-                  common::process::Handle process;
-                  bool success = true;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & process;
-                     archive & success;
-                  })
-               };
-               */
-            } // manager
-
 
             template< message::Type type>
             struct basic_transaction : basic_message< type>
@@ -225,39 +127,6 @@ namespace casual
 
             namespace resource
             {
-               /*
-               namespace id
-               {
-                  struct Request : basic_message< Type::transaction_resource_id_request>
-                  {
-                     common::process::Handle process;
-                     Uuid identifier;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        basic_message< Type::transaction_resource_id_request>::marshal( archive);
-                        archive & process;
-                        archive & identifier;
-                     })
-
-                  };
-
-                  struct Reply : basic_message< Type::transaction_resource_id_reply>
-                  {
-                     platform::resource::id::type resource = 0;
-                     Uuid identifier;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        basic_message< Type::transaction_resource_id_reply>::marshal( archive);
-                        archive & resource;
-                        archive & identifier;
-                     })
-                  };
-
-
-               } // id
-               */
 
                template< message::Type type>
                struct basic_reply : transaction::basic_reply< type>
@@ -391,8 +260,24 @@ namespace casual
                      })
 
                      friend std::ostream& operator << ( std::ostream& out, const Involved& value);
-
                   };
+
+                  namespace involved
+                  {
+                     template< typename M>
+                     Involved create( const Uuid& domain, M&& message)
+                     {
+                        Involved involved;
+
+                        involved.domain = domain;
+                        involved.correlation = message.correlation;
+                        involved.execution = message.execution;
+                        involved.process = common::process::handle();
+                        involved.trid = message.trid;
+
+                        return involved;
+                     }
+                  } // involved
 
                   namespace prepare
                   {
@@ -425,12 +310,6 @@ namespace casual
 
          namespace reverse
          {
-
-           // template<>
-           // struct type_traits< transaction::manager::connect::Request> : detail::type< transaction::manager::connect::Reply> {};
-//            template<>
- //           struct type_traits< transaction::client::connect::Request> : detail::type< transaction::client::connect::Reply> {};
-
 
             template<>
             struct type_traits< transaction::commit::Request> : detail::type< transaction::commit::Reply> {};

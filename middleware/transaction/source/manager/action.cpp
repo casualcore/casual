@@ -75,7 +75,7 @@ namespace casual
                {
                   while( count-- > 0)
                   {
-                     auto& info = m_state.xaConfig.at( proxy.key);
+                     auto& info = m_state.xa_switch_configuration.at( proxy.key);
 
                      state::resource::Proxy::Instance instance;//( proxy.id);
                      instance.id = proxy.id;
@@ -134,7 +134,7 @@ namespace casual
                               //
                               log::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
 
-                              m_state.persistentReplies.emplace_back( instance.process.queue, message::shutdown::Request{});
+                              m_state.persistent.replies.emplace_back( instance.process.queue, message::shutdown::Request{});
                            }
                            break;
                         }

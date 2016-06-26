@@ -152,6 +152,7 @@ namespace casual
             gateway_connection_information_reply,
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
+            gateway_domain_id,
 
 
 

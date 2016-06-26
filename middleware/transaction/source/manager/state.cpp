@@ -36,7 +36,8 @@ namespace casual
                   {
                      state::resource::Proxy operator () ( const message::domain::configuration::transaction::Resource& value) const
                      {
-                        trace::internal::Scope trace{ "transform::Resource"};
+
+                        Trace trace{ "transform::Resource", log::internal::transaction};
 
                         state::resource::Proxy result;
 
@@ -153,26 +154,53 @@ namespace casual
                         case Proxy::Instance::State::idle: return "idle";
                         case Proxy::Instance::State::shutdown: return "shutdown";
                         case Proxy::Instance::State::started: return "started";
-                        case Proxy::Instance::State::startupError: return "startupError";
+                        case Proxy::Instance::State::error: return "startupError";
                      }
                      return "<unknown>";
                   };
 
                return out << state_switch();
             }
+
+
+            namespace domain
+            {
+               common::platform::resource::id::type id( const common::Uuid& remote)
+               {
+                  static auto base = std::numeric_limits< common::platform::resource::id::type>::max();
+
+                  static std::map< common::Uuid, common::platform::resource::id::type> mapping;
+
+                  auto found = range::find( mapping, remote);
+
+                  if( found)
+                  {
+                     return found->second;
+                  }
+                  else
+                  {
+                     --base;
+                     mapping.emplace( remote, base);
+                     return base;
+                  }
+               }
+
+            } // domain
+
+
          } // resource
 
          void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file)
          {
 
             {
-               trace::internal::Scope trace( "transaction manager xa-switch configuration", log::internal::transaction);
+               Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
                auto resources = config::xa::switches::get( resource_file);
 
                for( auto& resource : resources)
                {
-                  if( ! state.xaConfig.emplace( resource.key, std::move( resource)).second)
+                  if( ! state.xa_switch_configuration.emplace( resource.key, std::move( resource)).second)
                   {
                      throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
@@ -183,7 +211,7 @@ namespace casual
             // configure resources
             //
             {
-               trace::internal::Scope trace( "transaction manager resource configuration", log::internal::transaction);
+               Trace trace( "transaction manager resource configuration", log::internal::transaction);
 
                std::transform(
                      std::begin( configuration.resources),
@@ -212,67 +240,67 @@ namespace casual
       {
          switch( value)
          {
-            case XA_HEURHAZ: return Result::cXA_HEURHAZ; break;
-            case XA_HEURMIX: return Result::cXA_HEURMIX; break;
-            case XA_HEURCOM: return Result::cXA_HEURCOM; break;
-            case XA_HEURRB: return Result::cXA_HEURRB; break;
-            case XAER_RMFAIL: return Result::cXAER_RMFAIL; break;
-            case XAER_RMERR: return Result::cXAER_RMERR; break;
-            case XA_RBINTEGRITY: return Result::cXA_RBINTEGRITY; break;
-            case XA_RBCOMMFAIL: return Result::cXA_RBCOMMFAIL; break;
-            case XA_RBROLLBACK: return Result::cXA_RBROLLBACK; break;
-            case XA_RBOTHER: return Result::cXA_RBOTHER; break;
-            case XA_RBDEADLOCK: return Result::cXA_RBDEADLOCK; break;
-            case XAER_PROTO: return Result::cXAER_PROTO; break;
-            case XA_RBPROTO: return Result::cXA_RBPROTO; break;
-            case XA_RBTIMEOUT: return Result::cXA_RBTIMEOUT; break;
-            case XA_RBTRANSIENT: return Result::cXA_RBTRANSIENT; break;
-            case XAER_INVAL: return Result::cXAER_INVAL; break;
-            case XA_NOMIGRATE: return Result::cXA_NOMIGRATE; break;
-            case XAER_OUTSIDE: return Result::cXAER_OUTSIDE; break;
-            case XAER_NOTA: return Result::cXAER_NOTA; break;
-            case XAER_ASYNC: return Result::cXAER_ASYNC; break;
-            case XA_RETRY: return Result::cXA_RETRY; break;
-            case XAER_DUPID: return Result::cXAER_DUPID; break;
-            case XA_OK: return Result::cXA_OK; break;
-            case XA_RDONLY: return Result::cXA_RDONLY; break;
+            case XA_HEURHAZ: return Result::xa_HEURHAZ; break;
+            case XA_HEURMIX: return Result::xa_HEURMIX; break;
+            case XA_HEURCOM: return Result::xa_HEURCOM; break;
+            case XA_HEURRB: return Result::xa_HEURRB; break;
+            case XAER_RMFAIL: return Result::xaer_RMFAIL; break;
+            case XAER_RMERR: return Result::xaer_RMERR; break;
+            case XA_RBINTEGRITY: return Result::xa_RBINTEGRITY; break;
+            case XA_RBCOMMFAIL: return Result::xa_RBCOMMFAIL; break;
+            case XA_RBROLLBACK: return Result::xa_RBROLLBACK; break;
+            case XA_RBOTHER: return Result::xa_RBOTHER; break;
+            case XA_RBDEADLOCK: return Result::xa_RBDEADLOCK; break;
+            case XAER_PROTO: return Result::xaer_PROTO; break;
+            case XA_RBPROTO: return Result::xa_RBPROTO; break;
+            case XA_RBTIMEOUT: return Result::xa_RBTIMEOUT; break;
+            case XA_RBTRANSIENT: return Result::xa_RBTRANSIENT; break;
+            case XAER_INVAL: return Result::xaer_INVAL; break;
+            case XA_NOMIGRATE: return Result::xa_NOMIGRATE; break;
+            case XAER_OUTSIDE: return Result::xaer_OUTSIDE; break;
+            case XAER_NOTA: return Result::xaer_NOTA; break;
+            case XAER_ASYNC: return Result::xaer_ASYNC; break;
+            case XA_RETRY: return Result::xa_RETRY; break;
+            case XAER_DUPID: return Result::xaer_DUPID; break;
+            case XA_OK: return Result::xa_OK; break;
+            case XA_RDONLY: return Result::xa_RDONLY; break;
          }
-         return Result::cXAER_RMFAIL;
+         return Result::xaer_RMFAIL;
       }
 
       int Transaction::Resource::convert( Result value)
       {
          switch( value)
          {
-            case Result::cXA_HEURHAZ: return XA_HEURHAZ; break;
-            case Result::cXA_HEURMIX: return XA_HEURMIX; break;
-            case Result::cXA_HEURCOM: return XA_HEURCOM; break;
-            case Result::cXA_HEURRB: return XA_HEURRB; break;
-            case Result::cXAER_RMFAIL: return XAER_RMFAIL; break;
-            case Result::cXAER_RMERR: return XAER_RMERR; break;
-            case Result::cXA_RBINTEGRITY: return XA_RBINTEGRITY; break;
-            case Result::cXA_RBCOMMFAIL: return XA_RBCOMMFAIL; break;
-            case Result::cXA_RBROLLBACK: return XA_RBROLLBACK; break;
-            case Result::cXA_RBOTHER: return XA_RBOTHER; break;
-            case Result::cXA_RBDEADLOCK: return XA_RBDEADLOCK; break;
-            case Result::cXAER_PROTO: return XAER_PROTO; break;
-            case Result::cXA_RBPROTO: return XA_RBPROTO; break;
-            case Result::cXA_RBTIMEOUT: return XA_RBTIMEOUT; break;
-            case Result::cXA_RBTRANSIENT: return XA_RBTRANSIENT; break;
-            case Result::cXAER_INVAL: return XAER_INVAL; break;
-            case Result::cXA_NOMIGRATE: return XA_NOMIGRATE; break;
-            case Result::cXAER_OUTSIDE: return XAER_OUTSIDE; break;
-            case Result::cXAER_NOTA: return XAER_NOTA; break;
-            case Result::cXAER_ASYNC: return XAER_ASYNC; break;
-            case Result::cXA_RETRY: return XA_RETRY; break;
-            case Result::cXAER_DUPID: return XAER_DUPID; break;
-            case Result::cXA_OK: return XA_OK; break;
-            case Result::cXA_RDONLY: return XA_RDONLY; break;
+            case Result::xa_HEURHAZ: return XA_HEURHAZ; break;
+            case Result::xa_HEURMIX: return XA_HEURMIX; break;
+            case Result::xa_HEURCOM: return XA_HEURCOM; break;
+            case Result::xa_HEURRB: return XA_HEURRB; break;
+            case Result::xaer_RMFAIL: return XAER_RMFAIL; break;
+            case Result::xaer_RMERR: return XAER_RMERR; break;
+            case Result::xa_RBINTEGRITY: return XA_RBINTEGRITY; break;
+            case Result::xa_RBCOMMFAIL: return XA_RBCOMMFAIL; break;
+            case Result::xa_RBROLLBACK: return XA_RBROLLBACK; break;
+            case Result::xa_RBOTHER: return XA_RBOTHER; break;
+            case Result::xa_RBDEADLOCK: return XA_RBDEADLOCK; break;
+            case Result::xaer_PROTO: return XAER_PROTO; break;
+            case Result::xa_RBPROTO: return XA_RBPROTO; break;
+            case Result::xa_RBTIMEOUT: return XA_RBTIMEOUT; break;
+            case Result::xa_RBTRANSIENT: return XA_RBTRANSIENT; break;
+            case Result::xaer_INVAL: return XAER_INVAL; break;
+            case Result::xa_NOMIGRATE: return XA_NOMIGRATE; break;
+            case Result::xaer_OUTSIDE: return XAER_OUTSIDE; break;
+            case Result::xaer_NOTA: return XAER_NOTA; break;
+            case Result::xaer_ASYNC: return XAER_ASYNC; break;
+            case Result::xa_RETRY: return XA_RETRY; break;
+            case Result::xaer_DUPID: return XAER_DUPID; break;
+            case Result::xa_OK: return XA_OK; break;
+            case Result::xa_RDONLY: return XA_RDONLY; break;
          }
          return XAER_RMFAIL;
       }
 
-      void Transaction::Resource::setResult( int value)
+      void Transaction::Resource::set_result( int value)
       {
          result = convert( value);
       }
@@ -280,7 +308,7 @@ namespace casual
 
       Transaction::Resource::Stage Transaction::stage() const
       {
-         Resource::Stage result = Resource::Stage::cNotInvolved;
+         Resource::Stage result = Resource::Stage::not_involved;
 
          for( auto& resource : resources)
          {
@@ -292,7 +320,7 @@ namespace casual
 
       Transaction::Resource::Result Transaction::results() const
       {
-         auto result = Resource::Result::cXA_RDONLY;
+         auto result = Resource::Result::xa_RDONLY;
 
          for( auto& resource : resources)
          {
@@ -313,9 +341,9 @@ namespace casual
       State::State( const std::string& database) : log( database) {}
 
 
-      bool State::pending() const
+      bool State::outstanding() const
       {
-         return ! persistentReplies.empty();
+         return ! persistent.replies.empty();
       }
 
       bool State::ready() const

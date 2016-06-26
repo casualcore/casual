@@ -1,8 +1,5 @@
 //!
-//! monitor.cpp
-//!
-//! Created on: Jul 15, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/manager.h"
@@ -12,7 +9,6 @@
 
 
 #include "common/server/handle.h"
-#include "common/server/lifetime.h"
 #include "common/trace.h"
 #include "common/environment.h"
 #include "common/message/dispatch.h"
@@ -223,7 +219,7 @@ namespace casual
                   {
                      batchWrite.begin();
 
-                     if( ! state.pending())
+                     if( ! state.outstanding())
                      {
                         //
                         // We can only block if our backlog is empty
@@ -246,7 +242,7 @@ namespace casual
                      auto count = common::platform::batch::transaction;
 
                      while( ( handler( ipc::device().non_blocking_next()) || --count > 0 ) &&
-                           state.persistentReplies.size() < common::platform::batch::transaction)
+                           state.persistent.replies.size() < common::platform::batch::transaction)
                      {
                         ;
                      }
@@ -255,7 +251,7 @@ namespace casual
                   //
                   // Check if we have any persistent stuff to handle, if not we don't do persistent commit
                   //
-                  if( ! state.persistentReplies.empty() || ! state.persistentRequests.empty())
+                  if( ! state.persistent.replies.empty() || ! state.persistent.requests.empty())
                   {
                      batchWrite.commit();
 
@@ -264,33 +260,33 @@ namespace casual
                      //
                      {
 
-                        common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
+                        common::log::internal::transaction << "manager persistent replies: " << state.persistent.replies.size() << "\n";
 
                         auto notDone = common::range::partition(
-                              state.persistentReplies,
+                              state.persistent.replies,
                               common::negate( action::persistent::Send{ state}));
 
-                        common::range::trim( state.persistentReplies, std::get< 0>( notDone));
+                        common::range::trim( state.persistent.replies, std::get< 0>( notDone));
 
-                        common::log::internal::transaction << "manager persistent replies: " << state.persistentReplies.size() << "\n";
+                        common::log::internal::transaction << "manager persistent replies: " << state.persistent.replies.size() << "\n";
                      }
 
                      //
                      // Send persistent resource requests
                      //
                      {
-                        common::log::internal::transaction << "manager persistent request: " << state.persistentRequests.size() << "\n";
+                        common::log::internal::transaction << "manager persistent request: " << state.persistent.requests.size() << "\n";
 
                         auto notDone = common::range::partition(
-                              state.persistentRequests,
+                              state.persistent.requests,
                               common::negate( action::persistent::Send{ state}));
 
                         //
                         // Move the ones that did not find an idle resource to pending requests
                         //
-                        common::range::move( std::get< 0>( notDone), state.pendingRequests);
+                        common::range::move( std::get< 0>( notDone), state.pending.requests);
 
-                        state.persistentRequests.clear();
+                        state.persistent.requests.clear();
 
                      }
                   }

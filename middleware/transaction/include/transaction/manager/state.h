@@ -75,7 +75,7 @@ namespace casual
                      started,
                      idle,
                      busy,
-                     startupError,
+                     error,
                      shutdown
                   };
 
@@ -145,6 +145,24 @@ namespace casual
                };
             } // update
 
+
+            namespace domain
+            {
+               common::platform::resource::id::type id( const common::Uuid& remote);
+
+            } // domain
+
+
+
+            struct Domain
+            {
+               //!
+               //! id of the remote domain
+               //!
+               common::Uuid id;
+
+            };
+
          } // resource
 
 
@@ -203,6 +221,8 @@ namespace casual
                };
             } // filter
          } // pending
+
+
       } // state
 
 
@@ -214,16 +234,16 @@ namespace casual
 
             enum class Stage
             {
-               cInvolved,
-               cPrepareRequested,
-               cPrepareReplied,
-               cCommitRequested,
-               cCommitReplied,
-               cRollbackRequested,
-               cRollbackReplied,
-               cDone,
-               cError,
-               cNotInvolved,
+               involved,
+               prepare_requested,
+               prepare_replied,
+               commit_requested,
+               commit_replied,
+               rollback_requested,
+               rollback_replied,
+               done,
+               error,
+               not_involved,
             };
 
 
@@ -234,30 +254,30 @@ namespace casual
             //!
             enum class Result
             {
-               cXA_HEURHAZ,
-               cXA_HEURMIX,
-               cXA_HEURCOM,
-               cXA_HEURRB,
-               cXAER_RMFAIL,
-               cXAER_RMERR,
-               cXA_RBINTEGRITY,
-               cXA_RBCOMMFAIL,
-               cXA_RBROLLBACK,
-               cXA_RBOTHER,
-               cXA_RBDEADLOCK,
-               cXAER_PROTO,
-               cXA_RBPROTO,
-               cXA_RBTIMEOUT,
-               cXA_RBTRANSIENT,
-               cXAER_INVAL,
-               cXA_NOMIGRATE,
-               cXAER_OUTSIDE,
-               cXAER_ASYNC,
-               cXA_RETRY,
-               cXAER_DUPID,
-               cXAER_NOTA,
-               cXA_OK,      //! Went as expected
-               cXA_RDONLY,  //! Went "better" than expected
+               xa_HEURHAZ,
+               xa_HEURMIX,
+               xa_HEURCOM,
+               xa_HEURRB,
+               xaer_RMFAIL,
+               xaer_RMERR,
+               xa_RBINTEGRITY,
+               xa_RBCOMMFAIL,
+               xa_RBROLLBACK,
+               xa_RBOTHER,
+               xa_RBDEADLOCK,
+               xaer_PROTO,
+               xa_RBPROTO,
+               xa_RBTIMEOUT,
+               xa_RBTRANSIENT,
+               xaer_INVAL,
+               xa_NOMIGRATE,
+               xaer_OUTSIDE,
+               xaer_ASYNC,
+               xa_RETRY,
+               xaer_DUPID,
+               xaer_NOTA,
+               xa_OK,      //! Went as expected
+               xa_RDONLY,  //! Went "better" than expected
             };
 
             Resource( id_type id) : id( id) {}
@@ -265,13 +285,13 @@ namespace casual
             Resource& operator = ( Resource&&) noexcept = default;
 
             id_type id;
-            Stage stage = Stage::cInvolved;
-            Result result = Result::cXA_OK;
+            Stage stage = Stage::involved;
+            Result result = Result::xa_OK;
 
             static Result convert( int value);
             static int convert( Result value);
 
-            void setResult( int value);
+            void set_result( int value);
 
 
             struct update
@@ -420,31 +440,43 @@ namespace casual
          State( const State&) = delete;
          State& operator = ( const State&) = delete;
 
-
-         std::map< std::string, config::xa::Switch> xaConfig;
+         std::vector< Transaction> transactions;
 
          std::vector< state::resource::Proxy> resources;
 
-         std::vector< Transaction> transactions;
+
+         struct
+         {
+            //!
+            //! Replies that will be sent after an atomic write to the log
+            //!
+            std::vector< state::pending::Reply> replies;
+
+            //!
+            //! Resource request, that will be processed after an atomic
+            //! write to the log. If corresponding resources is busy, for some
+            //! requests, these will be moved to pendingRequests
+            //!
+            std::vector< state::pending::Request> requests;
+
+         } persistent;
 
 
-         //!
-         //! Replies that will be sent after an atomic write to the log
-         //!
-         std::vector< state::pending::Reply> persistentReplies;
 
-         //!
-         //! Resource request, that will be processed as soon as possible,
-         //! that is, as soon as corresponding resources is done/idle
-         //!
-         std::vector< state::pending::Request> pendingRequests;
+         struct
+         {
+            //!
+            //! Resource request, that will be processed as soon as possible,
+            //! that is, as soon as corresponding resources is done/idle
+            //!
+            std::vector< state::pending::Request> requests;
 
-         //!
-         //! Resource request, that will be processed after an atomic
-         //! write to the log. If corresponding resources is busy, for some
-         //! requests, these will be moved to pendingRequests
-         //!
-         std::vector< state::pending::Request> persistentRequests;
+         } pending;
+
+
+
+
+
 
 
          //!
@@ -453,13 +485,14 @@ namespace casual
          transaction::Log log;
 
 
+         std::map< std::string, config::xa::Switch> xa_switch_configuration;
 
 
          //!
          //! @return true if there are pending stuff to do. We can't block
          //! if we got stuff to do...
          //!
-         bool pending() const;
+         bool outstanding() const;
 
 
          //!
