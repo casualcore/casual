@@ -4,6 +4,7 @@
 
 
 #include "queue/api/rm/queue.h"
+#include "queue/common/log.h"
 #include "queue/common/queue.h"
 #include "queue/common/environment.h"
 #include "queue/common/transform.h"
@@ -158,8 +159,8 @@ namespace casual
                      }
                      request.queue = group.queue;
 
-                     common::log::internal::queue << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
-                     common::log::internal::queue << "enqueues - request: " << request << std::endl;
+                     log << "enqueues - queue: " << queue << " group: " << group.queue << " process: " << group.process << std::endl;
+                     log << "enqueues - request: " << request << std::endl;
 
                      return casual::common::communication::ipc::blocking::send( group.process.queue, request);
                   };
@@ -234,7 +235,7 @@ namespace casual
                      request.selector.id = selector.id;
                      request.selector.properties = selector.properties;
 
-                     common::log::internal::queue << "async::dequeue - request: " << request << std::endl;
+                     log << "async::dequeue - request: " << request << std::endl;
 
                      return ipc.blocking_send( group.process.queue, request);
                   };
@@ -292,14 +293,14 @@ namespace casual
 
          sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
          {
-            common::trace::Scope trace( "queue::rm::enqueue", common::log::internal::queue);
+            Trace trace( "queue::rm::enqueue");
 
             return local::enqueue( queue, message);
          }
 
          std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
          {
-            common::trace::Scope trace( "queue::rm::dequeue", common::log::internal::queue);
+            Trace trace( "queue::rm::dequeue");
 
             return local::dequeue( queue, selector);
          }
@@ -315,7 +316,7 @@ namespace casual
          {
             Message dequeue( const std::string& queue, const Selector& selector)
             {
-               common::trace::Scope trace( "queue::rm::blocking::dequeue", common::log::internal::queue);
+               Trace trace( "queue::rm::blocking::dequeue");
 
                auto message = local::dequeue( queue, selector, true);
 

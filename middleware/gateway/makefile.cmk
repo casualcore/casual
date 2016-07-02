@@ -36,6 +36,7 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
        Compile( 'source/transform.cpp'),
        Compile( 'source/message.cpp'),
        Compile( 'source/manager/listener.cpp'),
+       Compile( 'source/common.cpp'),
      ])
         
 

@@ -5,6 +5,7 @@
 //!
 
 #include "gateway/outbound/gateway.h"
+#include "gateway/common.h"
 
 #include "common/communication/tcp.h"
 
@@ -80,7 +81,7 @@ namespace casual
                            { std::chrono::seconds{ 5}, 0} // forever
                         })}
                   {
-                     Trace trace{ "outbound::tcp::Policy::external_type ctor", log::internal::gateway};
+                     Trace trace{ "outbound::tcp::Policy::external_type ctor"};
 
 
                      /*

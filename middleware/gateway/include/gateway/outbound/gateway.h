@@ -6,6 +6,7 @@
 #define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_OUTBOUND_GATEWAY_H_
 
 #include "gateway/message.h"
+#include "gateway/common.h"
 #include "gateway/handle.h"
 #include "gateway/environment.h"
 
@@ -103,7 +104,7 @@ namespace casual
 
                   void operator() ( message_type& message)
                   {
-                     common::log::internal::gateway << "call request: " << message << '\n';
+                     log << "call request: " << message << '\n';
 
                      if( message.trid)
                      {
@@ -133,7 +134,7 @@ namespace casual
 
                void operator() ( message_type& message)
                {
-                  common::log::internal::gateway << "reply: " << message << '\n';
+                  log << "reply: " << message << '\n';
 
                   try
                   {
@@ -143,7 +144,7 @@ namespace casual
                   }
                   catch( const common::exception::queue::Unavailable&)
                   {
-                     common::log::internal::gateway << "destination queue: " << routing.get( message.correlation)
+                     log << "destination queue: " << routing.get( message.correlation)
                            << " unavailable for correlation: " << message.correlation << " - action: discard\n";
                   }
                   catch( const common::exception::invalid::Argument&)
@@ -170,7 +171,7 @@ namespace casual
 
                      void operator () ( common::message::gateway::domain::discover::Request& request) const
                      {
-                        common::Trace trace{ "gateway::outbound::handle::domain::discover::Request", common::log::internal::gateway};
+                        Trace trace{ "gateway::outbound::handle::domain::discover::Request"};
 
                         auto reply = common::message::reverse::type( request);
 
@@ -225,7 +226,7 @@ namespace casual
             {
                try
                {
-                  common::Trace trace{ "gateway::outbound::Gateway::~Gateway()", common::log::internal::gateway};
+                  Trace trace{ "gateway::outbound::Gateway::~Gateway()"};
 
                   if( m_reply_thread.joinable())
                   {
@@ -260,7 +261,7 @@ namespace casual
 
             void operator() ()
             {
-               common::Trace trace{ "gateway::outbound::Gateway::operator()", common::log::internal::gateway};
+               Trace trace{ "gateway::outbound::Gateway::operator()"};
 
                //
                // We block sig-user so worker always gets'em
@@ -275,14 +276,14 @@ namespace casual
 
                auto&& outbound_device = policy.outbound();
 
-               common::log::internal::gateway << "internal policy: " << policy << '\n';
+               log << "internal policy: " << policy << '\n';
 
 
                //
                // Send connect to gateway so it knows we're up'n running
                //
                {
-                  common::Trace trace{ "gateway::outbound::Gateway::operator() gateway connect", common::log::internal::gateway};
+                  common::Trace trace{ "gateway::outbound::Gateway::operator() gateway connect", log};
 
                   message::outbound::Connect connect;
                   connect.process = common::process::handle();
@@ -315,7 +316,7 @@ namespace casual
 
             configuration_type connect()
             {
-               common::Trace trace{ "gateway::outbound::Gateway::connect", common::log::internal::gateway};
+               Trace trace{ "gateway::outbound::Gateway::connect"};
 
                message::worker::Connect message;
 
@@ -346,7 +347,7 @@ namespace casual
                //
                common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
 
-               common::Trace trace{ "gateway::outbound::Gateway::reply_thread", common::log::internal::gateway};
+               Trace trace{ "gateway::outbound::Gateway::reply_thread"};
 
 
                auto send_disconnect = []( message::worker::Disconnect::Reason reason)
@@ -354,7 +355,7 @@ namespace casual
                      common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
 
                      message::worker::Disconnect disconnect{ reason};
-                     common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
+                     log << "send disconnect: " << disconnect << '\n';
 
                      ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
                   };
@@ -376,7 +377,7 @@ namespace casual
                   //
                   {
 
-                     common::Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect", common::log::internal::gateway};
+                     common::Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect", log};
 
                      message::worker::Connect message;
 
@@ -405,7 +406,7 @@ namespace casual
                      handle::domain::discover::Request{ policy.address()},
                   };
 
-                  common::log::internal::gateway << "start reply message pump\n";
+                  log << "start reply message pump\n";
 
                   common::message::dispatch::blocking::pump( handler, inbound);
 

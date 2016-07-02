@@ -334,16 +334,16 @@ int casual_vlog( casual_log_category_t category, const char* const format, va_li
       switch( category)
       {
       case casual_log_category_t::c_log_debug:
-         casual::common::log::write( casual::common::log::category::Type::debug, data);
+         casual::common::log::write( "debug", data);
          break;
       case casual_log_category_t::c_log_information:
-         casual::common::log::write( casual::common::log::category::Type::information, data);
+         casual::common::log::write( "information", data);
          break;
       case casual_log_category_t::c_log_warning:
-         casual::common::log::write( casual::common::log::category::Type::warning, data);
+         casual::common::log::write( "warning", data);
          break;
       default:
-         casual::common::log::write( casual::common::log::category::Type::error, data);
+         casual::common::log::write( "error", data);
          break;
       }
    };

@@ -1,12 +1,10 @@
 //!
-//! service.cpp
-//!
-//! Created on: Nov 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/forward/common.h"
 #include "queue/api/rm/queue.h"
+#include "queue/common/log.h"
 
 #include "common/arguments.h"
 #include "common/exception.h"
@@ -51,7 +49,7 @@ namespace casual
 
             void operator () ( queue::Message&& message)
             {
-               common::trace::Scope trace{ "queue::forward::Enqueuer::operator()", common::log::internal::queue};
+               Trace trace{ "queue::forward::Enqueuer::operator()"};
                queue::rm::enqueue( m_queue, message);
             }
 

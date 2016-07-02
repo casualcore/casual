@@ -6,6 +6,7 @@
 #include "gateway/manager/handle.h"
 #include "gateway/environment.h"
 #include "gateway/transform.h"
+#include "gateway/common.h"
 
 #include "config/domain.h"
 
@@ -28,7 +29,7 @@ namespace casual
             {
                manager::State connect( manager::Settings settings)
                {
-                  Trace trace{ "gateway::manager::local::connect", log::internal::gateway};
+                  Trace trace{ "gateway::manager::local::connect"};
 
                   //
                   // Connect to domain
@@ -70,14 +71,14 @@ namespace casual
       Manager::Manager( manager::Settings settings)
         : m_state{ manager::local::connect( std::move( settings))}
       {
-         Trace trace{ "gateway::Manager::Manager", log::internal::gateway};
+         Trace trace{ "gateway::Manager::Manager"};
 
 
       }
 
       Manager::~Manager()
       {
-         Trace trace{ "gateway::Manager::~Manager", log::internal::gateway};
+         Trace trace{ "gateway::Manager::~Manager"};
 
          try
          {
@@ -95,7 +96,7 @@ namespace casual
 
       void Manager::start()
       {
-         Trace trace{ "gateway::Manager::start", log::internal::gateway};
+         Trace trace{ "gateway::Manager::start"};
 
          //
          // boot outbounds

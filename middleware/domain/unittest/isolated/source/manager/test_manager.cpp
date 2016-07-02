@@ -232,7 +232,7 @@ domain:
                               }
                               process::sleep( std::chrono::microseconds{ 10});
                            }
-                           throw exception::xatmi::service::NoEntry{ service};
+                           throw exception::xatmi::service::no::Entry{ service};
                         }
                      } // wait
 

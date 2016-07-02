@@ -3,6 +3,7 @@
 //!
 
 #include "gateway/handle.h"
+#include "gateway/common.h"
 
 #include "common/trace.h"
 
@@ -17,7 +18,7 @@ namespace casual
 
          void Disconnect::operator() ( message_type& message)
          {
-            common::Trace trace{ "gateway::handle::Disconnect::operator()", common::log::internal::gateway};
+            Trace trace{ "gateway::handle::Disconnect::operator()"};
 
             if( message.reason == message_type::Reason::disconnect && message.remote.id)
             {

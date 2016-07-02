@@ -69,11 +69,7 @@ LinkUnittest( 'bin/test-buffer',
     lib_buffer, 'casual-common', 'casual-xatmi'
    ])  
    
-#
-# Install
-#
-Install( install_lib, '$(CASUAL_HOME)/lib')
-Install( install_include, '$(CASUAL_HOME)/include/buffer')
+
 
 
 #
@@ -90,4 +86,13 @@ lib_casual_buffer_sample = LinkLibrary( 'bin/casual_buffer_sample',
     [
      lib_buffer, 'casual-xatmi'
     ])
+
+
+#
+# Install
+#
+Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_include, '$(CASUAL_HOME)/include/buffer')
+
+
 

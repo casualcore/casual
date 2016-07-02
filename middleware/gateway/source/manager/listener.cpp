@@ -4,6 +4,7 @@
 
 #include "gateway/manager/listener.h"
 #include "gateway/message.h"
+#include "gateway/common.h"
 
 #include "common/communication/ipc.h"
 #include "common/trace.h"
@@ -22,7 +23,7 @@ namespace casual
             {
                void listener_thread( communication::tcp::Address address, Uuid correlation)
                {
-                  Trace trace{ "listener_thread", log::internal::gateway};
+                  Trace trace{ "listener_thread"};
 
                   signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::user})};
 
@@ -52,7 +53,7 @@ namespace casual
 
                         auto socket = listener();
 
-                        log::internal::gateway << "socket connect: " << socket << std::endl;
+                        log << "socket connect: " << socket << std::endl;
 
                         if( socket)
                         {
@@ -87,12 +88,12 @@ namespace casual
 
          Listener::~Listener()
          {
-            Trace trace{ "gateway::manager::Listener::~Listener()", log::internal::gateway};
+            Trace trace{ "gateway::manager::Listener::~Listener()"};
             try
             {
                if( m_thread.joinable())
                {
-                  log::internal::gateway << "listener still active: " << *this << '\n';
+                  log << "listener still active: " << *this << '\n';
 
                   // TODO: should we try to shutdown?
                }
@@ -110,7 +111,7 @@ namespace casual
 
          void Listener::start()
          {
-            Trace trace{ "gateway::manager::Listener::start()", log::internal::gateway};
+            Trace trace{ "gateway::manager::Listener::start()"};
 
             if( m_thread.joinable())
             {
@@ -123,9 +124,9 @@ namespace casual
 
          void Listener::shutdown()
          {
-            Trace trace{ "gateway::manager::Listener::shutdown()", log::internal::gateway};
+            Trace trace{ "gateway::manager::Listener::shutdown()"};
 
-            log::internal::gateway << "shutdown listener: " << *this << std::endl;
+            log << "shutdown listener: " << *this << std::endl;
 
             if( m_thread.joinable() && m_state != State::signaled)
             {
@@ -137,7 +138,7 @@ namespace casual
 
          void Listener::event( const message::manager::listener::Event& event)
          {
-            log::internal::gateway << "Listener::event event: " << event << std::endl;
+            log << "Listener::event event: " << event << std::endl;
 
             if( event.correlation != m_correlation)
             {

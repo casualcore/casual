@@ -48,18 +48,18 @@ namespace casual
 
                   domain::identity( domain::Identity{ "unittest-domain"});
 
-                  log::stream::get( log::category::Type::casual_debug) << "mockup::unittest::Environment::SetUp";
+                  log::stream::get( "casual.debug") << "mockup::unittest::Environment::SetUp";
 
 
                   directory::create( domain_path);
 
-                  log::stream::get( log::category::Type::casual_debug) << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
-                  log::stream::get( log::category::Type::casual_debug)  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
+                  log::stream::get( "casual.debug") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
+                  log::stream::get( "casual.debug")  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
 
 
                   if( ! directory::create( environment::domain::singleton::path()))
                   {
-                     log::stream::get( log::category::Type::error) << "failed to create domain singleton directory\n";
+                     log::stream::get( "error") << "failed to create domain singleton directory\n";
                   }
                }
 

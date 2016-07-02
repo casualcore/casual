@@ -8,6 +8,7 @@
 #include "gateway/inbound/cache.h"
 
 #include "gateway/message.h"
+#include "gateway/common.h"
 #include "gateway/handle.h"
 #include "gateway/environment.h"
 
@@ -82,7 +83,7 @@ namespace casual
 
                   void operator() ( message_type& message)
                   {
-                     common::Trace trace{ "gateway::inbound::handle::call::Request::operator()", common::log::internal::gateway};
+                     Trace trace{ "gateway::inbound::handle::call::Request::operator()"};
 
                      //
                      // Change 'sender' so we (our main thread) get the reply
@@ -122,7 +123,7 @@ namespace casual
 
                      void operator() ( message_type& message)
                      {
-                        common::log::internal::gateway << "lookup reply: " << message << "\n";
+                        log << "lookup reply: " << message << "\n";
 
                         auto request = m_cache.get( message.correlation);
 
@@ -181,7 +182,7 @@ namespace casual
 
                void operator() ( message_type& message)
                {
-                  common::Trace trace{ "gateway::inbound::handle::basic_reply::operator()", common::log::internal::gateway};
+                  Trace trace{ "gateway::inbound::handle::basic_reply::operator()"};
 
                   m_device.blocking_send( message);
                }
@@ -211,7 +212,7 @@ namespace casual
 
                      void operator () ( common::message::gateway::domain::discover::Request& request) const
                      {
-                        common::Trace trace{ "gateway::inbound::handle::connection::information::Request", common::log::internal::gateway};
+                        Trace trace{ "gateway::inbound::handle::connection::information::Request"};
 
                         auto reply = common::message::reverse::type( request);
 
@@ -238,7 +239,7 @@ namespace casual
                   {
                      void operator () ( common::message::gateway::domain::discover::Reply& reply) const
                      {
-                        common::Trace trace{ "gateway::inbound::handle::connection::information::Reply", common::log::internal::gateway};
+                        Trace trace{ "gateway::inbound::handle::connection::information::Reply"};
 
                         reply.process = common::process::handle();
                         common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), reply);
@@ -288,7 +289,7 @@ namespace casual
             {
                try
                {
-                  common::Trace trace{ "gateway::inbound::Gateway::~Gateway()", common::log::internal::gateway};
+                  Trace trace{ "gateway::inbound::Gateway::~Gateway()"};
 
                   if( m_request_thread.joinable())
                   {
@@ -322,7 +323,7 @@ namespace casual
 
             void operator() ()
             {
-               common::Trace trace{ "gateway::inbound::Gateway::operator()", common::log::internal::gateway};
+               Trace trace{ "gateway::inbound::Gateway::operator()"};
 
                //
                // We block sig-user so worker always gets'em
@@ -342,7 +343,7 @@ namespace casual
                // Send connect to gateway so it knows we're up'n running
                //
                {
-                  common::Trace trace{ "gateway::inbound::Gateway::operator() gateway connect", common::log::internal::gateway};
+                  Trace trace{ "gateway::inbound::Gateway::operator() gateway connect"};
 
                   message::inbound::Connect connect;
                   connect.process = common::process::handle();
@@ -371,7 +372,7 @@ namespace casual
                   handle::create::forward< common::message::gateway::domain::discover::Reply>( outbound_device),
                };
 
-               common::log::internal::gateway << "start internal message pump\n";
+               log << "start internal message pump\n";
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
 
             }
@@ -380,7 +381,7 @@ namespace casual
 
             configuration_type connect()
             {
-               common::Trace trace{ "gateway::inbound::Gateway::connect", common::log::internal::gateway};
+               Trace trace{ "gateway::inbound::Gateway::connect"};
 
                message::worker::Connect message;
 
@@ -412,7 +413,7 @@ namespace casual
                common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
 
 
-               common::Trace trace{ "gateway::inbound::Gateway::request_thread", common::log::internal::gateway};
+               Trace trace{ "gateway::inbound::Gateway::request_thread"};
 
                auto send_disconnect = []( message::worker::Disconnect::Reason reason)
                   {
@@ -422,7 +423,7 @@ namespace casual
                         common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
 
                         message::worker::Disconnect disconnect{ reason};
-                        common::log::internal::gateway << "send disconnect: " << disconnect << '\n';
+                        log << "send disconnect: " << disconnect << '\n';
 
                         ipc.send( disconnect, common::communication::ipc::policy::Blocking{});
                      }
@@ -448,7 +449,7 @@ namespace casual
                   // domain
                   //
                   {
-                     common::Trace trace{ "gateway::inbound::Gateway::request_thread main thread connect", common::log::internal::gateway};
+                     Trace trace{ "gateway::inbound::Gateway::request_thread main thread connect"};
 
                      message::worker::Connect message;
 
@@ -481,7 +482,7 @@ namespace casual
 
                   };
              
-                  common::log::internal::gateway << "start external message pump\n";
+                  log << "start external message pump\n";
                   common::message::dispatch::blocking::pump( handler, device);
                }
                catch( const common::exception::signal::User&)

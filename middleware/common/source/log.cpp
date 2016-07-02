@@ -110,243 +110,236 @@ namespace casual
                   }
 
                   std::ofstream m_output;
-                  std::mutex m_streamMutex;
                };
 
-
-               class logger_buffer : public std::streambuf
+               namespace user
                {
-               public:
-
-                  using base_type = std::streambuf;
-
-                  logger_buffer( log::category::Type category)
-                     : m_category( log::category::name( category))
+                  std::regex filter()
                   {
-
+                     return std::regex{ common::environment::variable::get( "CASUAL_LOG", "error")};
                   }
 
-                  int overflow( int value) override
+
+
+               } // user
+
+               namespace error
+               {
+                  const std::regex& filter()
                   {
-                     if( value != base_type::traits_type::eof())
+                     static std::regex filter{ "error"};
+                     return filter;
+                  }
+
+               } // error
+
+               namespace stream
+               {
+
+                  struct buffer : public std::streambuf
+                  {
+                     using base_type = std::streambuf;
+
+                     buffer( std::string category)
+                        : m_category( std::move( category))
                      {
-                        if( value == '\n')
-                        {
-                           log();
-                        }
-                        else
-                        {
-                           m_buffer.push_back( base_type::traits_type::to_char_type( value));
-                        }
 
                      }
-                     return value;
-                  }
 
-               private:
-
-                  void log()
-                  {
-                     File::instance().log(  m_category, m_buffer);
-                     m_buffer.clear();
-                  }
-
-                  typedef std::string buffer_type;
-                  buffer_type m_buffer;
-
-                  const std::string m_category;
-               };
-
-
-               template< log::category::Type category>
-               logger_buffer* bufferFactory()
-               {
-                  static logger_buffer result( category);
-                  return &result;
-               }
-
-               struct buffer_holder
-               {
-                  std::function< logger_buffer*()> factory;
-               };
-
-               namespace buffer
-               {
-                  std::map< log::category::Type, buffer_holder>& mapping()
-                  {
-                     static std::map< log::category::Type, buffer_holder> buffers;
-                     return buffers;
-                  }
-
-
-                  const buffer_holder& get( log::category::Type category)
-                  {
-                     return mapping().at( category);
-                  }
-
-                  namespace active
-                  {
-                     logger_buffer* get( log::category::Type category)
+                     int overflow( int value) override
                      {
-                        std::vector< std::string> environment;
-
-                        range::transform(
-                              common::string::split( common::environment::variable::get( "CASUAL_LOG", ""), ','),
-                              environment,
-                              string::trim);
-
-
-                        auto found = range::find( environment, log::category::name( category));
-
-                        if( ! found.empty() || ! range::find( environment, "%").empty())
+                        if( value != base_type::traits_type::eof())
                         {
-                           return buffer::get( category).factory();
-                        }
+                           if( value == '\n')
+                           {
+                              log();
+                           }
+                           else
+                           {
+                              m_buffer.push_back( base_type::traits_type::to_char_type( value));
+                           }
 
+                        }
+                        return value;
+                     }
+
+                  private:
+
+                     void log()
+                     {
+                        File::instance().log(  m_category, m_buffer);
+                        m_buffer.clear();
+                     }
+
+                     typedef std::string buffer_type;
+                     buffer_type m_buffer;
+
+                     const std::string m_category;
+
+
+                  };
+
+
+                  struct holder
+                  {
+                     holder( std::string category, log::Stream& stream)
+                       : category{ std::move( category)}, stream{ stream} {}
+
+                     std::string category;
+                     std::reference_wrapper< log::Stream> stream;
+                     std::unique_ptr< stream::buffer> buffer;
+                  };
+
+                  std::vector< holder>& streams()
+                  {
+                     static std::vector< holder> streams;
+                     return streams;
+                  }
+
+
+                  stream::buffer* activate( holder& holder)
+                  {
+                     holder.buffer.reset( new stream::buffer{ holder.category});
+                     return holder.buffer.get();
+                  }
+
+                  stream::buffer* activate( holder& holder, const std::regex& filter)
+                  {
+                     if( std::regex_match( holder.category, error::filter()) || std::regex_match( holder.category, filter))
+                     {
+                        return activate( holder);
+                     }
+                     else
+                     {
+                        holder.buffer.reset( nullptr);
+                     }
+
+                     return holder.buffer.get();
+                  }
+
+                  namespace find
+                  {
+                     holder* holder( const std::string& category)
+                     {
+                        auto found = range::find_if( stream::streams(), [&]( const stream::holder& h){ return h.category == category;});
+
+                        if( found)
+                        {
+                           return &( *found);
+                        }
                         return nullptr;
                      }
-                  } // active
-               } // buffer
+
+                  } // find
+
+               } // stream
+
+
+
+               namespace registration
+               {
+
+                  stream::buffer* stream( log::Stream& stream, std::string category)
+                  {
+                     if( ! stream::find::holder( category))
+                     {
+                        stream::streams().emplace_back( std::move( category), stream);
+
+                        return stream::activate( stream::streams().back(), user::filter());
+                     }
+                     return nullptr;
+                  }
+
+
+               } // registration
 
             } // unnamed
 
          } // local
 
 
-         namespace category
+
+
+         Stream::Stream( std::string category)
+           : std::ostream{ local::registration::stream( *this, std::move( category))}
          {
 
-            namespace
-            {
+         }
 
-               std::map< Type, std::string>& mapping()
-               {
-                  static std::map< Type, std::string> singleton;
-                  return singleton;
-               }
 
-            } // <unnamed>
-
-            const std::string& name( Type type)
-            {
-               return mapping().at( type);
-            }
-
-         } // category
 
          namespace stream
          {
-            namespace
-            {
-               std::map< category::Type, internal::Stream*>& mapping()
-               {
-                  static std::map< category::Type, internal::Stream*> singleton;
-                  return singleton;
-               }
-            } // unnamed
 
-            internal::Stream& get( category::Type category)
+            Stream& get( const std::string& category)
             {
-               return *mapping().at( category);
+               auto holder = local::stream::find::holder( category);
+
+               if( holder)
+               {
+                  return holder->stream;
+               }
+
+               throw exception::invalid::Argument{ "invalid log category", CASUAL_NIP( category)};
             }
          } // stream
 
-
-         namespace registration
-         {
-            namespace
-            {
-               template< category::Type type>
-               category::Type logger( std::string name, internal::Stream& stream)
-               {
-                  category::mapping()[ type] = std::move( name);
-
-                  local::buffer::mapping()[ type] = { local::bufferFactory< type>};
-
-                  stream::mapping()[ type] = &stream;
-
-                  return type;
-               }
-
-               template< category::Type type>
-               local::logger_buffer* active( std::string name, internal::Stream& stream)
-               {
-                  return local::buffer::active::get( registration::logger< type>( std::move( name), stream));
-               }
-
-            } // <unnamed>
-
-         } // register
 
 
 
          namespace internal
          {
 
-            internal::Stream debug{ registration::active< category::Type::casual_debug>( "casual.debug", debug)};
-
-            internal::Stream trace{ registration::active< category::Type::casual_trace>( "casual.trace", trace)};
-
-            internal::Stream transaction{ registration::active< category::Type::casual_transaction>( "casual.transaction", transaction)};
-
-            internal::Stream gateway{ registration::active< category::Type::casual_gateway>( "casual.gateway", gateway)};
-
-            internal::Stream ipc{ registration::active< category::Type::casual_ipc>( "casual.ipc", ipc)};
-
-            internal::Stream queue{ registration::active< category::Type::casual_queue>( "casual.queue", queue)};
-
-            internal::Stream buffer{ registration::active< category::Type::casual_buffer>( "casual.buffer", buffer)};
-
-
+            Stream debug{ "casual.debug"};
+            Stream trace{ "casual.trace"};
+            Stream transaction{ "casual.transaction"};
+            Stream ipc{ "casual.ipc"};
+            Stream buffer{ "casual.buffer"};
          } // internal
 
-         internal::Stream debug{ registration::active< category::Type::debug>( "debug", debug)};
-
-         internal::Stream trace{ registration::active< category::Type::trace>( "trace", trace)};
-
-         internal::Stream parameter{ registration::active< category::Type::parameter>( "parameter", parameter)};
-
-         internal::Stream information{ registration::active< category::Type::information>( "information", information)};
-
-         internal::Stream warning{ registration::active< category::Type::warning>( "warning", warning)};
+         Stream debug{ "debug"};
+         Stream trace{ "trace"};
+         Stream parameter{ "parameter"};
+         Stream information{ "information"};
+         Stream warning{ "warning"};
 
          //
          // Always on
          //
-         internal::Stream error{ local::buffer::get( registration::logger< category::Type::error>( "error", error)).factory()};
+         Stream error{ "error"};
 
 
 
 
 
-         bool active( category::Type category)
+         bool active( const std::string& category)
          {
-            return local::buffer::active::get( category) != nullptr;
+            return static_cast< bool>( stream::get( category));
          }
 
 
-         void activate( category::Type category)
+         void activate( const std::string& category)
          {
-            stream::get( category).rdbuf( local::buffer::get( category).factory());
+            auto holder = local::stream::find::holder( category);
+
+            if( holder && ! holder->stream.get())
+            {
+               holder->stream.get().rdbuf( local::stream::activate( *holder));
+            }
          }
 
-         void deactivate( category::Type category)
+         void deactivate( const std::string& category)
          {
-            stream::get( category).rdbuf( nullptr);
+            auto holder = local::stream::find::holder( category);
+
+            if( holder)
+            {
+               holder->stream.get().rdbuf( nullptr);
+               holder->buffer.reset( nullptr);
+            }
          }
 
 
-
-
-         void write( category::Type category, const char* message)
-         {
-            stream::get( category) << message << std::endl;
-         }
-
-         void write( category::Type category, const std::string& message)
-         {
-            stream::get( category) << message << std::endl;
-         }
 
          void write( const std::string& category, const std::string& message)
          {
@@ -357,4 +350,5 @@ namespace casual
 
    } // common
 } // casual
+
 
