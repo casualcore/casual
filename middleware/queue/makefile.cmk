@@ -31,6 +31,11 @@ install_lib = []
 install_bin = []
 
 #
+# So we get the local build-rm
+#
+Environment( 'PATH', '../tools/bin:$(PATH)')
+
+#
 # Common stuff
 #
 

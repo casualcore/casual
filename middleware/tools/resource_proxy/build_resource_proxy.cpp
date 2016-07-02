@@ -1,8 +1,5 @@
 //!
-//! build.cpp
-//!
-//! Created on: Aug 4, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 

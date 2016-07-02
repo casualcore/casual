@@ -112,7 +112,7 @@ def LinkResourceProxy( name, resource, libraries = [], directive = ''):
     
     build_resource_proxy = _plumbing.platform().executable_name( 'casual-build-resource-proxy')
     
-    directive += ' --link-directives "' + _plumbing.platform().link_directive( libraries) + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
+    directive += ' --link-directives "' + _plumbing.platform().link_directive( libraries) + ' $(INCLUDE_PATHS_DIRECTIVE) $(DEFAULT_INCLUDE_PATHS_DIRECTIVE) $(LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
     
     
     print
