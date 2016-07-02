@@ -5,6 +5,7 @@
 We are confident that a hierarchic log system doesn't really work on most systems in practice. Either you don't get the logs you want, or you get way to much logs.
 
 Our experience shows that a category model works much better. For example:
+
 * error
 * warning
 * debug
@@ -13,6 +14,7 @@ Our experience shows that a category model works much better. For example:
 There is no levels involved, and no category implicitly brings in another category, hence one can be very specific what should log.
 
 Sometimes you still might need some levels of log granularity. For example:
+
 * casual.transaction
 * casual.transaction.verbose
 
@@ -38,10 +40,11 @@ casual.ipc           | logs details about ipc stuff
 casual.tcp           | logs details about tcp stuff
 casual.gateway       | logs details what gateway is doing
 casual.transaction   | logs details about transactions, including TM
+casual.queue         | logs details about casual-queue
 casual.debug         | logs general debug stuff.
 
 
-This is all based on just the category model, before the insight with regular expression selection, and we'll most likely start to introduce levels of verbosity. 
+This is all based on just the category model, before the insight with regular expression selection, and we'll most likely start to introduce levels of verbosity.
 
 
 ### example
