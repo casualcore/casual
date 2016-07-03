@@ -21,6 +21,29 @@ from casual.make.output import Output
 _plumbing = casual.make.plumbing.plumbing(version = 1.0)
 _porcelain = casual.make.porcelain.porcelain(version = 1.0)
 
+
+# def _set_ld_library_path():
+#     
+#     build_home = os.getenv('CASUAL_BUILD_HOME', '$HOME/git/casual')
+#     
+#     if not build_home.endswith( 'middleware'):
+#         build_home = build_home + '/middleware'
+#     
+#     ld_library_path = build_home + '/common/bin:' +
+#         build_home + '/xatmi/bin:' +
+#         build_home + '/xatmi/bin:'   
+#     
+#     
+#     print "#"
+#     print "# Set LD_LIBRARY_PATH so that unittest has access to dependent libraries"
+#     print "#"
+#     print "space :=  "
+#     print "space +=  "
+#     print "formattet_library_path = $(subst -L,,$(subst $(space),:,$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS)))"
+#     print "LOCAL_LD_LIBRARY_PATH=$(formattet_library_path):$(PLATFORMLIB_DIR)"
+#     print 
+#     
+
 #
 # New functions adding functionality
 #
@@ -114,6 +137,7 @@ def LinkResourceProxy( name, resource, libraries = [], directive = ''):
     
     directive += ' --link-directives "' + _plumbing.platform().link_directive( libraries) + ' $(INCLUDE_PATHS_DIRECTIVE) $(DEFAULT_INCLUDE_PATHS_DIRECTIVE) $(LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBS) $(LINK_DIRECTIVES_EXE)"'
     
+    _plumbing.set_ld_path()
     
     print
     print "link: " + target.name
@@ -125,7 +149,7 @@ def LinkResourceProxy( name, resource, libraries = [], directive = ''):
     print '   depenency_' + target.name + ' = ' + _plumbing.multiline( dependent_targets)
     print
     print target.file + ': $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' ' + directive
+    print '\t@LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) ' + build_resource_proxy + ' --output ' + target.file + ' --resource-key ' + resource + ' ' + directive
     
     _plumbing.register_file_for_clean( target.file)
     _plumbing.register_path_for_create( destination_path)
