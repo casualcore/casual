@@ -90,8 +90,8 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None, 
     else:
         directive += ' -s ' + ' '.join( serverdefinition)
  
-     
-    return _plumbing.link( _plumbing.platform().link_server, target, objectfiles, libraries, directive)    
+    _plumbing.set_ld_path()
+    return _plumbing.link( _plumbing.platform().link_server, target, objectfiles, libraries, directive, 'LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) ')    
  
 def LinkClient( name, objectfiles, libraries, resources=None):
     """
@@ -108,8 +108,9 @@ def LinkClient( name, objectfiles, libraries, resources=None):
         directive = "";
     else:
         directive = " -r " + ' '.join( resources)
-         
-    _plumbing.link( _plumbing.platform().link_client, target, objectfiles, libraries, directive)
+        
+    _plumbing.set_ld_path()
+    _plumbing.link( _plumbing.platform().link_client, target, objectfiles, libraries, directive, 'LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) ')
 
 
 
