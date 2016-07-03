@@ -14,6 +14,7 @@ LibraryPaths( [ 'bin',
 	'../queue/bin',
 	'../buffer/bin',
 	'../serviceframework/bin',
+        '../configuration/bin',
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 	])
 
