@@ -1,8 +1,5 @@
 //!
-//! test_vo.h
-//!
-//! Created on: Mar 31, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef TEST_VO_H_

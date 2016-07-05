@@ -1,9 +1,6 @@
-/*
- * test_xml_archive.cpp
- *
- *  Created on: Jan 15, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #include <gtest/gtest.h>
 
@@ -12,7 +9,7 @@
 
 #include <sstream>
 
-#include "../include/test_vo.h"
+#include "../../include/test_vo.h"
 
 namespace casual
 {

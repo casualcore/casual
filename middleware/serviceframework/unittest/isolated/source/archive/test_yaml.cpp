@@ -1,13 +1,10 @@
 //!
-//! casual_isolatedunittest_yaml_archive.cpp
-//!
-//! Created on: Oct 31, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
 
-#include "../include/test_vo.h"
+#include "../../include/test_vo.h"
 
 #include "sf/archive/yaml.h"
 #include "sf/exception.h"

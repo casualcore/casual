@@ -1,9 +1,7 @@
-/*
- * test_ini_archive.cpp
- *
- *  Created on: Feb 12, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
+
 
 #include <gtest/gtest.h>
 
@@ -13,7 +11,7 @@
 #include <sstream>
 #include <locale>
 
-#include "../include/test_vo.h"
+#include "../../include/test_vo.h"
 
 
 

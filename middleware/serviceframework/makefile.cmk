@@ -48,21 +48,23 @@ install_lib.append( lib_sf)
 LinkUnittest( 'bin/test-casual-sf',
 	[
         Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
-        Compile( 'unittest/isolated/source/test_archive.cpp'),
-        Compile( 'unittest/isolated/source/test_archive_write_read.cpp'),
-        Compile( 'unittest/isolated/source/test_relaxed_archive_write_read.cpp'),
         Compile( 'unittest/isolated/source/test_traits.cpp'),
-        Compile( 'unittest/isolated/source/test_yaml_archive.cpp'),
-        Compile( 'unittest/isolated/source/test_json_archive.cpp'),
-        Compile( 'unittest/isolated/source/test_xml_archive.cpp'),
-        Compile( 'unittest/isolated/source/test_ini_archive.cpp'),
         Compile( 'unittest/isolated/source/test_buffer.cpp'),
         Compile( 'unittest/isolated/source/test_maker.cpp'),
         Compile( 'unittest/isolated/source/test_service.cpp'),
         Compile( 'unittest/isolated/source/test_uuid.cpp'),
         Compile( 'unittest/isolated/source/test_xatmi_call.cpp'),
         Compile( 'unittest/isolated/source/test_vo.cpp'),
-        Compile( 'unittest/isolated/source/test_service_archive.cpp'),
+        
+        # archive stuff
+        Compile( 'unittest/isolated/source/archive/test_archive.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_write_read.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_relaxed_write_read.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_yaml.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_json.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_xml.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_ini.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_service.cpp'),
     ],
 	[ lib_sf, 'casual-xatmi', 'casual-common', 'yaml-cpp', 'pugixml'])
 

@@ -1,8 +1,5 @@
 //!
-//! service_protocol.cpp
-//!
-//! Created on: May 5, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/service/protocol.h"

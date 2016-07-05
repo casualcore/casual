@@ -1,8 +1,5 @@
 //!
-//! service.cpp
 //!
-//! Created on: Mar 14, 2015
-//!     Author: Lazan
 //!
 
 #include "sf/archive/service.h"
@@ -32,7 +29,7 @@ namespace casual
                {
                  auto& current = *m_stack.back();
 
-                 current.emplace_back( name, sf::service::Model::Type::type_container);
+                 current.emplace_back( name, sf::service::model::type::Category::container);
 
                  m_stack.push_back( &current.back().attribues);
 
@@ -49,7 +46,7 @@ namespace casual
                {
                   auto& current = *m_stack.back();
 
-                  current.emplace_back( name, sf::service::Model::Type::type_composite);
+                  current.emplace_back( name, sf::service::model::type::Category::container);
 
                   m_stack.push_back( &current.back().attribues);
 

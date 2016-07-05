@@ -1,8 +1,5 @@
 //!
-//! casual_isolatedunittest_archive.cpp
-//!
-//! Created on: Oct 14, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 

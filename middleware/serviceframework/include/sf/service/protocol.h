@@ -1,8 +1,5 @@
 //!
-//! service_implementation.h
-//!
-//! Created on: Jan 4, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SERVICE_IMPLEMENTATION_H_

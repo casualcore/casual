@@ -7,7 +7,7 @@
 
 #include "sf/archive/json.h"
 
-#include "../include/test_vo.h"
+#include "../../include/test_vo.h"
 
 namespace casual
 {

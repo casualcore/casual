@@ -1,8 +1,5 @@
 //!
-//! casual_isolatedunittest_archive.cpp
-//!
-//! Created on: Oct 14, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -15,7 +12,7 @@
 
 #include "common/log.h"
 
-#include "../include/test_vo.h"
+#include "../../include/test_vo.h"
 
 
 #include <string>

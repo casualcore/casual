@@ -1,8 +1,5 @@
 //!
-//! test_service_model.cpp
-//!
-//! Created on: Mar 15, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -42,9 +39,9 @@ namespace casual
 
          ASSERT_TRUE( model.arguments.input.size() == 2);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_string");
-         EXPECT_TRUE( model.arguments.input.at( 0).type == service::Model::Type::type_string);
+         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::string);
          EXPECT_TRUE( model.arguments.input.at( 1).role == "some_long");
-         EXPECT_TRUE( model.arguments.input.at( 1).type == service::Model::Type::type_integer);
+         EXPECT_TRUE( model.arguments.input.at( 1).category == service::model::type::Category::integer);
       }
 
       TEST( casual_sf_service_archive, container_serialization)
@@ -62,14 +59,14 @@ namespace casual
 
          ASSERT_TRUE( model.arguments.input.size() == 2);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_strings");
-         EXPECT_TRUE( model.arguments.input.at( 0).type == service::Model::Type::type_container);
+         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::container);
          ASSERT_TRUE( model.arguments.input.at( 0).attribues.size() == 1);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.front().type == service::Model::Type::type_string);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.front().category == service::model::type::Category::string);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.front().role.empty());
          EXPECT_TRUE( model.arguments.input.at( 1).role == "some_longs");
-         EXPECT_TRUE( model.arguments.input.at( 1).type == service::Model::Type::type_container);
+         EXPECT_TRUE( model.arguments.input.at( 1).category == service::model::type::Category::container);
          ASSERT_TRUE( model.arguments.input.at( 1).attribues.size() == 1);
-         EXPECT_TRUE( model.arguments.input.at( 1).attribues.front().type == service::Model::Type::type_integer);
+         EXPECT_TRUE( model.arguments.input.at( 1).attribues.front().category == service::model::type::Category::integer);
          EXPECT_TRUE( model.arguments.input.at( 1).attribues.front().role.empty());
       }
 
@@ -116,18 +113,18 @@ namespace casual
 
          ASSERT_TRUE( model.arguments.input.size() == 1);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_composite");
-         EXPECT_TRUE( model.arguments.input.at( 0).type == service::Model::Type::type_composite);
+         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::composite);
          ASSERT_TRUE( model.arguments.input.at( 0).attribues.size() == 5);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).role == "some_string");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).type == service::Model::Type::type_string);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).category == service::model::type::Category::string);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).role == "some_binary");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).type == service::Model::Type::type_binary);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).category == service::model::type::Category::binary);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).role == "some_long");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).type == service::Model::Type::type_integer);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).category == service::model::type::Category::integer);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).role == "some_bool");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).type == service::Model::Type::type_boolean);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).category == service::model::type::Category::boolean);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).role == "some_double");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).type == service::Model::Type::type_float);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).category == service::model::type::Category::floatingpoint);
       }
 
       namespace local
@@ -160,10 +157,10 @@ namespace casual
 
          ASSERT_TRUE( model.arguments.input.size() == 1);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "complex");
-         EXPECT_TRUE( model.arguments.input.at( 0).type == service::Model::Type::type_container);
+         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::container);
          ASSERT_TRUE( model.arguments.input.at( 0).attribues.size() == 1);
          EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).role.empty());
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).type == service::Model::Type::type_container);
+         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).category == service::model::type::Category::container);
          ASSERT_TRUE( model.arguments.input.at( 0).attribues.at( 0).attribues.size() == 2) << CASUAL_MAKE_NVP( model);
 
 
