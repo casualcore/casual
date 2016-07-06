@@ -6,6 +6,7 @@
 #define SF_LOG_H_
 
 #include "common/log.h"
+#include "common/trace.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/log.h"
@@ -29,7 +30,16 @@ namespace casual
          using common::log::information;
          using common::log::warning;
          using common::log::error;
+
+         extern common::log::Stream sf;
+
       } // log
+
+      struct Trace : common::Trace
+      {
+         template< typename T>
+         Trace( T&& value) : common::Trace( std::forward< T>( value), log::sf) {}
+      };
 
 
       template <typename T, typename R>

@@ -46,15 +46,7 @@ namespace casual
          {
             using namespace common::buffer::type;
 
-            namespace api
-            {
-               Type binary();
-               Type json();
-               Type yaml();
-               Type xml();
-
-               const std::vector< Type>& types();
-            }
+            Type api();
 
             Type get( platform::raw_buffer_type buffer);
          } // type

@@ -1,8 +1,5 @@
 //!
-//! casual_calling_context.h
-//!
-//! Created on: Jun 16, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_CALLING_CONTEXT_H_

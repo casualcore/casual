@@ -87,7 +87,7 @@ namespace casual
 
    }
 
-   TEST( casual_sf_json_archive, simple_write_read)
+   TEST( casual_sf_json_archive, DISABLED_simple_write_read)
    {
       std::string json;
 

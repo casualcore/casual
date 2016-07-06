@@ -25,27 +25,27 @@ namespace casual
             Base::Base( Base&&) = default;
 
 
-            bool Base::doCall()
+            bool Base::do_call()
             {
                return true;
             }
 
-            reply::State Base::doFinalize()
+            reply::State Base::do_finalize()
             {
                return m_state;
             }
 
-            void Base::doHandleException()
+            void Base::do_andle_exception()
             {
 
             }
 
-            Interface::Input& Base::doInput()
+            Interface::Input& Base::do_input()
             {
                return m_input;
             }
 
-            Interface::Output& Base::doOutput()
+            Interface::Output& Base::do_output()
             {
                return m_output;
             }
@@ -53,21 +53,21 @@ namespace casual
             Binary::Binary( TPSVCINFO* serviceInfo) : Base( serviceInfo),
                   m_readerBuffer( buffer::raw( serviceInfo)), m_reader( m_readerBuffer), m_writer( m_writerBuffer)
             {
-               const common::trace::internal::Scope trace{ "Binary::Binary"};
+               sf::Trace trace{ "protocol::Binary::Binary"};
 
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
 
             }
 
-            std::vector< buffer::Type> Binary::types()
+            factory::buffer::Type Binary::type()
             {
-               return { buffer::type::binary()};
+               return buffer::type::binary();
             }
 
-            reply::State Binary::doFinalize()
+            reply::State Binary::do_finalize()
             {
-               const common::trace::internal::Scope trace{ "Binary::doFinalize"};
+               sf::Trace trace{ "protocol::Binary::do_finalize"};
 
                auto raw = m_writerBuffer.release();
                m_state.data = raw.buffer;
@@ -80,7 +80,7 @@ namespace casual
             Yaml::Yaml( TPSVCINFO* serviceInfo)
                : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
-               const common::trace::internal::Scope trace{ "Yaml::doYaml"};
+               sf::Trace trace{ "protocol::Yaml::doYaml"};
 
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
@@ -93,14 +93,14 @@ namespace casual
 
             }
 
-            std::vector< buffer::Type> Yaml::types()
+            factory::buffer::Type Yaml::type()
             {
-               return { buffer::type::yaml()};
+               return buffer::type::yaml();
             }
 
-            reply::State Yaml::doFinalize()
+            reply::State Yaml::do_finalize()
             {
-               const common::trace::internal::Scope trace{ "Yaml::doFinalize"};
+               sf::Trace trace{ "protocol::Yaml::do_finalize"};
 
                //
                // TODO: Let yaml::Save know about X_Octet (or binary::Stream)
@@ -123,7 +123,7 @@ namespace casual
             Json::Json( TPSVCINFO* serviceInfo)
                : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
-               const common::trace::internal::Scope trace{ "Json::Json"};
+               sf::Trace trace{ "protocol::Json::Json"};
 
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
@@ -136,14 +136,14 @@ namespace casual
 
             }
 
-            std::vector< buffer::Type> Json::types()
+            factory::buffer::Type Json::type()
             {
-               return { buffer::type::json()};
+               return buffer::type::json();
             }
 
-            reply::State Json::doFinalize()
+            reply::State Json::do_finalize()
             {
-               const common::trace::internal::Scope trace{ "Json::doFinalize"};
+               sf::Trace trace{ "protocol::Json::do_finalize"};
 
                //
                // TODO: Let json::Save know about X_Octet (or binary::Stream)
@@ -166,7 +166,7 @@ namespace casual
             Xml::Xml( TPSVCINFO* serviceInfo)
                : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
             {
-               const common::trace::internal::Scope trace{ "Xml::Xml"};
+               sf::Trace trace{ "protocol::Xml::Xml"};
 
                m_input.readers.push_back( &m_reader);
                m_output.writers.push_back( &m_writer);
@@ -180,14 +180,14 @@ namespace casual
             }
 
 
-            std::vector< buffer::Type> Xml::types()
+            factory::buffer::Type Xml::type()
             {
-               return { common::buffer::type::xml()};
+               return common::buffer::type::xml();
             }
 
-            reply::State Xml::doFinalize()
+            reply::State Xml::do_finalize()
             {
-               const common::trace::internal::Scope trace{ "Xml::doFinalize"};
+               sf::Trace trace{ "protocol::Xml::do_finalize"};
 
                //
                // TODO: Let xml::Save know about X_Octet (or binary::Stream)
@@ -209,7 +209,7 @@ namespace casual
 
             Describe::Describe( TPSVCINFO* information) : Base( information), m_writer( m_model), m_protocoll( protocoll( information))
             {
-               const common::trace::internal::Scope trace{ "Describe::Describe"};
+               sf::Trace trace{ "protocol::Describe::Describe"};
 
                m_input.readers.push_back( &m_prepare);
                m_input.writers.push_back( &m_writer.input);
@@ -219,46 +219,51 @@ namespace casual
 
             }
 
-
-            std::vector< buffer::Type> Describe::types()
-            {
-               return buffer::type::api::types();
-            }
-
             namespace local
             {
                namespace
                {
-                  std::map< buffer::Type, buffer::Type> api_mapping( std::vector< buffer::Type> types)
+                  namespace describe
                   {
-                     std::map< buffer::Type, buffer::Type> result;
-
-                     for( auto& api_type : types)
+                     namespace type
                      {
-                        buffer::Type type{ api_type.subname.c_str(), nullptr};
-                        result[ std::move( api_type)] = std::move( type);
-                     }
+                        bool equal( const common::buffer::Type& l, const common::buffer::Type& r)
+                        {
+                           return l.name == r.name;
+                        }
 
-                     return result;
-                  }
+                     } // type
+
+                  } // describe
+
                } // <unnamed>
             } // local
 
-            std::unique_ptr< Interface> Describe::protocoll( TPSVCINFO* information)
+            factory::buffer::Type Describe::type()
             {
-               const static auto mapping = local::api_mapping( types());
-
-               return service::Factory::instance().create( information, mapping.at( buffer::type::get( information->data)));
+               //
+               // custom equal compare to delay the dispatch of the actual describe
+               // protocol
+               //
+               return { buffer::type::api(), &local::describe::type::equal};
             }
 
-            bool Describe::doCall()
+
+            std::unique_ptr< Interface> Describe::protocoll( TPSVCINFO* information)
+            {
+               buffer::Type protocol_type{ buffer::type::get( information->data).subname, ""};
+
+               return service::Factory::instance().create( information, protocol_type);
+            }
+
+            bool Describe::do_call()
             {
                return false;
             }
 
-            reply::State Describe::doFinalize()
+            reply::State Describe::do_finalize()
             {
-               const common::trace::internal::Scope trace{ "Describe::doFinalize"};
+               sf::Trace trace{ "protocol::Describe::do_finalize"};
 
                service::IO service_io{ std::move( m_protocoll)};
 

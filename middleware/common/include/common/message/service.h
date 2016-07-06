@@ -74,8 +74,6 @@ namespace casual
 
 
 
-
-
             namespace lookup
             {
                //!

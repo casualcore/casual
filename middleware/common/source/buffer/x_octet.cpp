@@ -1,8 +1,5 @@
 //!
-//! x_octet.cpp
-//!
-//! Created on: Sep 18, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/buffer/pool.h"

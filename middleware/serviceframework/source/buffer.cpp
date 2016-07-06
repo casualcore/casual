@@ -31,7 +31,7 @@ namespace casual
                static const std::vector< Type>& types()
                {
                   static const std::vector< Type> result{
-                        type::api::binary(), type::api::json(), type::api::yaml(), type::api::xml()
+                        type::api()
                      };
                   return result;
                }
@@ -45,15 +45,8 @@ namespace casual
 
          namespace type
          {
-            namespace api
-            {
-               Type binary() { return { ".api", type::binary().name};}
-               Type json() { return { ".api", type::json().name};}
-               Type yaml() { return { ".api", type::yaml().name};}
-               Type xml() { return { ".api", type::xml().name};}
+            Type api() { return { ".api", nullptr};}
 
-               const std::vector< Type>& types() { return pool::API::types();}
-            }
 
             Type get( platform::raw_buffer_type buffer)
             {

@@ -36,6 +36,7 @@ category             | description
 error                | logs any kind of error, allways on
 warning              | should not be used, either it's an error or it's not
 information          | logs information about "big things", 'domain has started', and so on...
+parameter            | logs input/output parameters for a casual-sf service
 casual.ipc           | logs details about ipc stuff
 casual.tcp           | logs details about tcp stuff
 casual.gateway       | logs details what gateway is doing

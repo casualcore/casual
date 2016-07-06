@@ -78,6 +78,7 @@ namespace casual
                   std::size_t indent;
                   std::string name;
                   std::string value;
+                  std::size_t size = 0;
                   Type type = Type::value;
                };
 

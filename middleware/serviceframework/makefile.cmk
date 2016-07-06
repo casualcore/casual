@@ -35,6 +35,7 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         Compile( 'source/service/protocol.cpp'),
         Compile( 'source/xatmi_call.cpp'),
         Compile( 'source/platform.cpp'),
+        Compile( 'source/log.cpp'),
         
     ],
     ['casual-common', 'casual-xatmi', 'yaml-cpp', 'pugixml'])

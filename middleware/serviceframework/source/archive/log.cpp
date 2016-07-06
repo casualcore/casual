@@ -39,6 +39,7 @@ namespace casual
 
                ++m_indent;
 
+               m_buffer.back().size = size;
                m_buffer.back().type = Type::container;
                flush();
 
@@ -130,9 +131,14 @@ namespace casual
                   switch( value.type)
                   {
                      case Type::composite:
+                     {
+                        m_output << '-' << value.name;
+                        break;
+                     }
                      case Type::container:
                      {
                         m_output << '-' << value.name;
+                        if( value.size) { m_output << " (size: " << value.size << ')';}
                         break;
                      }
                      default:

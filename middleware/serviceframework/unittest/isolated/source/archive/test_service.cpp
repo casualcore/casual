@@ -97,6 +97,29 @@ namespace casual
 
             bool operator < ( const Composite& lhs, const Composite& rhs) { return true;}
 
+            namespace composit
+            {
+               void validate( const service::Model::Type& type)
+               {
+                  ASSERT_TRUE( type.attribues.size() == 5);
+                  EXPECT_TRUE( type.attribues.at( 0).role == "some_string");
+                  EXPECT_TRUE( type.attribues.at( 0).category == service::model::type::Category::string);
+                  EXPECT_TRUE( type.attribues.at( 1).role == "some_binary");
+                  EXPECT_TRUE( type.attribues.at( 1).category == service::model::type::Category::binary);
+                  EXPECT_TRUE( type.attribues.at( 2).role == "some_long");
+                  EXPECT_TRUE( type.attribues.at( 2).category == service::model::type::Category::integer);
+                  EXPECT_TRUE( type.attribues.at( 3).role == "some_bool");
+                  EXPECT_TRUE( type.attribues.at( 3).category == service::model::type::Category::boolean);
+                  EXPECT_TRUE( type.attribues.at( 4).role == "some_double");
+                  EXPECT_TRUE( type.attribues.at( 4).category == service::model::type::Category::floatingpoint);
+               }
+
+            } // composit
+
+
+
+
+
          } // <unnamed>
       } // local
 
@@ -113,18 +136,9 @@ namespace casual
 
          ASSERT_TRUE( model.arguments.input.size() == 1);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_composite");
-         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::composite);
-         ASSERT_TRUE( model.arguments.input.at( 0).attribues.size() == 5);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).role == "some_string");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).category == service::model::type::Category::string);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).role == "some_binary");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).category == service::model::type::Category::binary);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).role == "some_long");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).category == service::model::type::Category::integer);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).role == "some_bool");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).category == service::model::type::Category::boolean);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).role == "some_double");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).category == service::model::type::Category::floatingpoint);
+         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::composite) << model.arguments.input.at( 0).category;
+
+         local::composit::validate( model.arguments.input.at( 0));
       }
 
       namespace local
@@ -159,53 +173,48 @@ namespace casual
          EXPECT_TRUE( model.arguments.input.at( 0).role == "complex");
          EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::container);
          ASSERT_TRUE( model.arguments.input.at( 0).attribues.size() == 1);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).role.empty());
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).category == service::model::type::Category::container);
-         ASSERT_TRUE( model.arguments.input.at( 0).attribues.at( 0).attribues.size() == 2) << CASUAL_MAKE_NVP( model);
 
-
-         /*
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).role == "some_string");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 0).type == service::Model::Type::type_string);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).role == "some_binary");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 1).type == service::Model::Type::type_binary);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).role == "some_long");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 2).type == service::Model::Type::type_integer);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).role == "some_bool");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 3).type == service::Model::Type::type_boolean);
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).role == "some_double");
-         EXPECT_TRUE( model.arguments.input.at( 0).attribues.at( 4).type == service::Model::Type::type_float);
-         */
-      }
-
-      /*
-      namespace local
-      {
-         namespace
          {
-            TPSVCINFO prepareAPI( buffer::Type type)
+            auto& map = model.arguments.input.at( 0).attribues.at( 0);
+
+            EXPECT_TRUE( map.role.empty());
+            EXPECT_TRUE( map.category == service::model::type::Category::container);
+            ASSERT_TRUE( map.attribues.size() == 2) << CASUAL_MAKE_NVP( model);
+
             {
-               TPSVCINFO info;
-
-               sf::buffer::Buffer buffer( std::move( type), 64);
-
-               auto raw = buffer.release();
-
-               info.data = raw.buffer;
-               info.len = raw.size;
-
-               return info;
+               auto& first = map.attribues.at( 0);
+               local::composit::validate( first);
             }
-         } // <unnamed>
-      } // local
-      */
 
-      TEST( casual_sf_service_archive, service_json_factory)
-      {
-         //auto information = local::prepareAPI( buffer::type::api::yaml());
+            {
+               auto& second = map.attribues.at( 1);
+               ASSERT_TRUE( second.attribues.size() == 2) << CASUAL_MAKE_NVP( model);
 
-         //service::IO service_io{ sf::service::Factory::instance().create( &information)};
+               {
+                  auto& some_longs = second.attribues.at( 0);
 
+                  EXPECT_TRUE( some_longs.category == service::model::type::Category::container);
+                  EXPECT_TRUE( some_longs.role == "some_longs");
+
+                  ASSERT_TRUE( some_longs.attribues.size() == 1);
+                  EXPECT_TRUE( some_longs.attribues.at( 0).role.empty());
+                  EXPECT_TRUE( some_longs.attribues.at( 0).category == service::model::type::Category::integer);
+
+               }
+
+               {
+                  auto& some_composites = second.attribues.at( 1);
+
+                  EXPECT_TRUE( some_composites.category == service::model::type::Category::container);
+                  EXPECT_TRUE( some_composites.role == "some_composites");
+                  ASSERT_TRUE( some_composites.attribues.size() == 1) << CASUAL_MAKE_NVP( some_composites);
+
+
+                  local::composit::validate( some_composites.attribues.at( 0));
+               }
+            }
+
+         }
       }
 
    } // sf

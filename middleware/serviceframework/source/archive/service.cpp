@@ -46,7 +46,7 @@ namespace casual
                {
                   auto& current = *m_stack.back();
 
-                  current.emplace_back( name, sf::service::model::type::Category::container);
+                  current.emplace_back( name, sf::service::model::type::Category::composite);
 
                   m_stack.push_back( &current.back().attribues);
 

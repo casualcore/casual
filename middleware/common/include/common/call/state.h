@@ -1,8 +1,5 @@
 //!
-//! state.h
-//!
-//! Created on: Jul 12, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_CALL_STATE_H_

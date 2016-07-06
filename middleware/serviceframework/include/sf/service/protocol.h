@@ -34,15 +34,15 @@ namespace casual
 
             private:
 
-               bool doCall() override;
+               bool do_call() override;
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               void doHandleException() override;
+               void do_andle_exception() override;
 
-               Interface::Input& doInput() override;
+               Interface::Input& do_input() override;
 
-               Interface::Output& doOutput() override;
+               Interface::Output& do_output() override;
 
 
             protected:
@@ -60,9 +60,9 @@ namespace casual
             public:
                Binary( TPSVCINFO* serviceInfo);
 
-               static std::vector< buffer::Type> types();
+               static factory::buffer::Type type();
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
             private:
 
@@ -80,9 +80,9 @@ namespace casual
 
                Yaml( TPSVCINFO* serviceInfo);
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               static std::vector< buffer::Type> types();
+               static factory::buffer::Type type();
 
             private:
 
@@ -98,9 +98,9 @@ namespace casual
 
                Json( TPSVCINFO* serviceInfo);
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               static std::vector< buffer::Type> types();
+               static factory::buffer::Type type();
 
 
             private:
@@ -117,9 +117,9 @@ namespace casual
 
                Xml( TPSVCINFO* serviceInfo);
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               static std::vector< buffer::Type> types();
+               static factory::buffer::Type type();
 
             private:
 
@@ -158,14 +158,14 @@ namespace casual
 
                Describe( TPSVCINFO* information);
 
-               static std::vector< buffer::Type> types();
+               static factory::buffer::Type type();
 
             private:
 
                static std::unique_ptr< Interface> protocoll( TPSVCINFO* information);
 
-               bool doCall() override;
-               reply::State doFinalize() override;
+               bool do_call() override;
+               reply::State do_finalize() override;
 
                Model m_model;
 
