@@ -1,8 +1,5 @@
 //!
-//! pool.h
-//!
-//! Created on: Sep 17, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_BUFFER_POOL_H_
@@ -193,7 +190,7 @@ namespace casual
 
                   }
 
-                  auto subtype = std::unique_ptr< Concrete< P>>( new Concrete< P>( std::forward< P>( pool)));
+                  auto subtype = make::unique< Concrete< P>>( std::forward< P>( pool));
 
                   auto& result = subtype->pool();
 

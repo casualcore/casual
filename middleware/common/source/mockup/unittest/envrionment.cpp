@@ -1,11 +1,8 @@
 //!
-//! unittest_envrionment.cpp
-//!
-//! Created on: May 29, 2014
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "common/environment.h"
@@ -48,13 +45,13 @@ namespace casual
 
                   domain::identity( domain::Identity{ "unittest-domain"});
 
-                  log::stream::get( "casual.debug") << "mockup::unittest::Environment::SetUp";
+                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << std::endl;
 
 
                   directory::create( domain_path);
 
-                  log::stream::get( "casual.debug") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
-                  log::stream::get( "casual.debug")  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
+                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
+                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
 
 
                   if( ! directory::create( environment::domain::singleton::path()))

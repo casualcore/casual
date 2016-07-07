@@ -8,6 +8,8 @@
 
 #include "domain/common.h"
 
+#include "common/pimpl.h"
+
 #include <queue>
 #include <memory>
 
@@ -95,7 +97,7 @@ namespace casual
             template< typename T>
             static std::unique_ptr< base_task> make( T&& task)
             {
-               return std::unique_ptr< base_task>{ new basic_task< T>( std::forward< T>( task))};
+               return common::make::unique< basic_task< T>>( std::forward< T>( task));
             }
 
             std::unique_ptr< base_task> m_holder;

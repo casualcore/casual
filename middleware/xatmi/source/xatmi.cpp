@@ -1,14 +1,11 @@
 //!
-//! xatm.cpp
-//!
-//! Created on: Apr 29, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "xatmi.h"
 
 #include "common/buffer/pool.h"
-#include "common/call/context.h"
+#include "common/service/call/context.h"
 #include "common/server/context.h"
 #include "common/platform.h"
 #include "common/log.h"
@@ -48,12 +45,12 @@ void casual_set_tperrno( int value)
 
 long casual_get_tpurcode(void)
 {
-   return casual::common::call::Context::instance().user_code();
+   return casual::common::service::call::Context::instance().user_code();
 }
 
 void casual_set_tpurcode( long value)
 {
-   casual::common::call::Context::instance().user_code( value);
+   casual::common::service::call::Context::instance().user_code( value);
 }
 
 
@@ -171,7 +168,7 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 
    try
    {
-      casual::common::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
+      casual::common::service::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
    }
    catch( ...)
    {
@@ -194,7 +191,7 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
 
    try
    {
-      return casual::common::call::Context::instance().async( svc, idata, ilen, flags);
+      return casual::common::service::call::Context::instance().async( svc, idata, ilen, flags);
    }
    catch( ...)
    {
@@ -209,7 +206,7 @@ int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 
    try
    {
-      casual::common::call::Context::instance().reply( *idPtr, odata, *olen, flags);
+      casual::common::service::call::Context::instance().reply( *idPtr, odata, *olen, flags);
    }
    catch( ...)
    {
@@ -225,7 +222,7 @@ int tpcancel( int id)
 
    try
    {
-      casual::common::call::Context::instance().cancel( id);
+      casual::common::service::call::Context::instance().cancel( id);
    }
    catch( ...)
    {

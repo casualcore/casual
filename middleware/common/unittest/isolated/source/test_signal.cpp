@@ -1,11 +1,6 @@
 //!
-//! test_signal.cpp
+//! caual
 //!
-//! Created on: Aug 10, 2013
-//!     Author: Lazan
-//!
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "common/signal.h"
@@ -55,7 +50,7 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, send_signal__expect_throw)
       {
-         Trace trace{ "TYPED_TEST( casual_common_signal_types, send_signal__expect_throw)"};
+         CASUAL_UNITTEST_TRACE();
 
          //
          // Start from a clean sheet
@@ -77,7 +72,7 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, block_all_signals__send_signal_X___expect_no_throw)
       {
-         Trace trace{ "TYPED_TEST( casual_common_signal_types, block_all_signals__send_signal_X___expect_no_throw)"};
+         CASUAL_UNITTEST_TRACE();
 
 
          signal::clear();
@@ -107,7 +102,7 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, send_signal_X__block_all_signals___expect_no_throw)
       {
-         Trace trace{ "TYPED_TEST( casual_common_signal_types, send_signal_X__block_all_signals___expect_no_throw)"};
+         CASUAL_UNITTEST_TRACE();
 
          signal::clear();
          EXPECT_NO_THROW( signal::handle());
@@ -135,7 +130,7 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, block_signal_X__send_signal_X___expect_no_throw)
       {
-         Trace trace{ "TYPED_TEST( casual_common_signal_types, block_signal_X__send_signal_X___expect_no_throw)"};
+         CASUAL_UNITTEST_TRACE();
 
          signal::clear();
          EXPECT_NO_THROW( signal::handle());
@@ -162,7 +157,7 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, send_signal_X__block_signal_X___expect_no_throw)
       {
-         Trace trace{ "TYPED_TEST( casual_common_signal_types, send_signal_X__block_signal_X___expect_no_throw)"};
+         CASUAL_UNITTEST_TRACE();
 
          signal::clear();
          EXPECT_NO_THROW( signal::handle());

@@ -36,12 +36,6 @@ namespace casual
 
 
             //!
-            //! Log with category 'casual.ipc'
-            //!
-            extern Stream ipc;
-
-
-            //!
             //! Log with category 'casual.buffer'
             //!
             extern Stream buffer;

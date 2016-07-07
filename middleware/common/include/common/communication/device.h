@@ -1,8 +1,5 @@
 //!
-//! device.h
-//!
-//! Created on: Jan 4, 2016
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_DEVICE_H_

@@ -55,10 +55,13 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const base_call& value)
                {
+                  auto& header = common::service::header::fields();
+
                   return out << "{ process: " << value.process
                      << ", service: " << value.service
                      << ", parent: " << value.parent
                      << ", flags: " << value.flags
+                     << ", header: " << range::make( header)
                      << '}';
                }
 

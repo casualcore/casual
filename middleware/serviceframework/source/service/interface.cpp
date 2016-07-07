@@ -85,14 +85,14 @@ namespace casual
 
 
          template< typename T>
-         std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* serviceInfo) const
+         std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* service_info) const
          {
             if( common::log::parameter)
             {
-               return std::unique_ptr< Interface>( new protocol::parameter::Log< T>( serviceInfo));
+               return common::make::unique< protocol::parameter::Log< T>>( service_info);
             }
 
-            return std::unique_ptr< Interface>( new T( serviceInfo));
+            return common::make::unique< T>( service_info);
          }
 
 

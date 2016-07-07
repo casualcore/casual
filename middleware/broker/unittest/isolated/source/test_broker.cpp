@@ -14,7 +14,7 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/message/type.h"
-#include "common/call/lookup.h"
+#include "common/service/lookup.h"
 
 
 namespace casual
@@ -93,14 +93,14 @@ namespace casual
 		   mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
 
 		   {
-		      auto service = call::service::Lookup{ "service1"}();
+		      auto service = service::Lookup{ "service1"}();
 		      EXPECT_TRUE( service.service.name == "service1");
 		      EXPECT_TRUE( service.process == server.process());
 		      EXPECT_TRUE( service.state == decltype( service)::State::idle);
 		   }
 
          {
-            auto service = call::service::Lookup{ "service2"}();
+            auto service = service::Lookup{ "service2"}();
             EXPECT_TRUE( service.service.name == "service2");
 
             // we only have one instance, we expect this to be busy
@@ -121,7 +121,7 @@ namespace casual
 
 
          {
-            auto service = call::service::Lookup{ "service2"}();
+            auto service = service::Lookup{ "service2"}();
             EXPECT_TRUE( service.service.name == "service2");
 
             //
@@ -146,7 +146,7 @@ namespace casual
          mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
 
          {
-            auto service = call::service::Lookup{ "non-existent-service"}();
+            auto service = service::Lookup{ "non-existent-service"}();
             EXPECT_TRUE( service.service.name == "non-existent-service");
             EXPECT_TRUE( service.state == decltype( service)::State::absent);
          }
@@ -166,13 +166,13 @@ namespace casual
          mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
 
          {
-            auto service = call::service::Lookup{ "service1"}();
+            auto service = service::Lookup{ "service1"}();
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == server.process());
             EXPECT_TRUE( service.state == decltype( service)::State::idle);
          }
 
-         call::service::Lookup lookup{ "service2"};
+         service::Lookup lookup{ "service2"};
          {
             auto service = lookup();
             EXPECT_TRUE( service.service.name == "service2");

@@ -1,14 +1,11 @@
 //!
-//! terminal.h
-//!
-//! Created on: Dec 22, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMON_TERMINAL_H_
 #define COMMON_TERMINAL_H_
 
-#include "common/move.h"
+#include "common/pimpl.h"
 
 #include <string>
 #include <ostream>
@@ -327,7 +324,7 @@ namespace casual
                {
                   auto result = initialize( std::forward< Columns>( columns)...);
 
-                  std::unique_ptr< base_column> basic{ new basic_column< typename std::decay< C>::type>( std::forward< C>( column))};
+                  auto basic = make::unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
 
                   result.emplace( std::begin( result), std::move( basic));
                   return result;

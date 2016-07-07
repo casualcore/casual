@@ -1,12 +1,9 @@
 //!
-//! proxy.h
-//!
-//! Created on: Mar 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef PROXY_H_
-#define PROXY_H_
+#ifndef SF_PROXY_H_
+#define SF_PROXY_H_
 
 
 #include <memory>

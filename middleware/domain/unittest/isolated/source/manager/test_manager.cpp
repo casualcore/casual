@@ -16,7 +16,7 @@
 #include "common/mockup/file.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
-#include "common/call/lookup.h"
+#include "common/service/lookup.h"
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 
@@ -224,7 +224,7 @@ domain:
 
                            while( count-- > 0)
                            {
-                              auto reply = common::call::service::Lookup{ service}();
+                              auto reply = common::service::Lookup{ service}();
 
                               if( reply.process)
                               {

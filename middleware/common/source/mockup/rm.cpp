@@ -1,11 +1,10 @@
 //!
-//! rm.cpp
-//!
-//! Created on: May 29, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/mockup/rm.h"
+#include "common/mockup/log.h"
+
 #include "common/transaction/id.h"
 #include "common/transaction/transaction.h"
 #include "common/internal/log.h"
@@ -57,7 +56,7 @@ namespace casual
                return XAER_PROTO;
             }
 
-            log::internal::transaction << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
             return XA_OK;
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
@@ -69,14 +68,14 @@ namespace casual
                log::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
                return XAER_PROTO;
             }
-            log::internal::transaction << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             return XA_OK;
          }
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID trid{ *xid};
-            log::internal::transaction << "xa_start_entry - trid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_start_entry - trid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             auto& transactions = local::rms[ rmid];
 
@@ -109,7 +108,7 @@ namespace casual
          int xa_end_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID trid{ *xid};
-            log::internal::transaction << "xa_end_entry - xid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_end_entry - xid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             auto& transactions = local::rms[ rmid];
 
@@ -136,21 +135,21 @@ namespace casual
          int xa_rollback_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_rollback_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_rollback_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
             return XA_OK;
          }
 
          int xa_prepare_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_prepare_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_prepare_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
             return XA_OK;
          }
 
          int xa_commit_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_commit_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_commit_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             return XA_OK;
          }
@@ -158,7 +157,7 @@ namespace casual
          int xa_recover_entry( XID* xid, long count, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_recover_entry - xid: " << transaction << " count: " << count << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_recover_entry - xid: " << transaction << " count: " << count << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             return XA_OK;
          }
@@ -166,14 +165,14 @@ namespace casual
          int xa_forget_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
-            log::internal::transaction << "xa_forget_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_forget_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             return XA_OK;
          }
 
          int xa_complete_entry( int* handle, int* retval, int rmid, long flags)
          {
-            log::internal::transaction << "xa_complete_entry - handle:" << handle << " retval: " << retval << " rmid: " << rmid << " flags: " << flags << std::endl;
+            log << "xa_complete_entry - handle:" << handle << " retval: " << retval << " rmid: " << rmid << " flags: " << flags << std::endl;
 
             return XA_OK;
          }

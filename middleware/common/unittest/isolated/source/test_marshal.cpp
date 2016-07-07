@@ -1,11 +1,8 @@
 //!
-//! casual_isolatedunittest_archive.cpp
-//!
-//! Created on: Jun 9, 2012
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "common/marshal/binary.h"
 #include "common/marshal/network.h"
@@ -81,6 +78,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, binary)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -108,6 +107,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, io)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -141,6 +142,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, io_big_size)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -166,6 +169,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, transaction_id_null)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -187,6 +192,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, transaction_id)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -211,6 +218,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, message_call)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -221,6 +230,16 @@ namespace casual
 
             // marshal
             {
+
+               // header
+               {
+                  service::header::clear();
+
+                  service::header::replace::add( { "casual.header.test.1", "42"});
+                  service::header::replace::add( { "casual.header.test.2", "poop"});
+
+               }
+
 
                buffer::Payload payload{ type, 128};
                range::copy( info, std::begin( payload.memory));
@@ -233,6 +252,11 @@ namespace casual
                auto output = output_type{}( buffer);
                output << message;
 
+               // header
+               {
+                  service::header::clear();
+                  EXPECT_TRUE( service::header::fields().empty());
+               }
             }
 
             // unmarshal
@@ -247,12 +271,22 @@ namespace casual
                EXPECT_TRUE( message.buffer.memory.size() == 100);
                EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
 
+               // header
+               {
+                  EXPECT_TRUE( service::header::fields().size() == 2);
+                  EXPECT_TRUE( service::header::get< int>( "casual.header.test.1") == 42);
+                  EXPECT_TRUE( service::header::get( "casual.header.test.2") == "poop");
+                  service::header::clear();
+               }
+
             }
 
          }
 
          TYPED_TEST( casual_common_marshal, enqueue_request)
          {
+            CASUAL_UNITTEST_TRACE();
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 

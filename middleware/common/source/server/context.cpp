@@ -1,15 +1,12 @@
 //!
-//! casual_server_context.cpp
-//!
-//! Created on: Apr 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/server/context.h"
 
 
 #include "common/message/server.h"
-#include "common/call/context.h"
+#include "common/service/call/context.h"
 
 
 #include "common/communication/ipc.h"

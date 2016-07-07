@@ -61,30 +61,16 @@ struct ServiceEntryVO::Implementation
 
 
 ServiceEntryVO::ServiceEntryVO()
-   : pimpl( new Implementation())  
 {
    //## base class protected section begin [200.ctor.10]
    //## base class protected section end   [200.ctor.10]  
 }
 
 ServiceEntryVO::~ServiceEntryVO() = default;
-
 ServiceEntryVO::ServiceEntryVO( ServiceEntryVO&&  rhs) = default;
-
 ServiceEntryVO& ServiceEntryVO::operator = (ServiceEntryVO&&) = default;
-
-
-ServiceEntryVO::ServiceEntryVO( const ServiceEntryVO& rhs)
-   : pimpl( new Implementation( *rhs.pimpl))
-{
-
-}
-
-ServiceEntryVO& ServiceEntryVO::operator = ( const ServiceEntryVO& rhs)
-{
-    *pimpl = *rhs.pimpl;
-    return *this;
-}
+ServiceEntryVO::ServiceEntryVO( const ServiceEntryVO& rhs) = default;
+ServiceEntryVO& ServiceEntryVO::operator = ( const ServiceEntryVO& rhs) = default;
 
 std::string ServiceEntryVO::getParentService() const
 {

@@ -10,6 +10,7 @@
 #include "common/error.h"
 #include "common/platform.h"
 #include "common/move.h"
+#include "common/cast.h"
 
 #include <algorithm>
 #include <numeric>
@@ -34,54 +35,12 @@ namespace casual
 
       namespace scope
       {
+
          //!
          //! executes an action ones.
          //! If the action has not been executed the
          //! destructor will perform the execution
          //!
-         struct Execute
-         {
-            Execute( std::function< void()> executer) : m_execute( std::move( executer)) {}
-
-            ~Execute()
-            {
-               try
-               {
-                  (*this)();
-               }
-               catch( ...)
-               {
-                  error::handler();
-               }
-            }
-
-            //!
-            //! executes the actions ones.
-            //! no-op if already executed
-            //!
-            void operator () ()
-            {
-               if( m_execute)
-               {
-                  std::function< void()> executer;
-                  std::swap( m_execute, executer);
-                  executer();
-               }
-            }
-
-            //!
-            //! Removes the action
-            //!
-            void release()
-            {
-               m_execute = nullptr;
-            }
-
-         private:
-
-            std::function< void()> m_execute;
-         };
-
          template< typename E>
          struct basic_execute
          {
@@ -124,6 +83,11 @@ namespace casual
             move::Moved m_moved;
          };
 
+         //!
+         //! returns an executer that will do an action ones.
+         //! If the action has not been executed the
+         //! destructor will perform the execution
+         //!
          template< typename E>
          auto execute( E&& executor) -> decltype( basic_execute< E>{ std::forward< E>( executor)})
          {
@@ -360,13 +324,6 @@ namespace casual
       }
 
 
-      template< typename Enum>
-      auto as_integer( Enum value) -> typename std::underlying_type< Enum>::type
-      {
-         return static_cast< typename std::underlying_type< Enum>::type>(value);
-      }
-
-
       template< typename Iter>
       struct Range
       {
@@ -542,6 +499,16 @@ namespace casual
       {
          return detail::negate< T>{ std::forward< T>( functor)};
       }
+
+
+      namespace make
+      {
+         template< typename T, typename... Args>
+         std::unique_ptr< T> unique( Args&&... args)
+         {
+            return std::unique_ptr< T>( new T( std::forward< Args>( args)...));
+         }
+      } // make
 
 
       //!
@@ -1453,7 +1420,7 @@ namespace std
    typename enable_if< is_enum< Enum>::value, ostream&>::type
    operator << ( ostream& out, Enum value)
    {
-     return out << casual::common::as_integer( value);
+     return out << casual::common::cast::underlying( value);
    }
 
 } // std

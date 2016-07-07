@@ -5,7 +5,7 @@
 #include "service/describe/describe.h"
 #include "common.h"
 
-#include "common/call/lookup.h"
+//#include "common/call/lookup.h"
 
 namespace casual
 {

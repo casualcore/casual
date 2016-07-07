@@ -114,7 +114,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_common_server_context, arguments)
+      TEST( common_server_context, arguments)
       {
          CASUAL_UNITTEST_TRACE();
 
@@ -128,7 +128,7 @@ namespace casual
          EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
       }
 
-      TEST( casual_common_server_context, arguments_move)
+      TEST( common_server_context, arguments_move)
       {
          CASUAL_UNITTEST_TRACE();
 
@@ -147,7 +147,7 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, connect)
+      TEST( common_server_context, connect)
       {
          CASUAL_UNITTEST_TRACE();
 
@@ -161,7 +161,7 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, call_service__gives_reply)
+      TEST( common_server_context, call_service__gives_reply)
       {
          CASUAL_UNITTEST_TRACE();
 
@@ -186,7 +186,7 @@ namespace casual
 
       /*
 
-      TEST( casual_common_server_context, call_service__gives_broker_ack)
+      TEST( common_server_context, call_service__gives_broker_ack)
       {
          CASUAL_UNITTEST_TRACE();
 
@@ -218,7 +218,7 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, call_service__gives_traffic_notify)
+      TEST( common_server_context, call_service__gives_traffic_notify)
       {
          mockup::ipc::clear();
 
@@ -309,7 +309,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( casual_common_server_context, mockup_domain_startup)
+      TEST( common_server_context, mockup_domain_startup)
       {
          CASUAL_UNITTEST_TRACE();
 
@@ -318,7 +318,7 @@ namespace casual
          });
       }
 
-      TEST( casual_common_server_context, call_server__non_existing__gives_TPESVCERR)
+      TEST( common_server_context, call_server__non_existing__gives_TPESVCERR)
       {
          local::Domain domain;
 
@@ -337,7 +337,7 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, call_server__test_service_none_TPSUCCESS)
+      TEST( common_server_context, call_server__test_service_none_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -353,7 +353,7 @@ namespace casual
          EXPECT_TRUE( reply.error == 0);
       }
 
-      TEST( casual_common_server_context, call_server__test_service_atomic_TPSUCCESS)
+      TEST( common_server_context, call_server__test_service_atomic_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -371,7 +371,7 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, call_server__test_service_join_TPSUCCESS)
+      TEST( common_server_context, call_server__test_service_join_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -388,7 +388,7 @@ namespace casual
          EXPECT_TRUE( reply.error == 0);
       }
 
-      TEST( casual_common_server_context, call_server__test_service_auto_TPSUCCESS)
+      TEST( common_server_context, call_server__test_service_auto_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -408,7 +408,7 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_none_TPSUCCESS)
+      TEST( common_server_context, call_server_in_transaction__test_service_none_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -425,7 +425,7 @@ namespace casual
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_atomic_TPSUCCESS)
+      TEST( common_server_context, call_server_in_transaction__test_service_atomic_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -444,7 +444,7 @@ namespace casual
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_join_TPSUCCESS)
+      TEST( common_server_context, call_server_in_transaction__test_service_join_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -463,7 +463,7 @@ namespace casual
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_auto_TPSUCCESS)
+      TEST( common_server_context, call_server_in_transaction__test_service_auto_TPSUCCESS)
       {
          local::Domain domain;
 
@@ -483,7 +483,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_server_context, call_server__test_service_none_TPFAIL)
+      TEST( common_server_context, call_server__test_service_none_TPFAIL)
       {
          local::Domain domain;
 
@@ -498,7 +498,7 @@ namespace casual
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
 
-      TEST( casual_common_server_context, call_server__test_service_atomic_TPFAIL)
+      TEST( common_server_context, call_server__test_service_atomic_TPFAIL)
       {
          local::Domain domain;
 
@@ -515,7 +515,7 @@ namespace casual
          EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
       }
 
-      TEST( casual_common_server_context, call_server__test_service_join_TPFAIL)
+      TEST( common_server_context, call_server__test_service_join_TPFAIL)
       {
          local::Domain domain;
 
@@ -532,7 +532,7 @@ namespace casual
          EXPECT_TRUE( reply.error == TPESVCFAIL);
       }
 
-      TEST( casual_common_server_context, call_server__test_service_auto_TPFAIL)
+      TEST( common_server_context, call_server__test_service_auto_TPFAIL)
       {
          local::Domain domain;
 
@@ -550,7 +550,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_none_TPFAIL)
+      TEST( common_server_context, call_server_in_transaction__test_service_none_TPFAIL)
       {
          local::Domain domain;
 
@@ -567,7 +567,7 @@ namespace casual
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_atomic_TPFAIL)
+      TEST( common_server_context, call_server_in_transaction__test_service_atomic_TPFAIL)
       {
          local::Domain domain;
 
@@ -586,7 +586,7 @@ namespace casual
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_join_TPFAIL__expect_rollback)
+      TEST( common_server_context, call_server_in_transaction__test_service_join_TPFAIL__expect_rollback)
       {
          local::Domain domain;
 
@@ -603,7 +603,7 @@ namespace casual
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
       }
 
-      TEST( casual_common_server_context, call_server_in_transaction__test_service_auto_TPFAIL__expect_rollback)
+      TEST( common_server_context, call_server_in_transaction__test_service_auto_TPFAIL__expect_rollback)
       {
          local::Domain domain;
 
@@ -623,9 +623,9 @@ namespace casual
 
 
 
-      TEST( casual_common_server_context, state_call_descriptor_reserver)
+      TEST( common_server_context, state_call_descriptor_reserver)
       {
-         call::State state;
+         service::call::State state;
 
          auto first = state.pending.reserve( uuid::make());
          EXPECT_TRUE( first == 1);

@@ -4,6 +4,7 @@
 
 
 
+#include "sf/pimpl.h"
  
 
 // 
@@ -99,7 +100,7 @@ private:
    //## additional private declarations protected section end   [200.200]
 
    struct Implementation;
-   std::unique_ptr< Implementation> pimpl;
+   casual::sf::Pimpl< Implementation> pimpl;
 
 
 };

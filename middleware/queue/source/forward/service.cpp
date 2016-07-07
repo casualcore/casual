@@ -11,7 +11,7 @@
 #include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
-#include "common/call/context.h"
+#include "common/service/call/context.h"
 
 
 namespace casual
@@ -72,7 +72,7 @@ namespace casual
 
                auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
 
-               common::call::Context::instance().sync( m_service, buffer, size, buffer, size, TPNOTIME);
+               common::service::call::Context::instance().sync( m_service, buffer, size, buffer, size, TPNOTIME);
 
                const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
 

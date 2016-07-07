@@ -1,8 +1,5 @@
 //!
-//! type.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMONMESSAGETYPE_H_

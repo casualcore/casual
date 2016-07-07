@@ -14,7 +14,7 @@
 
 #include "common/transaction/context.h"
 
-#include "common/call/context.h"
+#include "common/service/call/context.h"
 #include "common/buffer/pool.h"
 #include "common/buffer/transport.h"
 
@@ -299,7 +299,7 @@ namespace casual
                      // user has called casual_service_forward
                      //
 
-                     if( call::Context::instance().pending())
+                     if( common::service::call::Context::instance().pending())
                      {
                         //
                         // We can't do a forward, user has pending stuff in flight

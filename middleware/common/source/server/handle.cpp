@@ -1,13 +1,10 @@
 //!
-//! handle.cpp
-//!
-//! Created on: Dec 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/server/handle.h"
 
-#include "common/call/lookup.h"
+#include "common/service/lookup.h"
 
 namespace casual
 {
@@ -15,26 +12,6 @@ namespace casual
    {
       namespace server
       {
-         /*
-         message::server::connect::Reply connect( const Uuid& identification)
-         {
-            return connect( communication::ipc::inbound::device(), identification, {});
-         }
-
-         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services)
-         {
-            return connect( ipc, uuid::empty(), std::move( services), nullptr);
-         }
-
-         message::server::connect::Reply connect( communication::ipc::inbound::Device& ipc, std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
-         {
-            auto reply = connect( ipc, std::move( services));
-
-            transaction::Context::instance().set( resources);
-
-            return reply;
-         }
-         */
 
          namespace local
          {
@@ -173,7 +150,7 @@ namespace casual
                      throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending transactions");
                   }
 
-                  call::service::Lookup lookup{ jump.forward.service, message::service::lookup::Request::Context::forward};
+                  common::service::Lookup lookup{ jump.forward.service, message::service::lookup::Request::Context::forward};
 
 
                   message::service::call::callee::Request request;

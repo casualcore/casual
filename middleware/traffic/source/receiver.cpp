@@ -147,9 +147,9 @@ namespace casual
                //
                // Make sure we write persistent no matter what...
                //
-               common::scope::Execute persist{ [&](){
+               auto persist = common::scope::execute( [&](){
                   log.persist_commit();
-               }};
+               });
 
 
                //
