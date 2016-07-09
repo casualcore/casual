@@ -1,8 +1,5 @@
 //!
-//! buffer.cpp
-//!
-//! Created on: Dec 23, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/buffer.h"
@@ -24,30 +21,8 @@ namespace casual
       namespace buffer
       {
 
-         namespace pool
-         {
-            struct API : public common::buffer::pool::default_pool
-            {
-               static const std::vector< Type>& types()
-               {
-                  static const std::vector< Type> result{
-                        type::api()
-                     };
-                  return result;
-               }
-            };
-
-            //
-            // Register the pool to the pool-holder at the end of this file...
-            //
-
-         } // pool
-
          namespace type
          {
-            Type api() { return { ".api", nullptr};}
-
-
             Type get( platform::raw_buffer_type buffer)
             {
                std::array< char, 8 + 1> type;
@@ -218,20 +193,6 @@ namespace casual
 
       } // buffer
    } // sf
-
-   namespace common
-   {
-      namespace buffer
-      {
-
-
-         //
-         // Registrate the pool to the pool-holder
-         //
-         template class ::casual::common::buffer::pool::Registration< sf::buffer::pool::API>;
-
-      } // buffer
-   } // common
 
 } // casual
 

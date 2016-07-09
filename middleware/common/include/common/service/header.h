@@ -42,6 +42,7 @@ namespace casual
 
 
                std::vector< header::Field>& fields();
+               void fields( std::vector< header::Field> fields);
 
 
                //!

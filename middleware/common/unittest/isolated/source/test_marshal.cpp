@@ -248,6 +248,7 @@ namespace casual
                EXPECT_TRUE( payload.memory.data() == info) << "payload.memory.data(): " <<  payload.memory.data();
 
                message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
+               message.header = service::header::fields();
 
                auto output = output_type{}( buffer);
                output << message;
@@ -270,6 +271,10 @@ namespace casual
                EXPECT_TRUE( message.buffer.type == type);
                EXPECT_TRUE( message.buffer.memory.size() == 100);
                EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
+
+               service::header::clear();
+               service::header::fields( std::move( message.header));
+
 
                // header
                {

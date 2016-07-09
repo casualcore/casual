@@ -162,12 +162,11 @@ namespace casual
                   common::transaction::ID trid;
                   std::int64_t flags = 0;
 
+                  std::vector< common::service::header::Field> header;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     auto& header = common::service::header::fields();
-
                      base_type::marshal( archive);
                      archive & descriptor;
                      archive & process;

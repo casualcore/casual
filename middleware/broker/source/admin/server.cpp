@@ -69,7 +69,7 @@ namespace broker
             auto service_io = local::server->createService( serviceInfo);
 
 
-            auto serviceReturn = transform::state( state);
+            auto serviceReturn = service_io.call( &transform::state, state);
 
             service_io << CASUAL_MAKE_NVP( serviceReturn);
 

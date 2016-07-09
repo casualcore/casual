@@ -110,7 +110,10 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
       //
       // Call the implementation
       //
-      bool serviceReturn = service_io.call( *local::implementation, &local::implementation_type::casual_sf_test1, outputValues);
+      bool serviceReturn = service_io.call(
+            &local::implementation_type::casual_sf_test1,
+            *local::implementation,
+            outputValues);
 
       //
       // Serialize output

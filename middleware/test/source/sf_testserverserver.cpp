@@ -112,8 +112,8 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
       //
       
       bool serviceReturn = service_io.call( 
-         *local::implementation, 
-         &local::implementation_type::casual_sf_test1, 
+         &local::implementation_type::casual_sf_test1,
+         *local::implementation,
          values,
          outputValues);
       
@@ -182,8 +182,8 @@ void casual_sf_test2( TPSVCINFO *serviceInfo)
       //
       
       service_io.call( 
+         &local::implementation_type::casual_sf_test2,
          *local::implementation, 
-         &local::implementation_type::casual_sf_test2, 
          someValue);
       
       

@@ -104,6 +104,8 @@ namespace casual
                })
             };
 
+            std::string service;
+
             struct arguments_t
             {
                std::vector< Type> input;
@@ -119,6 +121,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
+               archive & CASUAL_MAKE_NVP( service);
                archive & CASUAL_MAKE_NVP( arguments);
             })
 

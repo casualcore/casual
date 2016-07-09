@@ -63,6 +63,7 @@ target = LinkExecutable( 'bin/casual-service-describe',
    [ 
     common_a,
     'casual-common', 
+    'casual-sf',
     'casual-xatmi',
     ])
 

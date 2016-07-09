@@ -15,6 +15,21 @@ namespace casual
          common::log::Stream sf{ "casual.sf"};
 
       } // log
+
+      namespace trace
+      {
+         namespace detail
+         {
+               Scope::~Scope() = default;
+
+               Scope::Scope( const char* information, std::ostream& log)
+                  : common::trace::basic::Scope( information, log) {}
+
+         } // detail
+
+      } // trace
+
+
    } // sf
 
 } // casual

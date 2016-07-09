@@ -7,7 +7,11 @@
 
 
 #include "sf/archive/archive.h"
+#include "sf/log.h"
 #include "sf/buffer.h"
+
+
+#include "common/functional.h"
 
 #include "xatmi.h"
 
@@ -112,16 +116,17 @@ namespace casual
                return *this;
             }
 
-            template< typename I, typename M, typename... Args>
-            auto call( I& implementation, M memberfunction, Args&&... args) -> decltype( std::mem_fn( memberfunction)( implementation, std::forward< Args>( args)...))
+
+            template< typename F, typename... Args>
+            auto call( F&& function, Args&&... args) -> decltype( common::invoke( std::forward< F>( function), std::forward< Args>( args)...))
             {
+               sf::Trace trace{ "sf::service::IO::call"};
+
                if( call_implementation())
                {
-                  auto function = std::mem_fn( memberfunction);
-
                   try
                   {
-                     return function( implementation, std::forward< Args>( args)...);
+                     return common::invoke( std::forward< F>( function), std::forward< Args>( args)...);
                   }
                   catch( ...)
                   {
@@ -132,8 +137,11 @@ namespace casual
                //
                // We return the default value for the return type
                //
-               return decltype( std::mem_fn( memberfunction)( implementation, std::forward< Args>( args)...))();
+               return decltype( common::invoke( std::forward< F>( function), std::forward< Args>( args)...))();
             }
+
+
+
 
          private:
 
@@ -159,33 +167,6 @@ namespace casual
             interface_type m_interface;
          };
 
-         namespace factory
-         {
-            namespace buffer
-            {
-               struct Type
-               {
-                  using equality_type = std::function< bool( const sf::buffer::Type&, const sf::buffer::Type&)>;
-
-                  Type() = default;
-                  inline Type( sf::buffer::Type type) : type{ std::move( type)}, equal{ &default_eqaul} {}
-                  inline Type( sf::buffer::Type type, equality_type equal) : type{ std::move( type)}, equal{ std::move( equal)} {}
-
-                  sf::buffer::Type type;
-                  equality_type equal;
-
-                  inline friend bool operator == ( const Type& lhs, const Type& rhs) { return lhs.equal( lhs.type, rhs.type);}
-                  inline friend bool operator == ( const Type& lhs, const sf::buffer::Type& rhs) { return lhs.equal( lhs.type, rhs);}
-                  inline friend bool operator == ( const sf::buffer::Type& lhs, const Type& rhs) { return rhs.equal( lhs, rhs.type);}
-
-                  static bool default_eqaul( const sf::buffer::Type& l, const sf::buffer::Type& r) { return l == r;}
-               };
-
-            } // buffer
-
-
-
-         } // factory
 
          class Factory
          {
@@ -195,7 +176,7 @@ namespace casual
 
             struct Holder
             {
-               factory::buffer::Type type;
+               common::buffer::Type type;
                function_type create;
             };
 

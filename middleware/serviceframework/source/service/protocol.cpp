@@ -3,8 +3,9 @@
 //!
 
 #include "sf/service/protocol.h"
+#include "sf/log.h"
 
-#include "common/internal/trace.h"
+#include "common/execution.h"
 
 
 namespace casual
@@ -60,7 +61,7 @@ namespace casual
 
             }
 
-            factory::buffer::Type Binary::type()
+            common::buffer::Type Binary::type()
             {
                return buffer::type::binary();
             }
@@ -93,7 +94,7 @@ namespace casual
 
             }
 
-            factory::buffer::Type Yaml::type()
+            common::buffer::Type Yaml::type()
             {
                return buffer::type::yaml();
             }
@@ -136,7 +137,7 @@ namespace casual
 
             }
 
-            factory::buffer::Type Json::type()
+            common::buffer::Type Json::type()
             {
                return buffer::type::json();
             }
@@ -180,7 +181,7 @@ namespace casual
             }
 
 
-            factory::buffer::Type Xml::type()
+            common::buffer::Type Xml::type()
             {
                return common::buffer::type::xml();
             }
@@ -207,9 +208,12 @@ namespace casual
             }
 
 
-            Describe::Describe( TPSVCINFO* information) : Base( information), m_writer( m_model), m_protocoll( protocoll( information))
+            Describe::Describe( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol)
+                  : Base( information), m_writer( m_model), m_protocol( std::move( protocol))
             {
                sf::Trace trace{ "protocol::Describe::Describe"};
+
+               m_model.service = common::execution::service::name();
 
                m_input.readers.push_back( &m_prepare);
                m_input.writers.push_back( &m_writer.input);
@@ -219,42 +223,6 @@ namespace casual
 
             }
 
-            namespace local
-            {
-               namespace
-               {
-                  namespace describe
-                  {
-                     namespace type
-                     {
-                        bool equal( const common::buffer::Type& l, const common::buffer::Type& r)
-                        {
-                           return l.name == r.name;
-                        }
-
-                     } // type
-
-                  } // describe
-
-               } // <unnamed>
-            } // local
-
-            factory::buffer::Type Describe::type()
-            {
-               //
-               // custom equal compare to delay the dispatch of the actual describe
-               // protocol
-               //
-               return { buffer::type::api(), &local::describe::type::equal};
-            }
-
-
-            std::unique_ptr< Interface> Describe::protocoll( TPSVCINFO* information)
-            {
-               buffer::Type protocol_type{ buffer::type::get( information->data).subname, ""};
-
-               return service::Factory::instance().create( information, protocol_type);
-            }
 
             bool Describe::do_call()
             {
@@ -265,7 +233,7 @@ namespace casual
             {
                sf::Trace trace{ "protocol::Describe::do_finalize"};
 
-               service::IO service_io{ std::move( m_protocoll)};
+               service::IO service_io{ std::move( m_protocol)};
 
                service_io << makeNameValuePair( "model", m_model);
 

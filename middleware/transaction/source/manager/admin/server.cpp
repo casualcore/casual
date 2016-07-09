@@ -61,7 +61,7 @@ namespace casual
             {
                auto service_io = local::server->createService( serviceInfo);
 
-               auto serviceReturn = transform::state( state);
+               auto serviceReturn = service_io.call( &transform::state, state);
 
                service_io << CASUAL_MAKE_NVP( serviceReturn);
 
@@ -92,7 +92,7 @@ namespace casual
 
                service_io >> CASUAL_MAKE_NVP( instances);
 
-               auto serviceReturn = action::resource::insances( state, std::move( instances));
+               auto serviceReturn = service_io.call( &action::resource::insances, state, std::move( instances));
 
                service_io << CASUAL_MAKE_NVP( serviceReturn);
 

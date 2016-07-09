@@ -48,6 +48,12 @@ namespace casual
                   return fields;
                }
 
+               void fields( std::vector< header::Field> header)
+               {
+                  log::internal::debug << "header: " << range::make( header) << '\n';
+                  fields() = std::move( header);
+               }
+
                bool exists( const std::string& key)
                {
                   return local::find( key);

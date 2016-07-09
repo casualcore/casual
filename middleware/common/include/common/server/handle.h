@@ -233,6 +233,11 @@ namespace casual
                   execution::service::name( message.service.name);
                   execution::service::parent::name( message.parent);
 
+                  //
+                  // set header
+                  //
+                  common::service::header::fields( std::move( message.header));
+
 
 
 

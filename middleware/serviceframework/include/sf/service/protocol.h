@@ -60,7 +60,7 @@ namespace casual
             public:
                Binary( TPSVCINFO* serviceInfo);
 
-               static factory::buffer::Type type();
+               static common::buffer::Type type();
 
                reply::State do_finalize() override;
 
@@ -82,7 +82,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static factory::buffer::Type type();
+               static common::buffer::Type type();
 
             private:
 
@@ -100,7 +100,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static factory::buffer::Type type();
+               static common::buffer::Type type();
 
 
             private:
@@ -119,7 +119,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static factory::buffer::Type type();
+               static common::buffer::Type type();
 
             private:
 
@@ -156,13 +156,9 @@ namespace casual
             {
             public:
 
-               Describe( TPSVCINFO* information);
-
-               static factory::buffer::Type type();
+               Describe( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
 
             private:
-
-               static std::unique_ptr< Interface> protocoll( TPSVCINFO* information);
 
                bool do_call() override;
                reply::State do_finalize() override;
@@ -179,7 +175,7 @@ namespace casual
                   archive::service::Writer output;
                } m_writer;
 
-               std::unique_ptr< Interface> m_protocoll;
+               std::unique_ptr< Interface> m_protocol;
 
             };
 

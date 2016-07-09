@@ -101,9 +101,9 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       // Call the implementation
       //
       
-      bool serviceReturn = service_io.call( 
-         *local::implementation, 
-         &local::implementation_type::getMonitorStatistics, 
+      bool serviceReturn = service_io.call(
+         &local::implementation_type::getMonitorStatistics,
+         *local::implementation,
          outputValues);
       
       

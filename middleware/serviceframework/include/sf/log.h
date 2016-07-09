@@ -35,10 +35,27 @@ namespace casual
 
       } // log
 
-      struct Trace : common::Trace
+      namespace trace
       {
-         template< typename T>
-         Trace( T&& value) : common::Trace( std::forward< T>( value), log::sf) {}
+         namespace detail
+         {
+            class Scope : common::trace::basic::Scope
+            {
+            public:
+               ~Scope();
+            protected:
+               Scope( const char* information, std::ostream& log);
+            };
+
+         } // detail
+
+      } // trace
+
+      struct Trace : trace::detail::Scope
+      {
+         template<decltype(sizeof("")) size>
+         Trace( const char (&information)[size], std::ostream& log = log::sf)
+            : trace::detail::Scope( information, log) {}
       };
 
 

@@ -59,19 +59,6 @@ namespace casual
                         }
                      };
 
-                     namespace blocking
-                     {
-                        //using Send = common::queue::blocking::basic_send< Policy>;
-                        //using Receive = common::queue::blocking::basic_reader< Policy>;
-
-                     } // blocking
-
-                     namespace non_blocking
-                     {
-                        //using Receive = common::queue::non_blocking::basic_reader< Policy>;
-
-                     } // non_blocking
-
                   } // queue
 
 
@@ -168,6 +155,7 @@ namespace casual
                         message.process = process::handle();
                         message.parent = execution::service::name();
                         message.flags = flags;
+                        message.header = service::header::fields();
 
                         return message;
                      }

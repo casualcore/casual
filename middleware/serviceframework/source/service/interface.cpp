@@ -7,9 +7,10 @@
 
 // TODO: temporary to test factory
 #include "sf/service/protocol.h"
+#include "sf/log.h"
 
-#include "common/internal/trace.h"
 
+#include "common/service/header.h"
 
 //
 // std
@@ -101,11 +102,22 @@ namespace casual
             sf::Trace trace( "sf::service::Factory::create");
 
             auto found = common::range::find_if( m_factories, [&]( const Holder& h){
-               return h.type.equal( h.type.type, type);
+               return h.type == type;
             });
 
             if( found)
             {
+               if( common::service::header::exists( "casual-service-describe"))
+               {
+                  log::sf << "casual-service-describe protocol\n";
+
+                  //
+                  // service-describe protocol
+                  //
+                  return common::make::unique< protocol::Describe>( service_info, found->create( service_info));
+
+               }
+
                return found->create( service_info);
             }
 
@@ -129,7 +141,6 @@ namespace casual
             registration< service::protocol::Binary>();
             registration< service::protocol::Json>();
             registration< service::protocol::Xml>();
-            registration< service::protocol::Describe>();
          }
 
 
