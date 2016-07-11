@@ -164,8 +164,8 @@ namespace casual
             }
 
 
-            Xml::Xml( TPSVCINFO* serviceInfo)
-               : Base( serviceInfo), m_reader( m_load( serviceInfo->data, serviceInfo->len)), m_writer( m_save())
+            Xml::Xml( TPSVCINFO* service_info)
+               : Base( service_info), m_reader( m_load( service_info->data, service_info->len)), m_writer( m_save())
             {
                sf::Trace trace{ "protocol::Xml::Xml"};
 
@@ -175,8 +175,8 @@ namespace casual
                //
                // We don't need the request-buffer any more
                //
-               tpfree( serviceInfo->data);
-               serviceInfo->len = 0;
+               tpfree( service_info->data);
+               service_info->len = 0;
 
             }
 
@@ -206,6 +206,43 @@ namespace casual
 
                return m_state;
             }
+
+
+            Ini::Ini( TPSVCINFO* service_info)
+            : Base( service_info), m_reader( m_load( service_info->data, service_info->len)), m_writer( m_save())
+            {
+               sf::Trace trace{ "protocol::Ini::Ini"};
+
+               m_input.readers.push_back( &m_reader);
+               m_output.writers.push_back( &m_writer);
+
+               //
+               // We don't need the request-buffer any more
+               //
+               tpfree( service_info->data);
+               service_info->len = 0;
+            }
+
+            reply::State Ini::do_finalize()
+            {
+               std::string ini;
+               m_save( ini);
+
+               buffer::Binary buffer{ common::buffer::type::ini(), ini.size()};
+               buffer.str( ini);
+
+               auto raw = buffer.release();
+               m_state.data = raw.buffer;
+               m_state.size = raw.size;
+
+               return m_state;
+            }
+
+            common::buffer::Type Ini::type()
+            {
+               return common::buffer::type::ini();
+            }
+
 
 
             Describe::Describe( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol)
@@ -238,6 +275,63 @@ namespace casual
                service_io << makeNameValuePair( "model", m_model);
 
                return service_io.finalize();
+            }
+
+
+            Example::Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol)
+                  : Base( information), m_protocol( std::move( protocol))
+            {
+               sf::Trace trace{ "protocol::Example::Example"};
+
+
+               m_input.readers.push_back( &m_prepare);
+               m_input.writers = m_protocol->output().writers;
+
+               for( auto& writer : m_input.writers)
+               {
+                  writer->serialtype_start( "input");
+               }
+
+
+               m_output.readers.push_back( &m_prepare);
+               m_output.writers = m_protocol->output().writers;
+
+
+
+            }
+
+
+            bool Example::do_call()
+            {
+               //
+               // Input is by definition deserialized, and after this
+               // we take care of the output
+               //
+
+               for( auto& writer : m_input.writers)
+               {
+                  writer->serialtype_end( "input");
+               }
+
+               for( auto& writer : m_output.writers)
+               {
+                  writer->serialtype_start( "output");
+               }
+
+               return false;
+            }
+
+            reply::State Example::do_finalize()
+            {
+               sf::Trace trace{ "protocol::Example::do_finalize"};
+
+
+               for( auto& writer : m_output.writers)
+               {
+                  writer->serialtype_end( "output");
+               }
+
+               return m_protocol->finalize();
             }
 
          }

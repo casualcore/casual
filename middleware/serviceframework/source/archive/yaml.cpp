@@ -1,13 +1,11 @@
-/*
- * yaml.cpp
- *
- *  Created on: Jan 23, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #include "sf/archive/yaml.h"
 
 #include "sf/exception.h"
+#include "sf/log.h"
 
 #include "common/transcode.h"
 
@@ -20,6 +18,38 @@ namespace casual
       {
          namespace yaml
          {
+            namespace local
+            {
+               namespace
+               {
+                  const std::string& empty()
+                  {
+                     sf::log::sf << "archive::yaml::local::empty\n";
+
+                     static const std::string document{ "---\n"};
+                     return document;
+                  }
+
+                  std::istringstream stream( const std::string& yaml)
+                  {
+                     if( yaml.empty())
+                     {
+                        return std::istringstream{ empty()};
+                     }
+                     return std::istringstream{ yaml};
+                  }
+
+                  std::istringstream stream( const char* const yaml)
+                  {
+                     if( ! yaml || yaml[ 0] == '\0')
+                     {
+                        return std::istringstream{ empty()};
+                     }
+                     return std::istringstream{ yaml};
+                  }
+
+               } // <unnamed>
+            } // local
 
             Load::Load() = default;
             Load::~Load() = default;
@@ -50,20 +80,20 @@ namespace casual
 
             const YAML::Node& Load::operator() ( const std::string& yaml)
             {
-               std::istringstream stream( yaml);
+               auto stream = local::stream( yaml);
                return (*this)( stream);
             }
 
             const YAML::Node& Load::operator() ( const char* const yaml, const std::size_t size)
             {
-               std::istringstream stream( std::string( yaml, size));
+               auto stream = local::stream( std::string( yaml, size));
                return (*this)( stream);
             }
 
 
             const YAML::Node& Load::operator() ( const char* const yaml)
             {
-               std::istringstream stream( yaml);
+               auto stream = local::stream( yaml);
                return (*this)( stream);
             }
 

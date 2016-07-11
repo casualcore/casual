@@ -18,105 +18,144 @@ namespace casual
       {
          namespace service
          {
-            namespace implementation
+            namespace describe
             {
-               class Writer
+               namespace implementation
                {
-               public:
-
-                  using types_t = std::vector< sf::service::Model::Type>;
-
-                  Writer( std::vector< sf::service::Model::Type>& types);
-                  Writer( Writer&&);
-
-
-                  ~Writer();
-
-                  std::size_t container_start( const std::size_t size, const char* name);
-                  void container_end( const char*);
-
-                  void serialtype_start( const char* name);
-                  void serialtype_end( const char*);
-
-                  template<typename T>
-                  void write( T&& value, const char* name)
+                  class Writer
                   {
-                     m_stack.back()->emplace_back( name, sf::service::model::type::traits< T>::category());
-                  }
+                  public:
 
-               private:
-                  std::vector< types_t*> m_stack;
-               };
+                     using types_t = std::vector< sf::service::Model::Type>;
+
+                     Writer( std::vector< sf::service::Model::Type>& types);
+                     Writer( Writer&&);
 
 
+                     ~Writer();
 
-               struct Prepare
-               {
+                     std::size_t container_start( const std::size_t size, const char* name);
+                     void container_end( const char*);
 
-                  bool serialtype_start( const char*) { return true;}
+                     void serialtype_start( const char* name);
+                     void serialtype_end( const char*);
 
-                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char*)
-                  {
-                     if( size == 0)
+                     template<typename T>
+                     void write( T&& value, const char* name)
                      {
-                        return std::make_tuple( 1, true);
+                        m_stack.back()->emplace_back( name, sf::service::model::type::traits< T>::category());
                      }
 
-                     return std::make_tuple( size, true);
-                  }
+                  private:
+                     std::vector< types_t*> m_stack;
+                  };
 
-                  //! @{
-                  //! No op
-                  void container_end( const char*) { /*no op*/}
-                  void serialtype_end( const char*) { /*no op*/}
-                  //! @}
 
+
+                  struct Prepare
+                  {
+
+                     bool serialtype_start( const char*);
+
+                     std::tuple< std::size_t, bool> container_start( std::size_t size, const char*);
+
+                     //! @{
+                     //! No op
+                     void container_end( const char*);
+                     void serialtype_end( const char*);
+                     //! @}
+
+
+                     template< typename T>
+                     bool read( T& value, const char*)
+                     {
+                        return true;
+                     }
+                  };
+
+               } // implementation
+
+
+               using Prepare = basic_reader< implementation::Prepare, policy::Relaxed>;
+
+               using Writer = basic_writer< implementation::Writer>;
+
+
+
+               //!
+               //! To help with unittesting and such.
+               //!
+               struct Wrapper
+               {
+                  Wrapper( std::vector< sf::service::Model::Type>& types) : m_writer( types) {}
 
                   template< typename T>
-                  bool read( T& value, const char*)
+                  Wrapper& operator << ( T&& value)
                   {
-                     return true;
+                     Prepare prepare;
+                     prepare >> value;
+
+                     m_writer << std::forward< T>( value);
+
+                     return *this;
                   }
+
+                  template< typename T>
+                  Wrapper& operator & ( T&& value)
+                  {
+                     return *this << std::forward< T>( value);
+                  }
+               private:
+                  Writer m_writer;
                };
 
-            } // implementation
+            } // describe
 
 
-            using Prepare = basic_reader< implementation::Prepare, policy::Relaxed>;
-
-            using Writer = basic_writer< implementation::Writer>;
-
-
-
-            //!
-            //! To help with unittesting and such.
-            //!
-            struct Wrapper
+            namespace example
             {
-               Wrapper( std::vector< sf::service::Model::Type>& types) : m_writer( types) {}
-
-               template< typename T>
-               Wrapper& operator << ( T&& value)
+               namespace implementation
                {
-                  Prepare prepare;
-                  prepare >> value;
+                  //!
+                  //! "prepares" the object model with "random" values
+                  //!
+                  struct Prepare
+                  {
 
-                  m_writer << std::forward< T>( value);
+                     bool serialtype_start( const char*);
 
-                  return *this;
-               }
+                     std::tuple< std::size_t, bool> container_start( std::size_t size, const char*);
 
-               template< typename T>
-               Wrapper& operator & ( T&& value)
-               {
-                  return *this << std::forward< T>( value);
-               }
+                     //! @{
+                     //! No op
+                     void container_end( const char*);
+                     void serialtype_end( const char*);
+                     //! @}
 
-            private:
 
-               Writer m_writer;
-            };
+                     template< typename T>
+                     bool read( T& value, const char*)
+                     {
+                        pod( value);
+                        return true;
+                     }
 
+                     void pod( bool& value);
+                     void pod( char& value);
+                     void pod( short& value);
+                     void pod( long& value);
+                     void pod( long long& value);
+                     void pod( float& value);
+                     void pod( double& value);
+                     void pod( std::string& value);
+                     void pod( platform::binary_type& value);
+                  };
+
+               } // implementation
+
+               using Prepare = basic_reader< implementation::Prepare, policy::Relaxed>;
+
+            } // example
 
          } // service
       } // archive

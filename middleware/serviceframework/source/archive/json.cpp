@@ -36,7 +36,21 @@ namespace casual
 
                   rapidjson::Document& parse( rapidjson::Document& document, const char* const json)
                   {
-                     document.Parse( json);
+                     //
+                     // To support empty documents
+                     //
+                     {
+                        static const std::string empty{ "{}"};
+
+                        if( ! json || json[ 0] == '\0')
+                        {
+                           document.Parse( empty.c_str());
+                        }
+                        else
+                        {
+                           document.Parse( json);
+                        }
+                     }
 
                      if( document.HasParseError())
                      {

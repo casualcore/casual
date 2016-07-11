@@ -1,9 +1,6 @@
-/*
- * xml.h
- *
- *  Created on: Jan 15, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #ifndef CASUAL_SF_ARCHIVE_XML_H_
 #define CASUAL_SF_ARCHIVE_XML_H_

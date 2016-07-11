@@ -357,11 +357,8 @@ namespace casual
          operator T() const = delete;
 
 
-         reference operator * () { return *m_first;}
-         const reference operator * () const { return *m_first;}
-
-
-         iterator operator -> () { return m_first;}
+         reference operator * () const { return *m_first;}
+         iterator operator -> () const { return m_first;}
 
 
          Range operator ++ ()
@@ -551,7 +548,7 @@ namespace casual
          }
 
          template< typename Iter>
-         Range< Iter> make( Range< Iter> range)
+         constexpr Range< Iter> make( Range< Iter> range)
          {
             return range;
          }
@@ -565,12 +562,15 @@ namespace casual
          template< typename C>
          struct type_traits
          {
-            using type = decltype( make( std::begin( std::declval< C>()), 0));
+            using type = decltype( make( std::declval< C>().begin(), std::size_t{}));
          };
 
 
          template< typename C>
          using type_t = typename type_traits< C>::type;
+
+         template< typename C>
+         using const_type_t = typename type_traits< const C>::type;
 
          template< typename R>
          typename std::enable_if< std::is_array< typename std::remove_reference< R>::type>::value, std::size_t>::type
@@ -799,7 +799,7 @@ namespace casual
          //! @param destination sets the maximum what will be copied
          //!
          template< typename Range1, typename Range2>
-         void copy_max( Range1&& source, Range2 destination)
+         void copy_max( Range1&& source, Range2&& destination)
          {
             auto max = range::size( destination);
             auto wanted = range::size( source);

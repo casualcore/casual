@@ -22,15 +22,18 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name)
          {
-            std::string uuid;
+            platform::binary_type uuid;
             archive >> sf::makeNameValuePair( name, uuid);
 
-            value = platform::Uuid{ uuid};
+            common::range::copy_max( uuid, value.get());
          }
 
          void serialize( Writer& archive, const platform::Uuid& value, const char* name)
          {
-            archive << sf::makeNameValuePair( name, common::uuid::string( value));
+            platform::binary_type uuid( sizeof( value.get()));
+            common::range::copy( value.get(), std::begin( uuid));
+
+            archive << sf::makeNameValuePair( name, uuid);
          }
 
          void serialize( Reader& archive, common::process::Handle& value, const char* name)

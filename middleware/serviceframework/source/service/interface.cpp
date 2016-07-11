@@ -107,7 +107,8 @@ namespace casual
 
             if( found)
             {
-               if( common::service::header::exists( "casual-service-describe"))
+               if( common::service::header::exists( "casual-service-describe") &&
+                     common::service::header::get( "casual-service-describe") != "false")
                {
                   log::sf << "casual-service-describe protocol\n";
 
@@ -115,7 +116,16 @@ namespace casual
                   // service-describe protocol
                   //
                   return common::make::unique< protocol::Describe>( service_info, found->create( service_info));
+               }
+               else if( common::service::header::exists( "casual-service-example") &&
+                     common::service::header::get( "casual-service-example") != "false")
+               {
+                  log::sf << "casual-service-example protocol\n";
 
+                  //
+                  // service-describe protocol
+                  //
+                  return common::make::unique< protocol::Example>( service_info, found->create( service_info));
                }
 
                return found->create( service_info);
@@ -141,6 +151,7 @@ namespace casual
             registration< service::protocol::Binary>();
             registration< service::protocol::Json>();
             registration< service::protocol::Xml>();
+            registration< service::protocol::Ini>();
          }
 
 

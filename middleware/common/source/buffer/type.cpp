@@ -1,8 +1,5 @@
 //!
-//! type.cpp
-//!
-//! Created on: Feb 22, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/buffer/type.h"
@@ -52,6 +49,7 @@ namespace casual
             Type json() { return { CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE};}
             Type yaml() { return { CASUAL_BUFFER_YAML_TYPE, CASUAL_BUFFER_YAML_SUBTYPE};}
             Type xml() { return { CASUAL_BUFFER_XML_TYPE, CASUAL_BUFFER_XML_SUBTYPE};}
+            Type ini() { return { CASUAL_BUFFER_INI_TYPE, CASUAL_BUFFER_INI_SUBTYPE};}
          } // type
 
 
@@ -64,7 +62,13 @@ namespace casual
           : type( std::move( type)), memory( std::move( buffer)) {}
 
          Payload::Payload( Type type, platform::binary_type::size_type size)
-          : type( std::move( type)), memory( size) {}
+          : type( std::move( type)), memory( size)
+         {
+            if( ! memory.data())
+            {
+               memory.reserve( 1);
+            }
+         }
 
 
          Payload::Payload( Payload&& rhs) noexcept

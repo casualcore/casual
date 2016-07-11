@@ -69,6 +69,17 @@ target = LinkExecutable( 'bin/casual-service-describe',
 
 install_bin.append( target)
 
+target = LinkExecutable( 'bin/casual-service-example',
+   [ Compile( 'source/service/example/main.cpp')],
+   [ 
+    common_a,
+    'casual-common', 
+    'casual-sf',
+    'casual-xatmi',
+    ])
+
+install_bin.append( target)
+
 
 
 target = LinkExecutable( 'bin/casual-log-format',

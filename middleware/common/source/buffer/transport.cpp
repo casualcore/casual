@@ -1,8 +1,5 @@
 //!
-//! transport.cpp
-//!
-//! Created on: Dec 27, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/buffer/transport.h"

@@ -29,7 +29,7 @@ namespace casual
 
          service::Model model;
 
-         archive::service::Wrapper writer{ model.arguments.input};
+         archive::service::describe::Wrapper writer{ model.arguments.input};
 
          std::string some_string;
          long some_long = 0;
@@ -49,7 +49,7 @@ namespace casual
 
          service::Model model;
 
-         archive::service::Wrapper writer{ model.arguments.input};
+         archive::service::describe::Wrapper writer{ model.arguments.input};
 
          std::vector< std::string> some_strings;
          std::vector< long> some_longs;
@@ -128,7 +128,7 @@ namespace casual
       {
 
          service::Model model;
-         archive::service::Wrapper writer{ model.arguments.input};
+         archive::service::describe::Wrapper writer{ model.arguments.input};
 
          local::Composite some_composite;
 
@@ -164,7 +164,7 @@ namespace casual
       {
 
          service::Model model;
-         archive::service::Wrapper writer{ model.arguments.input};
+         archive::service::describe::Wrapper writer{ model.arguments.input};
 
          std::map< local::Composite, local::NestedComposite> complex;
          writer << CASUAL_MAKE_NVP( complex);

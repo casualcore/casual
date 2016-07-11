@@ -12,6 +12,7 @@
 #include "sf/archive/binary.h"
 #include "sf/archive/json.h"
 #include "sf/archive/xml.h"
+#include "sf/archive/ini.h"
 #include "sf/archive/log.h"
 #include "sf/archive/service.h"
 #include "sf/log.h"
@@ -129,6 +130,24 @@ namespace casual
                archive::xml::Writer m_writer;
             };
 
+            class Ini : public Base
+            {
+            public:
+               Ini( TPSVCINFO* service_info);
+
+               reply::State do_finalize() override;
+
+               static common::buffer::Type type();
+
+            private:
+
+               archive::ini::Load m_load;
+               archive::ini::Reader m_reader;
+               archive::ini::Save m_save;
+               archive::ini::Writer m_writer;
+
+            };
+
 
 
             namespace parameter
@@ -165,18 +184,38 @@ namespace casual
 
                Model m_model;
 
-               archive::service::Prepare m_prepare;
+               archive::service::describe::Prepare m_prepare;
 
                struct writer_t
                {
                   writer_t( Model& model) : input( model.arguments.input), output( model.arguments.output) {}
 
-                  archive::service::Writer input;
-                  archive::service::Writer output;
+                  archive::service::describe::Writer input;
+                  archive::service::describe::Writer output;
                } m_writer;
 
                std::unique_ptr< Interface> m_protocol;
+            };
 
+            //!
+            //! Fills the object model with "random" values and produce an
+            //! example of the API in the requested protocol (json, yaml, ...),
+            //! which could help getting an understanding of an API.
+            //!
+            class Example : public Base
+            {
+            public:
+
+               Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
+
+            private:
+
+               bool do_call() override;
+               reply::State do_finalize() override;
+
+               archive::service::example::Prepare m_prepare;
+
+               std::unique_ptr< Interface> m_protocol;
             };
 
          } // protocol

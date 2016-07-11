@@ -54,11 +54,16 @@ namespace casual
          Buffer::Buffer( const Type& type, std::size_t size)
             : m_buffer{ tpalloc( type.name.c_str(), type.subname.c_str(), size), deleter_type{}}, m_size( size)
          {
-            if( ! m_buffer)
+            if( size && ! m_buffer)
             {
                m_size = 0;
                throw exception::memory::Allocation{ "could not allocate buffer: " + common::error::xatmi::error( tperrno)};
             }
+         }
+
+         Buffer::Buffer( const Type& type) : Buffer{ type, 0}
+         {
+
          }
 
          Buffer::Buffer( const Raw& buffer)
