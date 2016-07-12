@@ -1,11 +1,9 @@
 //!
-//! handle.cpp
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/group/handle.h"
+#include "queue/common/log.h"
 
 #include "queue/common/environment.h"
 
@@ -46,7 +44,7 @@ namespace casual
                   {
                      void replies( State& state, const common::transaction::ID& trid)
                      {
-                        common::trace::Scope trace{ "queue::handle::pending", common::log::internal::queue};
+                        Trace trace{ "queue::handle::pending"};
 
 
                         auto pending = state.pending.commit( trid);
@@ -75,7 +73,7 @@ namespace casual
                            }
                            catch( const common::exception::queue::Unavailable& exception)
                            {
-                              common::log::internal::queue << "ipc-queue unavailable for request: " << request << " - action: ignore\n";
+                              log << "ipc-queue unavailable for request: " << request << " - action: ignore\n";
                            }
                         }
                      }
@@ -111,7 +109,7 @@ namespace casual
 
             void shutdown( State& state)
             {
-               common::trace::Scope trace{ "queue::handle::shutdown", common::log::internal::queue};
+               Trace trace{ "queue::handle::shutdown"};
 
                for( auto& pending : state.pending.requests)
                {
@@ -127,7 +125,7 @@ namespace casual
             {
                void Process::operator() ( const common::message::domain::process::termination::Event& message)
                {
-                  common::trace::Scope trace{ "queue::handle::dead::Process", common::log::internal::queue};
+                  Trace trace{ "queue::handle::dead::Process"};
 
                   //
                   // We check and do some clean up, if the dead process has any pending replies.
@@ -145,7 +143,7 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
-                     common::trace::Scope trace{ "queue::handle::information::queues::request", common::log::internal::queue};
+                     Trace trace{ "queue::handle::information::queues::request"};
 
                      common::message::queue::information::queues::Reply reply;
                      reply.correlation = message.correlation;
@@ -161,7 +159,7 @@ namespace casual
 
                   void Request::operator () ( message_type& message)
                   {
-                     common::trace::Scope trace{ "queue::handle::information::messages::request", common::log::internal::queue};
+                     Trace trace{ "queue::handle::information::messages::request"};
 
                      common::message::queue::information::messages::Reply reply;
                      reply.correlation = message.correlation;
@@ -179,7 +177,7 @@ namespace casual
             {
                void Request::operator () ( message_type& message)
                {
-                  common::trace::Scope trace{ "queue::handle::enqueue::request", common::log::internal::queue};
+                  Trace trace{ "queue::handle::enqueue::request"};
 
                   try
                   {
@@ -225,7 +223,7 @@ namespace casual
 
                bool request( State& state, Request::message_type& message)
                {
-                  common::trace::Scope trace{ "queue::handle::dequeue::request", common::log::internal::queue};
+                  Trace trace{ "queue::handle::dequeue::request"};
 
                   try
                   {
@@ -270,7 +268,7 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
-                     common::trace::Scope trace{ "queue::handle::dequeue::forget::Request", common::log::internal::queue};
+                     Trace trace{ "queue::handle::dequeue::forget::Request"};
 
                      try
                      {
@@ -295,7 +293,7 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
-                     common::trace::Scope trace{ "queue::handle::transaction::commit::Request", common::log::internal::queue};
+                     Trace trace{ "queue::handle::transaction::commit::Request"};
 
                      common::message::transaction::resource::commit::Reply reply;
                      reply.correlation = message.correlation;
@@ -327,7 +325,7 @@ namespace casual
                {
                   void Request::operator () ( message_type& message)
                   {
-                     common::trace::Scope trace{ "queue::handle::transaction::rollback::Request", common::log::internal::queue};
+                     Trace trace{ "queue::handle::transaction::rollback::Request"};
 
                      common::message::transaction::resource::rollback::Reply reply;
                      reply.correlation = message.correlation;

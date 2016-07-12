@@ -3,6 +3,7 @@
 //!
 
 #include "common/communication/ipc.h"
+#include "common/communication/log.h"
 #include "common/environment.h"
 #include "common/error.h"
 #include "common/trace.h"
@@ -48,7 +49,7 @@ namespace casual
                         }
                         case EINTR:
                         {
-                           log::internal::ipc << "ipc::native::send - signal received\n";
+                           log << "ipc::native::send - signal received\n";
                            common::signal::handle();
 
                            //
@@ -85,7 +86,7 @@ namespace casual
                      }
                   }
 
-                  log::internal::ipc << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
                   return true;
                }
@@ -106,7 +107,7 @@ namespace casual
                      {
                         case EINTR:
                         {
-                           log::internal::ipc << "ipc::native::receive - signal received\n";
+                           log << "ipc::native::receive - signal received\n";
 
                            common::signal::handle();
 
@@ -129,13 +130,13 @@ namespace casual
                         {
                            std::ostringstream msg;
                            msg << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: " << flags << " - " << common::error::string();
-                           log::internal::ipc << msg.str() << std::endl;
+                           log << msg.str() << std::endl;
                            throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
                         }
                      }
                   }
 
-                  log::internal::ipc << "<--- [" << id << "] receive transport: " << transport << " - flags: " << flags << '\n';
+                  log << "<--- [" << id << "] receive transport: " << transport << " - flags: " << flags << '\n';
 
                   return true;
 
@@ -153,7 +154,7 @@ namespace casual
                   {
                      throw exception::invalid::Argument( "ipc queue create failed - " + common::error::string(), __FILE__, __LINE__);
                   }
-                  log::internal::ipc << "queue id: " << m_id << " created\n";
+                  log << "queue id: " << m_id << " created\n";
                }
 
                Connector::~Connector()
@@ -254,7 +255,7 @@ namespace casual
 
                   void Connector::reconnect()
                   {
-                     Trace trace{ "ipc::outbound::instance::Connector::reconnect", log::internal::ipc};
+                     Trace trace{ "ipc::outbound::instance::Connector::reconnect"};
 
                      m_id = local::fetch( m_identity, m_environment);
                   }
@@ -287,7 +288,7 @@ namespace casual
                               return queue;
                            }
 
-                           log::internal::ipc << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
+                           log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
 
                            auto from_singleton_file = []()
                                  {
@@ -323,7 +324,7 @@ namespace casual
 
                   void Connector::reconnect()
                   {
-                     Trace trace{ "ipc::outbound::domain::Connector::reconnect", log::internal::ipc};
+                     Trace trace{ "ipc::outbound::domain::Connector::reconnect"};
 
                      m_id = local::reconnect();
                   }
@@ -451,7 +452,7 @@ namespace casual
                {
                   if( msgctl( id, IPC_RMID, nullptr) == 0)
                   {
-                     log::internal::ipc << "queue id: " << id << " removed\n";
+                     log << "queue id: " << id << " removed\n";
                      return true;
                   }
                   else

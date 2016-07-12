@@ -5,6 +5,7 @@
 #include "gateway/manager/state.h"
 
 #include "gateway/message.h"
+#include "gateway/common.h"
 
 
 
@@ -96,9 +97,9 @@ namespace casual
 
          void State::event( const message::manager::listener::Event& event)
          {
-            Trace trace{ "manager::State::event", log::internal::gateway};
+            Trace trace{ "manager::State::event"};
 
-            log::internal::gateway << "event: " << event << '\n';
+            log << "event: " << event << '\n';
 
             auto found = range::find( listeners, event.correlation);
 

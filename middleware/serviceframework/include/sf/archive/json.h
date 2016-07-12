@@ -1,8 +1,5 @@
 //!
-//! archive_jsaon.h
-//!
-//! Created on: Jul 10, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef ARCHIVE_JSON_H_

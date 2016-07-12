@@ -31,11 +31,17 @@ install_lib = []
 install_bin = []
 
 #
+# So we get the local build-rm
+#
+Environment( 'PATH', '../tools/bin:$(PATH)')
+
+#
 # Common stuff
 #
 
 common = LinkLibrary( 'bin/casual-queue-common',
    [
+    Compile( 'source/common/log.cpp'),
     Compile( 'source/common/environment.cpp'),
     Compile( 'source/common/transform.cpp'),
     Compile( 'source/common/queue.cpp'),
@@ -136,7 +142,8 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
    [
        Compile( 'source/api/queue.cpp')
    ],
-   [ 
+   [
+    common, 
     'casual-sf', 
     'casual-common', 
     ])

@@ -56,6 +56,7 @@ namespace casual
             Type json();
             Type yaml();
             Type xml();
+            Type ini();
          } // type
 
          struct Payload

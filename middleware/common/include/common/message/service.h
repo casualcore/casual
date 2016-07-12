@@ -11,6 +11,8 @@
 #include "common/buffer/type.h"
 #include "common/uuid.h"
 
+#include "common/service/header.h"
+
 namespace casual
 {
    namespace common
@@ -71,8 +73,6 @@ namespace casual
                   archive & location;
                })
             };
-
-
 
 
 
@@ -162,6 +162,9 @@ namespace casual
                   common::transaction::ID trid;
                   std::int64_t flags = 0;
 
+                  std::vector< common::service::header::Field> header;
+
+
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
@@ -171,6 +174,7 @@ namespace casual
                      archive & parent;
                      archive & trid;
                      archive & flags;
+                     archive & header;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const base_call& value);

@@ -22,6 +22,7 @@ intall_libs = []
 
 lib_configuration = LinkLibrary( 'bin/casual-configuration',
     [
+        Compile( 'source/common.cpp'),
         Compile( 'source/file.cpp'),
         Compile( 'source/environment.cpp'),
         Compile( 'source/domain.cpp'),

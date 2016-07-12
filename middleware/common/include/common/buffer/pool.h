@@ -1,8 +1,5 @@
 //!
-//! pool.h
-//!
-//! Created on: Sep 17, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_BUFFER_POOL_H_
@@ -193,7 +190,7 @@ namespace casual
 
                   }
 
-                  auto subtype = std::unique_ptr< Concrete< P>>( new Concrete< P>( std::forward< P>( pool)));
+                  auto subtype = make::unique< Concrete< P>>( std::forward< P>( pool));
 
                   auto& result = subtype->pool();
 
@@ -251,42 +248,64 @@ namespace casual
             {
                using buffer_type = B;
                using pool_type = std::vector< buffer_type>;
+               using range_type = range::type_t< pool_type>;
+
 
                using types_type = std::vector< Type>;
 
                platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, size);
-                  return m_pool.back().payload.memory.data();
+
+                  auto& payload = m_pool.back().payload;
+
+                  //
+                  // Make sure we've got a handle
+                  //
+                  if( ! payload.memory.data())
+                  {
+                     payload.memory.reserve( 1);
+                  }
+
+                  return payload.memory.data();
                }
 
                platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size)
                {
-                  auto buffer = find( handle);
+                  auto found = find( handle);
 
-                  if( buffer != std::end( m_pool))
+                  if( found)
                   {
-                     buffer->payload.memory.resize( size);
-                     return buffer->payload.memory.data();
+                     auto& payload = found->payload;
+
+                     payload.memory.resize( size);
+
+                     //
+                     // Make sure we've got a handle
+                     //
+                     if( ! payload.memory.data())
+                     {
+                        payload.memory.reserve( 1);
+                     }
+
+                     return payload.memory.data();
                   }
-
                   return nullptr;
-
                }
 
 
                bool manage( platform::const_raw_buffer_type handle)
                {
-                  return find( handle) != std::end( m_pool);
+                  return find( handle);
                }
 
                void deallocate( platform::const_raw_buffer_type handle)
                {
-                  auto buffer = find( handle);
+                  auto found = find( handle);
 
-                  if( buffer != std::end( m_pool))
+                  if( found)
                   {
-                     m_pool.erase( buffer);
+                     m_pool.erase( std::begin( found));
                   }
                }
 
@@ -294,16 +313,22 @@ namespace casual
                platform::raw_buffer_type insert( Payload payload)
                {
                   m_pool.emplace_back( std::move( payload));
+
+                  if( ! m_pool.back().payload.memory.data())
+                  {
+                     m_pool.back().payload.memory.reserve( 1);
+                  }
+
                   return m_pool.back().payload.memory.data();
                }
 
                buffer_type& get( platform::const_raw_buffer_type handle)
                {
-                  auto buffer = find( handle);
+                  auto found = find( handle);
 
-                  if( buffer != std::end( m_pool))
+                  if( found)
                   {
-                     return *buffer;
+                     return *found;
                   }
                   throw exception::xatmi::invalid::Argument{ "failed to find buffer"};
                }
@@ -311,12 +336,12 @@ namespace casual
 
                buffer_type release( platform::const_raw_buffer_type handle)
                {
-                  auto buffer = find( handle);
+                  auto found = find( handle);
 
-                  if( buffer != std::end( m_pool))
+                  if( found)
                   {
-                     buffer_type result{ std::move( *buffer)};
-                     m_pool.erase( buffer);
+                     buffer_type result{ std::move( *found)};
+                     m_pool.erase( std::begin( found));
 
                      return result;
                   }
@@ -336,9 +361,9 @@ namespace casual
 
             protected:
 
-               typename pool_type::iterator find( platform::const_raw_buffer_type handle)
+               range_type find( platform::const_raw_buffer_type handle)
                {
-                  return std::find_if( std::begin( m_pool), std::end( m_pool),
+                  return range::find_if( m_pool,
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});
                }
                pool_type m_pool;

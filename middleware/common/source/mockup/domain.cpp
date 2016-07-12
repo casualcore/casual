@@ -3,6 +3,8 @@
 //!
 
 #include "common/mockup/domain.h"
+#include "common/mockup/log.h"
+
 #include "common/environment.h"
 #include "common/message/traffic.h"
 
@@ -28,7 +30,7 @@ namespace casual
             {
                void Echo::operator()( message::service::call::callee::Request& request)
                {
-                  Trace trace{ "mockup domain::service::Echo", log::internal::debug};
+                  Trace trace{ "mockup domain::service::Echo"};
 
                   if( ! common::flag< TPNOREPLY>( request.flags))
                   {
@@ -48,7 +50,7 @@ namespace casual
                   }
                   else
                   {
-                     log::internal::debug << "TPNOREPLY was set, no echo\n";
+                     log << "TPNOREPLY was set, no echo\n";
                   }
                }
 
@@ -62,7 +64,7 @@ namespace casual
                   {
                      common::environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
 
-                     log::internal::debug << environment::variable::name::ipc::domain::manager() << " set to: "
+                     log << environment::variable::name::ipc::domain::manager() << " set to: "
                            << common::environment::variable::get( environment::variable::name::ipc::domain::manager()) << '\n';
 
                      std::ofstream file{ common::environment::domain::singleton::file()};
@@ -70,7 +72,7 @@ namespace casual
                      if( file)
                      {
                         file << ipc;
-                        log::internal::debug << "ipc: " << ipc << " to: " << common::environment::domain::singleton::file() << '\n';
+                        log << "ipc: " << ipc << " to: " << common::environment::domain::singleton::file() << '\n';
                      }
                      else
                      {
@@ -90,7 +92,7 @@ namespace casual
 
                            void operator () ( message::domain::process::connect::Reply& r)
                            {
-                              log::internal::debug << "mockup " << information << " - connected to the domain\n";
+                              log << "mockup " << information << " - connected to the domain\n";
                            }
 
                            std::string information;
@@ -120,7 +122,7 @@ namespace casual
                return message::dispatch::Handler{
                   [&]( message::domain::process::connect::Request& r)
                   {
-                     Trace trace{ "mockup domain::process::connect::Request", log::internal::debug};
+                     Trace trace{ "mockup domain::process::connect::Request"};
 
                      m_state.executables.push_back( r.process);
 
@@ -133,7 +135,7 @@ namespace casual
 
                         if( found && found->second != r.process)
                         {
-                           log::internal::debug << "mockup process: " << r.process << " is a singleton, and one is already running\n";
+                           log  << "mockup process: " << r.process << " is a singleton, and one is already running\n";
                            reply.directive = decltype( reply)::Directive::singleton;
 
                            ipc::eventually::send( r.process.queue, reply);
@@ -153,7 +155,7 @@ namespace casual
                               if( ( p.identification && p.identification == r.identification)
                                     || ( p.pid && p.pid == r.process.pid))
                               {
-                                 log::internal::debug << "mockup found pending: " << p << " for connected process: " << r.process << "\n";
+                                 log << "mockup found pending: " << p << " for connected process: " << r.process << "\n";
 
                                  auto reply = message::reverse::type( p);
                                  reply.process = r.process;
@@ -166,7 +168,7 @@ namespace casual
                   },
                   [&]( common::message::domain::process::lookup::Request& r)
                   {
-                     Trace trace{ "mockup domain::process::lookup::Request", log::internal::debug};
+                     Trace trace{ "mockup domain::process::lookup::Request"};
 
                      auto reply = message::reverse::type( r);
 
@@ -176,7 +178,7 @@ namespace casual
 
                         if( found)
                         {
-                           log::internal::debug << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
+                           log << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
 
                            reply.process = found->second;
                            ipc::eventually::send( r.process.queue, reply);
@@ -193,7 +195,7 @@ namespace casual
                         {
 
                            reply.process = *found;
-                           log::internal::debug << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
+                           log << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
                            ipc::eventually::send( r.process.queue, reply);
                            return;
                         }
@@ -202,7 +204,7 @@ namespace casual
                      // not found
                      if( r.directive == common::message::domain::process::lookup::Request::Directive::wait)
                      {
-                        log::internal::debug << "mockup - lockup wait with request: " << r << '\n';
+                        log << "mockup - lockup wait with request: " << r << '\n';
                         m_state.pending.push_back( std::move( r));
                      }
                      else
@@ -212,7 +214,7 @@ namespace casual
                   },
                   [&]( message::domain::process::termination::Registration& m)
                   {
-                     Trace trace{ "mockup domain process::termination::Registration", log::internal::debug};
+                     Trace trace{ "mockup domain process::termination::Registration"};
                   },
                };
             }
@@ -280,7 +282,7 @@ namespace casual
 
                   [&]( message::service::lookup::Request& r)
                   {
-                     Trace trace{ "mockup service::lookup::Request", log::internal::debug};
+                     Trace trace{ "mockup service::lookup::Request"};
 
                      auto reply = message::reverse::type( r);
 
@@ -300,14 +302,14 @@ namespace casual
                   },
                   [&]( message::service::call::ACK& m)
                   {
-                     Trace trace{ "mockup service::call::ACK", log::internal::debug};
+                     Trace trace{ "mockup service::call::ACK"};
 
                   },
                   [&]( message::service::Advertise& m)
                   {
-                     Trace trace{ "mockup service::Advertise", log::internal::debug};
+                     Trace trace{ "mockup service::Advertise"};
 
-                     log::internal::debug << "message: " << m << '\n';
+                     log  << "message: " << m << '\n';
 
                      for( auto& service : m.services)
                      {
@@ -341,7 +343,7 @@ namespace casual
                   return message::dispatch::Handler{
                      [&]( common::message::transaction::commit::Request& message)
                      {
-                        Trace trace{ "mockup::transaction::Commit", log::internal::debug};
+                        Trace trace{ "mockup::transaction::Commit"};
 
                         common::message::transaction::commit::Reply reply;
 
@@ -359,7 +361,7 @@ namespace casual
                      },
                      [&]( common::message::transaction::rollback::Request& message)
                      {
-                        Trace trace{ "mockup::transaction::Rollback", log::internal::debug};
+                        Trace trace{ "mockup::transaction::Rollback"};
 
                         common::message::transaction::rollback::Reply reply;
 
@@ -444,7 +446,7 @@ namespace casual
 
                void Server::advertise( std::vector< message::Service> services) const
                {
-                  Trace trace{ "mockup echo::Server::advertise", log::internal::debug};
+                  Trace trace{ "mockup echo::Server::advertise"};
 
                   //
                   // Advertise services
@@ -454,7 +456,7 @@ namespace casual
 
                void Server::undadvertise( std::vector< message::Service> services) const
                {
-                  Trace trace{ "mockup echo::Server::unadvertise", log::internal::debug};
+                  Trace trace{ "mockup echo::Server::unadvertise"};
 
                   message::service::Unadvertise unadvertise;
                   unadvertise.process = m_replier.process();

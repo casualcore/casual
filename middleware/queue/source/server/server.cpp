@@ -109,7 +109,10 @@ extern "C"
          //
          // Call the implementation
          //
-         auto returnValue = service_io.call( *local::implementation, &local::implementation_type::enqueue, queue, message);
+         auto returnValue = service_io.call(
+               &local::implementation_type::enqueue,
+               *local::implementation,
+               queue, message);
 
          //
          // Serialize output
@@ -149,8 +152,8 @@ extern "C"
          // Call the implementation
          //
          auto returnValue = service_io.call(
-            *local::implementation,
             &local::implementation_type::dequeue,
+            *local::implementation,
             queue, selector);
 
          //

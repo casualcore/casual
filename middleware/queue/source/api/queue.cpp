@@ -1,11 +1,9 @@
 //!
-//! queue.cpp
-//!
-//! Created on: Nov 23, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/api/queue.h"
+#include "queue/common/log.h"
 
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
@@ -26,7 +24,7 @@ namespace casual
             template< typename M>
             sf::platform::Uuid enqueue( const std::string& queue, M&& message)
             {
-               sf::Trace trace( "casual::queue::enqueue", common::log::internal::queue);
+               Trace trace( "casual::queue::enqueue");
 
                sf::xatmi::service::binary::Sync service{ "casual.enqueue"};
                service << CASUAL_MAKE_NVP( queue);
@@ -46,14 +44,14 @@ namespace casual
 
       sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
       {
-         sf::Trace trace( "casual::queue::enqueue", common::log::internal::queue);
+         Trace trace( "casual::queue::enqueue");
 
          return local::enqueue( queue, message);
       }
 
       std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
       {
-         sf::Trace trace{ "casual::queue::dequeue", common::log::internal::queue};
+         Trace trace{ "casual::queue::dequeue"};
 
          sf::xatmi::service::binary::Sync service{ "casual.dequeue"};
          service << CASUAL_MAKE_NVP( queue);
@@ -111,7 +109,7 @@ namespace casual
 
          sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
          {
-            sf::Trace trace{ "casual::queue::xatmi::enqueue", common::log::internal::queue};
+            Trace trace{ "casual::queue::xatmi::enqueue"};
 
             auto send = common::buffer::pool::Holder::instance().get( message.payload.buffer, message.payload.size);
 
@@ -135,7 +133,7 @@ namespace casual
 
          std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
          {
-            sf::Trace trace{ "casual::queue::xatmi::dequeue", common::log::internal::queue};
+            Trace trace{ "casual::queue::xatmi::dequeue"};
 
             std::vector< Message> results;
 

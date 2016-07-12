@@ -21,16 +21,24 @@ LibraryPaths( ['bin',
 
 install_bin = []
 
+common_a = LinkArchive( 'bin/casual-tools-common',
+  [
+    Compile( 'source/common.cpp'),
+    Compile( 'source/service/describe/describe.cpp')
+   ])
+
+
 
 target = LinkExecutable( 'bin/casual-build-server',
-   [ Compile( 'build_server/build_server.cpp')],
+   [ Compile( 'build/server.cpp')],
    [ 'casual-common', 'casual-sf', 'casual-configuration'])
 
 install_bin.append( target)
 
 target = LinkExecutable( 'bin/casual-build-resource-proxy',
-   [ Compile( 'resource_proxy/build_resource_proxy.cpp')],
+   [ Compile( 'build/resource/proxy.cpp')],
    [ 
+    common_a,
     'casual-common', 
     'casual-sf', 
     'casual-configuration',
@@ -39,15 +47,38 @@ target = LinkExecutable( 'bin/casual-build-resource-proxy',
 install_bin.append( target)
 
 
-target = LinkExecutable( 'bin/casual-call-service',
-   [ Compile( 'call_service/call_service.cpp')],
-   [ 
+target = LinkExecutable( 'bin/casual-service-call',
+   [ Compile( 'source/service/call/main.cpp')],
+   [
+    common_a, 
     'casual-common', 
     'casual-xatmi',
     ])
 
 install_bin.append( target)
 
+
+target = LinkExecutable( 'bin/casual-service-describe',
+   [ Compile( 'source/service/describe/main.cpp')],
+   [ 
+    common_a,
+    'casual-common', 
+    'casual-sf',
+    'casual-xatmi',
+    ])
+
+install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-service-example',
+   [ Compile( 'source/service/example/main.cpp')],
+   [ 
+    common_a,
+    'casual-common', 
+    'casual-sf',
+    'casual-xatmi',
+    ])
+
+install_bin.append( target)
 
 
 

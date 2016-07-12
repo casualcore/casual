@@ -1,12 +1,9 @@
 //!
-//! pre.h
-//!
-//! Created on: Dec 26, 2014
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef CASUAL_COMMON_BUFFER_PRE_H_
-#define CASUAL_COMMON_BUFFER_PRE_H_
+#ifndef CASUAL_COMMON_BUFFER_TRANSPORT_H_
+#define CASUAL_COMMON_BUFFER_TRANSPORT_H_
 
 
 #include "common/buffer/type.h"

@@ -3,6 +3,7 @@
 //!
 
 #include "common/communication/tcp.h"
+#include "common/communication/log.h"
 
 #include "common/error.h"
 
@@ -107,7 +108,7 @@ namespace casual
                      template< typename F>
                      Socket create( const Address& address, F binder, Flags< Flag> flags = {})
                      {
-                        trace::Scope trace( "common::communication::tcp::local::socket::create", log::internal::debug);
+                        Trace trace( "common::communication::tcp::local::socket::create");
 
                         struct addrinfo* information = nullptr;
 
@@ -164,7 +165,7 @@ namespace casual
 
                      Socket connect( const Address& address)
                      {
-                        trace::Scope trace( "common::communication::tcp::local::socket::connect", log::internal::debug);
+                        Trace trace( "common::communication::tcp::local::socket::connect");
 
                         //
                         // We block all signals while we're doing one connect attempt
@@ -173,7 +174,7 @@ namespace casual
 
                         return create( address,[]( const Socket& s, const addrinfo& info)
                               {
-                                 trace::Scope trace( "common::communication::tcp::local::socket::connect lambda", log::internal::debug);
+                                 Trace trace( "common::communication::tcp::local::socket::connect lambda");
 
                                  return ::connect( s.descriptor(), info.ai_addr, info.ai_addrlen) != -1;
                               });
@@ -181,7 +182,7 @@ namespace casual
 
                      Socket local( const Address& address)
                      {
-                        trace::Scope trace( "common::communication::tcp::local::socket::local", log::internal::debug);
+                        Trace trace( "common::communication::tcp::local::socket::local");
 
                         //
                         // We block all signals while we're trying to set up a listener...
@@ -192,7 +193,7 @@ namespace casual
 
                         return create( address,[]( const Socket& s, const addrinfo& info)
                               {
-                                 trace::Scope trace( "common::communication::tcp::local::socket::local lambda", log::internal::debug);
+                                 Trace trace( "common::communication::tcp::local::socket::local lambda");
 
                                  //
                                  // To avoid possible TIME_WAIT from previous
@@ -216,7 +217,7 @@ namespace casual
 
                      tcp::socket::descriptor_type duplicate( tcp::socket::descriptor_type descriptor)
                      {
-                        trace::Scope trace( "common::communication::tcp::local::socket::duplicate", log::internal::debug);
+                        Trace trace( "common::communication::tcp::local::socket::duplicate");
 
                         //
                         // We block all signals while we're trying to duplicate the descriptor
@@ -225,7 +226,7 @@ namespace casual
 
                         auto copy = check::result( ::dup( descriptor));
 
-                        log::internal::debug << "descriptors - original: "<< descriptor << " , copy:" << copy <<'\n';
+                        log << "descriptors - original: "<< descriptor << " , copy:" << copy <<'\n';
 
                         return copy;
                      }
@@ -285,7 +286,7 @@ namespace casual
                   try
                   {
                      local::socket::check::result( ::close( m_descriptor));
-                     log::internal::debug << "Socket::close - descriptor: " << m_descriptor << '\n';
+                     log << "Socket::close - descriptor: " << m_descriptor << '\n';
                   }
                   catch( ...)
                   {
@@ -320,7 +321,7 @@ namespace casual
 
             Socket::descriptor_type Socket::release() noexcept
             {
-               log::internal::debug << "Socket::release - descriptor: " << m_descriptor << '\n';
+               log << "Socket::release - descriptor: " << m_descriptor << '\n';
 
                auto descriptor = m_descriptor;
                m_descriptor = -1;
@@ -346,7 +347,7 @@ namespace casual
 
             Socket connect( const Address& address)
             {
-               trace::Scope trace( "common::communication::tcp::connect", log::internal::debug);
+               Trace trace( "common::communication::tcp::connect");
 
                return local::socket::connect( address);
 
@@ -356,7 +357,7 @@ namespace casual
             {
                Socket connect( const Address& address, process::pattern::Sleep sleep)
                {
-                  trace::Scope trace( "common::communication::tcp::retry::connect", log::internal::debug);
+                  Trace trace( "common::communication::tcp::retry::connect");
 
                   while( true)
                   {
@@ -376,7 +377,7 @@ namespace casual
 
             Listener::Listener( Address address) : m_listener{ local::socket::local( address)}
             {
-               trace::Scope trace( "common::communication::tcp::Listener ctor", log::internal::debug);
+               Trace trace( "common::communication::tcp::Listener ctor");
 
                //
                // Could (probably) be set to zero as well (in casual-context)
@@ -388,7 +389,7 @@ namespace casual
 
             Socket Listener::operator() () const
             {
-               trace::Scope trace( "common::communication::tcp::Listener::operator()", log::internal::debug);
+               Trace trace( "common::communication::tcp::Listener::operator()");
 
                common::signal::handle();
 
@@ -419,7 +420,7 @@ namespace casual
 
                      ssize_t receive( socket::descriptor_type descriptor, void* const data, const std::size_t size, common::Flags< Flag> flags)
                      {
-                       log::internal::debug << "descriptor: " << descriptor << ", data: " << static_cast< void*>( data) << ", size: " << size << ", flags: " << flags << '\n';
+                       log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( data) << ", size: " << size << ", flags: " << flags << '\n';
 
                         common::signal::handle();
 
@@ -442,7 +443,7 @@ namespace casual
 
                bool send( const Socket& socket, const message::Transport& transport, common::Flags< Flag> flags)
                {
-                  Trace trace{ "tcp::native::send", log::internal::debug};
+                  Trace trace{ "tcp::native::send"};
 
                   const auto size = message::Transport::header_size + message::Transport::message_type_size + transport.size();
 
@@ -462,7 +463,7 @@ namespace casual
 
                         first += bytes;
                      }
-                     log::debug << "tcp send ---> socket: " << socket << ", transport: " << transport << '\n';
+                     log << "tcp send ---> socket: " << socket << ", transport: " << transport << '\n';
                      return true;
                   }
                   catch( const exception::communication::no::Message&)
@@ -473,7 +474,7 @@ namespace casual
 
                bool receive( const Socket& socket, message::Transport& transport, common::Flags< Flag> flags)
                {
-                  Trace trace{ "tcp::native::receive", log::internal::debug};
+                  Trace trace{ "tcp::native::receive"};
 
                   const auto first = reinterpret_cast< char*>( &transport.message);
                   auto current = first;
@@ -513,7 +514,7 @@ namespace casual
                         current += bytes;
                      }
 
-                     log::debug << "tcp receive <---- socket: " << socket << " , transport: " << transport << '\n';
+                     log << "tcp receive <---- socket: " << socket << " , transport: " << transport << '\n';
 
                      return true;
                   }

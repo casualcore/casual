@@ -22,6 +22,9 @@ namespace casual
       namespace
       {
          sf::server::type server;
+
+
+
       }
    }
 
@@ -62,6 +65,41 @@ namespace casual
 
             namespace service
             {
+
+               namespace scale
+               {
+                  std::vector< vo::scale::Instances> instances( manager::State& state, std::vector< vo::scale::Instances> instances)
+                  {
+                     std::vector< vo::scale::Instances> result;
+
+                     message::domain::scale::Executable message;
+
+                     for( auto& instance : instances)
+                     {
+                        auto found = range::find_if( state.executables, [&]( const state::Executable& e){
+                           return e.alias == instance.alias;
+                        });
+
+                        if( found)
+                        {
+                           found->configured_instances = instance.instances;
+                           message.executables.push_back( found->id);
+                           result.push_back( std::move( instance));
+
+                        }
+                     }
+
+                     //
+                     // Push the work-task to our queue, and It'll be processed as soon
+                     // as possible
+                     //
+                     communication::ipc::inbound::device().push( std::move( message));
+
+                     return result;
+                  }
+
+               } // scale
+
                extern "C"
                {
 
@@ -73,7 +111,9 @@ namespace casual
                      {
                         auto service_io = local::server->createService( serviceInfo);
 
-                        auto serviceReturn = casual::domain::transform::state( state);
+                        manager::admin::vo::State (*function)(const manager::State&) = casual::domain::transform::state;
+
+                        auto serviceReturn = service_io.call( function, state);
 
 
                         service_io << CASUAL_MAKE_NVP( serviceReturn);
@@ -94,42 +134,20 @@ namespace casual
                         reply.flags);
                   }
 
-                  void scale_instances( TPSVCINFO *serviceInfo, manager::State& state)
+
+
+                  void scale_instances( TPSVCINFO *service_info, manager::State& state)
                   {
                      casual::sf::service::reply::State reply;
 
                      try
                      {
-                        auto service_io = local::server->createService( serviceInfo);
+                        auto service_io = local::server->createService( service_info);
 
                         std::vector< vo::scale::Instances> instances;
                         service_io >> CASUAL_MAKE_NVP( instances);
 
-                        std::vector< vo::scale::Instances> serviceReturn;
-
-                        message::domain::scale::Executable message;
-
-                        for( auto& instance : instances)
-                        {
-                           auto found = range::find_if( state.executables, [&]( const state::Executable& e){
-                              return e.alias == instance.alias;
-                           });
-
-                           if( found)
-                           {
-                              found->configured_instances = instance.instances;
-                              message.executables.push_back( found->id);
-                              serviceReturn.push_back( std::move( instance));
-
-                           }
-                        }
-
-                        //
-                        // Push the work-task to our queue, and It'll be processed as soon
-                        // as possible
-                        //
-                        communication::ipc::inbound::device().push( std::move( message));
-
+                        auto serviceReturn = service_io.call( &scale::instances, state, std::move( instances));
 
                         service_io << CASUAL_MAKE_NVP( serviceReturn);
                         reply = service_io.finalize();
@@ -137,7 +155,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        local::server->handleException( serviceInfo, reply);
+                        local::server->handleException( service_info, reply);
                      }
 
                      tpreturn(
@@ -149,22 +167,22 @@ namespace casual
                   }
 
 
-                  void shutdown_domain( TPSVCINFO *serviceInfo, manager::State& state)
+                  void shutdown_domain( TPSVCINFO *service_info, manager::State& state)
                   {
                      casual::sf::service::reply::State reply;
 
                      try
                      {
-                        auto service_io = local::server->createService( serviceInfo);
+                        auto service_io = local::server->createService( service_info);
 
-                        handle::shutdown( state);
+                        service_io.call( &handle::shutdown, state);
 
                         reply = service_io.finalize();
 
                      }
                      catch( ...)
                      {
-                        local::server->handleException( serviceInfo, reply);
+                        local::server->handleException( service_info, reply);
                      }
 
                      tpreturn(

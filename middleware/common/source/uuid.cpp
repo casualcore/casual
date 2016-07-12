@@ -61,12 +61,19 @@ namespace casual
 
 		Uuid::Uuid( const std::string& uuid)
 		{
-		   if( uuid.size() !=  sizeof( uuid_type) * 2)
+		   if( ! uuid.empty())
 		   {
-		      throw exception::invalid::Argument{ "invalid uuid string representation", CASUAL_NIP( uuid)};
-		   }
+	         if( uuid.size() !=  sizeof( uuid_type) * 2)
+	         {
+	            throw exception::invalid::Argument{ "invalid uuid string representation", CASUAL_NIP( uuid)};
+	         }
 
-		   transcode::hex::decode( uuid, m_uuid);
+	         transcode::hex::decode( uuid, m_uuid);
+		   }
+		   else
+		   {
+            memory::set( m_uuid);
+		   }
 		}
 
 

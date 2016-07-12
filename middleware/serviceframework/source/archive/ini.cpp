@@ -273,6 +273,12 @@ namespace casual
                return m_document;
             }
 
+            const tree& Load::operator() ( const char* ini, std::size_t size)
+            {
+               std::istringstream stream( std::string( ini, size));
+               return operator() ( stream);
+            }
+
             namespace reader
             {
 

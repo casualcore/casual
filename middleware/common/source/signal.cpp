@@ -210,9 +210,10 @@ namespace casual
 
                      if( count > 0)
                      {
-                        scope::Execute decrement{ [&](){
+                        auto decrement = scope::execute( [&](){
                            ++m_pendings;
-                        }};
+                        });
+
                         auto current = signal::mask::current();
 
                         log::internal::debug << "signal::Handler::handle - handler: " << *this << ", mask: " << current << '\n';
@@ -301,9 +302,9 @@ namespace casual
                      {
                         log::internal::debug << "signal glitch insurance created for signal: " << pending << '\n';
 
-                        scope::Execute done{ [&](){
+                        auto done = scope::execute( [&](){
                            insurance.store( false);
-                        }};
+                        });
 
                         while( true)
                         {
@@ -426,8 +427,8 @@ namespace casual
                   static std::vector< std::unique_ptr< base_handle>> create( H&& handler, Handlers&&... handlers)
                   {
                      auto result = create( std::forward< Handlers>( handlers)...);
-                     std::unique_ptr< base_handle> holder{ new basic_handle< H>( std::forward< H>( handler))};
-                     result.push_back( std::move( holder));
+
+                     result.push_back( std::move( make::unique< basic_handle< H>>( std::forward< H>( handler))));
                      return result;
                   }
 

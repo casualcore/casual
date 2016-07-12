@@ -1,8 +1,5 @@
 //!
-//! casual_error.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -34,6 +31,28 @@ namespace casual
 
       namespace error
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace log
+               {
+                  template< typename E>
+                  common::log::Stream& stream( E&& exception)
+                  {
+                     switch( exception.category())
+                     {
+                        case exception::code::log::Category::debug: return common::log::debug;
+                        case exception::code::log::Category::information: return common::log::information;
+                        default: return common::log::error;
+                     }
+                  }
+
+               } // log
+
+
+            } // <unnamed>
+         } // local
 
          int last()
          {
@@ -69,7 +88,7 @@ namespace casual
             }
             catch( const exception::xatmi::base& exception)
             {
-               log::stream::get( exception.category()) << "xatmi - " << exception << std::endl;
+               local::log::stream( exception) << "xatmi - " << exception << std::endl;
                return exception.code();
             }
 
@@ -83,7 +102,7 @@ namespace casual
             }
             catch( const exception::code::base& exception)
             {
-               log::stream::get( exception.category()) << exception.tag_name() << " - " << exception << std::endl;
+               local::log::stream( exception) << exception.tag_name() << " - " << exception << std::endl;
                return exception.code();
             }
             catch( const exception::base& exception)

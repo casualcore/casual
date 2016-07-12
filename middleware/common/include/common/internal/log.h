@@ -22,38 +22,23 @@ namespace casual
             //!
             //! Log with category 'casual.debug'
             //!
-            extern internal::Stream debug;
+            extern Stream debug;
 
             //!
             //! Log with category 'casual.trace'
             //!
-            extern internal::Stream trace;
+            extern Stream trace;
 
             //!
             //! Log with category 'casual.transaction'
             //!
-            extern internal::Stream transaction;
+            extern Stream transaction;
 
-            //!
-            //! Log with category 'casual.gateway'
-            //!
-            extern internal::Stream gateway;
-
-
-            //!
-            //! Log with category 'casual.ipc'
-            //!
-            extern internal::Stream ipc;
-
-            //!
-            //! Log with category 'casual.queue'
-            //!
-            extern internal::Stream queue;
 
             //!
             //! Log with category 'casual.buffer'
             //!
-            extern internal::Stream buffer;
+            extern Stream buffer;
 
 
          } // internal

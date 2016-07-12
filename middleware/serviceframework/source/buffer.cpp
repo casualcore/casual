@@ -1,8 +1,5 @@
 //!
-//! buffer.cpp
-//!
-//! Created on: Dec 23, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/buffer.h"
@@ -24,37 +21,8 @@ namespace casual
       namespace buffer
       {
 
-         namespace pool
-         {
-            struct API : public common::buffer::pool::default_pool
-            {
-               static const std::vector< Type>& types()
-               {
-                  static const std::vector< Type> result{
-                        type::api::binary(), type::api::json(), type::api::yaml(), type::api::xml()
-                     };
-                  return result;
-               }
-            };
-
-            //
-            // Register the pool to the pool-holder at the end of this file...
-            //
-
-         } // pool
-
          namespace type
          {
-            namespace api
-            {
-               Type binary() { return { ".api", type::binary().name};}
-               Type json() { return { ".api", type::json().name};}
-               Type yaml() { return { ".api", type::yaml().name};}
-               Type xml() { return { ".api", type::xml().name};}
-
-               const std::vector< Type>& types() { return pool::API::types();}
-            }
-
             Type get( platform::raw_buffer_type buffer)
             {
                std::array< char, 8 + 1> type;
@@ -86,11 +54,16 @@ namespace casual
          Buffer::Buffer( const Type& type, std::size_t size)
             : m_buffer{ tpalloc( type.name.c_str(), type.subname.c_str(), size), deleter_type{}}, m_size( size)
          {
-            if( ! m_buffer)
+            if( size && ! m_buffer)
             {
                m_size = 0;
                throw exception::memory::Allocation{ "could not allocate buffer: " + common::error::xatmi::error( tperrno)};
             }
+         }
+
+         Buffer::Buffer( const Type& type) : Buffer{ type, 0}
+         {
+
          }
 
          Buffer::Buffer( const Raw& buffer)
@@ -225,20 +198,6 @@ namespace casual
 
       } // buffer
    } // sf
-
-   namespace common
-   {
-      namespace buffer
-      {
-
-
-         //
-         // Registrate the pool to the pool-holder
-         //
-         template class ::casual::common::buffer::pool::Registration< sf::buffer::pool::API>;
-
-      } // buffer
-   } // common
 
 } // casual
 

@@ -1,9 +1,6 @@
-/*
- * xml.cpp
- *
- *  Created on: Jan 21, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #include "sf/archive/xml.h"
 
@@ -32,6 +29,18 @@ namespace casual
                   {
                      if( !result) throw exception::archive::invalid::Document{ result.description()};
                   }
+
+                  namespace empty
+                  {
+                     const std::string& document()
+                     {
+                        static std::string empty{ R"(<?xml version="1.0"?><value></value>)"};
+                        return empty;
+                     }
+
+
+                  } // empty
+
                } // local
             }
 
@@ -52,18 +61,33 @@ namespace casual
 
             const pugi::xml_document& Load::operator() ( const std::string& xml)
             {
+               if( xml.empty())
+               {
+                  return operator()( local::empty::document());
+               }
+
                local::check( m_document.load_buffer( xml.data(), xml.size()));
                return m_document;
             }
 
             const pugi::xml_document& Load::operator() ( const char* const xml, const std::size_t size)
             {
+               if( ! size || ! xml)
+               {
+                  return operator()( local::empty::document());
+               }
+
                local::check( m_document.load_buffer( xml, size));
                return m_document;
             }
 
             const pugi::xml_document& Load::operator() ( const char* const xml)
             {
+               if( ! xml || xml[ 0] == '\n')
+               {
+                  return operator()( local::empty::document());
+               }
+
                //local::check( m_document.load_string( xml));
                local::check( m_document.load( xml));
                return m_document;
@@ -133,30 +157,7 @@ namespace casual
                {
                   m_stack.pop_back();
                }
-/*
-               namespace
-               {
-                  namespace local
-                  {
-                     //
-                     // This is a help to check some to avoid terminate (via assert)
-                     //
-                     template<typename C, typename F>
-                     auto read( const rapidjson::Value* const value, C&& checker, F&& fetcher) -> decltype( std::bind( fetcher, value)())
-                     {
-                        if( std::bind( checker, value)())
-                        {
-                           return std::bind( fetcher, value)();
-                        }
-                        else
-                        {
-                           throw exception::archive::invalid::Node{ "unexpected type"};
-                        }
-                     }
 
-                  } // local
-               } // <unnamed>
-*/
 
                namespace
                {

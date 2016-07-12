@@ -3,6 +3,7 @@
 //!
 
 #include "common/mockup/process.h"
+#include "common/mockup/log.h"
 
 #include "common/process.h"
 #include "common/communication/ipc.h"
@@ -17,7 +18,7 @@ namespace casual
 
          Process::Process( const std::string& executable, const std::vector< std::string>& arguments)
          {
-            Trace trace{ "common::mockup::Process::Process()", log::internal::debug};
+            Trace trace{ "common::mockup::Process::Process()"};
 
             m_process.pid = common::process::spawn( executable, arguments, {});
          }
@@ -27,7 +28,7 @@ namespace casual
 
          Process::~Process()
          {
-            Trace trace{ "common::mockup::Process::~Process()", log::internal::debug};
+            Trace trace{ "common::mockup::Process::~Process()"};
 
             try
             {
@@ -41,7 +42,7 @@ namespace casual
                   // Try to get corresponding queue
                   //
                   m_process.queue = process::instance::fetch::handle( m_process.pid, process::instance::fetch::Directive::direct).queue;
-                  log::internal::debug << "mockup fetched process: " << m_process << '\n';
+                  log << "mockup fetched process: " << m_process << '\n';
                }
 
 

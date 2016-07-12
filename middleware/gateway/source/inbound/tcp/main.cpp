@@ -3,6 +3,7 @@
 //!
 
 #include "gateway/inbound/gateway.h"
+#include "gateway/common.h"
 
 #include "common/communication/tcp.h"
 
@@ -68,7 +69,7 @@ namespace casual
                   external_type( tcp::Settings&& settings)
                      : m_inbound{ communication::tcp::adopt( settings.descriptor)}
                   {
-                     log::internal::gateway << "external_type: " << *this << '\n';
+                     log << "external_type: " << *this << '\n';
 
                   }
 

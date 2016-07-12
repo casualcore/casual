@@ -1,8 +1,5 @@
 //!
-//! message_dispatch.h
-//!
-//! Created on: Dec 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef MESSAGE_DISPATCH_H_
@@ -141,7 +138,7 @@ namespace casual
                   //
                   // assert( result.count( handle_type::message_type::type()) == 0);
 
-                  std::unique_ptr< base_handler> holder{ new handle_type( std::forward< H>( handler))};
+                  auto holder = make::unique< handle_type>( std::forward< H>( handler));
 
                   result.emplace(
                         handle_type::message_type::type(),

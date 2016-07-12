@@ -1,12 +1,11 @@
 //!
-//! queue.cpp
-//!
-//! Created on: Jun 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "config/queue.h"
 #include "config/file.h"
+#include "config/common.h"
+
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
@@ -140,6 +139,8 @@ namespace casual
 
          Domain get( const std::string& file)
          {
+            Trace trace{ "config::queue::get"};
+
             queue::Domain domain;
 
             //
@@ -161,7 +162,7 @@ namespace casual
             local::validate( domain);
 
 
-            common::log::internal::debug << CASUAL_MAKE_NVP( domain);
+            log << CASUAL_MAKE_NVP( domain);
 
             return domain;
 

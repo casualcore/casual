@@ -1,11 +1,9 @@
 //!
-//! database.cpp
-//!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/group/database.h"
+#include "queue/common/log.h"
 
 #include "common/algorithm.h"
 
@@ -91,7 +89,7 @@ namespace casual
          Database::Database( const std::string& database, std::string groupname) : m_connection( database)
          {
 
-            common::trace::internal::Scope trace{ "Database::Database", common::log::internal::queue};
+            Trace trace{ "Database::Database"};
 
             //
             // Make sure we got FK
@@ -351,7 +349,7 @@ namespace casual
          Queue Database::create( Queue queue)
          {
 
-            common::trace::internal::Scope trace{ "queue::Database::create", common::log::internal::queue};
+            Trace trace{ "queue::Database::create"};
 
 
 
@@ -379,14 +377,14 @@ namespace casual
             queue.id = m_connection.rowid();
             queue.type = Queue::cQueue;
 
-            common::log::internal::queue << "queue: " << queue << std::endl;
+            log << "queue: " << queue << std::endl;
 
             return queue;
          }
 
          void Database::updateQueue( const Queue& queue)
          {
-            common::trace::internal::Scope trace{ "queue::Database::updateQueue", common::log::internal::queue};
+            Trace trace{ "queue::Database::updateQueue"};
 
             auto existing = Database::queue( queue.id);
 
@@ -399,7 +397,7 @@ namespace casual
          }
          void Database::removeQueue( Queue::id_type id)
          {
-            common::trace::internal::Scope trace{ "queue::Database::removeQueue", common::log::internal::queue};
+            Trace trace{ "queue::Database::removeQueue"};
 
             auto existing = Database::queue( id);
 
@@ -447,9 +445,9 @@ namespace casual
 
          common::message::queue::enqueue::Reply Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
-            common::trace::internal::Scope trace{ "queue::Database::enqueue", common::log::internal::queue};
+            Trace trace{ "queue::Database::enqueue"};
 
-            common::log::internal::queue << "request: " << message << std::endl;
+            log << "request: " << message << std::endl;
 
             common::message::queue::enqueue::Reply reply;
 
@@ -489,9 +487,9 @@ namespace casual
 
          common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
-            common::trace::internal::Scope trace{ "queue::Database::dequeue", common::log::internal::queue};
+            Trace trace{ "queue::Database::dequeue"};
 
-            common::log::internal::queue << "request: " << message << std::endl;
+            log << "request: " << message << std::endl;
 
             common::message::queue::dequeue::Reply reply;
 
@@ -516,7 +514,7 @@ namespace casual
 
             if( ! resultset.fetch( row))
             {
-               common::log::internal::queue << "dequeue - qid: " << message.queue << " - no message" << std::endl;
+               log << "dequeue - qid: " << message.queue << " - no message" << std::endl;
 
                return reply;
             }
@@ -537,7 +535,7 @@ namespace casual
                m_statement.state.nullxid.execute( std::get< 0>( result));
             }
 
-            common::log::internal::queue << "dequeue - qid: " << message.queue << " id: " << std::get< 1>( result).id << " size: " << std::get< 1>( result).payload.size() << " trid: " << message.trid << std::endl;
+            log << "dequeue - qid: " << message.queue << " id: " << std::get< 1>( result).id << " size: " << std::get< 1>( result).payload.size() << " trid: " << message.trid << std::endl;
 
             reply.message.push_back( std::move( std::get< 1>( result)));
 
@@ -547,9 +545,9 @@ namespace casual
 
          void Database::commit( const common::transaction::ID& id)
          {
-            common::trace::internal::Scope trace{ "queue::Database::commit", common::log::internal::queue};
+            Trace trace{ "queue::Database::commit"};
 
-            common::log::internal::queue << "commit xid: " << id << std::endl;
+            log << "commit xid: " << id << std::endl;
 
             auto gtrid = common::transaction::global( id);
 
@@ -560,9 +558,9 @@ namespace casual
 
          void Database::rollback( const common::transaction::ID& id)
          {
-            common::trace::internal::Scope trace{ "queue::Database::rollback", common::log::internal::queue};
+            Trace trace{ "queue::Database::rollback"};
 
-            common::log::internal::queue << "rollback xid: " << id << std::endl;
+            log << "rollback xid: " << id << std::endl;
 
             auto gtrid = common::transaction::global( id);
 
@@ -593,7 +591,7 @@ namespace casual
 
          std::vector< common::message::queue::information::Queue> Database::queues()
          {
-            common::trace::internal::Scope trace{ "queue::Database::queues", common::log::internal::queue};
+            Trace trace{ "queue::Database::queues"};
 
             std::vector< common::message::queue::information::Queue> result;
 

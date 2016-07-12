@@ -4,6 +4,7 @@
 
 #include "config/gateway.h"
 #include "config/file.h"
+#include "config/common.h"
 
 #include "common/algorithm.h"
 
@@ -151,6 +152,8 @@ namespace casual
 
          Gateway get( const std::string& file)
          {
+            Trace trace{ "config::gateway::get"};
+
             //
             // Create the reader and deserialize configuration
             //
@@ -161,7 +164,7 @@ namespace casual
 
             gateway.finalize();
 
-            common::log::internal::gateway << CASUAL_MAKE_NVP( gateway);
+            log << CASUAL_MAKE_NVP( gateway);
 
             return gateway;
 

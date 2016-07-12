@@ -3,11 +3,11 @@
 //!
 
 #include "common/mockup/ipc.h"
+#include "common/mockup/log.h"
 
-
-//#include "common/queue.h"
 
 #include "common/communication/ipc.h"
+
 
 #include "common/process.h"
 #include "common/environment.h"
@@ -190,15 +190,15 @@ namespace casual
 
                   void shutdown_thread( std::thread& thread, id_type input)
                   {
-                     Trace trace{ "shutdown_thread", log::internal::ipc};
+                     Trace trace{ "shutdown_thread"};
 
-                     log::internal::ipc << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
+                     log << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
 
                      signal::thread::scope::Block block;
 
                      try
                      {
-                        Trace trace{ "send disconnect message", log::internal::ipc};
+                        Trace trace{ "send disconnect message"};
                         message::mockup::Disconnect message;
 
                         communication::ipc::outbound::Device ipc{ input};
@@ -206,7 +206,7 @@ namespace casual
                      }
                      catch( const std::exception& exception)
                      {
-                        log::internal::ipc << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                        log << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << std::endl;
                      }
                      catch( ...)
                      {
@@ -215,12 +215,12 @@ namespace casual
 
                      try
                      {
-                        Trace trace{ "thread join", log::internal::ipc};
+                        Trace trace{ "thread join"};
                         thread.join();
                      }
                      catch( const std::exception& exception)
                      {
-                        log::internal::ipc << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                        log << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << std::endl;
                      }
                   }
 
@@ -253,7 +253,7 @@ namespace casual
 
                         ~Sender()
                         {
-                           Trace trace{ "mockup ipc::ventually::Sender dtor", log::internal::ipc};
+                           Trace trace{ "mockup ipc::ventually::Sender dtor"};
 
                            m_queue.terminate();
                            m_sender.join();
@@ -273,7 +273,7 @@ namespace casual
                            try
                            {
 
-                              Trace trace{ "mockup ipc::eventually::Sender::worker_thread", log::internal::ipc};
+                              Trace trace{ "mockup ipc::eventually::Sender::worker_thread"};
 
                               std::vector< Message> cache;
 
@@ -320,7 +320,7 @@ namespace casual
 
                void send( id_type destination, communication::message::Complete&& complete)
                {
-                  Trace trace{ "mockup ipc::eventually::send", log::internal::ipc};
+                  Trace trace{ "mockup ipc::eventually::send"};
 
                   local::eventually::Sender::instance().send( destination, std::move( complete));
                }
@@ -357,7 +357,7 @@ namespace casual
 
                      try
                      {
-                        Trace trace{ "Link::input_worker", log::internal::ipc};
+                        Trace trace{ "Link::input_worker"};
 
                         auto terminate = scope::execute( [&](){ queue.terminate();});
 
@@ -369,7 +369,7 @@ namespace casual
 
                            if( transport.type() == message::mockup::Disconnect::type())
                            {
-                              log::internal::ipc << "mockup link got disconnect message - action: shutdown thread\n";
+                              log << "mockup link got disconnect message - action: shutdown thread\n";
                               return;
                            }
                            else if( transport.type() == message::mockup::Clear::type())
@@ -404,7 +404,7 @@ namespace casual
 
                      try
                      {
-                        Trace trace{ "Link::output_worker", log::internal::ipc};
+                        Trace trace{ "Link::output_worker"};
 
                         while( true)
                         {
@@ -430,7 +430,7 @@ namespace casual
 
                ~Implementation()
                {
-                  Trace trace{ "Link::~Implementation()", log::internal::ipc};
+                  Trace trace{ "Link::~Implementation()"};
 
                   local::shutdown_thread( m_input_worker, input);
                   m_output_worker.join();
@@ -516,19 +516,19 @@ namespace casual
 
                ~Implementation()
                {
-                  Trace trace{ "Replier::~Implementation()", log::internal::ipc};
+                  Trace trace{ "Replier::~Implementation()"};
 
                   local::shutdown_thread( m_thread, process.queue);
                }
 
                static void worker_thread( communication::ipc::inbound::Device&& ipc, message::dispatch::Handler&& replier)
                {
-                  Trace trace{ "Replier::worker_thread", log::internal::ipc};
+                  Trace trace{ "Replier::worker_thread"};
 
                   try
                   {
                      replier.insert( []( message::mockup::Disconnect&){
-                        log::internal::ipc << "Replier::worker_thread disconnect\n";
+                        log << "Replier::worker_thread disconnect\n";
                         throw exception::Shutdown{ "worker_thread disconnect"};
                      });
 

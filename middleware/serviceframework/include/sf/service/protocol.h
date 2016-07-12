@@ -1,8 +1,5 @@
 //!
-//! service_implementation.h
-//!
-//! Created on: Jan 4, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SERVICE_IMPLEMENTATION_H_
@@ -15,6 +12,7 @@
 #include "sf/archive/binary.h"
 #include "sf/archive/json.h"
 #include "sf/archive/xml.h"
+#include "sf/archive/ini.h"
 #include "sf/archive/log.h"
 #include "sf/archive/service.h"
 #include "sf/log.h"
@@ -37,15 +35,15 @@ namespace casual
 
             private:
 
-               bool doCall() override;
+               bool do_call() override;
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               void doHandleException() override;
+               void do_andle_exception() override;
 
-               Interface::Input& doInput() override;
+               Interface::Input& do_input() override;
 
-               Interface::Output& doOutput() override;
+               Interface::Output& do_output() override;
 
 
             protected:
@@ -63,9 +61,9 @@ namespace casual
             public:
                Binary( TPSVCINFO* serviceInfo);
 
-               static std::vector< buffer::Type> types();
+               static common::buffer::Type type();
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
             private:
 
@@ -83,9 +81,9 @@ namespace casual
 
                Yaml( TPSVCINFO* serviceInfo);
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               static std::vector< buffer::Type> types();
+               static common::buffer::Type type();
 
             private:
 
@@ -101,9 +99,9 @@ namespace casual
 
                Json( TPSVCINFO* serviceInfo);
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               static std::vector< buffer::Type> types();
+               static common::buffer::Type type();
 
 
             private:
@@ -120,9 +118,9 @@ namespace casual
 
                Xml( TPSVCINFO* serviceInfo);
 
-               reply::State doFinalize() override;
+               reply::State do_finalize() override;
 
-               static std::vector< buffer::Type> types();
+               static common::buffer::Type type();
 
             private:
 
@@ -130,6 +128,24 @@ namespace casual
                archive::xml::Reader m_reader;
                archive::xml::Save m_save;
                archive::xml::Writer m_writer;
+            };
+
+            class Ini : public Base
+            {
+            public:
+               Ini( TPSVCINFO* service_info);
+
+               reply::State do_finalize() override;
+
+               static common::buffer::Type type();
+
+            private:
+
+               archive::ini::Load m_load;
+               archive::ini::Reader m_reader;
+               archive::ini::Save m_save;
+               archive::ini::Writer m_writer;
+
             };
 
 
@@ -159,31 +175,47 @@ namespace casual
             {
             public:
 
-               Describe( TPSVCINFO* information);
-
-               static std::vector< buffer::Type> types();
+               Describe( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
 
             private:
 
-               static std::unique_ptr< Interface> protocoll( TPSVCINFO* information);
-
-               bool doCall() override;
-               reply::State doFinalize() override;
+               bool do_call() override;
+               reply::State do_finalize() override;
 
                Model m_model;
 
-               archive::service::Prepare m_prepare;
+               archive::service::describe::Prepare m_prepare;
 
                struct writer_t
                {
                   writer_t( Model& model) : input( model.arguments.input), output( model.arguments.output) {}
 
-                  archive::service::Writer input;
-                  archive::service::Writer output;
+                  archive::service::describe::Writer input;
+                  archive::service::describe::Writer output;
                } m_writer;
 
-               std::unique_ptr< Interface> m_protocoll;
+               std::unique_ptr< Interface> m_protocol;
+            };
 
+            //!
+            //! Fills the object model with "random" values and produce an
+            //! example of the API in the requested protocol (json, yaml, ...),
+            //! which could help getting an understanding of an API.
+            //!
+            class Example : public Base
+            {
+            public:
+
+               Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
+
+            private:
+
+               bool do_call() override;
+               reply::State do_finalize() override;
+
+               archive::service::example::Prepare m_prepare;
+
+               std::unique_ptr< Interface> m_protocol;
             };
 
          } // protocol

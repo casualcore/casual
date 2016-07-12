@@ -1,11 +1,9 @@
 //!
-//! service.cpp
-//!
-//! Created on: Nov 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/forward/common.h"
+#include "queue/common/log.h"
 #include "queue/api/rm/queue.h"
 
 #include "common/arguments.h"
@@ -13,7 +11,7 @@
 #include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
-#include "common/call/context.h"
+#include "common/service/call/context.h"
 
 
 namespace casual
@@ -56,7 +54,7 @@ namespace casual
 
             void operator () ( queue::Message&& message)
             {
-               common::trace::internal::Scope trace{ "queue::forward::Caller::operator()", common::log::internal::queue};
+               Trace trace{ "queue::forward::Caller::operator()"};
 
                //
                // Prepare the xatmi-buffer
@@ -68,13 +66,13 @@ namespace casual
 
                   }, std::move( message.payload.data)};
 
-               common::log::internal::queue << "payload: " << payload << std::endl;
+               log << "payload: " << payload << std::endl;
 
                long size = payload.memory.size();
 
                auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
 
-               common::call::Context::instance().sync( m_service, buffer, size, buffer, size, TPNOTIME);
+               common::service::call::Context::instance().sync( m_service, buffer, size, buffer, size, TPNOTIME);
 
                const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
 

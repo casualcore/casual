@@ -1,16 +1,17 @@
 //!
-//! service.h
-//!
-//! Created on: Dec 27, 2012
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef SERVICE_H_
-#define SERVICE_H_
+#ifndef SF_SERVICE_INTERFACE_H_
+#define SF_SERVICE_INTERFACE_H_
 
 
 #include "sf/archive/archive.h"
+#include "sf/log.h"
 #include "sf/buffer.h"
+
+
+#include "common/functional.h"
 
 #include "xatmi.h"
 
@@ -44,8 +45,8 @@ namespace casual
          {
          public:
 
-            typedef std::vector< archive::Reader*> readers_type;
-            typedef std::vector< archive::Writer*> writers_type;
+            using readers_type = std::vector< archive::Reader*>;
+            using writers_type = std::vector< archive::Writer*>;
 
             virtual ~Interface();
 
@@ -54,7 +55,7 @@ namespace casual
 
             reply::State finalize();
 
-            void handleException();
+            void handle_exception();
 
             struct Input
             {
@@ -73,13 +74,13 @@ namespace casual
 
 
          private:
-            virtual bool doCall() = 0;
-            virtual reply::State doFinalize() = 0;
+            virtual bool do_call() = 0;
+            virtual reply::State do_finalize() = 0;
 
-            virtual Input& doInput() = 0;
-            virtual Output& doOutput() = 0;
+            virtual Input& do_input() = 0;
+            virtual Output& do_output() = 0;
 
-            virtual void doHandleException() = 0;
+            virtual void do_andle_exception() = 0;
 
          };
 
@@ -115,45 +116,49 @@ namespace casual
                return *this;
             }
 
-            template< typename I, typename M, typename... Args>
-            auto call( I& implementation, M memberfunction, Args&&... args) -> decltype( std::mem_fn( memberfunction)( implementation, std::forward< Args>( args)...))
-            {
-               if( callImplementation())
-               {
-                  auto function = std::mem_fn( memberfunction);
 
+            template< typename F, typename... Args>
+            auto call( F&& function, Args&&... args) -> decltype( common::invoke( std::forward< F>( function), std::forward< Args>( args)...))
+            {
+               sf::Trace trace{ "sf::service::IO::call"};
+
+               if( call_implementation())
+               {
                   try
                   {
-                     return function( implementation, std::forward< Args>( args)...);
+                     return common::invoke( std::forward< F>( function), std::forward< Args>( args)...);
                   }
                   catch( ...)
                   {
-                     handleException();
+                     handle_exception();
                   }
                }
 
                //
-               // Vi return the default value for the return type
+               // We return the default value for the return type
                //
-               return decltype( std::mem_fn( memberfunction)( implementation, std::forward< Args>( args)...))();
+               return decltype( common::invoke( std::forward< F>( function), std::forward< Args>( args)...))();
             }
+
+
+
 
          private:
 
-            bool callImplementation();
+            bool call_implementation();
 
-            void handleException();
+            void handle_exception();
 
 
             template< typename T, typename A>
             void serialize( T&& value, A& io)
             {
-               for( auto archive : io.readers)
+               for( auto&& archive : io.readers)
                {
                   *archive >> std::forward< T>( value);
                }
 
-               for( auto archive : io.writers)
+               for( auto&& archive : io.writers)
                {
                   *archive << std::forward< T>( value);
                }
@@ -162,26 +167,33 @@ namespace casual
             interface_type m_interface;
          };
 
+
          class Factory
          {
          public:
 
-            typedef std::function< std::unique_ptr< Interface>( TPSVCINFO*)> function_type;
+            using function_type = std::function< std::unique_ptr< Interface>( TPSVCINFO*)>;
 
+            struct Holder
+            {
+               common::buffer::Type type;
+               function_type create;
+            };
 
             static Factory& instance();
 
-            std::unique_ptr< Interface> create( TPSVCINFO* serviceInfo, const buffer::Type& type) const;
-            std::unique_ptr< Interface> create( TPSVCINFO* serviceInfo) const;
+            std::unique_ptr< Interface> create( TPSVCINFO* service_info, const buffer::Type& type) const;
+            std::unique_ptr< Interface> create( TPSVCINFO* service_info) const;
 
 
             template< typename T>
             void registration()
             {
-               for( auto& type : T::types())
-               {
-                  m_factories[ std::move( type)] = Creator< T>();
-               }
+               Holder holder;
+               holder.type = T::type();
+               holder.create = Creator< T>();
+
+               m_factories.push_back( std::move( holder));
             }
 
 
@@ -195,7 +207,7 @@ namespace casual
 
             Factory();
 
-            std::map< sf::buffer::Type, function_type> m_factories;
+            std::vector< Holder> m_factories;
          };
 
       } // service

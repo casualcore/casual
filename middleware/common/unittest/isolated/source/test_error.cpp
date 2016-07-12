@@ -1,8 +1,5 @@
 //!
-//! test_error.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -41,12 +38,12 @@ namespace casual
    }
 
 
-   template< typename E, long code, common::log::category::Type category>
+   template< typename E, long code, common::exception::code::log::Category category>
    struct holder
    {
       typedef E exception_type;
       static long getCode() { return code;}
-      static common::log::category::Type getGategory() { return category;}
+      static common::exception::code::log::Category getGategory() { return category;}
       //static const char* getString() { return string;}
 
    };
@@ -61,22 +58,22 @@ namespace casual
 
 
    typedef ::testing::Types<
-         holder< common::exception::xatmi::no::Message, TPEBLOCK, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::Limit, TPELIMIT, common::log::category::Type::information>,
-         holder< common::exception::xatmi::invalid::Argument, TPEINVAL, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::os::Error, TPEOS, common::log::category::Type::error>,
-         holder< common::exception::xatmi::Protocoll, TPEPROTO, common::log::category::Type::error>,
-         holder< common::exception::xatmi::invalid::Descriptor, TPEBADDESC, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::service::Error, TPESVCERR, common::log::category::Type::error>,
-         holder< common::exception::xatmi::service::Fail, TPESVCFAIL, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::service::no::Entry, TPENOENT, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::service::Advertised, TPEMATCH, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::System, TPESYSTEM, common::log::category::Type::error>,
-         holder< common::exception::xatmi::Timeout, TPETIME, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::transaction::Support, TPETRAN, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::Signal, TPGOTSIG, common::log::category::Type::information>,
-         holder< common::exception::xatmi::buffer::type::Input, TPEITYPE, common::log::category::Type::debug>,
-         holder< common::exception::xatmi::buffer::type::Output, TPEOTYPE, common::log::category::Type::debug>
+         holder< common::exception::xatmi::no::Message, TPEBLOCK, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::Limit, TPELIMIT, common::exception::code::log::Category::information>,
+         holder< common::exception::xatmi::invalid::Argument, TPEINVAL, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::os::Error, TPEOS, common::exception::code::log::Category::error>,
+         holder< common::exception::xatmi::Protocoll, TPEPROTO, common::exception::code::log::Category::error>,
+         holder< common::exception::xatmi::invalid::Descriptor, TPEBADDESC, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::service::Error, TPESVCERR, common::exception::code::log::Category::error>,
+         holder< common::exception::xatmi::service::Fail, TPESVCFAIL, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::service::no::Entry, TPENOENT, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::service::Advertised, TPEMATCH, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::System, TPESYSTEM, common::exception::code::log::Category::error>,
+         holder< common::exception::xatmi::Timeout, TPETIME, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::transaction::Support, TPETRAN, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::Signal, TPGOTSIG, common::exception::code::log::Category::information>,
+         holder< common::exception::xatmi::buffer::type::Input, TPEITYPE, common::exception::code::log::Category::debug>,
+         holder< common::exception::xatmi::buffer::type::Output, TPEOTYPE, common::exception::code::log::Category::debug>
     > xatmi_exceptions;
 
    TYPED_TEST_CASE(casual_common_error_xatmi, xatmi_exceptions);

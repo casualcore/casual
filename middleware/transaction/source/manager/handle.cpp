@@ -810,7 +810,7 @@ namespace casual
             }
             catch( const user::error& exception)
             {
-               common::log::stream::get( exception.category()) << common::error::xa::error( exception.code()) << " - " << exception << '\n';
+               common::error::handler();
 
                auto reply = local::transform::reply( message);
                reply.stage = decltype( reply)::Stage::error;

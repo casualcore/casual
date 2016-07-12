@@ -1,8 +1,5 @@
 //!
-//! communication.h
-//!
-//! Created on: Jan 3, 2016
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_H_
@@ -68,6 +65,7 @@ namespace casual
 
                using payload_type = std::array< char, payload_max_size>;
                using range_type = range::type_t< payload_type>;
+               using const_range_type = range::const_type_t< payload_type>;
 
                struct message_t
                {
@@ -105,7 +103,7 @@ namespace casual
                void type( common::message::Type type) { message.type = static_cast< decltype( message.type)>( type);}
 
 
-               range_type payload() const
+               const_range_type payload() const
                {
                   return range::make( std::begin( message.payload), message.header.count);
                }

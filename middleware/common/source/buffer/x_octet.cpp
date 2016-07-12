@@ -1,8 +1,5 @@
 //!
-//! x_octet.cpp
-//!
-//! Created on: Sep 18, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/buffer/pool.h"
@@ -21,14 +18,14 @@ namespace casual
             static const std::vector< Type>& types()
             {
                static const std::vector< Type> result{
-                     type::x_octet(), type::binary(), type::json(), type::yaml(), type::xml()
+                     type::x_octet(), type::binary(), type::json(), type::yaml(), type::xml(), type::ini()
                   };
                return result;
             }
          };
 
          //
-         // Registrate the pool to the pool-holder
+         // Register the pool to the pool-holder
          //
          template class pool::Registration< x_octet>;
 

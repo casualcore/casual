@@ -8,7 +8,7 @@
 //#include "common/ipc.h"
 #include "common/communication/message.h"
 #include "common/communication/ipc.h"
-#include "common/move.h"
+#include "common/pimpl.h"
 #include "common/platform.h"
 #include "common/message/type.h"
 #include "common/message/dispatch.h"

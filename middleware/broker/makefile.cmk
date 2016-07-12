@@ -34,7 +34,6 @@ logic_archive = LinkArchive( 'bin/casual-broker-logic',
    Compile( 'source/state.cpp'),
    Compile( 'source/transform.cpp'),
    Compile( 'source/admin/server.cpp'),
-   Compile( 'source/admin/brokervo.cpp'),
    ])
 
 

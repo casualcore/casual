@@ -1,8 +1,5 @@
 //!
-//! test_mockup.cpp
-//!
-//! Created on: May 25, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -13,7 +10,7 @@
 
 
 #include "common/message/service.h"
-#include "common/call/lookup.h"
+#include "common/service/lookup.h"
 
 #include "common/communication/ipc.h"
 #include "common/log.h"
@@ -318,7 +315,7 @@ namespace casual
 
          mockup::domain::minimal::Domain domain;
 
-         auto reply = call::service::Lookup{ "service1"}();
+         auto reply = service::Lookup{ "service1"}();
          EXPECT_TRUE( reply.state == decltype( reply)::State::idle);
          EXPECT_TRUE( reply.service.name == "service1") << "reply.service.name: " << reply.service.name;
          EXPECT_TRUE( reply.process == domain.server.process()) << "reply.process: " << reply.process;

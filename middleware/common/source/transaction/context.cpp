@@ -1,12 +1,9 @@
 //!
-//! context.cpp
-//!
-//! Created on: Jul 14, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/transaction/context.h"
-#include "common/call/context.h"
+#include "common/service/call/context.h"
 
 #include "common/communication/ipc.h"
 #include "common/environment.h"
@@ -371,7 +368,7 @@ namespace casual
                   //
                   for( auto& descriptor : transaction.descriptors())
                   {
-                     call::Context::instance().cancel( descriptor);
+                     service::call::Context::instance().cancel( descriptor);
                   }
                }
             };

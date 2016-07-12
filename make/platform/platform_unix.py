@@ -68,24 +68,24 @@ class CommonUNIX( Platform):
     
     
     def header_dependency(self, sourcefile, objectfiles, dependencyfile):
-        return '@$(HEADER_DEPENDENCY_COMMAND) -MT ' + ' -MT '.join( objectfiles) + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) ' + sourcefile + ' -MF ' +  dependencyfile 
+        return '@$(HEADER_DEPENDENCY_COMMAND) -MT ' + ' -MT '.join( objectfiles) + ' $(INCLUDE_PATHS_DIRECTIVE) $(DEFAULT_INCLUDE_PATHS_DIRECTIVE) ' + sourcefile + ' -MF ' +  dependencyfile 
     
     def compile(self, sourcefile, objectfile, directive):
-        return '$(COMPILER) -o ' + objectfile + ' ' + sourcefile + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) $(COMPILE_DIRECTIVES) ' +  directive
+        return '$(COMPILER) -o ' + objectfile + ' ' + sourcefile + ' $(INCLUDE_PATHS_DIRECTIVE) $(DEFAULT_INCLUDE_PATHS_DIRECTIVE) $(COMPILE_DIRECTIVES) ' +  directive
     
     def cross_compile(self, sourcefile, objectfile, directive):
-        return '$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o ' + objectfile + ' ' + sourcefile + ' $(INCLUDE_PATHS) $(DEFAULT_INCLUDE_PATHS) ' + directive
+        return '$(CROSSCOMPILER) $(CROSS_COMPILE_DIRECTIVES) -o ' + objectfile + ' ' + sourcefile + ' $(INCLUDE_PATHS_DIRECTIVE) $(DEFAULT_INCLUDE_PATHS_DIRECTIVE) ' + directive
 
 
 
     def link_generic(self, linker, output, objectfiles, libs, directive, extraDirective):
-        return linker + ' -o ' + output + ' ' + objectfiles + ' $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) ' + libs + ' $(DEFAULT_LIBS) ' + directive + ' ' + extraDirective
+        return linker + ' -o ' + output + ' ' + objectfiles + ' $(LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBRARY_PATHS_DIRECTIVE) ' + libs + ' $(DEFAULT_LIBS) ' + directive + ' ' + extraDirective
 
     def link_library(self, output, objectfiles, libs, directive):
         if isinstance( output, basestring):
             return self.link_generic( '$(LIBRARY_LINKER)', output, objectfiles, libs, '$(LINK_DIRECTIVES_LIB)', directive)
         elif isinstance( output, Output):
-            return '$(LIBRARY_LINKER)' + ' -o ' + output.name + ' ' + '$(LINKER_SONAME_DIRECTIVE)' + output.soname() + ' ' + objectfiles + ' $(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) ' + libs + ' $(DEFAULT_LIBS) ' + '$(LINK_DIRECTIVES_LIB)' + directive
+            return '$(LIBRARY_LINKER)' + ' -o ' + output.name + ' ' + '$(LINKER_SONAME_DIRECTIVE)' + output.soname() + ' ' + objectfiles + ' $(LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBRARY_PATHS_DIRECTIVE) ' + libs + ' $(DEFAULT_LIBS) ' + '$(LINK_DIRECTIVES_LIB)' + directive
         else:
             raise SyntaxError, 'Unknown type for output'
     
@@ -98,7 +98,7 @@ class CommonUNIX( Platform):
     
     # should not be here...
     def link_server(self, output, objectfiles, libs, directive):
-        return '$(BUILDSERVER) -o ' + output + directive + ' -f "' + objectfiles + '" -f "' + libs + '" -f "$(LIBRARY_PATHS) $(DEFAULT_LIBRARY_PATHS) $(LINK_DIRECTIVES_EXE) $(INCLUDE_PATHS)" ' 
+        return '$(BUILDSERVER) -o ' + output + directive + ' -f "' + objectfiles + '" -f "' + libs + '" -f "$(LIBRARY_PATHS_DIRECTIVE) $(DEFAULT_LIBRARY_PATHS_DIRECTIVE) $(LINK_DIRECTIVES_EXE) $(INCLUDE_PATHS_DIRECTIVE)" ' 
     
         
     

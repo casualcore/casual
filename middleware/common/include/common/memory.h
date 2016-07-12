@@ -1,8 +1,5 @@
 //!
-//! memory.h
-//!
-//! Created on: Dec 29, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_

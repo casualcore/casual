@@ -70,7 +70,9 @@ namespace casual
                      {
                         auto service_io = local::server->createService( serviceInfo);
 
-                        auto serviceReturn = gateway::transform::state( state);
+                        manager::admin::vo::State (*function)( const manager::State& state) = &gateway::transform::state;
+
+                        auto serviceReturn = service_io.call( function, state);
 
                         service_io << CASUAL_MAKE_NVP( serviceReturn);
 

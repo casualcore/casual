@@ -54,40 +54,40 @@ namespace casual
 
          long Simple::getLong() const
          {
-            return m_pimpl.implementation().m_long;
+            return m_pimpl->m_long;
          }
 
          const std::string& Simple::getString() const
          {
-            return m_pimpl.implementation().m_string;
+            return m_pimpl->m_string;
          }
 
 
          void Simple::serialize( sf::archive::Reader& reader)
          {
-            m_pimpl.implementation().serialize( reader);
+            m_pimpl->serialize( reader);
          }
 
          std::string& Simple::getString()
          {
-            return m_pimpl.implementation().m_string;
+            return m_pimpl->m_string;
          }
 
          void Simple::setLong( long value)
          {
-            m_pimpl.implementation().m_long = value;
+            m_pimpl->m_long = value;
          }
 
          void Simple::setString( const std::string& value)
          {
-            m_pimpl.implementation().m_string = value;
+            m_pimpl->m_string = value;
          }
 
 
 
          void Simple::serialize( sf::archive::Writer& writer) const
          {
-            m_pimpl.implementation().serialize( writer);
+            m_pimpl->serialize( writer);
          }
 
 

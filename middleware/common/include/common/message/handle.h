@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Sep 26, 2014
-//!     Author: Lazan
+//! casaul
 //!
 
 #ifndef CASUAL_COMMON_MESSAGE_HANDLE_H_

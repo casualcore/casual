@@ -10,6 +10,7 @@
 #include "common/error.h"
 #include "common/platform.h"
 #include "common/move.h"
+#include "common/cast.h"
 
 #include <algorithm>
 #include <numeric>
@@ -34,54 +35,12 @@ namespace casual
 
       namespace scope
       {
+
          //!
          //! executes an action ones.
          //! If the action has not been executed the
          //! destructor will perform the execution
          //!
-         struct Execute
-         {
-            Execute( std::function< void()> executer) : m_execute( std::move( executer)) {}
-
-            ~Execute()
-            {
-               try
-               {
-                  (*this)();
-               }
-               catch( ...)
-               {
-                  error::handler();
-               }
-            }
-
-            //!
-            //! executes the actions ones.
-            //! no-op if already executed
-            //!
-            void operator () ()
-            {
-               if( m_execute)
-               {
-                  std::function< void()> executer;
-                  std::swap( m_execute, executer);
-                  executer();
-               }
-            }
-
-            //!
-            //! Removes the action
-            //!
-            void release()
-            {
-               m_execute = nullptr;
-            }
-
-         private:
-
-            std::function< void()> m_execute;
-         };
-
          template< typename E>
          struct basic_execute
          {
@@ -124,6 +83,11 @@ namespace casual
             move::Moved m_moved;
          };
 
+         //!
+         //! returns an executer that will do an action ones.
+         //! If the action has not been executed the
+         //! destructor will perform the execution
+         //!
          template< typename E>
          auto execute( E&& executor) -> decltype( basic_execute< E>{ std::forward< E>( executor)})
          {
@@ -360,13 +324,6 @@ namespace casual
       }
 
 
-      template< typename Enum>
-      auto as_integer( Enum value) -> typename std::underlying_type< Enum>::type
-      {
-         return static_cast< typename std::underlying_type< Enum>::type>(value);
-      }
-
-
       template< typename Iter>
       struct Range
       {
@@ -400,11 +357,8 @@ namespace casual
          operator T() const = delete;
 
 
-         reference operator * () { return *m_first;}
-         const reference operator * () const { return *m_first;}
-
-
-         iterator operator -> () { return m_first;}
+         reference operator * () const { return *m_first;}
+         iterator operator -> () const { return m_first;}
 
 
          Range operator ++ ()
@@ -544,6 +498,16 @@ namespace casual
       }
 
 
+      namespace make
+      {
+         template< typename T, typename... Args>
+         std::unique_ptr< T> unique( Args&&... args)
+         {
+            return std::unique_ptr< T>( new T( std::forward< Args>( args)...));
+         }
+      } // make
+
+
       //!
       //! This is not intended to be a serious attempt at a range-library
       //! Rather an abstraction that helps our use-cases and to get a feel for
@@ -584,7 +548,7 @@ namespace casual
          }
 
          template< typename Iter>
-         Range< Iter> make( Range< Iter> range)
+         constexpr Range< Iter> make( Range< Iter> range)
          {
             return range;
          }
@@ -598,12 +562,15 @@ namespace casual
          template< typename C>
          struct type_traits
          {
-            using type = decltype( make( std::begin( std::declval< C>()), 0));
+            using type = decltype( make( std::declval< C>().begin(), std::size_t{}));
          };
 
 
          template< typename C>
          using type_t = typename type_traits< C>::type;
+
+         template< typename C>
+         using const_type_t = typename type_traits< const C>::type;
 
          template< typename R>
          typename std::enable_if< std::is_array< typename std::remove_reference< R>::type>::value, std::size_t>::type
@@ -832,7 +799,7 @@ namespace casual
          //! @param destination sets the maximum what will be copied
          //!
          template< typename Range1, typename Range2>
-         void copy_max( Range1&& source, Range2 destination)
+         void copy_max( Range1&& source, Range2&& destination)
          {
             auto max = range::size( destination);
             auto wanted = range::size( source);
@@ -1453,7 +1420,7 @@ namespace std
    typename enable_if< is_enum< Enum>::value, ostream&>::type
    operator << ( ostream& out, Enum value)
    {
-     return out << casual::common::as_integer( value);
+     return out << casual::common::cast::underlying( value);
    }
 
 } // std

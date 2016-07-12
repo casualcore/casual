@@ -3,6 +3,7 @@
 #include "gateway/manager/handle.h"
 #include "gateway/manager/admin/server.h"
 #include "gateway/environment.h"
+#include "gateway/common.h"
 
 
 
@@ -56,7 +57,7 @@ namespace casual
                         template< typename C>
                         void operator () ( C& connection) const
                         {
-                           Trace trace{ "gateway::manager::handle::local::shutdown::Connection", log::internal::gateway};
+                           Trace trace{ "gateway::manager::handle::local::shutdown::Connection"};
 
                            //
                            // We only want to handle terminate during this
@@ -67,7 +68,7 @@ namespace casual
                            {
                               if( connection.process)
                               {
-                                 log::internal::gateway << "send shutdown to connection: " << connection << std::endl;
+                                 log << "send shutdown to connection: " << connection << std::endl;
 
                                  common::message::shutdown::Request request;
                                  request.process = common::process::handle();
@@ -85,7 +86,7 @@ namespace casual
                               }
                               else if( connection.process.pid)
                               {
-                                 log::internal::gateway << "terminate connection: " << connection << std::endl;
+                                 log << "terminate connection: " << connection << std::endl;
                                  common::process::lifetime::terminate( { connection.process.pid});
                                  connection.runlevel = state::base_connection::Runlevel::offline;
                               }
@@ -121,7 +122,7 @@ namespace casual
                   {
                      void operator () ( manager::state::outbound::Connection& connection) const
                      {
-                        Trace trace{ "gateway::manager::handle::local::Boot", log::internal::gateway};
+                        Trace trace{ "gateway::manager::handle::local::Boot"};
 
                         if( connection.runlevel == manager::state::outbound::Connection::Runlevel::absent)
                         {
@@ -153,7 +154,7 @@ namespace casual
 
             void shutdown( State& state)
             {
-               Trace trace{ "gateway::manager::handle::shutdown", log::internal::gateway};
+               Trace trace{ "gateway::manager::handle::shutdown"};
 
                //
                // We only want to handle child-signals during this stage
@@ -162,7 +163,7 @@ namespace casual
 
                state.runlevel = State::Runlevel::shutdown;
 
-               log::internal::gateway << "state: " << state << '\n';
+               log << "state: " << state << '\n';
 
                range::for_each( state.listeners, std::mem_fn( &Listener::shutdown));
 
@@ -173,7 +174,7 @@ namespace casual
 
                while( state.running())
                {
-                  log::internal::gateway << "state: " << state << '\n';
+                  log << "state: " << state << '\n';
 
                   handler( ipc::device().next( communication::ipc::policy::Blocking{}));
                }
@@ -182,7 +183,7 @@ namespace casual
 
             void boot( State& state)
             {
-               Trace trace{ "gateway::manager::handle::boot", log::internal::gateway};
+               Trace trace{ "gateway::manager::handle::boot"};
 
                range::for_each( state.connections.outbound, local::Boot{});
                range::for_each( state.listeners, std::mem_fn( &Listener::start));
@@ -199,8 +200,8 @@ namespace casual
 
                void Event::operator () ( message_type& message)
                {
-                  Trace trace{ "gateway::manager::handle::listener::Event::operator()", log::internal::gateway};
-                  log::internal::gateway << "message: " << message << '\n';
+                  Trace trace{ "gateway::manager::handle::listener::Event::operator()"};
+                  log << "message: " << message << '\n';
 
                   state().event( message);
                }
@@ -213,7 +214,7 @@ namespace casual
 
                void exit( const common::process::lifetime::Exit& exit)
                {
-                  Trace trace{ "gateway::manager::handle::process::exit", log::internal::gateway};
+                  Trace trace{ "gateway::manager::handle::process::exit"};
 
                   //
                   // We put a dead process event on our own ipc device, that
@@ -226,7 +227,7 @@ namespace casual
 
                void Exit::operator () ( message_type& message)
                {
-                  Trace trace{ "gateway::manager::handle::process::Exit", log::internal::gateway};
+                  Trace trace{ "gateway::manager::handle::process::Exit"};
 
 
                   auto inbound_found = range::find( state().connections.inbound, message.death.pid);
@@ -282,7 +283,7 @@ namespace casual
                   {
                      void send( const common::process::Handle& process, std::vector< std::string> services)
                      {
-                        Trace trace{ "gateway::manager::handle::local::discover send", log::internal::gateway};
+                        Trace trace{ "gateway::manager::handle::local::discover send"};
 
                         common::message::gateway::domain::discover::Request request;
                         request.process = common::process::handle();
@@ -319,9 +320,9 @@ namespace casual
                {
                   void Reply::operator () ( message_type& message)
                   {
-                     Trace trace{ "gateway::manager::handle::domain::discover::Reply", log::internal::gateway};
+                     Trace trace{ "gateway::manager::handle::domain::discover::Reply"};
 
-                     log::internal::gateway << "message: " << message << '\n';
+                     log << "message: " << message << '\n';
 
                      {
                         auto found = range::find( state().connections.outbound, message.process.pid);
@@ -356,9 +357,9 @@ namespace casual
             {
                void Connect::operator () ( message_type& message)
                {
-                  Trace trace{ "gateway::manager::handle::outbound::Connect", log::internal::gateway};
+                  Trace trace{ "gateway::manager::handle::outbound::Connect"};
 
-                  log::internal::gateway << "message: " << message << '\n';
+                  log << "message: " << message << '\n';
 
                   auto found = range::find( state().connections.outbound, message.process.pid);
 
@@ -385,9 +386,9 @@ namespace casual
             {
                void Connect::operator () ( message_type& message)
                {
-                  Trace trace{ "gateway::manager::handle::inbound::Connect", log::internal::gateway};
+                  Trace trace{ "gateway::manager::handle::inbound::Connect"};
 
-                  log::internal::gateway << "message: " << message << '\n';
+                  log << "message: " << message << '\n';
 
                   auto found = range::find( state().connections.inbound, message.process.pid);
 
@@ -407,7 +408,7 @@ namespace casual
                {
                   void Connect::operator () ( message_type& message)
                   {
-                     Trace trace{ "gateway::manager::handle::inbound::ipc::Connect", log::internal::gateway};
+                     Trace trace{ "gateway::manager::handle::inbound::ipc::Connect"};
 
                      //
                      // Another ipc-domain wants to talk to us
@@ -440,9 +441,9 @@ namespace casual
 
                   void Connect::operator () ( message_type& message)
                   {
-                     Trace trace{ "gateway::manager::handle::inbound::tcp::Connect", log::internal::gateway};
+                     Trace trace{ "gateway::manager::handle::inbound::tcp::Connect"};
 
-                     log::internal::gateway << "message: " << message << '\n';
+                     log << "message: " << message << '\n';
 
                      //
                      // We take ownership of the socket until we've spawned the inbound connection

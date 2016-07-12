@@ -1,8 +1,5 @@
 //!
-//! casual_exception.h
-//!
-//! Created on: Apr 29, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_EXCEPTION_H_
@@ -232,6 +229,16 @@ namespace casual
 
          namespace code
          {
+            namespace log
+            {
+               enum class Category
+               {
+                  error,
+                  debug,
+                  information,
+               };
+
+            } // log
 
             struct base : common::exception::base
             {
@@ -239,7 +246,7 @@ namespace casual
 
                virtual std::string tag_name() const noexcept = 0;
                virtual long code() const noexcept = 0;
-               virtual log::category::Type category() const noexcept = 0;
+               virtual log::Category category() const noexcept = 0;
             };
 
             template< typename base_tag>
@@ -259,19 +266,19 @@ namespace casual
                }
             };
 
-            template< long code_value, log::category::Type categor_value, typename base_tag>
+            template< long code_value, log::Category Category, typename base_tag>
             struct basic_code : public tag_base< base_tag>
             {
                using tag_base< base_tag>::tag_base;
 
                long code() const noexcept override { return code_value;}
-               log::category::Type category() const noexcept override { return categor_value;}
+               log::Category category() const noexcept override { return Category;}
             };
 
 
             namespace category
             {
-               template< log::category::Type categor_value, typename base_tag>
+               template< log::Category Category, typename base_tag>
                struct basic_category : tag_base< base_tag>
                {
                   using base_type = tag_base< base_tag>;
@@ -282,7 +289,7 @@ namespace casual
                    : base_type( std::move( description), std::forward< Args>( information)...), m_code( code) {}
 
                   long code() const noexcept override { return m_code;}
-                  log::category::Type category() const noexcept override { return categor_value;}
+                  log::Category category() const noexcept override { return Category;}
 
                private:
                   long m_code;
@@ -291,7 +298,7 @@ namespace casual
                struct category_tag {};
 
                template< typename base_tag>
-               using basic_error = basic_category< log::category::Type::error, base_tag>;
+               using basic_error = basic_category< log::Category::error, base_tag>;
 
                using error = basic_error< category_tag>;
 
@@ -308,7 +315,7 @@ namespace casual
             using base = code::tag_base< base_tag>;
 
 
-            template< long code, log::category::Type category>
+            template< long code, code::log::Category category>
             struct basic_xatmi : public code::basic_code< code, category, base_tag>
             {
                using base_type = code::basic_code< code, category, base_tag>;
@@ -323,62 +330,60 @@ namespace casual
 
             namespace no
             {
-               using Message = basic_xatmi< TPEBLOCK, log::category::Type::debug>;
+               using Message = basic_xatmi< TPEBLOCK, code::log::Category::debug>;
             } // no
 
-            using Limit = basic_xatmi< TPELIMIT, log::category::Type::information>;
+            using Limit = basic_xatmi< TPELIMIT, code::log::Category::information>;
 
 
             namespace os
             {
-               using Error = basic_xatmi< TPEOS, log::category::Type::error>;
+               using Error = basic_xatmi< TPEOS, code::log::Category::error>;
             } // os
 
 
-            using Protocoll = basic_xatmi< TPEPROTO, log::category::Type::error>;
+            using Protocoll = basic_xatmi< TPEPROTO, code::log::Category::error>;
 
             namespace invalid
             {
-               using Argument = basic_xatmi< TPEINVAL, log::category::Type::debug>;
+               using Argument = basic_xatmi< TPEINVAL, code::log::Category::debug>;
 
-               using Descriptor = basic_xatmi< TPEBADDESC, log::category::Type::debug>;
+               using Descriptor = basic_xatmi< TPEBADDESC, code::log::Category::debug>;
             } // invalid
 
             namespace service
             {
-               using Error = basic_xatmi< TPESVCERR, log::category::Type::error>;
+               using Error = basic_xatmi< TPESVCERR, code::log::Category::error>;
 
-               using Fail = basic_xatmi< TPESVCFAIL, log::category::Type::debug>;
+               using Fail = basic_xatmi< TPESVCFAIL, code::log::Category::debug>;
 
                namespace no
                {
-                  using Entry = basic_xatmi< TPENOENT, log::category::Type::debug>;
+                  using Entry = basic_xatmi< TPENOENT, code::log::Category::debug>;
                } // no
 
-               //typedef basic_xatmi< TPENOENT, log::category::Type::user> NoEntry;
-               typedef basic_xatmi< TPENOENT, log::category::Type::error> NoEntry;
 
-               typedef basic_xatmi< TPEMATCH, log::category::Type::debug> Advertised;
+               typedef basic_xatmi< TPEMATCH, code::log::Category::debug> Advertised;
             }
 
-            using System = basic_xatmi< TPESYSTEM, log::category::Type::error>;
+            using System = basic_xatmi< TPESYSTEM,code::log::Category::error>;
 
-            using Timeout = basic_xatmi< TPETIME, log::category::Type::debug>;
+            using Timeout = basic_xatmi< TPETIME, code::log::Category::debug>;
 
             namespace transaction
             {
-               using Support = basic_xatmi< TPETRAN, log::category::Type::debug>;
+               using Support = basic_xatmi< TPETRAN, code::log::Category::debug>;
             } // transaction
 
-            using Signal = basic_xatmi< TPGOTSIG, log::category::Type::information>;
+            using Signal = basic_xatmi< TPGOTSIG, code::log::Category::information>;
 
             namespace buffer
             {
                namespace type
                {
-                  using Input = basic_xatmi< TPEITYPE, log::category::Type::debug>;
+                  using Input = basic_xatmi< TPEITYPE, code::log::Category::debug>;
 
-                  using Output = basic_xatmi< TPEOTYPE, log::category::Type::debug>;
+                  using Output = basic_xatmi< TPEOTYPE, code::log::Category::debug>;
                } // type
             }
 
@@ -397,24 +402,24 @@ namespace casual
 
             using base = code::tag_base< base_tag>;
 
-            template< long code, log::category::Type category>
+            template< long code, code::log::Category category>
             using basic_tx = code::basic_code< code, category, base_tag>;
 
-            using Fail = basic_tx< TX_FAIL, log::category::Type::error>;
+            using Fail = basic_tx< TX_FAIL, code::log::Category::error>;
 
-            using Error = basic_tx< TX_ERROR, log::category::Type::error>;
+            using Error = basic_tx< TX_ERROR, code::log::Category::error>;
 
-            using Protocol = basic_tx< TX_PROTOCOL_ERROR, log::category::Type::error>;
+            using Protocol = basic_tx< TX_PROTOCOL_ERROR, code::log::Category::error>;
 
-            using Argument = basic_tx< TX_EINVAL, log::category::Type::error>;
+            using Argument = basic_tx< TX_EINVAL, code::log::Category::error>;
 
-            using Outside = basic_tx< TX_OUTSIDE, log::category::Type::error>;
+            using Outside = basic_tx< TX_OUTSIDE, code::log::Category::error>;
 
             namespace no
             {
-               using Begin = basic_tx< TX_NO_BEGIN, log::category::Type::error>;
+               using Begin = basic_tx< TX_NO_BEGIN, code::log::Category::error>;
 
-               using Support = basic_tx< TX_NOT_SUPPORTED, log::category::Type::debug>;
+               using Support = basic_tx< TX_NOT_SUPPORTED, code::log::Category::debug>;
             } // no
          }
 

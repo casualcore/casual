@@ -79,10 +79,10 @@ endif
 #
 # Format the include-/library- paths
 # 
-INCLUDE_PATHS := $(addprefix -I, $(INCLUDE_PATHS) )
-LIBRARY_PATHS := $(addprefix -L, $(LIBRARY_PATHS) )
-DEFAULT_INCLUDE_PATHS := $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
-DEFAULT_LIBRARY_PATHS := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
+INCLUDE_PATHS_DIRECTIVE = $(addprefix -I, $(INCLUDE_PATHS) )
+LIBRARY_PATHS_DIRECTIVE = $(addprefix -L, $(LIBRARY_PATHS) )
+DEFAULT_INCLUDE_PATHS_DIRECTIVE = $(addprefix -I, $(DEFAULT_INCLUDE_PATHS) )
+DEFAULT_LIBRARY_PATHS_DIRECTIVE = $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 
 #
 # Header dependency stuff

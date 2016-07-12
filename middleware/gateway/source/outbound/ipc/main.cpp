@@ -5,6 +5,7 @@
 
 
 #include "gateway/message.h"
+#include "gateway/common.h"
 #include "gateway/environment.h"
 #include "gateway/outbound/gateway.h"
 #include "gateway/outbound/routing.h"
@@ -38,7 +39,7 @@ namespace casual
 
                   process::Handle lookup_gateway( communication::ipc::inbound::Device& ipc, platform::ipc::id::type broker)
                   {
-                     Trace trace{ "outbound::ipc::local::lookup_gateway", log::internal::gateway};
+                     Trace trace{ "outbound::ipc::local::lookup_gateway"};
 
                      common::message::domain::process::lookup::Request request;
                      request.directive = common::message::domain::process::lookup::Request::Directive::wait;
@@ -54,20 +55,20 @@ namespace casual
 
                   message::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, platform::ipc::id::type gateway)
                   {
-                     Trace trace{ "outbound::ipc::local::lookup_inbound", log::internal::gateway};
+                     Trace trace{ "outbound::ipc::local::lookup_inbound"};
 
                      message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
                      request.process.queue = ipc.connector().id();
 
-                     log::internal::gateway << "reguest: " << request << '\n';
+                     log  << "reguest: " << request << '\n';
 
                      auto reply = communication::ipc::call( gateway, request,
                            communication::ipc::policy::Blocking{},
                            nullptr,
                            ipc);
 
-                     log::internal::gateway << "reply: " << reply << '\n';
+                     log << "reply: " << reply << '\n';
 
                      return reply;
                   }
@@ -75,7 +76,7 @@ namespace casual
 
                   message::ipc::connect::Reply connect_domain( communication::ipc::inbound::Device& ipc, const std::string& path)
                   {
-                     Trace trace{ "outbound::ipc::local::connect_domain", log::internal::gateway};
+                     Trace trace{ "outbound::ipc::local::connect_domain"};
 
                      std::ifstream domain_file{ path};
 
@@ -84,14 +85,14 @@ namespace casual
                         platform::ipc::id::type domain_qid{ 0};
                         domain_file >> domain_qid;
 
-                        log::internal::gateway << "domain file: " << path << " - qid: " << domain_qid << '\n';
+                        log << "domain file: " << path << " - qid: " << domain_qid << '\n';
 
                         auto gateway = lookup_gateway( ipc, domain_qid);
 
                         return lookup_inbound( ipc, gateway.queue);
                      }
 
-                     log::internal::gateway << "failed to find domain file: " << path << std::endl;
+                     log << "failed to find domain file: " << path << std::endl;
 
                      return {};
                   }
@@ -147,7 +148,7 @@ namespace casual
                {
                   external_type( Settings&& settings)
                   {
-                     Trace trace{ "outbound::ipc::Policy::external_type ctor", log::internal::gateway};
+                     Trace trace{ "outbound::ipc::Policy::external_type ctor"};
 
                      if( ! settings.domain_file.empty())
                      {
@@ -159,7 +160,7 @@ namespace casual
                      }
 
                      {
-                        Trace trace{ "outbound::ipc::Policy::external_type ctor connect", log::internal::gateway};
+                        Trace trace{ "outbound::ipc::Policy::external_type ctor connect"};
 
 
                         process::pattern::Sleep sleep{ {

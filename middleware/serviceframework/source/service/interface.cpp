@@ -1,8 +1,5 @@
 //!
-//! service.cpp
-//!
-//! Created on: Jan 4, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/service/interface.h"
@@ -10,9 +7,10 @@
 
 // TODO: temporary to test factory
 #include "sf/service/protocol.h"
+#include "sf/log.h"
 
-#include "common/internal/trace.h"
 
+#include "common/service/header.h"
 
 //
 // std
@@ -32,26 +30,26 @@ namespace casual
 
          bool Interface::call()
          {
-            return doCall();
+            return do_call();
          }
          reply::State Interface::finalize()
          {
-            return doFinalize();
+            return do_finalize();
          }
 
          Interface::Input& Interface::input()
          {
-            return doInput();
+            return do_input();
          }
 
-         void Interface::handleException()
+         void Interface::handle_exception()
          {
-            doHandleException();
+            do_andle_exception();
          }
 
          Interface::Output& Interface::output()
          {
-            return doOutput();
+            return do_output();
          }
 
          IO::IO( interface_type interface)
@@ -64,14 +62,14 @@ namespace casual
 
          }
 
-         bool IO::callImplementation()
+         bool IO::call_implementation()
          {
             return m_interface->call();
          }
 
-         void IO::handleException()
+         void IO::handle_exception()
          {
-            m_interface->handleException();
+            m_interface->handle_exception();
          }
 
          reply::State IO::finalize()
@@ -88,47 +86,72 @@ namespace casual
 
 
          template< typename T>
-         std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* serviceInfo) const
+         std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* service_info) const
          {
-            if( common::log::active( common::log::category::Type::parameter))
+            if( common::log::parameter)
             {
-               return std::unique_ptr< Interface>( new protocol::parameter::Log< T>( serviceInfo));
+               return common::make::unique< protocol::parameter::Log< T>>( service_info);
             }
 
-            return std::unique_ptr< Interface>( new T( serviceInfo));
+            return common::make::unique< T>( service_info);
          }
 
 
-         std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo, const buffer::Type& type) const
+         std::unique_ptr< Interface> Factory::create( TPSVCINFO* service_info, const buffer::Type& type) const
          {
-            const common::trace::internal::Scope trace( "sf::service::Factory::create");
+            sf::Trace trace( "sf::service::Factory::create");
 
-            auto found = m_factories.find( type);
+            auto found = common::range::find_if( m_factories, [&]( const Holder& h){
+               return h.type == type;
+            });
 
-            if( found == m_factories.end())
+            if( found)
             {
-               throw sf::exception::Validation( "no suitable protocol was found for type: " + type.name + " subtype: " + type.subname);
+               if( common::service::header::exists( "casual-service-describe") &&
+                     common::service::header::get( "casual-service-describe") != "false")
+               {
+                  log::sf << "casual-service-describe protocol\n";
+
+                  //
+                  // service-describe protocol
+                  //
+                  return common::make::unique< protocol::Describe>( service_info, found->create( service_info));
+               }
+               else if( common::service::header::exists( "casual-service-example") &&
+                     common::service::header::get( "casual-service-example") != "false")
+               {
+                  log::sf << "casual-service-example protocol\n";
+
+                  //
+                  // service-describe protocol
+                  //
+                  return common::make::unique< protocol::Example>( service_info, found->create( service_info));
+               }
+
+               return found->create( service_info);
             }
 
-            return found->second( serviceInfo);
+            throw sf::exception::Validation( "no suitable protocol was found for type: " + type.name + " subtype: " + type.subname);
+
+
          }
 
          std::unique_ptr< Interface> Factory::create( TPSVCINFO* serviceInfo) const
          {
-            const common::trace::internal::Scope trace( "sf::service::Factory::create");
+            sf::Trace trace( "sf::service::Factory::create");
 
             return create( serviceInfo, sf::buffer::type::get( serviceInfo->data));
          }
 
          Factory::Factory()
          {
-            const common::trace::internal::Scope trace( "sf::service::Factory::Factory");
+            sf::Trace trace( "sf::service::Factory::Factory");
 
             registration< service::protocol::Yaml>();
             registration< service::protocol::Binary>();
             registration< service::protocol::Json>();
             registration< service::protocol::Xml>();
-            registration< service::protocol::Describe>();
+            registration< service::protocol::Ini>();
          }
 
 

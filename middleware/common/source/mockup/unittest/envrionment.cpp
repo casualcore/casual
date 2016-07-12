@@ -1,11 +1,8 @@
 //!
-//! unittest_envrionment.cpp
-//!
-//! Created on: May 29, 2014
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "common/environment.h"
@@ -48,18 +45,18 @@ namespace casual
 
                   domain::identity( domain::Identity{ "unittest-domain"});
 
-                  log::stream::get( log::category::Type::casual_debug) << "mockup::unittest::Environment::SetUp";
+                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << std::endl;
 
 
                   directory::create( domain_path);
 
-                  log::stream::get( log::category::Type::casual_debug) << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
-                  log::stream::get( log::category::Type::casual_debug)  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
+                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
+                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
 
 
                   if( ! directory::create( environment::domain::singleton::path()))
                   {
-                     log::stream::get( log::category::Type::error) << "failed to create domain singleton directory\n";
+                     log::stream::get( "error") << "failed to create domain singleton directory\n";
                   }
                }
 

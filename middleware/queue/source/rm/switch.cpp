@@ -1,8 +1,5 @@
 //!
-//! switch.cpp
-//!
-//! Created on: Jul 7, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/rm/switch.h"

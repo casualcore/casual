@@ -1,8 +1,5 @@
 //!
-//! proxy.cpp
-//!
-//! Created on: Mar 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/proxy.h"
@@ -107,7 +104,7 @@ namespace casual
                   std::unique_ptr< Result::impl_base> receive() override
                   {
                      using result_type = decltype( m_implemenentation());
-                     return std::unique_ptr< Result::impl_base>{ new result::basic_impl< result_type>{ m_implemenentation()}};
+                     return common::make::unique< result::basic_impl< result_type>>( m_implemenentation());
                   }
                   T m_implemenentation;
                };
@@ -138,7 +135,7 @@ namespace casual
                   std::unique_ptr< Receive::impl_base> call() override
                   {
                      using receive_type = decltype( m_implemenentation());
-                     return std::unique_ptr< Receive::impl_base>{ new receive::basic_impl< receive_type>{ m_implemenentation()}};
+                     return common::make::unique< receive::basic_impl< receive_type>>( m_implemenentation());
                   }
 
                   IO::Input& input() override
@@ -213,12 +210,7 @@ namespace casual
                   //
                   // We could create other protocols later, including mockup.
                   //
-
-                  if( common::log::parameter.good())
-                  {
-                     //return std::unique_ptr< Service::impl_base>{ new service::basic_impl< log::Service< Binary::Service>>{ std::move( service), flags}};
-                  }
-                  return std::unique_ptr< Service::impl_base>{ new Binary{ std::move( service), flags}};
+                  return common::make::unique< Binary>( std::move( service), flags);
                }
             } // protocol
 
@@ -284,7 +276,7 @@ namespace casual
                   std::unique_ptr< Result::impl_base> call() override
                   {
                      using receive_type = decltype( m_implemenentation());
-                     return std::unique_ptr< Result::impl_base>{ new result::basic_impl< receive_type>{ m_implemenentation()}};
+                     return common::make::unique< result::basic_impl< receive_type>>( m_implemenentation());
                   }
 
                   IO::Input& input() override
@@ -307,12 +299,7 @@ namespace casual
                   //
                   // We could create other protocols later, including mockup.
                   //
-
-                  if( common::log::parameter.good())
-                  {
-                     //return std::unique_ptr< Service::impl_base>{ new send::basic_impl< log::Send< Binary::Send>>{ std::move( service), flags}};
-                  }
-                  return std::unique_ptr< Service::impl_base>{ new Binary{ std::move( service), flags}};
+                  return common::make::unique< Binary>( std::move( service), flags);
                }
             }
 

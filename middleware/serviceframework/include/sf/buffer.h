@@ -1,12 +1,9 @@
 //!
-//! buffer.h
-//!
-//! Created on: Dec 23, 2012
-//!     Author: Lazan
+//! caual
 //!
 
-#ifndef BUFFER_H_
-#define BUFFER_H_
+#ifndef SF_BUFFER_H_
+#define SF_BUFFER_H_
 
 #include "sf/exception.h"
 #include "sf/platform.h"
@@ -46,15 +43,7 @@ namespace casual
          {
             using namespace common::buffer::type;
 
-            namespace api
-            {
-               Type binary();
-               Type json();
-               Type yaml();
-               Type xml();
-
-               const std::vector< Type>& types();
-            }
+            Type api();
 
             Type get( platform::raw_buffer_type buffer);
          } // type
@@ -75,6 +64,7 @@ namespace casual
             using iterator = buffer_type;
             using const_iterator = platform::const_raw_buffer_type;
             using size_type = std::size_t;
+            using value_type = char;
 
             using range_type = common::Range< iterator>;
             using const_range_type = common::Range< const_iterator>;
@@ -95,6 +85,13 @@ namespace casual
             //! Allocates a buffer of @p type with @size size
             //!
             Buffer( const Type& type, size_type size);
+
+
+            //!
+            //! Crates a 'null-buffer' with @p type type
+            //!
+            Buffer( const Type& type);
+
 
             //!
             //! Takes over ownership of the raw buffer.

@@ -3,6 +3,7 @@
 //!
 
 #include "common/mockup/thread.h"
+#include "common/mockup/log.h"
 
 
 #include "common/error.h"
@@ -24,7 +25,7 @@ namespace casual
          {
             try
             {
-               log::internal::debug << "mockup::Thread dtor - thread: " << m_thread.get_id() << '\n';
+               log << "mockup::Thread dtor - thread: " << m_thread.get_id() << '\n';
 
                if( m_thread.joinable())
                {

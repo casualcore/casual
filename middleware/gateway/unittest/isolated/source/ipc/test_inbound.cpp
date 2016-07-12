@@ -8,6 +8,7 @@
 
 
 #include "gateway/message.h"
+#include "gateway/common.h"
 #include "gateway/environment.h"
 
 
@@ -69,7 +70,7 @@ namespace casual
                      communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, inbound.correlation);
                      external = reply.process;
 
-                     log::internal::gateway << "external: " << external << std::endl;
+                     log << "external: " << external << std::endl;
 
 
                      /*

@@ -107,9 +107,9 @@ def Environment( name, value = '', export = True):
     """
     
     if( export):
-        print 'export ' + name + ' = ' + value
+        print 'export ' + name + ' := ' + value
     else:
-        print name + ' = ' + value
+        print name + ' := ' + value
     
     
 

@@ -13,7 +13,7 @@ namespace casual
 
    namespace domain
    {
-      extern common::log::internal::Stream& log;
+      extern common::log::Stream log;
 
       struct Trace : common::Trace
       {

@@ -5,8 +5,12 @@
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
 
+
 #include "common/trace.h"
 #include "common/log.h"
+
+
+#include <gtest/gtest.h>
 
 namespace casual
 {
@@ -17,21 +21,21 @@ namespace casual
 
          namespace detail
          {
-            template< typename T>
             struct Trace
             {
-               Trace( const T& test_info) : test_info( test_info)
+               Trace()
                {
+                  auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+
                   log::trace << "TEST( " << test_info->test_case_name() << ", " << test_info->name() << ") - in\n";
                }
 
                ~Trace()
                {
+                  auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+
                   log::trace << "TEST( " << test_info->test_case_name() << ", " << test_info->name() << ") - out\n";
                }
-
-            private:
-               T test_info;
             };
 
          } // detail
@@ -40,6 +44,6 @@ namespace casual
 } // casual
 
 #define CASUAL_UNITTEST_TRACE() \
-   casual::common::unittest::detail::Trace< decltype( this->test_info_)> trace{ this->test_info_}
+   casual::common::unittest::detail::Trace casual_unittest_trace
 
 #endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_

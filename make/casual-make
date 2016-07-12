@@ -131,7 +131,7 @@ reformat.filters = [
      lambda match: color.header( 'delete: ' ) + match.group(1) + '\n' ],
     [ re.compile(r'^mkdir( [-].+)*[ ](.*)'),  
      lambda match: color.header( 'create: ' ) + match.group( 2) + '\n' ],
-    [ re.compile(r'^casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*'),  
+    [ re.compile(r'.*casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*'),  
      lambda match: color.blue( 'buildserver (' + match.group(1) + '): ' ) + color.white( match.group(2)) + '\n' ],
     [ re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)'),  
      lambda match: color.blue( 'prepare install: ') + color.white( match.group(1)) +  ' --> ' +  match.group(2) + '\n' ],

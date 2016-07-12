@@ -1,9 +1,6 @@
-/*
- * ini.h
- *
- *  Created on: Feb 11, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #ifndef SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_
 #define SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_
@@ -48,6 +45,7 @@ namespace casual
 
                const tree& operator() ( std::istream& stream);
                const tree& operator() ( const std::string& ini);
+               const tree& operator() ( const char* ini, std::size_t size);
 
             private:
 

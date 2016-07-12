@@ -1,8 +1,5 @@
 //!
-//! type.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMONMESSAGETYPE_H_
@@ -72,7 +69,7 @@ namespace casual
             service_unadvertise,
             service_name_lookup_request,
             service_name_lookup_reply,
-            service_call,
+            service_call = SERVICE_BASE + 100,
             service_reply,
             service_acknowledge,
 

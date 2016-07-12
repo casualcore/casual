@@ -5,6 +5,7 @@
 #include "queue/group/group.h"
 #include "queue/group/handle.h"
 
+#include "queue/common/log.h"
 #include "queue/common/environment.h"
 
 #include "common/message/dispatch.h"
@@ -240,7 +241,7 @@ namespace casual
 
          Server::~Server()
          {
-            common::trace::Scope trace{ "queue::server::Server dtor", common::log::internal::queue};
+            common::trace::Scope trace{ "queue::server::Server dtor"};
 
             try
             {

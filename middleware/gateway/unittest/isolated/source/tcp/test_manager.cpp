@@ -13,7 +13,7 @@
 
 #include "common/environment.h"
 #include "common/trace.h"
-#include "common/call/lookup.h"
+#include "common/service/lookup.h"
 
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
@@ -252,7 +252,7 @@ domain:
          // Expect service remote1 to be available from the outbound connection
          //
          {
-            auto reply = common::call::service::Lookup{ "remote1"}();
+            auto reply = common::service::Lookup{ "remote1"}();
 
             EXPECT_TRUE( reply.service.name == "remote1");
             EXPECT_TRUE( reply.process == state.connections.outbound.at( 0).process);

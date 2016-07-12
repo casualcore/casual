@@ -3,6 +3,7 @@
 //!
 
 #include "gateway/transform.h"
+#include "gateway/common.h"
 
 #include "common/algorithm.h"
 #include "common/trace.h"
@@ -102,7 +103,7 @@ namespace casual
 
          manager::State state( const common::message::domain::configuration::gateway::Reply& configuration)
          {
-            Trace trace{ "gateway::transform::state", log::internal::gateway};
+            Trace trace{ "gateway::transform::state"};
 
             manager::State state;
 
@@ -114,7 +115,7 @@ namespace casual
 
          manager::admin::vo::State state( const manager::State& state)
          {
-            Trace trace{ "gateway::transform::state service", log::internal::gateway};
+            Trace trace{ "gateway::transform::state service"};
 
             manager::admin::vo::State result;
 

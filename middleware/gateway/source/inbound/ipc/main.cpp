@@ -3,6 +3,7 @@
 //!
 
 #include "gateway/inbound/gateway.h"
+#include "gateway/common.h"
 
 
 #include "common/arguments.h"
@@ -64,7 +65,7 @@ namespace casual
                {
                   external_type( ipc::Settings&& settings)
                   {
-                     Trace trace{ "inbound::ipc::Policy::external_type ctor", log::internal::gateway};
+                     Trace trace{ "inbound::ipc::Policy::external_type ctor"};
 
                      m_process.queue = settings.ipc;
 
@@ -77,7 +78,7 @@ namespace casual
                         reply.process.pid = common::process::id();
                         reply.process.queue = m_inbound.connector().id();
 
-                        log::internal::gateway << "reply: " << reply << '\n';
+                        log << "reply: " << reply << '\n';
 
                         communication::ipc::blocking::send( m_process.queue, reply);
                      }

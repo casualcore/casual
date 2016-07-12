@@ -3,6 +3,7 @@
 //!
 
 #include "gateway/inbound/cache.h"
+#include "gateway/common.h"
 
 #include "common/algorithm.h"
 #include "common/trace.h"
@@ -56,7 +57,7 @@ namespace casual
 
          void Cache::add( complete_type&& message) const
          {
-            Trace trace{ "gateway::inbound::Cache::add", log::internal::gateway};
+            Trace trace{ "gateway::inbound::Cache::add"};
 
             lock_type lock{ m_mutex};
 
@@ -72,7 +73,7 @@ namespace casual
 
             if( ! vacant( lock))
             {
-               log::internal::gateway << "state change: vacant -> limit\n";
+               log << "state change: vacant -> limit\n";
 
                //
                // This add to the cache broke the limits.
@@ -83,7 +84,7 @@ namespace casual
 
          Cache::complete_type Cache::get( const common::Uuid& correlation) const
          {
-            Trace trace{ "gateway::inbound::Cache::get", log::internal::gateway};
+            Trace trace{ "gateway::inbound::Cache::get"};
 
             lock_type lock{ m_mutex};
             auto found = range::find( m_messages, correlation);
@@ -99,7 +100,7 @@ namespace casual
 
             if( m_state == State::limit && vacant( lock))
             {
-               log::internal::gateway << "state change: limit -> vacant\n";
+               log << "state change: limit -> vacant\n";
                //
                // We was in a limit state, now we're vacant. Make sure blocked threads are
                // notified

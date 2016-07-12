@@ -22,34 +22,6 @@ namespace casual
       namespace log
       {
 
-         namespace category
-         {
-            enum class Type
-            {
-               //
-               // casual internal logging
-               casual_debug,
-               casual_trace,
-               casual_transaction,
-               casual_gateway,
-               casual_ipc,
-               casual_queue,
-               casual_buffer,
-
-               //
-               // Public logging
-               debug = 100,
-               trace,
-               parameter,
-               information,
-               warning,
-               error,
-            };
-
-            const std::string& name( Type type);
-
-         } // category
-
          namespace thread
          {
             class Safe
@@ -90,69 +62,64 @@ namespace casual
          } // thread
 
 
-         namespace internal
+         class Stream : public std::ostream
          {
+         public:
 
-            class Stream : public std::ostream
+            Stream( std::string category);
+
+
+            template< typename T>
+            thread::Safe operator << ( T&& value)
             {
-            public:
-
-               using std::ostream::ostream;
-
-
-               template< typename T>
-               thread::Safe operator << ( T&& value)
-               {
-                  thread::Safe proxy{ *this};
-                  proxy << std::forward< T>( value);
-                  return proxy;
-               }
-            };
-         } // internal
-
+               thread::Safe proxy{ *this};
+               proxy << std::forward< T>( value);
+               return proxy;
+            }
+         };
 
 
          //!
          //! Log with category 'debug'
          //!
-         extern internal::Stream debug;
+         extern Stream debug;
 
          //!
          //! Log with category 'trace'
          //!
-         extern internal::Stream trace;
+         extern Stream trace;
 
 
          //!
          //! Log with category 'parameter'
          //!
-         extern internal::Stream parameter;
+         extern Stream parameter;
 
          //!
          //! Log with category 'information'
          //!
-         extern internal::Stream information;
+         extern Stream information;
 
          //!
          //! Log with category 'warning'
          //!
          //! @note should be used very sparsely. Either it is an error or it's not...
          //!
-         extern internal::Stream warning;
+         extern Stream warning;
 
          //!
          //! Log with category 'error'
          //!
          //! @note always active
          //!
-         extern internal::Stream error;
+         extern Stream error;
 
          namespace stream
          {
             //!
             //! @returns the corresponding stream for the @p category
             //!
-            internal::Stream& get( category::Type category);
+            Stream& get( const std::string& category);
          } // stream
 
 
@@ -161,16 +128,11 @@ namespace casual
          //!
          //! @return true if the log-category is active.
          //!
-         bool active( category::Type category);
+         bool active( const std::string& category);
 
-         void activate( category::Type category);
+         void activate( const std::string& category);
 
-         void deactivate( category::Type category);
-
-
-
-         void write( category::Type category, const char* message);
-         void write( category::Type category, const std::string& message);
+         void deactivate( const std::string& category);
 
          void write( const std::string& category, const std::string& message);
 

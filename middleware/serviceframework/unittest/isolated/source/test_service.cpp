@@ -1,8 +1,5 @@
 //!
-//! test_service.cpp
-//!
-//! Created on: Mar 9, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
