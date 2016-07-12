@@ -39,17 +39,13 @@ namespace casual
                      //
                      // To support empty documents
                      //
+                     if( ! json || json[ 0] == '\0')
                      {
-                        static const std::string empty{ "{}"};
-
-                        if( ! json || json[ 0] == '\0')
-                        {
-                           document.Parse( empty.c_str());
-                        }
-                        else
-                        {
-                           document.Parse( json);
-                        }
+                        document.Parse( "{}");
+                     }
+                     else
+                     {
+                        document.Parse( json);
                      }
 
                      if( document.HasParseError())
@@ -73,11 +69,11 @@ namespace casual
 
             const rapidjson::Document& Load::operator() ( std::istream& stream)
             {
-               return local::parse(
-                  m_document,
-                  std::string{
-                     std::istream_iterator< char>( stream),
-                     std::istream_iterator< char>()}.c_str());
+               const std::string buffer{
+                  std::istream_iterator< char>( stream),
+                  std::istream_iterator< char>()};
+
+               return local::parse( m_document, buffer.c_str());
             }
 
             const rapidjson::Document& Load::operator() ( const std::string& json)
@@ -88,7 +84,8 @@ namespace casual
             const rapidjson::Document& Load::operator() ( const char* const json, const std::size_t size)
             {
                // To ensure null-terminated string
-               return local::parse( m_document, std::string( json, size).c_str());
+               const std::string buffer{ json, size};
+               return local::parse( m_document, buffer.c_str());
             }
 
             const rapidjson::Document& Load::operator() ( const char* const json)
