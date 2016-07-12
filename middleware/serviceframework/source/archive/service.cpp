@@ -95,35 +95,31 @@ namespace casual
                         {
                            std::default_random_engine& engine()
                            {
-                              static std::random_device rd;
-                              static std::default_random_engine re{ rd()};
-                              return re;
+                              static std::random_device device;
+                              static std::default_random_engine engine{ device()};
+                              return engine;
                            }
 
                            template< typename T>
                            T random()
-                           {;
-                              static auto min = std::numeric_limits< T>::min() / 5;
-                              static auto max = std::numeric_limits< T>::max() / 5;
+                           {
+                              static std::uniform_int_distribution< T> distribution(
+                                    std::numeric_limits< T>::min() / 5,
+                                    std::numeric_limits< T>::max() / 5);
 
-
-                              static std::uniform_int_distribution< T> dist(
-                                    min,
-                                    max);
-
-                              return dist( engine());
-
+                              return distribution( engine());
                            }
 
                            template<>
                            char random<char>()
                            {
-                              static std::uniform_int_distribution< char> dist(
+                              static std::uniform_int_distribution< char> distribution(
                                     40,
                                     127);
 
-                              return dist( engine());
+                              return distribution( engine());
                            }
+
                         } // random
                      } // <unnamed>
                   } // local
@@ -145,13 +141,15 @@ namespace casual
                   void Prepare::serialtype_end( const char*) { /*no op*/}
 
 
+
+
                   void Prepare::pod( bool& value) { value = true;}
                   void Prepare::pod( char& value) { value = local::random::random< char>();}
                   void Prepare::pod( short& value) { value = local::random::random< short>();}
                   void Prepare::pod( long& value) { value = local::random::random< long>();}
                   void Prepare::pod( long long& value) { value = local::random::random< long long>();}
-                  void Prepare::pod( float& value) { value = local::random::random< float>();}
-                  void Prepare::pod( double& value) { value = local::random::random< double>();}
+                  void Prepare::pod( float& value) { value = local::random::random<short>();}
+                  void Prepare::pod( double& value) { value = local::random::random<long>();}
                   void Prepare::pod( std::string& value) { value = "casual";}
                   void Prepare::pod( platform::binary_type& value)
                   {
@@ -161,7 +159,7 @@ namespace casual
 
                         value.assign( std::begin( uuid.get()), std::end( uuid.get()));
                      }
-                  };
+                  }
 
                } // implementation
 
