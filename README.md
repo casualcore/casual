@@ -30,6 +30,8 @@ The following needs to be installed using rpm or yum packages:
  * gcc-c++
  * puppet
 
+*Note: casual will note make on a 32-bit system*
+
 #### Set up the environment
 Use templatefile to setup environment
 
