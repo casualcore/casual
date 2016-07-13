@@ -23,11 +23,11 @@ Can of course be used stand alone without the rest of casual.
 ### How do I get set up? ###
 
 #### Prerequisites
-The following needs to be installed using rpm or yum packages.
-* git
-* python
-* gcc-c++
-* puppet
+The following needs to be installed using rpm or yum packages:
+ * git
+ * python
+ * gcc-c++
+ * puppet
 
 #### Set up the environment
 Use templatefile to setup environment
