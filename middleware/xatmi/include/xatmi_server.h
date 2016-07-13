@@ -1,8 +1,5 @@
 //!
-//! xatmi_server.h
-//!
-//! Created on: Mar 28, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef XATMI_SERVER_H_
@@ -35,7 +32,7 @@ struct casual_service_name_mapping
 struct casual_xa_switch_mapping
 {
    const char* key;
-   struct xa_switch_t* xaSwitch;
+   struct xa_switch_t* xa_switch;
 };
 
 
@@ -53,7 +50,7 @@ struct casual_server_argument
    int argc;
    char** argv;
 
-   struct casual_xa_switch_mapping* xaSwitches;
+   struct casual_xa_switch_mapping* xa_switches;
 };
 
 

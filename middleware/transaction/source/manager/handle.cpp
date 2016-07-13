@@ -1,15 +1,10 @@
 //!
-//! handle.cpp
-//!
-//! Created on: Jun 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/handle.h"
-
 #include "transaction/manager/action.h"
-
-#include "common/trace.h"
+#include "transaction/common.h"
 
 
 namespace casual
@@ -127,7 +122,7 @@ namespace casual
 
                         if( ! send( reply))
                         {
-                           common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
+                           log << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
                            m_state.persistent.replies.push_back( std::move( reply));
                         }
 
@@ -151,7 +146,7 @@ namespace casual
 
                      if( ! send( reply))
                      {
-                        common::log::internal::transaction << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
+                        log << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
                         state.persistent.replies.push_back( std::move( reply));
                      }
                   }
@@ -192,7 +187,7 @@ namespace casual
                      template< typename M, typename F>
                      void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
                      {
-                        common::trace::Scope trace{ "transaction::handle::send::resource::request", common::log::internal::transaction};
+                        Trace trace{ "transaction::handle::send::resource::request"};
 
                         M message;
                         message.process = common::process::handle();
@@ -223,7 +218,7 @@ namespace casual
                            // Could not send to all RM-proxy-instances. We put the request
                            // in pending.
                            //
-                           common::log::internal::transaction << "could not send to all RM-proxy-instances - action: try later\n";
+                           log << "could not send to all RM-proxy-instances - action: try later\n";
 
                            state.pending.requests.push_back( std::move( request));
                         }
@@ -299,7 +294,7 @@ namespace casual
 
                      common::range::trim( transaction.resources, common::range::unique( common::range::sort( transaction.resources)));
 
-                     common::log::internal::transaction << "involved: " << transaction << '\n';
+                     log << "involved: " << transaction << '\n';
 
                   }
 
@@ -319,7 +314,7 @@ namespace casual
 
             void Exit::apply( const common::process::lifetime::Exit& exit)
             {
-               common::trace::Scope trace{ "transaction::handle::dead::Process", common::log::internal::transaction};
+               Trace trace{ "transaction::handle::dead::Process"};
 
                // TODO: check if it's one of spawned resource proxies, if so, restart?
 
@@ -357,7 +352,7 @@ namespace casual
             {
                void Allocation::operator () ( message_type& message)
                {
-                  common::trace::Scope trace{ "transaction::handle::resource::id::Allocation", common::log::internal::transaction};
+                  Trace trace{ "transaction::handle::resource::id::Allocation"};
 
                }
 
@@ -366,9 +361,9 @@ namespace casual
 
             void Involved::operator () ( common::message::transaction::resource::Involved& message)
             {
-               common::trace::Scope trace{ "transaction::handle::resource::Involved", common::log::internal::transaction};
+               Trace trace{ "transaction::handle::resource::Involved"};
 
-               common::log::internal::transaction << "involved message: " << message << '\n';
+               log << "involved message: " << message << '\n';
 
 
                auto transaction = common::range::find_if(
@@ -454,9 +449,9 @@ namespace casual
 
                void Connect::operator () ( message_type& message)
                {
-                  common::trace::Scope trace{ "transaction::handle::resource::connect reply", common::log::internal::transaction};
+                  Trace trace{ "transaction::handle::resource::connect reply"};
 
-                  common::log::internal::transaction << "resource connected: " << message << std::endl;
+                  log << "resource connected: " << message << std::endl;
 
                   try
                   {
@@ -482,7 +477,7 @@ namespace casual
                   {
                      common::log::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
 
-                     common::log::internal::transaction << "resources: " << common::range::make( m_state.resources) << std::endl;
+                     log << "resources: " << common::range::make( m_state.resources) << std::endl;
                   }
 
 
@@ -494,7 +489,7 @@ namespace casual
                      //
                      /*
 
-                     common::log::internal::transaction << "enough resources are connected - send connect to broker\n";
+                     log << "enough resources are connected - send connect to broker\n";
 
                      common::message::transaction::manager::Ready running;
                      running.process = common::process::handle();
@@ -508,9 +503,9 @@ namespace casual
 
                bool basic_prepare::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
-                  common::trace::Scope trace{ "transaction::handle::resource::prepare reply", common::log::internal::transaction};
+                  Trace trace{ "transaction::handle::resource::prepare reply"};
 
-                  common::log::internal::transaction << "prepare reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  log << "prepare reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
 
                   //
@@ -549,7 +544,7 @@ namespace casual
                      {
                         case Transaction::Resource::Result::xa_RDONLY:
                         {
-                           common::log::internal::transaction << "prepare completed - " << transaction << " XA_RDONLY\n";
+                           log << "prepare completed - " << transaction << " XA_RDONLY\n";
 
                            //
                            // Read-only optimazation. We can send the reply directly and
@@ -576,7 +571,7 @@ namespace casual
                         }
                         case Transaction::Resource::Result::xa_OK:
                         {
-                           common::log::internal::transaction << "prepare completed - " << transaction << " XA_OK\n";
+                           log << "prepare completed - " << transaction << " XA_OK\n";
 
                            //
                            // Prepare has gone ok. Log state
@@ -639,9 +634,9 @@ namespace casual
 
                bool basic_commit::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
-                  common::trace::Scope trace{ "transaction::handle::resource::commit reply", common::log::internal::transaction};
+                  Trace trace{ "transaction::handle::resource::commit reply"};
 
-                  common::log::internal::transaction << "commit reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  log << "commit reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
                   resource.stage = Transaction::Resource::Stage::commit_replied;
 
@@ -665,7 +660,7 @@ namespace casual
                      {
                         case Transaction::Resource::Result::xa_OK:
                         {
-                           common::log::internal::transaction << "commit completed - " << transaction << " XA_OK\n";
+                           log << "commit completed - " << transaction << " XA_OK\n";
 
                            auto reply = local::transform::message< reply_type>( message);
                            reply.correlation = transaction.correlation;
@@ -723,9 +718,9 @@ namespace casual
 
                bool basic_rollback::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
-                  common::trace::Scope trace{ "transaction::handle::resource::rollback reply", common::log::internal::transaction};
+                  Trace trace{ "transaction::handle::resource::rollback reply"};
 
-                  common::log::internal::transaction << "rollback reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  log << "rollback reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
 
                   resource.stage = Transaction::Resource::Stage::rollback_replied;
 
@@ -751,7 +746,7 @@ namespace casual
                         case Transaction::Resource::Result::xaer_NOTA:
                         case Transaction::Resource::Result::xa_RDONLY:
                         {
-                           common::log::internal::transaction << "rollback completed - " << transaction << " XA_OK\n";
+                           log << "rollback completed - " << transaction << " XA_OK\n";
 
                            //
                            // Send reply
@@ -839,7 +834,7 @@ namespace casual
 
          void basic_commit::operator () ( message_type& message)
          {
-            common::Trace trace{ "transaction::handle::Commit", common::log::internal::transaction};
+            common::Trace trace{ "transaction::handle::Commit"};
 
             auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
@@ -888,7 +883,7 @@ namespace casual
                {
                   case 0:
                   {
-                     common::log::internal::transaction << "no resources involved - " << transaction << " XA_RDONLY\n";
+                     log << "no resources involved - " << transaction << " XA_RDONLY\n";
 
                      //
                      // We can remove this transaction
@@ -913,7 +908,7 @@ namespace casual
                      //
                      // Only one resource involved, we do a one-phase-commit optimization.
                      //
-                     common::log::internal::transaction << "only one resource involved - " << transaction << " TMONEPHASE\n";
+                     log << "only one resource involved - " << transaction << " TMONEPHASE\n";
 
                      //
                      // Keep the correlation so we can send correct reply
@@ -935,7 +930,7 @@ namespace casual
                      //
                      // More than one resource involved, we do the prepare stage
                      //
-                     common::log::internal::transaction << "prepare " << transaction << "\n";
+                     log << "prepare " << transaction << "\n";
 
                      //
                      // Keep the correlation so we can send correct reply
@@ -961,7 +956,7 @@ namespace casual
 
          void basic_rollback::operator () ( message_type& message)
          {
-            common::trace::Scope trace{ "transaction::handle::Rollback", common::log::internal::transaction};
+            Trace trace{ "transaction::handle::Rollback"};
 
             //
             // Find the transaction
@@ -993,7 +988,7 @@ namespace casual
 
                if( transaction.resources.empty())
                {
-                  common::log::internal::transaction << "no resources involved - " << transaction << " XA_OK\n";
+                  log << "no resources involved - " << transaction << " XA_OK\n";
 
                   //
                   // We can remove this transaction.
@@ -1034,15 +1029,15 @@ namespace casual
          {
             void Involved::operator () (common::message::transaction::resource::domain::Involved& message)
             {
-               common::trace::Scope trace{ "transaction::handle::domain::Involved", common::log::internal::transaction};
+               Trace trace{ "transaction::handle::domain::Involved"};
 
-               common::log::internal::transaction << "involved message: " << message << '\n';
+               log << "involved message: " << message << '\n';
 
             }
 
             void Prepare::operator () ( message_type& message)
             {
-               common::trace::Scope trace{ "transaction::handle::domain::prepare request", common::log::internal::transaction};
+               Trace trace{ "transaction::handle::domain::prepare request"};
 
                //
                // Find the transaction
@@ -1052,7 +1047,7 @@ namespace casual
                if( found && ! found->resources.empty())
                {
                   auto& transaction = *found;
-                  common::log::internal::transaction << "prepare - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
+                  log << "prepare - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   local::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
                      m_state,
@@ -1073,7 +1068,7 @@ namespace casual
                   // Either way, we don't have it, so we just reply that it has been prepared with "read only"
                   //
 
-                  common::log::internal::transaction << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
+                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
                   //
                   // Send reply
@@ -1090,7 +1085,7 @@ namespace casual
 
             void Commit::operator () ( message_type& message)
             {
-               common::trace::Scope trace{ "transaction::handle::domain::commit request", common::log::internal::transaction};
+               Trace trace{ "transaction::handle::domain::commit request"};
 
                //
                // Find the transaction
@@ -1100,7 +1095,7 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
-                  common::log::internal::transaction << "commit - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
+                  log << "commit - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
@@ -1113,7 +1108,7 @@ namespace casual
                else
                {
 
-                  common::log::internal::transaction << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
+                  log << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
 
                   //
                   // Send reply
@@ -1129,7 +1124,7 @@ namespace casual
 
             void Rollback::operator () ( message_type& message)
             {
-               common::trace::Scope trace{ "transaction::handle::domain::rollback request", common::log::internal::transaction};
+               Trace trace{ "transaction::handle::domain::rollback request"};
 
                //
                // Find the transaction
@@ -1139,7 +1134,7 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
-                  common::log::internal::transaction << "rollback - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
+                  log << "rollback - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
                   local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
@@ -1151,7 +1146,7 @@ namespace casual
                }
                else
                {
-                  common::log::internal::transaction << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
+                  log << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
 
                   //
                   // Send reply
@@ -1171,7 +1166,7 @@ namespace casual
                {
                   bool basic_prepare::operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
-                     common::trace::Scope trace{ "transaction::handle::domain::resource::prepare reply", common::log::internal::transaction};
+                     Trace trace{ "transaction::handle::domain::resource::prepare reply"};
 
                      resource.result = Transaction::Resource::convert( message.state);
                      resource.stage = Transaction::Resource::Stage::prepare_replied;
@@ -1188,7 +1183,7 @@ namespace casual
 
                         auto result = transaction.results();
 
-                        common::log::internal::transaction << "domain prepared: " << transaction.trid << " - state: " << result << std::endl;
+                        log << "domain prepared: " << transaction.trid << " - state: " << result << std::endl;
 
                         //
                         // This TM does not own the transaction, so we don't need to store
@@ -1212,7 +1207,7 @@ namespace casual
 
                   bool basic_commit::operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
-                     common::trace::Scope trace{ "transaction::handle::domain::resource::commit reply", common::log::internal::transaction};
+                     Trace trace{ "transaction::handle::domain::resource::commit reply"};
 
                      resource.result = Transaction::Resource::convert( message.state);
                      resource.stage = Transaction::Resource::Stage::commit_replied;
@@ -1231,7 +1226,7 @@ namespace casual
 
                         auto result = transaction.results();
 
-                        common::log::internal::transaction << "domain committed: " << transaction.trid << " - state: " << result << std::endl;
+                        log << "domain committed: " << transaction.trid << " - state: " << result << std::endl;
 
                         //
                         // This TM does not own the transaction, so we don't need to store
@@ -1260,7 +1255,7 @@ namespace casual
 
                   bool basic_rollback::operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource)
                   {
-                     common::trace::Scope trace{ "transaction::handle::domain::resource::rollback reply", common::log::internal::transaction};
+                     Trace trace{ "transaction::handle::domain::resource::rollback reply"};
 
                      //using non_block_writer = typename queue_policy::non_block_writer;
 

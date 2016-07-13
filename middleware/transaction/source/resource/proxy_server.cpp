@@ -31,7 +31,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
       casual::common::trace::internal::Scope trace{ "casual_start_reource_proxy"};
 
       casual::transaction::resource::State state;
-      state.xaSwitches = serverArguments->xaSwitches;
+      state.xa_switches = serverArguments->xaSwitches;
 
       {
          casual::common::Arguments arguments{ {

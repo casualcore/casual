@@ -38,6 +38,7 @@ manager_archive = LinkArchive( 'bin/manager-archive',
     Compile( 'source/manager/handle.cpp'),
     Compile( 'source/manager/admin/server.cpp'),
     Compile( 'source/manager/admin/transform.cpp'),
+    Compile( 'source/common.cpp'),
     ])
  
 

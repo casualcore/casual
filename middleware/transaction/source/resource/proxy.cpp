@@ -55,7 +55,7 @@ namespace casual
                   reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
 
-                  reply.state = m_state.xaSwitches->xaSwitch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
+                  reply.state = m_state.xa_switches->xa_switch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
 
 
                   common::trace::Outcome logConnect{ "resource connect to transaction monitor", common::log::internal::transaction};
@@ -106,7 +106,7 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     auto result = state.xaSwitches->xaSwitch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags);
+                     auto result = state.xa_switches->xa_switch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags);
                      log::internal::transaction << error::xa::error( result) << " prepare rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
@@ -117,7 +117,7 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     auto result =  state.xaSwitches->xaSwitch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags);
+                     auto result =  state.xa_switches->xa_switch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags);
 
                      if( log::internal::transaction)
                      {
@@ -125,7 +125,7 @@ namespace casual
                         if( result != XA_OK)
                         {
                            std::array< XID, 12> xids;
-                           auto count = state.xaSwitches->xaSwitch->xa_recover_entry( xids.data(), xids.max_size(), state.rm_id, TMSTARTRSCAN | TMENDRSCAN);
+                           auto count = state.xa_switches->xa_switch->xa_recover_entry( xids.data(), xids.max_size(), state.rm_id, TMSTARTRSCAN | TMENDRSCAN);
 
                            while( count > 0)
                            {
@@ -145,7 +145,7 @@ namespace casual
                   template< typename M>
                   int operator() ( State& state, M& message) const
                   {
-                     auto result =  state.xaSwitches->xaSwitch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags);
+                     auto result =  state.xa_switches->xa_switch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags);
                      log::internal::transaction << error::xa::error( result) << " rollback rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
@@ -198,13 +198,13 @@ namespace casual
          {
             void state( const State& state)
             {
-               if( ! ( state.xaSwitches && state.xaSwitches->key && state.xaSwitches->key == state.rm_key
+               if( ! ( state.xa_switches && state.xa_switches->key && state.xa_switches->key == state.rm_key
                      && ! state.rm_key.empty()))
                {
                   throw exception::NotReallySureWhatToNameThisException( "mismatch between expected resource key and configured resource key");
                }
 
-               if( ! state.xaSwitches->xaSwitch)
+               if( ! state.xa_switches->xa_switch)
                {
                   throw exception::NotReallySureWhatToNameThisException( "xa-switch is null");
                }
@@ -221,7 +221,7 @@ namespace casual
 
         Proxy::~Proxy()
         {
-           auto result = m_state.xaSwitches->xaSwitch->xa_close_entry( m_state.rm_closeinfo.c_str(), m_state.rm_id, TMNOFLAGS);
+           auto result = m_state.xa_switches->xa_switch->xa_close_entry( m_state.rm_closeinfo.c_str(), m_state.rm_id, TMNOFLAGS);
 
            if( result != XA_OK)
            {

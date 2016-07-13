@@ -51,11 +51,11 @@ namespace local
                   ++service;
                }
 
-               auto xaSwitch = value.xaSwitches;
+               auto xaSwitch = value.xa_switches;
 
-               while( xaSwitch->xaSwitch != nullptr)
+               while( xaSwitch->xa_switch != nullptr)
                {
-                  result.resources.emplace_back( xaSwitch->key, xaSwitch->xaSwitch);
+                  result.resources.emplace_back( xaSwitch->key, xaSwitch->xa_switch);
                   ++xaSwitch;
                }
 

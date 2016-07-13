@@ -1,0 +1,104 @@
+@startuml
+
+title Interdomain transaction with one resource involved in each
+
+
+box "local domain" #LightBlue
+   participant "Server A" as SA
+   database "RM 2" as RM2
+   participant "TM" as LTM
+   participant "Gateway" as LG
+end box
+
+box "remote domain" 
+   participant "Gateway" as RG
+   participant "TM" as RTM
+   participant "Server B" as SB
+   database "RM 1" as RM1
+end box
+
+activate SA
+SA -> SA: begin transaction (trid 42)
+SA -> LTM: resource RM 2 involved in trid 42
+SA -> RM2: uses resurce RM 2 (trid 42)
+
+
+SA -> LG: call service b (trid 42)    
+LG -> LTM: outound involved in trid 42
+LG -> RG: call service b (trid 42)
+RG -> SB: call service b (trid 42)
+activate SB
+SB -> RTM: resource RM 1 involved in trid 42
+SB -> RM1: uses resource (trid 42)
+SB -> RG: reply service b
+deactivate SB
+
+RG -> LG: reply service b
+LG -> SA: reply service b
+
+
+SA -> LTM: commit request (trid 42)
+activate LTM
+LTM -> LG: prepare request (trid 42)
+LTM -> RM2: prepare request (trid 42)
+deactivate LTM
+
+activate RM2
+LG -> RG: prepare request (trid 42)
+RG -> RTM: prepare request (trid 42)
+activate RTM
+
+RM2 -> LTM: prepare reply OK (trid 42)
+deactivate RM2
+
+RTM -> RM1: prepare request (trid 42)
+deactivate RTM
+activate RM1
+RM1 -> RTM: prepare reply OK (trid 42)
+deactivate RM1
+activate RTM
+
+
+RTM -> RG: prepare reply OK (trid 42)
+deactivate RTM
+
+RG -> LG: prepare reply OK (trid 42)
+LG -> LTM: prepare reply OK (trid 42)
+activate LTM
+
+LTM -> SA: prepare stage done
+
+LTM -> LG: commit request (trid 42)
+LTM -> RM2: commit request (trid 42)
+deactivate LTM
+activate RM2
+
+
+LG -> RG: commit request (trid 42)
+RG -> RTM: commit request (trid 42)
+activate RTM
+
+RTM -> RM1: commit request (trid 42)
+deactivate RTM
+activate RM1
+RM1 -> RTM: commit reply OK (trid 42)
+deactivate RM1
+activate RTM
+
+RM2 -> LTM: commit reply OK (trid 42)
+deactivate RM2
+
+RTM -> RG: commit reply OK (trid 42)
+deactivate RTM
+
+RG -> LG: commit reply OK (trid 42)
+LG -> LTM: commit reply OK (trid 42)
+activate LTM
+
+LTM -> SA: commit reply OK (trid 42)
+deactivate LTM
+deactivate SA
+
+
+
+@enduml

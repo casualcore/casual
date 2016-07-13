@@ -1,8 +1,5 @@
 //!
-//! resource_proxy.h
-//!
-//! Created on: Aug 5, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef RESOURCE_PROXY_H_
@@ -32,7 +29,7 @@ namespace casual
             std::string rm_openinfo;
             std::string rm_closeinfo;
 
-            casual_xa_switch_mapping* xaSwitches = nullptr;
+            casual_xa_switch_mapping* xa_switches = nullptr;
             common::platform::ipc::id::type tm_queue = 0;
 
             template< typename A>
