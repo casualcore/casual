@@ -24,6 +24,7 @@ Can of course be used stand alone without the rest of casual.
 
 #### Prerequisites
 The following needs to be installed using rpm or yum packages:
+
  * git
  * python
  * gcc-c++
