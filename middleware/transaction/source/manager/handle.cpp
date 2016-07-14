@@ -140,7 +140,7 @@ namespace casual
                   template< typename R>
                   void reply( State& state, R&& message, const common::process::Handle& target)
                   {
-                     state::pending::Reply reply{ target.queue, message};
+                     state::pending::Reply reply{ target.queue, std::forward< R>( message)};
 
                      action::persistent::Send send{ state};
 
@@ -856,6 +856,7 @@ namespace casual
             {
                auto& transaction = *found;
 
+
                //
                // Make sure we add the involved resources from the commit message (if any)
                //
@@ -1039,47 +1040,93 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::prepare request"};
 
+               auto send_readonly_reply = [&](){
+
+                  auto reply = local::transform::reply( message);
+                  reply.state = XA_RDONLY;
+
+                  local::send::reply( m_state, std::move( reply), message.process);
+               };
+
                //
                // Find the transaction
                //
                auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
 
-               if( found && ! found->resources.empty())
+
+               if( found)
                {
                   auto& transaction = *found;
-                  log << "prepare - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
 
-                  local::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
-                     m_state,
-                     transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                     Transaction::Resource::Stage::prepare_requested,
-                     message.flags
-                  );
+                  log << "transaction: " << transaction << '\n';
+
+                  //
+                  // We can only get this message if a 'user commit' has
+                  // been invoked somewhere.
+                  //
+                  // The transaction can only be in one of two states.
+                  //
+                  // 1) The prepare phase has already started, either by this domain
+                  //    or another domain, either way the work has begun, and we don't
+                  //    need to do anything for this particular request.
+                  //
+                  // 2) Some other domain has received a 'user commit' and started the
+                  //    prepare phase. This domain should carry out the request on behalf
+                  //    of the other domain.
+                  //
+
+                  switch( transaction.stage())
+                  {
+                     case Transaction::Resource::Stage::involved:
+                     {
+                        //
+                        // We're in the second state. We change the owner to the inbound gateway that
+                        // sent the request, so we know where to send the accumulated reply.
+                        //
+                        transaction.trid.owner( message.process);
+
+
+                        local::send::resource::request< common::message::transaction::resource::domain::prepare::Request>(
+                           m_state,
+                           transaction,
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                           Transaction::Resource::Stage::prepare_requested,
+                           message.flags
+                        );
+
+                        break;
+                     }
+                     default:
+                     {
+                        send_readonly_reply();
+                        break;
+                     }
+                     case Transaction::Resource::Stage::not_involved:
+                     {
+                        send_readonly_reply();
+
+                        //
+                        // We remove the transaction
+                        //
+                        m_state.transactions.erase( std::begin( found));
+
+                        break;
+                     }
+                  }
                }
                else
                {
                   //
-                  // We don't have the transaction. This could be for three reasons:
+                  // We don't have the transaction. This could be for two reasons:
                   // 1) We had it, but it was already prepared from another domain, and XA
                   // optimization kicked in ("read only") and the transaction was done
                   // 2) casual have made some optimizations.
-                  // 3) no resources involved
                   // Either way, we don't have it, so we just reply that it has been prepared with "read only"
                   //
 
                   log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
-                  //
-                  // Send reply
-                  //
-                  {
-                     auto reply = local::transform::reply( message);
-                     reply.state = XA_RDONLY;
-
-                     local::send::reply( m_state, std::move( reply), message.process);
-                  }
-
+                  send_readonly_reply();
                }
             }
 
@@ -1095,7 +1142,7 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
-                  log << "commit - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
+                  log << "transaction: " << transaction << '\n';
 
                   local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
@@ -1134,7 +1181,7 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
-                  log << "rollback - trid:" << transaction.trid << " owner: " << transaction.trid.owner() << " resources: " << common::range::make( transaction.resources) << "\n";
+                  log << "transaction: " << transaction << '\n';
 
                   local::send::resource::request< common::message::transaction::resource::domain::commit::Request>(
                      m_state,
@@ -1172,6 +1219,9 @@ namespace casual
                      resource.stage = Transaction::Resource::Stage::prepare_replied;
 
 
+                     log << "transaction: " << transaction << '\n';
+
+
                      if( common::range::all_of( transaction.resources,
                            Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied}))
                      {
@@ -1195,7 +1245,7 @@ namespace casual
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( result);
 
-                           local::send::reply( m_state, std::move( reply), message.process);
+                           local::send::reply( m_state, std::move( reply), transaction.trid.owner());
                         }
                      }
 
@@ -1211,6 +1261,8 @@ namespace casual
 
                      resource.result = Transaction::Resource::convert( message.state);
                      resource.stage = Transaction::Resource::Stage::commit_replied;
+
+                     log << "transaction: " << transaction << '\n';
 
 
                      if( common::range::all_of( transaction.resources,
@@ -1238,7 +1290,7 @@ namespace casual
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( result);
 
-                           local::send::reply( m_state, std::move( reply), message.process);
+                           local::send::reply( m_state, std::move( reply), transaction.trid.owner());
                         }
 
                         //
@@ -1257,9 +1309,50 @@ namespace casual
                   {
                      Trace trace{ "transaction::handle::domain::resource::rollback reply"};
 
-                     //using non_block_writer = typename queue_policy::non_block_writer;
+                     resource.result = Transaction::Resource::convert( message.state);
+                     resource.stage = Transaction::Resource::Stage::commit_replied;
+
+                     log << "transaction: " << transaction << '\n';
+
+                     if( common::range::all_of( transaction.resources,
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::commit_replied}))
+                     {
+
+                        //
+                        // All resources has committed, we're done with commit stage.
+                        // We can remove the transaction.
+                        //
+
+                        using reply_type = common::message::transaction::resource::rollback::Reply;
+
+                        auto result = transaction.results();
+
+                        log << "domain rollback: " << transaction.trid << " - state: " << result << std::endl;
+
+                        //
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+                        // Send reply
+                        //
+                        {
+                           auto reply = local::transform::message< reply_type>( message);
+                           reply.state = Transaction::Resource::convert( result);
+
+                           local::send::reply( m_state, std::move( reply), transaction.trid.owner());
+                        }
+
+                        //
+                        // We remove the transaction
+                        //
+                        return true;
+                     }
+
+                     //
+                     // else we wait...
 
                      return false;
+
                   }
 
 

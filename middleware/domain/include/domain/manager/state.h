@@ -37,9 +37,6 @@ namespace casual
                {
                   using id_type = std::size_t;
 
-
-                  //inline id_type id() const { return m_id;}
-
                   id_type id = nextId();
 
                   friend bool operator == ( const Id& lhs, id_type rhs) { return lhs.id == rhs;}

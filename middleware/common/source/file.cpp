@@ -44,6 +44,14 @@ namespace casual
             }
          }
 
+         void move( const std::string& old_path, const std::string& new_path)
+         {
+            if( ::rename( old_path.c_str(), new_path.c_str()) == -1)
+            {
+               throw exception::NotReallySureWhatToNameThisException{ "should be a system exception from errno"};
+            }
+         }
+
 
          namespace scoped
          {

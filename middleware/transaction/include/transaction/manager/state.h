@@ -1,8 +1,5 @@
 //!
-//! manager_state.h
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_TRANSACTION_MANAGER_STATE_H_
@@ -373,6 +370,7 @@ namespace casual
          //! Used to keep track of the origin for commit request.
          //!
          common::Uuid correlation;
+
 
          Resource::Stage stage() const;
 

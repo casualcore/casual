@@ -7,6 +7,7 @@
 #include "common/environment.h"
 #include "common/error.h"
 #include "common/trace.h"
+#include "common/domain.h"
 
 
 #include <fstream>
@@ -300,6 +301,21 @@ namespace casual
                                     {
                                        file >> ipc;
                                        environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
+
+                                       {
+                                          std::string domain_name;
+                                          file >> domain_name;
+                                          std::string domain_id;
+                                          file >> domain_id;
+
+                                          common::domain::identity( { domain_id, domain_name});
+
+                                          log << "domain identity: " << common::domain::identity() << '\n';
+                                       }
+
+
+
+
                                     }
                                     return ipc;
                                  };

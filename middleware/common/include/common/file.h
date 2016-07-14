@@ -23,6 +23,11 @@ namespace casual
       {
          void remove( const std::string& path);
 
+         //!
+         //! Moves/renames a file from @p old_path to @p new_path
+         //!
+         void move( const std::string& old_path, const std::string& new_path);
+
          namespace scoped
          {
             class Path

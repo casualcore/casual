@@ -182,6 +182,11 @@ namespace casual
             return m_owner;
          }
 
+         void ID::owner( const process::Handle& handle)
+         {
+            m_owner = handle;
+         }
+
 
 
          bool operator < ( const ID& lhs, const ID& rhs)

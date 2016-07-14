@@ -335,7 +335,10 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Transaction& value)
       {
-         return out << "{trid: " << value.trid << ", resources: " << common::range::make( value.resources) << "}";
+         return out << "{ trid: " << value.trid
+            << ", resources: " << common::range::make( value.resources)
+            << ", correlation: " << value.correlation
+            << '}';
       }
 
       State::State( const std::string& database) : log( database) {}

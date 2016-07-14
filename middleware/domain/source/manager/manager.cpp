@@ -30,10 +30,30 @@ namespace casual
 
                file::scoped::Path singleton()
                {
-                  auto path = environment::domain::singleton::file();
-                  std::ifstream file( path);
+                  Trace trace{ "domain::manager::local::singleton"};
 
-                  if( file)
+                  auto path = environment::domain::singleton::file();
+
+
+
+
+                  auto temp_file = file::scoped::Path{ file::name::unique( "/tmp/", ".tmp")};
+
+                  std::ofstream output( temp_file);
+
+                  if( output)
+                  {
+                     output << communication::ipc::inbound::id() << '\n';
+                     output << common::domain::identity().name << '\n';
+                     output << common::domain::identity().id << std::endl;
+                  }
+                  else
+                  {
+                     throw common::exception::invalid::File( "failed to write temporary domain singleton file: " + temp_file.path());
+                  }
+
+
+                  if( common::file::exists( path))
                   {
                      //
                      // There is potentially a running casual-domain already - abort
@@ -41,22 +61,11 @@ namespace casual
                      throw common::exception::invalid::Process( "can only be one casual-domain running in a domain");
                   }
 
-                  file::scoped::Path result( std::move( path));
+                  common::file::move( temp_file, path);
 
+                  temp_file.release();
 
-                  std::ofstream output( result);
-
-                  if( output)
-                  {
-                     output << communication::ipc::inbound::id() << std::endl;
-                     output << process::uuid() << std::endl;
-                  }
-                  else
-                  {
-                     throw common::exception::invalid::File( "failed to write process singleton queue file: " + path);
-                  }
-
-                  return result;
+                  return { std::move( path)};
                }
 
             } // <unnamed>
@@ -64,9 +73,11 @@ namespace casual
 
 
          Manager::Manager( Settings&& settings)
-           : m_singelton{ local::singleton()}, m_state{ configuration::state( settings)}
+           : m_state{ configuration::state( settings)}
          {
             Trace trace{ "domain::Manager ctor"};
+
+            m_singelton = local::singleton();
 
             //
             // Set our ipc-queue so children easy can send messages to us.

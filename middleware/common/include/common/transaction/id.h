@@ -120,6 +120,7 @@ namespace casual
             //! @return owner/creator of the transaction
             //!
             const process::Handle& owner() const;
+            void owner( const process::Handle& handle);
 
 
 
