@@ -20,6 +20,7 @@
 #include <sstream>
 
 #include <functional>
+#include <memory>
 
 #include <cassert>
 #include <cstring>
