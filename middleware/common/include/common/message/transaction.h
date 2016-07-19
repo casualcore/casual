@@ -279,6 +279,7 @@ namespace casual
                      }
                   } // involved
 
+                  /*
                   namespace prepare
                   {
                      typedef basic_request< Type::transaction_domain_resource_prepare_request> Request;
@@ -299,6 +300,7 @@ namespace casual
                      typedef basic_reply< Type::transaction_domain_resource_rollback_reply> Reply;
 
                   } // rollback
+                  */
                } // domain
 
 
@@ -323,12 +325,14 @@ namespace casual
             template<>
             struct type_traits< transaction::resource::rollback::Request> : detail::type< transaction::resource::rollback::Reply> {};
 
+            /*
             template<>
             struct type_traits< transaction::resource::domain::prepare::Request> : detail::type< transaction::resource::domain::prepare::Reply> {};
             template<>
             struct type_traits< transaction::resource::domain::commit::Request> : detail::type< transaction::resource::domain::commit::Reply> {};
             template<>
             struct type_traits< transaction::resource::domain::rollback::Request> : detail::type< transaction::resource::domain::rollback::Reply> {};
+            */
 
          } // reverse
 

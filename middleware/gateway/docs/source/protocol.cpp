@@ -355,10 +355,10 @@ the complete transport message.
 )";
                {
 
-                  using message_type = common::message::transaction::resource::domain::prepare::Request;
+                  using message_type = common::message::transaction::resource::prepare::Request;
 
                   out << R"(
-#### common::message::transaction::resource::domain::prepare::Request
+#### common::message::transaction::resource::prepare::Request
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -384,10 +384,10 @@ Sent to and received from other domains when one domain wants to prepare a trans
                }
 
                {
-                  using message_type = common::message::transaction::resource::domain::prepare::Reply;
+                  using message_type = common::message::transaction::resource::prepare::Reply;
 
                   out << R"(
-#### common::message::transaction::resource::domain::prepare::Reply
+#### common::message::transaction::resource::prepare::Reply
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -420,10 +420,10 @@ Sent to and received from other domains when one domain wants to prepare a trans
 )";
 
                {
-                  using message_type = common::message::transaction::resource::domain::commit::Request;
+                  using message_type = common::message::transaction::resource::commit::Request;
 
                   out << R"(
-#### common::message::transaction::resource::domain::commit::Request
+#### common::message::transaction::resource::commit::Request
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -449,10 +449,10 @@ Sent to and received from other domains when one domain wants to commit an alrea
                }
 
                {
-                  using message_type = common::message::transaction::resource::domain::commit::Reply;
+                  using message_type = common::message::transaction::resource::commit::Reply;
 
                   out << R"(
-#### common::message::transaction::resource::domain::commit::Reply
+#### common::message::transaction::resource::commit::Reply
 
 Reply to a commit request. 
 
@@ -488,10 +488,10 @@ Reply to a commit request.
 
 
                {
-                  using message_type = common::message::transaction::resource::domain::rollback::Request;
+                  using message_type = common::message::transaction::resource::rollback::Request;
 
                   out << R"(
-#### common::message::transaction::resource::domain::rollback::Request
+#### common::message::transaction::resource::rollback::Request
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -518,10 +518,10 @@ That is, when one or more resources has failed to prepare.
                }
 
                {
-                  using message_type = common::message::transaction::resource::domain::rollback::Reply;
+                  using message_type = common::message::transaction::resource::rollback::Reply;
 
                   out << R"(
-#### common::message::transaction::resource::domain::rollback::Reply
+#### common::message::transaction::resource::rollback::Reply
 
 Reply to a rollback request. 
 

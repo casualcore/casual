@@ -355,9 +355,9 @@ namespace casual
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_reply_thread},
                   handle::call::Request< outbound_device_type>{ m_state, outbound_device},
-                  handle::create< common::message::transaction::resource::domain::prepare::Request>( m_state, outbound_device),
-                  handle::create< common::message::transaction::resource::domain::commit::Request>( m_state, outbound_device),
-                  handle::create< common::message::transaction::resource::domain::rollback::Request>( m_state, outbound_device),
+                  handle::create< common::message::transaction::resource::prepare::Request>( m_state, outbound_device),
+                  handle::create< common::message::transaction::resource::commit::Request>( m_state, outbound_device),
+                  handle::create< common::message::transaction::resource::rollback::Request>( m_state, outbound_device),
                   handle::create< common::message::gateway::domain::discover::Request>( m_state, outbound_device),
 
                   //
@@ -458,9 +458,9 @@ namespace casual
                   //
                   common::message::dispatch::Handler handler{
                      handle::basic_reply< common::message::service::call::Reply>{ state},
-                     handle::basic_reply< common::message::transaction::resource::domain::prepare::Reply>{ state},
-                     handle::basic_reply< common::message::transaction::resource::domain::commit::Reply>{ state},
-                     handle::basic_reply< common::message::transaction::resource::domain::rollback::Reply>{ state},
+                     handle::basic_reply< common::message::transaction::resource::prepare::Reply>{ state},
+                     handle::basic_reply< common::message::transaction::resource::commit::Reply>{ state},
+                     handle::basic_reply< common::message::transaction::resource::rollback::Reply>{ state},
                      handle::domain::discover::Reply{ state},
 
                      handle::domain::discover::Request{ policy.address()},

@@ -357,9 +357,9 @@ namespace casual
                   gateway::handle::Disconnect{ m_request_thread},
                   handle::call::lookup::Reply{ m_cache},
                   handle::create::forward< common::message::service::call::Reply>( outbound_device),
-                  handle::create::forward< common::message::transaction::resource::domain::prepare::Reply>( outbound_device),
-                  handle::create::forward< common::message::transaction::resource::domain::commit::Reply>( outbound_device),
-                  handle::create::forward< common::message::transaction::resource::domain::rollback::Reply>( outbound_device),
+                  handle::create::forward< common::message::transaction::resource::prepare::Reply>( outbound_device),
+                  handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
+                  handle::create::forward< common::message::transaction::resource::rollback::Reply>( outbound_device),
 
                   //
                   // Sent from this domain to get information about the other
@@ -469,9 +469,9 @@ namespace casual
                   //
                   common::message::dispatch::Handler handler{
                      handle::call::Request{ cache},
-                     handle::basic_transaction_request< common::message::transaction::resource::domain::prepare::Request>{},
-                     handle::basic_transaction_request< common::message::transaction::resource::domain::commit::Request>{},
-                     handle::basic_transaction_request< common::message::transaction::resource::domain::rollback::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
 
                      handle::domain::discover::Request{ policy.address()},
 

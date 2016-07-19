@@ -110,11 +110,15 @@ namespace casual
 
                struct basic_prepare : public state::Base
                {
-                  typedef common::message::transaction::resource::prepare::Reply message_type;
+                  using message_type = common::message::transaction::resource::prepare::Reply;
 
                   using state::Base::Base;
 
                   bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+
+               private:
+                  bool local( message_type& message, Transaction& transaction);
+                  bool remote( message_type& message, Transaction& transaction);
 
                };
                using Prepare = Wrapper< basic_prepare>;
@@ -122,22 +126,30 @@ namespace casual
 
                struct basic_commit : public state::Base
                {
-                  typedef common::message::transaction::resource::commit::Reply message_type;
+                  using message_type = common::message::transaction::resource::commit::Reply;
 
                   using state::Base::Base;
 
                   bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+
+               private:
+                  bool local( message_type& message, Transaction& transaction);
+                  bool remote( message_type& message, Transaction& transaction);
 
                };
                using Commit = Wrapper< basic_commit>;
 
                struct basic_rollback : public state::Base
                {
-                  typedef common::message::transaction::resource::rollback::Reply message_type;
+                  using message_type = common::message::transaction::resource::rollback::Reply;
 
                   using state::Base::Base;
 
                   bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+
+               private:
+                  bool local( message_type& message, Transaction& transaction);
+                  bool remote( message_type& message, Transaction& transaction);
 
                };
 
@@ -226,54 +238,6 @@ namespace casual
                void operator () ( message_type& message);
 
             };
-
-            //!
-            //! These handles responses from the resources in an inter-domain-context.
-            //!
-            namespace resource
-            {
-
-               namespace reply
-               {
-                   struct basic_prepare : public state::Base
-                   {
-                      typedef common::message::transaction::resource::domain::prepare::Reply message_type;
-
-                      using Base::Base;
-
-                      bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
-                   };
-
-                   using Prepare = handle::resource::reply::Wrapper< basic_prepare>;
-
-
-                   struct basic_commit : public state::Base
-                   {
-                      typedef common::message::transaction::resource::domain::commit::Reply message_type;
-
-                      using state::Base::Base;
-
-                      bool operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource);
-                   };
-
-                   using Commit = handle::resource::reply::Wrapper< basic_commit>;
-
-
-                   struct basic_rollback : public state::Base
-                   {
-                      typedef common::message::transaction::resource::domain::rollback::Reply message_type;
-
-                      using state::Base::Base;
-
-                      bool operator () (  message_type& message, Transaction& transaction, Transaction::Resource& resource);
-
-                   };
-
-                   using Rollback = handle::resource::reply::Wrapper< basic_rollback>;
-
-               } // reply
-
-            } // resource
 
          } // domain
 

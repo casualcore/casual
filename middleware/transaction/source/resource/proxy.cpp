@@ -172,6 +172,7 @@ namespace casual
                   policy::Rollback>;
 
 
+            /*
             namespace domain
             {
                using Prepare = basic_handler<
@@ -190,6 +191,7 @@ namespace casual
                      message::transaction::resource::domain::rollback::Reply,
                      policy::Rollback>;
             } // domain
+            */
 
 
          } // handle
@@ -246,9 +248,11 @@ namespace casual
                handle::Prepare{ m_state},
                handle::Commit{ m_state},
                handle::Rollback{ m_state},
+               /*
                handle::domain::Prepare{ m_state},
                handle::domain::Commit{ m_state},
                handle::domain::Rollback{ m_state},
+               */
             };
 
 

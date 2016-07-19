@@ -103,12 +103,14 @@ namespace casual
             transaction_resource_commit_reply,
             transaction_resource_rollback_request,
             transaction_resource_rollback_reply,
+            /*
             transaction_domain_resource_prepare_request = TRANSACTION_BASE + 300,
             transaction_domain_resource_prepare_reply,
             transaction_domain_resource_commit_request,
             transaction_domain_resource_commit_reply,
             transaction_domain_resource_rollback_request,
             transaction_domain_resource_rollback_reply,
+            */
 
             transaction_resource_involved = TRANSACTION_BASE + 400,
             transaction_domain_resource_involved,

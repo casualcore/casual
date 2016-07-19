@@ -165,11 +165,11 @@ namespace casual
 
             namespace domain
             {
-               common::platform::resource::id::type id( const common::Uuid& remote)
+               id::type id( const common::Uuid& remote)
                {
-                  static auto base = std::numeric_limits< common::platform::resource::id::type>::max();
+                  static auto base = std::numeric_limits< id::type>::max();
 
-                  static std::map< common::Uuid, common::platform::resource::id::type> mapping;
+                  static std::map< common::Uuid, id::type> mapping;
 
                   auto found = range::find( mapping, remote);
 

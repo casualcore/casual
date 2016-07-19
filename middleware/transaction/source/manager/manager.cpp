@@ -196,9 +196,6 @@ namespace casual
                   handle::domain::Prepare{ state},
                   handle::domain::Commit{ state},
                   handle::domain::Rollback{ state},
-                  handle::domain::resource::reply::Prepare{ state},
-                  handle::domain::resource::reply::Commit{ state},
-                  handle::domain::resource::reply::Rollback{ state},
                   common::server::handle::basic_admin_call{
                      admin::services( state),
                      ipc::device().error_handler()},
@@ -262,11 +259,11 @@ namespace casual
 
                         common::log::internal::transaction << "manager persistent replies: " << state.persistent.replies.size() << "\n";
 
-                        auto notDone = common::range::partition(
+                        auto not_done = common::range::partition(
                               state.persistent.replies,
                               common::negate( action::persistent::Send{ state}));
 
-                        common::range::trim( state.persistent.replies, std::get< 0>( notDone));
+                        common::range::trim( state.persistent.replies, std::get< 0>( not_done));
 
                         common::log::internal::transaction << "manager persistent replies: " << state.persistent.replies.size() << "\n";
                      }
@@ -277,14 +274,14 @@ namespace casual
                      {
                         common::log::internal::transaction << "manager persistent request: " << state.persistent.requests.size() << "\n";
 
-                        auto notDone = common::range::partition(
+                        auto not_done = common::range::partition(
                               state.persistent.requests,
                               common::negate( action::persistent::Send{ state}));
 
                         //
                         // Move the ones that did not find an idle resource to pending requests
                         //
-                        common::range::move( std::get< 0>( notDone), state.pending.requests);
+                        common::range::move( std::get< 0>( not_done), state.pending.requests);
 
                         state.persistent.requests.clear();
 

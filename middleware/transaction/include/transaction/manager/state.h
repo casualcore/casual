@@ -60,9 +60,15 @@ namespace casual
 
          namespace resource
          {
+            namespace id
+            {
+               using type = common::platform::resource::id::type;
+            } // id
+
+
             struct Proxy
             {
-               using id_type = common::platform::resource::id::type;
+
 
                struct Instance
                {
@@ -76,7 +82,7 @@ namespace casual
                      shutdown
                   };
 
-                  id_type id;
+                  id::type id;
                   common::process::Handle process;
 
                   Stats statistics;
@@ -90,9 +96,9 @@ namespace casual
                };
 
                Proxy() = default;
-               Proxy( id_type id) : id( id) {}
+               Proxy( id::type id) : id( id) {}
 
-               id_type id = 0;
+               id::type id = 0;
 
                std::string key;
                std::string openinfo;
@@ -118,8 +124,8 @@ namespace casual
                   return lhs.id < rhs.id;
                }
 
-               friend bool operator == ( const Proxy& lhs, id_type rhs) { return lhs.id == rhs; }
-               friend bool operator == ( id_type lhs, const Proxy& rhs) { return lhs == rhs.id; }
+               friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs; }
+               friend bool operator == ( id::type lhs, const Proxy& rhs) { return lhs == rhs.id; }
 
                friend std::ostream& operator << ( std::ostream& out, const Proxy& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
@@ -145,7 +151,7 @@ namespace casual
 
             namespace domain
             {
-               common::platform::resource::id::type id( const common::Uuid& remote);
+               id::type id( const common::Uuid& remote);
 
             } // domain
 
@@ -156,7 +162,14 @@ namespace casual
                //!
                //! id of the remote domain
                //!
-               common::Uuid id;
+               common::Uuid remote;
+
+               //!
+               //! RM id
+               //!
+               id::type id;
+
+               std::vector< common::process::Handle> instances;
 
             };
 
@@ -227,7 +240,7 @@ namespace casual
       {
          struct Resource
          {
-            using id_type = common::platform::resource::id::type;
+            using id_type = state::resource::id::type;
 
             enum class Stage
             {
@@ -371,6 +384,12 @@ namespace casual
          //!
          common::Uuid correlation;
 
+         //!
+         //! Indicate if the transaction is owned by a remote domain,
+         //! and what RM id that domain act as.
+         //!
+         state::resource::id::type resource = 0;
+
 
          Resource::Stage stage() const;
 
@@ -441,6 +460,8 @@ namespace casual
          std::vector< Transaction> transactions;
 
          std::vector< state::resource::Proxy> resources;
+
+         std::vector< state::resource::Domain> domains;
 
 
          struct
