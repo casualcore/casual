@@ -27,6 +27,8 @@ namespace casual
    namespace transaction
    {
 
+      class State;
+
       namespace state
       {
          struct Statistics
@@ -63,6 +65,10 @@ namespace casual
             namespace id
             {
                using type = common::platform::resource::id::type;
+
+               inline bool remote( type id) { return id < 0;}
+               inline bool local( type id) { return id > 0;}
+
             } // id
 
 
@@ -149,16 +155,18 @@ namespace casual
             } // update
 
 
-            namespace domain
-            {
-               id::type id( const common::Uuid& remote);
 
-            } // domain
 
 
 
             struct Domain
             {
+
+               Domain( const common::process::Handle& process, const common::Uuid& remote, id::type id);
+
+
+               common::process::Handle process;
+
                //!
                //! id of the remote domain
                //!
@@ -169,9 +177,16 @@ namespace casual
                //!
                id::type id;
 
-               std::vector< common::process::Handle> instances;
+               friend bool operator == ( const Domain& lhs, const common::process::Handle& rhs);
 
             };
+
+
+            namespace domain
+            {
+               id::type id( State& state, const common::process::Handle& process, const common::Uuid& remote);
+
+            } // domain
 
          } // resource
 
@@ -186,8 +201,8 @@ namespace casual
                {
                }
 
-               base_message( base_message&&) = default;
-               base_message& operator = ( base_message&&) = default;
+               base_message( base_message&&) noexcept = default;
+               base_message& operator = ( base_message&&) noexcept = default;
 
                common::communication::message::Complete message;
                common::platform::time_point created;
@@ -207,9 +222,10 @@ namespace casual
             {
                using id_type = common::platform::resource::id::type;
 
-               using base_message::base_message;
+               template< typename M>
+               Request( id_type resource, M&& message) : base_message( std::forward< M>( message)), resource( resource) {}
 
-               std::vector< id_type> resources;
+               id_type resource;
 
             };
 
@@ -223,10 +239,10 @@ namespace casual
 
                   bool operator () ( const pending::Request& value) const
                   {
-                     return common::range::any_of(
-                           value.resources, [=]( id_type id){ return id == m_id;});
+                     return value.resource == m_id;
                   }
 
+               private:
                   id_type m_id;
                };
             } // filter
@@ -529,11 +545,15 @@ namespace casual
 
          void operator () ( const common::process::lifetime::Exit& death);
 
-         state::resource::Proxy& get_resource( common::platform::resource::id::type rm);
-         state::resource::Proxy::Instance& get_instance( common::platform::resource::id::type rm, common::platform::pid::type pid);
+         state::resource::Proxy& get_resource( state::resource::id::type rm);
+         state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::platform::pid::type pid);
 
-         using instance_range = decltype( common::range::make( std::declval< state::resource::Proxy>().instances.begin(), std::declval< state::resource::Proxy>().instances.end()));
-         instance_range idle_instance( common::platform::resource::id::type rm);
+
+         using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;
+         instance_range idle_instance( state::resource::id::type rm);
+
+         const state::resource::Domain& get_domain( state::resource::id::type rm) const;
+
 
 
       private:

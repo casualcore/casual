@@ -163,26 +163,32 @@ namespace casual
             }
 
 
+            Domain::Domain( const common::process::Handle& process, const common::Uuid& remote, id::type id)
+              : process{ process}, remote{ remote}, id{ id}
+            {
+
+            }
+
+            bool operator == ( const Domain& lhs, const common::process::Handle& rhs)
+            {
+               return lhs.process == rhs;
+            }
+
             namespace domain
             {
-               id::type id( const common::Uuid& remote)
+               id::type id( State& state, const common::process::Handle& process, const common::Uuid& remote)
                {
-                  static auto base = std::numeric_limits< id::type>::max();
-
-                  static std::map< common::Uuid, id::type> mapping;
-
-                  auto found = range::find( mapping, remote);
+                  auto found = range::find( state.domains, process);
 
                   if( found)
                   {
-                     return found->second;
+                     return found->id;
                   }
-                  else
-                  {
-                     --base;
-                     mapping.emplace( remote, base);
-                     return base;
-                  }
+
+                  static id::type base_id = 0;
+
+                  state.domains.emplace_back( process, remote, --base_id);
+                  return state.domains.back().id;
                }
 
             } // domain
@@ -406,7 +412,7 @@ namespace casual
          log::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
-      state::resource::Proxy& State::get_resource( common::platform::resource::id::type rm)
+      state::resource::Proxy& State::get_resource( state::resource::id::type rm)
       {
          auto found = common::range::find( resources, rm);
 
@@ -417,7 +423,7 @@ namespace casual
          return *found;
       }
 
-      state::resource::Proxy::Instance& State::get_instance( common::platform::resource::id::type rm, common::platform::pid::type pid)
+      state::resource::Proxy::Instance& State::get_instance( state::resource::id::type rm, common::platform::pid::type pid)
       {
          auto& resource = get_resource( rm);
 
@@ -432,11 +438,24 @@ namespace casual
          return *found;
       }
 
-      State::instance_range State::idle_instance( common::platform::resource::id::type rm)
+      State::instance_range State::idle_instance( state::resource::id::type rm)
       {
          auto& resource = get_resource( rm);
 
          return common::range::find_if( resource.instances, state::filter::Idle{});
+      }
+
+      const state::resource::Domain& State::get_domain( state::resource::id::type rm) const
+      {
+         auto found = range::find_if( domains, [=]( const state::resource::Domain& d){
+            return d.id == rm;
+         });
+
+         if( ! found)
+         {
+            throw common::exception::invalid::Argument{ "failed to find domain", CASUAL_NIP( rm)};
+         }
+         return *found;
       }
 
    } // transaction

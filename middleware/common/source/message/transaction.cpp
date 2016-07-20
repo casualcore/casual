@@ -1,8 +1,5 @@
 //!
-//! transaction.cpp
-//!
-//! Created on: May 31, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/message/transaction.h"
@@ -16,6 +13,49 @@ namespace casual
       {
          namespace transaction
          {
+
+
+            namespace rollback
+            {
+               std::ostream& operator << ( std::ostream& out, const Request& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", trid: " << message.trid
+                        << ", resources: " << range::make( message.resources)
+                        << '}';
+               }
+
+            } // rollback
+
+            namespace commit
+            {
+               std::ostream& operator << ( std::ostream& out, const Reply::Stage& stage)
+               {
+                  switch( stage)
+                  {
+                     case Reply::Stage::commit: return out << "commit";
+                     case Reply::Stage::error: return out << "error";
+                     case Reply::Stage::prepare: return out << "prepare";
+                  }
+                  return out << "unknown";
+               }
+               std::ostream& operator << ( std::ostream& out, const Reply& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", trid: " << message.trid
+                        << ", state: " << message.stage
+                        << ", state: " << message.state
+                        << '}';
+               }
+               std::ostream& operator << ( std::ostream& out, const Request& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", trid: " << message.trid
+                        << ", resources: " << range::make( message.resources)
+                        << '}';
+               }
+            } // commit
+
             namespace resource
             {
 

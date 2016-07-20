@@ -31,13 +31,6 @@
 
 
 
-#define CASUAL_DEBUG_EXCEPTION( statement) \
-   try \
-   { \
-      statement \
-   } catch( const casual::common::exception::base& e) { std::cerr << "exception: " << e << std::endl; throw; } \
-   catch( const std::exception& e) { std::cerr << "exception: " << e.what() << std::endl; throw; }
-
 namespace casual
 {
 
@@ -446,6 +439,243 @@ namespace casual
          EXPECT_TRUE( tx_rollback() == TX_OK);
       }
 
+      TEST( casual_transaction_manager, begin_transaction__1_remote_resurce_involved___expect_one_phase_optimization)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::configuration()};
+
+         mockup::ipc::Collector gateway;
+
+         auto trid = common::transaction::ID::create();
+         auto domain_id = uuid::make();
+
+         // gateway involved
+         {
+            common::message::transaction::resource::domain::Involved message;
+            message.domain = domain_id;
+            message.trid = trid;
+            message.process = gateway.process();
+
+            local::send::tm( message);
+         }
+
+         // commit
+         {
+            common::message::transaction::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         // remote commit (one phase optimization)
+         {
+            common::message::transaction::resource::commit::Request message;
+
+            communication::ipc::blocking::receive( gateway.output(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.flags == TMONEPHASE);
+
+            auto reply = common::message::reverse::type( message);
+            reply.resource = message.resource;
+            reply.state = XA_OK;
+            reply.trid = message.trid;
+
+            local::send::tm( reply);
+
+         }
+
+         // commit reply
+         {
+            common::message::transaction::commit::Reply message;
+
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == TX_OK);
+
+         }
+
+
+      }
+
+
+
+      TEST( casual_transaction_manager, begin_transaction__2_remote_resurce_involved___expect_remote_prepare_commit)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::configuration()};
+
+         mockup::ipc::Collector gateway1;
+         mockup::ipc::Collector gateway2;
+
+         auto trid = common::transaction::ID::create();
+
+         // gateway involved
+         {
+            common::message::transaction::resource::domain::Involved message;
+            message.trid = trid;
+
+            message.process = gateway1.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+
+            message.process = gateway2.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+         }
+
+         // commit
+         {
+            common::message::transaction::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+
+         // remote prepare
+         {
+            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::prepare::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XA_OK;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_prepare( gateway1);
+            remote_prepare( gateway2);
+         };
+
+         // commit prepare reply
+         {
+            common::message::transaction::commit::Reply message;
+
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::prepare);
+            EXPECT_TRUE( message.state == TX_OK);
+         }
+
+
+         // remote commit
+         {
+            auto remote_commit = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::commit::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XA_OK;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_commit( gateway1);
+            remote_commit( gateway2);
+         };
+
+         // commit reply
+         {
+            common::message::transaction::commit::Reply message;
+
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::commit);
+            EXPECT_TRUE( message.state == TX_OK);
+         }
+      }
+
+      TEST( casual_transaction_manager, begin_transaction__2_remote_resurce_involved_read_only___expect_remote_prepare__read_only_optimization)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::configuration()};
+
+         mockup::ipc::Collector gateway1;
+         mockup::ipc::Collector gateway2;
+
+         auto trid = common::transaction::ID::create();
+
+         // gateway involved
+         {
+            common::message::transaction::resource::domain::Involved message;
+            message.trid = trid;
+
+            message.process = gateway1.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+
+            message.process = gateway2.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+         }
+
+         // commit
+         {
+            common::message::transaction::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+
+         // remote prepare
+         {
+            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::prepare::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XA_RDONLY;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_prepare( gateway1);
+            remote_prepare( gateway2);
+         };
+
+         // commit reply
+         {
+            common::message::transaction::commit::Reply message;
+
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid) << "message: " << message;
+            EXPECT_TRUE( message.state == XA_RDONLY) << "state: " << message.state;
+         }
+      }
 
    } // transaction
 

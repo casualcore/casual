@@ -1,8 +1,5 @@
 //!
-//! transform.cpp
-//!
-//! Created on: Jun 14, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/admin/transform.h"
@@ -128,7 +125,7 @@ namespace casual
                {
                   vo::pending::Request result;
 
-                  result.resources = value.resources;
+                  result.resource = value.resource;
                   result.correlation = value.message.correlation;
                   result.type = common::message::convert::type( value.message.type);
 

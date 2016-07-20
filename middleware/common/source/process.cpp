@@ -174,6 +174,31 @@ namespace casual
 
             namespace fetch
             {
+               namespace local
+               {
+                  namespace
+                  {
+
+                     Handle call( message::domain::process::lookup::Request& request)
+                     {
+                        //
+                        // We create a temporary inbound, so we don't rely on the 'global' inbound
+                        //
+                        communication::ipc::inbound::Device inbound;
+
+                        request.process.pid = common::process::id();
+                        request.process.queue = inbound.connector().id();
+
+                        return communication::ipc::call(
+                              communication::ipc::domain::manager::device(),
+                              request,
+                              communication::ipc::policy::Blocking{},
+                              nullptr,
+                              inbound).process;
+                     }
+                  } // <unnamed>
+               } // local
+
                std::ostream& operator << ( std::ostream& out, Directive directive)
                {
                   switch( directive)
@@ -193,10 +218,8 @@ namespace casual
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
                   request.identification = identity;
-                  request.process = common::process::handle();
 
-                  auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
-                  return reply.process;
+                  return local::call( request);
                }
 
                Handle handle( platform::pid::type pid , Directive directive)
@@ -208,10 +231,8 @@ namespace casual
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
                   request.pid = pid;
-                  request.process = common::process::handle();
 
-                  auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
-                  return reply.process;
+                  return local::call( request);
                }
 
             } // fetch

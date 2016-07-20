@@ -162,39 +162,32 @@ namespace casual
                         template< typename M, typename F>
                         void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
                         {
-                           M message;
-                           message.process = common::process::handle();
-                           message.trid = transaction.trid;
-                           message.flags = flags;
-
-                           state::pending::Request request{ message};
-
                            auto resources = common::range::partition(
                               transaction.resources,
                               filter);
 
-                           typedef Transaction::Resource resource_type;
+                           common::range::for_each( resources, [&]( const Transaction::Resource& r){
 
-                           common::range::transform(
-                              std::get< 0>( resources), request.resources,
-                              std::mem_fn( &resource_type::id));
+                              M message;
+                              message.process = common::process::handle();
+                              message.trid = transaction.trid;
+                              message.flags = flags;
+                              message.resource = r.id;
 
+                              state::pending::Request request{ r.id, message};
 
-                           state.persistent.requests.push_back( std::move( request));
+                              state.persistent.requests.push_back( std::move( request));
+                           });
                         }
 
                      } // persistent
 
 
                      template< typename M, typename F>
-                     void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage newStage, long flags = TMNOFLAGS)
+                     void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage new_stage, long flags = TMNOFLAGS)
                      {
                         Trace trace{ "transaction::handle::send::resource::request"};
 
-                        M message;
-                        message.process = common::process::handle();
-                        message.trid = transaction.trid;
-                        message.flags = flags;
 
                         auto resources = std::get< 0>( common::range::partition(
                            transaction.resources,
@@ -205,25 +198,30 @@ namespace casual
                         //
                         common::range::for_each(
                            resources,
-                           Transaction::Resource::update::Stage{ newStage});
+                           Transaction::Resource::update::Stage{ new_stage});
 
-                        state::pending::Request request{ message};
 
-                        common::range::transform(
-                           resources,
-                           request.resources,
-                           std::mem_fn( &Transaction::Resource::id));
+                        common::range::for_each( resources, [&]( const Transaction::Resource& r){
 
-                        if( ! action::resource::request( state, request))
-                        {
-                           //
-                           // Could not send to all RM-proxy-instances. We put the request
-                           // in pending.
-                           //
-                           log << "could not send to all RM-proxy-instances - action: try later\n";
+                           M message;
+                           message.process = common::process::handle();
+                           message.trid = transaction.trid;
+                           message.flags = flags;
+                           message.resource = r.id;
 
-                           state.pending.requests.push_back( std::move( request));
-                        }
+                           state::pending::Request request{ r.id, message};
+
+                           if( ! action::resource::request( state, request))
+                           {
+                              //
+                              // Could not send to resource. We put the request
+                              // in pending.
+                              //
+                              log << "could not send to resource: " << r.id << " - action: try later\n";
+
+                              state.pending.requests.push_back( std::move( request));
+                           }
+                        });
                      }
 
                   } // resource
@@ -250,16 +248,7 @@ namespace casual
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
 
-                           request->resources.erase(
-                              std::find(
-                                 std::begin( request->resources),
-                                 std::end( request->resources),
-                                 instance.id));
-
-                           if( std::begin( request)->resources.empty())
-                           {
-                              state.pending.requests.erase( std::begin( request));
-                           }
+                           state.pending.requests.erase( std::begin( request));
                         }
                         else
                         {
@@ -302,6 +291,28 @@ namespace casual
                   }
 
                } // resource
+
+               namespace transaction
+               {
+                  template< typename M>
+                  auto find_or_add( State& state, M&& message) -> decltype( common::range::make( state.transactions))
+                  {
+                     //
+                     // Find the transaction
+                     //
+                     auto found = common::range::find_if( state.transactions, find::Transaction{ message.trid});
+
+                     if( found)
+                     {
+                        return found;
+                     }
+
+                     state.transactions.emplace_back( message.trid);
+
+                     return common::range::make( std::prev( std::end( state.transactions)), std::end( state.transactions));
+                  }
+
+               } // transaction
 
             } // <unnamed>
          } // local
@@ -350,42 +361,15 @@ namespace casual
 
          namespace resource
          {
-            /*
-            namespace id
-            {
-               void Allocation::operator () ( message_type& message)
-               {
-                  Trace trace{ "transaction::handle::resource::id::Allocation"};
-
-               }
-
-            } // id
-            */
-
             void Involved::operator () ( common::message::transaction::resource::Involved& message)
             {
                Trace trace{ "transaction::handle::resource::Involved"};
 
                log << "involved message: " << message << '\n';
 
+               auto& transaction = *local::transaction::find_or_add( m_state, message);
 
-               auto transaction = common::range::find_if(
-                     m_state.transactions, find::Transaction( message.trid));
-
-               if( transaction)
-               {
-                  local::resource::involved( m_state, *transaction, message);
-
-               }
-               else
-               {
-                  //
-                  // First time this transaction is involved with a resource, we
-                  // add it...
-                  //
-                  m_state.transactions.emplace_back( message.trid);
-                  local::resource::involved( m_state, m_state.transactions.back(), message);
-               }
+               local::resource::involved( m_state, transaction, message);
             }
 
             namespace reply
@@ -395,16 +379,20 @@ namespace casual
                void Wrapper< H>::operator () ( message_type& message)
                {
 
-                  auto now = common::platform::clock_type::now();
-                  //
-                  // The instance is done and ready for more work
-                  //
-
-                  auto& instance = m_state.get_instance( message.resource, message.process.pid);
-
+                  if( state::resource::id::local( message.resource))
                   {
-                     local::instance::done( this->m_state, instance);
-                     local::instance::statistics( instance, message, now);
+                     //
+                     // The resource is a local resource proxy, and it's done
+                     // and ready for more work
+                     //
+
+                     auto& instance = m_state.get_instance( message.resource, message.process.pid);
+
+                     {
+                        local::instance::done( this->m_state, instance);
+                        local::instance::statistics( instance, message, common::platform::clock_type::now());
+                     }
+
                   }
 
                   //
@@ -634,7 +622,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::prepare reply"};
 
-                  log << "prepare reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  log << "message: " << message << '\n';
 
 
                   //
@@ -775,7 +763,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::commit reply"};
 
-                  log << "commit reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  log << "message: " << message << '\n';
 
                   resource.stage = Transaction::Resource::Stage::commit_replied;
 
@@ -893,7 +881,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::rollback reply"};
 
-                  log << "rollback reply - from: " << message.process << " rmid: " << message.resource << " result: " << common::error::xa::error( message.state) << '\n';
+                  log << "message: " << message << '\n';
 
                   resource.stage = Transaction::Resource::Stage::rollback_replied;
 
@@ -957,121 +945,103 @@ namespace casual
 
          void basic_commit::operator () ( message_type& message)
          {
-            common::Trace trace{ "transaction::handle::Commit"};
+            Trace trace{ "transaction::handle::Commit"};
 
-            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
+            log << "message: " << message << '\n';
 
-            if( ! found)
+            auto location = local::transaction::find_or_add( m_state, message);
+            auto& transaction = *location;
+
+            //
+            // Make sure we add the involved resources from the commit message (if any)
+            //
+            local::resource::involved( m_state, transaction, message);
+
+            switch( transaction.stage())
             {
-               //
-               // transaction is not known to TM, hence no resources has been involved
-               // up to this point. We add the transaction and
-               //
-
-               m_state.transactions.emplace_back( message.trid);
-
-               //
-               // We now have the transaction, we call recursive...
-               //
-               (*this)( message);
+               case Transaction::Resource::Stage::involved:
+               case Transaction::Resource::Stage::not_involved:
+               {
+                  break;
+               }
+               default:
+               {
+                  throw user::error{ XAER_PROTO, "Attempt to commit transaction, which is not in a state for commit", CASUAL_NIP( message.trid)};
+               }
             }
-            else
+
+            //
+            // Only the owner of the transaction can fiddle with the transaction ?
+            //
+
+
+            switch( transaction.resources.size())
             {
-               auto& transaction = *found;
-
-
-               //
-               // Make sure we add the involved resources from the commit message (if any)
-               //
-               local::resource::involved( m_state, transaction, message);
-
-               switch( transaction.stage())
+               case 0:
                {
-                  case Transaction::Resource::Stage::involved:
-                  case Transaction::Resource::Stage::not_involved:
+                  log << "no resources involved - " << transaction << " XA_RDONLY\n";
+
+                  //
+                  // We can remove this transaction
+                  //
+                  m_state.transactions.erase( std::begin( location));
+
+                  //
+                  // Send reply
+                  //
                   {
-                     break;
+                     auto reply = local::transform::reply( message);
+                     reply.state = XA_RDONLY;
+                     reply.stage = reply_type::Stage::commit;
+
+                     local::send::reply( m_state, std::move( reply), message.process);
                   }
-                  default:
-                  {
-                     throw user::error{ XAER_PROTO, "Attempt to commit transaction, which is not in a state for commit", CASUAL_NIP( message.trid)};
-                  }
+
+                  break;
                }
-
-               //
-               // Only the owner of the transaction can fiddle with the transaction ?
-               //
-
-
-               switch( transaction.resources.size())
+               case 1:
                {
-                  case 0:
-                  {
-                     log << "no resources involved - " << transaction << " XA_RDONLY\n";
+                  //
+                  // Only one resource involved, we do a one-phase-commit optimization.
+                  //
+                  log << "only one resource involved - " << transaction << " TMONEPHASE\n";
 
-                     //
-                     // We can remove this transaction
-                     //
-                     m_state.transactions.erase( std::begin( found));
+                  //
+                  // Keep the correlation so we can send correct reply
+                  //
+                  transaction.correlation = message.correlation;
 
-                     //
-                     // Send reply
-                     //
-                     {
-                        auto reply = local::transform::reply( message);
-                        reply.state = XA_RDONLY;
-                        reply.stage = reply_type::Stage::commit;
+                  local::send::resource::request< common::message::transaction::resource::commit::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                     Transaction::Resource::Stage::commit_requested,
+                     TMONEPHASE
+                  );
 
-                        local::send::reply( m_state, std::move( reply), message.process);
-                     }
-
-                     break;
-                  }
-                  case 1:
-                  {
-                     //
-                     // Only one resource involved, we do a one-phase-commit optimization.
-                     //
-                     log << "only one resource involved - " << transaction << " TMONEPHASE\n";
-
-                     //
-                     // Keep the correlation so we can send correct reply
-                     //
-                     transaction.correlation = message.correlation;
-
-                     local::send::resource::request< common::message::transaction::resource::commit::Request>(
-                        m_state,
-                        transaction,
-                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                        Transaction::Resource::Stage::commit_requested,
-                        TMONEPHASE
-                     );
-
-                     break;
-                  }
-                  default:
-                  {
-                     //
-                     // More than one resource involved, we do the prepare stage
-                     //
-                     log << "prepare " << transaction << "\n";
-
-                     //
-                     // Keep the correlation so we can send correct reply
-                     //
-                     transaction.correlation = message.correlation;
-
-                     local::send::resource::request< common::message::transaction::resource::prepare::Request>(
-                        m_state,
-                        transaction,
-                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                        Transaction::Resource::Stage::prepare_requested
-                     );
-
-                     break;
-                  }
+                  break;
                }
+               default:
+               {
+                  //
+                  // More than one resource involved, we do the prepare stage
+                  //
+                  log << "prepare " << transaction << "\n";
 
+                  //
+                  // Keep the correlation so we can send correct reply
+                  //
+                  transaction.correlation = message.correlation;
+
+                  local::send::resource::request< common::message::transaction::resource::prepare::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                     Transaction::Resource::Stage::prepare_requested
+                  );
+
+                  break;
+               }
             }
          }
 
@@ -1081,6 +1051,8 @@ namespace casual
          void basic_rollback::operator () ( message_type& message)
          {
             Trace trace{ "transaction::handle::Rollback"};
+
+            log << "message: " << message << '\n';
 
             //
             // Find the transaction
@@ -1157,16 +1129,29 @@ namespace casual
 
                log << "involved message: " << message << '\n';
 
+               auto& transaction = *local::transaction::find_or_add( m_state, message);
+
+               auto id = state::resource::domain::id( m_state, message.process, message.domain);
+
+               if( ! common::range::find( transaction.resources, id))
+               {
+                  transaction.resources.emplace_back( id);
+               }
+
+               log << "transaction: " << transaction << '\n';
             }
 
             void Prepare::operator () ( message_type& message)
             {
                Trace trace{ "transaction::handle::domain::prepare request"};
 
+               log << "message: " << message << '\n';
+
                auto send_readonly_reply = [&](){
 
                   auto reply = local::transform::reply( message);
                   reply.state = XA_RDONLY;
+                  reply.resource = message.resource;
 
                   local::send::reply( m_state, std::move( reply), message.process);
                };
@@ -1259,6 +1244,8 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::commit request"};
 
+               log << "message: " << message << '\n';
+
                //
                // Find the transaction
                //
@@ -1268,6 +1255,17 @@ namespace casual
                {
                   auto& transaction = *found;
                   log << "transaction: " << transaction << '\n';
+
+                  //
+                  // Could be a one phase commit optimization.
+                  //
+                  /* TODO: we need to take care of this...
+                  if( common::flag< TMONEPHASE>( message.flags) && transaction.resources.size() > 1)
+                  {
+
+
+                  }
+                  */
 
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
                      m_state,
@@ -1288,6 +1286,7 @@ namespace casual
                   {
                      auto reply = local::transform::reply( message);
                      reply.state = XAER_NOTA;
+                     reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
                   }
@@ -1297,6 +1296,9 @@ namespace casual
             void Rollback::operator () ( message_type& message)
             {
                Trace trace{ "transaction::handle::domain::rollback request"};
+
+               log << "message: " << message << '\n';
+
 
                //
                // Find the transaction
@@ -1326,6 +1328,7 @@ namespace casual
                   {
                      auto reply = local::transform::reply( message);
                      reply.state = XAER_NOTA;
+                     reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
                   }

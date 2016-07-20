@@ -171,8 +171,8 @@ namespace casual
 
          struct basic_commit : public state::Base
          {
-            typedef common::message::transaction::commit::Request message_type;
-            typedef common::message::transaction::commit::Reply reply_type;
+            using message_type = common::message::transaction::commit::Request;
+            using reply_type = common::message::transaction::commit::Reply;
 
             using Base::Base;
 
@@ -184,8 +184,8 @@ namespace casual
 
          struct basic_rollback : public state::Base
          {
-            typedef common::message::transaction::rollback::Request message_type;
-            typedef common::message::transaction::rollback::Reply reply_type;
+            using message_type = common::message::transaction::rollback::Request;
+            using reply_type = common::message::transaction::rollback::Reply;
 
             using Base::Base;
 
@@ -210,8 +210,8 @@ namespace casual
 
             struct Prepare : public state::Base
             {
-               typedef common::message::transaction::resource::prepare::Request message_type;
-               typedef common::message::transaction::resource::prepare::Reply reply_type;
+               using message_type = common::message::transaction::resource::prepare::Request;
+               using reply_type = common::message::transaction::resource::prepare::Reply;
 
                using Base::Base;
 
@@ -220,8 +220,8 @@ namespace casual
 
             struct Commit : public state::Base
             {
-               typedef common::message::transaction::resource::commit::Request message_type;
-               typedef common::message::transaction::resource::commit::Reply reply_type;
+               using message_type = common::message::transaction::resource::commit::Request;
+               using reply_type = common::message::transaction::resource::commit::Reply;
 
                using state::Base::Base;
 
@@ -230,8 +230,8 @@ namespace casual
 
             struct Rollback : public state::Base
             {
-               typedef common::message::transaction::resource::rollback::Request message_type;
-               typedef common::message::transaction::resource::rollback::Reply reply_type;
+               using message_type = common::message::transaction::resource::rollback::Request;
+               using reply_type = common::message::transaction::resource::rollback::Reply;
 
                using state::Base::Base;
 

@@ -5,6 +5,7 @@
 #include "transaction/manager/action.h"
 #include "transaction/manager/handle.h"
 #include "transaction/manager/admin/transform.h"
+#include "transaction/common.h"
 
 #include "common/process.h"
 #include "common/internal/log.h"
@@ -31,7 +32,7 @@ namespace casual
 
             {
 
-               common::Trace trace( "configure", log::internal::transaction);
+               Trace trace( "configure");
 
                message::domain::configuration::transaction::resource::Request request;
                request.scope = message::domain::configuration::transaction::resource::Request::Scope::all;
@@ -48,7 +49,7 @@ namespace casual
             }
 
             {
-               Trace trace( "event registration", log::internal::transaction);
+               Trace trace( "event registration");
 
                message::domain::process::termination::Registration message;
                message.process = common::process::handle();
@@ -65,9 +66,9 @@ namespace casual
 
             void Instances::operator () ( state::resource::Proxy& proxy)
             {
-               trace::internal::Scope trace( "resource::Instances::operator()", common::log::internal::transaction);
+               Trace trace( "resource::Instances::operator()");
 
-               common::log::internal::transaction << "update instances for resource: " << proxy << std::endl;
+               log << "update instances for resource: " << proxy << std::endl;
 
                auto count = static_cast< long>( proxy.concurency - proxy.instances.size());
 
@@ -108,7 +109,7 @@ namespace casual
                         case state::resource::Proxy::Instance::State::started:
                         {
 
-                           log::internal::transaction << "Instance has not register yet. We, kill it...: " << instance << std::endl;
+                           log << "Instance has not register yet. We, kill it...: " << instance << std::endl;
 
                            process::lifetime::terminate( { instance.process.pid});
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
@@ -116,12 +117,12 @@ namespace casual
                         }
                         case state::resource::Proxy::Instance::State::shutdown:
                         {
-                           log::internal::transaction << "instance already in shutdown state - " << instance << std::endl;
+                           log << "instance already in shutdown state - " << instance << std::endl;
                            break;
                         }
                         default:
                         {
-                           log::internal::transaction << "shutdown instance: " << instance << std::endl;
+                           log << "shutdown instance: " << instance << std::endl;
 
 
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
@@ -176,49 +177,62 @@ namespace casual
                return result;
             }
 
-            namespace instance
+            namespace local
             {
-               bool request( State& state, const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance)
+               namespace
                {
-                  Trace trace{ "transaction::action::resource::instance::request", log::internal::transaction};
-
-                  if( ipc::device().non_blocking_push( instance.process.queue, message))
+                  namespace instance
                   {
-                     instance.state( state::resource::Proxy::Instance::State::busy);
-                     instance.statistics.roundtrip.start( common::platform::clock_type::now());
-                     return true;
-                  }
-                  return false;
+                     bool request( const common::communication::message::Complete& message, state::resource::Proxy::Instance& instance)
+                     {
+                        Trace trace{ "transaction::action::resource::instance::request"};
 
-               }
-            } // instance
+                        if( ipc::device().non_blocking_push( instance.process.queue, message))
+                        {
+                           instance.state( state::resource::Proxy::Instance::State::busy);
+                           instance.statistics.roundtrip.start( common::platform::clock_type::now());
+                           return true;
+                        }
+                        return false;
+
+                     }
+                  } // instance
+
+               } // <unnamed>
+            } // local
+
+
 
             bool request( State& state, state::pending::Request& message)
             {
-               Trace trace{ "transaction::action::resource::request", log::internal::transaction};
+               Trace trace{ "transaction::action::resource::request"};
 
-               decltype( message.resources) resources;
-               std::swap( message.resources, resources);
-
-               for( auto&& id : resources)
+               if( state::resource::id::local( message.resource))
                {
-                  auto found = state.idle_instance( id);
+                  auto found = state.idle_instance( message.resource);
 
                   if( found )
                   {
-                     if( ! resource::instance::request( state, message.message, *found))
+
+                     if( ! local::instance::request( message.message, *found))
                      {
-                        common::log::internal::transaction << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
-                        message.resources.push_back( id);
+                        log << "failed to send resource request - type: " << message.message.type << " to: " << found->process << "\n";
+                        return false;
                      }
                   }
                   else
                   {
-                     message.resources.push_back( id);
+                     log << "failed to find idle resource - action: wait\n";
+                     return false;
                   }
                }
+               else
+               {
+                  auto& domain = state.get_domain( message.resource);
 
-               return message.resources.empty();
+                  ipc::device().blocking_push( domain.process.queue, message.message);
+               }
+               return true;
             }
 
          } // resource
@@ -233,7 +247,7 @@ namespace casual
                {
                   if( ! ipc::device().non_blocking_push( message.target, message.message))
                   {
-                     common::log::internal::transaction << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
+                     log << "failed to send reply - type: " << message.message.type << " to: " << message.target << "\n";
                      return false;
                   }
                }

@@ -151,13 +151,13 @@ namespace casual
 
             struct Request
             {
-               std::vector< resource::id_type> resources;
+               resource::id_type resource;
                sf::platform::Uuid correlation;
                long type;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( resources);
+                  archive & CASUAL_MAKE_NVP( resource);
                   archive & CASUAL_MAKE_NVP( correlation);
                   archive & CASUAL_MAKE_NVP( type);
                })
