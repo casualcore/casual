@@ -27,10 +27,10 @@ The following needs to be installed using rpm or yum packages:
 
  * git
  * python
- * gcc-c++
+ * gcc-c++ (at least 4.8.3)
  * puppet
 
-*Note: casual will not make on a 32-bit system*
+*Note: casual will not build on a 32-bit system*
 
 #### Set up the environment
 Use templatefile to setup environment
