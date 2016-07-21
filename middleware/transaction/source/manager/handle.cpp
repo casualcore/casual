@@ -151,6 +151,16 @@ namespace casual
                      }
                   }
 
+                  template< typename R>
+                  void read_only( State& state, R&& message)
+                  {
+                     auto reply = local::transform::reply( message);
+                     reply.state = XA_RDONLY;
+                     reply.resource = message.resource;
+
+                     send::reply( state, std::move( reply), message.process);
+                  }
+
 
 
 
@@ -313,6 +323,475 @@ namespace casual
                   }
 
                } // transaction
+
+               namespace implementation
+               {
+                  struct Local : handle::implementation::Interface
+                  {
+                     static const Local* instance()
+                     {
+                        static Local singleton;
+                        return &singleton;
+                     }
+
+                     bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                     {
+                        Trace trace{ "transaction::handle::resource::prepare local reply"};
+
+                        using reply_type = common::message::transaction::commit::Reply;
+
+                        //
+                        // Normalize all the resources return-state
+                        //
+                        auto result = transaction.results();
+
+                        switch( result)
+                        {
+                           case Transaction::Resource::Result::xa_RDONLY:
+                           {
+                              log << "prepare completed - " << transaction << " XA_RDONLY\n";
+
+                              //
+                              // Read-only optimization. We can send the reply directly and
+                              // discard the transaction
+                              //
+                              state.log.remove( transaction.trid);
+
+                              //
+                              // Send reply
+                              //
+                              {
+                                 auto reply = local::transform::message< reply_type>( message);
+                                 reply.correlation = transaction.correlation;
+                                 reply.stage = reply_type::Stage::commit;
+                                 reply.state = XA_RDONLY;
+
+                                 local::send::reply( state, std::move( reply), transaction.trid.owner());
+                              }
+
+                              //
+                              // Indicate that wrapper should remove the transaction from state
+                              //
+                              return true;
+                           }
+                           case Transaction::Resource::Result::xa_OK:
+                           {
+                              log << "prepare completed - " << transaction << " XA_OK\n";
+
+                              //
+                              // Prepare has gone ok. Log state
+                              //
+                              state.log.prepare( transaction.trid);
+
+                              //
+                              // prepare send reply. Will be sent after persistent write to file
+                              //
+                              {
+                                 auto reply = local::transform::message< reply_type>( message);
+                                 reply.correlation = transaction.correlation;
+                                 reply.stage = reply_type::Stage::prepare;
+                                 reply.state = XA_OK;
+
+                                 local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
+                              }
+
+                              //
+                              // All XA_OK is to be committed, send commit to all
+                              //
+
+                              //
+                              // We only want to send to resorces that has reported ok, and is in prepared state
+                              // (could be that some has read-only)
+                              //
+                              auto filter = common::chain::And::link(
+                                    Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
+                                    Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
+
+                              local::send::resource::request<
+                                 common::message::transaction::resource::commit::Request>( state, transaction, filter, Transaction::Resource::Stage::prepare_requested);
+
+
+                              break;
+                           }
+                           default:
+                           {
+                              //
+                              // Something has gone wrong.
+                              //
+                              common::log::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+
+                              local::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                                 state,
+                                 transaction,
+                                 Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                                 Transaction::Resource::Stage::rollback_requested);
+
+                              break;
+                           }
+                        }
+
+
+                        //
+                        // Transaction is not done
+                        //
+                        return false;
+                     }
+
+                     bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
+                     {
+                        Trace trace{ "transaction::handle::resource::commit local reply"};
+
+                        using reply_type = common::message::transaction::commit::Reply;
+
+                        //
+                        // Normalize all the resources return-state
+                        //
+                        auto result = transaction.results();
+
+                        switch( result)
+                        {
+                           case Transaction::Resource::Result::xa_OK:
+                           {
+                              log << "commit completed - " << transaction << " XA_OK\n";
+
+                              auto reply = local::transform::message< reply_type>( message);
+                              reply.correlation = transaction.correlation;
+                              reply.stage = reply_type::Stage::commit;
+                              reply.state = XA_OK;
+
+                              if( transaction.resources.size() <= 1)
+                              {
+                                 local::send::reply( state, reply, transaction.trid.owner());
+                              }
+                              else
+                              {
+                                 //
+                                 // Send reply
+                                 // TODO: We can't send reply directly without checking that the prepare-reply
+                                 // has been sent (prepare-reply could be pending for persistent write).
+                                 // For now, we do a delayed reply, so we're sure that the
+                                 // commit-reply arrives after the prepare-reply
+                                 //
+                                 local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
+                              }
+
+                              //
+                              // Remove transaction
+                              //
+                              state.log.remove( message.trid);
+                              return true;
+                           }
+                           default:
+                           {
+                              //
+                              // Something has gone wrong.
+                              //
+                              common::log::error << "TODO: something has gone wrong...\n";
+
+                              //
+                              // prepare send reply. Will be sent after persistent write to file.
+                              //
+                              // TOOD: we do have to save the state of the transaction?
+                              //
+                              {
+                                 auto reply = local::transform::message< reply_type>( message);
+                                 reply.correlation = transaction.correlation;
+                                 reply.stage = reply_type::Stage::commit;
+                                 reply.state = Transaction::Resource::convert( result);
+
+                                 local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
+                              }
+                              break;
+                           }
+                        }
+
+                        return false;
+                     }
+
+                     bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                     {
+                        Trace trace{ "transaction::handle::resource::rollback local reply"};
+
+                        using reply_type = common::message::transaction::rollback::Reply;
+
+                        //
+                        // Normalize all the resources return-state
+                        //
+                        auto result = transaction.results();
+
+                        switch( result)
+                        {
+                           case Transaction::Resource::Result::xa_OK:
+                           case Transaction::Resource::Result::xaer_NOTA:
+                           case Transaction::Resource::Result::xa_RDONLY:
+                           {
+                              log << "rollback completed - " << transaction << " XA_OK\n";
+
+                              //
+                              // Send reply
+                              //
+                              {
+                                 auto reply = local::transform::message< reply_type>( message);
+                                 reply.correlation = transaction.correlation;
+                                 reply.state = XA_OK;
+
+                                 local::send::reply( state, std::move( reply), transaction.trid.owner());
+                              }
+
+                              //
+                              // Remove transaction
+                              //
+                              state.log.remove( message.trid);
+                              return true;
+                           }
+                           default:
+                           {
+                              //
+                              // Something has gone wrong.
+                              //
+                              common::log::error << "TODO: resource rollback - something has gone wrong...\n";
+
+                              //
+                              // prepare send reply. Will be sent after persistent write to file
+                              //
+                              //
+                              // TOOD: we do have to save the state of the transaction?
+                              //
+                              {
+                                 auto reply = local::transform::message< reply_type>( message);
+                                 reply.correlation = transaction.correlation;
+                                 reply.state = Transaction::Resource::convert( result);
+
+                                 local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
+                              }
+                              break;
+                           }
+                        }
+                        return false;
+
+                     }
+
+
+                  private:
+                     Local() = default;
+                  };
+
+                  struct Remote : handle::implementation::Interface
+                  {
+                     static const Remote* instance()
+                     {
+                        static Remote singleton;
+                        return &singleton;
+                     }
+
+                     bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                     {
+                        Trace trace{ "transaction::handle::implementation::Remote::handle prepare reply"};
+
+                        //
+                        // Transaction is owned by another domain, so we just act as a resource.
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+
+                        using reply_type = common::message::transaction::resource::prepare::Reply;
+
+                        {
+                           auto reply = local::transform::message< reply_type>( message);
+                           reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.resource = transaction.resource;
+
+                           local::send::reply( state, std::move( reply), transaction.trid.owner());
+                        }
+
+                        return false;
+                     }
+
+                     bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
+                     {
+                        Trace trace{ "transaction::handle::implementation::Remote::handle commit reply"};
+
+                        //
+                        // Transaction is owned by another domain, so we just act as a resource.
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+
+                        using reply_type = common::message::transaction::resource::commit::Reply;
+
+                        {
+                           auto reply = local::transform::message< reply_type>( message);
+                           reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.resource = transaction.resource;
+
+                           local::send::reply( state, std::move( reply), transaction.trid.owner());
+                        }
+
+                        return true;
+                     }
+
+                     bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                     {
+                        Trace trace{ "transaction::handle::implementation::Remote::handle rollback reply"};
+
+                        //
+                        // Transaction is owned by another domain, so we just act as a resource.
+                        // This TM does not own the transaction, so we don't need to store
+                        // state.
+                        //
+
+                        using reply_type = common::message::transaction::resource::rollback::Reply;
+
+                        {
+                           auto reply = local::transform::message< reply_type>( message);
+                           reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.resource = transaction.resource;
+
+                           local::send::reply( state, std::move( reply), transaction.trid.owner());
+                        }
+
+                        return true;
+                     }
+
+                  protected:
+                     Remote() = default;
+                  };
+
+
+                  namespace one
+                  {
+                     namespace phase
+                     {
+                        namespace commit
+                        {
+
+                           struct Remote : implementation::Remote
+                           {
+                              static const Remote* instance()
+                              {
+                                 static Remote singleton;
+                                 return &singleton;
+                              }
+
+                              bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                              {
+                                 Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::handle prepare reply"};
+                                 //
+                                 // We're done with the prepare phase, start with commit or rollback
+                                 //
+
+                                 using reply_type = common::message::transaction::resource::commit::Reply;
+
+                                 //
+                                 // Normalize all the resources return-state
+                                 //
+                                 auto result = transaction.results();
+
+                                 switch( result)
+                                 {
+                                    case Transaction::Resource::Result::xa_RDONLY:
+                                    {
+                                       log << "prepare completed - " << transaction << " XA_RDONLY\n";
+
+                                       //
+                                       // Read-only optimization. We can send the reply directly and
+                                       // discard the transaction
+                                       //
+                                       state.log.remove( transaction.trid);
+
+                                       //
+                                       // Send reply
+                                       //
+                                       {
+                                          auto reply = local::transform::message< reply_type>( message);
+                                          reply.correlation = transaction.correlation;
+                                          reply.resource = transaction.resource;
+                                          reply.state = XA_RDONLY;
+
+                                          local::send::reply( state, std::move( reply), transaction.trid.owner());
+                                       }
+
+                                       //
+                                       // Indicate that wrapper should remove the transaction from state
+                                       //
+                                       return true;
+                                    }
+                                    case Transaction::Resource::Result::xa_OK:
+                                    {
+                                       log << "prepare completed - " << transaction << " XA_OK\n";
+
+                                       //
+                                       // Prepare has gone ok. Log state
+                                       //
+                                       state.log.prepare( transaction.trid);
+
+
+                                       //
+                                       // All XA_OK is to be committed, send commit to all
+                                       //
+
+                                       //
+                                       // We only want to send to resorces that has reported ok, and is in prepared state
+                                       // (could be that some has read-only)
+                                       //
+                                       auto filter = common::chain::And::link(
+                                             Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
+                                             Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
+
+                                       local::send::resource::request<
+                                          common::message::transaction::resource::commit::Request>(
+                                                state, transaction, filter, Transaction::Resource::Stage::prepare_requested);
+
+
+                                       break;
+                                    }
+                                    default:
+                                    {
+                                       //
+                                       // Something has gone wrong.
+                                       //
+                                       common::log::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+
+                                       local::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                                          state,
+                                          transaction,
+                                          Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                                          Transaction::Resource::Stage::rollback_requested);
+
+                                       break;
+                                    }
+                                 }
+                                 return false;
+                              }
+
+                              bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                              {
+                                 Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::handle rollback reply"};
+
+                                 using reply_type = common::message::transaction::resource::commit::Reply;
+
+                                 //
+                                 // Send reply
+                                 //
+                                 {
+                                    auto reply = local::transform::message< reply_type>( message);
+                                    reply.correlation = transaction.correlation;
+                                    reply.resource = transaction.resource;
+                                    reply.state = XA_RBOTHER;
+
+                                    local::send::reply( state, std::move( reply), transaction.trid.owner());
+                                 }
+                                 return true;
+                              }
+
+                           private:
+                              Remote() = default;
+                           };
+
+                        } // commit
+                     } // phase
+                  } // one
+               } // implementation
 
             } // <unnamed>
          } // local
@@ -491,133 +970,6 @@ namespace casual
                   }
                }
 
-               bool basic_prepare::local( message_type& message, Transaction& transaction)
-               {
-                  Trace trace{ "transaction::handle::resource::prepare local reply"};
-
-                  using reply_type = common::message::transaction::commit::Reply;
-
-                  //
-                  // Normalize all the resources return-state
-                  //
-                  auto result = transaction.results();
-
-                  switch( result)
-                  {
-                     case Transaction::Resource::Result::xa_RDONLY:
-                     {
-                        log << "prepare completed - " << transaction << " XA_RDONLY\n";
-
-                        //
-                        // Read-only optimization. We can send the reply directly and
-                        // discard the transaction
-                        //
-                        m_state.log.remove( transaction.trid);
-
-                        //
-                        // Send reply
-                        //
-                        {
-                           auto reply = local::transform::message< reply_type>( message);
-                           reply.correlation = transaction.correlation;
-                           reply.stage = reply_type::Stage::commit;
-                           reply.state = XA_RDONLY;
-
-                           local::send::reply( m_state, std::move( reply), transaction.trid.owner());
-                        }
-
-                        //
-                        // Indicate that wrapper should remove the transaction from state
-                        //
-                        return true;
-                     }
-                     case Transaction::Resource::Result::xa_OK:
-                     {
-                        log << "prepare completed - " << transaction << " XA_OK\n";
-
-                        //
-                        // Prepare has gone ok. Log state
-                        //
-                        m_state.log.prepare( transaction.trid);
-
-                        //
-                        // prepare send reply. Will be sent after persistent write to file
-                        //
-                        {
-                           auto reply = local::transform::message< reply_type>( message);
-                           reply.correlation = transaction.correlation;
-                           reply.stage = reply_type::Stage::prepare;
-                           reply.state = XA_OK;
-
-                           local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
-                        }
-
-                        //
-                        // All XA_OK is to be committed, send commit to all
-                        //
-
-                        //
-                        // We only want to send to resorces that has reported ok, and is in prepared state
-                        // (could be that some has read-only)
-                        //
-                        auto filter = common::chain::And::link(
-                              Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
-                              Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
-
-                        local::send::resource::request<
-                           common::message::transaction::resource::commit::Request>( m_state, transaction, filter, Transaction::Resource::Stage::prepare_requested);
-
-
-                        break;
-                     }
-                     default:
-                     {
-                        //
-                        // Something has gone wrong.
-                        //
-                        common::log::error << "TODO: something has gone wrong - rollback...\n";
-
-                        local::send::resource::request< common::message::transaction::resource::rollback::Request>(
-                           m_state,
-                           transaction,
-                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
-                           Transaction::Resource::Stage::rollback_requested);
-
-                        break;
-                     }
-                  }
-
-
-                  //
-                  // Transaction is not done
-                  //
-                  return false;
-               }
-
-               bool basic_prepare::remote( message_type& message, Transaction& transaction)
-               {
-                  Trace trace{ "transaction::handle::resource::prepare remote reply"};
-
-                  //
-                  // Transaction is owned by another domain, so we just act as a resource.
-                  // This TM does not own the transaction, so we don't need to store
-                  // state.
-                  //
-
-                  using reply_type = common::message::transaction::resource::prepare::Reply;
-
-                  {
-                     auto reply = local::transform::message< reply_type>( message);
-                     reply.state = Transaction::Resource::convert( transaction.results());
-                     reply.resource = transaction.resource;
-
-                     local::send::reply( m_state, std::move( reply), transaction.trid.owner());
-                  }
-
-                  return true;
-
-               }
-
                bool basic_prepare::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
                   Trace trace{ "transaction::handle::resource::prepare reply"};
@@ -652,111 +1004,10 @@ namespace casual
                      return false;
                   }
 
-                  if( transaction.resource)
-                  {
-                     return remote( message, transaction);
-                  }
-                  else
-                  {
-                     return local( message, transaction);
-                  }
+                  return transaction.implementation->handle( m_state, message, transaction);
 
                }
 
-               bool basic_commit::local( message_type& message, Transaction& transaction)
-               {
-                  Trace trace{ "transaction::handle::resource::commit local reply"};
-
-
-                  using reply_type = common::message::transaction::commit::Reply;
-
-                  //
-                  // Normalize all the resources return-state
-                  //
-                  auto result = transaction.results();
-
-                  switch( result)
-                  {
-                     case Transaction::Resource::Result::xa_OK:
-                     {
-                        log << "commit completed - " << transaction << " XA_OK\n";
-
-                        auto reply = local::transform::message< reply_type>( message);
-                        reply.correlation = transaction.correlation;
-                        reply.stage = reply_type::Stage::commit;
-                        reply.state = XA_OK;
-
-                        if( transaction.resources.size() <= 1)
-                        {
-                           local::send::reply( m_state, reply, transaction.trid.owner());
-                        }
-                        else
-                        {
-                           //
-                           // Send reply
-                           // TODO: We can't send reply directly without checking that the prepare-reply
-                           // has been sent (prepare-reply could be pending for persistent write).
-                           // For now, we do a delayed reply, so we're sure that the
-                           // commit-reply arrives after the prepare-reply
-                           //
-                           local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
-                        }
-
-                        //
-                        // Remove transaction
-                        //
-                        m_state.log.remove( message.trid);
-                        return true;
-                     }
-                     default:
-                     {
-                        //
-                        // Something has gone wrong.
-                        //
-                        common::log::error << "TODO: something has gone wrong...\n";
-
-                        //
-                        // prepare send reply. Will be sent after persistent write to file.
-                        //
-                        // TOOD: we do have to save the state of the transaction?
-                        //
-                        {
-                           auto reply = local::transform::message< reply_type>( message);
-                           reply.correlation = transaction.correlation;
-                           reply.stage = reply_type::Stage::commit;
-                           reply.state = Transaction::Resource::convert( result);
-
-                           local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
-                        }
-                        break;
-                     }
-                  }
-
-                  return false;
-
-               }
-               bool basic_commit::remote( message_type& message, Transaction& transaction)
-               {
-                  Trace trace{ "transaction::handle::resource::commit remote reply"};
-
-                  //
-                  // Transaction is owned by another domain, so we just act as a resource.
-                  // This TM does not own the transaction, so we don't need to store
-                  // state.
-                  //
-
-                  using reply_type = common::message::transaction::resource::commit::Reply;
-
-                  {
-                     auto reply = local::transform::message< reply_type>( message);
-                     reply.state = Transaction::Resource::convert( transaction.results());
-                     reply.resource = transaction.resource;
-
-                     local::send::reply( m_state, std::move( reply), transaction.trid.owner());
-                  }
-
-                  return true;
-               }
 
 
                bool basic_commit::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
@@ -779,103 +1030,10 @@ namespace casual
                      return false;
                   }
 
-                  if( transaction.resource)
-                  {
-                     return remote( message, transaction);
-                  }
-                  else
-                  {
-                     return local( message, transaction);
-                  }
+                  return transaction.implementation->handle( m_state, message, transaction);
                }
 
 
-               bool basic_rollback::local( message_type& message, Transaction& transaction)
-               {
-                  Trace trace{ "transaction::handle::resource::rollback local reply"};
-
-                  using reply_type = common::message::transaction::rollback::Reply;
-
-                  //
-                  // Normalize all the resources return-state
-                  //
-                  auto result = transaction.results();
-
-                  switch( result)
-                  {
-                     case Transaction::Resource::Result::xa_OK:
-                     case Transaction::Resource::Result::xaer_NOTA:
-                     case Transaction::Resource::Result::xa_RDONLY:
-                     {
-                        log << "rollback completed - " << transaction << " XA_OK\n";
-
-                        //
-                        // Send reply
-                        //
-                        {
-                           auto reply = local::transform::message< reply_type>( message);
-                           reply.correlation = transaction.correlation;
-                           reply.state = XA_OK;
-
-                           local::send::reply( m_state, std::move( reply), transaction.trid.owner());
-                        }
-
-                        //
-                        // Remove transaction
-                        //
-                        m_state.log.remove( message.trid);
-                        return true;
-                     }
-                     default:
-                     {
-                        //
-                        // Something has gone wrong.
-                        //
-                        common::log::error << "TODO: resource rollback - something has gone wrong...\n";
-
-                        //
-                        // prepare send reply. Will be sent after persistent write to file
-                        //
-                        //
-                        // TOOD: we do have to save the state of the transaction?
-                        //
-                        {
-                           auto reply = local::transform::message< reply_type>( message);
-                           reply.correlation = transaction.correlation;
-                           reply.state = Transaction::Resource::convert( result);
-
-                           local::send::persistent::reply( m_state, std::move( reply), transaction.trid.owner());
-                        }
-                        break;
-                     }
-                  }
-                  return false;
-
-               }
-
-               bool basic_rollback::remote( message_type& message, Transaction& transaction)
-               {
-                  Trace trace{ "transaction::handle::resource::rollback remote reply"};
-
-                  //
-                  // Transaction is owned by another domain, so we just act as a resource.
-                  // This TM does not own the transaction, so we don't need to store
-                  // state.
-                  //
-
-                  using reply_type = common::message::transaction::resource::rollback::Reply;
-
-                  {
-                     auto reply = local::transform::message< reply_type>( message);
-                     reply.state = Transaction::Resource::convert( transaction.results());
-                     reply.resource = transaction.resource;
-
-                     local::send::reply( m_state, std::move( reply), transaction.trid.owner());
-                  }
-
-                  return true;
-
-               }
 
                bool basic_rollback::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
                {
@@ -894,14 +1052,7 @@ namespace casual
                      return false;
                   }
 
-                  if( transaction.resource)
-                  {
-                     return remote( message, transaction);
-                  }
-                  else
-                  {
-                     return local( message, transaction);
-                  }
+                  return transaction.implementation->handle( m_state, message, transaction);
                }
             } // reply
          } // resource
@@ -969,6 +1120,12 @@ namespace casual
                   throw user::error{ XAER_PROTO, "Attempt to commit transaction, which is not in a state for commit", CASUAL_NIP( message.trid)};
                }
             }
+
+            //
+            // Local normal commit phase
+            //
+            transaction.implementation = local::implementation::Local::instance();
+
 
             //
             // Only the owner of the transaction can fiddle with the transaction ?
@@ -1054,67 +1211,51 @@ namespace casual
 
             log << "message: " << message << '\n';
 
-            //
-            // Find the transaction
-            //
-            auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
+            auto location = local::transaction::find_or_add( m_state, message);
+            auto& transaction = *location;
 
-            if( ! found)
+            //
+            // Local normal rollback phase
+            //
+            transaction.implementation = local::implementation::Local::instance();
+
+            //
+            // Make sure we add the involved resources from the rollback message (if any)
+            //
+            local::resource::involved( m_state, transaction, message);
+
+            if( transaction.resources.empty())
             {
-               //
-               // transaction is not known to TM, hence no resources has been involved
-               // up to this point. We add the transaction.
-               //
-
-               m_state.transactions.emplace_back( message.trid);
+               log << "no resources involved - " << transaction << " XA_OK\n";
 
                //
-               // We now have the transaction, we call recursive...
+               // We can remove this transaction.
                //
-               (*this)( message);
+               m_state.transactions.erase( std::begin( location));
+
+               //
+               // Send reply
+               //
+               {
+                  auto reply = local::transform::reply( message);
+                  reply.state = XA_OK;
+
+                  local::send::reply( m_state, std::move( reply), message.process);
+               }
             }
             else
             {
-               auto& transaction = *found;
-
                //
-               // Make sure we add the involved resources from the rollback message (if any)
+               // Keep the correlation so we can send correct reply
                //
-               local::resource::involved( m_state, transaction, message);
+               transaction.correlation = message.correlation;
 
-               if( transaction.resources.empty())
-               {
-                  log << "no resources involved - " << transaction << " XA_OK\n";
-
-                  //
-                  // We can remove this transaction.
-                  //
-                  m_state.transactions.erase( std::begin( found));
-
-                  //
-                  // Send reply
-                  //
-                  {
-                     auto reply = local::transform::reply( message);
-                     reply.state = XA_OK;
-
-                     local::send::reply( m_state, std::move( reply), message.process);
-                  }
-               }
-               else
-               {
-                  //
-                  // Keep the correlation so we can send correct reply
-                  //
-                  transaction.correlation = message.correlation;
-
-                  local::send::resource::request< common::message::transaction::resource::rollback::Request>(
-                     m_state,
-                     transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                     Transaction::Resource::Stage::rollback_requested
-                  );
-               }
+               local::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                  m_state,
+                  transaction,
+                  Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                  Transaction::Resource::Stage::rollback_requested
+               );
             }
          }
 
@@ -1147,15 +1288,6 @@ namespace casual
 
                log << "message: " << message << '\n';
 
-               auto send_readonly_reply = [&](){
-
-                  auto reply = local::transform::reply( message);
-                  reply.state = XA_RDONLY;
-                  reply.resource = message.resource;
-
-                  local::send::reply( m_state, std::move( reply), message.process);
-               };
-
                //
                // Find the transaction
                //
@@ -1164,24 +1296,68 @@ namespace casual
 
                if( found)
                {
-                  auto& transaction = *found;
+                  if( handle( message, *found))
+                  {
+                     //
+                     // We remove the transaction
+                     //
+                     m_state.transactions.erase( std::begin( found));
+                  }
+               }
+               else
+               {
+                  //
+                  // We don't have the transaction. This could be for two reasons:
+                  // 1) We had it, but it was already prepared from another domain, and XA
+                  // optimization kicked in ("read only") and the transaction was done
+                  // 2) casual have made some optimizations.
+                  // Either way, we don't have it, so we just reply that it has been prepared with "read only"
+                  //
 
-                  log << "transaction: " << transaction << '\n';
+                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
+                  local::send::read_only( m_state, message);
+               }
+            }
+
+            bool Prepare::handle( message_type& message, Transaction& transaction)
+            {
+               Trace trace{ "transaction::handle::domain::Prepare::handle"};
+
+               log << "transaction: " << transaction << '\n';
+
+               //
+               // We can only get this message if a 'user commit' has
+               // been invoked somewhere.
+               //
+               // The transaction can only be in one of two states.
+               //
+               // 1) The prepare phase has already started, either by this domain
+               //    or another domain, either way the work has begun, and we don't
+               //    need to do anything for this particular request.
+               //
+               // 2) Some other domain has received a 'user commit' and started the
+               //    prepare phase. This domain should carry out the request on behalf
+               //    of the other domain.
+               //
+
+               if( transaction.implementation)
+               {
                   //
-                  // We can only get this message if a 'user commit' has
-                  // been invoked somewhere.
+                  // state 1:
                   //
-                  // The transaction can only be in one of two states.
+                  // The commit/rollback phase has already started, we send
+                  // read only and let the phase take it's course
                   //
-                  // 1) The prepare phase has already started, either by this domain
-                  //    or another domain, either way the work has begun, and we don't
-                  //    need to do anything for this particular request.
+                  local::send::read_only( m_state, message);
+               }
+               else
+               {
                   //
-                  // 2) Some other domain has received a 'user commit' and started the
-                  //    prepare phase. This domain should carry out the request on behalf
-                  //    of the other domain.
+                  // state 2:
                   //
+
+                  transaction.implementation = local::implementation::Remote::instance();
 
                   switch( transaction.stage())
                   {
@@ -1206,38 +1382,18 @@ namespace casual
 
                         break;
                      }
-                     default:
-                     {
-                        send_readonly_reply();
-                        break;
-                     }
                      case Transaction::Resource::Stage::not_involved:
                      {
-                        send_readonly_reply();
+                        local::send::read_only( m_state, message);
 
                         //
                         // We remove the transaction
                         //
-                        m_state.transactions.erase( std::begin( found));
-
-                        break;
+                        return true;
                      }
                   }
                }
-               else
-               {
-                  //
-                  // We don't have the transaction. This could be for two reasons:
-                  // 1) We had it, but it was already prepared from another domain, and XA
-                  // optimization kicked in ("read only") and the transaction was done
-                  // 2) casual have made some optimizations.
-                  // Either way, we don't have it, so we just reply that it has been prepared with "read only"
-                  //
-
-                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
-
-                  send_readonly_reply();
-               }
+               return false;
             }
 
             void Commit::operator () ( message_type& message)
@@ -1253,27 +1409,7 @@ namespace casual
 
                if( found)
                {
-                  auto& transaction = *found;
-                  log << "transaction: " << transaction << '\n';
-
-                  //
-                  // Could be a one phase commit optimization.
-                  //
-                  /* TODO: we need to take care of this...
-                  if( common::flag< TMONEPHASE>( message.flags) && transaction.resources.size() > 1)
-                  {
-
-
-                  }
-                  */
-
-                  local::send::resource::request< common::message::transaction::resource::commit::Request>(
-                     m_state,
-                     transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
-                     Transaction::Resource::Stage::commit_requested,
-                     message.flags
-                  );
+                  handle( message, *found);
                }
                else
                {
@@ -1290,6 +1426,62 @@ namespace casual
 
                      local::send::reply( m_state, std::move( reply), message.process);
                   }
+               }
+            }
+
+            void Commit::handle( message_type& message, Transaction& transaction)
+            {
+               Trace trace{ "transaction::handle::domain::Commit::handle"};
+
+               log << "transaction: " << transaction << '\n';
+
+               if( transaction.implementation)
+               {
+                  local::send::resource::request< common::message::transaction::resource::commit::Request>(
+                     m_state,
+                     transaction,
+                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                     Transaction::Resource::Stage::commit_requested,
+                     message.flags
+                  );
+               }
+               else
+               {
+                  //
+                  // It has to be a one phase commit optimization.
+                  //
+                  if( ! common::flag< TMONEPHASE>( message.flags))
+                  {
+                     auto reply = local::transform::reply( message);
+                     reply.state = XAER_PROTO;
+                     reply.resource = message.resource;
+
+                     local::send::reply( m_state, std::move( reply), message.process);
+                  }
+
+                  transaction.implementation = local::implementation::one::phase::commit::Remote::instance();
+
+                  if( transaction.resources.size() > 1)
+                  {
+                     local::send::resource::request< common::message::transaction::resource::prepare::Request>(
+                        m_state,
+                        transaction,
+                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                        Transaction::Resource::Stage::prepare_requested,
+                        TMNOFLAGS
+                     );
+                  }
+                  else
+                  {
+                     local::send::resource::request< common::message::transaction::resource::commit::Request>(
+                        m_state,
+                        transaction,
+                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                        Transaction::Resource::Stage::commit_requested,
+                        message.flags
+                     );
+                  }
+
                }
             }
 

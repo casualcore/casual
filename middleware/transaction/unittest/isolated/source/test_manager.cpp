@@ -677,6 +677,194 @@ namespace casual
          }
       }
 
+      TEST( casual_transaction_manager, transaction_2_remote_resurce_involved__one_phase_commit_optimzation___expect_prepare_phase_commit_XA_OK)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::configuration()};
+
+         mockup::ipc::Collector gateway1;
+         mockup::ipc::Collector gateway2;
+
+         auto trid = common::transaction::ID::create();
+
+         // gateway involved
+         {
+            common::message::transaction::resource::domain::Involved message;
+            message.trid = trid;
+
+            message.process = gateway1.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+
+            message.process = gateway2.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+         }
+
+         // one-phase-commit
+         {
+            common::message::transaction::resource::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+            message.flags = TMONEPHASE;
+
+            local::send::tm( message);
+         }
+
+
+         // remote prepare
+         {
+            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::prepare::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XA_OK;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_prepare( gateway1);
+            remote_prepare( gateway2);
+         };
+
+         // remote commit
+         {
+            auto remote_commit = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::commit::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XA_OK;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_commit( gateway1);
+            remote_commit( gateway2);
+         };
+
+         // resource commit reply
+         {
+            common::message::transaction::resource::commit::Reply message;
+
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid) << "message: " << message;
+            EXPECT_TRUE( message.state == XA_OK) << "state: " << message.state;
+         }
+      }
+
+
+
+      TEST( casual_transaction_manager, transaction_2_remote_resurce_involved__one_phase_commit_optimzation__RM_fail__expect_rollback__commit_XA_RBOTHER)
+      {
+         CASUAL_UNITTEST_TRACE();
+
+         local::Domain domain{ local::configuration()};
+
+         mockup::ipc::Collector gateway1;
+         mockup::ipc::Collector gateway2;
+
+         auto trid = common::transaction::ID::create();
+
+         // gateway involved
+         {
+            common::message::transaction::resource::domain::Involved message;
+            message.trid = trid;
+
+            message.process = gateway1.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+
+            message.process = gateway2.process();
+            message.domain = uuid::make();
+            local::send::tm( message);
+         }
+
+         // one-phase-commit
+         {
+            common::message::transaction::resource::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+            message.flags = TMONEPHASE;
+
+            local::send::tm( message);
+         }
+
+
+         // remote prepare
+         {
+            auto remote_prepare = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::prepare::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XAER_RMERR;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_prepare( gateway1);
+            remote_prepare( gateway2);
+         };
+
+         // remote rollback
+         {
+            auto remote_commit = [&]( mockup::ipc::Collector& gtw){
+
+               common::message::transaction::resource::rollback::Request message;
+
+               communication::ipc::blocking::receive( gtw.output(), message);
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.flags == TMNOFLAGS);
+
+               auto reply = common::message::reverse::type( message);
+               reply.resource = message.resource;
+               reply.state = XA_OK;
+               reply.trid = message.trid;
+
+               local::send::tm( reply);
+            };
+
+            remote_commit( gateway1);
+            remote_commit( gateway2);
+         };
+
+         // resource commit reply
+         {
+            common::message::transaction::resource::commit::Reply message;
+
+            communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid) << "message: " << message;
+            EXPECT_TRUE( message.state == XA_RBOTHER) << "state: " << message.state;
+         }
+      }
+
    } // transaction
 
 } // casual

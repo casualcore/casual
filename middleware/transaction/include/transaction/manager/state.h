@@ -26,6 +26,13 @@ namespace casual
 
    namespace transaction
    {
+      namespace handle
+      {
+         namespace implementation
+         {
+            struct Interface;
+         } // implementation
+      } // handle
 
       class State;
 
@@ -247,8 +254,6 @@ namespace casual
                };
             } // filter
          } // pending
-
-
       } // state
 
 
@@ -258,7 +263,7 @@ namespace casual
          {
             using id_type = state::resource::id::type;
 
-            enum class Stage
+            enum class Stage : std::uint16_t
             {
                involved,
                prepare_requested,
@@ -278,7 +283,7 @@ namespace casual
             //! Used to rank the return codes from the resources, the lower the enum value (higher up),
             //! the more severe...
             //!
-            enum class Result
+            enum class Result : std::uint16_t
             {
                xa_HEURHAZ,
                xa_HEURMIX,
@@ -387,6 +392,11 @@ namespace casual
 
          Transaction( common::transaction::ID trid) : trid( std::move( trid)) {}
 
+         //!
+         //! Depending on context the transaction will have different
+         //! handle-implementations.
+         //!
+         const handle::implementation::Interface* implementation = nullptr;
 
          common::transaction::ID trid;
          std::vector< Resource> resources;
@@ -416,6 +426,7 @@ namespace casual
 
          friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
       };
+
 
 
 

@@ -47,6 +47,18 @@ namespace casual
 
       namespace handle
       {
+
+         namespace implementation
+         {
+            struct Interface
+            {
+               virtual bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
+               virtual bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
+               virtual bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
+            };
+         } // implementation
+
+
          namespace process
          {
             struct Exit : state::Base
@@ -116,10 +128,6 @@ namespace casual
 
                   bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
-               private:
-                  bool local( message_type& message, Transaction& transaction);
-                  bool remote( message_type& message, Transaction& transaction);
-
                };
                using Prepare = Wrapper< basic_prepare>;
 
@@ -132,10 +140,6 @@ namespace casual
 
                   bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
 
-               private:
-                  bool local( message_type& message, Transaction& transaction);
-                  bool remote( message_type& message, Transaction& transaction);
-
                };
                using Commit = Wrapper< basic_commit>;
 
@@ -146,11 +150,6 @@ namespace casual
                   using state::Base::Base;
 
                   bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
-
-               private:
-                  bool local( message_type& message, Transaction& transaction);
-                  bool remote( message_type& message, Transaction& transaction);
-
                };
 
                using Rollback = Wrapper< basic_rollback>;
@@ -216,6 +215,8 @@ namespace casual
                using Base::Base;
 
                void operator () ( message_type& message);
+            private:
+               bool handle( message_type& message, Transaction& transaction);
             };
 
             struct Commit : public state::Base
@@ -226,6 +227,9 @@ namespace casual
                using state::Base::Base;
 
                void operator () ( message_type& message);
+
+            private:
+               void handle( message_type& message, Transaction& transaction);
             };
 
             struct Rollback : public state::Base
