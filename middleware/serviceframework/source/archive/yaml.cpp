@@ -24,28 +24,26 @@ namespace casual
                {
                   const std::string& empty()
                   {
-                     sf::log::sf << "archive::yaml::local::empty\n";
-
                      static const std::string document{ "---\n"};
                      return document;
                   }
 
-                  std::istringstream stream( const std::string& yaml)
+                  const std::string& stream( const std::string& yaml)
                   {
                      if( yaml.empty())
                      {
-                        return std::istringstream{ empty()};
+                        return empty();
                      }
-                     return std::istringstream{ yaml};
+                     return yaml;
                   }
 
-                  std::istringstream stream( const char* const yaml)
+                  const char* stream( const char* const yaml)
                   {
                      if( ! yaml || yaml[ 0] == '\0')
                      {
-                        return std::istringstream{ empty()};
+                        return empty().c_str();
                      }
-                     return std::istringstream{ yaml};
+                     return yaml;
                   }
 
                } // <unnamed>
@@ -80,20 +78,20 @@ namespace casual
 
             const YAML::Node& Load::operator() ( const std::string& yaml)
             {
-               auto stream = local::stream( yaml);
+               std::istringstream stream{ local::stream( yaml)};
                return (*this)( stream);
             }
 
             const YAML::Node& Load::operator() ( const char* const yaml, const std::size_t size)
             {
-               auto stream = local::stream( std::string( yaml, size));
+               std::istringstream stream{ local::stream( std::string( yaml, size))};
                return (*this)( stream);
             }
 
 
             const YAML::Node& Load::operator() ( const char* const yaml)
             {
-               auto stream = local::stream( yaml);
+               std::istringstream stream{ local::stream( yaml)};
                return (*this)( stream);
             }
 
