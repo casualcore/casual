@@ -103,9 +103,12 @@ namespace casual
                            template< typename T>
                            T random()
                            {
+                              //using limit = std::numeric_limits< T>;
+
                               static std::uniform_int_distribution< T> distribution(
-                                    std::numeric_limits< T>::min() / 5,
-                                    std::numeric_limits< T>::max() / 5);
+                                    1,
+                                    1000);
+                                    //limit::max() / ( 5 * limit::digits ) + 1);
 
                               return distribution( engine());
                            }
