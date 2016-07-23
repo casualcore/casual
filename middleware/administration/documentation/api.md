@@ -52,9 +52,9 @@ The following modules has an administrative api:
 The following administrative services is exposed:
 
 * [.casual.broker.state](../../broker/documentation/api.md#.casual.broker.state)
-* [.casual.domain.state](../../domain/documentation/api.md#.casual.domain.state)
-* [.casual.domain.scale.instances](../../domain/documentation/api.md#.casual.domain.scale.instances)
-* [.casual.domain.shutdown](../../domain/documentation/api.md#.casual.domain.shutdown)
+* [.casual.domain.state](../../domain/documentation/api.md#casualdomainstate)
+* [.casual.domain.scale.instances](../../domain/documentation/api.md#casualdomainscaleinstances)
+* [.casual.domain.shutdown](../../domain/documentation/api.md#casualdomainshutdown)
 * [.casual.transaction.state](../../transaction/documentation/api.md#.casual.transaction.state)
 * [.casual.transaction.update.instances](../../transaction/documentation/api.md#.casual.transaction.update.instances)
 
