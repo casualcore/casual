@@ -1,7 +1,5 @@
 
-
 ## .casual.domain.state
-<a name="casualdomainstate"></a>
 
 ```bash
 
@@ -50,7 +48,6 @@ output
 ```
 
 ## .casual.domain.scale.instances
-<a name="casualdomainscaleinstances"></a>
 
 ```bash
 service: .casual.domain.scale.instances
@@ -67,7 +64,6 @@ output
 ```
 
 ## .casual.domain.shutdown
-<a name="casualdomainshutdown"></a>
 
 ```bash
 service: .casual.domain.shutdown
