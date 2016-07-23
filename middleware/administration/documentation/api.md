@@ -51,12 +51,12 @@ The following modules has an administrative api:
 ## Services
 The following administrative services is exposed:
 
-* [.casual.broker.state](../../broker/documentation/api.md#.casual.broker.state)
-* [.casual.domain.state](../../domain/documentation/api.md#casualdomainstate)
-* [.casual.domain.scale.instances](../../domain/documentation/api.md#casualdomainscaleinstances)
-* [.casual.domain.shutdown](../../domain/documentation/api.md#casualdomainshutdown)
-* [.casual.transaction.state](../../transaction/documentation/api.md#.casual.transaction.state)
-* [.casual.transaction.update.instances](../../transaction/documentation/api.md#.casual.transaction.update.instances)
+* [.casual.broker.state](../../broker/documentation/api.md#markdown-header-casualbrokerstate)
+* [.casual.domain.state](../../domain/documentation/api.md#markdown-header-casualdomainstate)
+* [.casual.domain.scale.instances](../../domain/documentation/api.md#markdown-header-casualdomainscaleinstances)
+* [.casual.domain.shutdown](../../domain/documentation/api.md#markdown-header-casualdomainshutdown)
+* [.casual.transaction.state](../../transaction/documentation/api.md#markdown-header-casualtransactionstate)
+* [.casual.transaction.update.instances](../../transaction/documentation/api.md#markdown-header-casualtransactionupdateinstances)
 
 
 
