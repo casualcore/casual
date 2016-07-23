@@ -1,6 +1,5 @@
 
 ## .casual.transaction.state
-<a name=".casual.transaction.state"></a>
 
 Gets the current state of the transaction manager in a given domain
 
@@ -85,7 +84,6 @@ output
 ```
 
 ## .casual.transaction.update.instances
-<a name=".casual.transaction.update.instances"></a>
 
 Updates insstances of 0..* resource proxies
 

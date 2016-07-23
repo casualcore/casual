@@ -44,12 +44,13 @@ The following modules has an administrative api:
 * [domain](../../domain/documentation/api.md)
 * [broker](../../broker/documentation/api.md)
 * [transaction](../../transaction/documentation/api.md)
+* [gateway](../../gateway/documentation/api.md)
 
 
 
 
 ## Services
-The following administrative services is exposed:
+The following administrative services are exposed:
 
 * [.casual.broker.state](../../broker/documentation/api.md#markdown-header-casualbrokerstate)
 * [.casual.domain.state](../../domain/documentation/api.md#markdown-header-casualdomainstate)
@@ -57,7 +58,7 @@ The following administrative services is exposed:
 * [.casual.domain.shutdown](../../domain/documentation/api.md#markdown-header-casualdomainshutdown)
 * [.casual.transaction.state](../../transaction/documentation/api.md#markdown-header-casualtransactionstate)
 * [.casual.transaction.update.instances](../../transaction/documentation/api.md#markdown-header-casualtransactionupdateinstances)
-
+* [.casual.gateway.state](../../gateway/documentation/api.md#markdown-header-casualgatewaystate)
 
 
 

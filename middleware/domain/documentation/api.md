@@ -1,8 +1,10 @@
+# casual.domain
 
 ## .casual.domain.state
 
-```bash
+### definition
 
+```bash
 service: .casual.domain.state
 input
 output
@@ -44,10 +46,76 @@ output
           integer pid
           integer queue
 
+```
+
+### example
+
+```json
+{
+    "input": {},
+    "output": {
+        "serviceReturn": {
+            "groups": [
+                {
+                    "id": 380,
+                    "name": "casual",
+                    "note": "casual",
+                    "resources": [
+                        {
+                            "instances": 562,
+                            "key": "casual",
+                            "openinfo": "casual",
+                            "closeinfo": "casual"
+                        }
+                    ],
+                    "dependencies": [
+                        771
+                    ]
+                }
+            ],
+            "executables": [
+                {
+                    "id": 623,
+                    "alias": "casual",
+                    "path": "casual",
+                    "arguments": [
+                        "casual"
+                    ],
+                    "note": "casual",
+                    "instances": [
+                        287
+                    ],
+                    "memberships": [
+                        632
+                    ],
+                    "environment": {
+                        "variables": [
+                            "casual"
+                        ]
+                    },
+                    "configured_instances": 120,
+                    "restart": true,
+                    "restarts": 884
+                }
+            ],
+            "termination": {
+                "listeners": [
+                    {
+                        "pid": 503,
+                        "queue": 58
+                    }
+                ]
+            }
+        }
+    }
+}
 
 ```
 
+
 ## .casual.domain.scale.instances
+
+### definition
 
 ```bash
 service: .casual.domain.scale.instances
@@ -63,10 +131,46 @@ output
       integer instances
 ```
 
+### example
+
+```json
+{
+    "input": {
+        "instances": [
+            {
+                "alias": "casual",
+                "instances": 256
+            }
+        ]
+    },
+    "output": {
+        "serviceReturn": [
+            {
+                "alias": "casual",
+                "instances": 838
+            }
+        ]
+    }
+}
+``
+
 ## .casual.domain.shutdown
+
+### definition
 
 ```bash
 service: .casual.domain.shutdown
 input
 output
 ```
+
+### example
+```json
+{
+    "input": {},
+    "output": {}
+}
+``
+
+
+
