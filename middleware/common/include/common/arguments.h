@@ -344,13 +344,13 @@ namespace casual
                template< typename O, typename T>
                auto static make( O& object, void (O::*member)( T)) -> std::function<void( T)>
                {
-                  return [&]( const T& value){ common::invoke( member, object, value);};
+                  return [=,&object]( const T& value){ common::invoke( member, object, value);};
                }
 
                template< typename T>
                auto static make( void (*function)( T)) -> std::function<void( T)>
                {
-                  return [&]( const T& value){ common::invoke( function, value);};
+                  return [=]( const T& value){ common::invoke( function, value);};
                }
 
                //
@@ -362,7 +362,7 @@ namespace casual
                   //
                   // We bind directly to the variable
                   //
-                  return [&]( const T& values){ value::assign( variable, values);};
+                  return [&variable]( const T& values){ value::assign( variable, values);};
                }
             };
 
@@ -373,9 +373,9 @@ namespace casual
                using zero_result_type = std::function<void()>;
 
                template< typename O>
-               static zero_result_type make( O& object, void (O::*fucnction)(void))
+               static zero_result_type make( O& object, void (O::*function)(void))
                {
-                  return [&](){ common::invoke( fucnction, object);};
+                  return [=,&object](){ common::invoke( function, object);};
                }
 
                static zero_result_type make( void (*function)(void))
@@ -393,7 +393,7 @@ namespace casual
                //
                static zero_result_type make( bool& value)
                {
-                  return [&](){ value = true;};
+                  return [&value](){ value = true;};
                }
             };
 
