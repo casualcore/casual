@@ -21,13 +21,13 @@ namespace casual
             {
                idle,
                busy,
-               remote,
             };
 
             common::process::Handle process;
-            State state;
-            std::size_t invoked;
+            State state = State::busy;
+            std::size_t invoked = 0;
             sf::platform::time_point last;
+            std::size_t hops = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -44,9 +44,21 @@ namespace casual
 
          struct ServiceVO
          {
+            struct Instance
+            {
+               sf::platform::pid::type pid;
+               std::size_t hops;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( pid);
+                  archive & CASUAL_MAKE_NVP( hops);
+               })
+            };
+
             std::string name;
             std::chrono::microseconds timeout;
-            std::vector< sf::platform::pid::type> instances;
+            std::vector< Instance> instances;
             std::size_t lookedup = 0;
             std::size_t type = 0;
             std::size_t transaction = 0;

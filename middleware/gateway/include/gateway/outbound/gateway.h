@@ -244,9 +244,7 @@ namespace casual
                            common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
                         }
                         reply_base::operator() ( reply);
-
                      }
-
                   };
 
 

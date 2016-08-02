@@ -1,8 +1,5 @@
 //!
-//! casual_broker_transform.h
-//!
-//! Created on: Jun 15, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BROKER_TRANSFORM_H_
@@ -11,9 +8,11 @@
 
 #include "broker/state.h"
 #include "broker/broker.h"
+#include "broker/message.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/server.h"
+#include "common/message/gateway.h"
 #include "common/message/transaction.h"
 
 #include "common/server/handle.h"
@@ -84,7 +83,7 @@ namespace casual
             {
                using Base::Base;
 
-               void operator () ( const common::message::forward::connect::Request& message);
+               void operator () ( const message::forward::connect::Request& message);
             };
 
          } // forward
@@ -95,7 +94,7 @@ namespace casual
          //!
          //! Advertise 0..N services for a server.
          //!
-         struct Advertise : public Base
+         struct Advertise : Base
          {
             typedef common::message::service::Advertise message_type;
 
@@ -108,7 +107,7 @@ namespace casual
 		   //!
          //! Unadvertise 0..N services for a server.
          //!
-		   struct Unadvertise : public Base
+		   struct Unadvertise : Base
          {
             typedef common::message::service::Unadvertise message_type;
 
@@ -123,9 +122,9 @@ namespace casual
 	         //!
 	         //! Looks up a service-name
 	         //!
-	         struct Lookup : public Base
+	         struct Lookup : Base
 	         {
-	            typedef common::message::service::lookup::Request message_type;
+	            using message_type = common::message::service::lookup::Request;
 
 	            using Base::Base;
 
@@ -134,6 +133,18 @@ namespace casual
 	         };
 
          } // service
+
+		   namespace domain
+         {
+            struct Discover : Base
+            {
+               using message_type = common::message::gateway::domain::discover::Request;
+               using Base::Base;
+
+               void operator () ( message_type& message);
+            };
+
+         } // domain
 
 
          //!
@@ -170,7 +181,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
+            void connect( std::vector< common::message::service::advertise::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::ipc::id::type id, common::message::service::call::Reply& message);
 

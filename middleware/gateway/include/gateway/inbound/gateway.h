@@ -182,7 +182,9 @@ namespace casual
 
                void operator() ( message_type& message)
                {
-                  Trace trace{ "gateway::inbound::handle::basic_reply::operator()"};
+                  Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
+
+                  log << "forward message: " << message << '\n';
 
                   m_device.blocking_send( message);
                }

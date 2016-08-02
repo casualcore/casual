@@ -81,17 +81,17 @@ namespace casual
             {
                server::Arguments arguments{ { "/test/path"}};
 
-               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::Transaction::none);
+               arguments.services.emplace_back( "test_service", &test_service, 0, service::transaction::Type::none);
 
-               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::none);
-               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::atomic);
-               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::join);
-               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::automatic);
+               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, service::transaction::Type::none);
+               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, service::transaction::Type::atomic);
+               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, service::transaction::Type::join);
+               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, service::transaction::Type::automatic);
 
-               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::none);
-               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::atomic);
-               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::join);
-               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::automatic);
+               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, service::transaction::Type::none);
+               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, service::transaction::Type::atomic);
+               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, service::transaction::Type::join);
+               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, service::transaction::Type::automatic);
 
                return arguments;
             }

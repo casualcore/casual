@@ -314,7 +314,9 @@ namespace casual
                      for( auto& service : m.services)
                      {
                         auto& lookup = m_state.services[ service.name];
-                        lookup.service = service;
+                        lookup.service.name = service.name;
+                        lookup.service.type = service.type;
+                        lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
                   },
@@ -395,7 +397,7 @@ namespace casual
             {
                namespace
                {
-                  void advertise( std::vector< message::Service> services, const process::Handle& process)
+                  void advertise( std::vector< message::service::advertise::Service> services, const process::Handle& process)
                   {
                      message::service::Advertise advertise;
                      advertise.process = process;
@@ -411,11 +413,11 @@ namespace casual
             {
                namespace create
                {
-                  message::Service service(
+                  message::service::advertise::Service service(
                         std::string name,
                         std::chrono::microseconds timeout)
                   {
-                     message::Service result;
+                     message::service::advertise::Service result;
 
                      result.name = std::move( name);
                      result.timeout = timeout;
@@ -427,7 +429,7 @@ namespace casual
 
 
 
-               Server::Server( std::vector< message::Service> services)
+               Server::Server( std::vector< message::service::advertise::Service> services)
                 : m_replier{ message::dispatch::Handler{ service::Echo{}, local::handle::connect::Reply{ "echo server"},}}
                {
                   //
@@ -438,13 +440,14 @@ namespace casual
                   advertise( std::move( services));
                }
 
-               Server::Server( message::Service service) : Server{ std::vector< message::Service>{ std::move( service)}}
+               Server::Server( message::service::advertise::Service service)
+                  : Server{ std::vector< message::service::advertise::Service>{ std::move( service)}}
                {
 
                }
 
 
-               void Server::advertise( std::vector< message::Service> services) const
+               void Server::advertise( std::vector< message::service::advertise::Service> services) const
                {
                   Trace trace{ "mockup echo::Server::advertise"};
 
@@ -454,7 +457,7 @@ namespace casual
                   local::advertise( std::move( services),  m_replier.process());
                }
 
-               void Server::undadvertise( std::vector< message::Service> services) const
+               void Server::undadvertise( std::vector< std::string> services) const
                {
                   Trace trace{ "mockup echo::Server::unadvertise"};
 

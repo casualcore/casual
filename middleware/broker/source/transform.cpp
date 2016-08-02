@@ -1,8 +1,5 @@
 //!
-//! transform.cpp
-//!
-//! Created on: Sep 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -104,12 +101,18 @@ namespace casual
                      result.timeout = value.information.timeout;
                      result.lookedup = value.lookedup;
                      result.type = value.information.type;
-                     result.transaction = value.information.transaction;
+                     result.transaction = common::cast::underlying( value.information.transaction);
 
-                     auto transform_pid = []( const state::service::Instance& value){ return value.instance.get().process.pid;};
+                     auto transform_instance = []( const state::service::Instance& value)
+                           {
+                              return admin::ServiceVO::Instance{
+                                 value.process().pid,
+                                 value.hops()
+                              };
+                           };
 
-                     common::range::transform( value.instances.local, result.instances, transform_pid);
-                     common::range::transform( value.instances.remote, result.instances, transform_pid);
+                     common::range::transform( value.instances.local, result.instances, transform_instance);
+                     common::range::transform( value.instances.remote, result.instances, transform_instance);
 
                      return result;
                   }

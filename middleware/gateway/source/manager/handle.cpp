@@ -263,23 +263,6 @@ namespace casual
             {
                namespace
                {
-                  void advertise( const common::process::Handle& process, std::vector< std::string> services)
-                  {
-                     common::message::service::Advertise message;
-                     message.process = process;
-                     message.location = common::message::service::Location::remote;
-
-                     range::transform( services, message.services, []( std::string& s){
-                        return common::message::Service{
-                           std::move( s),
-                           common::server::Service::Type::cXATMI,
-                           cast::underlying( common::server::Service::Transaction::join)
-                        };
-
-                     });
-
-                     manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
-                  }
 
                   namespace discover
                   {
@@ -294,21 +277,53 @@ namespace casual
                         manager::ipc::device().blocking_send( process.queue, request);
                      }
 
-                     template< typename C>
-                     void reply( C& connection, const common::message::gateway::domain::discover::Reply& message)
+
+                     namespace inbound
                      {
-                        if( connection.runlevel == state::outbound::Connection::Runlevel::booting)
+                        template< typename C>
+                        void reply( C& connection, const common::message::gateway::domain::discover::Reply& message)
                         {
-                           connection.process = message.process;
-                           connection.runlevel = state::outbound::Connection::Runlevel::online;
-                           connection.remote = message.remote;
-                           connection.address = message.address;
+                           if( connection.runlevel == state::outbound::Connection::Runlevel::booting)
+                           {
+                              connection.process = message.process;
+                              connection.runlevel = state::outbound::Connection::Runlevel::online;
+                              connection.remote = message.remote;
+                              connection.address = message.address;
+                           }
+                           else
+                           {
+                              log::error << "connection is in wrong state: " << connection << " - action: discard\n";
+                           }
                         }
-                        else
+                     } // inbound
+
+                     namespace outbound
+                     {
+                        void reply( state::outbound::Connection& connection, common::message::gateway::domain::discover::Reply& message)
                         {
-                           log::error << "connection is in wrong state: " << connection << " - action: discard\n";
+                           // update state
+                           inbound::reply( connection, message);
+
+                           //
+                           // advertise the services
+                           //
+                           {
+                              common::message::service::Advertise advertise;
+                              advertise.process = message.process;
+
+                              advertise.services = std::move( message.services);
+
+                              //
+                              // add one hop, since we now it has passed a domain boundary
+                              //
+                              for( auto& service : advertise.services) { ++service.hops;}
+
+                              manager::ipc::device().blocking_send( communication::ipc::broker::device(), advertise);
+                           }
+
                         }
-                     }
+
+                     } // outbound
 
                   } // discover
 
@@ -331,9 +346,7 @@ namespace casual
 
                         if( found)
                         {
-                           local::discover::reply( *found, message);
-                           local::advertise( message.process, found->services);
-
+                           local::discover::outbound::reply( *found, message);
                            return;
                         }
                      }
@@ -343,8 +356,7 @@ namespace casual
 
                         if( found)
                         {
-                           local::discover::reply( *found, message);
-
+                           local::discover::inbound::reply( *found, message);
                            return;
                         }
                      }

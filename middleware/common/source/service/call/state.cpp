@@ -115,7 +115,7 @@ namespace casual
                //
                // Can't be associated with a transaction
                //
-               if( transaction::Context::instance().associated( descriptor))
+               if( common::transaction::Context::instance().associated( descriptor))
                {
                   throw exception::xatmi::transaction::Support{ "descriptor " + std::to_string( descriptor) + " is associated with a transaction"};
                }

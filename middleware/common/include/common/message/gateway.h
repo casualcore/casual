@@ -6,7 +6,7 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_GATEWAY_H_
 
 
-#include "common/message/type.h"
+#include "common/message/service.h"
 
 #include "common/process.h"
 #include "common/domain.h"
@@ -30,20 +30,26 @@ namespace casual
                   struct Request : basic_message< Type::gateway_domain_discover_request>
                   {
                      common::process::Handle process;
+                     common::domain::Identity domain;
                      std::vector< std::string> services;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_type::marshal( archive);
                         archive & process;
+                        archive & domain;
                         archive & services;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
 
                   struct Reply : basic_message< Type::gateway_domain_discover_reply>
                   {
+                     using Service = service::advertise::Service;
+
                      common::process::Handle process;
-                     std::vector< std::string> services;
+                     std::vector< Service> services;
                      common::domain::Identity remote;
                      std::vector< std::string> address;
 

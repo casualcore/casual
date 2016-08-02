@@ -5,9 +5,9 @@
 #include "broker/handle.h"
 #include "broker/transform.h"
 #include "broker/admin/server.h"
+#include "broker/common.h"
 
 #include "common/server/lifetime.h"
-#include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/process.h"
@@ -58,7 +58,7 @@ namespace casual
          {
             void Connect::operator () ( common::message::traffic::monitor::connect::Request& message)
             {
-               trace::internal::Scope trace{ "broker::handle::traffic::Connect"};
+               Trace trace{ "broker::handle::traffic::Connect"};
 
                m_state.traffic.monitors.add( message.process);
 
@@ -68,7 +68,7 @@ namespace casual
 
             void Disconnect::operator () ( message_type& message)
             {
-               trace::internal::Scope trace{ "broker::handle::monitor::Disconnect"};
+               Trace trace{ "broker::handle::monitor::Disconnect"};
 
                m_state.traffic.monitors.remove( message.process.pid);
             }
@@ -80,9 +80,9 @@ namespace casual
          namespace forward
          {
 
-            void Connect::operator () ( const common::message::forward::connect::Request& message)
+            void Connect::operator () ( const message::forward::connect::Request& message)
             {
-               common::trace::internal::Scope trace{ "broker::handle::forward::Connect"};
+               Trace trace{ "broker::handle::forward::Connect"};
 
                m_state.forward = message.process;
             }
@@ -92,14 +92,14 @@ namespace casual
 
          void Advertise::operator () ( message_type& message)
          {
-            trace::internal::Scope trace{ "broker::handle::Advertise"};
+            Trace trace{ "broker::handle::Advertise"};
 
             m_state.add( message);
          }
 
          void Unadvertise::operator () ( message_type& message)
          {
-            trace::internal::Scope trace{ "broker::handle::Unadvertise"};
+            Trace trace{ "broker::handle::Unadvertise"};
 
             m_state.remove( message);
          }
@@ -110,7 +110,7 @@ namespace casual
 
             void Lookup::operator () ( message_type& message)
             {
-               trace::internal::Scope trace{ "broker::handle::service::Lookup"};
+               Trace trace{ "broker::handle::service::Lookup"};
 
                try
                {
@@ -215,10 +215,41 @@ namespace casual
          } // service
 
 
+         namespace domain
+         {
+            void Discover::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::domain::Discover"};
+
+               auto reply = common::message::reverse::type( message);
+
+               for( const auto& s : message.services)
+               {
+                  auto&& service = m_state.find_service( s);
+
+                  if( service)
+                  {
+                     if( service->instances.local)
+                     {
+                        //
+                        // Service is local
+                        //
+                        reply.services.emplace_back( service->information.name, 0);
+                     }
+                     else if( service->instances.remote)
+                     {
+
+                     }
+                  }
+               }
+            }
+
+         } // domain
+
 
          void ACK::operator () ( message_type& message)
          {
-            trace::internal::Scope trace{ "broker::handle::ACK"};
+            Trace trace{ "broker::handle::ACK"};
 
             try
             {
@@ -270,7 +301,7 @@ namespace casual
          }
 
 
-         void Policy::connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
+         void Policy::connect( std::vector< common::message::service::advertise::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
             m_state.connect_broker( std::move( services));
          }

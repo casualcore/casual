@@ -5,6 +5,7 @@
 #include "broker/broker.h"
 #include "broker/handle.h"
 #include "broker/transform.h"
+#include "broker/common.h"
 
 #include "broker/admin/server.h"
 
@@ -44,7 +45,7 @@ namespace casual
 
 		Broker::Broker( Settings&& arguments)
 		{
-		   Trace trace{ "Broker::Broker ctor", log::internal::debug};
+		   Trace trace{ "Broker::Broker ctor"};
 
 		   //
 		   // Connect to domain
@@ -78,7 +79,7 @@ namespace casual
          catch( const common::exception::signal::Terminate&)
          {
             // we do nothing, and let the dtor take care of business
-            common::log::internal::debug << "broker has been terminated\n";
+            log << "broker has been terminated\n";
          }
          catch( ...)
          {
@@ -98,12 +99,12 @@ namespace casual
                // Prepare message-pump handlers
                //
 
-               common::log::internal::debug << "prepare message-pump handlers\n";
+               log << "prepare message-pump handlers\n";
 
 
                auto handler = broker::handler( state);
 
-               common::log::internal::debug << "start message pump\n";
+               log << "start message pump\n";
 
 
                while( true)
@@ -122,7 +123,7 @@ namespace casual
                      //
                      {
 
-                        common::log::internal::debug << "pending replies: " << range::make( state.pending.replies) << '\n';
+                        log << "pending replies: " << range::make( state.pending.replies) << '\n';
 
                         decltype( state.pending.replies) replies;
                         std::swap( replies, state.pending.replies);
@@ -161,7 +162,7 @@ namespace casual
             catch( const common::exception::signal::Terminate&)
             {
                // we do nothing, and let the dtor take care of business
-               common::log::internal::debug << "broker has been terminated\n";
+               log << "broker has been terminated\n";
             }
             catch( ...)
             {

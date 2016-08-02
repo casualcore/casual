@@ -18,11 +18,23 @@ namespace casual
                namespace discover
                {
 
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ process: " << value.process
+                           << ", domain: " << value.domain
+                           << ", services: " << range::make( value.services)
+                           << '}';
+                  }
+
+
+
                   std::ostream& operator << ( std::ostream& out, const Reply& value)
                   {
                      return out << "{ remote: " << value.remote
-                           << ", address: " << range::make( value.address)
                            << ", process: " << value.process
+                           << ", services: " << range::make( value.services)
+                           << ", address: " << range::make( value.address)
+
                            << '}';
                   }
 

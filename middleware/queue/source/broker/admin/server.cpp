@@ -141,8 +141,15 @@ namespace casual
             {
                common::server::Arguments result{ { common::process::path()}};
 
-               result.services.emplace_back( ".casual.queue.list.queues", std::bind( &service::list_queues, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
-               result.services.emplace_back( ".casual.queue.list.messages", std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)), common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+               result.services.emplace_back( ".casual.queue.list.queues",
+                     std::bind( &service::list_queues, std::placeholders::_1, std::ref( state)),
+                     common::server::Service::Type::cCasualAdmin,
+                     common::service::transaction::Type::none);
+
+               result.services.emplace_back( ".casual.queue.list.messages",
+                     std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)),
+                     common::server::Service::Type::cCasualAdmin,
+                     common::service::transaction::Type::none);
 
                return result;
             }

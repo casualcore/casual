@@ -1,8 +1,5 @@
 //!
-//! type.cpp
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/message/type.h"
@@ -18,12 +15,6 @@ namespace casual
       namespace message
       {
 
-
-         std::ostream& operator << ( std::ostream& out, const Service& value)
-         {
-            return out << "{ name: " << value.name << ", type: " << value.type << ", timeout: "
-               << value.timeout.count() << ", mode: " << value.transaction << ", traffic: " << range::make( value.traffic_monitors) << '}';
-         }
 
 
          std::ostream& operator << ( std::ostream& out, const Statistics& message)

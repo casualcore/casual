@@ -466,11 +466,11 @@ namespace casual
                            message.services = range::transform( manager::admin::services( state).services,
                                  []( const common::server::Service& s)
                                  {
-                                    common::message::Service result;
+                                    common::message::service::advertise::Service result;
 
                                     result.name = s.origin;
                                     result.type = s.type;
-                                    result.transaction = cast::underlying( s.transaction);
+                                    result.transaction = s.transaction;
 
                                     return result;
                                  });
@@ -625,7 +625,7 @@ namespace casual
                      {
                         using common::server::handle::policy::Admin::Admin;
 
-                        void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+                        void connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources)
                         {
                            // no-op, we'll advertise our services when the broker comes online.
                         }

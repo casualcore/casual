@@ -36,39 +36,6 @@ namespace casual
             } // scale
 
 
-            namespace discover
-            {
-               struct Request : common::message::basic_message< common::message::Type::domain_discover_request>
-               {
-                  common::domain::Identity remote;
-
-
-                  //!
-                  //!
-                  //!
-                  std::vector< std::string> services;
-
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     base_type::marshal( archive);
-                     archive & remote;
-                     archive & services;
-                  })
-               };
-
-               struct Reply : common::message::basic_message< common::message::Type::domain_discover_reply>
-               {
-                  common::domain::Identity remote;
-
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     base_type::marshal( archive);
-                     archive & remote;
-                  })
-               };
-
-
-            } // discover
 
             namespace process
             {

@@ -1,13 +1,11 @@
 //!
-//! service.h
-//!
-//! Created on: Oct 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_SERVER_SERVICE_H_
 #define CASUAL_COMMON_SERVER_SERVICE_H_
 
+#include "common/service/type.h"
 
 #include "xatmi.h"
 
@@ -33,24 +31,10 @@ namespace casual
 
 
 
-            enum class Transaction : std::uint64_t
-            {
-               //! join transaction if present else start a new transaction
-               automatic = 0,
-               //! join transaction if present else execute outside transaction
-               join = 1,
-               //! start a new transaction regardless
-               atomic = 2,
-               //! execute outside transaction regardless
-               none = 3
-            };
-
-
-
             using function_type = std::function< void( TPSVCINFO*)>;
 
 
-            Service( std::string name, function_type function, std::uint64_t type, Transaction transaction);
+            Service( std::string name, function_type function, std::uint64_t type, service::transaction::Type transaction);
             Service( std::string name, function_type function);
 
             Service( Service&&);
@@ -63,7 +47,7 @@ namespace casual
             function_type function;
 
             std::uint64_t type = Type::cXATMI;
-            Transaction transaction = Transaction::automatic;
+            service::transaction::Type transaction = service::transaction::Type::automatic;
             bool active = true;
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
@@ -78,24 +62,6 @@ namespace casual
 
 
          };
-
-         namespace service
-         {
-            namespace transaction
-            {
-               constexpr std::uint64_t mode( Service::Transaction mode)
-               {
-                  return static_cast< std::uint64_t>( mode);
-               }
-               constexpr Service::Transaction mode( std::uint64_t mode)
-               {
-                  return Service::Transaction( mode);
-               }
-               Service::Transaction mode( const std::string& mode);
-
-            } // transaction
-
-         } // service
 
       } // server
    } // common

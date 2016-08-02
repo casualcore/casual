@@ -103,7 +103,7 @@ namespace casual
                result.services.emplace_back( ".casual.gateway.state",
                      std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
                      common::server::Service::Type::cCasualAdmin,
-                     common::server::Service::Transaction::none);
+                     common::service::transaction::Type::none);
 
 
                return result;

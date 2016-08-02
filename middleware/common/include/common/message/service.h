@@ -8,6 +8,7 @@
 #include "common/message/type.h"
 
 #include "common/transaction/id.h"
+#include "common/service/type.h"
 #include "common/buffer/type.h"
 #include "common/uuid.h"
 
@@ -19,9 +20,59 @@ namespace casual
    {
       namespace message
       {
+         struct Service
+         {
+
+            Service() = default;
+            Service& operator = (const Service& rhs) = default;
+
+
+
+            explicit Service( std::string name, std::uint64_t type, common::service::transaction::Type transaction)
+               : name( std::move( name)), type( type), transaction( transaction)
+            {}
+
+            Service( std::string name)
+               : Service( std::move( name), 0, common::service::transaction::Type::automatic)
+            {}
+
+            std::string name;
+            std::uint64_t type = 0;
+            std::chrono::microseconds timeout = std::chrono::microseconds::zero();
+            common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               archive & name;
+               archive & type;
+               archive & timeout;
+               archive & transaction;
+            })
+
+            friend std::ostream& operator << ( std::ostream& out, const Service& value);
+         };
 
          namespace service
          {
+            namespace call
+            {
+               //!
+               //! Represent service information in a 'call context'
+               //!
+               struct Service : message::Service
+               {
+                  using message::Service::Service;
+
+                  std::vector< platform::ipc::id::type> traffic_monitors;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     message::Service::marshal( archive);
+                     archive & traffic_monitors;
+                  })
+               };
+            } // call
+
             struct Transaction
             {
                common::transaction::ID trid;
@@ -36,24 +87,42 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
 
-            enum class Location : char
+            namespace advertise
             {
-               local,
-               remote
-            };
+               struct Service : message::Service
+               {
+                  Service() = default;
+                  Service( std::string name,
+                        std::uint64_t type = 0,
+                        common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
+                        std::size_t hops = 0)
+                   : message::Service{ std::move( name), type, transaction}, hops{ hops} {}
+
+                  std::size_t hops = 0;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     message::Service::marshal( archive);
+                     archive & hops;
+                  })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Service& message);
+               };
+
+            } // advertise
+
 
             struct Advertise : basic_message< Type::service_advertise>
             {
                common::process::Handle process;
-               std::vector< Service> services;
-               Location location = Location::local;
+               std::vector< advertise::Service> services;
+
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
                   archive & process;
                   archive & services;
-                  archive & location;
                })
 
                friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
@@ -62,15 +131,13 @@ namespace casual
             struct Unadvertise : basic_message< Type::service_unadvertise>
             {
                common::process::Handle process;
-               std::vector< Service> services;
-               Location location = Location::local;
+               std::vector< std::string> services;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
                   archive & process;
                   archive & services;
-                  archive & location;
                })
             };
 
@@ -107,12 +174,14 @@ namespace casual
                   })
                };
 
+
+
                //!
                //! Represent "service-name-lookup" response.
                //!
                struct Reply : basic_message< Type::service_name_lookup_reply>
                {
-                  Service service;
+                  call::Service service;
                   common::process::Handle process;
 
                   enum class State : char

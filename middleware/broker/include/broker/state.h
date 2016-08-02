@@ -71,11 +71,9 @@ namespace casual
             {
                idle,
                busy,
-               remote,
             };
 
             Instance() = default;
-            Instance( common::process::Handle process, State state) : process( std::move( process)), m_state{ state} {}
             Instance( common::process::Handle process) : process( std::move( process)) {}
 
             common::process::Handle process;
@@ -89,7 +87,6 @@ namespace casual
 
             inline State state() const { return m_state;}
 
-
             inline const common::platform::time_point& last() const { return m_last;}
 
             inline friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
@@ -98,6 +95,7 @@ namespace casual
 
          private:
             State m_state = State::idle;
+
             common::platform::time_point m_last = common::platform::time_point::min();
 
          };
@@ -110,22 +108,28 @@ namespace casual
             {
                using State = state::Instance::State;
 
+               std::reference_wrapper< state::Instance> instance;
                std::size_t invoked = 0;
 
-               Instance( state::Instance& instance) : instance{ instance} {}
-               std::reference_wrapper< state::Instance> instance;
+               Instance( state::Instance& instance, std::size_t hops) : instance{ instance}, m_hops{ hops} {}
+
 
                inline bool idle() const { return instance.get().idle();}
 
                void lock( const common::platform::time_point& when);
                void unlock( const common::platform::time_point& when);
 
-               //inline void state( State state) { instance.get().state( state);}
                inline State state() const { return instance.get().state();}
+               inline std::size_t hops() const { return m_hops;}
+               inline const common::platform::time_point& last() const { return instance.get().last();}
 
                inline const common::process::Handle& process() const { return instance.get().process;}
 
-               friend bool operator == ( const Instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+               friend inline bool operator == ( const Instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+               friend inline bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.hops() < rhs.hops();}
+
+            private:
+               std::size_t m_hops = 0;
             };
          } // service
 
@@ -135,7 +139,7 @@ namespace casual
          {
 
 
-            Service( common::message::Service information) : information( std::move( information)) {}
+            Service( common::message::service::call::Service information) : information( std::move( information)) {}
             Service() {}
 
             using instances_type = std::vector< service::Instance>;
@@ -149,7 +153,7 @@ namespace casual
 
             } instances;
 
-            common::message::Service information;
+            common::message::service::call::Service information;
             std::size_t lookedup = 0;
 
             //!
@@ -157,7 +161,7 @@ namespace casual
             //!
             service::Instance* idle();
 
-            void add( state::Instance& instance);
+            void add( state::Instance& instance, std::size_t hops);
 
             void remove( common::platform::pid::type instance);
 
@@ -237,11 +241,11 @@ namespace casual
          void remove( const common::message::service::Unadvertise& message);
 
 
-         state::Service* find_service(  const std::string& name);
+         state::Service* find_service( const std::string& name);
 
 
 
-         void connect_broker( std::vector< common::message::Service> services);
+         void connect_broker( std::vector< common::message::service::advertise::Service> services);
 
 
 

@@ -75,7 +75,7 @@ namespace casual
                   template< typename T>
                   auto network( T&& value) -> typename std::enable_if< ! common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
                   {
-                     auto network = common::network::byteorder::encode( value);
+                     auto network = common::network::byteorder::encode( common::marshal::binary::network::detail::cast( value));
                      return Type{ name( network), common::memory::size( network)};
                   }
 

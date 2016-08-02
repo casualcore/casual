@@ -23,12 +23,12 @@ namespace casual
             {
                manager::state::outbound::Connection::Type type( common::message::domain::configuration::gateway::Connection::Type value)
                {
-                  using connectino_type = common::message::domain::configuration::gateway::Connection::Type;
+                  using connection_type = common::message::domain::configuration::gateway::Connection::Type;
 
                   switch( value)
                   {
-                     case connectino_type::ipc: return manager::state::outbound::Connection::Type::ipc;
-                     case connectino_type::tcp: return manager::state::outbound::Connection::Type::tcp;
+                     case connection_type::ipc: return manager::state::outbound::Connection::Type::ipc;
+                     case connection_type::tcp: return manager::state::outbound::Connection::Type::tcp;
                   }
 
                   return manager::state::outbound::Connection::Type::unknown;

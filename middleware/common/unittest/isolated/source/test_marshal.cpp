@@ -116,7 +116,9 @@ namespace casual
 
             serverConnect.process.queue = 666;
 
-            message::Service service;
+            traits::concrete::type_t< decltype( serverConnect.services.front())> service;
+
+            //message::Service service;
 
             service.name = "service1";
             serverConnect.services.push_back( service);
@@ -152,7 +154,8 @@ namespace casual
             serverConnect.process.queue = 666;
 
 
-            message::Service service;
+            traits::concrete::type_t< decltype( serverConnect.services.front())> service;
+
             service.name = "service1";
             serverConnect.services.resize( 10000, service);
 

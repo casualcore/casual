@@ -1,11 +1,10 @@
-/*
- * cache.cpp
- *
- *  Created on: 26 jun 2015
- *      Author: 40043280
- */
+//!
+//! casual
+//!
+
 
 #include "broker/forward/cache.h"
+#include "broker/common.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -42,7 +41,7 @@ namespace casual
                   {
                      void reply( State& state, common::message::service::call::callee::Request& message)
                      {
-                        Trace trace{ "broker::forward::handle::service::send::error::reply", log::internal::debug};
+                        Trace trace{ "broker::forward::handle::service::send::error::reply"};
 
                         if( ! common::flag< TPNOREPLY>( message.flags))
                         {
@@ -64,7 +63,7 @@ namespace casual
                                  //
                                  state.pending.emplace_back( std::move( reply), message.process.queue);
 
-                                 log::internal::debug << "could not send error reply to process: " << message.process << " - will try later\n";
+                                 log << "could not send error reply to process: " << message.process << " - will try later\n";
                               }
                            }
                            catch( const exception::queue::Unavailable&)
@@ -72,7 +71,7 @@ namespace casual
                               //
                               // No-op, we just drop the message
                               //
-                              log::internal::debug << "could not send error reply to process: " << message.process << " - queue unavailable - action: ignore\n";
+                              log << "could not send error reply to process: " << message.process << " - queue unavailable - action: ignore\n";
                            }
                         }
                      }
@@ -99,13 +98,13 @@ namespace casual
 
                      void handle( const message::service::lookup::Reply& message)
                      {
-                        Trace trace{ "broker::forward::handle::service::name::Lookup::handle", log::internal::debug};
+                        Trace trace{ "broker::forward::handle::service::name::Lookup::handle"};
 
-                        log::internal::debug << "service lookup reply received - message: " << message << '\n';
+                        log << "service lookup reply received - message: " << message << '\n';
 
                         if( message.state == message::service::lookup::Reply::State::busy)
                         {
-                           log::internal::debug << "service is busy - action: wait for idle\n";
+                           log << "service is busy - action: wait for idle\n";
                            return;
                         }
 
@@ -140,7 +139,7 @@ namespace casual
                            return;
                         }
 
-                        log::internal::debug << "send request - to: " << message.process.queue << " - request: " << request << std::endl;
+                        log << "send request - to: " << message.process.queue << " - request: " << request << std::endl;
 
                         if( ! communication::ipc::non::blocking::send( message.process.queue, request))
                         {
@@ -150,7 +149,7 @@ namespace casual
                            //
                            m_state.pending.emplace_back( request, message.process.queue);
 
-                           log::internal::debug << "could not forward call to process: " << message.process << " - will try later\n";
+                           log << "could not forward call to process: " << message.process << " - will try later\n";
 
                         }
                         error_reply.release();
@@ -165,9 +164,9 @@ namespace casual
 
                   void operator () ( common::message::service::call::callee::Request& message)
                   {
-                     Trace trace{ "broker::forward::handle::service::Call::operator()", log::internal::debug};
+                     Trace trace{ "broker::forward::handle::service::Call::operator()"};
 
-                     log::internal::debug << "call request received for service: " << message.service << " from: " << message.process << '\n';
+                     log << "call request received for service: " << message.service << " from: " << message.process << '\n';
 
                      //
                      // lookup service

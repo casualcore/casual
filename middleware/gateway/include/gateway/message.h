@@ -44,30 +44,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Event& value);
                };
 
-               /*
-               namespace create
-               {
-
-                  struct Request : common::message::basic_message< common::message::Type::gateway_manager_listener_create_reqeust>
-                  {
-                     common::communication::tcp::Address address;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        base_type::marshal( archive);
-                        archive & address;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
-
-                  };
-
-               } // create
-               */
-
-
             } // listener
-
-
          } // manager
 
 

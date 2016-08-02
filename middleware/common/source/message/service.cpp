@@ -1,10 +1,6 @@
-/*
- * server.cpp
- *
- *  Created on: 22 apr 2015
- *      Author: 40043280
- */
-
+//!
+//! casual
+//!
 
 #include "common/message/service.h"
 
@@ -14,6 +10,15 @@ namespace casual
    {
       namespace message
       {
+         std::ostream& operator << ( std::ostream& out, const Service& value)
+         {
+            return out << "{ name: " << value.name
+                  << ", type: " << value.type
+                  << ", timeout: " << value.timeout.count()
+                  << ", mode: " << value.transaction
+                  << '}';
+         }
+
          namespace service
          {
 
@@ -23,6 +28,20 @@ namespace casual
                      << ", state: " << message.state
                      << '}';
             }
+
+            namespace advertise
+            {
+               std::ostream& operator << ( std::ostream& out, const Service& message)
+               {
+                  return out << "{ name: " << message.name
+                        << ", type: " << message.type
+                        << ", transaction: " << message.transaction
+                        << ", hops: " << message.hops
+                        << '}';
+               }
+
+            } // advertise
+
 
             std::ostream& operator << ( std::ostream& out, const Advertise& message)
             {

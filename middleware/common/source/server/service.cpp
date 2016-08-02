@@ -1,8 +1,7 @@
 //!
 //! service.cpp
 //!
-//! Created on: Apr 4, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/server/service.h"
@@ -21,11 +20,11 @@ namespace casual
       {
 
 
-         Service::Service( std::string name, function_type function, std::uint64_t type, Transaction transaction)
+         Service::Service( std::string name, function_type function, std::uint64_t type, service::transaction::Type transaction)
             : origin( std::move( name)), function( function), type( type), transaction( transaction) {}
 
          Service::Service( std::string name, function_type function)
-            : Service( std::move( name), std::move( function), Type::cXATMI, Transaction::automatic) {}
+            : Service( std::move( name), std::move( function), Type::cXATMI, service::transaction::Type::automatic) {}
 
 
          Service::Service( Service&&) = default;
@@ -62,27 +61,6 @@ namespace casual
          {
             return ! ( lhs == rhs);
          }
-
-
-         namespace service
-         {
-            namespace transaction
-            {
-               Service::Transaction mode( const std::string& mode)
-               {
-                  const static std::map< std::string, Service::Transaction> mapping{
-                     { "automatic", Service::Transaction::automatic},
-                     { "auto", Service::Transaction::automatic},
-                     { "join", Service::Transaction::join},
-                     { "atomic", Service::Transaction::atomic},
-                     { "none", Service::Transaction::none},
-                  };
-                  return mapping.at( mode);
-               }
-
-            } // transaction
-
-         } // service
 
       } // server
    } // common

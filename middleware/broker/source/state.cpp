@@ -1,12 +1,10 @@
 //!
-//! state.cpp
-//!
-//! Created on: Sep 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "broker/state.h"
 #include "broker/transform.h"
+#include "broker/common.h"
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
@@ -101,17 +99,19 @@ namespace casual
             return range::find( m_instances, instance);
          }
 
-         void Service::add( state::Instance& instance)
+         void Service::add( state::Instance& instance, std::size_t hops)
          {
-            m_instances.emplace_back( instance);
+            m_instances.emplace_back( instance, hops);
 
             partition_instances();
          }
 
          void Service::partition_instances()
          {
-            auto partition = range::stable_partition( m_instances, []( const service::Instance& i){
-               return i.state() != state::Instance::State::remote;
+            range::stable_sort( m_instances);
+
+            auto partition = range::divide_if( m_instances, []( const service::Instance& i){
+               return i.hops() != 0;
             });
 
             instances.local = std::get< 0>( partition);
@@ -181,13 +181,13 @@ namespace casual
             template< typename I, typename S>
             void remove_process( I& instances, S& services, common::platform::pid::type pid)
             {
-               Trace trace{ "broker::local::remove_process", log::internal::debug};
+               Trace trace{ "broker::local::remove_process"};
 
                auto found = common::range::find( instances, pid);
 
                if( found)
                {
-                  log::internal::debug << "remove process pid: " << pid << std::endl;
+                  log << "remove process pid: " << pid << std::endl;
 
                   for( auto& s : services)
                   {
@@ -202,28 +202,25 @@ namespace casual
 
 
             template< typename I>
-            auto find_or_add( I& instances, common::process::Handle process, state::Instance::State execution) -> decltype( instances.at( process.pid))
+            auto find_or_add( I& instances, common::process::Handle process) -> decltype( instances.at( process.pid))
             {
-               Trace trace{ "broker::local::find_or_add", log::internal::debug};
+               Trace trace{ "broker::local::find_or_add"};
 
                auto found = range::find( instances, process.pid);
 
                if( found)
                {
-                  log::internal::debug << "process found\n";
+                  log << "process found\n";
                   return found->second;
                }
 
-               return instances.emplace(
-                     std::piecewise_construct,
-                     std::forward_as_tuple( process.pid),
-                     std::forward_as_tuple( process, execution)).first->second;
+               return instances.emplace( process.pid, process).first->second;
             }
 
             template< typename S>
-            auto find_or_add( S& services, common::message::Service&& service) -> decltype( services.at( service.name))
+            auto find_or_add( S& services, common::message::service::call::Service&& service) -> decltype( services.at( service.name))
             {
-               Trace trace{ "broker::local::find_or_add service", log::internal::debug};
+               Trace trace{ "broker::local::find_or_add service"};
 
                auto found = range::find( services, service.name);
 
@@ -235,30 +232,45 @@ namespace casual
                return services.emplace( service.name, std::move( service)).first->second;
             }
 
-            template< typename I, typename S>
-            void add_services( State& state, I& instances, S&& services, common::process::Handle process, state::Instance::State execution)
-            {
-               Trace trace{ "broker::local::add_services", log::internal::debug};
 
-               auto& instance = local::find_or_add( instances, process, execution);
+            common::message::service::call::Service transform( common::message::service::advertise::Service&& service)
+            {
+               common::message::service::call::Service result;
+
+               result.name = std::move( service.name);
+               result.timeout = service.timeout;
+               result.transaction = service.transaction;
+               result.type = service.type;
+
+               return result;
+            }
+
+
+            template< typename I, typename S>
+            void add_services( State& state, I& instances, S&& services, common::process::Handle process)
+            {
+               Trace trace{ "broker::local::add_services"};
+
+               auto& instance = local::find_or_add( instances, process);
 
                for( auto& s : services)
                {
-                  auto& service = find_or_add( state.services, std::move( s));
-                  service.add( instance);
+                  auto hops = s.hops;
+                  auto& service = find_or_add( state.services, transform( std::move( s)));
+                  service.add( instance, hops);
                }
             }
 
             template< typename I, typename S>
-            void remove_services( State& state, I& instances, S& services, common::process::Handle process, state::Instance::State execution)
+            void remove_services( State& state, I& instances, S& services, common::process::Handle process)
             {
-               Trace trace{ "broker::local::remove_services", log::internal::debug};
+               Trace trace{ "broker::local::remove_services"};
 
-               auto& instance = find_or_add( instances, process, execution);
+               auto& instance = find_or_add( instances, process);
 
                for( auto& s : services)
                {
-                  auto service = state.find_service( s.name);
+                  auto service = state.find_service( s);
 
                   if( service)
                   {
@@ -272,7 +284,7 @@ namespace casual
 
       void State::remove_process( common::platform::pid::type pid)
       {
-         Trace trace{ "broker::State::remove_process", log::internal::debug};
+         Trace trace{ "broker::State::remove_process"};
 
          local::remove_process( instances, services, pid);
       }
@@ -280,26 +292,20 @@ namespace casual
 
       void State::add( common::message::service::Advertise& message)
       {
-         Trace trace{ "broker::State::add", log::internal::debug};
+         Trace trace{ "broker::State::add"};
 
-         auto execution = message.location == common::message::service::Location::remote ?
-               state::Instance::State::remote : state::Instance::State::idle;
-
-         local::add_services( *this, instances, std::move( message.services), message.process, execution);
+         local::add_services( *this, instances, std::move( message.services), message.process);
       }
 
       void State::remove( const common::message::service::Unadvertise& message)
       {
-         Trace trace{ "broker::State::remove", log::internal::debug};
+         Trace trace{ "broker::State::remove"};
 
-         auto execution = message.location == common::message::service::Location::remote ?
-               state::Instance::State::remote : state::Instance::State::idle;
-
-         local::remove_services( *this, instances, message.services, message.process, execution);
+         local::remove_services( *this, instances, message.services, message.process);
       }
 
 
-      state::Service* State::find_service(  const std::string& name)
+      state::Service* State::find_service( const std::string& name)
       {
          auto found = range::find( services, name);
 
@@ -312,24 +318,9 @@ namespace casual
 
 
 
-      /*
-      state::Service& State::find_or_add( common::message::Service message)
+      void State::connect_broker( std::vector< common::message::service::advertise::Service> services)
       {
-         auto found = range::find( services, message.name);
-
-         if( found)
-         {
-            return found->second;
-         }
-         state::Service service{ message};
-         return services.emplace( message.name, std::move( service)).first->second;
-      }
-      */
-
-
-      void State::connect_broker( std::vector< common::message::Service> services)
-      {
-         local::add_services( *this, instances, std::move( services), common::process::handle(), state::Instance::State::idle);
+         local::add_services( *this, instances, std::move( services), common::process::handle());
       }
 
 

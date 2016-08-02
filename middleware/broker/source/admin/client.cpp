@@ -68,6 +68,16 @@ namespace casual
       namespace format
       {
 
+         using instance_base = std::reference_wrapper< const admin::InstanceVO>;
+
+         struct Instance : instance_base
+         {
+            Instance() = default;
+            Instance( const admin::InstanceVO& instance, std::size_t hops) : instance_base{ instance}, hops{ hops} {}
+
+            std::size_t hops = 0;
+         };
+
 
          struct base_instances
          {
@@ -75,18 +85,18 @@ namespace casual
 
          protected:
 
-            std::vector< admin::InstanceVO> instances( const std::vector< platform::pid::type>& pids) const
+            std::vector< Instance> instances( const std::vector< admin::ServiceVO::Instance>& instances) const
             {
-               std::vector< admin::InstanceVO> result;
+               std::vector< Instance> result;
 
-               for( auto& pid : pids)
+               for( auto& instance : instances)
                {
                   auto found = range::find_if( m_instances, [=]( const admin::InstanceVO& v){
-                     return v.process.pid == pid;
+                     return v.process.pid == instance.pid;
                   });
                   if( found)
                   {
-                     result.push_back( *found);
+                     result.emplace_back( *found, instance.hops);
                   }
                }
 
@@ -96,6 +106,7 @@ namespace casual
             const std::vector< admin::InstanceVO>& m_instances;
          };
 
+         /*
          struct format_state :  base_instances
          {
             using base_instances::base_instances;
@@ -115,11 +126,10 @@ namespace casual
                {
                   for( auto& instance : instances( value.instances))
                   {
-                     switch( instance.state)
+                     switch( instance.get().state)
                      {
                         case admin::InstanceVO::State::idle: out << terminal::color::green.start() << '+'; break;
                         case admin::InstanceVO::State::busy: out << terminal::color::yellow.start() << '*'; break;
-                        case admin::InstanceVO::State::remote: out << terminal::color::magenta.start() << '-'; break;
                         default: out << terminal::color::red.start() <<  '?'; break;
                      }
                   }
@@ -129,11 +139,10 @@ namespace casual
                {
                   for( auto& instance : instances( value.instances))
                   {
-                     switch( instance.state)
+                     switch( instance.get().state)
                      {
                         case admin::InstanceVO::State::idle: out << '+'; break;
                         case admin::InstanceVO::State::busy: out << '*'; break;
-                        case admin::InstanceVO::State::remote: out << '-'; break;
                         default: out <<  '?'; break;
                      }
                   }
@@ -149,6 +158,85 @@ namespace casual
                }
             }
          };
+         */
+
+         namespace instance
+         {
+            namespace local
+            {
+               struct total
+               {
+                  std::size_t operator () ( const admin::ServiceVO& value) const
+                  {
+                     auto instances = value.instances;
+
+                     auto range = std::get< 0>( range::partition( instances, []( const admin::ServiceVO::Instance& i){
+                        return i.hops == 0;
+                     }));
+
+                     return range.size();
+                  }
+               };
+
+
+               struct busy : base_instances
+               {
+                  using base_instances::base_instances;
+
+                  std::size_t operator () ( const admin::ServiceVO& value) const
+                  {
+                     auto instances = base_instances::instances( value.instances);
+
+                     auto range = std::get< 0>( range::partition( instances, []( const format::Instance& i){
+                        return i.hops == 0 && i.get().state == admin::InstanceVO::State::busy;
+                     }));
+
+                     return range.size();
+                  }
+               };
+
+               struct load : base_instances
+               {
+                  using base_instances::base_instances;
+
+                  double operator () ( const admin::ServiceVO& value) const
+                  {
+                     auto total = instance::local::total{}( value);
+                     auto busy = instance::local::busy{ m_instances}( value);
+
+                     if( busy > 0)
+                     {
+                        return total / busy;
+                     }
+
+                     return 0.0;
+                  }
+               };
+
+            } // local
+
+            namespace remote
+            {
+               struct total
+               {
+                  std::size_t operator () ( const admin::ServiceVO& value) const
+                  {
+                     auto instances = value.instances;
+
+                     auto range = std::get< 0>( range::partition( instances, []( const admin::ServiceVO::Instance& i){
+                        return i.hops > 0;
+                     }));
+
+                     return range.size();
+                  }
+               };
+
+
+            } // remote
+
+
+
+         } // instances
 
 
          struct format_instances
@@ -174,13 +262,13 @@ namespace casual
             {
                const char* operator () ( const admin::ServiceVO& value) const
                {
-                  static std::map< server::Service::Transaction, const char*> mapping{
-                     {server::Service::Transaction::automatic, "auto"},
-                     {server::Service::Transaction::join, "join"},
-                     {server::Service::Transaction::atomic, "atomic"},
-                     {server::Service::Transaction::none, "none"},
+                  static std::map< service::transaction::Type, const char*> mapping{
+                     { service::transaction::Type::automatic, "auto"},
+                     { service::transaction::Type::join, "join"},
+                     { service::transaction::Type::atomic, "atomic"},
+                     { service::transaction::Type::none, "none"},
                   };
-                  return mapping[ server::Service::Transaction( value.transaction)];
+                  return mapping[ service::transaction::mode( value.transaction)];
                }
             };
 
@@ -191,8 +279,11 @@ namespace casual
                terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "requested", std::mem_fn( &admin::ServiceVO::lookedup), terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "#", format_instances{}, terminal::color::white, terminal::format::Align::right),
-               terminal::format::custom_column( "state", format_state{ instances})
+               terminal::format::column( "local", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "busy", format::instance::local::busy{ instances}, terminal::color::red, terminal::format::Align::right),
+               terminal::format::column( "load", format::instance::local::load{ instances}, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "remote", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
+               //terminal::format::custom_column( "state", format_state{ instances})
             };
          }
 
@@ -229,7 +320,6 @@ namespace casual
                      {
                         case admin::InstanceVO::State::idle: out << std::right << std::setw( width) << terminal::color::green << "idle"; break;
                         case admin::InstanceVO::State::busy: out << std::right << std::setw( width) << terminal::color::yellow << "busy"; break;
-                        case admin::InstanceVO::State::remote: out << std::right << std::setw( width) << terminal::color::magenta << "remote"; break;
                      }
                   }
                   else
@@ -238,7 +328,6 @@ namespace casual
                      {
                         case admin::InstanceVO::State::idle: out << std::right << std::setw( width) << "idle"; break;
                         case admin::InstanceVO::State::busy: out << std::right << std::setw( width) << "busy"; break;
-                        case admin::InstanceVO::State::remote: out  << std::right << std::setw( width) << "remote"; break;
                      }
                   }
                }
