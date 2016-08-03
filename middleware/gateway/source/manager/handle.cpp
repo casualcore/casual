@@ -263,71 +263,20 @@ namespace casual
             {
                namespace
                {
-
                   namespace discover
                   {
-                     void send( const common::process::Handle& process, std::vector< std::string> services)
+                     void send( const state::outbound::Connection& connection, std::vector< std::string> services)
                      {
                         Trace trace{ "gateway::manager::handle::local::discover send"};
 
                         common::message::gateway::domain::discover::Request request;
+                        request.domain = common::domain::identity();
                         request.process = common::process::handle();
                         request.services = std::move( services);
 
-                        manager::ipc::device().blocking_send( process.queue, request);
+                        manager::ipc::device().blocking_send( connection.process.queue, request);
                      }
-
-
-                     namespace inbound
-                     {
-                        template< typename C>
-                        void reply( C& connection, const common::message::gateway::domain::discover::Reply& message)
-                        {
-                           if( connection.runlevel == state::outbound::Connection::Runlevel::booting)
-                           {
-                              connection.process = message.process;
-                              connection.runlevel = state::outbound::Connection::Runlevel::online;
-                              connection.remote = message.remote;
-                              connection.address = message.address;
-                           }
-                           else
-                           {
-                              log::error << "connection is in wrong state: " << connection << " - action: discard\n";
-                           }
-                        }
-                     } // inbound
-
-                     namespace outbound
-                     {
-                        void reply( state::outbound::Connection& connection, common::message::gateway::domain::discover::Reply& message)
-                        {
-                           // update state
-                           inbound::reply( connection, message);
-
-                           //
-                           // advertise the services
-                           //
-                           {
-                              common::message::service::Advertise advertise;
-                              advertise.process = message.process;
-
-                              advertise.services = std::move( message.services);
-
-                              //
-                              // add one hop, since we now it has passed a domain boundary
-                              //
-                              for( auto& service : advertise.services) { ++service.hops;}
-
-                              manager::ipc::device().blocking_send( communication::ipc::broker::device(), advertise);
-                           }
-
-                        }
-
-                     } // outbound
-
                   } // discover
-
-
                } // <unnamed>
             } // local
 
@@ -341,26 +290,62 @@ namespace casual
 
                      log << "message: " << message << '\n';
 
-                     {
-                        auto found = range::find( state().connections.outbound, message.process.pid);
+                     //
+                     // This message can only come from an outbound connection.
+                     //
+                     auto found = range::find( state().connections.outbound, message.process.pid);
 
-                        if( found)
+                     if( found)
+                     {
+                        found->remote = message.remote;
+
+                        //
+                        // advertise the services
+                        //
                         {
-                           local::discover::outbound::reply( *found, message);
-                           return;
+                           common::message::service::Advertise advertise;
+                           advertise.process = message.process;
+
+                           advertise.services = std::move( message.services);
+
+                           //
+                           // add one hop, since we now it has passed a domain boundary
+                           //
+                           for( auto& service : advertise.services) { ++service.hops;}
+
+                           manager::ipc::device().blocking_send( communication::ipc::broker::device(), advertise);
                         }
+                        return;
                      }
 
-                     {
-                        auto found = range::find( state().connections.inbound, message.process.pid);
-
-                        if( found)
-                        {
-                           local::discover::inbound::reply( *found, message);
-                           return;
-                        }
-                     }
                      log::error << "discovery reply from unknown connection " << message << " - action: discard\n";
+                  }
+
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::domain::discover::Request"};
+
+                     log << "message: " << message << '\n';
+
+                     //
+                     // This message can only come from an inbound connection.
+                     //
+
+                     auto found = range::find( state().connections.inbound, message.process.pid);
+
+                     if( found)
+                     {
+                        found->remote = message.domain;
+
+                        //
+                        // Forward to broker
+                        //
+                        manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
+                        return;
+                     }
+
+                     log::error << "discovery request from unknown connection " << message << " - action: discard\n";
+
                   }
 
 
@@ -382,7 +367,10 @@ namespace casual
                      if( found->runlevel == state::outbound::Connection::Runlevel::booting)
                      {
                         found->process = message.process;
-                        local::discover::send( message.process, found->services);
+                        found->address = std::move( message.address);
+                        found->runlevel = state::outbound::Connection::Runlevel::online;
+
+                        local::discover::send( *found, found->services);
                      }
                      else
                      {
@@ -409,8 +397,12 @@ namespace casual
                   if( found)
                   {
                      found->process = message.process;
+                     found->address = std::move( message.address);
+                     found->runlevel = state::outbound::Connection::Runlevel::online;
 
-                     local::discover::send( message.process, {});
+                     //
+                     // It will soon arrive a discovery message, where we can pick up domain-id and such.
+                     //
                   }
                   else
                   {
@@ -505,6 +497,7 @@ namespace casual
                manager::handle::outbound::Connect{ state},
                manager::handle::inbound::ipc::Connect{ state},
                manager::handle::inbound::tcp::Connect{ state},
+               handle::domain::discover::Request{ state},
                handle::domain::discover::Reply{ state},
                std::ref( admin),
 

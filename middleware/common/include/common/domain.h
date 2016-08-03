@@ -26,13 +26,15 @@ namespace casual
             Uuid id;
             std::string name;
 
-
-            friend std::ostream& operator << ( std::ostream& out, const Identity& value);
-
             CASUAL_CONST_CORRECT_MARSHAL({
                archive & id;
                archive & name;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const Identity& value);
+
+            friend bool operator < ( const Identity& lhs, const Identity& rhs);
+
          };
 
          const Identity& identity();

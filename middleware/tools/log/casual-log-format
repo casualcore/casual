@@ -105,8 +105,8 @@ def format( input, output):
         
         if( len( rows) == 11):
             
-            pid = rows[ 4];
-            thread = truncateThread( pid, rows[ 5]);
+            pid = rows[ 3];
+            thread = truncateThread( pid, rows[ 4]);
             
             output.write( time( rows[ 0]));
             output.write( '|');
@@ -114,14 +114,14 @@ def format( input, output):
             output.write( '|');
             output.write( color.yellow( truncateUUID( rows[ 2])));
             output.write( '|');
-            output.write( color.yellow( truncateXID( rows[ 3])));
-            output.write( '|');
             output.write( color.white( normalizePID( pid)));
             output.write( '|');
             output.write( thread);
             output.write( '|');
             #output.write( color.white( rows[ 6]));
-            output.write( rows[ 6]);
+            output.write( rows[ 5]);
+            output.write( '|');
+            output.write( color.yellow( truncateXID( rows[ 6])));
             output.write( '|');
             output.write( color.grey( rows[ 7]));
             output.write( '|');

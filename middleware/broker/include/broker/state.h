@@ -119,6 +119,8 @@ namespace casual
                void lock( const common::platform::time_point& when);
                void unlock( const common::platform::time_point& when);
 
+               inline bool remote() const { return m_hops != 0;}
+
                inline State state() const { return instance.get().state();}
                inline std::size_t hops() const { return m_hops;}
                inline const common::platform::time_point& last() const { return instance.get().last();}

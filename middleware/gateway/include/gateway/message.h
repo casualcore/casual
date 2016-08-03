@@ -52,15 +52,18 @@ namespace casual
          struct basic_connect : common::message::basic_message< type>
          {
             common::process::Handle process;
+            std::vector< std::string> address;
 
             CASUAL_CONST_CORRECT_MARSHAL({
                common::message::basic_message< type>::marshal( archive);
                archive & process;
+               archive & address;
             })
 
             friend std::ostream& operator << ( std::ostream& out, const basic_connect& value)
             {
                return out << "{ process: " << value.process
+                     << ", address: " << common::range::make( value.address)
                      << '}';
             }
          };
@@ -122,10 +125,12 @@ namespace casual
             struct Connect : common::message::basic_message< common::message::Type::gateway_worker_connect>
             {
                common::platform::binary_type information;
+               std::vector< std::string> address;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);
                   archive & information;
+                  archive & address;
                })
 
             };

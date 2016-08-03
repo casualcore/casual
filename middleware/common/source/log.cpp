@@ -63,10 +63,10 @@ namespace casual
                      m_output << chronology::local()
                         << '|' << common::domain::identity().name
                         << '|' << execution::id()
-                        << '|' << transaction::Context::instance().current().trid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
+                        << '|' << transaction::Context::instance().current().trid
                         << '|' << execution::service::parent::name()
                         << '|' << execution::service::name()
                         << '|' << category

@@ -257,6 +257,9 @@ namespace casual
 
          } // expression
 
+         template< typename T>
+         using decay_t = typename std::decay< T>::type;
+
       } // traits
    } // common
 } // casual

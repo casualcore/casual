@@ -172,6 +172,10 @@ namespace casual
                      archive & process;
                      archive & context;
                   })
+
+
+                  friend std::ostream& operator << ( std::ostream& out, const Context& value);
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
 
 

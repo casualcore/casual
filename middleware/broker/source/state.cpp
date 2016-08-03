@@ -78,7 +78,10 @@ namespace casual
          {
             void Instance::lock( const common::platform::time_point& when)
             {
-               instance.get().lock( when);
+               if( ! remote())
+               {
+                  instance.get().lock( when);
+               }
             }
 
             void Instance::unlock( const common::platform::time_point& when)

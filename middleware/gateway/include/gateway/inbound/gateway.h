@@ -210,50 +210,32 @@ namespace casual
                {
                   struct Request
                   {
-                     Request( std::vector< std::string> address) : address( std::move( address)) {}
+                     //Request( std::vector< std::string> address) : address( std::move( address)) {}
 
                      void operator () ( common::message::gateway::domain::discover::Request& request) const
                      {
-                        Trace trace{ "gateway::inbound::handle::connection::information::Request"};
-
-                        auto reply = common::message::reverse::type( request);
-
-                        reply.process = common::process::handle();
-                        reply.remote = common::domain::identity();
-                        reply.address = address;
+                        Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
 
                         //
-                        // Send to main thread, for forward to remote domain
+                        // Request from remote domain about this domain
                         //
-                        common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), reply);
 
+                        //
+                        // Make sure the main thread gets the reply
+                        //
+                        request.process = common::process::handle();
+
+                        //
+                        // Forward to gateway, which will forward the message to broker, after it
+                        // has extracted some information about the remote domain.
+                        //
+                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), request);
                      }
 
-                     std::vector< std::string> address;
+                     //std::vector< std::string> address;
                   };
-
-                  //!
-                  //! Assumes it's the gateway-manager that has sent the request
-                  //!
-                  //! @todo: make this more generic?
-                  //!
-                  struct Reply
-                  {
-                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
-                     {
-                        Trace trace{ "gateway::inbound::handle::connection::information::Reply"};
-
-                        reply.process = common::process::handle();
-                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), reply);
-                     }
-                  };
-
-
                } // discover
-
             } // domain
-
-
          } // handle
 
          template< typename Policy>
@@ -266,6 +248,13 @@ namespace casual
 
             using ipc_policy = common::communication::ipc::policy::Blocking;
 
+            struct connect_type
+            {
+               configuration_type configuration;
+               std::vector< std::string> address;
+
+            };
+
             template< typename S>
             Gateway( S&& settings)
               : m_request_thread{ request_thread< S>, std::ref( m_cache), std::forward< S>( settings)}
@@ -274,17 +263,6 @@ namespace casual
                // 'connect' to our local domain
                //
                common::process::instance::connect();
-
-               //
-               // We need to make sure that we got the broker queue.
-               // the worker thread is the one that sends request to broker, hence
-               // is the first one to initialize broker queue lookup, and
-               // it's possible that the main thread consumes the process-lookup-reply
-               //
-               // TOOD: Can we do something about this?
-               //
-               common::communication::ipc::broker::device();
-
             }
 
             ~Gateway()
@@ -336,7 +314,8 @@ namespace casual
                // Now we wait for the worker to establish connection with
                // the other domain. We're still active and can be shut down
                //
-               internal_policy_type policy{ connect()};
+               auto configuration = connect();
+               internal_policy_type policy{ std::move( configuration.configuration)};
 
 
                auto&& outbound_device = policy.outbound();
@@ -349,6 +328,7 @@ namespace casual
 
                   message::inbound::Connect connect;
                   connect.process = common::process::handle();
+                  connect.address = std::move( configuration.address);
                   common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
                }
 
@@ -362,15 +342,6 @@ namespace casual
                   handle::create::forward< common::message::transaction::resource::prepare::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::rollback::Reply>( outbound_device),
-
-                  //
-                  // Sent from this domain to get information about the other
-                  //
-                  handle::create::forward< common::message::gateway::domain::discover::Request>( outbound_device),
-
-                  //
-                  // Sent from worker thread to reply to a connection information request
-                  //
                   handle::create::forward< common::message::gateway::domain::discover::Reply>( outbound_device),
                };
 
@@ -381,7 +352,7 @@ namespace casual
 
          private:
 
-            configuration_type connect()
+            connect_type connect()
             {
                Trace trace{ "gateway::inbound::Gateway::connect"};
 
@@ -399,11 +370,13 @@ namespace casual
                   handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                }
 
-               configuration_type configuration;
-               common::marshal::binary::Input marshal{ message.information};
-               marshal >> configuration;
+               connect_type result;
+               result.address = std::move( message.address);
 
-               return configuration;
+               common::marshal::binary::Input marshal{ message.information};
+               marshal >> result.configuration;
+
+               return result;
             }
 
             template< typename S>
@@ -454,7 +427,7 @@ namespace casual
                      Trace trace{ "gateway::inbound::Gateway::request_thread main thread connect"};
 
                      message::worker::Connect message;
-
+                     message.address = policy.address();
                      {
                         auto configuration = policy.configuration();
                         common::marshal::binary::Output marshal{ message.information};
@@ -475,12 +448,8 @@ namespace casual
                      handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
 
-                     handle::domain::discover::Request{ policy.address()},
-
-                     //
-                     // Assumes that the reply should be sent to domain-manager
-                     //
-                     handle::domain::discover::Reply{},
+                     handle::domain::discover::Request{},
+                     //handle::domain::discover::Request{ policy.address()},
 
                   };
              

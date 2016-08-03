@@ -135,7 +135,7 @@ namespace casual
 
                      ipc::device().blocking_send( message.process.queue, reply);
 
-                     service.lookedup++;
+                     ++service.lookedup;
                   }
                   else
                   {
@@ -217,32 +217,48 @@ namespace casual
 
          namespace domain
          {
-            void Discover::operator () ( message_type& message)
+            namespace discover
             {
-               Trace trace{ "broker::handle::domain::Discover"};
-
-               auto reply = common::message::reverse::type( message);
-
-               for( const auto& s : message.services)
+               void Request::operator () ( message_type& message)
                {
-                  auto&& service = m_state.find_service( s);
+                  Trace trace{ "broker::handle::domain::discover::Request"};
 
-                  if( service)
+                  auto reply = common::message::reverse::type( message);
+
+                  reply.remote = common::domain::identity();
+
+                  for( const auto& s : message.services)
                   {
-                     if( service->instances.local)
-                     {
-                        //
-                        // Service is local
-                        //
-                        reply.services.emplace_back( service->information.name, 0);
-                     }
-                     else if( service->instances.remote)
-                     {
+                     auto&& service = m_state.find_service( s);
 
+                     if( service)
+                     {
+                        if( service->instances.local)
+                        {
+                           //
+                           // Service is local
+                           //
+                           reply.services.emplace_back(
+                                 service->information.name,
+                                 service->information.type,
+                                 service->information.transaction);
+                        }
+                        else if( service->instances.remote)
+                        {
+                           reply.services.emplace_back(
+                                 service->information.name,
+                                 service->information.type,
+                                 service->information.transaction,
+                                 service->instances.remote->hops());
+
+                        }
                      }
                   }
+
+                  ipc::device().blocking_send( message.process.queue, reply);
+
                }
-            }
+            } // discover
 
          } // domain
 
@@ -360,6 +376,7 @@ namespace casual
             handle::traffic::Connect{ state},
             handle::traffic::Disconnect{ state},
             handle::Call{ admin::services( state), state},
+            handle::domain::discover::Request{ state},
             common::message::handle::Ping{},
             common::message::handle::Shutdown{},
          };
@@ -377,6 +394,7 @@ namespace casual
             handle::traffic::Connect{ state},
             handle::traffic::Disconnect{ state},
             //handle::Call{ communication::ipc::inbound::device(), admin::services( state), state},
+            handle::domain::discover::Request{ state},
             common::message::handle::Ping{},
             common::message::handle::Shutdown{},
          };

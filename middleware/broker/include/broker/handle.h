@@ -136,13 +136,18 @@ namespace casual
 
 		   namespace domain
          {
-            struct Discover : Base
+		      namespace discover
             {
-               using message_type = common::message::gateway::domain::discover::Request;
-               using Base::Base;
+	            struct Request : Base
+	            {
+	               using message_type = common::message::gateway::domain::discover::Request;
+	               using Base::Base;
 
-               void operator () ( message_type& message);
-            };
+	               void operator () ( message_type& message);
+	            };
+
+            } // discover
+
 
          } // domain
 

@@ -49,17 +49,15 @@ namespace casual
                      using Service = service::advertise::Service;
 
                      common::process::Handle process;
-                     std::vector< Service> services;
                      common::domain::Identity remote;
-                     std::vector< std::string> address;
+                     std::vector< Service> services;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_type::marshal( archive);
                         archive & process;
-                        archive & services;
                         archive & remote;
-                        archive & address;
+                        archive & services;
                      })
 
                      friend std::ostream& operator << ( std::ostream& out, const Reply& value);

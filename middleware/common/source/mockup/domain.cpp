@@ -7,6 +7,7 @@
 
 #include "common/environment.h"
 #include "common/message/traffic.h"
+#include "common/message/gateway.h"
 
 
 #include "common/flag.h"
@@ -284,6 +285,8 @@ namespace casual
                   {
                      Trace trace{ "mockup service::lookup::Request"};
 
+                     log  << "request: " << r << '\n';
+
                      auto reply = message::reverse::type( r);
 
                      auto found = range::find( m_state.services, r.requested);
@@ -292,12 +295,16 @@ namespace casual
                      {
                         reply = found->second;
                         reply.correlation = r.correlation;
+                        reply.execution = r.execution;
                      }
                      else
                      {
                         reply.service.name = r.requested;
                         reply.state = decltype( reply)::State::absent;
                      }
+
+                     log  << "reply: " << reply << '\n';
+
                      ipc::eventually::send( r.process.queue, reply);
                   },
                   [&]( message::service::call::ACK& m)
@@ -319,6 +326,8 @@ namespace casual
                         lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
+
+                     //log << "services: " << range::make( m_state.services) << '\n';
                   },
                   [&]( message::traffic::monitor::connect::Request& m)
                   {
@@ -328,6 +337,38 @@ namespace casual
                   [&]( message::traffic::monitor::Disconnect& m)
                   {
                      range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
+                  },
+                  [&]( message::gateway::domain::discover::Request& m)
+                  {
+                     Trace trace{ "mockup gateway::domain::discover::Request"};
+
+                     log << "request: " << m << '\n';
+
+                     auto reply = message::reverse::type( m);
+
+                     reply.remote = m.domain;
+
+                     for( auto&& s : m.services)
+                     {
+                        auto found = range::find( m_state.services, s);
+
+                        if( found)
+                        {
+                           traits::concrete::type_t< decltype( reply.services.front())> service;
+
+                           service.name = found->second.service.name;
+                           service.timeout = found->second.service.timeout;
+                           service.transaction = found->second.service.transaction;
+                           service.type = found->second.service.type;
+
+                           reply.services.push_back( std::move( service));
+                        }
+                     }
+
+                     log << "reply: " << reply << '\n';
+
+                     ipc::eventually::send( m.process.queue, reply);
+
                   },
                   local::handle::connect::Reply{ "broker"},
 

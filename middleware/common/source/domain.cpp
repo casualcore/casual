@@ -34,6 +34,12 @@ namespace casual
             return out << "{ id: " << value.id << ", name: " << value.name << "}";
          }
 
+         bool operator < ( const Identity& lhs, const Identity& rhs)
+         {
+            return lhs.id < rhs.id;
+         }
+
+
 
          namespace local
          {

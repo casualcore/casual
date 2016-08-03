@@ -87,6 +87,14 @@ namespace casual
                      void operator () ( message_type& message);
                   };
 
+                  struct Request : Base
+                  {
+                     using Base::Base;
+                     using message_type = common::message::gateway::domain::discover::Request;
+
+                     void operator () ( message_type& message);
+                  };
+
                } // discovery
             } // domain
 

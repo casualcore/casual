@@ -64,31 +64,33 @@ namespace casual
                {
                   struct Connection
                   {
-                     manager::admin::vo::inbound::Connection operator() ( const manager::state::inbound::Connection& value) const
+                     manager::admin::vo::Connection operator() ( const manager::state::inbound::Connection& value) const
                      {
-                        auto result = transform< manager::admin::vo::inbound::Connection>( value);
+                        auto result = transform( value);
+                        result.bound = manager::admin::vo::Connection::Bound::in;
 
                         return result;
                      }
 
-                     manager::admin::vo::outbound::Connection operator() ( const manager::state::outbound::Connection& value) const
+                     manager::admin::vo::Connection operator() ( const manager::state::outbound::Connection& value) const
                      {
-                        auto result = transform< manager::admin::vo::outbound::Connection>( value);
+                        auto result = transform( value);
+                        result.bound = manager::admin::vo::Connection::Bound::out;
 
                         return result;
                      }
 
                   private:
 
-                     template< typename R, typename T>
-                     R transform( const T& value) const
+                     template< typename T>
+                     manager::admin::vo::Connection transform( const T& value) const
                      {
-                        R result;
+                        manager::admin::vo::Connection result;
 
                         result.process = value.process;
                         result.remote = value.remote;
-                        result.runlevel = static_cast< typename R::Runlevel>( value.runlevel);
-                        result.type = static_cast< typename R::Type>( value.type);
+                        result.runlevel = static_cast< manager::admin::vo::Connection::Runlevel>( value.runlevel);
+                        result.type = static_cast< manager::admin::vo::Connection::Type>( value.type);
                         result.address = value.address;
 
                         return result;
@@ -120,8 +122,8 @@ namespace casual
             manager::admin::vo::State result;
 
 
-            range::transform( state.connections.inbound, result.connections.inbound, local::vo::Connection{});
-            range::transform( state.connections.outbound, result.connections.outbound, local::vo::Connection{});
+            range::transform( state.connections.outbound, result.connections, local::vo::Connection{});
+            range::transform( state.connections.inbound, result.connections, local::vo::Connection{});
 
 
             return result;

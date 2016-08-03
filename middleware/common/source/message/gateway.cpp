@@ -33,8 +33,6 @@ namespace casual
                      return out << "{ remote: " << value.remote
                            << ", process: " << value.process
                            << ", services: " << range::make( value.services)
-                           << ", address: " << range::make( value.address)
-
                            << '}';
                   }
 

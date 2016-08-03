@@ -420,8 +420,6 @@ namespace casual
             return *( m_first + index);
          }
 
-
-         //template< typename Iter>
          friend std::ostream& operator << ( std::ostream& out, const Range& range)
          {
             if( out)
@@ -438,6 +436,8 @@ namespace casual
             }
             return out;
          }
+
+
       private:
          iterator m_first;
          std::size_t m_size;
@@ -1008,7 +1008,7 @@ namespace casual
          template< typename R, typename T>
          auto find( R&& range, T&& value)
             -> typename std::enable_if<
-               common::traits::container::is_associative< typename std::decay<R>::type>::value,
+               common::traits::container::is_associative< common::traits::decay_t< R>>::value,
                decltype( make( std::forward< R>( range)))>::type
          {
             return make( range.find( value), std::end( range));
@@ -1020,7 +1020,7 @@ namespace casual
          template< typename R, typename T>
          auto find( R&& range, T&& value)
             -> typename std::enable_if<
-               ! common::traits::container::is_associative< typename std::decay<R>::type>::value,
+               ! common::traits::container::is_associative< common::traits::decay_t< R>>::value,
                decltype( make( std::forward< R>( range)))>::type
          {
             return make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));

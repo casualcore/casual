@@ -53,6 +53,26 @@ namespace casual
 
             namespace lookup
             {
+               std::ostream& operator << ( std::ostream& out, const Request::Context& value)
+               {
+                  switch( value)
+                  {
+                     case Request::Context::forward: return out << "forward";
+                     case Request::Context::gateway: return out << "gateway";
+                     case Request::Context::no_reply: return out << "no_reply";
+                     case Request::Context::regular: return out << "regular";
+                  }
+                  return out << "unknown";
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Request& value)
+               {
+                  return out << "{ process: " << value.process
+                        << ", requested: " << value.requested
+                        << ", context: " << value.context
+                        << '}';
+
+               }
 
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {
