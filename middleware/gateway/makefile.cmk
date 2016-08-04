@@ -163,7 +163,7 @@ Dependencies( target_unittest, install_bin)
 
 tartet = LinkExecutable( "docs/bin/print-protocol",
      [
-        Compile( 'docs/source/protocol.cpp')
+        Compile( 'documentation/source/protocol.cpp')
       ],
      [
       'casual-common'

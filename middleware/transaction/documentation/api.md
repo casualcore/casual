@@ -1,130 +1,9 @@
 
-## API definitions of all the administration services casual have
+## .casual.transaction.state
 
-### Describe services
-To describe a casaul-sf-service just use the following command:
+Gets the current state of the transaction manager in a given domain
 
-```bash
->$ casual-service-describe --services <services>
-```
-
-
-### Services
-The following services is described:
-
-* .casual.broker.state
-* .casual.domain.scale.instances
-* .casual.domain.shutdown  
-* .casual.domain.state
-* .casual.transaction.state
-* .casual.transaction.update.instances
-
-
-#### .casual.broker.state
-
-```bash
-service: .casual.broker.state
-input
-output
-  composite serviceReturn
-    container instances
-      composite
-        composite process
-          integer pid
-          integer queue
-        character state
-        integer invoked
-        integer last
-    container services
-      composite
-        string name
-        integer timeout
-        container instances
-          integer
-        integer lookedup
-        integer type
-        integer transaction
-    container pending
-      composite
-        string requested
-        composite process
-          integer pid
-          integer queue
-```
-
-#### .casual.domain.scale.instances
-
-```bash
-service: .casual.domain.scale.instances
-input
-  container instances
-    composite
-      string alias
-      integer instances
-output
-  container serviceReturn
-    composite
-      string alias
-      integer instances
-```
-
-#### .casual.domain.shutdown
-
-```bash
-service: .casual.domain.shutdown
-input
-output
-```
-
-#### .casual.domain.state
-
-```bash
-
-service: .casual.domain.state
-input
-output
-  composite serviceReturn
-    container groups
-      composite
-        integer id
-        string name
-        string note
-        container resources
-          composite
-            integer instances
-            string key
-            string openinfo
-            string closeinfo
-        container dependencies
-          integer
-    container executables
-      composite
-        integer id
-        string alias
-        string path
-        container arguments
-          string
-        string note
-        container instances
-          integer
-        container memberships
-          integer
-        composite environment
-          container variables
-            string
-        integer configured_instances
-        boolean restart
-        integer restarts
-    composite termination
-      container listeners
-        composite
-          integer pid
-          integer queue
-
-
-```
-
-#### .casual.transaction.state
+### definition
 
 ```bash
 service: .casual.transaction.state
@@ -204,8 +83,11 @@ output
 
 ```
 
-#### .casual.transaction.update.instances
+## .casual.transaction.update.instances
 
+Updates insstances of 0..* resource proxies
+
+### definition
 ```bash
 service: .casual.transaction.update.instances
 input
