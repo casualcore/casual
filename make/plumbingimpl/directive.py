@@ -11,6 +11,7 @@ logging.basicConfig( filename='.casual/cmk.log',level=logging.DEBUG)
 import os
 import sys
 import re
+import copy
 from contextlib import contextmanager
 
 import casual.make.platform.platform
@@ -620,24 +621,23 @@ def install(target, destination):
     elif isinstance( target, basestring):
         install( internal.Target( target), destination)
     else:
-        
-        filename = target.file
+        copied_target = copy.deepcopy( target)
+        filename = copied_target.file
 
-        target.name = 'install_' + target.target
+        copied_target.name = 'install_' + copied_target.target
+        register_path_for_create( destination)
         
-        register_path_for_create( destination);
-        
-        print 'install: '+ target.name
+        print 'install: '+ copied_target.name
         print
-        print target.name + ": " + filename + ' | ' + destination
+        print copied_target.name + ": " + filename + ' | ' + destination
         print "\t" + platform().install( filename, destination)
         
-        if target.output:
-            soname_fullpath = target.stem + '.' + target.output.version.soname_version()
-            symlink(destination + '/' + os.path.basename(target.file), destination + '/' + os.path.basename(soname_fullpath))
-            symlink(destination + '/' + os.path.basename(soname_fullpath), destination + '/' + os.path.basename(target.stem))
+        if copied_target.output:
+            soname_fullpath = copied_target.stem + '.' + copied_target.output.version.soname_version()
+            symlink(destination + '/' + os.path.basename(copied_target.file), destination + '/' + os.path.basename(soname_fullpath))
+            symlink(destination + '/' + os.path.basename(soname_fullpath), destination + '/' + os.path.basename(copied_target.stem))
          
-        return target;
+        return copied_target
 
 
 def set_parallel_make( value):
