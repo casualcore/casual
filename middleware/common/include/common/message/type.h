@@ -141,12 +141,27 @@ namespace casual
             gateway_ipc_connect_reply,
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
+            gateway_service_advertise,
+            gateway_service_unadvertise,
             gateway_domain_id,
 
+            // Innterdomain messages, part of gateway
+            INTERDOMAIN_BASE = 8000,
+            ineterdomain_domain_discover_request,
+            ineterdomain_domain_discover_reply,
+            ineterdomain_service_call,
+            ineterdomain_service_reply,
+            ineterdomain_transaction_resource_prepare_request,
+            ineterdomain_transaction_resource_prepare_reply,
+            ineterdomain_transaction_resource_commit_request,
+            ineterdomain_transaction_resource_commit_reply,
+            ineterdomain_transaction_resource_rollback_request,
+            ineterdomain_transaction_resource_rollback_reply,
 
 
 
-            MOCKUP_BASE = 1000000, // avoid conflict with real messages
+
+            MOCKUP_BASE = 10000000, // avoid conflict with real messages
             mockup_disconnect,
             mockup_clear,
          };
@@ -159,6 +174,7 @@ namespace casual
          {
             return message.type();
          }
+
 
          namespace convert
          {
@@ -198,31 +214,6 @@ namespace casual
             })
          };
 
-         template< typename M, message::Type message_type>
-         struct type_wrapper : public M
-         {
-            using M::M;
-
-            constexpr static Type type() { return message_type;}
-
-            Uuid correlation;
-
-            //!
-            //! The execution-id
-            //!
-            mutable Uuid execution;
-
-            CASUAL_CONST_CORRECT_MARSHAL(
-            {
-               //
-               // correlation is part of ipc::message::Complete, and is
-               // handled by the ipc-abstraction (marshaled 'on the side')
-               //
-
-               archive & execution;
-               M::marshal( archive);
-            })
-         };
 
          namespace flush
          {
@@ -397,17 +388,7 @@ namespace casual
                };
 
             } // spawn
-
-
-
-
-
-
          } // process
-
-
-
-
 
          namespace reverse
          {
@@ -436,8 +417,6 @@ namespace casual
 
 
 
-
-
             template< typename T>
             auto type( T&& message) -> typename type_traits< typename std::decay<T>::type>::reverse_type
             {
@@ -448,10 +427,6 @@ namespace casual
 
                return result;
             }
-
-
-
-
          } // reverse
 
       } // message

@@ -177,6 +177,7 @@ namespace casual
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
+
          common::message::service::call::callee::Request request;
          {
             request.service.name = "service1";
@@ -190,7 +191,8 @@ namespace casual
          // handle the message, as we're the other domain
          //
          {
-            common::message::service::call::callee::Request message;
+
+            message::interdomain::service::call::receive::Request message;
             communication::ipc::blocking::receive( domain.remote.output(), message);
 
             EXPECT_TRUE( message.correlation == correlation);

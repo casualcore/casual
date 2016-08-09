@@ -297,13 +297,13 @@ namespace casual
 
                      if( found)
                      {
-                        found->remote = message.remote;
+                        found->remote = message.domain;
 
                         //
                         // advertise the services
                         //
                         {
-                           common::message::service::Advertise advertise;
+                           common::message::gateway::domain::service::Advertise advertise;
                            advertise.process = message.process;
 
                            advertise.services = std::move( message.services);

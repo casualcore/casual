@@ -50,7 +50,7 @@ namespace casual
          }
 
 
-         common::process::Handle Instance::operator () ( const state::Instance& value) const
+         common::process::Handle Instance::operator () ( const state::instance::Local& value) const
          {
             return value.process;
          }
@@ -62,14 +62,25 @@ namespace casual
             {
                struct Instance
                {
-                  admin::InstanceVO operator() ( const state::Instance& instance) const
+                  admin::instance::LocalVO operator() ( const state::instance::Local& instance) const
                   {
-                     admin::InstanceVO result;
+                     admin::instance::LocalVO result;
 
                      result.process = instance.process;
                      result.invoked = instance.invoked;
                      result.last = instance.last();
-                     result.state = static_cast< admin::InstanceVO::State>( instance.state());
+                     result.state = static_cast< admin::instance::LocalVO::State>( instance.state());
+
+                     return result;
+                  }
+
+                  admin::instance::RemoteVO operator() ( const state::instance::Remote& instance) const
+                  {
+                     admin::instance::RemoteVO result;
+
+                     result.process = instance.process;
+                     result.invoked = instance.invoked;
+                     result.last = instance.last();
 
                      return result;
                   }
@@ -103,16 +114,27 @@ namespace casual
                      result.type = value.information.type;
                      result.transaction = common::cast::underlying( value.information.transaction);
 
-                     auto transform_instance = []( const state::service::Instance& value)
+
+
+                     auto transform_remote = []( const state::service::instance::Remote& value)
                            {
-                              return admin::ServiceVO::Instance{
+                              return admin::service::instance::Remote{
                                  value.process().pid,
+                                 value.invoked,
                                  value.hops()
                               };
                            };
 
-                     common::range::transform( value.instances.local, result.instances, transform_instance);
-                     common::range::transform( value.instances.remote, result.instances, transform_instance);
+                     auto transform_local = []( const state::service::instance::Local& value)
+                           {
+                              return admin::service::instance::Local{
+                                 value.process().pid,
+                                 value.invoked,
+                              };
+                           };
+
+                     common::range::transform( value.instances.local, result.instances.local, transform_local);
+                     common::range::transform( value.instances.remote, result.instances.remote, transform_remote);
 
                      return result;
                   }
@@ -125,7 +147,10 @@ namespace casual
          {
             admin::StateVO result;
 
-            common::range::transform( state.instances, result.instances,
+            common::range::transform( state.instances.local, result.instances.local,
+                  common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
+
+            common::range::transform( state.instances.remote, result.instances.remote,
                   common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
 
             common::range::transform( state.pending.requests, result.pending, local::Pending{});

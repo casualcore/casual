@@ -90,23 +90,42 @@ namespace casual
          } // forward
 
 
-         void Advertise::operator () ( message_type& message)
-         {
-            Trace trace{ "broker::handle::Advertise"};
 
-            m_state.add( message);
-         }
-
-         void Unadvertise::operator () ( message_type& message)
-         {
-            Trace trace{ "broker::handle::Unadvertise"};
-
-            m_state.remove( message);
-         }
 
 
          namespace service
          {
+            void Advertise::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::Advertise"};
+
+               m_state.add( message);
+            }
+
+            void Unadvertise::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::Unadvertise"};
+
+               m_state.remove( message);
+            }
+
+            namespace gateway
+            {
+               void Advertise::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::Advertise"};
+
+                  m_state.add( message);
+               }
+
+               void Unadvertise::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::Unadvertise"};
+
+                  m_state.remove( message);
+               }
+            } // gateway
+
 
             void Lookup::operator () ( message_type& message)
             {
@@ -225,7 +244,7 @@ namespace casual
 
                   auto reply = common::message::reverse::type( message);
 
-                  reply.remote = common::domain::identity();
+                  reply.domain = common::domain::identity();
 
                   for( const auto& s : message.services)
                   {
@@ -233,7 +252,7 @@ namespace casual
 
                      if( service)
                      {
-                        if( service->instances.local)
+                        if( ! service->instances.local.empty())
                         {
                            //
                            // Service is local
@@ -243,13 +262,13 @@ namespace casual
                                  service->information.type,
                                  service->information.transaction);
                         }
-                        else if( service->instances.remote)
+                        else if( ! service->instances.remote.empty())
                         {
                            reply.services.emplace_back(
                                  service->information.name,
                                  service->information.type,
                                  service->information.transaction,
-                                 service->instances.remote->hops());
+                                 service->instances.remote.front().hops());
 
                         }
                      }
@@ -269,7 +288,11 @@ namespace casual
 
             try
             {
-               auto& instance = m_state.instance( message.process.pid);
+               //
+               // This message can only come from a local instance
+               //
+
+               auto& instance = m_state.local_instance( message.process.pid);
 
                auto now = platform::clock_type::now();
 
@@ -289,7 +312,7 @@ namespace casual
                   auto pending = common::range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
                      auto service = m_state.find_service( r.requested);
 
-                     return service && service->has( message.process.pid);
+                     return service && range::find( service->instances.local, message.process.pid);
                   });
 
                   if( pending)
@@ -369,8 +392,10 @@ namespace casual
 
             handle::forward::Connect{ state},
             //handle::dead::process::Event{ state},
-            handle::Advertise{ state},
-            handle::Unadvertise{ state},
+            handle::service::Advertise{ state},
+            handle::service::Unadvertise{ state},
+            handle::service::gateway::Advertise{ state},
+            handle::service::gateway::Unadvertise{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},
             handle::traffic::Connect{ state},
@@ -387,8 +412,10 @@ namespace casual
          return {
             handle::forward::Connect{ state},
             //handle::dead::process::Event{ state},
-            handle::Advertise{ state},
-            handle::Unadvertise{ state},
+            handle::service::Advertise{ state},
+            handle::service::Unadvertise{ state},
+            handle::service::gateway::Advertise{ state},
+            handle::service::gateway::Unadvertise{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},
             handle::traffic::Connect{ state},

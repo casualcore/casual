@@ -76,16 +76,18 @@ namespace casual
 
 
                basic_request( const Routing& routing, device_type& device)
-                  : routing( routing), forward( device) {}
+                  : routing( routing), device( device) {}
 
                void operator() ( message_type& message)
                {
-                  forward( message);
                   routing.add( message.correlation, message.process);
+
+                  auto&& request = message::interdomain::send::wrap( message);
+                  device.blocking_send( request);
                }
 
                const Routing& routing;
-               basic_forward< message_type, device_type> forward;
+               device_type& device;
             };
 
             template< typename M, typename D>
@@ -110,8 +112,6 @@ namespace casual
                   {
                      log << "call request: " << message << '\n';
 
-                     this->forward( message);
-
                      if( ! common::flag< TPNOREPLY>( message.flags))
                      {
                         if( message.trid)
@@ -127,6 +127,9 @@ namespace casual
 
                         this->routing.add( message.correlation, message.process);
                      }
+
+                     auto&& request = message::interdomain::send::wrap( message);
+                     this->device.blocking_send( request);
                   }
 
                private:
@@ -144,21 +147,23 @@ namespace casual
 
                void operator() ( message_type& message) const
                {
-                  log << "reply: " << message << '\n';
+                  auto&& reply = message.get();
+
+                  log << "reply: " << reply << '\n';
 
                   try
                   {
-                     auto destination = routing.get( message.correlation);
-                     process( message);
-                     common::communication::ipc::blocking::send( destination.destination.queue, message);
+                     auto destination = routing.get( reply.correlation);
+                     process( reply);
+                     common::communication::ipc::blocking::send( destination.destination.queue, reply);
                   }
                   catch( const common::exception::queue::Unavailable&)
                   {
-                     log << "destination queue unavailable for correlation: " << message.correlation << " - action: discard\n";
+                     log << "destination queue unavailable for correlation: " << reply.correlation << " - action: discard\n";
                   }
                   catch( const common::exception::invalid::Argument&)
                   {
-                     common::log::error << "failed to correlate ["  << message.correlation << "] reply with a destination - action: ignore\n";
+                     common::log::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                   }
                }
 
@@ -205,12 +210,13 @@ namespace casual
 
                namespace discover
                {
-                  using reply_base = basic_reply< common::message::gateway::domain::discover::Reply>;
-                  struct Reply : reply_base
+                  struct Reply : basic_reply< message::interdomain::domain::discovery::receive::Reply>
                   {
-                     using reply_base::reply_base;
+                     using base_type = basic_reply< message::interdomain::domain::discovery::receive::Reply>;
 
-                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
+                     using base_type::base_type;
+
+                     void operator () ( message::interdomain::domain::discovery::receive::Reply& reply) const
                      {
                         Trace trace{ "gateway::outbound::handle::domain::discover::Reply"};
 
@@ -219,10 +225,10 @@ namespace casual
                         //
                         {
                            domain::id::Message message;
-                           message.id = reply.remote;
+                           message.id = reply.domain;
                            common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
                         }
-                        reply_base::operator() ( reply);
+                        base_type::operator() ( reply);
                      }
                   };
 
@@ -339,9 +345,17 @@ namespace casual
                using outbound_device_type = decltype( outbound_device);
 
                common::message::dispatch::Handler handler{
+                  //
+                  // internal messages
+                  //
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_reply_thread},
+                  handle::domain::Identity{ remote},
+
+                  //
+                  // external messages, that will be forward to remote domain
+                  //
                   handle::call::Request< outbound_device_type>{ m_routing, outbound_device, remote},
                   handle::create< common::message::transaction::resource::prepare::Request>( m_routing, outbound_device),
                   handle::create< common::message::transaction::resource::commit::Request>( m_routing, outbound_device),
@@ -349,7 +363,7 @@ namespace casual
 
                   handle::create< common::message::gateway::domain::discover::Request>( m_routing, outbound_device),
 
-                  handle::domain::Identity{ remote},
+
 
                };
 
@@ -444,10 +458,14 @@ namespace casual
                   // we start our reply-message-pump
                   //
                   common::message::dispatch::Handler handler{
-                     handle::basic_reply< common::message::service::call::Reply>{ routing},
-                     handle::basic_reply< common::message::transaction::resource::prepare::Reply>{ routing},
-                     handle::basic_reply< common::message::transaction::resource::commit::Reply>{ routing},
-                     handle::basic_reply< common::message::transaction::resource::rollback::Reply>{ routing},
+
+                     //
+                     // External messages from the other domain
+                     //
+                     handle::basic_reply< message::interdomain::service::call::receive::Reply>{ routing},
+                     handle::basic_reply< message::interdomain::transaction::resource::receive::prepare::Reply>{ routing},
+                     handle::basic_reply< message::interdomain::transaction::resource::receive::commit::Reply>{ routing},
+                     handle::basic_reply< message::interdomain::transaction::resource::receive::rollback::Reply>{ routing},
                      handle::domain::discover::Reply{ routing},
                   };
 

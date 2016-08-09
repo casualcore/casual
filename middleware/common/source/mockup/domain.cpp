@@ -329,6 +329,23 @@ namespace casual
 
                      //log << "services: " << range::make( m_state.services) << '\n';
                   },
+                  [&]( message::gateway::domain::service::Advertise& m)
+                  {
+                     Trace trace{ "mockup gateway::domain::service::Advertise"};
+
+                     log  << "message: " << m << '\n';
+
+                     for( auto& service : m.services)
+                     {
+                        auto& lookup = m_state.services[ service.name];
+                        lookup.service.name = service.name;
+                        lookup.service.type = service.type;
+                        lookup.service.transaction = service.transaction;
+                        lookup.process = m.process;
+                     }
+
+                     //log << "services: " << range::make( m_state.services) << '\n';
+                  },
                   [&]( message::traffic::monitor::connect::Request& m)
                   {
                      m_state.traffic_monitors.push_back( m.process.queue);
@@ -346,7 +363,7 @@ namespace casual
 
                      auto reply = message::reverse::type( m);
 
-                     reply.remote = m.domain;
+                     reply.domain = m.domain;
 
                      for( auto&& s : m.services)
                      {

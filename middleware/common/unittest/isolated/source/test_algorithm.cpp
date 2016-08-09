@@ -1,8 +1,5 @@
 //!
-//! test_algorithm.cpp
-//!
-//! Created on: Dec 22, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -464,6 +461,49 @@ namespace casual
          auto split = range::intersection( range, lookup);
 
          EXPECT_TRUE( range::sort( std::get< 0>( split)) == range::sort( lookup)) << std::get< 0>( split);
+         EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace intersection
+            {
+               struct common
+               {
+                  common( int v) : value{ v} {}
+                  int value = 0;
+                  friend bool operator == ( const common& lhs, const common& rhs) { return lhs.value == rhs.value;}
+                  friend bool operator < ( const common& lhs, const common& rhs) { return lhs.value < rhs.value;}
+               };
+
+               struct A : common
+               {
+                  using common::common;
+               };
+
+               struct B : common
+               {
+                  using common::common;
+               };
+
+
+            } // intersection
+
+         } // <unnamed>
+      } // local
+
+      TEST( casual_common_algorithm, intersection_predicate)
+      {
+         using namespace local::intersection;
+
+         std::vector< A> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
+         std::vector< B> lookup{ 4, 1, 3, 5, 2};
+
+         auto split = range::intersection( range, lookup, []( const A& a, const B& b){ return a.value == b.value;});
+
+         EXPECT_TRUE( range::sort( std::get< 0>( split)) == range::sort( lookup));// << std::get< 0>( split);
          EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
       }
 

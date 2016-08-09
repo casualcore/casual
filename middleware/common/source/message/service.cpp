@@ -29,18 +29,6 @@ namespace casual
                      << '}';
             }
 
-            namespace advertise
-            {
-               std::ostream& operator << ( std::ostream& out, const Service& message)
-               {
-                  return out << "{ name: " << message.name
-                        << ", type: " << message.type
-                        << ", transaction: " << message.transaction
-                        << ", hops: " << message.hops
-                        << '}';
-               }
-
-            } // advertise
 
 
             std::ostream& operator << ( std::ostream& out, const Advertise& message)

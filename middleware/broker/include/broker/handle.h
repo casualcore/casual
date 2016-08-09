@@ -91,34 +91,69 @@ namespace casual
 
 
 
-         //!
-         //! Advertise 0..N services for a server.
-         //!
-         struct Advertise : Base
-         {
-            typedef common::message::service::Advertise message_type;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
 
 
-		   //!
-         //! Unadvertise 0..N services for a server.
-         //!
-		   struct Unadvertise : Base
-         {
-            typedef common::message::service::Unadvertise message_type;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
 
 
 		   namespace service
          {
+	         //!
+	         //! Advertise 0..N services for a server.
+	         //!
+	         struct Advertise : Base
+	         {
+	            typedef common::message::service::Advertise message_type;
+
+	            using Base::Base;
+
+	            void operator () ( message_type& message);
+	         };
+
+
+	         //!
+	         //! Unadvertise 0..N services for a server.
+	         //!
+	         struct Unadvertise : Base
+	         {
+	            typedef common::message::service::Unadvertise message_type;
+
+	            using Base::Base;
+
+	            void operator () ( message_type& message);
+	         };
+
+	         namespace gateway
+            {
+
+	            //!
+	            //! Advertise 0..N services for a server.
+	            //!
+	            struct Advertise : Base
+	            {
+	               typedef common::message::gateway::domain::service::Advertise message_type;
+
+	               using Base::Base;
+
+	               void operator () ( message_type& message);
+	            };
+
+
+	            //!
+	            //! Unadvertise 0..N services for a server.
+	            //!
+	            struct Unadvertise : Base
+	            {
+	               typedef common::message::gateway::domain::service::Unadvertise message_type;
+
+	               using Base::Base;
+
+	               void operator () ( message_type& message);
+	            };
+
+
+            } // gateway
+
+
 	         //!
 	         //! Looks up a service-name
 	         //!

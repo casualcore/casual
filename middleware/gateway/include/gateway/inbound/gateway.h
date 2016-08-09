@@ -55,10 +55,10 @@ namespace casual
                void operator() ( message_type& message)
                {
                   //
-                  // Change 'sender' so we (our main thread) get the reply
+                  // Set 'sender' so we (our main thread) get the reply
                   //
                   message.process = common::process::handle();
-                  blocking::send( common::communication::ipc::transaction::manager::device(), message);
+                  blocking::send( common::communication::ipc::transaction::manager::device(), message.get());
                }
             };
 
@@ -76,7 +76,7 @@ namespace casual
 
                struct Request : Base
                {
-                  using message_type = common::message::service::call::callee::Request;
+                  using message_type = message::interdomain::service::call::receive::Request;
 
                   using Base::Base;
 
@@ -104,7 +104,7 @@ namespace casual
                      //
                      // Add message to cache, this could block
                      //
-                     m_cache.add( common::marshal::complete( std::move( message)));
+                     m_cache.add( common::marshal::complete( std::move( message.get())));
 
                      //
                      // Send lookup
@@ -184,9 +184,11 @@ namespace casual
                {
                   Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
 
+                  auto&& wrapper = message::interdomain::send::wrap( message);
+
                   log << "forward message: " << message << '\n';
 
-                  m_device.blocking_send( message);
+                  m_device.blocking_send( wrapper);
                }
 
             private:
@@ -210,9 +212,7 @@ namespace casual
                {
                   struct Request
                   {
-                     //Request( std::vector< std::string> address) : address( std::move( address)) {}
-
-                     void operator () ( common::message::gateway::domain::discover::Request& request) const
+                     void operator () ( message::interdomain::domain::discovery::receive::Request& request) const
                      {
                         Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
 
@@ -229,10 +229,8 @@ namespace casual
                         // Forward to gateway, which will forward the message to broker, after it
                         // has extracted some information about the remote domain.
                         //
-                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), request);
+                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), request.get());
                      }
-
-                     //std::vector< std::string> address;
                   };
                } // discover
             } // domain
@@ -334,10 +332,17 @@ namespace casual
 
 
                common::message::dispatch::Handler handler{
+                  //
+                  // Internal messages
+                  //
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
                   handle::call::lookup::Reply{ m_cache},
+
+                  //
+                  // External messages that will be forward to the other domain
+                  //
                   handle::create::forward< common::message::service::call::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::prepare::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
@@ -439,18 +444,16 @@ namespace casual
 
                   common::log::information << "connection established - policy: " << policy << "\n";
 
+
                   //
                   // we start our request-message-pump
                   //
                   common::message::dispatch::Handler handler{
                      handle::call::Request{ cache},
-                     handle::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
-                     handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
-                     handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
-
+                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::prepare::Request>{},
+                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::commit::Request>{},
+                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::rollback::Request>{},
                      handle::domain::discover::Request{},
-                     //handle::domain::discover::Request{ policy.address()},
-
                   };
              
                   log << "start external message pump\n";

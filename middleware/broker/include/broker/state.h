@@ -9,6 +9,7 @@
 
 #include "common/message/domain.h"
 #include "common/message/server.h"
+#include "common/message/gateway.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
 
@@ -65,74 +66,107 @@ namespace casual
          struct Service;
 
 
-         struct Instance
+         namespace instance
          {
-            enum class State : char
+            struct base_instance
             {
-               idle,
-               busy,
-            };
+               base_instance() = default;
+               base_instance( common::process::Handle process) : process( std::move( process)) {}
 
-            Instance() = default;
-            Instance( common::process::Handle process) : process( std::move( process)) {}
-
-            common::process::Handle process;
-            std::size_t invoked = 0;
-
-            void lock( const common::platform::time_point& when);
-            void unlock( const common::platform::time_point& when);
-
-
-            inline bool idle() const { return m_state != State::busy;}
-
-            inline State state() const { return m_state;}
-
-            inline const common::platform::time_point& last() const { return m_last;}
-
-            inline friend bool operator == ( const Instance& lhs, const Instance& rhs) { return lhs.process == rhs.process;}
-            inline friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.process.pid < rhs.process.pid;}
-
-
-         private:
-            State m_state = State::idle;
-
-            common::platform::time_point m_last = common::platform::time_point::min();
-
-         };
-
-
-
-         namespace service
-         {
-            struct Instance
-            {
-               using State = state::Instance::State;
-
-               std::reference_wrapper< state::Instance> instance;
+               common::process::Handle process;
                std::size_t invoked = 0;
 
-               Instance( state::Instance& instance, std::size_t hops) : instance{ instance}, m_hops{ hops} {}
+               inline const common::platform::time_point& last() const { return m_last;}
 
+               inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
+               inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
 
-               inline bool idle() const { return instance.get().idle();}
+            protected:
+               common::platform::time_point m_last = common::platform::time_point::min();
+            };
+
+            struct Local : base_instance
+            {
+               enum class State : char
+               {
+                  idle,
+                  busy,
+               };
+
+               using base_instance::base_instance;
 
                void lock( const common::platform::time_point& when);
                void unlock( const common::platform::time_point& when);
 
-               inline bool remote() const { return m_hops != 0;}
-
-               inline State state() const { return instance.get().state();}
-               inline std::size_t hops() const { return m_hops;}
-               inline const common::platform::time_point& last() const { return instance.get().last();}
-
-               inline const common::process::Handle& process() const { return instance.get().process;}
-
-               friend inline bool operator == ( const Instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
-               friend inline bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.hops() < rhs.hops();}
+               inline State state() const { return m_state;}
+               inline bool idle() const { return m_state == State::idle;}
 
             private:
-               std::size_t m_hops = 0;
+               State m_state = State::idle;
             };
+
+            struct Remote : base_instance
+            {
+               using base_instance::base_instance;
+
+               void requested( const common::platform::time_point& when);
+
+            };
+
+         } // instance
+
+
+         namespace service
+         {
+
+            namespace instance
+            {
+               struct base_instance
+               {
+                  virtual void lock( const common::platform::time_point& when) = 0;
+                  virtual const common::process::Handle& process() const = 0;
+
+                  std::size_t invoked = 0;
+
+                  friend inline bool operator == ( const base_instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+
+               protected:
+                  ~base_instance() = default;
+               };
+
+               struct Local final : std::reference_wrapper< state::instance::Local>, base_instance
+               {
+                  using base_type = std::reference_wrapper< state::instance::Local>;
+                  using base_type::base_type;
+
+                  inline bool idle() const { return get().idle();}
+
+                  inline const common::process::Handle& process() const override { return get().process;}
+                  void lock( const common::platform::time_point& when) override;
+
+               };
+
+               struct Remote final : std::reference_wrapper< state::instance::Remote>, base_instance
+               {
+                  using base_type = std::reference_wrapper< state::instance::Remote>;
+
+                  Remote( state::instance::Remote& instance, std::size_t hops) : base_type{ instance}, m_hops{ hops} {}
+
+                  inline const common::process::Handle& process() const override { return get().process;}
+                  void lock( const common::platform::time_point& when) override;
+
+                  inline std::size_t hops() const { return m_hops;}
+
+                  friend inline bool operator < ( const Remote& lhs, const Remote& rhs) { return lhs.hops() < rhs.hops();}
+
+               private:
+                  std::size_t m_hops = 0;
+               };
+
+
+
+            } // instance
+
          } // service
 
 
@@ -144,14 +178,13 @@ namespace casual
             Service( common::message::service::call::Service information) : information( std::move( information)) {}
             Service() {}
 
-            using instances_type = std::vector< service::Instance>;
-
-            using range_type = common::range::traits< instances_type>::type;
+            template< typename T>
+            using instances_type = std::vector< T>;
 
             struct
             {
-               range_type local;
-               range_type remote;
+               instances_type< service::instance::Local> local;
+               instances_type< service::instance::Remote> remote;
 
             } instances;
 
@@ -161,13 +194,12 @@ namespace casual
             //!
             //! @return an idle instance or nullptr if no one is found.
             //!
-            service::Instance* idle();
+            service::instance::base_instance* idle();
 
-            void add( state::Instance& instance, std::size_t hops);
+            void add( state::instance::Local& instance);
+            void add( state::instance::Remote& instance, std::size_t hops);
 
             void remove( common::platform::pid::type instance);
-
-            bool has( common::platform::pid::type instance);
 
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
@@ -177,9 +209,7 @@ namespace casual
 
          private:
 
-            void partition_instances();
-
-            instances_type m_instances;
+            void partition_remote_instances();
          };
       } // state
 
@@ -199,11 +229,18 @@ namespace casual
          State( const State&) = delete;
 
 
-         using instance_mapping_type = std::unordered_map< common::platform::pid::type, state::Instance>;
+         template< typename T>
+         using instance_mapping_type = std::unordered_map< common::platform::pid::type, T>;
          using service_mapping_type = std::unordered_map< std::string, state::Service>;
 
-         instance_mapping_type instances;
          service_mapping_type services;
+
+         struct
+         {
+            instance_mapping_type< state::instance::Local> local;
+            instance_mapping_type< state::instance::Remote> remote;
+
+         } instances;
 
 
          struct
@@ -235,12 +272,15 @@ namespace casual
 
 
          state::Service& service( const std::string& name);
-         state::Instance& instance( common::platform::pid::type pid);
+         state::instance::Local& local_instance( common::platform::pid::type pid);
 
          void remove_process( common::platform::pid::type pid);
 
+
          void add( common::message::service::Advertise& message);
+         void add( common::message::gateway::domain::service::Advertise& message);
          void remove( const common::message::service::Unadvertise& message);
+         void remove( const common::message::gateway::domain::service::Unadvertise& message);
 
 
          state::Service* find_service( const std::string& name);

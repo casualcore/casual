@@ -1158,10 +1158,15 @@ namespace casual
          template< typename R1, typename R2, typename F>
          auto intersection( R1&& range, R2&& lookup, F functor) -> decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
          {
-            using range_type = decltype( make( std::forward< R1>( range)));
-            using value_type = typename range_type::value_type;
+            //using range_type = decltype( make( std::forward< R1>( range)));
+            using range_value_type = decltype( *std::begin( range));
+            using lookup_value_type = decltype( *std::begin( lookup));
 
-            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( lookup), std::bind( functor, value, std::placeholders::_1));};
+            auto lambda = [&]( range_value_type v){
+               return find_if( std::forward< R2>( lookup), [&]( lookup_value_type& l){
+                  return functor( v, l);
+               }); // std::bind( functor, value, std::placeholders::_1));
+            };
             return stable_partition( std::forward< R1>( range), lambda);
 
          }
@@ -1274,8 +1279,14 @@ namespace casual
          bool uniform( R1&& range1, R2&& range2, Compare comp)
          {
             return includes( std::forward< R1>( range1), std::forward< R2>( range2), comp)
-                  //&& includes( std::forward< R2>( range2), std::forward< R1>( range1), comp);
                  && includes( std::forward< R2>( range2), std::forward< R1>( range1), compare::inverse( comp));
+         }
+
+
+         template< typename Range, typename Predicate>
+         auto count_if( Range&& range, Predicate predicate) -> decltype( std::count_if( std::begin( range), std::end( range), predicate))
+         {
+            return std::count_if( std::begin( range), std::end( range), predicate);
          }
 
          namespace numeric

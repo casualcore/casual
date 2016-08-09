@@ -89,25 +89,10 @@ namespace casual
 
             namespace advertise
             {
-               struct Service : message::Service
-               {
-                  Service() = default;
-                  Service( std::string name,
-                        std::uint64_t type = 0,
-                        common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
-                        std::size_t hops = 0)
-                   : message::Service{ std::move( name), type, transaction}, hops{ hops} {}
-
-                  std::size_t hops = 0;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     message::Service::marshal( archive);
-                     archive & hops;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const Service& message);
-               };
+               //!
+               //! Represent service information in a 'advertise context'
+               //!
+               using Service = message::Service;
 
             } // advertise
 
@@ -140,7 +125,6 @@ namespace casual
                   archive & services;
                })
             };
-
 
 
             namespace lookup

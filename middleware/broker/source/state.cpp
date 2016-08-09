@@ -50,80 +50,104 @@ namespace casual
       namespace state
       {
 
-         void Instance::lock( const common::platform::time_point& when)
+         namespace instance
          {
-            assert( m_state != State::busy);
-
-            if( m_state == State::idle)
+            void Local::lock( const common::platform::time_point& when)
             {
-               m_state = State::busy;
+               assert( m_state != State::busy);
+
+               if( m_state == State::idle)
+               {
+                  m_state = State::busy;
+               }
+
+               m_last = when;
             }
 
-            m_last = when;
-         }
-
-         void Instance::unlock( const common::platform::time_point& when)
-         {
-            assert( m_state != State::idle);
-
-            if( m_state == State::busy)
+            void Local::unlock( const common::platform::time_point& when)
             {
-               m_state = State::idle;
+               assert( m_state != State::idle);
+
+               if( m_state == State::busy)
+               {
+                  m_state = State::idle;
+               }
+
+               m_last = when;
             }
 
-            m_last = when;
-         }
+            void Remote::requested( const common::platform::time_point& when)
+            {
+               ++invoked;
+               m_last = when;
+            }
+
+         } // instance
 
          namespace service
          {
-            void Instance::lock( const common::platform::time_point& when)
-            {
-               if( ! remote())
-               {
-                  instance.get().lock( when);
-               }
-            }
 
-            void Instance::unlock( const common::platform::time_point& when)
+            namespace instance
             {
-               instance.get().unlock( when);
-            }
+               void Local::lock( const common::platform::time_point& when)
+               {
+                  get().lock( when);
+               }
+
+               void Remote::lock( const common::platform::time_point& when)
+               {
+                  get().requested( when);
+               }
+
+            } // instance
 
          } // service
 
          void Service::remove( common::platform::pid::type instance)
          {
-            range::trim( m_instances, range::remove( m_instances, instance));
-            partition_instances();
+            {
+               auto found = range::find( instances.local, instance);
+
+               if( found)
+               {
+                  instances.local.erase( std::begin( found));
+               }
+
+            }
+
+            {
+               auto found = range::find( instances.remote, instance);
+
+               if( found)
+               {
+                  instances.remote.erase( std::begin( found));
+                  partition_remote_instances();
+               }
+            }
          }
 
-         bool Service::has( common::platform::pid::type instance)
+
+
+         void Service::add( state::instance::Local& instance)
          {
-            return range::find( m_instances, instance);
+            instances.local.emplace_back( instance);
          }
 
-         void Service::add( state::Instance& instance, std::size_t hops)
+         void Service::add( state::instance::Remote& instance, std::size_t hops)
          {
-            m_instances.emplace_back( instance, hops);
-
-            partition_instances();
+            instances.remote.emplace_back( instance, hops);
+            partition_remote_instances();
          }
 
-         void Service::partition_instances()
+
+         void Service::partition_remote_instances()
          {
-            range::stable_sort( m_instances);
-
-            auto partition = range::divide_if( m_instances, []( const service::Instance& i){
-               return i.hops() != 0;
-            });
-
-            instances.local = std::get< 0>( partition);
-            instances.remote = std::get< 1>( partition);
+            range::stable_sort( instances.remote);
          }
 
-         service::Instance* Service::idle()
+         service::instance::base_instance* Service::idle()
          {
-            auto found = range::find_if( instances.local, std::mem_fn( &service::Instance::idle));
+            auto found = range::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
 
             if( found)
             {
@@ -132,7 +156,7 @@ namespace casual
 
             if( instances.local.empty() && ! instances.remote.empty())
             {
-               return &(*instances.remote);
+               return &instances.remote.front();
             }
 
             return nullptr;
@@ -171,9 +195,9 @@ namespace casual
          return local::get( services, name);
       }
 
-      state::Instance& State::instance( common::platform::pid::type pid)
+      state::instance::Local& State::local_instance( common::platform::pid::type pid)
       {
-         return local::get( instances, pid);
+         return local::get( instances.local, pid);
       }
 
 
@@ -220,8 +244,8 @@ namespace casual
                return instances.emplace( process.pid, process).first->second;
             }
 
-            template< typename S>
-            auto find_or_add( S& services, common::message::service::call::Service&& service) -> decltype( services.at( service.name))
+            template< typename Services, typename Service>
+            auto find_or_add_service( Services& services, Service&& service) -> decltype( services.at( service.name))
             {
                Trace trace{ "broker::local::find_or_add service"};
 
@@ -236,7 +260,8 @@ namespace casual
             }
 
 
-            common::message::service::call::Service transform( common::message::service::advertise::Service&& service)
+            template< typename Service>
+            common::message::service::call::Service transform( Service&& service)
             {
                common::message::service::call::Service result;
 
@@ -248,21 +273,6 @@ namespace casual
                return result;
             }
 
-
-            template< typename I, typename S>
-            void add_services( State& state, I& instances, S&& services, common::process::Handle process)
-            {
-               Trace trace{ "broker::local::add_services"};
-
-               auto& instance = local::find_or_add( instances, process);
-
-               for( auto& s : services)
-               {
-                  auto hops = s.hops;
-                  auto& service = find_or_add( state.services, transform( std::move( s)));
-                  service.add( instance, hops);
-               }
-            }
 
             template< typename I, typename S>
             void remove_services( State& state, I& instances, S& services, common::process::Handle process)
@@ -289,22 +299,58 @@ namespace casual
       {
          Trace trace{ "broker::State::remove_process"};
 
-         local::remove_process( instances, services, pid);
+         local::remove_process( instances.local, services, pid);
+         local::remove_process( instances.remote, services, pid);
       }
 
 
       void State::add( common::message::service::Advertise& message)
       {
-         Trace trace{ "broker::State::add"};
+         Trace trace{ "broker::State::add local"};
 
-         local::add_services( *this, instances, std::move( message.services), message.process);
+         //
+         // Local services
+         //
+         auto& instance = local::find_or_add( instances.local, message.process);
+
+         for( auto& s : message.services)
+         {
+            auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
+            service.add( instance);
+         }
+      }
+
+      void State::add( common::message::gateway::domain::service::Advertise& message)
+      {
+         Trace trace{ "broker::State::add remote"};
+
+         //
+         // Local services
+         //
+         auto& instance = local::find_or_add( instances.remote, message.process);
+
+         for( auto& s : message.services)
+         {
+            auto hops = s.hops;
+            auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
+            service.add( instance, hops);
+         }
+
       }
 
       void State::remove( const common::message::service::Unadvertise& message)
       {
-         Trace trace{ "broker::State::remove"};
+         Trace trace{ "broker::State::remove local"};
 
-         local::remove_services( *this, instances, message.services, message.process);
+         local::remove_services( *this, instances.local, message.services, message.process);
+      }
+
+      void State::remove( const common::message::gateway::domain::service::Unadvertise& message)
+      {
+         Trace trace{ "broker::State::remove local"};
+
+         local::remove_services( *this, instances.remote, message.services, message.process);
+
       }
 
 
@@ -323,7 +369,12 @@ namespace casual
 
       void State::connect_broker( std::vector< common::message::service::advertise::Service> services)
       {
-         local::add_services( *this, instances, std::move( services), common::process::handle());
+         common::message::service::Advertise message;
+
+         message.services = std::move( services);
+         message.process = process::handle();
+
+         add( message);
       }
 
 
