@@ -252,6 +252,12 @@ namespace casual
                   {
                      log::error << "failed to correlate child termination - death: " << message.death << " - action: discard\n";
                   }
+
+                  //
+                  // Send the exit notification to domain.
+                  //
+                  ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+
                }
 
             } // process
@@ -305,6 +311,8 @@ namespace casual
                         {
                            common::message::gateway::domain::service::Advertise advertise;
                            advertise.process = message.process;
+                           advertise.domain = message.domain;
+                           advertise.order = found->order;
 
                            advertise.services = std::move( message.services);
 

@@ -60,6 +60,8 @@ namespace casual
                   struct Advertise : basic_message< Type::gateway_service_advertise>
                   {
                      common::process::Handle process;
+                     common::domain::Identity domain;
+                     std::size_t order = 0;
                      std::vector< advertise::Service> services;
 
 
@@ -84,6 +86,8 @@ namespace casual
                         archive & process;
                         archive & services;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Unadvertise& message);
                   };
 
                } // service

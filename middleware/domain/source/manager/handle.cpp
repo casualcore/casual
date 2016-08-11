@@ -113,6 +113,25 @@ namespace casual
 
                } // task
 
+               namespace domain
+               {
+                  state::Executable executable( State& state)
+                  {
+                     state::Executable manager;
+                     manager.alias = "casual-domain-manager";
+                     manager.path = "${CASUAL_HOME}/bin/casual-domain-manager";
+                     manager.configured_instances = 1;
+                     manager.memberships.push_back( state.groups.at( 0).id);
+                     manager.note = "responsible for all executables in this domain";
+                     manager.instances.push_back( process::id());
+
+                     return manager;
+                  }
+               } // domain
+
+
+
+
             } // <unnamed>
          } // local
          namespace handle
@@ -172,7 +191,10 @@ namespace casual
                // Add our self to processes that this domain has. Mostly to
                // help in unittest, but also to make it symmetric
                //
+
                state.processes[ common::process::handle().pid] = common::process::handle();
+               state.executables.push_back( manager::local::domain::executable( state));
+
 
                range::for_each( state.bootorder(), [&]( state::Batch& batch){
                      state.tasks.add( local::task::Boot{ batch});
@@ -184,6 +206,14 @@ namespace casual
                Trace trace{ "domain::manager::handle::shutdown"};
 
                state.runlevel( State::Runlevel::shutdown);
+
+               //
+               // Make sure we remove our self so we don't try to shutdown
+               //
+               range::for_each( state.executables, []( state::Executable& e){
+                  range::trim( e.instances, range::remove( e.instances, common::process::id()));
+               });
+
 
                range::for_each( state.executables, []( state::Executable& e){
                   e.configured_instances = 0;
@@ -550,6 +580,8 @@ namespace casual
                void Lookup::operator () ( const common::message::domain::process::lookup::Request& message)
                {
                   Trace trace{ "domain::manager::handle::process::Lookup"};
+
+                  log << "message: " << message << '\n';
 
                   if( ! local::Lookup{ state()}( message))
                   {

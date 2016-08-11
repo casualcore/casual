@@ -420,23 +420,6 @@ namespace casual
             return *( m_first + index);
          }
 
-         friend std::ostream& operator << ( std::ostream& out, const Range& range)
-         {
-            if( out)
-            {
-               auto current = std::begin( range);
-               out << "[";
-               while( current != std::end( range))
-               {
-                  out << *current++;
-                  if( current != std::end( range))
-                     out << ",";
-               }
-               out << "]";
-            }
-            return out;
-         }
-
 
       private:
          iterator m_first;
@@ -1289,6 +1272,37 @@ namespace casual
             return std::count_if( std::begin( range), std::end( range), predicate);
          }
 
+
+         template< typename Stream, typename Range, typename D>
+         Stream& print( Stream& out, Range&& range, D&& delimeter)
+         {
+            for( auto current = std::begin( range); current != std::end( range); ++current)
+            {
+               out << *current;
+
+               if( current + 1 != std::end( range))
+               {
+                  out << delimeter;
+               }
+            }
+            return out;
+         }
+
+         template< typename Stream, typename Range, typename D, typename F>
+         Stream& print( Stream& out, Range&& range,  D&& delimeter, F&& functor)
+         {
+            for( auto current = std::begin( range); current != std::end( range); ++current)
+            {
+               functor( out, *current);
+
+               if( current + 1 != std::end( range))
+               {
+                  out << delimeter;
+               }
+            }
+            return out;
+         }
+
          namespace numeric
          {
             template< typename R, typename T>
@@ -1397,6 +1411,17 @@ namespace casual
 
          } // sorted
       } // range
+
+      template< typename Iter>
+      std::ostream& operator << ( std::ostream& out, const Range< Iter>& range)
+      {
+         if( out)
+         {
+            out << "[";
+            range::print( out, range, ',') << ']';
+         }
+         return out;
+      }
 
       template< typename Iter1, typename Iter2>
       bool operator == ( const Range< Iter1>& lhs, const Range< Iter2>& rhs)

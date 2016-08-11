@@ -61,6 +61,7 @@ namespace casual
                   m_state = State::busy;
                }
 
+               ++invoked;
                m_last = when;
             }
 
@@ -82,6 +83,11 @@ namespace casual
                m_last = when;
             }
 
+            bool operator < ( const Remote& lhs, const Remote& rhs)
+            {
+               return lhs.order < rhs.order;
+            }
+
          } // instance
 
          namespace service
@@ -92,11 +98,19 @@ namespace casual
                void Local::lock( const common::platform::time_point& when)
                {
                   get().lock( when);
+                  ++invoked;
                }
 
                void Remote::lock( const common::platform::time_point& when)
                {
                   get().requested( when);
+                  ++invoked;
+               }
+
+
+               bool operator < ( const Remote& lhs, const Remote& rhs)
+               {
+                  return std::make_tuple( lhs.get(), lhs.hops()) < std::make_tuple( rhs.get(), rhs.hops());
                }
 
             } // instance
@@ -309,8 +323,9 @@ namespace casual
          Trace trace{ "broker::State::add local"};
 
          //
-         // Local services
+         // Local instance
          //
+
          auto& instance = local::find_or_add( instances.local, message.process);
 
          for( auto& s : message.services)
@@ -325,9 +340,11 @@ namespace casual
          Trace trace{ "broker::State::add remote"};
 
          //
-         // Local services
+         // Remote instance
          //
+
          auto& instance = local::find_or_add( instances.remote, message.process);
+         instance.order = message.order;
 
          for( auto& s : message.services)
          {

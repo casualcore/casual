@@ -8,6 +8,7 @@
 #include "sf/archive/log.h"
 
 #include "broker/admin/brokervo.h"
+#include "domain/manager/admin/vo.h"
 
 #include "common/file.h"
 #include "common/arguments.h"
@@ -49,7 +50,6 @@ namespace casual
 
       namespace call
       {
-
          admin::StateVO state()
          {
             sf::xatmi::service::binary::Sync service( ".casual.broker.state");
@@ -61,6 +61,28 @@ namespace casual
 
             return serviceReply;
          }
+
+         struct State
+         {
+            admin::StateVO broker;
+            casual::domain::manager::admin::vo::State domain;
+         };
+
+         State instances()
+         {
+            sf::xatmi::service::binary::Async service{ ".casual.domain.state"};
+            auto reply = service();
+
+            State result;
+            result.broker = call::state();
+
+            reply() >> CASUAL_MAKE_NVP( result.domain);
+
+            return result;
+         }
+
+
+
       } // call
 
       namespace normalized
@@ -90,6 +112,97 @@ namespace casual
 
             return result;
          }
+
+         namespace service
+         {
+
+            struct Instance
+            {
+               enum class State : char
+               {
+                  idle,
+                  busy,
+                  remote,
+               };
+
+               Instance( const admin::ServiceVO& service) : service{ service} {}
+
+               common::process::Handle process;
+
+               struct
+               {
+                  std::size_t invoked = 0;
+                  std::size_t hops = 0;
+
+               } services;
+
+               std::size_t invoked = 0;
+
+               std::reference_wrapper< const admin::ServiceVO> service;
+
+               const casual::domain::manager::admin::vo::Executable* executable = nullptr;
+
+               State state = State::remote;
+            };
+
+            namespace local
+            {
+               namespace
+               {
+                  namespace lookup
+                  {
+                     const casual::domain::manager::admin::vo::Executable* executable( const call::State& state, platform::pid::type pid)
+                     {
+                        auto found = range::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::vo::Executable& e){
+                           return range::find( e.instances, pid);
+                        });
+
+                        if( found)
+                        {
+                           return &(*found);
+                        }
+                        return nullptr;
+                     }
+
+                  } // lookup
+               } // <unnamed>
+            } // local
+
+            std::vector< Instance> instances( const call::State& state)
+            {
+               std::vector< Instance> result;
+
+               for( auto& service : state.broker.services)
+               {
+                  for( auto& i : service.instances.local)
+                  {
+                     auto local = range::find( state.broker.instances.local, i.pid);
+                     Instance instance{ service};
+                     instance.invoked = local->invoked;
+                     instance.state = local->state == admin::instance::LocalVO::State::idle ? Instance::State::idle : Instance::State::busy;
+                     instance.process.pid = i.pid;
+                     instance.services.invoked = i.invoked;
+                     instance.executable = local::lookup::executable( state, i.pid);
+                     result.push_back( std::move( instance));
+                  }
+
+                  for( auto& i : service.instances.remote)
+                  {
+                     auto remote = range::find( state.broker.instances.remote, i.pid);
+                     Instance instance{ service};
+                     instance.invoked = remote->invoked;
+                     instance.process.pid = i.pid;
+                     instance.services.invoked = i.invoked;
+                     instance.services.hops = i.hops;
+                     instance.executable = local::lookup::executable( state, i.pid);
+                     result.push_back( std::move( instance));
+                  }
+               }
+
+               return result;
+            }
+
+         } // service
 
       } // normalized
 
@@ -262,17 +375,17 @@ namespace casual
                terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "requested", std::mem_fn( &admin::ServiceVO::lookedup), terminal::color::cyan, terminal::format::Align::right),
                terminal::format::column( "local", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
-               terminal::format::column( "busy", format::instance::local::busy{ instances}, terminal::color::red, terminal::format::Align::right),
-               terminal::format::column( "pending", format::instance::local::pending{ state}, terminal::color::yellow, terminal::format::Align::right),
+               terminal::format::column( "busy", format::instance::local::busy{ instances}, terminal::color::yellow, terminal::format::Align::right),
+               terminal::format::column( "pending", format::instance::local::pending{ state}, terminal::color::red, terminal::format::Align::right),
                terminal::format::column( "load", format::instance::local::load{ state, instances}, terminal::color::white, terminal::format::Align::right),
                terminal::format::column( "remote", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
             };
          }
 
 
-         terminal::format::formatter< normalized::Instance> instances()
+         terminal::format::formatter< normalized::service::Instance> instances()
          {
-            using value_type = normalized::Instance;
+            using value_type = normalized::service::Instance;
 
 
             struct format_pid
@@ -280,18 +393,30 @@ namespace casual
                platform::pid::type operator () ( const value_type& v) const { return v.process.pid;}
             };
 
+            auto format_service_name = []( const value_type& v){
+               return v.service.get().name;
+            };
+
+
+            /*
             struct format_queue
             {
                platform::ipc::id::type operator () ( const value_type& v) const { return v.process.queue;}
             };
+            */
 
+            auto format_process_alias = []( const value_type& v) -> const std::string& {
+               if( v.executable) { return v.executable->alias;}
+               static std::string empty;
+               return empty;
+            };
 
 
             struct format_state
             {
-               std::size_t width( const value_type& value) const
+               std::size_t width( const value_type& value, const std::ostream&) const
                {
-                  return 6;
+                  return 7;
                }
 
                void print( std::ostream& out, const value_type& value, std::size_t width, bool color) const
@@ -305,6 +430,7 @@ namespace casual
                         case value_type::State::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
                         case value_type::State::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
                         case value_type::State::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
+                        default: out << "unknown"; break;
                      }
                   }
                   else
@@ -314,24 +440,51 @@ namespace casual
                         case value_type::State::idle: out << std::left << std::setw( width) << "idle"; break;
                         case value_type::State::busy: out << std::left << std::setw( width) << "busy"; break;
                         case value_type::State::remote: out << std::left << std::setw( width) << "remote"; break;
+                        default: out << "unknown"; break;
                      }
                   }
                }
             };
 
+            auto format_hops = []( const value_type& value){
+               return value.services.hops;
+            };
+
+            auto format_service_invoke = []( const value_type& value){
+               return value.services.invoked;
+            };
+
+            auto format_service_percent = []( const value_type& value){
+
+               if( value.invoked > 0)
+               {
+                  return value.services.invoked / static_cast< double>( value.invoked);
+               }
+               return 0.0;
+            };
+
+            /*
             struct format_last
             {
-               std::string operator () ( const normalized::Instance& v) const { return chronology::local( v.last);}
+               std::string operator () ( const value_type& v) const { return chronology::local( v..last);}
             };
+            */
 
 
             return {
                { global::porcelain, ! global::no_colors, ! global::no_header},
+               terminal::format::column( "service", format_service_name, terminal::color::yellow),
                terminal::format::column( "pid", format_pid{}, terminal::color::white, terminal::format::Align::right),
-               terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
+               //terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::custom_column( "state", format_state{}),
-               terminal::format::column( "invoked", std::mem_fn( &admin::instance::Base::invoked), terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "last", format_last{}, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::column( "invoked", format_service_invoke, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "total", std::mem_fn( &value_type::invoked), terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "ratio", format_service_percent, terminal::color::no_color, terminal::format::Align::right),
+               //terminal::format::column( "last", format_last{}, terminal::color::blue, terminal::format::Align::right),
+
+               terminal::format::column( "alias", format_process_alias, terminal::color::blue, terminal::format::Align::left),
+
             };
          }
 
@@ -348,42 +501,46 @@ namespace casual
 
             auto formatter = format::services( state);
 
-            formatter.print( std::cout, std::begin( state.services), std::end( state.services));
+            formatter.print( out, std::begin( state.services), std::end( state.services));
          }
 
          template< typename IR>
-         void instances( std::ostream& out, IR instances_range)
+         void instances( std::ostream& out, IR instances)
          {
-            range::sort( instances_range, []( const admin::instance::Base& l, const admin::instance::Base& r){ return l.process < r.process;});
 
             auto formatter = format::instances();
 
-            formatter.print( std::cout, instances_range);
+            formatter.print( out, instances);
          }
 
-         void instances( std::ostream& out, admin::StateVO& state)
+         void instances( std::ostream& out, call::State& state)
          {
-            instances( out, normalized::instances( state));
+            auto instances = normalized::service::instances( state);
+            print::instances( out, instances);
          }
 
       } // print
 
       namespace action
       {
+         std::ostream& set_format( std::ostream& out)
+         {
+            return out << std::fixed << std::setprecision( 3);
+         }
 
 
          void list_services()
          {
             auto state = call::state();
 
-            print::services( std::cout, state);
+            print::services( set_format( std::cout), state);
          }
 
          void list_instances()
          {
-            auto state = call::state();
+            auto state = call::instances();
 
-            print::instances( std::cout, state);
+            print::instances( set_format( std::cout), state);
          }
 
          void list_pending()

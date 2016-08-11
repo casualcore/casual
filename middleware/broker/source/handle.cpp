@@ -52,6 +52,19 @@ namespace casual
 
 
 
+         namespace process
+         {
+            void Exit::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::process::Exit"};
+
+               log << "message: " << message << '\n';
+
+               m_state.remove_process( message.death.pid);
+            }
+
+         } // process
+
 
 
          namespace traffic
@@ -99,12 +112,16 @@ namespace casual
             {
                Trace trace{ "broker::handle::Advertise"};
 
+               log << "message: " << message << '\n';
+
                m_state.add( message);
             }
 
             void Unadvertise::operator () ( message_type& message)
             {
                Trace trace{ "broker::handle::Unadvertise"};
+
+               log << "message: " << message << '\n';
 
                m_state.remove( message);
             }
@@ -115,12 +132,16 @@ namespace casual
                {
                   Trace trace{ "broker::handle::Advertise"};
 
+                  log << "message: " << message << '\n';
+
                   m_state.add( message);
                }
 
                void Unadvertise::operator () ( message_type& message)
                {
                   Trace trace{ "broker::handle::Unadvertise"};
+
+                  log << "message: " << message << '\n';
 
                   m_state.remove( message);
                }
@@ -297,7 +318,6 @@ namespace casual
                auto now = platform::clock_type::now();
 
                instance.unlock( now);
-               ++instance.invoked;
 
                //
                // Check if there are pending request for services that this
@@ -391,7 +411,7 @@ namespace casual
          return {
 
             handle::forward::Connect{ state},
-            //handle::dead::process::Event{ state},
+            handle::process::Exit{ state},
             handle::service::Advertise{ state},
             handle::service::Unadvertise{ state},
             handle::service::gateway::Advertise{ state},
@@ -411,7 +431,7 @@ namespace casual
       {
          return {
             handle::forward::Connect{ state},
-            //handle::dead::process::Event{ state},
+            handle::process::Exit{ state},
             handle::service::Advertise{ state},
             handle::service::Unadvertise{ state},
             handle::service::gateway::Advertise{ state},

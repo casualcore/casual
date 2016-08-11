@@ -51,6 +51,18 @@ namespace casual
          };
 
 
+         namespace process
+         {
+            struct Exit : Base
+            {
+               using Base::Base;
+               using message_type = common::message::domain::process::termination::Event;
+
+               void operator () ( message_type& message);
+            };
+         } // process
+
+
 
          namespace traffic
          {

@@ -124,6 +124,8 @@ namespace casual
                   archive & process;
                   archive & services;
                })
+
+               friend std::ostream& operator << ( std::ostream& out, const Unadvertise& message);
             };
 
 

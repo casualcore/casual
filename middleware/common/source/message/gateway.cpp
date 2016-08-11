@@ -33,6 +33,15 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Advertise& message)
                   {
                      return out << "{ process: " << message.process
+                           << ", domain: " << message.domain
+                           << ", order: " << message.order
+                           << ", services: " << range::make( message.services)
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Unadvertise& message)
+                  {
+                     return out << "{ process: " << message.process
                            << ", services: " << range::make( message.services)
                            << '}';
                   }

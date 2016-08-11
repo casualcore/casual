@@ -18,6 +18,7 @@
 #include "common/internal/log.h"
 
 #include "common/message/dispatch.h"
+#include "common/message/domain.h"
 #include "common/message/handle.h"
 #include "common/process.h"
 #include "common/domain.h"
@@ -43,14 +44,59 @@ namespace casual
 	{
 
 
-		Broker::Broker( Settings&& arguments)
+	   namespace local
+      {
+         namespace
+         {
+            std::string forward( const Settings& settings)
+            {
+               if( settings.forward.empty())
+               {
+                  return environment::directory::casual() + "/bin/casual-forward-cache";
+               }
+               return settings.forward;
+            }
+
+            void connect( State& state, const Settings& settings)
+            {
+               //
+               // Connect to domain
+               //
+               process::instance::connect( process::instance::identity::broker());
+
+               //
+               // Register for process termination
+               //
+               {
+                  Trace trace{ "broker::connect process::termination"};
+
+                  common::message::domain::process::termination::Registration message;
+                  message.process = common::process::handle();
+
+                  ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+               }
+
+               //
+               // Start forward
+               //
+               {
+                  Trace trace{ "broker::connect spawn forward"};
+
+                  state.forward.pid = common::process::spawn( forward( settings), {});
+               }
+
+            }
+
+         } // <unnamed>
+      } // local
+
+
+
+		Broker::Broker( Settings&& settings)
 		{
 		   Trace trace{ "Broker::Broker ctor"};
 
-		   //
-		   // Connect to domain
-		   //
-		   process::instance::connect( process::instance::identity::broker());
+		   local::connect( m_state, settings);
 		}
 
 
@@ -62,6 +108,7 @@ namespace casual
             //
             // Terminate
             //
+		      process::terminate( m_state.forward);
 		   }
          catch( ...)
          {

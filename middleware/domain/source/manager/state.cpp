@@ -244,6 +244,22 @@ namespace casual
             }
 
             //
+            // Remove from instances
+            //
+            {
+               using value_type = decltype( *std::begin( singeltons));
+               auto found = range::find_if( singeltons, [&]( value_type& v){
+                  return v.second.pid == pid;
+               });
+
+               if( found)
+               {
+                  singeltons.erase( std::begin( found));
+               }
+
+            }
+
+            //
             // Find and remove from executable
             //
             {
@@ -262,7 +278,7 @@ namespace casual
                }
                else
                {
-                  log::error << "failed to find executable with pid: " << pid << " - this should not happen! - action: ignore\n";
+                  log << "failed to find executable with pid: " << pid << " - assume it's a grand child";
                }
             }
          }

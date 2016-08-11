@@ -77,6 +77,7 @@ namespace casual
                   //! configured services
                   //!
                   std::vector< std::string> services;
+                  std::size_t order = 0;
                   bool restart = false;
 
                   friend std::ostream& operator << ( std::ostream& out, const Connection& value);

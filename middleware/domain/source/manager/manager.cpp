@@ -34,9 +34,6 @@ namespace casual
 
                   auto path = environment::domain::singleton::file();
 
-
-
-
                   auto temp_file = file::scoped::Path{ file::name::unique( "/tmp/", ".tmp")};
 
                   std::ofstream output( temp_file);

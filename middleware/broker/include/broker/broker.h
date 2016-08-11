@@ -33,8 +33,7 @@ namespace casual
 
 		struct Settings
 		{
-
-
+		   std::string forward;
 		};
 
 		class Broker

@@ -5,6 +5,7 @@ IncludePaths( [
     'admin/include',
 	'../common/include',
 	'../configuration/include',
+    '../domain/include',
 	'../xatmi/include',
 	'../serviceframework/include',
 	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)'])

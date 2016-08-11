@@ -94,6 +94,8 @@ namespace casual
                         base_event::marshal( archive);
                         archive & death;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Event& value);
                   };
 
                } // termination

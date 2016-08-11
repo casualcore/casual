@@ -305,6 +305,14 @@ namespace casual
          bool terminate( platform::pid::type pid);
 
 
+         //!
+         //! Tries to shutdown the process, if it fails terminate signal will be signaled
+         //!
+         //! @param process to terminate
+         //!
+         void terminate( const Handle& process);
+
+
 
          //!
          //! ping a server that owns the @p queue

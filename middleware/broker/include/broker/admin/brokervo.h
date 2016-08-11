@@ -31,6 +31,7 @@ namespace casual
 
                friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
                friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.process.pid == rhs.process.pid;}
+               friend bool operator == ( const Base& lhs, common::platform::pid::type rhs) { return lhs.process.pid == rhs;}
 
             };
 

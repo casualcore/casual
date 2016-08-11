@@ -79,6 +79,8 @@ namespace casual
                         << ", runlevel: " << value.runlevel
                         << ", process: " << value.process
                         << ", remote: " << value.remote
+                        << ", restar: " << value.restart
+                        << ", order: " << value.order
                         << ", services: " << range::make( value.services)
                         << '}';
                }

@@ -38,6 +38,13 @@ namespace casual
                      << '}';
             }
 
+            std::ostream& operator << ( std::ostream& out, const Unadvertise& message)
+            {
+               return out << "{ process: " << message.process
+                     << ", services: " << range::make( message.services)
+                     << '}';
+            }
+
 
             namespace lookup
             {

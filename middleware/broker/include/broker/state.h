@@ -109,8 +109,11 @@ namespace casual
             {
                using base_instance::base_instance;
 
+               std::size_t order;
+
                void requested( const common::platform::time_point& when);
 
+               friend bool operator < ( const Remote& lhs, const Remote& rhs);
             };
 
          } // instance
@@ -143,7 +146,6 @@ namespace casual
 
                   inline const common::process::Handle& process() const override { return get().process;}
                   void lock( const common::platform::time_point& when) override;
-
                };
 
                struct Remote final : std::reference_wrapper< state::instance::Remote>, base_instance
@@ -157,7 +159,7 @@ namespace casual
 
                   inline std::size_t hops() const { return m_hops;}
 
-                  friend inline bool operator < ( const Remote& lhs, const Remote& rhs) { return lhs.hops() < rhs.hops();}
+                  friend bool operator < ( const Remote& lhs, const Remote& rhs);
 
                private:
                   std::size_t m_hops = 0;
