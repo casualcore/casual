@@ -50,12 +50,8 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, send_signal__expect_throw)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         //
-         // Start from a clean sheet
-         //
-         signal::clear();
          EXPECT_NO_THROW( signal::handle());
 
          signal::send( process::id(), TestFixture::get_signal());
@@ -72,10 +68,8 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, block_all_signals__send_signal_X___expect_no_throw)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-
-         signal::clear();
          EXPECT_NO_THROW( signal::handle());
 
          {
@@ -102,9 +96,8 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, send_signal_X__block_all_signals___expect_no_throw)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         signal::clear();
          EXPECT_NO_THROW( signal::handle());
 
          {
@@ -130,9 +123,8 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, block_signal_X__send_signal_X___expect_no_throw)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         signal::clear();
          EXPECT_NO_THROW( signal::handle());
 
          {
@@ -157,9 +149,9 @@ namespace casual
 
       TYPED_TEST( casual_common_signal_types, send_signal_X__block_signal_X___expect_no_throw)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         signal::clear();
+
          EXPECT_NO_THROW( signal::handle());
 
          {
@@ -185,8 +177,8 @@ namespace casual
 
       TEST( casual_common_signal, send_terminate__expect_throw)
       {
-         CASUAL_UNITTEST_TRACE();
-         signal::clear();
+         common::unittest::Trace trace;
+
 
          signal::send( process::id(), signal::Type::terminate);
 
@@ -200,12 +192,8 @@ namespace casual
 
       TEST( casual_common_signal, scope_timeout)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         //
-         // Start from a clean sheet
-         //
-         signal::clear();
 
          EXPECT_NO_THROW( signal::handle());
 
@@ -220,12 +208,8 @@ namespace casual
 
       TEST( casual_common_signal, nested_timeout)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         //
-         // Start from a clean sheet
-         //
-         signal::clear();
 
          EXPECT_NO_THROW( signal::handle());
 

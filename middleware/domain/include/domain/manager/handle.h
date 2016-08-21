@@ -30,13 +30,11 @@ namespace casual
 
             namespace mandatory
             {
+               namespace boot
+               {
+                  void prepare( State& state);
+               } // boot
 
-               //!
-               //! Boots the mandatory parts
-               //!
-               //! @param state
-               //!
-               void boot( State& state);
             } // mandatory
 
 

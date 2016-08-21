@@ -69,7 +69,7 @@ namespace casual
                      {
                         Trace trace( "call::validate::input", log::internal::transaction);
 
-                        if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && transaction::Context::instance().current())
+                        if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && common::transaction::Context::instance().current())
                         {
                            throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
                         }
@@ -105,7 +105,7 @@ namespace casual
                            char* idata,
                            long ilen,
                            long flags,
-                           const message::Service& service)
+                           const message::service::call::Service& service)
                      {
                         message::service::call::caller::Request message( buffer::pool::Holder::instance().get( idata, ilen));
 
@@ -133,7 +133,7 @@ namespace casual
 
                            message.descriptor = descriptor.descriptor;
 
-                           auto& transaction = transaction::Context::instance().current();
+                           auto& transaction = common::transaction::Context::instance().current();
 
                            if( ! flag< TPNOTRAN>( flags) && transaction)
                            {
@@ -300,7 +300,7 @@ namespace casual
                //
                // Update transaction state
                //
-               transaction::Context::instance().update( reply);
+               common::transaction::Context::instance().update( reply);
 
                //
                // Check buffer types

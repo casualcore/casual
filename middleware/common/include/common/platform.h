@@ -83,16 +83,16 @@ namespace casual
          {
 	         //!
 	         //! Max number of transaction state updates that will be done
-	         //! before (forced) persistence store of the updates, though could be
+	         //! before (forced) persistence store of the updates, could be
 	         //! stored before though
 	         //!
-	         constexpr std::size_t transaction = 100;
+	         constexpr std::size_t transaction() { return 100;}
 
 	         //!
 	         //! Max number of statistics updates that will be done
 	         //! before persistence store of the updates...
 	         //!
-	         constexpr std::size_t statistics = 1000;
+	         constexpr std::size_t statistics() { return 1000;}
 
          } // batch
 

@@ -24,8 +24,15 @@ namespace casual
             {
                inline namespace v1_0
                {
-                  struct base_connection
+                  struct Connection
                   {
+                     enum class Bound : char
+                     {
+                        out,
+                        in,
+                        unknown,
+                     };
+
                      enum class Type : char
                      {
                         unknown,
@@ -36,63 +43,46 @@ namespace casual
                      enum class Runlevel : short
                      {
                         absent,
-                        booting,
+                        connecting,
                         online,
                         shutdown,
                         error
                      };
 
-                     common::process::Handle process;
-                     common::domain::Identity remote;
-                     std::vector< std::string> address;
+
+                     Bound bound = Bound::unknown;
                      Type type = Type::unknown;
                      Runlevel runlevel = Runlevel::absent;
 
 
+                     common::process::Handle process;
+                     common::domain::Identity remote;
+                     std::vector< std::string> address;
+
+
+
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
+                        archive & CASUAL_MAKE_NVP( bound);
+                        archive & CASUAL_MAKE_NVP( type);
+                        archive & CASUAL_MAKE_NVP( runlevel);
                         archive & CASUAL_MAKE_NVP( process);
                         archive & CASUAL_MAKE_NVP( remote);
                         archive & CASUAL_MAKE_NVP( address);
-                        archive & CASUAL_MAKE_NVP( type);
-                        archive & CASUAL_MAKE_NVP( runlevel);
                      })
+
+                     friend bool operator < ( const Connection& lhs, const Connection& rhs)
+                     {
+                        return std::make_tuple( lhs.remote, lhs.bound, lhs.type, lhs.process)
+                             < std::make_tuple( rhs.remote, rhs.bound, rhs.type, rhs.process);
+                     }
 
                   };
 
-                  namespace outbound
-                  {
-                     struct Connection : base_connection
-                     {
-
-                     };
-
-                  } // outbound
-
-                  namespace inbound
-                  {
-                     struct Connection : base_connection
-                     {
-
-                     };
-
-                  } // outbound
 
                   struct State
                   {
-                     struct
-                     {
-                        std::vector< outbound::Connection> outbound;
-                        std::vector< inbound::Connection> inbound;
-
-                        CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
-                           archive & CASUAL_MAKE_NVP( outbound);
-                           archive & CASUAL_MAKE_NVP( inbound);
-                        })
-
-                     } connections;
-
+                     std::vector< Connection> connections;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {

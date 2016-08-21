@@ -5,6 +5,7 @@ IncludePaths( [
     'admin/include',
 	'../common/include',
 	'../configuration/include',
+    '../domain/include',
 	'../xatmi/include',
 	'../serviceframework/include',
 	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)'])
@@ -33,6 +34,7 @@ logic_archive = LinkArchive( 'bin/casual-broker-logic',
    Compile( 'source/handle.cpp'),
    Compile( 'source/state.cpp'),
    Compile( 'source/transform.cpp'),
+   Compile( 'source/common.cpp'),
    Compile( 'source/admin/server.cpp'),
    ])
 
@@ -61,6 +63,7 @@ target = LinkExecutable( 'bin/casual-forward-cache',
         Compile( 'source/forward/main.cpp')
      ] + forward_objs,
     [
+      logic_archive,
       'casual-common'
      ])
 

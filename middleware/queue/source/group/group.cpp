@@ -152,7 +152,7 @@ namespace casual
                      //
 
                      while( handler( ipc.non_blocking_next()) &&
-                           state.persistent.size() < common::platform::batch::transaction)
+                           state.persistent.size() < common::platform::batch::transaction())
                      {
                         ;
                      }

@@ -237,10 +237,10 @@ namespace casual
                      // We also do a "busy wait" to try to get more done between each write.
                      //
 
-                     auto count = common::platform::batch::transaction;
+                     auto count = common::platform::batch::transaction();
 
                      while( ( handler( ipc::device().non_blocking_next()) || --count > 0 ) &&
-                           state.persistent.replies.size() < common::platform::batch::transaction)
+                           state.persistent.replies.size() < common::platform::batch::transaction())
                      {
                         ;
                      }

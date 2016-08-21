@@ -83,7 +83,6 @@ namespace casual
                {
                   std::vector< manager::state::Group::id_type> result;
 
-
                   for( auto& name : members)
                   {
                      auto found = common::range::find( groups, name);
@@ -103,6 +102,9 @@ namespace casual
 
                struct Group
                {
+
+                  Group( const manager::State& state) : m_state( state) {}
+
                   manager::state::Group operator () ( const config::domain::Group& group) const
                   {
                      manager::state::Group result;
@@ -111,43 +113,36 @@ namespace casual
                      result.note = group.note;
                      range::transform( group.resources, result.resources, local::Resources{});
 
+                     result.dependencies.push_back( id( "global"));
+
+                     for( auto& dependency : group.dependencies)
+                     {
+                        result.dependencies.push_back( id( dependency));
+                     }
 
                      return result;
                   }
-               };
 
-               std::vector< manager::state::Group> groups( const std::vector< config::domain::Group>& groups, manager::state::Group&& global)
-               {
-                  std::vector< manager::state::Group> result;
-                  result.push_back( std::move( global));
+               private:
 
-                  range::transform( groups, result, local::Group{});
-
-                  //
-                  // Resolve dependencies
-                  //
-                  for( auto& group : groups)
+                  manager::state::Group::id_type id( const std::string& name) const
                   {
-                     auto found = common::range::find( result, group.name);
+                     auto found = range::find_if( m_state.groups, [&]( const manager::state::Group& group){
+                        return group.name == name;
+                     });
 
                      if( found)
                      {
-                        found->dependencies = local::membership( group.dependencies, result);
-
-                        //
-                        // All groups have is member of the global group
-                        //
-                        found->dependencies.push_back( result.front().id);
-
+                        return found->id;
                      }
-                     else
-                     {
-                        throw exception::invalid::Semantic{ "could not happen!"};
-                     }
+                     throw exception::invalid::Argument{ "unresolved dependency to group '" + name + "'" };
                   }
 
-                  return result;
-               }
+                  const manager::State& m_state;
+
+               };
+
+
 
                std::vector< std::string> environment( const config::Environment& environment)
                {
@@ -255,6 +250,8 @@ namespace casual
 
                } // vo
 
+
+
             } // <unnamed>
          } // local
 
@@ -286,19 +283,56 @@ namespace casual
             // Handle groups
             //
             {
-               manager::state::Group global;
-               global.name = "global";
-               global.note = "global group - the group that everything has dependency to";
+               manager::state::Group first;
+               result.global.group = first.id;
+               first.name = "global";
+               first.note = "first global group - the group that everything has dependency to";
 
-               result.groups = local::groups( domain.groups, std::move( global));
+               result.groups.push_back( std::move( first));
             }
+
+            {
+               range::transform( domain.groups, result.groups, local::Group{ result});
+            }
+
+            {
+               manager::state::Group last;
+               result.global.last = last.id;
+               last.dependencies.push_back( result.global.group);
+               last.name = "casual.last";
+               last.note = "last global group - will be booted last and shutdown first";
+
+               result.groups.push_back( std::move( last));
+            }
+
 
             //
             // Handle executables
             //
             {
-               result.executables = local::executables( domain.servers, result.groups);
 
+               //
+               // Add our self to processes that this domain has. Mostly to
+               // make it symmetric
+               //
+               {
+
+                  result.processes[ common::process::handle().pid] = common::process::handle();
+
+                  manager::state::Executable manager;
+                  result.global.manager = manager.id;
+                  manager.alias = "casual-domain-manager";
+                  manager.path = "${CASUAL_HOME}/bin/casual-domain-manager";
+                  manager.configured_instances = 1;
+                  manager.memberships.push_back( result.global.group);
+                  manager.note = "responsible for all executables in this domain";
+
+                  manager.instances.push_back( common::process::id());
+
+                  result.executables.push_back( std::move( manager));
+               }
+
+               range::append( local::executables( domain.servers, result.groups), result.executables);
                range::append( local::executables( domain.executables, result.groups), result.executables);
 
                range::for_each( result.executables, local::verify::Alias{});

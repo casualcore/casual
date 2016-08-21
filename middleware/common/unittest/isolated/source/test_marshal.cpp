@@ -48,6 +48,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, basic_io)
          {
+            common::unittest::Trace trace;
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -78,7 +80,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, binary)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -107,7 +109,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, io)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -116,7 +118,9 @@ namespace casual
 
             serverConnect.process.queue = 666;
 
-            message::Service service;
+            traits::concrete::type_t< decltype( serverConnect.services.front())> service;
+
+            //message::Service service;
 
             service.name = "service1";
             serverConnect.services.push_back( service);
@@ -142,7 +146,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, io_big_size)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -152,7 +156,8 @@ namespace casual
             serverConnect.process.queue = 666;
 
 
-            message::Service service;
+            traits::concrete::type_t< decltype( serverConnect.services.front())> service;
+
             service.name = "service1";
             serverConnect.services.resize( 10000, service);
 
@@ -169,7 +174,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, transaction_id_null)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -192,7 +197,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, transaction_id)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -218,7 +223,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, message_call)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -290,7 +295,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, enqueue_request)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;

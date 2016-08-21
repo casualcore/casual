@@ -1,13 +1,9 @@
-/*
- * test_admin.cpp
- *
- *  Created on: 6 sep 2015
- *      Author: 40043280
- */
-
-
+//!
+//! casual
+//!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "transaction/manager/admin/transactionvo.h"
@@ -26,6 +22,8 @@ namespace casual
 
       TEST( casual_transaction_admin, statistics_start_end)
       {
+         common::unittest::Trace trace;
+
          state::Statistics statistics;
 
          auto now = common::platform::clock_type::now();
@@ -44,6 +42,8 @@ namespace casual
 
       TEST( casual_transaction_admin, transform_statistics)
       {
+         common::unittest::Trace trace;
+
          state::Statistics statistics;
 
          auto now = common::platform::clock_type::now();
@@ -64,6 +64,8 @@ namespace casual
 
       TEST( casual_transaction_admin, vo_statistics__addition_assignment__rhs_defualt)
       {
+         common::unittest::Trace trace;
+
          state::Statistics statistics;
 
          auto now = common::platform::clock_type::now();
@@ -85,6 +87,8 @@ namespace casual
 
       TEST( casual_transaction_admin, vo_statistics__addition_assignment__lhs_defualt)
       {
+         common::unittest::Trace trace;
+
          state::Statistics statistics;
 
          auto now = common::platform::clock_type::now();
@@ -106,6 +110,8 @@ namespace casual
 
       TEST( casual_transaction_admin, vo_statistics__addition_assignment__rhs_defualt_2x)
       {
+         common::unittest::Trace trace;
+
          vo::Statistics vo;
 
          auto us100 = std::chrono::microseconds{ 100};

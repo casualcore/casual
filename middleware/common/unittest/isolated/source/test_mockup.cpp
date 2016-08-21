@@ -27,7 +27,7 @@ namespace casual
 
       TEST( casual_common_mockup, ipc_Collector_startup)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             mockup::ipc::Collector instance;
@@ -37,7 +37,7 @@ namespace casual
 
       TEST( casual_common_mockup, ipc_Instance_one_message)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
@@ -65,7 +65,7 @@ namespace casual
 
       TEST( casual_common_mockup, ipc_link_2_Collector__send_one_message)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
@@ -99,7 +99,7 @@ namespace casual
 
       TEST( casual_common_mockup, ipc_Collector_200_messages)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
@@ -143,7 +143,7 @@ namespace casual
 
       TEST( casual_common_mockup, ipc_link_2_Collector__send_200_messages)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          // so we don't hang for ever, if something is wrong...
          common::signal::timer::Scoped timout( std::chrono::seconds( 5));
@@ -192,7 +192,7 @@ namespace casual
 
       TEST( casual_common_mockup, domain_manager__instanciate)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             mockup::domain::Manager manager;
@@ -201,7 +201,7 @@ namespace casual
 
       TEST( casual_common_mockup, domain_manager__process_connect__expect_ok)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::Manager manager;
 
@@ -216,7 +216,7 @@ namespace casual
 
       TEST( casual_common_mockup, domain_manager__process_connect__process_lookup___expect_found)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::Manager manager;
 
@@ -243,7 +243,7 @@ namespace casual
 
       TEST( casual_common_mockup, domain_manager__process_connect__singleton___process_lookup___expect_found)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::Manager manager;
 
@@ -272,7 +272,7 @@ namespace casual
 
       TEST( casual_common_mockup, domain_manager__process_lookup_singleton___process_connect____expect_found)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::Manager manager;
 
@@ -311,7 +311,7 @@ namespace casual
 
       TEST( casual_common_mockup, minimal_domain__service1_lookup__expect_found)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::minimal::Domain domain;
 

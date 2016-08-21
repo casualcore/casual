@@ -1,8 +1,5 @@
 //!
-//! pending.h
-//!
-//! Created on: Oct 12, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_MESSAGE_PENDING_H_

@@ -45,12 +45,14 @@ namespace casual
                   }
 
 
-                  admin::vo::State scale_instances()
+                  std::vector< admin::vo::scale::Instances> scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     sf::xatmi::service::binary::Sync service( "..casual.domain.scale.instances");
+                     sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
+
+                     service << CASUAL_MAKE_NVP( instances);
                      auto reply = service();
 
-                     admin::vo::State serviceReply;
+                     std::vector< admin::vo::scale::Instances> serviceReply;
 
                      reply >> CASUAL_MAKE_NVP( serviceReply);
 
@@ -136,8 +138,24 @@ namespace casual
 
                   void scale_instances( const std::vector< std::string>& values)
                   {
+                     if( values.size() % 2 != 0)
+                     {
+                        throw exception::invalid::Argument{ "<alias> <# of instances>"};
+                     }
 
+                     std::vector< admin::vo::scale::Instances> instances;
 
+                     auto current = std::begin( values);
+
+                     for( ; current != std::end( values); current += 2)
+                     {
+                        admin::vo::scale::Instances instance;
+                        instance.alias = *current;
+                        instance.instances = std::stoul(*( current + 1));
+                        instances.push_back( std::move( instance));
+                     }
+
+                     call::scale_instances( instances);
                   }
 
                   void boot()

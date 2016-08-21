@@ -1,14 +1,8 @@
-//
-// test_network_byteorder.cpp
-//
-//  Created on: 7 nov 2013
-//      Author: Kristone
-//
+//!
+//! casual
+//!
 
-
-
-
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 #include "common/network/byteorder.h"
 
@@ -24,6 +18,8 @@ namespace casual
 
          TEST( casual_common, network_byteorder__confirm_bytes)
          {
+            common::unittest::Trace trace;
+
             //
             // we could make this as a static check as well ...
             //
@@ -40,6 +36,8 @@ namespace casual
 
          TEST( casual_common, network_byteorder__confirm_encode_types)
          {
+            common::unittest::Trace trace;
+
             //
             // we could make this as a static check as well ...
             //
@@ -62,6 +60,8 @@ namespace casual
          //
          TEST( casual_common, network_byteorder__confirm_decode_types)
          {
+            common::unittest::Trace trace;
+
             //
             // we could make this as a static check as well ...
             //
@@ -81,6 +81,8 @@ namespace casual
 
          TEST( casual_common, network_byteorder__encode_decode)
          {
+            common::unittest::Trace trace;
+
             {
                const bool initial = true;
                const auto encoded = byteorder::encode( initial);

@@ -1,8 +1,5 @@
 //!
-//! client.cpp
-//!
-//! Created on: Jun 14, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -137,7 +134,7 @@ namespace casual
                   struct format_state
                   {
 
-                     std::size_t width( const vo::resource::Proxy& value) const
+                     std::size_t width( const vo::resource::Proxy& value, const std::ostream&) const
                      {
                         return value.instances.size();
                      }
@@ -278,7 +275,7 @@ namespace casual
                   {
                      using State = vo::resource::Instance::State;
 
-                     std::size_t width( const vo::resource::Instance& value) const
+                     std::size_t width( const vo::resource::Instance& value, const std::ostream&) const
                      {
                         switch( value.state)
                         {

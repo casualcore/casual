@@ -1,8 +1,5 @@
 //!
-//! casual_utility_uuid.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 

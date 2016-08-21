@@ -1,8 +1,5 @@
 //!
-//! xatmi_server.cpp
-//!
-//! Created on: Mar 28, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "xatmi_server.h"
@@ -46,7 +43,7 @@ namespace local
                         service->name,
                         service->functionPointer,
                         service->type,
-                        common::server::service::transaction::mode( service->transaction));
+                        common::service::transaction::mode( service->transaction));
 
                   ++service;
                }

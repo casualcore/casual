@@ -47,7 +47,8 @@ namespace casual
          {
             //state::Instance operator () ( const common::message::server::connect::Request& message) const;
 
-            common::process::Handle operator () ( const state::Instance& value) const;
+            common::process::Handle operator () ( const state::instance::Local& value) const;
+
 
          };
 

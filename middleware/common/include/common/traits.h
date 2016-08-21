@@ -244,6 +244,22 @@ namespace casual
          using underlying_type_t = typename underlying_type< T>::type;
          //! @}
 
+         namespace concrete
+         {
+            template< typename T>
+            using type_t = typename std::remove_cv< typename std::remove_reference< T>::type>::type;
+
+            template< typename E>
+            constexpr auto type( E&& expression) -> type_t< decltype( std::forward< E>( expression))>
+            {
+               return {};
+            }
+
+         } // expression
+
+         template< typename T>
+         using decay_t = typename std::decay< T>::type;
+
       } // traits
    } // common
 } // casual

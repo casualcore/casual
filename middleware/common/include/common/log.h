@@ -143,4 +143,6 @@ namespace casual
 
 } // casual
 
+
+
 #endif // COMMON_LOG_H

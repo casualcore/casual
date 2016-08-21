@@ -63,10 +63,10 @@ namespace casual
                   })
                };
 
-               struct base_reply
+               struct Reply : basic_message< Type::queue_lookup_reply>
                {
-                  base_reply() = default;
-                  base_reply( common::process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
+                  Reply() = default;
+                  Reply( common::process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
 
                   common::process::Handle process;
                   std::size_t queue = 0;
@@ -77,7 +77,7 @@ namespace casual
                   })
                };
 
-               using Reply = message::type_wrapper< base_reply, Type::queue_lookup_reply>;
+               //using Reply = message::type_wrapper< base_reply, Type::queue_lookup_reply>;
 
             } // lookup
 

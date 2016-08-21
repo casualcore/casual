@@ -75,8 +75,7 @@ namespace casual
                   external_type( Settings&& settings)
                    : m_adress{ settings.address},
                      m_inbound{ communication::tcp::retry::connect( m_adress, {
-                           { std::chrono::milliseconds{ 50}, 20}, // 1s
-                           { std::chrono::milliseconds{ 500}, 20}, // 10s
+                           { std::chrono::milliseconds{ 100}, 100}, // 10s
                            { std::chrono::seconds{ 1}, 3600}, // 1h
                            { std::chrono::seconds{ 5}, 0} // forever
                         })}

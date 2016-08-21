@@ -120,47 +120,49 @@ namespace casual
 
             namespace mandatory
             {
-               void boot( State& state)
+               namespace boot
                {
-                  Trace trace{ "domain::manager::handle::mandatory::boot"};
-
+                  void prepare( State& state)
                   {
-                     state::Executable broker;
-                     broker.alias = "casual-broker";
-                     broker.path = "${CASUAL_HOME}/bin/casual-broker";
-                     broker.configured_instances = 1;
-                     broker.memberships.push_back( state.groups.at( 0).id);
-                     broker.note = "service lookup and management";
-                     //broker.restart = true;
+                     Trace trace{ "domain::manager::handle::mandatory::boot::prepare"};
 
-                     state.executables.push_back( std::move( broker));
+                     {
+                        state::Executable broker;
+                        broker.alias = "casual-broker";
+                        broker.path = "${CASUAL_HOME}/bin/casual-broker";
+                        broker.configured_instances = 1;
+                        broker.memberships.push_back( state.global.group);
+                        broker.note = "service lookup and management";
+                        //broker.restart = true;
+
+                        state.executables.push_back( std::move( broker));
+                     }
+
+                     {
+                        state::Executable tm;
+                        tm.alias = "casual-transaction-manager";
+                        tm.path = "${CASUAL_HOME}/bin/casual-transaction-manager";
+                        tm.configured_instances = 1;
+                        tm.memberships.push_back( state.global.group);
+                        tm.note = "manage transaction in this domain";
+                        //tm.restart = true;
+
+                        state.executables.push_back( std::move( tm));
+                     }
+
+                     if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
+                     {
+                        state::Executable gateway;
+                        gateway.alias = "casual-gateway-manager";
+                        gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
+                        gateway.configured_instances = 1;
+                        gateway.memberships.push_back(  state.global.last);
+                        gateway.note = "manage connections to and from other domains";
+
+                        state.executables.push_back( std::move( gateway));
+                     }
                   }
-
-                  {
-                     state::Executable tm;
-                     tm.alias = "casual-transaction-manager";
-                     tm.path = "${CASUAL_HOME}/bin/casual-transaction-manager";
-                     tm.configured_instances = 1;
-                     tm.memberships.push_back( state.groups.at( 0).id);
-                     tm.note = "manage transaction in this domain";
-                     //tm.restart = true;
-
-                     state.executables.push_back( std::move( tm));
-                  }
-
-                  if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
-                  {
-                     state::Executable gateway;
-                     gateway.alias = "casual-gateway-manager";
-                     gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
-                     gateway.configured_instances = 1;
-                     gateway.memberships.push_back( state.groups.at( 0).id);
-                     gateway.note = "manage connections to and from other domains";
-
-                     state.executables.push_back( std::move( gateway));
-                  }
-               }
-
+               } // boot
             } // mandatory
 
 
@@ -168,11 +170,6 @@ namespace casual
             {
                Trace trace{ "domain::manager::handle::boot"};
 
-               //
-               // Add our self to processes that this domain has. Mostly to
-               // help in unittest, but also to make it symmetric
-               //
-               state.processes[ common::process::handle().pid] = common::process::handle();
 
                range::for_each( state.bootorder(), [&]( state::Batch& batch){
                      state.tasks.add( local::task::Boot{ batch});
@@ -184,6 +181,14 @@ namespace casual
                Trace trace{ "domain::manager::handle::shutdown"};
 
                state.runlevel( State::Runlevel::shutdown);
+
+               //
+               // Make sure we remove our self so we don't try to shutdown
+               //
+               range::for_each( state.executables, []( state::Executable& e){
+                  range::trim( e.instances, range::remove( e.instances, common::process::id()));
+               });
+
 
                range::for_each( state.executables, []( state::Executable& e){
                   e.configured_instances = 0;
@@ -466,11 +471,11 @@ namespace casual
                            message.services = range::transform( manager::admin::services( state).services,
                                  []( const common::server::Service& s)
                                  {
-                                    common::message::Service result;
+                                    common::message::service::advertise::Service result;
 
                                     result.name = s.origin;
                                     result.type = s.type;
-                                    result.transaction = cast::underlying( s.transaction);
+                                    result.transaction = s.transaction;
 
                                     return result;
                                  });
@@ -551,6 +556,8 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::process::Lookup"};
 
+                  log << "message: " << message << '\n';
+
                   if( ! local::Lookup{ state()}( message))
                   {
                      state().pending.lookup.push_back( message);
@@ -625,7 +632,7 @@ namespace casual
                      {
                         using common::server::handle::policy::Admin::Admin;
 
-                        void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+                        void connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources)
                         {
                            // no-op, we'll advertise our services when the broker comes online.
                         }

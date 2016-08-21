@@ -1,8 +1,5 @@
 //!
-//! casual_broker_transform.h
-//!
-//! Created on: Jun 15, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BROKER_TRANSFORM_H_
@@ -14,6 +11,7 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/server.h"
+#include "common/message/gateway.h"
 #include "common/message/transaction.h"
 
 #include "common/server/handle.h"
@@ -52,6 +50,18 @@ namespace casual
          };
 
 
+         namespace process
+         {
+            struct Exit : Base
+            {
+               using Base::Base;
+               using message_type = common::message::domain::process::termination::Event;
+
+               void operator () ( message_type& message);
+            };
+         } // process
+
+
 
          namespace traffic
          {
@@ -78,54 +88,84 @@ namespace casual
 
 
 
-         namespace forward
-         {
-            struct Connect : Base
-            {
-               using Base::Base;
-
-               void operator () ( const common::message::forward::connect::Request& message);
-            };
-
-         } // forward
-
-
-
-
-         //!
-         //! Advertise 0..N services for a server.
-         //!
-         struct Advertise : public Base
-         {
-            typedef common::message::service::Advertise message_type;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
-
-
-		   //!
-         //! Unadvertise 0..N services for a server.
-         //!
-		   struct Unadvertise : public Base
-         {
-            typedef common::message::service::Unadvertise message_type;
-
-            using Base::Base;
-
-            void operator () ( message_type& message);
-         };
-
 
 		   namespace service
          {
 	         //!
+	         //! Advertise 0..N services for a server.
+	         //!
+	         struct Advertise : Base
+	         {
+	            typedef common::message::service::Advertise message_type;
+
+	            using Base::Base;
+
+	            void operator () ( message_type& message);
+	         };
+
+
+	         //!
+	         //! Unadvertise 0..N services for a server.
+	         //!
+	         struct Unadvertise : Base
+	         {
+	            typedef common::message::service::Unadvertise message_type;
+
+	            using Base::Base;
+
+	            void operator () ( message_type& message);
+	         };
+
+	         namespace gateway
+            {
+
+	            //!
+	            //! Advertise 0..N services for a server.
+	            //!
+	            struct Advertise : Base
+	            {
+	               using message_type = common::message::gateway::domain::service::Advertise;
+
+	               using Base::Base;
+
+	               void operator () ( message_type& message);
+	            };
+
+
+	            //!
+	            //! Unadvertise 0..N services for a server.
+	            //!
+	            struct Unadvertise : Base
+	            {
+	               using message_type = common::message::gateway::domain::service::Unadvertise;
+
+	               using Base::Base;
+
+	               void operator () ( message_type& message);
+	            };
+
+	            namespace discover
+               {
+	               struct Reply : Base
+	               {
+	                  using message_type = common::message::gateway::domain::discover::automatic::Reply;
+
+	                  using Base::Base;
+
+	                  void operator () ( message_type& message);
+	               };
+
+               } // discover
+
+            } // gateway
+
+
+	         //!
 	         //! Looks up a service-name
 	         //!
-	         struct Lookup : public Base
+	         struct Lookup : Base
 	         {
-	            typedef common::message::service::lookup::Request message_type;
+	            using message_type = common::message::service::lookup::Request;
 
 	            using Base::Base;
 
@@ -134,6 +174,23 @@ namespace casual
 	         };
 
          } // service
+
+		   namespace domain
+         {
+		      namespace discover
+            {
+	            struct Request : Base
+	            {
+	               using message_type = common::message::gateway::domain::discover::Request;
+	               using Base::Base;
+
+	               void operator () ( message_type& message);
+	            };
+
+            } // discover
+
+
+         } // domain
 
 
          //!
@@ -170,7 +227,7 @@ namespace casual
             Policy& operator = ( Policy&&) = default;
 
 
-            void connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources);
+            void connect( std::vector< common::message::service::advertise::Service> services, const std::vector< common::transaction::Resource>& resources);
 
             void reply( common::platform::ipc::id::type id, common::message::service::call::Reply& message);
 
@@ -196,9 +253,6 @@ namespace casual
 		} // handle
 
       common::message::dispatch::Handler handler( State& state);
-
-      common::message::dispatch::Handler handler_no_services( State& state);
-
 
 
 	} // broker

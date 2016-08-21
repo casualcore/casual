@@ -65,6 +65,28 @@ namespace casual
                Gateway gateway;
             };
 
+            namespace domain
+            {
+               //!
+               //! exposes service domain1
+               //!
+               struct Service
+               {
+                  Service( const std::string& configuration)
+                     : domain1{ mockup::domain::echo::create::service( "remote1")}, gateway{ configuration}  {}
+
+                  mockup::domain::Manager manager;
+                  mockup::domain::Broker broker;
+                  mockup::domain::transaction::Manager tm;
+
+                  mockup::domain::echo::Server domain1;
+
+                  Gateway gateway;
+
+               };
+
+            } // domain
+
 
 
             std::string empty_configuration()
@@ -124,13 +146,16 @@ domain:
 
                      bool manager_ready( const manager::admin::vo::State& state)
                      {
-                        if( state.connections.outbound.empty())
+                        if( state.connections.empty())
                            return false;
 
-                        return range::any_of( state.connections.outbound, []( const manager::admin::vo::outbound::Connection& c){
-                           return c.runlevel >= manager::admin::vo::outbound::Connection::Runlevel::online;
-                        }) && range::any_of( state.connections.inbound, []( const manager::admin::vo::inbound::Connection& c){
-                           return c.runlevel >= manager::admin::vo::inbound::Connection::Runlevel::online;
+                        return range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
+                                 c.bound == manager::admin::vo::Connection::Bound::out;
+                        })
+                        && range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
+                                 c.bound == manager::admin::vo::Connection::Bound::in;
                         });
                      }
 
@@ -163,7 +188,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, empty_configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::empty_configuration()};
 
@@ -175,7 +200,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::one_listener_configuration()};
 
@@ -186,7 +211,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::one_listener_configuration()};
 
@@ -197,8 +222,10 @@ domain:
 
          auto state = local::call::wait::ready::state();
 
-         EXPECT_TRUE( ! state.connections.outbound.empty());
-         EXPECT_TRUE( ! state.connections.inbound.empty());
+         EXPECT_TRUE( state.connections.size() == 2);
+         EXPECT_TRUE( range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+            return c.bound == manager::admin::vo::Connection::Bound::out;
+         }));
       }
 
       namespace local
@@ -234,9 +261,10 @@ domain:
 
       TEST( casual_gateway_manager_tcp,  connect_to_our_self__remote1_advertise__expect_service_remote1)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration::connect_to_our_self_services_service1()};
+         // exposes service "remote1"
+         local::domain::Service domain{ local::configuration::connect_to_our_self_services_service1()};
 
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
@@ -245,17 +273,20 @@ domain:
 
          auto state = local::call::wait::ready::state();
 
-         ASSERT_TRUE( ! state.connections.outbound.empty());
-         EXPECT_TRUE( ! state.connections.inbound.empty());
+         ASSERT_TRUE( state.connections.size() == 2);
+
+         range::sort( state.connections);
+
 
          //
-         // Expect service remote1 to be available from the outbound connection
+         // Expect service domain1 to be available from the outbound connection
          //
          {
             auto reply = common::service::Lookup{ "remote1"}();
 
             EXPECT_TRUE( reply.service.name == "remote1");
-            EXPECT_TRUE( reply.process == state.connections.outbound.at( 0).process);
+            EXPECT_TRUE( reply.process == state.connections.at( 0).process) << "reply.process: "
+                  << reply.process << " - state.connections.at( 0).process: " << state.connections.at( 0).process;
          }
 
       }

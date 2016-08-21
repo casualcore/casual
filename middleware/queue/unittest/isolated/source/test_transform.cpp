@@ -1,11 +1,9 @@
 //!
-//! test_transform.cpp
-//!
-//! Created on: Oct 4, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "queue/common/transform.h"
 #include "queue/broker/broker.h"
@@ -62,6 +60,8 @@ namespace casual
 
       TEST( casual_queue_transform, groups_expect_2_groups)
       {
+         common::unittest::Trace trace;
+
          auto groups = transform::groups( local::state());
 
          ASSERT_TRUE( groups.size() == 2) << CASUAL_MAKE_NVP( groups);

@@ -1,8 +1,5 @@
 //!
-//! simple_process.cpp
-//!
-//! Created on: May 12, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 

@@ -1,8 +1,5 @@
 //!
-//! transaction_id.h
-//!
-//! Created on: Nov 1, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_TRANSACTION_ID_H_
@@ -158,6 +155,14 @@ namespace casual
 
          };
 
+
+         //!
+         //! @return a (binary) range that represent the data part of the xid, global + branch
+         //!
+         //! @{
+         xid_range_type data( const ID& id);
+         xid_range_type data( const xid_type& id);
+         //! @}
 
          //!
          //! @return a (binary) range that represent the global part of the xid

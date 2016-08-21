@@ -1,11 +1,8 @@
 //!
-//! test_transaction_id.cpp
-//!
-//! Created on: Nov 2, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 #include "common/transaction/id.h"
 #include "common/uuid.h"
@@ -18,6 +15,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, ostream)
       {
+         common::unittest::Trace trace;
+
          const Uuid gtrid = uuid::make();
 
          transaction::ID id{ gtrid, gtrid, { 0, 0}};
@@ -34,6 +33,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, generic_string)
       {
+         common::unittest::Trace trace;
+
          transaction::ID id{ uuid::make(), uuid::make(), { 0, 0}};
 
          std::ostringstream stream;
@@ -51,6 +52,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, uuid_constructor)
       {
+         common::unittest::Trace trace;
+
          auto gtrid = uuid::make();
          auto bqual = uuid::make();
          const transaction::ID id{ gtrid, bqual, process::handle()};
@@ -68,6 +71,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, not_equal)
       {
+         common::unittest::Trace trace;
+
          auto lhs = transaction::ID::create();
          auto rhs = transaction::ID::create();
 
@@ -77,6 +82,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, equal_to_xid__expect_true)
       {
+         common::unittest::Trace trace;
+
          auto trid = transaction::ID::create();
 
          EXPECT_TRUE( trid.xid == trid.xid) << "trid: " << trid << std::endl;
@@ -84,6 +91,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, owner)
       {
+         common::unittest::Trace trace;
+
          auto trid = transaction::ID::create();
 
          EXPECT_TRUE( trid.owner() == process::handle()) << "trid.owner(): " << trid.owner() << std::endl << "process::handle()" << process::handle() << std::endl;
@@ -92,6 +101,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, equal)
       {
+         common::unittest::Trace trace;
+
          auto lhs = transaction::ID::create();
          auto rhs = lhs;
 
@@ -104,6 +115,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, move)
       {
+         common::unittest::Trace trace;
+
          auto id = transaction::ID::create();
 
          transaction::ID moved{ std::move( id)};
@@ -114,6 +127,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, global_id)
       {
+         common::unittest::Trace trace;
+
          auto gtrid = uuid::make();
          auto bqual = uuid::make();
          const transaction::ID id{ gtrid, bqual, process::handle()};
@@ -128,6 +143,8 @@ namespace casual
 
       TEST( casual_common_transaction_id, branch_id)
       {
+         common::unittest::Trace trace;
+
          auto gtrid = uuid::make();
          auto bqual = uuid::make();
          const transaction::ID id{ gtrid, bqual, process::handle()};

@@ -1,8 +1,5 @@
 //!
-//! marshal.h
-//!
-//! Created on: Dec 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_MARSHAL_MARSHAL_H_

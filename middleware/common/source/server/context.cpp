@@ -128,11 +128,11 @@ namespace casual
                if( found)
                {
                   m_state.services.emplace( prospect.origin, *found);
-                  message.services.emplace_back( prospect.origin, found->type, service::transaction::mode( found->transaction));
+                  message.services.emplace_back( prospect.origin, found->type, found->transaction);
                }
                else
                {
-                  message.services.emplace_back( prospect.origin, prospect.type, service::transaction::mode( prospect.transaction));
+                  message.services.emplace_back( prospect.origin, prospect.type, prospect.transaction);
 
                   m_state.physical_services.push_back( std::move( prospect));
                   m_state.services.emplace( prospect.origin, m_state.physical_services.back());
@@ -152,7 +152,7 @@ namespace casual
 
             message::service::Unadvertise message;
             message.process = process::handle();
-            message.services.push_back( message::Service( service));
+            message.services.emplace_back( service);
 
             communication::ipc::blocking::send( communication::ipc::broker::device(), message);
          }

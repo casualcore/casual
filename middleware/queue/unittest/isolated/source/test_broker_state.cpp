@@ -1,11 +1,9 @@
 //!
-//! test_broker_state.cpp
-//!
-//! Created on: Aug 16, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "queue/broker/state.h"
 
@@ -17,6 +15,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__empty__expect_empty_stage)
       {
+         common::unittest::Trace trace;
+
          broker::State::Correlation correlation{ common::process::handle(), common::Uuid{}, {}};
 
          EXPECT_TRUE( correlation.replied());
@@ -25,6 +25,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__1_request_pending___expect_pending_stage)
       {
+         common::unittest::Trace trace;
+
          broker::State::Correlation correlation{ common::process::handle(), common::Uuid{}, { common::process::Handle{ 10, 10}}};
 
          EXPECT_TRUE( ! correlation.replied());
@@ -33,6 +35,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__1_request_replied___expect_replied_stage)
       {
+         common::unittest::Trace trace;
+
          common::process::Handle group_1{ 10, 10};
 
          broker::State::Correlation correlation{ common::process::handle(), common::Uuid{}, { group_1}};
@@ -44,6 +48,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__2_request_pending___expect_pending_stage)
       {
+         common::unittest::Trace trace;
+
          common::process::Handle group_1{ 10, 10};
          common::process::Handle group_2{ 20, 20};
 
@@ -55,6 +61,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__2_request_pending_replied___expect_pending_stage)
       {
+         common::unittest::Trace trace;
+
          common::process::Handle group_1{ 10, 10};
          common::process::Handle group_2{ 20, 20};
 
@@ -68,6 +76,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__2_request_pending_error___expect_pending_stage)
       {
+         common::unittest::Trace trace;
+
          common::process::Handle group_1{ 10, 10};
          common::process::Handle group_2{ 20, 20};
 
@@ -81,6 +91,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__2_request_replied___expect_replied_stage)
       {
+         common::unittest::Trace trace;
+
          common::process::Handle group_1{ 10, 10};
          common::process::Handle group_2{ 20, 20};
 
@@ -95,6 +107,8 @@ namespace casual
 
       TEST( casual_queue_broker_state, correlation__2_request_error_replied___expect_replied_error_stage)
       {
+         common::unittest::Trace trace;
+
          common::process::Handle group_1{ 10, 10};
          common::process::Handle group_2{ 20, 20};
 

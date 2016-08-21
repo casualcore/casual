@@ -752,6 +752,25 @@ namespace casual
             return signal::send( pid, signal::Type::terminate);
          }
 
+         void terminate( const Handle& process)
+         {
+            if( process)
+            {
+               message::shutdown::Request request;
+               request.process = handle();
+               communication::ipc::call( process.queue, request);
+            }
+            else if( process.pid)
+            {
+               terminate( process.pid);
+            }
+            else
+            {
+               return;
+            }
+            wait( process.pid);
+         }
+
 
 
          Handle ping( platform::ipc::id::type queue)
