@@ -231,7 +231,6 @@ namespace casual
                   {
                      m_pendings.store( 0);
                      range::for_each( m_handlers, std::mem_fn( &Handler::base_handle::clear));
-                     log::internal::debug << "signal::Handler::clear handler: " << *this << '\n';
                   }
 
 

@@ -60,7 +60,7 @@ namespace casual
 
       TEST( casual_broker, admin_services)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          broker::State state;
 
@@ -72,7 +72,7 @@ namespace casual
 
       TEST( casual_broker, startup_shutdown__expect_no_throw)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain domain;
@@ -86,7 +86,7 @@ namespace casual
 
 		TEST( casual_broker, advertise_new_services_current_server)
       {
-		   CASUAL_UNITTEST_TRACE();
+		   common::unittest::Trace trace;
 
 		   local::Domain domain;
 
@@ -111,7 +111,7 @@ namespace casual
 
 		TEST( casual_broker, unadvertise_service)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
@@ -136,7 +136,7 @@ namespace casual
 
       TEST( casual_broker, service_lookup_non_existent__expect_absent_reply)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
@@ -156,7 +156,7 @@ namespace casual
 
       TEST( casual_broker, service_lookup_service1__expect__busy_reply__send_ack____expect__idle_reply)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 

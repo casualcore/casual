@@ -183,7 +183,7 @@ namespace casual
 
       TEST( casual_transaction_manager, shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain domain{ local::configuration()};
@@ -193,7 +193,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
              
@@ -211,7 +211,7 @@ namespace casual
 
       TEST( casual_transaction_manager, commit_transaction__expect_ok__no_resource_roundtrips)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -237,7 +237,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -276,7 +276,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -315,7 +315,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_rollback_transaction__2_resources_involved__expect_XA_OK)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -352,7 +352,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_commit_transaction__2_resources_involved__expect_two_phase_commit)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -397,7 +397,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction__2_resource_involved__owner_dies__expect_rollback)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -441,7 +441,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction__1_remote_resurce_involved___expect_one_phase_optimization)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -505,7 +505,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction__2_remote_resurce_involved___expect_remote_prepare_commit)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -610,7 +610,7 @@ namespace casual
 
       TEST( casual_transaction_manager, begin_transaction__2_remote_resurce_involved_read_only___expect_remote_prepare__read_only_optimization)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -679,7 +679,7 @@ namespace casual
 
       TEST( casual_transaction_manager, transaction_2_remote_resurce_involved__one_phase_commit_optimzation___expect_prepare_phase_commit_XA_OK)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -774,7 +774,7 @@ namespace casual
 
       TEST( casual_transaction_manager, transaction_2_remote_resurce_involved__one_phase_commit_optimzation__RM_fail__expect_rollback__commit_XA_RBOTHER)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 

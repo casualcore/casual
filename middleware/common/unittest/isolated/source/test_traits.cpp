@@ -1,15 +1,10 @@
 //!
-//! test_traits.cpp
+//! casual
 //!
-//! Created on: Jun 30, 2014
-//!     Author: Lazan
-//!
+
+#include <common/unittest.h>
 
 #include "common/traits.h"
-
-
-#include <gtest/gtest.h>
-
 
 #include <array>
 #include <stack>
@@ -21,6 +16,7 @@ namespace casual
    {
       TEST( casual_common_traits, is_sequence_container)
       {
+         common::unittest::Trace trace;
 
          EXPECT_TRUE(  traits::container::is_sequence< std::vector< int>>::value);
          EXPECT_TRUE(  traits::container::is_sequence< std::deque< int>>::value);
@@ -33,6 +29,7 @@ namespace casual
 
       TEST( casual_common_traits, is_associative_container)
       {
+         common::unittest::Trace trace;
 
          EXPECT_TRUE( ( traits::container::is_associative< std::map< int, int>>::value));
          EXPECT_TRUE( ( traits::container::is_associative< std::multimap< int, int>>::value));
@@ -49,6 +46,7 @@ namespace casual
 
       TEST( casual_common_traits, container_is_unordered)
       {
+         common::unittest::Trace trace;
 
          EXPECT_TRUE( ( traits::container::is_unordered< std::unordered_map< int, int>>::value));
          EXPECT_TRUE( ( traits::container::is_unordered< std::unordered_multimap< int, int>>::value));
@@ -60,6 +58,7 @@ namespace casual
 
       TEST( casual_common_traits, is_container_adaptor)
       {
+         common::unittest::Trace trace;
 
          EXPECT_TRUE(  traits::container::is_adaptor< std::stack< int>>::value);
          EXPECT_TRUE(  traits::container::is_adaptor< std::queue< int>>::value);
@@ -70,6 +69,7 @@ namespace casual
 
       TEST( casual_common_traits, is_container)
       {
+         common::unittest::Trace trace;
 
          EXPECT_TRUE( ( traits::container::is_container< std::map< int, int>>::value));
          EXPECT_TRUE( ( traits::container::is_container< std::multimap< int, int>>::value));
@@ -95,6 +95,8 @@ namespace casual
 
       TEST( casual_common_traits_function, functor_void)
       {
+         common::unittest::Trace trace;
+
          struct Functor
          {
             void operator () () {};
@@ -106,6 +108,8 @@ namespace casual
 
       TEST( casual_common_traits_function, functor_long__short_double)
       {
+         common::unittest::Trace trace;
+
          struct Functor
          {
             long operator () ( short, double) { return 42;};
@@ -120,6 +124,8 @@ namespace casual
 
       TEST( casual_common_traits_function, lambda_bool__int)
       {
+         common::unittest::Trace trace;
+
          auto lamdba = [](int){ return true;};
          EXPECT_TRUE( traits::function< decltype( lamdba)>::arguments() == 1);
          EXPECT_TRUE( ( std::is_same< typename traits::function< decltype( lamdba)>::result_type, bool>::value));
@@ -128,6 +134,8 @@ namespace casual
 
       TEST( casual_common_traits_function, member_function_bool__long)
       {
+         common::unittest::Trace trace;
+
          struct Functor
          {
             bool function( long) { return true;};
@@ -161,6 +169,8 @@ namespace casual
 
       TEST( casual_common_traits_function, member_has_serializible__false)
       {
+         common::unittest::Trace trace;
+
          struct A
          {
          };
@@ -185,7 +195,7 @@ namespace casual
 
       TEST( casual_common_traits_function, member_has_serializible__true)
       {
-
+         common::unittest::Trace trace;
 
          EXPECT_TRUE( ( has_serializible< local::A, long>::value));
       }

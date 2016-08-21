@@ -1,11 +1,9 @@
 //!
-//! test_transactionlog.cpp
-//!
-//! Created on: Nov 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "transaction/manager/log.h"
@@ -44,6 +42,8 @@ namespace casual
 
       TEST( casual_transaction_log, prepare)
       {
+         common::unittest::Trace trace;
+
          Log log( local::transactionLogPath());
 
          auto trans = local::create_transaction();

@@ -3,7 +3,7 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 
 
@@ -97,6 +97,8 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch)
             {
+               common::unittest::Trace trace;
+
                message::dispatch::Handler handler{ local::TestHandler()};
 
                local::TestHandler::message_type message;
@@ -107,6 +109,8 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
             {
+               common::unittest::Trace trace;
+
                message::dispatch::Handler handler{ local::TestHandler()};
 
                message::service::call::ACK message;
@@ -128,6 +132,8 @@ namespace casual
 
          TEST( casual_common_message_reverse, transaction_resource_rollback_Request__gives__transaction_resource_rollback_Reply)
          {
+            common::unittest::Trace trace;
+
             message::transaction::resource::rollback::Request request;
             request.correlation = uuid::make();
             request.execution = uuid::make();

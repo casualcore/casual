@@ -47,7 +47,7 @@ namespace casual
 
          TEST( common_message_coordinate, instansation)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW({
                local::Coordinate coordinate;
@@ -56,7 +56,7 @@ namespace casual
 
          TEST( common_message_coordinate, send__expect_no_coordination)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             auto correlation = uuid::make();
 
@@ -68,7 +68,7 @@ namespace casual
 
          TEST( common_message_coordinate, send__accumulate__expect_coordination)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Coordinate coordinate;
 
@@ -91,7 +91,7 @@ namespace casual
 
          TEST( common_message_coordinate, send_2_destination__accumulate_1__expect_no_coordination)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Coordinate coordinate;
 
@@ -115,7 +115,7 @@ namespace casual
 
          TEST( common_message_coordinate, send_2_destination__accumulate_2__expect_coordination)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Coordinate coordinate;
 
@@ -149,7 +149,7 @@ namespace casual
 
          TEST( common_message_coordinate, add_pid_42__remove_pid_42__expect__send)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Coordinate coordinate;
 

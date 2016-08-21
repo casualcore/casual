@@ -162,7 +162,7 @@ domain:
 
          TEST( casual_domain_manager, empty_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::empty()}};
@@ -173,7 +173,7 @@ domain:
 
          TEST( casual_domain_manager, echo_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo()}};
@@ -185,7 +185,7 @@ domain:
 
          TEST( casual_domain_manager, echo_restart_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo_restart()}};
@@ -197,7 +197,7 @@ domain:
 
          TEST( casual_domain_manager, sleep_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::sleep()}};
@@ -317,7 +317,7 @@ domain:
 
          TEST( casual_domain_manager, state_long_running_processes_5__expect_5)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
@@ -335,7 +335,7 @@ domain:
 
          TEST( casual_domain_manager, state_long_running_processes_5__scale_out_to_10___expect_10)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
@@ -358,7 +358,7 @@ domain:
 
          TEST( casual_domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
@@ -385,7 +385,7 @@ domain:
 
          TEST( casual_domain_manager, groups_4__with_5_executables___start_with_instances_1__scale_to_10)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             const std::string configuration{ R"(
 domain:

@@ -74,7 +74,7 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_xa_config__expect_2_resources)
    {
-      CASUAL_UNITTEST_TRACE();
+      common::unittest::Trace trace;
 
       local::Domain domain;
 
@@ -89,7 +89,7 @@ namespace casual
 
    TEST( casual_transaction_configuration, configure_resource__expect_2_resources)
    {
-      CASUAL_UNITTEST_TRACE();
+      common::unittest::Trace trace;
 
       local::Domain domain;
 

@@ -188,7 +188,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, empty_configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::empty_configuration()};
 
@@ -200,7 +200,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::one_listener_configuration()};
 
@@ -211,7 +211,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::one_listener_configuration()};
 
@@ -261,7 +261,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp,  connect_to_our_self__remote1_advertise__expect_service_remote1)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          // exposes service "remote1"
          local::domain::Service domain{ local::configuration::connect_to_our_self_services_service1()};

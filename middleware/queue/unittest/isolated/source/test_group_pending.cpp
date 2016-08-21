@@ -1,11 +1,9 @@
 //!
-//! test_server_database.cpp
-//!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "queue/group/group.h"
@@ -36,6 +34,8 @@ namespace casual
       } // local
       TEST( casual_queue_group_pending, empty_commit__expect_no_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -49,6 +49,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_request_q10__enqueue_q10__commit__expect_1_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -67,6 +69,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_request_q10__enqueue_q20__commit__expect_0_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -82,6 +86,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_request_q10__enqueue_3x_q10__commit__expect_1_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -103,6 +109,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, one_request_q10__enqueue_q10__commit__expect_0_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -119,6 +127,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_request_2x_q10__enqueue_q10__commit__expect_2_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -141,6 +151,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_request_q10_q20___enqueue_q10__commit__expect_1_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -161,6 +173,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_request_q10_q20___enqueue_q10_g20__commit__expect_2_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;
@@ -185,6 +199,8 @@ namespace casual
 
       TEST( casual_queue_group_pending, block_dequeue_q10_pid_42__enqueue_3x_q10__erase_pid_42__expect_0_pending)
       {
+         common::unittest::Trace trace;
+
          auto trid = common::transaction::ID::create();
 
          group::State::Pending pending;

@@ -39,7 +39,7 @@ namespace casual
 
          TEST( casual_domain_state_boot_order, empty_state___expect_empty_boot_order)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             State state;
 
             EXPECT_TRUE( state.bootorder().empty());
@@ -48,7 +48,7 @@ namespace casual
 
          TEST( casual_domain_state_boot_order, executable_1___expect_1_boot_order)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             auto state = local::configure( R"(
 domain:
 
@@ -68,7 +68,7 @@ domain:
 
          TEST( casual_domain_state_boot_order, group_1_exe1__global_exe2__expect__exe2_exe1)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             auto state = local::configure( R"(
 domain:
   

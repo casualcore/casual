@@ -162,7 +162,7 @@ domain:
 
       TEST( casual_gateway_manager, empty_configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::empty_configuration()};
 
@@ -173,7 +173,7 @@ domain:
 
       TEST( casual_gateway_manager, ipc_non_existent_path__configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", "/non/existent/path");
 
@@ -187,7 +187,7 @@ domain:
 
       TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__configuration___expect_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", environment::domain::singleton::path());
 
@@ -233,7 +233,7 @@ domain:
 
       TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", environment::domain::singleton::path());
 
@@ -265,7 +265,7 @@ domain:
 
       TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_outbound____expect_call_to_service)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", environment::domain::singleton::path());
 

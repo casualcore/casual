@@ -1,11 +1,9 @@
 //!
-//! test_server_database.cpp
-//!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "queue/group/database.h"
@@ -77,6 +75,8 @@ namespace casual
 
       TEST( casual_queue_group_database, create_database)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
       }
@@ -84,6 +84,8 @@ namespace casual
 
       TEST( casual_queue_group_database, create_queue)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
 
@@ -104,6 +106,8 @@ namespace casual
 
       TEST( casual_queue_group_database, remove_queue)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
 
@@ -116,6 +120,8 @@ namespace casual
 
       TEST( casual_queue_group_database, update_queue)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
 
@@ -136,6 +142,8 @@ namespace casual
 
       TEST( casual_queue_group_database, create_queue_on_disc_and_open_again)
       {
+         common::unittest::Trace trace;
+
          common::file::scoped::Path path{
             common::file::name::unique(
                common::environment::directory::temporary() + "/",
@@ -167,6 +175,8 @@ namespace casual
 
       TEST( casual_queue_group_database, create_5_queue_on_disc_and_open_again)
       {
+         common::unittest::Trace trace;
+
          common::file::scoped::Path path{
             common::file::name::unique(
                common::environment::directory::temporary() + "/",
@@ -202,6 +212,8 @@ namespace casual
 
       TEST( casual_queue_group_database, create_100_queues)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
 
@@ -226,6 +238,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_one_message)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -241,6 +255,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_one_message__get_queue_info)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -263,6 +279,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_one_message__get_message_info)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -282,6 +300,8 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_one_message)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -302,6 +322,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_deque__info__expect__count_0__size_0)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "enqueue_deque__info__expect__count_0__size_0"});
@@ -322,6 +344,8 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_message__from_id)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "dequeue_message__from_id"});
@@ -344,6 +368,8 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_message__from_properties)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -368,6 +394,8 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_message__from_non_existent_properties__expect_0_messages)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -387,6 +415,7 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_100_message)
       {
+         common::unittest::Trace trace;
 
          auto path = local::file();
          group::Database database( path, "test_group");
@@ -431,6 +460,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_one_message_in_transaction)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -472,6 +503,8 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_one_message_in_transaction)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -499,6 +532,8 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_group_error_queue__rollback__expect__message_not_moved)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          group::Queue group_queue;
@@ -536,6 +571,8 @@ namespace casual
 
       TEST( casual_queue_group_database, deque_in_transaction__info__expect__count_0__size_0)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -564,6 +601,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_one_message_in_transaction_rollback)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -584,6 +623,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_one_message_in_transaction_rollback__info__expect__count_0__size_0)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -606,6 +647,8 @@ namespace casual
 
       TEST( casual_queue_group_database, enqueue_dequeue_one_message_in_transaction_rollback)
       {
+         common::unittest::Trace trace;
+
          auto path = local::file();
          group::Database database( path, "test_group");
          auto queue = database.create( group::Queue{ "unittest_queue"});
@@ -708,6 +751,7 @@ namespace casual
 
       TEST( casual_queue_group_database, dequeue_100_message_in_transaction)
       {
+         common::unittest::Trace trace;
 
          auto path = local::file();
          group::Database database( path, "test_group");

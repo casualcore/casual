@@ -2,9 +2,7 @@
 //! casual
 //!
 
-#include <gtest/gtest.h>
-
-
+#include <common/unittest.h>
 #include "common/algorithm.h"
 
 namespace casual
@@ -25,6 +23,8 @@ namespace casual
 
       TEST( casual_common_algorithm_range, default_constructor__expoect_empty)
       {
+         common::unittest::Trace trace;
+
          using range_type = range::type_t< std::vector< int>>;
          range_type empty;
 
@@ -34,6 +34,8 @@ namespace casual
 
       TEST( casual_common_algorithm_position, overlap)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> container( 100);
 
          EXPECT_TRUE( range::position::overlap( container, container));
@@ -46,6 +48,8 @@ namespace casual
 
       TEST( casual_common_algorithm_position, subtract_two_equal_ranges__expect_empty_result)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> container( 100);
 
          auto result = range::position::subtract( container, container);
@@ -56,6 +60,8 @@ namespace casual
 
       TEST( casual_common_algorithm_position, subtract_bigger_from_smaller__expect_empty_result)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> container( 100);
 
          auto result = range::position::subtract( range::make( std::begin( container) + 10, 40), container);
@@ -66,6 +72,8 @@ namespace casual
 
       TEST( casual_common_algorithm_position, subtract_right_overlapping__expect_first)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> container( 100);
 
          auto result = range::position::subtract( container, range::make( std::begin( container) + 40, std::end( container)));
@@ -78,6 +86,8 @@ namespace casual
 
       TEST( casual_common_algorithm_position, subtract_left_overlapping__expect_first)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> container( 100);
 
          auto result = range::position::subtract( container, range::make( std::begin( container), 40));
@@ -90,6 +100,8 @@ namespace casual
 
       TEST( casual_common_algorithm_position, subtract_smaller_from_larger_overlapping__expect_splitted_into_two_ranges)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> container( 100);
 
          auto result = range::position::subtract( container, range::make( std::begin( container) + 20, 40));
@@ -110,6 +122,8 @@ namespace casual
 
       TEST( casual_common_algorithm, sort)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
          auto s = local::sorted();
 
@@ -126,6 +140,8 @@ namespace casual
 
       TEST( casual_common_algorithm, sort_predi)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
          auto s = local::sorted();
 
@@ -139,6 +155,8 @@ namespace casual
 
       TEST( casual_common_algorithm, sort_reverse)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
          auto s = local::sorted();
 
@@ -152,6 +170,8 @@ namespace casual
 
       TEST( casual_common_algorithm, sort_predicate_reverse)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
          auto s = local::sorted();
 
@@ -165,6 +185,8 @@ namespace casual
 
       TEST( casual_common_algorithm, partition)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
 
          auto part = range::partition( us, []( int value) { return value == 3;});
@@ -176,6 +198,8 @@ namespace casual
 
       TEST( casual_common_algorithm, partition_reverse)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
 
          auto part = range::partition( range::make_reverse( us), []( int value) { return value == 3;});
@@ -187,6 +211,8 @@ namespace casual
 
       TEST( casual_common_algorithm, find_value)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
 
          auto found =  range::find( us, 3);
@@ -197,6 +223,8 @@ namespace casual
 
       TEST( casual_common_algorithm, find_map_value)
       {
+         common::unittest::Trace trace;
+
          std::map< int, std::string> container{ {1, "one"}, {2, "two"}, {3, "three"}, {4, "four"}};
 
          auto found =  range::find( container, 3);
@@ -207,6 +235,8 @@ namespace casual
 
       TEST( casual_common_algorithm, find_value_reverse)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
 
          auto found =  range::find( range::make_reverse( us), 3);
@@ -219,6 +249,8 @@ namespace casual
 
       TEST( casual_common_algorithm, search)
       {
+         common::unittest::Trace trace;
+
          auto found = range::search( "some text to search", std::string{ "some"});
          EXPECT_TRUE( ! found.empty());
 
@@ -226,6 +258,8 @@ namespace casual
 
       TEST( casual_common_algorithm, uniform__true)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
          EXPECT_TRUE( range::uniform (uniform));
@@ -234,6 +268,8 @@ namespace casual
 
       TEST( casual_common_algorithm, uniform__false)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 2, 1};
 
          EXPECT_FALSE( range::uniform (uniform));
@@ -242,6 +278,8 @@ namespace casual
 
       TEST( casual_common_algorithm, sort_patition_find_value)
       {
+         common::unittest::Trace trace;
+
          auto us = local::unsorted();
 
 
@@ -256,6 +294,8 @@ namespace casual
 
       TEST( casual_common_algorithm, trim_container)
       {
+         common::unittest::Trace trace;
+
          auto s = local::sorted();
 
          auto found =  range::find( s, 3);
@@ -268,6 +308,8 @@ namespace casual
 
       TEST( casual_common_algorithm, sort_unique_trim_container)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> set{ 3, 1, 3, 2, 1, 3, 1, 2, 3};
 
          range::trim( set, range::unique( range::sort( set)));
@@ -297,6 +339,7 @@ namespace casual
 
       TEST( casual_common_algorithm, chain_basic)
       {
+         common::unittest::Trace trace;
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
@@ -309,6 +352,8 @@ namespace casual
 
       TEST( casual_common_algorithm, chain_basic_lvalue)
       {
+         common::unittest::Trace trace;
+
          auto functor = chain::Or::link( Equal{ 2}, Equal{ 4});
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
@@ -320,6 +365,8 @@ namespace casual
 
       TEST( casual_common_algorithm, chain_basic_lvalue1)
       {
+         common::unittest::Trace trace;
+
          Equal pred1{ 2};
          Equal pred2{ 4};
          auto functor = chain::Or::link( pred1, pred2);
@@ -382,6 +429,8 @@ namespace casual
 
       TEST( casual_common_algorithm, chain_order_name_asc)
       {
+         common::unittest::Trace trace;
+
          auto values = local::values();
 
          auto sorted = range::sort( values, chain::Order::link( order::name::Ascending()));
@@ -391,6 +440,8 @@ namespace casual
 
       TEST( casual_common_algorithm, chain_order_name_desc__age_asc)
       {
+         common::unittest::Trace trace;
+
          auto values = local::values();
 
          auto sorted = range::sort( values, chain::Order::link(
@@ -406,6 +457,8 @@ namespace casual
 
       TEST( casual_common_algorithm, chain_order_age_desc__height_asc)
       {
+         common::unittest::Trace trace;
+
          auto values = local::values();
 
          auto sorted = range::sort( values, chain::Order::link(
@@ -421,6 +474,8 @@ namespace casual
 
       TEST( casual_common_algorithm, copy_max__source_shorter_than_target)
       {
+         common::unittest::Trace trace;
+
          const std::string source = "1234";
          std::string target;
 
@@ -432,6 +487,8 @@ namespace casual
 
       TEST( casual_common_algorithm, copy_max__source_equal_to_target)
       {
+         common::unittest::Trace trace;
+
          const std::string source = "1234567";
          std::string target;
 
@@ -443,6 +500,8 @@ namespace casual
 
       TEST( casual_common_algorithm, copy_max__source_longer_than_target)
       {
+         common::unittest::Trace trace;
+
          const std::string source = "1234567";
          std::string target;
 
@@ -455,6 +514,8 @@ namespace casual
 
       TEST( casual_common_algorithm, intersection)
       {
+         common::unittest::Trace trace;
+
          std::vector< int> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
          std::vector< int> lookup{ 4, 1, 3, 5, 2};
 
@@ -496,6 +557,8 @@ namespace casual
 
       TEST( casual_common_algorithm, intersection_predicate)
       {
+         common::unittest::Trace trace;
+
          using namespace local::intersection;
 
          std::vector< A> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
@@ -510,6 +573,8 @@ namespace casual
 
       TEST( casual_common_algorithm_coalesce, lvalue_string__expect_lvalue)
       {
+         common::unittest::Trace trace;
+
          std::string first;
          std::string second;
 
@@ -518,6 +583,8 @@ namespace casual
 
       TEST( casual_common_algorithm_coalesce, rvalue_string_first__expect_rvalue)
       {
+         common::unittest::Trace trace;
+
          std::string first;
          std::string second;
 
@@ -526,6 +593,8 @@ namespace casual
 
       TEST( casual_common_algorithm_coalesce, lvalue_string_first__literal_string_second__expect_string_rvalue)
       {
+         common::unittest::Trace trace;
+
          std::string first;
 
          EXPECT_TRUE( ! std::is_lvalue_reference< decltype( coalesce( first, "0"))>::value);
@@ -535,6 +604,8 @@ namespace casual
 
       TEST( casual_common_algorithm_coalesce, int_nullptr_first__int_pointer_second__expect_second)
       {
+         common::unittest::Trace trace;
+
          int* first = nullptr;
          int temp = 42;
          int* second = &temp;
@@ -546,6 +617,8 @@ namespace casual
 
       TEST( casual_common_algorithm_coalesce, lvalue_string_10__last_literal___expect_string_rvalue)
       {
+         common::unittest::Trace trace;
+
          auto coalesce_strings = []() {
             std::vector< std::string> strings( 10);
 

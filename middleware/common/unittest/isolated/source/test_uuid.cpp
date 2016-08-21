@@ -1,14 +1,11 @@
 //!
-//! casual_isolatedunittet_uuid.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
 
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 #include "common/uuid.h"
 
@@ -22,6 +19,8 @@ namespace casual
 
 		TEST( casual_common_uuid, two_uuid__expect_unique)
 		{
+		   common::unittest::Trace trace;
+
 			Uuid oneUuid = uuid::make();
 			Uuid anotherUuid = uuid::make();
 
@@ -31,6 +30,8 @@ namespace casual
 
 		TEST( casual_common_uuid, one_uuid__expect_equal)
       {
+		   common::unittest::Trace trace;
+
          Uuid oneUuid = uuid::make();
 
          EXPECT_TRUE( oneUuid == oneUuid);
@@ -38,6 +39,8 @@ namespace casual
 
 		TEST( casual_common_uuid, two_uuid__expect_equal)
       {
+		   common::unittest::Trace trace;
+
          Uuid oneUuid = uuid::make();
          Uuid anotherUuid = oneUuid;
 
@@ -46,6 +49,8 @@ namespace casual
 
 		TEST( casual_common_uuid, default_constructed__expect_equal_to_empty)
 		{
+		   common::unittest::Trace trace;
+
 			Uuid oneUuid;
 
 			EXPECT_TRUE( oneUuid == uuid::empty());
@@ -53,6 +58,8 @@ namespace casual
 
 		TEST( casual_common_uuid, getString__expect_32B)
 		{
+		   common::unittest::Trace trace;
+
 			Uuid oneUuid = uuid::make();
 
 			EXPECT_TRUE( uuid::string( oneUuid).size() == 32);
@@ -60,6 +67,8 @@ namespace casual
 
 		TEST( casual_common_uuid, default_constructed__uuid_string__expect_00000000000000000000000000000000)
       {
+		   common::unittest::Trace trace;
+
          Uuid oneUuid;
 
          EXPECT_TRUE( uuid::string( oneUuid) == "00000000000000000000000000000000") << uuid::string( oneUuid);
@@ -67,6 +76,8 @@ namespace casual
 
       TEST( casual_common_uuid, ctor_55d9d19db80b49ac98188deef6fa0d4a__copy_ctor__expect_equal_string)
       {
+         common::unittest::Trace trace;
+
          Uuid uuid1{ "55d9d19db80b49ac98188deef6fa0d4a"};
 
          EXPECT_TRUE( uuid::string( uuid1) == "55d9d19db80b49ac98188deef6fa0d4a") << uuid::string( uuid1);
@@ -81,6 +92,8 @@ namespace casual
 
       TEST( casual_common_uuid, operator_bool_on_default_constructed__expect_false)
       {
+         common::unittest::Trace trace;
+
          Uuid oneUuid;
 
          EXPECT_FALSE( oneUuid) << uuid::string( oneUuid);
@@ -89,6 +102,8 @@ namespace casual
 
       TEST( casual_common_uuid, operator_bool_on_created__expect_true)
       {
+         common::unittest::Trace trace;
+
          Uuid oneUuid = uuid::make();
 
          EXPECT_TRUE( static_cast< bool>( oneUuid) ) << uuid::string( oneUuid);

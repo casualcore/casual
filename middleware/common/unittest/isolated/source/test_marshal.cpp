@@ -48,6 +48,8 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, basic_io)
          {
+            common::unittest::Trace trace;
+
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
@@ -78,7 +80,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, binary)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -107,7 +109,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, io)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -144,7 +146,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, io_big_size)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -172,7 +174,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, transaction_id_null)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -195,7 +197,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, transaction_id)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -221,7 +223,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, message_call)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
@@ -293,7 +295,7 @@ namespace casual
 
          TYPED_TEST( casual_common_marshal, enqueue_request)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;

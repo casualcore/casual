@@ -3,7 +3,6 @@
 //!
 
 #include <gtest/gtest.h>
-
 #include "common/unittest.h"
 
 
@@ -115,7 +114,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_ipc, shutdown_before_connection__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          //
          // We need to have a domain manager to 'connect the process'
@@ -131,7 +130,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_ipc, connection_then_force_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain doman;
@@ -141,7 +140,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_ipc, connection_then_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_THROW({
             local::Domain domain;
@@ -158,7 +157,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_ipc, service_call__service1__expect_echo)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
@@ -183,7 +182,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_ipc, service_call__absent_service__expect_reply_with_TPESVCERR)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
@@ -205,7 +204,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_ipc, service_call__removed_ipc_queue___expect_reply_with_TPESVCERR)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
