@@ -190,6 +190,8 @@ namespace casual
 
          Cache::Cache()
          {
+            Trace trace{ "broker::forward::Cache ctor"};
+
             //
             // Connect to domain
             //
@@ -236,7 +238,7 @@ namespace casual
                      m_state.pending.erase( std::end( remain), std::end( m_state.pending));
 
                      while( handler( communication::ipc::inbound::device().next( communication::ipc::policy::non::Blocking{}))
-                           && m_state.pending.size() < platform::batch::transaction)
+                           && m_state.pending.size() < platform::batch::transaction())
                      {
                         ;
                      }

@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_HANDLE_H_
@@ -14,6 +11,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/domain.h"
 #include "common/message/gateway.h"
+#include "common/message/coordinate.h"
 
 #include "common/communication/ipc.h"
 
@@ -95,7 +93,21 @@ namespace casual
                      void operator () ( message_type& message);
                   };
 
+                  namespace automatic
+                  {
+                     struct Request : Base
+                     {
+                        using Base::Base;
+                        using message_type = common::message::gateway::domain::discover::automatic::Request;
+
+                        void operator () ( message_type& message);
+                     };
+                  } // automatic
+
                } // discovery
+
+
+
             } // domain
 
             namespace outbound

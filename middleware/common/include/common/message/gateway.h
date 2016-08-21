@@ -130,6 +130,39 @@ namespace casual
                      friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
 
+                  namespace automatic
+                  {
+                     struct Request : basic_message< Type::gateway_domain_automatic_discover_request>
+                     {
+                        common::process::Handle process;
+                        common::domain::Identity domain;
+                        std::vector< std::string> services;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           base_type::marshal( archive);
+                           archive & process;
+                           archive & domain;
+                           archive & services;
+                        })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                     };
+
+                     struct Reply : basic_message< Type::gateway_domain_automatic_discover_reply>
+                     {
+                        std::vector< discover::Reply> replies;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           base_type::marshal( archive);
+                           archive & replies;
+                        })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                     };
+                  } // automatic
+
                } // discover
 
             } // domain

@@ -33,7 +33,7 @@ namespace casual
 
             struct Broker
             {
-               Broker() : process{ "./bin/casual-broker"}
+               Broker() : process{ "./bin/casual-broker", { "--forward", "./bin/casual-forward-cache"}}
                {
 
                }
@@ -126,13 +126,10 @@ namespace casual
 
             //
             // echo server has unadvertise this service. The service is
-            // still "present" in broker with no instances.
-            // TODO: do we wan't to be explicit when a service has no instances
+            // still "present" in broker with no instances. Hence it's absent
             //
-            EXPECT_TRUE( service.state == decltype( service)::State::busy) << "service: " << service;
+            EXPECT_TRUE( service.state == decltype( service)::State::absent) << "service: " << service;
          }
-
-
       }
 
 

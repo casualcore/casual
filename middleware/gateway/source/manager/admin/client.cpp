@@ -114,7 +114,7 @@ namespace casual
             {
                switch( c.runlevel)
                {
-                  case vo::Runlevel::booting: return "booting";
+                  case vo::Runlevel::connecting: return "connecting";
                   case vo::Runlevel::online: return "online";
                   case vo::Runlevel::shutdown: return "shutdown";
                   case vo::Runlevel::error: return "error";

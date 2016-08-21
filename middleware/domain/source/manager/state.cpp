@@ -60,11 +60,7 @@ namespace casual
                auto rhs_depend = range::find( rhs.dependencies, lhs.id);
                auto lhs_depend = range::find( lhs.dependencies, rhs.id);
 
-               if( rhs_depend)
-               {
-                  return ! lhs_depend;
-               }
-               return ! lhs_depend;
+               return rhs_depend && ! lhs_depend;
             }
 
 
@@ -153,7 +149,13 @@ namespace casual
                      range::stable_sort( groups, state::Group::boot::Order{});
 
                      std::vector< std::reference_wrapper< state::Executable>> excutable_wrappers;
-                     range::copy( state.executables, std::back_inserter( excutable_wrappers));
+
+                     //
+                     // We make sure we don't include our self in the boot sequence.
+                     //
+                     range::copy_if( state.executables, std::back_inserter( excutable_wrappers), [&state]( const state::Executable& e){
+                        return e.id != state.global.manager;
+                     });
 
                      auto executable = range::make( excutable_wrappers);
 
@@ -168,7 +170,7 @@ namespace casual
                         //
                         // Partition executables so we get the ones that has current group as a dependency
                         //
-                        auto slice = range::stable_partition( executable, [&]( state::Executable& e){
+                        auto slice = range::stable_partition( executable, [&]( const state::Executable& e){
                            return static_cast< bool>( range::find( e.memberships, group.get().id));
                         });
 

@@ -298,6 +298,19 @@ domain:
 
                } // configuration
 
+               namespace predicate
+               {
+                  struct Manager
+                  {
+                     bool operator () ( const admin::vo::Executable& value) const
+                     {
+                        return value.alias == "casual-domain-manager";
+                     }
+                  };
+
+               } // predicate
+
+
             } // <unnamed>
          } // local
 
@@ -314,8 +327,8 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).instances.size() == 5) << CASUAL_MAKE_NVP( state);
 
          }
 
@@ -338,9 +351,9 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 10) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).configured_instances == 10) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 1).instances.size() == 10) << CASUAL_MAKE_NVP( state);
          }
 
          TEST( casual_domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
@@ -362,8 +375,8 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 0) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).configured_instances == 0) << CASUAL_MAKE_NVP( state);
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
@@ -496,9 +509,11 @@ domain:
             common::process::instance::fetch::handle( common::process::instance::identity::broker());
 
             auto state = local::call::state();
+            state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));
+
 
             ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 1) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 1).configured_instances == 1) << CASUAL_MAKE_NVP( state);
 
 
             for( auto& instance : state.executables)
@@ -506,11 +521,12 @@ domain:
                local::call::scale( instance.alias, 10);
             }
 
+            state = local::call::state();
 
-            for( auto executable : local::call::state().executables)
+            for( auto executable : range::remove_if( state.executables, local::predicate::Manager{}))
             {
                EXPECT_TRUE( executable.configured_instances == 10);
-               EXPECT_TRUE( executable.instances.size() == 10);
+               EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
             }
          }
 

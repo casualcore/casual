@@ -83,7 +83,7 @@ namespace casual
 
             if( ! settings.bare)
             {
-               handle::mandatory::boot( m_state);
+               handle::mandatory::boot::prepare( m_state);
             }
 
             handle::boot( m_state);
@@ -157,7 +157,7 @@ namespace casual
                                  //
                                  // TODO: Should we have some sort of TTL for the pending?
                                  //
-                                 auto count = common::platform::batch::transaction;
+                                 auto count = common::platform::batch::transaction();
 
                                  while( handler( ipc::device().non_blocking_next()) && count-- > 0)
                                     ;

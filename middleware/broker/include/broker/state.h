@@ -188,6 +188,8 @@ namespace casual
                instances_type< service::instance::Local> local;
                instances_type< service::instance::Remote> remote;
 
+               inline bool empty() const { return local.empty() && remote.empty();}
+
             } instances;
 
             common::message::service::call::Service information;
@@ -285,15 +287,15 @@ namespace casual
          void remove( const common::message::gateway::domain::service::Unadvertise& message);
 
 
+         //!
+         //! find a service from name
+         //!
+         //! @param name of the service wanted
+         //! @return pointer to service, nullptr if not found
+         //!
          state::Service* find_service( const std::string& name);
 
-
-
          void connect_broker( std::vector< common::message::service::advertise::Service> services);
-
-
-
-      private:
       };
 
 

@@ -68,7 +68,23 @@ namespace casual
                            << '}';
                   }
 
+                  namespace automatic
+                  {
+                     std::ostream& operator << ( std::ostream& out, const Request& value)
+                     {
+                        return out << "{ process: " << value.process
+                              << ", domain: " << value.domain
+                              << ", services: " << range::make( value.services)
+                              << '}';
+                     }
 
+                     std::ostream& operator << ( std::ostream& out, const Reply& value)
+                     {
+                        return out << "{ replies: " << range::make( value.replies)
+                           << '}';
+                     }
+
+                  } // automatic
 
 
                } // discover

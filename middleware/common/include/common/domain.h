@@ -33,6 +33,8 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Identity& value);
 
+            friend bool operator == ( const Identity& lhs, const Identity& rhs);
+            inline friend bool operator != ( const Identity& lhs, const Identity& rhs) { return ! ( lhs == rhs);}
             friend bool operator < ( const Identity& lhs, const Identity& rhs);
 
          };

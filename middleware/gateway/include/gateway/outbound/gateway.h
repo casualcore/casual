@@ -221,13 +221,17 @@ namespace casual
                         Trace trace{ "gateway::outbound::handle::domain::discover::Reply"};
 
                         //
-                        // Send information about remote id to main thread
+                        // Send information about remote id to main thread, once
                         //
-                        {
+                        common::execute::once( [&](){
+
+                           Trace trace{ "gateway::outbound::handle::domain::discover::Reply send domain id"};
+
                            domain::id::Message message;
                            message.id = reply.domain;
                            common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
-                        }
+                        });
+
                         base_type::operator() ( reply);
                      }
                   };

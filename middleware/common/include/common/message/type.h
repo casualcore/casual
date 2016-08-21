@@ -30,10 +30,8 @@ namespace casual
             UTILITY_BASE = 500,
             flush_ipc, // dummy message used to flush queue (into cache)
             poke,
-            shutdownd_request,
-            shutdownd_reply,
-            forward_connect_request,
-            forward_connect_reply,
+            shutdown_request,
+            shutdown_reply,
             delay_message,
             inbound_ipc_connect,
 
@@ -141,6 +139,8 @@ namespace casual
             gateway_ipc_connect_reply,
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
+            gateway_domain_automatic_discover_request,
+            gateway_domain_automatic_discover_reply,
             gateway_service_advertise,
             gateway_service_unadvertise,
             gateway_domain_id,
@@ -252,7 +252,7 @@ namespace casual
          //!
          namespace shutdown
          {
-            struct Request : basic_message< Type::shutdownd_request>
+            struct Request : basic_message< Type::shutdown_request>
             {
                inline Request() = default;
                inline Request( common::process::Handle process) : process{ std::move( process)} {}
@@ -268,7 +268,7 @@ namespace casual
                })
             };
 
-            struct Reply : basic_message< Type::shutdownd_reply>
+            struct Reply : basic_message< Type::shutdown_reply>
             {
                template< typename ID>
                struct holder_t

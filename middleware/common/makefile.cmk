@@ -182,10 +182,10 @@ unittest_objectfiles = [
     Compile( 'unittest/isolated/source/communication/test_tcp.cpp'),
     Compile( 'unittest/isolated/source/communication/test_ipc.cpp'),
     
-    
-       
+
     
     Compile( 'unittest/isolated/source/message/test_dispatch.cpp'),
+    Compile( 'unittest/isolated/source/message/test_coordinate.cpp'),
     
     
     Compile( 'unittest/isolated/source/server/test_context.cpp'),

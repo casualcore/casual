@@ -102,9 +102,9 @@ namespace casual
          // boot outbounds
          //
          {
+
             manager::handle::boot( m_state);
-
-
+            m_state.runlevel = manager::State::Runlevel::online;
          }
 
 
@@ -116,9 +116,9 @@ namespace casual
             auto handler = manager::handler( m_state);
 
 
-            while( handler( manager::ipc::device().blocking_next()))
+            while( true)
             {
-               ;
+               handler( manager::ipc::device().blocking_next());
             }
          }
       }

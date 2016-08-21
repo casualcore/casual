@@ -82,7 +82,11 @@ namespace casual
                {
                   Trace trace{ "broker::connect spawn forward"};
 
-                  state.forward.pid = common::process::spawn( forward( settings), {});
+                  common::process::spawn( forward( settings), {});
+
+                  state.forward = common::process::instance::fetch::handle(
+                        common::process::instance::identity::forward::cache());
+
                }
 
             }
@@ -195,7 +199,7 @@ namespace casual
                         //
                         // TODO: Should we have some sort of TTL for the pending?
                         //
-                        auto count = common::platform::batch::transaction;
+                        auto count = common::platform::batch::transaction();
 
                         while( handler( ipc::device().non_blocking_next()) && count-- > 0)
                            ;

@@ -8,7 +8,6 @@
 
 #include "broker/state.h"
 #include "broker/broker.h"
-#include "broker/message.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/server.h"
@@ -89,23 +88,6 @@ namespace casual
 
 
 
-         namespace forward
-         {
-            struct Connect : Base
-            {
-               using Base::Base;
-
-               void operator () ( const message::forward::connect::Request& message);
-            };
-
-         } // forward
-
-
-
-
-
-
-
 
 		   namespace service
          {
@@ -142,7 +124,7 @@ namespace casual
 	            //!
 	            struct Advertise : Base
 	            {
-	               typedef common::message::gateway::domain::service::Advertise message_type;
+	               using message_type = common::message::gateway::domain::service::Advertise;
 
 	               using Base::Base;
 
@@ -155,13 +137,25 @@ namespace casual
 	            //!
 	            struct Unadvertise : Base
 	            {
-	               typedef common::message::gateway::domain::service::Unadvertise message_type;
+	               using message_type = common::message::gateway::domain::service::Unadvertise;
 
 	               using Base::Base;
 
 	               void operator () ( message_type& message);
 	            };
 
+	            namespace discover
+               {
+	               struct Reply : Base
+	               {
+	                  using message_type = common::message::gateway::domain::discover::automatic::Reply;
+
+	                  using Base::Base;
+
+	                  void operator () ( message_type& message);
+	               };
+
+               } // discover
 
             } // gateway
 
@@ -259,9 +253,6 @@ namespace casual
 		} // handle
 
       common::message::dispatch::Handler handler( State& state);
-
-      common::message::dispatch::Handler handler_no_services( State& state);
-
 
 
 	} // broker

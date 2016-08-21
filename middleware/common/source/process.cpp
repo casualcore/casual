@@ -757,6 +757,7 @@ namespace casual
             if( process)
             {
                message::shutdown::Request request;
+               request.process = handle();
                communication::ipc::call( process.queue, request);
             }
             else if( process.pid)

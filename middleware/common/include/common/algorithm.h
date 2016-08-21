@@ -97,6 +97,28 @@ namespace casual
 
       } // scope
 
+      namespace execute
+      {
+         //!
+         //! Execute @p executor once
+         //!
+         //! @note To be used with lambdas only.
+         //! @note Every invocation of the same type will only execute once.
+         //!
+         template< typename E>
+         void once( E&& executor)
+         {
+            static bool done = false;
+
+            if( ! done)
+            {
+               done = true;
+               executor();
+            }
+         }
+
+      } // execute
+
       namespace chain
       {
          namespace link

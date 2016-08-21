@@ -1,8 +1,5 @@
 //!
-//! test_message_dispatch.cpp
-//!
-//! Created on: Dec 2, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 

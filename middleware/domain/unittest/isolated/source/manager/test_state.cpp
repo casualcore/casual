@@ -60,7 +60,7 @@ domain:
 )" );
 
             auto bootorder = state.bootorder();
-            ASSERT_TRUE( bootorder.size() == 1);
+            ASSERT_TRUE( bootorder.size() == 2) << "bootorder: " << common::range::make( bootorder);
             EXPECT_TRUE( bootorder.at( 0).executables.size() == 1) << "bootorder: " << common::range::make( bootorder);
             auto& executable = bootorder.at( 0).executables.at( 0);
             EXPECT_TRUE( executable.get().path == "echo" );
@@ -84,16 +84,16 @@ domain:
 )" );
 
             auto bootorder = state.bootorder();
-            ASSERT_TRUE( bootorder.size() == 2);
+            ASSERT_TRUE( bootorder.size() == 3);
             {
                auto& batch = bootorder.at( 0);
-               EXPECT_TRUE( batch.group.get().name == "global" );
+               EXPECT_TRUE( batch.group.get().name == "global" ) << "bootorder: " << common::range::make( bootorder);
                ASSERT_TRUE( batch.executables.size() == 1) << "bootorder: " << common::range::make( bootorder);
                EXPECT_TRUE( batch.executables.at( 0).get().path == "exe2");
             }
             {
                auto& batch = bootorder.at( 1);
-               EXPECT_TRUE( batch.group.get().name == "group_1" );
+               EXPECT_TRUE( batch.group.get().name == "group_1" ) << "bootorder: " << common::range::make( bootorder) << " - state: " << state;
                ASSERT_TRUE( batch.executables.size() == 1);
                EXPECT_TRUE( batch.executables.at( 0).get().path == "exe1");
             }

@@ -313,6 +313,11 @@ namespace casual
       {
          Trace trace{ "broker::State::remove_process"};
 
+         if( forward.pid == pid)
+         {
+            forward = common::process::Handle{};
+         }
+
          local::remove_process( instances.local, services, pid);
          local::remove_process( instances.remote, services, pid);
       }

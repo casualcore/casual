@@ -113,25 +113,6 @@ namespace casual
 
                } // task
 
-               namespace domain
-               {
-                  state::Executable executable( State& state)
-                  {
-                     state::Executable manager;
-                     manager.alias = "casual-domain-manager";
-                     manager.path = "${CASUAL_HOME}/bin/casual-domain-manager";
-                     manager.configured_instances = 1;
-                     manager.memberships.push_back( state.groups.at( 0).id);
-                     manager.note = "responsible for all executables in this domain";
-                     manager.instances.push_back( process::id());
-
-                     return manager;
-                  }
-               } // domain
-
-
-
-
             } // <unnamed>
          } // local
          namespace handle
@@ -139,61 +120,55 @@ namespace casual
 
             namespace mandatory
             {
-               void boot( State& state)
+               namespace boot
                {
-                  Trace trace{ "domain::manager::handle::mandatory::boot"};
-
+                  void prepare( State& state)
                   {
-                     state::Executable broker;
-                     broker.alias = "casual-broker";
-                     broker.path = "${CASUAL_HOME}/bin/casual-broker";
-                     broker.configured_instances = 1;
-                     broker.memberships.push_back( state.groups.at( 0).id);
-                     broker.note = "service lookup and management";
-                     //broker.restart = true;
+                     Trace trace{ "domain::manager::handle::mandatory::boot::prepare"};
 
-                     state.executables.push_back( std::move( broker));
+                     {
+                        state::Executable broker;
+                        broker.alias = "casual-broker";
+                        broker.path = "${CASUAL_HOME}/bin/casual-broker";
+                        broker.configured_instances = 1;
+                        broker.memberships.push_back( state.global.group);
+                        broker.note = "service lookup and management";
+                        //broker.restart = true;
+
+                        state.executables.push_back( std::move( broker));
+                     }
+
+                     {
+                        state::Executable tm;
+                        tm.alias = "casual-transaction-manager";
+                        tm.path = "${CASUAL_HOME}/bin/casual-transaction-manager";
+                        tm.configured_instances = 1;
+                        tm.memberships.push_back( state.global.group);
+                        tm.note = "manage transaction in this domain";
+                        //tm.restart = true;
+
+                        state.executables.push_back( std::move( tm));
+                     }
+
+                     if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
+                     {
+                        state::Executable gateway;
+                        gateway.alias = "casual-gateway-manager";
+                        gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
+                        gateway.configured_instances = 1;
+                        gateway.memberships.push_back(  state.global.last);
+                        gateway.note = "manage connections to and from other domains";
+
+                        state.executables.push_back( std::move( gateway));
+                     }
                   }
-
-                  {
-                     state::Executable tm;
-                     tm.alias = "casual-transaction-manager";
-                     tm.path = "${CASUAL_HOME}/bin/casual-transaction-manager";
-                     tm.configured_instances = 1;
-                     tm.memberships.push_back( state.groups.at( 0).id);
-                     tm.note = "manage transaction in this domain";
-                     //tm.restart = true;
-
-                     state.executables.push_back( std::move( tm));
-                  }
-
-                  if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
-                  {
-                     state::Executable gateway;
-                     gateway.alias = "casual-gateway-manager";
-                     gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
-                     gateway.configured_instances = 1;
-                     gateway.memberships.push_back( state.groups.at( 0).id);
-                     gateway.note = "manage connections to and from other domains";
-
-                     state.executables.push_back( std::move( gateway));
-                  }
-               }
-
+               } // boot
             } // mandatory
 
 
             void boot( State& state)
             {
                Trace trace{ "domain::manager::handle::boot"};
-
-               //
-               // Add our self to processes that this domain has. Mostly to
-               // help in unittest, but also to make it symmetric
-               //
-
-               state.processes[ common::process::handle().pid] = common::process::handle();
-               state.executables.push_back( manager::local::domain::executable( state));
 
 
                range::for_each( state.bootorder(), [&]( state::Batch& batch){

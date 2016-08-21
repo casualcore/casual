@@ -199,11 +199,25 @@ namespace casual
                std::vector< common::process::Handle> listeners;
             } termination;
 
+
+
             //!
             //! check if task are done, and if so, start the next task
             //!
             bool execute();
             task::Queue tasks;
+
+            struct
+            {
+               state::Group::id_type group = 0;
+               state::Group::id_type last = 0;
+
+               //!
+               //! executable id of this domain manager
+               //!
+               state::Executable::id_type manager = 0;
+
+            } global;
 
             //!
             //! Runlevel can only "go forward"

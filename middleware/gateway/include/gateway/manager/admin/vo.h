@@ -43,7 +43,7 @@ namespace casual
                      enum class Runlevel : short
                      {
                         absent,
-                        booting,
+                        connecting,
                         online,
                         shutdown,
                         error
