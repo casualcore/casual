@@ -52,6 +52,8 @@ namespace casual
             auto state = local::configure( R"(
 domain:
 
+  name: unittest-domain
+
   executables:
     - path: echo
       arguments: [poop]
@@ -72,6 +74,8 @@ domain:
             auto state = local::configure( R"(
 domain:
   
+  name: unittest-domain
+
   groups:
     - name: group_1
 

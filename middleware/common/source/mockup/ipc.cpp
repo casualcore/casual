@@ -447,7 +447,9 @@ namespace casual
 
             Link::Link( id_type input, id_type output)
                : m_implementation( input, output)
-            {}
+            {
+               log << "link: " << *this << '\n';
+            }
 
             Link::~Link() = default;
 
@@ -463,10 +465,21 @@ namespace casual
                ipc.send( message::mockup::Clear{}, communication::ipc::policy::Blocking{});
             }
 
+            std::ostream& operator << ( std::ostream& out, const Link& value)
+            {
+               return out << "{ input:" << value.m_implementation->input
+                     << ", output: " << value.m_implementation->output
+                     << '}';
+            }
+
 
             struct Collector::Implementation
             {
-               Implementation() : m_link{ m_input.connector().id(), m_output.connector().id()}, m_pid( mockup::pid::next()) {}
+               Implementation() : m_link{ m_input.connector().id(), m_output.connector().id()}, m_pid( mockup::pid::next())
+               {
+                  Trace trace{ "Collector::Implementation()"};
+
+               }
 
                void clear()
                {
@@ -485,7 +498,7 @@ namespace casual
 
             Collector::Collector()
             {
-
+               log << "collector: " << *this << '\n';
             }
             Collector::~Collector() = default;
 
@@ -501,6 +514,15 @@ namespace casual
             void Collector::clear()
             {
                m_implementation->clear();
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Collector& value)
+            {
+               return out << "{ process: " << value.process()
+                     << ", input:" << value.m_implementation->m_input
+                     << ", output: " << value.m_implementation->m_output
+                     << ", link: " << value.m_implementation->m_link
+                     << '}';
             }
 
 
@@ -547,7 +569,10 @@ namespace casual
 
             };
 
-            Replier::Replier( message::dispatch::Handler&& replier) : m_implementation{ std::move( replier)} {}
+            Replier::Replier( message::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
+            {
+               log << "replier: " << *this << '\n';
+            }
 
             Replier::~Replier() = default;
 
@@ -557,6 +582,12 @@ namespace casual
 
             process::Handle Replier::process() const { return m_implementation->process;}
             id_type Replier::input() const { return m_implementation->process.queue;}
+
+            std::ostream& operator << ( std::ostream& out, const Replier& value)
+            {
+               return out << "{ process:" << value.m_implementation->process << '}';
+            }
+
 
 
          } // ipc

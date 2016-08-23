@@ -371,8 +371,8 @@ namespace casual
             //!
             //!
             //!
-            std::vector< Exit> wait( const std::vector< platform::pid::type> pids);
-            std::vector< Exit> wait( const std::vector< platform::pid::type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids);
+            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout);
 
 
             //!
@@ -381,8 +381,8 @@ namespace casual
             //! @return the terminated l
             //!
             //
-            std::vector< Exit> terminate( std::vector< platform::pid::type> pids);
-            std::vector< Exit> terminate( std::vector< platform::pid::type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids);
+            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout);
 
          } // lifetime
 

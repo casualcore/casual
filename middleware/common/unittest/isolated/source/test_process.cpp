@@ -26,7 +26,6 @@ namespace casual
             {
                return directory::name::base( __FILE__) + "../../../bin/simple_process";
             }
-
          }
       }
 
@@ -41,8 +40,6 @@ namespace casual
 
          // wait for it..
          EXPECT_TRUE( process::wait( pid) == 0);
-
-         signal::clear();
       }
 
       TEST( casual_common_process, spawn_one_process_with_argument)
@@ -58,7 +55,6 @@ namespace casual
          auto result = process::wait( pid);
          EXPECT_TRUE( result == 42) << "result: " << result;
 
-         signal::clear();
       }
 
       TEST( casual_common_process, spawn_one_process_check_termination)
@@ -86,8 +82,6 @@ namespace casual
 
          ASSERT_TRUE( terminated.size() == 1) << "terminated.size(): " << terminated.size();
          EXPECT_TRUE( terminated.front().pid == pid);
-
-         signal::clear();
       }
 
 
@@ -99,7 +93,7 @@ namespace casual
 
          for( auto& pid : pids)
          {
-            pid = process::spawn( local::processPath(), {});
+            pid = process::spawn( "sleep", { "3600"});
          }
 
          auto terminated = process::lifetime::terminate( pids, std::chrono::seconds( 5));
@@ -107,8 +101,6 @@ namespace casual
 
          ASSERT_TRUE( pids.size() == terminated.size());
          EXPECT_TRUE( range::equal( range::sort( pids), range::sort( terminated)));
-
-         signal::clear();
       }
 
 
@@ -121,8 +113,6 @@ namespace casual
          auto terminated = process::lifetime::wait( { 666});
 
          EXPECT_TRUE( terminated.empty());
-
-         signal::clear();
       }
 
       TEST( casual_common_process, spawn_non_existing_application__gives_exception)

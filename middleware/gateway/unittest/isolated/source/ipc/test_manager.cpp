@@ -202,32 +202,42 @@ domain:
       {
          namespace
          {
-            namespace inbound
+
+            namespace condition
             {
-               auto online() -> decltype( local::call::wait::ready::state())
+               template< typename P>
+               auto call( P&& predicate) -> decltype( local::call::wait::ready::state())
                {
-                  auto state = local::call::wait::ready::state();
-
-                  auto check_state = [&]()
+                  while( true)
                   {
-                     if( state.connections.empty()) { return false;}
+                     auto state = local::call::wait::ready::state();
 
-                     using vo_type = manager::admin::vo::Connection;
-
-                     return range::any_of( state.connections, []( const vo_type& vo){
-                        return vo.runlevel == vo_type::Runlevel::online && vo.bound == vo_type::Bound::in;
-                     });
-                  };
-
-                  while( ! check_state())
-                  {
+                     if( predicate( state))
+                     {
+                        return state;
+                     }
                      process::sleep( std::chrono::milliseconds{ 5});
-                     state = local::call::state();
                   }
-
-                  return state;
                }
-            } // inbound
+            } // condition
+
+            auto online() -> decltype( local::call::wait::ready::state())
+            {
+               using state_type = decltype( local::call::wait::ready::state());
+
+               return condition::call( []( const state_type& state){
+
+                  if( state.connections.empty()) { return false;}
+
+                  using vo_type = manager::admin::vo::Connection;
+
+                  return range::all_of( state.connections, []( const vo_type& vo){
+                     return vo.runlevel == vo_type::Runlevel::online;
+                  });
+
+               });
+            }
+
          } // <unnamed>
       } // local
 
@@ -246,7 +256,7 @@ domain:
          //
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
-         auto state = local::inbound::online();
+         auto state = local::online();
 
 
 
