@@ -35,7 +35,7 @@ namespace casual
 
                      namespace check
                      {
-                        void error( decltype( common::error::last()) last_error)
+                        void error( const decltype( common::error::last()) last_error)
                         {
                            switch( last_error)
                            {
@@ -93,15 +93,20 @@ namespace casual
 
                      namespace address
                      {
+                        const char* null_if_empty( const std::string& content)
+                        {
+                           if( content.empty()) { return nullptr;}
+                           return content.c_str();
+                        }
+
                         const char* host( const Address& address)
                         {
-                           if( address.host.empty()) { return nullptr;}
-                           return address.host.c_str();
+                           return null_if_empty( address.host);
                         }
+
                         const char* port( const Address& address)
                         {
-                           if( address.port.empty()) { return nullptr;}
-                           return address.port.c_str();
+                           return null_if_empty( address.port);
                         }
                      }
 
@@ -133,13 +138,6 @@ namespace casual
                         }
 
                         std::unique_ptr< struct addrinfo, std::function< void( struct addrinfo*)>> deleter( information, &freeaddrinfo);
-
-                        //
-                        // Add (at least) one (fake) error-code
-                        //
-                        //std::vector < std::decay< decltype( errno)>::type > errors{ ENETUNREACH};
-                        //
-                        // why?
 
                         for( const struct addrinfo* info = information; info; info = info->ai_next)
                         {
@@ -215,7 +213,7 @@ namespace casual
                      }
 
 
-                     tcp::socket::descriptor_type duplicate( tcp::socket::descriptor_type descriptor)
+                     tcp::socket::descriptor_type duplicate( const tcp::socket::descriptor_type descriptor)
                      {
                         Trace trace( "common::communication::tcp::local::socket::duplicate");
 
@@ -224,16 +222,34 @@ namespace casual
                         //
                         //common::signal::thread::scope::Block block;
 
-                        auto copy = check::result( ::dup( descriptor));
+                        const auto copy = check::result( ::dup( descriptor));
 
                         log << "descriptors - original: "<< descriptor << " , copy:" << copy <<'\n';
 
                         return copy;
                      }
 
+                     Address names( const struct sockaddr& info, const socklen_t size)
+                     {
+                        char host[ NI_MAXHOST];
+                        char serv[ NI_MAXSERV];
+                        const int flags{ };
+
+                        check::result(
+                           getnameinfo(
+                              &info, size,
+                              host, NI_MAXHOST,
+                              serv, NI_MAXSERV,
+                              flags));
+
+                        return { Address::Host{ host}, Address::Port{ serv}};
+                     }
+
+
                   } // socket
 
                } // <unnamed>
+
             } // local
 
             Address::Address( const std::string& address)
@@ -275,9 +291,43 @@ namespace casual
                return out << "{ host: " << value.host << ", port: " << value.port << '}';
             }
 
+            namespace socket
+            {
+
+               namespace address
+               {
+                  Address host( const descriptor_type descriptor)
+                  {
+                     struct sockaddr info{ };
+                     socklen_t size = sizeof( info);
+
+                     local::socket::check::result(
+                        getsockname(
+                           descriptor, &info, &size));
+
+                     return local::socket::names( info, size);
+                  }
+
+                  Address peer( const descriptor_type descriptor)
+                  {
+                     struct sockaddr info{ };
+                     socklen_t size = sizeof( info);
+
+                     local::socket::check::result(
+                        getpeername(
+                           descriptor, &info, &size));
+
+                     return local::socket::names( info, size);
+                  }
+
+               } // address
+
+            } // socket
+
+
             Socket::Socket() noexcept = default;
 
-            Socket::Socket( Socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
+            Socket::Socket( const Socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
 
             Socket::~Socket() noexcept
             {
@@ -323,18 +373,18 @@ namespace casual
             {
                log << "Socket::release - descriptor: " << m_descriptor << '\n';
 
-               auto descriptor = m_descriptor;
+               const auto descriptor = m_descriptor;
                m_descriptor = -1;
                return descriptor;
             }
 
 
-            Socket adopt( socket::descriptor_type descriptor)
+            Socket adopt( const socket::descriptor_type descriptor)
             {
                return { descriptor};
             }
 
-            Socket duplicate( socket::descriptor_type descriptor)
+            Socket duplicate( const socket::descriptor_type descriptor)
             {
                return adopt( local::socket::duplicate( descriptor));
             }
@@ -407,7 +457,7 @@ namespace casual
                   namespace
                   {
 
-                     ssize_t send( socket::descriptor_type descriptor, const void* const data, std::size_t const size, common::Flags< Flag> flags)
+                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, std::size_t const size, common::Flags< Flag> flags)
                      {
                         common::signal::handle();
 
@@ -416,9 +466,7 @@ namespace casual
 
                      }
 
-
-
-                     ssize_t receive( socket::descriptor_type descriptor, void* const data, const std::size_t size, common::Flags< Flag> flags)
+                     ssize_t receive( const socket::descriptor_type descriptor, void* const data, const std::size_t size, common::Flags< Flag> flags)
                      {
                        log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( data) << ", size: " << size << ", flags: " << flags << '\n';
 

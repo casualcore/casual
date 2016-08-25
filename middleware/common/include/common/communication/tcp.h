@@ -29,7 +29,7 @@ namespace casual
             {
                struct Host : std::string
                {
-                  using std::string::string;
+                  Host( std::string s) : std::string{ std::move( s)} {}
                };
 
                struct Port : public std::string
@@ -53,9 +53,22 @@ namespace casual
             {
                using descriptor_type = platform::tcp::descriptor::type;
 
+               namespace address
+               {
+
+                  //!
+                  //! @return The address to which the socket is bound to on local host
+                  //!
+                  Address host( descriptor_type descriptor);
+
+                  //!
+                  //! @return The address of the peer connected to the socket
+                  //!
+                  Address peer( descriptor_type descriptor);
+
+               } // address
+
             } // socket
-
-
 
             class Socket
             {
@@ -66,8 +79,8 @@ namespace casual
                Socket() noexcept;
                ~Socket() noexcept;
 
-               Socket( const Socket& other);
-               Socket& operator = ( const Socket& other);
+               Socket( const Socket&);
+               Socket& operator = ( const Socket&);
 
                Socket( Socket&&) noexcept;
                Socket& operator = ( Socket&&) noexcept;
