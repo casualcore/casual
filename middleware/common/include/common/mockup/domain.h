@@ -145,18 +145,18 @@ namespace casual
 
                namespace create
                {
-                  message::Service service(
+                  message::service::advertise::Service service(
                         std::string name,
                         std::chrono::microseconds timeout = std::chrono::microseconds::zero());
                } // create
 
                struct Server
                {
-                  Server( std::vector< message::Service> services);
-                  Server( message::Service service);
+                  Server( std::vector< message::service::advertise::Service> services);
+                  Server( message::service::advertise::Service service);
 
-                  void advertise( std::vector< message::Service> services) const;
-                  void undadvertise( std::vector< message::Service> services) const;
+                  void advertise( std::vector< message::service::advertise::Service> services) const;
+                  void undadvertise( std::vector< std::string> services) const;
 
 
                   void send_ack( std::string service) const;

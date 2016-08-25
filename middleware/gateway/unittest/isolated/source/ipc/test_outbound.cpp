@@ -129,7 +129,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, shutdown_before_connection__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          //
          // We need to have a domain manager to 'connect the process'
@@ -146,7 +146,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, connection_then_force_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain doman;
@@ -155,7 +155,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, connection_then_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_THROW({
             local::Domain domain;
@@ -171,11 +171,12 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, service_call__expect_echo)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
 
          common::message::service::call::callee::Request request;
          {
@@ -190,7 +191,8 @@ namespace casual
          // handle the message, as we're the other domain
          //
          {
-            common::message::service::call::callee::Request message;
+
+            message::interdomain::service::call::receive::Request message;
             communication::ipc::blocking::receive( domain.remote.output(), message);
 
             EXPECT_TRUE( message.correlation == correlation);

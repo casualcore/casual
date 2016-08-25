@@ -7,6 +7,7 @@
 
 #include "common/platform.h"
 #include "common/transaction/id.h"
+#include "common/service/type.h"
 
 #include "common/marshal/marshal.h"
 
@@ -29,10 +30,8 @@ namespace casual
             UTILITY_BASE = 500,
             flush_ipc, // dummy message used to flush queue (into cache)
             poke,
-            shutdownd_request,
-            shutdownd_reply,
-            forward_connect_request,
-            forward_connect_reply,
+            shutdown_request,
+            shutdown_reply,
             delay_message,
             inbound_ipc_connect,
 
@@ -41,8 +40,6 @@ namespace casual
             process_lookup_reply,
 
             DOMAIN_BASE = 1000,
-            domain_discover_request,
-            domain_discover_reply,
             domain_scale_executable,
             domain_process_connect_request,
             domain_process_connect_reply,
@@ -140,16 +137,31 @@ namespace casual
             gateway_worker_disconnect,
             gateway_ipc_connect_request,
             gateway_ipc_connect_reply,
-            gateway_connection_information_request,
-            gateway_connection_information_reply,
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
+            gateway_domain_automatic_discover_request,
+            gateway_domain_automatic_discover_reply,
+            gateway_service_advertise,
+            gateway_service_unadvertise,
             gateway_domain_id,
 
+            // Innterdomain messages, part of gateway
+            INTERDOMAIN_BASE = 8000,
+            ineterdomain_domain_discover_request,
+            ineterdomain_domain_discover_reply,
+            ineterdomain_service_call,
+            ineterdomain_service_reply,
+            ineterdomain_transaction_resource_prepare_request,
+            ineterdomain_transaction_resource_prepare_reply,
+            ineterdomain_transaction_resource_commit_request,
+            ineterdomain_transaction_resource_commit_reply,
+            ineterdomain_transaction_resource_rollback_request,
+            ineterdomain_transaction_resource_rollback_reply,
 
 
 
-            MOCKUP_BASE = 1000000, // avoid conflict with real messages
+
+            MOCKUP_BASE = 10000000, // avoid conflict with real messages
             mockup_disconnect,
             mockup_clear,
          };
@@ -162,6 +174,7 @@ namespace casual
          {
             return message.type();
          }
+
 
          namespace convert
          {
@@ -201,31 +214,6 @@ namespace casual
             })
          };
 
-         template< typename M, message::Type message_type>
-         struct type_wrapper : public M
-         {
-            using M::M;
-
-            constexpr static Type type() { return message_type;}
-
-            Uuid correlation;
-
-            //!
-            //! The execution-id
-            //!
-            mutable Uuid execution;
-
-            CASUAL_CONST_CORRECT_MARSHAL(
-            {
-               //
-               // correlation is part of ipc::message::Complete, and is
-               // handled by the ipc-abstraction (marshaled 'on the side')
-               //
-
-               archive & execution;
-               M::marshal( archive);
-            })
-         };
 
          namespace flush
          {
@@ -264,7 +252,7 @@ namespace casual
          //!
          namespace shutdown
          {
-            struct Request : basic_message< Type::shutdownd_request>
+            struct Request : basic_message< Type::shutdown_request>
             {
                inline Request() = default;
                inline Request( common::process::Handle process) : process{ std::move( process)} {}
@@ -280,7 +268,7 @@ namespace casual
                })
             };
 
-            struct Reply : basic_message< Type::shutdownd_reply>
+            struct Reply : basic_message< Type::shutdown_reply>
             {
                template< typename ID>
                struct holder_t
@@ -315,39 +303,6 @@ namespace casual
          // Below, some basic message related types that is used by others
          //
 
-         struct Service
-         {
-
-            Service() = default;
-            Service& operator = (const Service& rhs) = default;
-
-
-
-            explicit Service( std::string name, std::uint64_t type, std::uint64_t transaction)
-               : name( std::move( name)), type( type), transaction( transaction)
-            {}
-
-            Service( std::string name)
-               : Service( std::move( name), 0, 0)
-            {}
-
-            std::string name;
-            std::uint64_t type = 0;
-            std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            std::vector< platform::ipc::id::type> traffic_monitors;
-            std::uint64_t transaction = 0;
-
-            CASUAL_CONST_CORRECT_MARSHAL(
-            {
-               archive & name;
-               archive & type;
-               archive & timeout;
-               archive & traffic_monitors;
-               archive & transaction;
-            })
-
-            friend std::ostream& operator << ( std::ostream& out, const Service& value);
-         };
 
          namespace server
          {
@@ -433,25 +388,7 @@ namespace casual
                };
 
             } // spawn
-
-
-
-
-
-
          } // process
-
-
-
-         namespace forward
-         {
-            namespace connect
-            {
-               using Request = server::connect::basic_request< Type::forward_connect_request>;
-               using Reply = server::connect::basic_reply< Type::forward_connect_reply>;
-            } // connect
-
-         } // forward
 
          namespace reverse
          {
@@ -478,9 +415,6 @@ namespace casual
             template<>
             struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
 
-            template<>
-            struct type_traits< forward::connect::Request> : detail::type< forward::connect::Reply> {};
-
 
 
             template< typename T>
@@ -493,10 +427,6 @@ namespace casual
 
                return result;
             }
-
-
-
-
          } // reverse
 
       } // message

@@ -1,10 +1,6 @@
-/*
- * server.cpp
- *
- *  Created on: 22 apr 2015
- *      Author: 40043280
- */
-
+//!
+//! casual
+//!
 
 #include "common/message/service.h"
 
@@ -14,6 +10,15 @@ namespace casual
    {
       namespace message
       {
+         std::ostream& operator << ( std::ostream& out, const Service& value)
+         {
+            return out << "{ name: " << value.name
+                  << ", type: " << value.type
+                  << ", timeout: " << value.timeout.count()
+                  << ", mode: " << value.transaction
+                  << '}';
+         }
+
          namespace service
          {
 
@@ -24,7 +29,16 @@ namespace casual
                      << '}';
             }
 
+
+
             std::ostream& operator << ( std::ostream& out, const Advertise& message)
+            {
+               return out << "{ process: " << message.process
+                     << ", services: " << range::make( message.services)
+                     << '}';
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Unadvertise& message)
             {
                return out << "{ process: " << message.process
                      << ", services: " << range::make( message.services)
@@ -34,6 +48,26 @@ namespace casual
 
             namespace lookup
             {
+               std::ostream& operator << ( std::ostream& out, const Request::Context& value)
+               {
+                  switch( value)
+                  {
+                     case Request::Context::forward: return out << "forward";
+                     case Request::Context::gateway: return out << "gateway";
+                     case Request::Context::no_reply: return out << "no_reply";
+                     case Request::Context::regular: return out << "regular";
+                  }
+                  return out << "unknown";
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Request& value)
+               {
+                  return out << "{ process: " << value.process
+                        << ", requested: " << value.requested
+                        << ", context: " << value.context
+                        << '}';
+
+               }
 
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {

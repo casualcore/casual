@@ -84,7 +84,7 @@ namespace casual
 
          TEST( casual_common_communication_message, complete_add__ordered)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::traffic_event));
 
@@ -103,7 +103,7 @@ namespace casual
 
          TEST( casual_common_communication_message, complete_add__reverse_ordered)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             auto parts = local::payload::parts( 100, common::message::Type::traffic_event);
             range::reverse( parts);
@@ -124,14 +124,14 @@ namespace casual
 
          TEST( casual_common_communication_ipc, instanciate)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device device;
          }
 
          TEST( casual_common_communication_ipc, exists)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device device;
             EXPECT_TRUE( ipc::exists( device.connector().id()));
@@ -140,7 +140,7 @@ namespace casual
 
          TEST( casual_common_communication_ipc, non_blocking_receive__expect_no_messages)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device device;
 
@@ -151,7 +151,7 @@ namespace casual
 
          TEST( casual_common_communication_ipc, send_receivce__small_message)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device destination;
 

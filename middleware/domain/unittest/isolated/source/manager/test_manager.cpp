@@ -162,7 +162,7 @@ domain:
 
          TEST( casual_domain_manager, empty_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::empty()}};
@@ -173,7 +173,7 @@ domain:
 
          TEST( casual_domain_manager, echo_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo()}};
@@ -185,7 +185,7 @@ domain:
 
          TEST( casual_domain_manager, echo_restart_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo_restart()}};
@@ -197,7 +197,7 @@ domain:
 
          TEST( casual_domain_manager, sleep_configuration__expect_boot)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::sleep()}};
@@ -298,13 +298,26 @@ domain:
 
                } // configuration
 
+               namespace predicate
+               {
+                  struct Manager
+                  {
+                     bool operator () ( const admin::vo::Executable& value) const
+                     {
+                        return value.alias == "casual-domain-manager";
+                     }
+                  };
+
+               } // predicate
+
+
             } // <unnamed>
          } // local
 
 
          TEST( casual_domain_manager, state_long_running_processes_5__expect_5)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
@@ -314,15 +327,15 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).instances.size() == 5) << CASUAL_MAKE_NVP( state);
 
          }
 
 
          TEST( casual_domain_manager, state_long_running_processes_5__scale_out_to_10___expect_10)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
@@ -338,14 +351,14 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 10) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).configured_instances == 10) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 1).instances.size() == 10) << CASUAL_MAKE_NVP( state);
          }
 
          TEST( casual_domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
@@ -362,8 +375,8 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 0) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).configured_instances == 0) << CASUAL_MAKE_NVP( state);
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
@@ -372,7 +385,7 @@ domain:
 
          TEST( casual_domain_manager, groups_4__with_5_executables___start_with_instances_1__scale_to_10)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             const std::string configuration{ R"(
 domain:
@@ -496,9 +509,11 @@ domain:
             common::process::instance::fetch::handle( common::process::instance::identity::broker());
 
             auto state = local::call::state();
+            state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));
+
 
             ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 1) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 1).configured_instances == 1) << CASUAL_MAKE_NVP( state);
 
 
             for( auto& instance : state.executables)
@@ -506,11 +521,12 @@ domain:
                local::call::scale( instance.alias, 10);
             }
 
+            state = local::call::state();
 
-            for( auto executable : local::call::state().executables)
+            for( auto executable : range::remove_if( state.executables, local::predicate::Manager{}))
             {
                EXPECT_TRUE( executable.configured_instances == 10);
-               EXPECT_TRUE( executable.instances.size() == 10);
+               EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
             }
          }
 

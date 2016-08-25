@@ -165,7 +165,7 @@ domain:
 
       TEST( casual_queue, broker_startup)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -178,7 +178,7 @@ domain:
 
       TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 
@@ -197,7 +197,7 @@ domain:
 
       TEST( casual_queue, enqueue_5_message___expect_5_message_in_queue)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::configuration()};
 

@@ -1,6 +1,9 @@
+//!
+//! casual
+//!
 
 #include <gtest/gtest.h>
-
+#include "common/unittest.h"
 
 #include "common/environment.h"
 #include "common/exception.h"
@@ -12,12 +15,15 @@ namespace casual
    {
       TEST( casual_common_environment, string__no_variable__expect_same)
       {
+         common::unittest::Trace trace;
 
          EXPECT_TRUE( environment::string( "test/a/b/c") == "test/a/b/c");
       }
 
       TEST( casual_common_environment, environment_string__variable_in_middle__expect_altered)
       {
+         common::unittest::Trace trace;
+
          ASSERT_TRUE( environment::variable::exists( "HOME"));
 
          auto home = environment::variable::get( "HOME");
@@ -29,6 +35,8 @@ namespace casual
 
       TEST( casual_common_environment, string_variable__expect_altered)
       {
+         common::unittest::Trace trace;
+
          ASSERT_TRUE( environment::variable::exists( "HOME"));
 
          auto home = environment::variable::get( "HOME");
@@ -40,6 +48,8 @@ namespace casual
 
       TEST( casual_common_environment, string_variable__not_correct_format__expect_throw)
       {
+         common::unittest::Trace trace;
+
          EXPECT_THROW(
          {
             environment::string( "${HOME/a/b/c");

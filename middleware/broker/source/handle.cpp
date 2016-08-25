@@ -5,9 +5,9 @@
 #include "broker/handle.h"
 #include "broker/transform.h"
 #include "broker/admin/server.h"
+#include "broker/common.h"
 
 #include "common/server/lifetime.h"
-#include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/process.h"
@@ -52,13 +52,26 @@ namespace casual
 
 
 
+         namespace process
+         {
+            void Exit::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::process::Exit"};
+
+               log << "message: " << message << '\n';
+
+               m_state.remove_process( message.death.pid);
+            }
+
+         } // process
+
 
 
          namespace traffic
          {
             void Connect::operator () ( common::message::traffic::monitor::connect::Request& message)
             {
-               trace::internal::Scope trace{ "broker::handle::traffic::Connect"};
+               Trace trace{ "broker::handle::traffic::Connect"};
 
                m_state.traffic.monitors.add( message.process);
 
@@ -68,7 +81,7 @@ namespace casual
 
             void Disconnect::operator () ( message_type& message)
             {
-               trace::internal::Scope trace{ "broker::handle::monitor::Disconnect"};
+               Trace trace{ "broker::handle::monitor::Disconnect"};
 
                m_state.traffic.monitors.remove( message.process.pid);
             }
@@ -77,40 +90,96 @@ namespace casual
 
 
 
-         namespace forward
-         {
-
-            void Connect::operator () ( const common::message::forward::connect::Request& message)
-            {
-               common::trace::internal::Scope trace{ "broker::handle::forward::Connect"};
-
-               m_state.forward = message.process;
-            }
-
-         } // forward
-
-
-         void Advertise::operator () ( message_type& message)
-         {
-            trace::internal::Scope trace{ "broker::handle::Advertise"};
-
-            m_state.add( message);
-         }
-
-         void Unadvertise::operator () ( message_type& message)
-         {
-            trace::internal::Scope trace{ "broker::handle::Unadvertise"};
-
-            m_state.remove( message);
-         }
-
-
          namespace service
          {
+            void Advertise::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::Advertise"};
+
+               log << "message: " << message << '\n';
+
+               m_state.add( message);
+            }
+
+            void Unadvertise::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::Unadvertise"};
+
+               log << "message: " << message << '\n';
+
+               m_state.remove( message);
+            }
+
+            namespace gateway
+            {
+               void Advertise::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::gateway::Advertise"};
+
+                  log << "message: " << message << '\n';
+
+                  m_state.add( message);
+               }
+
+               void Unadvertise::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::gateway::Unadvertise"};
+
+                  log << "message: " << message << '\n';
+
+                  m_state.remove( message);
+               }
+
+               namespace discover
+               {
+                  void Reply::operator () ( message_type& message)
+                  {
+                     Trace trace{ "broker::handle::gateway::discover::Reply"};
+
+                     auto found = range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
+                        return r.correlation == message.correlation;
+                     });
+
+                     if( found)
+                     {
+                        auto pending = std::move( *found);
+                        m_state.pending.requests.erase( std::begin( found));
+
+                        auto service = m_state.find_service( pending.requested);
+
+                        if( service && ! service->instances.empty())
+                        {
+                           //
+                           // The requested service is now available, use
+                           // the lookup to decide how to progress.
+                           //
+                           Lookup{ m_state}( pending);
+                        }
+                        else
+                        {
+                           auto reply = common::message::reverse::type( pending);
+                           reply.service.name = pending.requested;
+                           reply.state = decltype( reply.state)::absent;
+
+                           ipc::device().blocking_send( pending.process.queue, reply);
+                        }
+
+                     }
+                     else
+                     {
+                        log << "failed to correlate pending request - assume it has been consumed by a recent started local server\n";
+                     }
+                  }
+
+
+               } // discover
+
+            } // gateway
+
 
             void Lookup::operator () ( message_type& message)
             {
-               trace::internal::Scope trace{ "broker::handle::service::Lookup"};
+               Trace trace{ "broker::handle::service::Lookup"};
 
                try
                {
@@ -135,7 +204,11 @@ namespace casual
 
                      ipc::device().blocking_send( message.process.queue, reply);
 
-                     service.lookedup++;
+                     ++service.lookedup;
+                  }
+                  else if( service.instances.empty())
+                  {
+                     throw state::exception::Missing{ "no instances"};
                   }
                   else
                   {
@@ -196,38 +269,112 @@ namespace casual
                      }
                   }
                }
-               catch( state::exception::Missing& exception)
+               catch( const state::exception::Missing&)
                {
-                  //
-                  // TODO: We will send the request to the gateway. (only if we want auto discovery)
-                  //
-                  // Server (queue) that hosts the requested service is not found.
-                  // We propagate this by having 0 occurrence of server in the response
-                  //
-                  auto reply = common::message::reverse::type( message);
-                  reply.service.name = message.requested;
-                  reply.state = decltype( reply.state)::absent;
 
-                  ipc::device().blocking_send( message.process.queue, reply);
+                  auto send_reply = scope::execute( [&](){
+
+                     log << "no instances found for service: " << message.requested << '\n';
+
+                     //
+                     // Server (queue) that hosts the requested service is not found.
+                     // We propagate this by having absent state
+                     //
+                     auto reply = common::message::reverse::type( message);
+                     reply.service.name = message.requested;
+                     reply.state = decltype( reply.state)::absent;
+
+                     ipc::device().blocking_send( message.process.queue, reply);
+                  });
+
+                  if( ! m_state.instances.remote.empty())
+                  {
+                     //
+                     // TODO: This is somewhat fragile.
+                     //
+                     log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
+
+                     common::message::gateway::domain::discover::automatic::Request request;
+                     request.correlation = message.correlation;
+                     request.domain = common::domain::identity();
+                     request.process = common::process::handle();
+                     request.services.push_back( message.requested);
+
+                     ipc::device().blocking_send( communication::ipc::gateway::manager::device(), request);
+
+                     m_state.pending.requests.push_back( std::move( message));
+
+                     send_reply.release();
+                  }
                }
             }
 
          } // service
 
 
+         namespace domain
+         {
+            namespace discover
+            {
+               void Request::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::domain::discover::Request"};
+
+                  auto reply = common::message::reverse::type( message);
+
+                  reply.domain = common::domain::identity();
+
+                  for( const auto& s : message.services)
+                  {
+                     auto&& service = m_state.find_service( s);
+
+                     if( service)
+                     {
+                        if( ! service->instances.local.empty())
+                        {
+                           //
+                           // Service is local
+                           //
+                           reply.services.emplace_back(
+                                 service->information.name,
+                                 service->information.type,
+                                 service->information.transaction);
+                        }
+                        else if( ! service->instances.remote.empty())
+                        {
+                           reply.services.emplace_back(
+                                 service->information.name,
+                                 service->information.type,
+                                 service->information.transaction,
+                                 service->instances.remote.front().hops());
+
+                        }
+                     }
+                  }
+
+                  ipc::device().blocking_send( message.process.queue, reply);
+
+               }
+            } // discover
+
+         } // domain
+
 
          void ACK::operator () ( message_type& message)
          {
-            trace::internal::Scope trace{ "broker::handle::ACK"};
+            Trace trace{ "broker::handle::ACK"};
 
             try
             {
-               auto& instance = m_state.instance( message.process.pid);
+               //
+               // This message can only come from a local instance
+               //
+
+               auto& instance = m_state.local_instance( message.process.pid);
 
                auto now = platform::clock_type::now();
 
                instance.unlock( now);
-               ++instance.invoked;
 
                //
                // Check if there are pending request for services that this
@@ -242,7 +389,7 @@ namespace casual
                   auto pending = common::range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
                      auto service = m_state.find_service( r.requested);
 
-                     return service && service->has( message.process.pid);
+                     return service && range::find( service->instances.local, message.process.pid);
                   });
 
                   if( pending)
@@ -270,7 +417,7 @@ namespace casual
          }
 
 
-         void Policy::connect( std::vector< common::message::Service> services, const std::vector< common::transaction::Resource>& resources)
+         void Policy::connect( std::vector< common::message::service::advertise::Service> services, const std::vector< common::transaction::Resource>& resources)
          {
             m_state.connect_broker( std::move( services));
          }
@@ -319,33 +466,18 @@ namespace casual
       common::message::dispatch::Handler handler( State& state)
       {
          return {
-
-            handle::forward::Connect{ state},
-            //handle::dead::process::Event{ state},
-            handle::Advertise{ state},
-            handle::Unadvertise{ state},
+            handle::process::Exit{ state},
+            handle::service::Advertise{ state},
+            handle::service::Unadvertise{ state},
+            handle::service::gateway::Advertise{ state},
+            handle::service::gateway::Unadvertise{ state},
+            handle::service::gateway::discover::Reply{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},
             handle::traffic::Connect{ state},
             handle::traffic::Disconnect{ state},
             handle::Call{ admin::services( state), state},
-            common::message::handle::Ping{},
-            common::message::handle::Shutdown{},
-         };
-      }
-
-      common::message::dispatch::Handler handler_no_services( State& state)
-      {
-         return {
-            handle::forward::Connect{ state},
-            //handle::dead::process::Event{ state},
-            handle::Advertise{ state},
-            handle::Unadvertise{ state},
-            handle::service::Lookup{ state},
-            handle::ACK{ state},
-            handle::traffic::Connect{ state},
-            handle::traffic::Disconnect{ state},
-            //handle::Call{ communication::ipc::inbound::device(), admin::services( state), state},
+            handle::domain::discover::Request{ state},
             common::message::handle::Ping{},
             common::message::handle::Shutdown{},
          };

@@ -97,6 +97,28 @@ namespace casual
 
       } // scope
 
+      namespace execute
+      {
+         //!
+         //! Execute @p executor once
+         //!
+         //! @note To be used with lambdas only.
+         //! @note Every invocation of the same type will only execute once.
+         //!
+         template< typename E>
+         void once( E&& executor)
+         {
+            static bool done = false;
+
+            if( ! done)
+            {
+               done = true;
+               executor();
+            }
+         }
+
+      } // execute
+
       namespace chain
       {
          namespace link
@@ -421,23 +443,6 @@ namespace casual
          }
 
 
-         //template< typename Iter>
-         friend std::ostream& operator << ( std::ostream& out, const Range& range)
-         {
-            if( out)
-            {
-               auto current = std::begin( range);
-               out << "[";
-               while( current != std::end( range))
-               {
-                  out << *current++;
-                  if( current != std::end( range))
-                     out << ",";
-               }
-               out << "]";
-            }
-            return out;
-         }
       private:
          iterator m_first;
          std::size_t m_size;
@@ -1008,7 +1013,7 @@ namespace casual
          template< typename R, typename T>
          auto find( R&& range, T&& value)
             -> typename std::enable_if<
-               common::traits::container::is_associative< typename std::decay<R>::type>::value,
+               common::traits::container::is_associative< common::traits::decay_t< R>>::value,
                decltype( make( std::forward< R>( range)))>::type
          {
             return make( range.find( value), std::end( range));
@@ -1020,7 +1025,7 @@ namespace casual
          template< typename R, typename T>
          auto find( R&& range, T&& value)
             -> typename std::enable_if<
-               ! common::traits::container::is_associative< typename std::decay<R>::type>::value,
+               ! common::traits::container::is_associative< common::traits::decay_t< R>>::value,
                decltype( make( std::forward< R>( range)))>::type
          {
             return make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));
@@ -1158,10 +1163,15 @@ namespace casual
          template< typename R1, typename R2, typename F>
          auto intersection( R1&& range, R2&& lookup, F functor) -> decltype( std::make_tuple( make( std::forward< R1>( range)), make( std::forward< R1>( range))))
          {
-            using range_type = decltype( make( std::forward< R1>( range)));
-            using value_type = typename range_type::value_type;
+            //using range_type = decltype( make( std::forward< R1>( range)));
+            using range_value_type = decltype( *std::begin( range));
+            using lookup_value_type = decltype( *std::begin( lookup));
 
-            auto lambda = [&]( const value_type& value){ return find_if( std::forward< R2>( lookup), std::bind( functor, value, std::placeholders::_1));};
+            auto lambda = [&]( range_value_type v){
+               return find_if( std::forward< R2>( lookup), [&]( lookup_value_type& l){
+                  return functor( v, l);
+               }); // std::bind( functor, value, std::placeholders::_1));
+            };
             return stable_partition( std::forward< R1>( range), lambda);
 
          }
@@ -1274,8 +1284,45 @@ namespace casual
          bool uniform( R1&& range1, R2&& range2, Compare comp)
          {
             return includes( std::forward< R1>( range1), std::forward< R2>( range2), comp)
-                  //&& includes( std::forward< R2>( range2), std::forward< R1>( range1), comp);
                  && includes( std::forward< R2>( range2), std::forward< R1>( range1), compare::inverse( comp));
+         }
+
+
+         template< typename Range, typename Predicate>
+         auto count_if( Range&& range, Predicate predicate) -> decltype( std::count_if( std::begin( range), std::end( range), predicate))
+         {
+            return std::count_if( std::begin( range), std::end( range), predicate);
+         }
+
+
+         template< typename Stream, typename Range, typename D>
+         Stream& print( Stream& out, Range&& range, D&& delimeter)
+         {
+            for( auto current = std::begin( range); current != std::end( range); ++current)
+            {
+               out << *current;
+
+               if( current + 1 != std::end( range))
+               {
+                  out << delimeter;
+               }
+            }
+            return out;
+         }
+
+         template< typename Stream, typename Range, typename D, typename F>
+         Stream& print( Stream& out, Range&& range,  D&& delimeter, F&& functor)
+         {
+            for( auto current = std::begin( range); current != std::end( range); ++current)
+            {
+               functor( out, *current);
+
+               if( current + 1 != std::end( range))
+               {
+                  out << delimeter;
+               }
+            }
+            return out;
          }
 
          namespace numeric
@@ -1386,6 +1433,17 @@ namespace casual
 
          } // sorted
       } // range
+
+      template< typename Iter>
+      std::ostream& operator << ( std::ostream& out, const Range< Iter>& range)
+      {
+         if( out)
+         {
+            out << "[";
+            range::print( out, range, ',') << ']';
+         }
+         return out;
+      }
 
       template< typename Iter1, typename Iter2>
       bool operator == ( const Range< Iter1>& lhs, const Range< Iter2>& rhs)

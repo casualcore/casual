@@ -54,7 +54,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
          {   
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             EXPECT_THROW( {
@@ -64,7 +64,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, listener_port_23666)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             EXPECT_NO_THROW({
@@ -102,7 +102,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, listener_port_23666__connect_to_port__expect_connection)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             mockup::Thread server{ &local::simple_server, std::string{ "23666"}};
@@ -115,7 +115,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, listener_port_23666__connect_to_port_10_times__expect_connections)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             mockup::Thread server{ &local::simple_server, std::string{ "23666"}};
@@ -185,7 +185,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, echo_server_port_23666__connect_to_port__expect_connection)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             const std::string port{ "23666"};
@@ -222,7 +222,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, echo_server_port_23666__10_connect_to_port__expect_echo_from_10)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             const std::string port{ "23666"};
@@ -266,7 +266,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__expect_connection)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
             signal::clear();
 
             const std::string port{ "23666"};

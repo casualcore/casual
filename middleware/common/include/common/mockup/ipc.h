@@ -83,6 +83,7 @@ namespace casual
 
                void clear() const;
 
+               friend std::ostream& operator << ( std::ostream& out, const Link& value);
             private:
                class Implementation;
                move::basic_pimpl< Implementation> m_implementation;
@@ -114,6 +115,8 @@ namespace casual
 
                void clear();
 
+               friend std::ostream& operator << ( std::ostream& out, const Collector& value);
+
             private:
                struct Implementation;
                move::basic_pimpl< Implementation> m_implementation;
@@ -143,6 +146,9 @@ namespace casual
                //!
                id_type input() const;
                process::Handle process() const;
+
+
+               friend std::ostream& operator << ( std::ostream& out, const Replier& value);
 
             private:
                struct Implementation;

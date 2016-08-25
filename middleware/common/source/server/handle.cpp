@@ -17,7 +17,7 @@ namespace casual
          {
             namespace
             {
-               void advertise( std::vector< message::Service> services)
+               void advertise( std::vector< message::service::advertise::Service> services)
                {
                   if( ! services.empty())
                   {
@@ -36,7 +36,7 @@ namespace casual
 
             namespace policy
             {
-               void Default::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Default::connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources)
                {
                   //
                   // Connection to the domain has been done before...
@@ -95,7 +95,7 @@ namespace casual
 
                   switch( service.transaction)
                   {
-                     case server::Service::Transaction::automatic:
+                     case service::transaction::Type::automatic:
                      {
                         if( message.trid)
                         {
@@ -107,17 +107,17 @@ namespace casual
                         }
                         break;
                      }
-                     case server::Service::Transaction::join:
+                     case service::transaction::Type::join:
                      {
                         transaction::Context::instance().join( message.trid);
                         break;
                      }
-                     case server::Service::Transaction::atomic:
+                     case service::transaction::Type::atomic:
                      {
                         transaction::Context::instance().start( now);
                         break;
                      }
-                     case server::Service::Transaction::none:
+                     case service::transaction::Type::none:
                      default:
                      {
                         //
@@ -197,7 +197,7 @@ namespace casual
                {}
 
 
-               void Admin::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Admin::connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources)
                {
                   //
                   // Connection to the domain has been done before...

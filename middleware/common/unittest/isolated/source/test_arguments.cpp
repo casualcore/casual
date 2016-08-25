@@ -1,8 +1,5 @@
 //!
-//! test_arguments.cpp
-//!
-//! Created on: Jan 5, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>

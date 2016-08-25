@@ -24,6 +24,13 @@ namespace casual
             } // scale
             namespace process
             {
+               namespace termination
+               {
+                  std::ostream& operator << ( std::ostream& out, const Event& value)
+                  {
+                     return out << "{ death: " << value.death << '}';
+                  }
+               } // termination
 
                namespace lookup
                {

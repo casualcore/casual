@@ -31,7 +31,7 @@ namespace casual
 
       TEST( common_move_pimpl, default_instansiation)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          move::basic_pimpl< local::Value> value;
 
@@ -41,7 +41,7 @@ namespace casual
 
       TEST( common_move_pimpl, instansiation_ctor)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          move::basic_pimpl< local::Value> value{ 666, "666"};
 
@@ -51,7 +51,7 @@ namespace casual
 
       TEST( common_move_pimpl, move)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          move::basic_pimpl< local::Value> source{ 666, "666"};
 
@@ -67,7 +67,7 @@ namespace casual
 
       TEST( common_pimpl, default_instansiation)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          basic_pimpl< local::Value> value;
 
@@ -77,7 +77,7 @@ namespace casual
 
       TEST( common_pimpl, instansiation_ctor)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          basic_pimpl< local::Value> value{ 666, "666"};
 
@@ -88,7 +88,7 @@ namespace casual
 
       TEST( common_pimpl, deep_copy)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          basic_pimpl< local::Value> a{ 666, "666"};
 
@@ -111,7 +111,7 @@ namespace casual
 
       TEST( common_pimpl, move)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          basic_pimpl< local::Value> source{ 666, "666"};
 

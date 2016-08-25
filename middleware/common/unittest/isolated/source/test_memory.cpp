@@ -1,11 +1,8 @@
 //!
-//! test_memory.cpp
-//!
-//! Created on: Dec 29, 2015
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 
 #include "common/memory.h"
@@ -72,6 +69,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, size)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          EXPECT_TRUE( memory::size( current_type) == TestFixture::expected())
@@ -81,6 +80,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, set)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          memory::set( current_type);
@@ -94,6 +95,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, set_6)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          memory::set( current_type, 6);
@@ -107,6 +110,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, copy)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          platform::binary_type original;

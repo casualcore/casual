@@ -7,6 +7,7 @@
 
 #include "common/environment.h"
 #include "common/message/traffic.h"
+#include "common/message/gateway.h"
 
 
 #include "common/flag.h"
@@ -284,6 +285,8 @@ namespace casual
                   {
                      Trace trace{ "mockup service::lookup::Request"};
 
+                     log  << "request: " << r << '\n';
+
                      auto reply = message::reverse::type( r);
 
                      auto found = range::find( m_state.services, r.requested);
@@ -292,12 +295,16 @@ namespace casual
                      {
                         reply = found->second;
                         reply.correlation = r.correlation;
+                        reply.execution = r.execution;
                      }
                      else
                      {
                         reply.service.name = r.requested;
                         reply.state = decltype( reply)::State::absent;
                      }
+
+                     log  << "reply: " << reply << '\n';
+
                      ipc::eventually::send( r.process.queue, reply);
                   },
                   [&]( message::service::call::ACK& m)
@@ -314,9 +321,30 @@ namespace casual
                      for( auto& service : m.services)
                      {
                         auto& lookup = m_state.services[ service.name];
-                        lookup.service = service;
+                        lookup.service.name = service.name;
+                        lookup.service.type = service.type;
+                        lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
+
+                     //log << "services: " << range::make( m_state.services) << '\n';
+                  },
+                  [&]( message::gateway::domain::service::Advertise& m)
+                  {
+                     Trace trace{ "mockup gateway::domain::service::Advertise"};
+
+                     log  << "message: " << m << '\n';
+
+                     for( auto& service : m.services)
+                     {
+                        auto& lookup = m_state.services[ service.name];
+                        lookup.service.name = service.name;
+                        lookup.service.type = service.type;
+                        lookup.service.transaction = service.transaction;
+                        lookup.process = m.process;
+                     }
+
+                     //log << "services: " << range::make( m_state.services) << '\n';
                   },
                   [&]( message::traffic::monitor::connect::Request& m)
                   {
@@ -326,6 +354,38 @@ namespace casual
                   [&]( message::traffic::monitor::Disconnect& m)
                   {
                      range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
+                  },
+                  [&]( message::gateway::domain::discover::Request& m)
+                  {
+                     Trace trace{ "mockup gateway::domain::discover::Request"};
+
+                     log << "request: " << m << '\n';
+
+                     auto reply = message::reverse::type( m);
+
+                     reply.domain = m.domain;
+
+                     for( auto&& s : m.services)
+                     {
+                        auto found = range::find( m_state.services, s);
+
+                        if( found)
+                        {
+                           traits::concrete::type_t< decltype( reply.services.front())> service;
+
+                           service.name = found->second.service.name;
+                           service.timeout = found->second.service.timeout;
+                           service.transaction = found->second.service.transaction;
+                           service.type = found->second.service.type;
+
+                           reply.services.push_back( std::move( service));
+                        }
+                     }
+
+                     log << "reply: " << reply << '\n';
+
+                     ipc::eventually::send( m.process.queue, reply);
+
                   },
                   local::handle::connect::Reply{ "broker"},
 
@@ -395,7 +455,7 @@ namespace casual
             {
                namespace
                {
-                  void advertise( std::vector< message::Service> services, const process::Handle& process)
+                  void advertise( std::vector< message::service::advertise::Service> services, const process::Handle& process)
                   {
                      message::service::Advertise advertise;
                      advertise.process = process;
@@ -411,11 +471,11 @@ namespace casual
             {
                namespace create
                {
-                  message::Service service(
+                  message::service::advertise::Service service(
                         std::string name,
                         std::chrono::microseconds timeout)
                   {
-                     message::Service result;
+                     message::service::advertise::Service result;
 
                      result.name = std::move( name);
                      result.timeout = timeout;
@@ -427,7 +487,7 @@ namespace casual
 
 
 
-               Server::Server( std::vector< message::Service> services)
+               Server::Server( std::vector< message::service::advertise::Service> services)
                 : m_replier{ message::dispatch::Handler{ service::Echo{}, local::handle::connect::Reply{ "echo server"},}}
                {
                   //
@@ -438,13 +498,14 @@ namespace casual
                   advertise( std::move( services));
                }
 
-               Server::Server( message::Service service) : Server{ std::vector< message::Service>{ std::move( service)}}
+               Server::Server( message::service::advertise::Service service)
+                  : Server{ std::vector< message::service::advertise::Service>{ std::move( service)}}
                {
 
                }
 
 
-               void Server::advertise( std::vector< message::Service> services) const
+               void Server::advertise( std::vector< message::service::advertise::Service> services) const
                {
                   Trace trace{ "mockup echo::Server::advertise"};
 
@@ -454,7 +515,7 @@ namespace casual
                   local::advertise( std::move( services),  m_replier.process());
                }
 
-               void Server::undadvertise( std::vector< message::Service> services) const
+               void Server::undadvertise( std::vector< std::string> services) const
                {
                   Trace trace{ "mockup echo::Server::unadvertise"};
 

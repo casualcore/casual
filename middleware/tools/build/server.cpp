@@ -43,7 +43,7 @@ struct Settings
       std::string name;
       std::string function;
       std::uint64_t type = 0;
-      std::uint64_t transaction = 0;
+      common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
    };
 
    std::string output;
@@ -65,19 +65,11 @@ struct Settings
                   {"casual-admin", common::server::Service::Type::cCasualAdmin},
                };
 
-               static std::map< std::string, std::uint64_t> transaction{
-                  {"auto", common::server::service::transaction::mode( common::server::Service::Transaction::automatic)},
-                  {"automatic", common::server::service::transaction::mode( common::server::Service::Transaction::automatic)},
-                  {"join", common::server::service::transaction::mode( common::server::Service::Transaction::join)},
-                  {"atomic",common::server::service::transaction::mode( common::server::Service::Transaction::atomic)},
-                  {"none", common::server::service::transaction::mode( common::server::Service::Transaction::none)},
-               };
-
                Service result;
                result.function = service.function;
                result.name = service.name;
                result.type = type[ service.type];
-               result.transaction = transaction[ service.transaction];
+               result.transaction = common::service::transaction::mode( service.transaction);
 
                return result;
             });
@@ -235,6 +227,7 @@ extern "C" {
 
 
 
+
    out << R"(
 
 
@@ -246,7 +239,7 @@ int main( int argc, char** argv)
       for( auto& service : settings.services)
       {
          out << R"(
-      {&)" << service.function << R"(, ")" << service.name << R"(", )" << service.type << ", " << service.transaction << "},";
+      {&)" << service.function << R"(, ")" << service.name << R"(", )" << service.type << ", " << common::cast::underlying( service.transaction) << "},";
       }
 
          out << R"(

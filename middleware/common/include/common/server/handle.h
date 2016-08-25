@@ -89,12 +89,12 @@ namespace casual
                   state.server_done = arguments.server_done;
 
 
-                  std::vector< message::Service> services;
+                  std::vector< message::service::advertise::Service> services;
 
                   for( auto& service : arguments.services)
                   {
                      auto name = service.origin;
-                     services.emplace_back( name, service.type, service::transaction::mode( service.transaction));
+                     services.emplace_back( name, service.type, service.transaction);
 
                      state.physical_services.push_back( std::move( service));
                      state.services.emplace( name, state.physical_services.back());
@@ -480,7 +480,7 @@ namespace casual
                //!
                struct Default
                {
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
@@ -500,7 +500,7 @@ namespace casual
                   Admin( communication::error::type handler);
 
 
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources);
 
                   void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 

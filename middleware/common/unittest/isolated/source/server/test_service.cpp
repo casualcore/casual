@@ -26,7 +26,7 @@ namespace casual
 
       TEST( common_server_service, equality)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          server::Service s1{ ".1", &local::service1};
          server::Service s2{ ".2", &local::service1};
@@ -36,7 +36,7 @@ namespace casual
 
       TEST( common_server_service, in_equality)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          server::Service s1{ ".1", &local::service1};
          server::Service s2{ ".2", &local::service2};
@@ -47,7 +47,7 @@ namespace casual
 
       TEST( common_server_service, bind_argument)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          server::Service s1{ ".1", std::bind( &local::service3, std::placeholders::_1, 10)};
          server::Service s2{ ".2", std::bind( &local::service3, std::placeholders::_1, 10)};

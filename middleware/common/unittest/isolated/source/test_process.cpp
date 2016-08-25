@@ -26,13 +26,12 @@ namespace casual
             {
                return directory::name::base( __FILE__) + "../../../bin/simple_process";
             }
-
          }
       }
 
       TEST( casual_common_process, spawn_one_process)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          auto pid = process::spawn( local::processPath(), {});
 
@@ -41,13 +40,11 @@ namespace casual
 
          // wait for it..
          EXPECT_TRUE( process::wait( pid) == 0);
-
-         signal::clear();
       }
 
       TEST( casual_common_process, spawn_one_process_with_argument)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          auto pid = process::spawn( local::processPath(), { "-r", "42" });
 
@@ -58,12 +55,11 @@ namespace casual
          auto result = process::wait( pid);
          EXPECT_TRUE( result == 42) << "result: " << result;
 
-         signal::clear();
       }
 
       TEST( casual_common_process, spawn_one_process_check_termination)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          auto pid = process::spawn( local::processPath(), {});
 
@@ -86,20 +82,18 @@ namespace casual
 
          ASSERT_TRUE( terminated.size() == 1) << "terminated.size(): " << terminated.size();
          EXPECT_TRUE( terminated.front().pid == pid);
-
-         signal::clear();
       }
 
 
       TEST( casual_common_process, spawn_10_process__children_terminate)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          std::vector< platform::pid::type> pids( 10);
 
          for( auto& pid : pids)
          {
-            pid = process::spawn( local::processPath(), {});
+            pid = process::spawn( "sleep", { "3600"});
          }
 
          auto terminated = process::lifetime::terminate( pids, std::chrono::seconds( 5));
@@ -107,27 +101,23 @@ namespace casual
 
          ASSERT_TRUE( pids.size() == terminated.size());
          EXPECT_TRUE( range::equal( range::sort( pids), range::sort( terminated)));
-
-         signal::clear();
       }
 
 
       TEST( casual_common_process, wait_timeout_non_existing_children)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          std::vector< platform::pid::type> pids( 10);
 
          auto terminated = process::lifetime::wait( { 666});
 
          EXPECT_TRUE( terminated.empty());
-
-         signal::clear();
       }
 
       TEST( casual_common_process, spawn_non_existing_application__gives_exception)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_THROW({
             process::spawn( local::processPath() + "_non_existing_file", {});

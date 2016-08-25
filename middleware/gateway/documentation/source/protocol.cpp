@@ -2,6 +2,7 @@
 //! casual 
 //!
 
+#include "gateway/message.h"
 
 #include "common/marshal/binary.h"
 #include "common/marshal/network.h"
@@ -56,12 +57,14 @@ namespace casual
                         { typeid( short), "short"},
                         { typeid( int), "int"},
                         { typeid( long), "long"},
-                        { typeid( size_t), "size"},
                         { typeid( std::uint64_t), "uint64"},
                         { typeid( std::int64_t), "int64"},
+                        { typeid( std::uint16_t), "uint16"},
+                        { typeid( std::size_t), "size"},
                      };
 
-                     auto found = common::range::find( names, typeid( value));
+
+                     auto found = common::range::find( names, typeid( common::marshal::binary::network::detail::cast( value)));
 
                      if( found)
                      {
@@ -75,14 +78,14 @@ namespace casual
                   template< typename T>
                   auto network( T&& value) -> typename std::enable_if< ! common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
                   {
-                     auto network = common::network::byteorder::encode( value);
+                     auto network = common::network::byteorder::encode( common::marshal::binary::network::detail::cast( value));
                      return Type{ name( network), common::memory::size( network)};
                   }
 
                   template< typename T>
                   auto network( T&& value) -> typename std::enable_if< common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
                   {
-                     return Type{ "byte array", common::memory::size( value)};
+                     return Type{ "fixed array", common::memory::size( value)};
                   }
 
                   template< typename T>
@@ -165,7 +168,7 @@ namespace casual
                      }
 
                      info.native.size = size;
-                     info.native.type = "byte array";
+                     info.native.type = "dynamic array";
 
                      info.network = info.native;
 
@@ -270,9 +273,9 @@ namespace casual
                         { false, false, true, " | "},
                         common::terminal::format::column( "role name", []( const type::Info& i) { return i.name.role;}, common::terminal::color::no_color),
                         common::terminal::format::column( "native type", []( const type::Info& i) { return i.native.type;}, common::terminal::color::no_color),
-                        common::terminal::format::column( "native size", []( const type::Info& i) { return i.native.size;}, common::terminal::color::no_color),
+                        common::terminal::format::column( "native size", []( const type::Info& i) { return i.native.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
                         common::terminal::format::column( "network type", []( const type::Info& i) { return i.network.type;}, common::terminal::color::no_color),
-                        common::terminal::format::column( "network size", []( const type::Info& i) { return i.network.size;}, common::terminal::color::no_color),
+                        common::terminal::format::column( "network size", []( const type::Info& i) { return i.network.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
                         common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color),
                      };
                   }
@@ -345,6 +348,43 @@ the complete transport message.
 
             }
 
+            template< typename M>
+            void transaction_request( std::ostream& out, M&& message)
+            {
+               message.trid = common::transaction::ID::create();
+
+               out << "message type: **" << M::type() << "**\n\n";
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution path"},
+                        { "xid.format", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "resource.id", "RM id of the resource - has to correlate with the reply"},
+                        { "flags", "XA flags to be forward to the resource"},
+                     });
+            }
+
+            template< typename M>
+            void transaction_reply( std::ostream& out, M&& message)
+            {
+               message.trid = common::transaction::ID::create();
+
+               out << "message type: **" << M::type() << "**\n\n";
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution path"},
+                        { "xid.format", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "resource.id", "RM id of the resource - has to correlate with the request"},
+                        { "resource.state", "The state of the operation - If successful XA_OK ( 0)"},
+                     });
+            }
+
+
             void transaction( std::ostream& out)
             {
                out << R"(
@@ -355,63 +395,27 @@ the complete transport message.
 )";
                {
 
-                  using message_type = common::message::transaction::resource::prepare::Request;
+                  using message_type = message::interdomain::transaction::resource::receive::prepare::Request;
 
                   out << R"(
-#### common::message::transaction::resource::prepare::Request
+#### message::interdomain::transaction::resource::receive::prepare::Request
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
-
-                  message_type request;
-                  request.trid = common::transaction::ID::create();
-
-                  local::format::type( out, request, {
-                           { "execution", "uuid of the current execution path"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                           { "resource.id", "RM id of the resource"},
-                           { "flags", "XA flags to be forward to the resource"},
-                        });
+                  transaction_request( out, message_type{});
                }
 
                {
-                  using message_type = common::message::transaction::resource::prepare::Reply;
+                  using message_type = message::interdomain::transaction::resource::receive::prepare::Reply;
 
                   out << R"(
-#### common::message::transaction::resource::prepare::Reply
+#### message::interdomain::transaction::resource::receive::prepare::Reply
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
-
-                  message_type request;
-                  request.trid = common::transaction::ID::create();
-
-                  local::format::type( out, request, {
-                           { "execution", "uuid of the current execution path"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                           { "resource.state", "The state of the operation - If successful XA_OK ( 0)"},
-                           { "resource.id", "RM id of the resource"},
-                           { "statistic.start", "start time in us"},
-                           { "statistic.end", "end time in us"},
-                        });
+                  transaction_reply( out, message_type{});
                }
 
                out << R"(
@@ -420,63 +424,27 @@ Sent to and received from other domains when one domain wants to prepare a trans
 )";
 
                {
-                  using message_type = common::message::transaction::resource::commit::Request;
+                  using message_type = message::interdomain::transaction::resource::receive::commit::Request;
 
                   out << R"(
-#### common::message::transaction::resource::commit::Request
+#### message::interdomain::transaction::resource::receive::commit::Request
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
-
-                  message_type request;
-                  request.trid = common::transaction::ID::create();
-
-                  local::format::type( out, request, {
-                           { "execution", "uuid of the current execution path"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                           { "resource.id", "RM id of the resource"},
-                           { "flags", "XA flags to be forward to the resource"},
-                        });
+                  transaction_request( out, message_type{});
                }
 
                {
-                  using message_type = common::message::transaction::resource::commit::Reply;
+                  using message_type = message::interdomain::transaction::resource::receive::commit::Reply;
 
                   out << R"(
-#### common::message::transaction::resource::commit::Reply
+#### message::interdomain::transaction::resource::receive::commit::Reply
 
 Reply to a commit request. 
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
-
-                  message_type request;
-                  request.trid = common::transaction::ID::create();
-
-                  local::format::type( out, request, {
-                           { "execution", "uuid of the current execution path"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                           { "resource.state", "The state of the operation - If successful XA_OK ( 0)"},
-                           { "resource.id", "RM id of the resource"},
-                           { "statistic.start", "start time in us"},
-                           { "statistic.end", "end time in us"},
-                        });
+                  transaction_reply( out, message_type{});
                }
 
 
@@ -488,64 +456,28 @@ Reply to a commit request.
 
 
                {
-                  using message_type = common::message::transaction::resource::rollback::Request;
+                  using message_type = message::interdomain::transaction::resource::receive::rollback::Request;
 
                   out << R"(
-#### common::message::transaction::resource::rollback::Request
+#### message::interdomain::transaction::resource::receive::rollback::Request
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
-
-                  message_type request;
-                  request.trid = common::transaction::ID::create();
-
-                  local::format::type( out, request, {
-                           { "execution", "uuid of the current execution path"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                           { "resource.id", "RM id of the resource"},
-                           { "flags", "XA flags to be forward to the resource"},
-                        });
+                  transaction_request( out, message_type{});
                }
 
                {
-                  using message_type = common::message::transaction::resource::rollback::Reply;
+                  using message_type =  message::interdomain::transaction::resource::receive::rollback::Reply;
 
                   out << R"(
-#### common::message::transaction::resource::rollback::Reply
+#### message::interdomain::transaction::resource::receive::rollback::Reply
 
 Reply to a rollback request. 
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
-
-                  message_type request;
-                  request.trid = common::transaction::ID::create();
-
-                  local::format::type( out, request, {
-                           { "execution", "uuid of the current execution path"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                           { "resource.state", "The state of the operation - If successful XA_OK ( 0)"},
-                           { "resource.id", "RM id of the resource"},
-                           { "statistic.start", "start time in us"},
-                           { "statistic.end", "end time in us"},
-                        });
+                  transaction_reply( out, message_type{});
                }
 
             }
@@ -561,21 +493,20 @@ Reply to a rollback request.
 
 )";
                {
-                  using message_type = common::message::service::call::callee::Request;
+                  using message_type = message::interdomain::service::call::receive::Request;
 
                   out << R"(
-#### common::message::service::call::callee::Request
+#### message::interdomain::service::call::receive::Request
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
+                  out << "message type: **" << message_type::type() << "**\n\n";
 
                   message_type request;
                   request.trid = common::transaction::ID::create();
                   request.service.name.resize( 128);
                   request.parent.resize( 128);
-                  request.service.traffic_monitors.resize( 1);
                   request.buffer.type.name.resize( 8);
                   request.buffer.type.subname.resize( 16);
                   request.buffer.memory.resize( 128);
@@ -583,49 +514,40 @@ Sent to and received from other domains when one domain wants call a service in 
                   local::format::type( out, request, {
                            { "execution", "uuid of the current execution path"},
                            { "call.descriptor", "descriptor of the call"},
-                           { "sender.pid", "pid of the sender process"},
-                           { "sender.queue", "ipc queue id of the sender process"},
                            { "service.name.size", "service name size"},
                            { "service.name.data", "byte array with service name"},
-                           { "service.type", "type of the service (plain xatmi, casual.sf, admin, ...)"},
-                           { "service.timeout", "timeout of the service in us"},
-                           { "service.traffic.size", "number of trafic monitors ipc-queues to follow"},
-                           { "service.traffic.queue", "for every service.traffic.size"},
-                           { "service.transaction", "type of transaction semantic in the service"},
+                           { "service.timeout", "timeout of the service in use"},
                            { "parent.name.size", "parent service name size"},
                            { "parent.name.data", "byte array with parent service name"},
 
-                           { "trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "trid.owner.pid", "pid of owner of the transaction"},
-                           { "trid.owner.queue", "ipc queue of owner of the transaction"},
-                           { "trid.xid.gtrid_length", "length of the transactino gtrid part"},
-                           { "trid.xid.bqual_length", "length of the transaction branch part"},
-                           { "trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                           { "xid.format", "xid format type. if 0 no more information of the xid is transported"},
+                           { "xid.gtrid_length", "length of the transaction gtrid part"},
+                           { "xid.bqual_length", "length of the transaction branch part"},
+                           { "xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
 
                            { "flags", "XATMI flags sent to the service"},
 
-                           { "buffer.type.name.size", "buffer type name size"},
+                           { "buffer.type.name.size", "buffer type name size (max 8)"},
                            { "buffer.type.name.data", "byte array with buffer type name"},
-                           { "buffer.type.subname.size", "buffer type subname size"},
+                           { "buffer.type.subname.size", "buffer type subname size (max 16)"},
                            { "buffer.type.subname.data", "byte array with buffer type subname"},
                            { "buffer.payload.size", "buffer payload size (could be very big)"},
                            { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
-
 
                         });
                }
 
 
                {
-                  using message_type = common::message::service::call::Reply;
+                  using message_type = message::interdomain::service::call::receive::Reply;
 
                   out << R"(
-#### common::message::service::call::Reply
+#### message::interdomain::service::call::receive::Reply
 
 Reply to call request
 
 )";
-                  out << "message type: " << message_type::type() << "\n\n";
+                  out << "message type: **" << message_type::type() << "**\n\n";
 
                   message_type message;
 
@@ -642,16 +564,14 @@ Reply to call request
                            { "call.code", "XATMI user supplied code"},
 
                            { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "transaction.trid.owner.pid", "pid of owner of the transaction"},
-                           { "transaction.trid.owner.queue", "ipc queue of owner of the transaction"},
                            { "transaction.trid.xid.gtrid_length", "length of the transactino gtrid part"},
                            { "transaction.trid.xid.bqual_length", "length of the transaction branch part"},
                            { "transaction.trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
                            { "transaction.state", "state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY"},
 
-                           { "buffer.type.name.size", "buffer type name size"},
+                           { "buffer.type.name.size", "buffer type name size (max 8)"},
                            { "buffer.type.name.data", "byte array with buffer type name"},
-                           { "buffer.type.subname.size", "buffer type subname size"},
+                           { "buffer.type.subname.size", "buffer type subname size (max 16)"},
                            { "buffer.type.subname.data", "byte array with buffer type subname"},
                            { "buffer.payload.size", "buffer payload size (could be very big)"},
                            { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
@@ -662,24 +582,91 @@ Reply to call request
 
             }
 
+            void domain_discovery( std::ostream& out)
+            {
+               out << R"(
+## Discovery messages
+
+### domain discovery 
+
+)";
+
+               {
+                  using message_type = message::interdomain::domain::discovery::receive::Request;
+
+                  out << R"(
+#### message::interdomain::domain::discovery::Request
+
+Sent to and received from other domains when one domain wants discover information abut the other.
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.services.push_back( std::string( 128, 0));
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "domain.id", "uuid of the caller domain"},
+                           { "domain.name.size", "size of the caller domain name"},
+                           { "domain.name.data", "dynamic byte array with the caller domain name"},
+                           { "services.size", "number of requested services to follow (an array of services)"},
+                           { "services.element.size", "size of the current service name"},
+                           { "services.element.data", "dynamic byte array of the current service name"},
+                        });
+
+
+               }
+
+
+               {
+                  using message_type = message::interdomain::domain::discovery::receive::Reply;
+
+                  out << R"(
+#### message::interdomain::domain::discovery::Reply
+
+Sent to and received from other domains when one domain wants discover information abut the other.
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.services.push_back( std::string( 128, 0));
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "domain.id", "uuid of the caller domain"},
+                           { "domain.name.size", "size of the caller domain name"},
+                           { "domain.name.data", "dynamic byte array with the caller domain name"},
+                           { "services.size", "number of services to follow (an array of services)"},
+                           { "services.element.name.size", "size of the current service name"},
+                           { "services.element.name.data", "dynamic byte array of the current service name"},
+                           { "services.element.type", "service type"},
+                           { "services.element.timeout", "service timeout"},
+                           { "services.element.transaction", "service transaction mode (auto, atomic, join, none)"},
+                           { "services.element.hops", "number of domain hops to the service (local services has 0 hops)"},
+                        });
+
+
+               }
+
+            }
+
 
 
             void protocol()
             {
                transport( std::cout);
+               domain_discovery( std::cout);
                service_call( std::cout);
                transaction( std::cout);
-
             }
-
-
          } // print
-
-
-
       } // protocol
-
-
    } // gateway
 } // casual
 

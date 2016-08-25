@@ -1,8 +1,5 @@
 //!
-//! process.cpp
-//!
-//! Created on: May 12, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/process.h"
@@ -693,7 +690,7 @@ namespace casual
                   return exit;
                }
 
-               void wait( const std::vector< platform::pid::type> pids, std::vector< lifetime::Exit>& result)
+               void wait( const std::vector< platform::pid::type>& pids, std::vector< lifetime::Exit>& result)
                {
                   while( result.size() < pids.size())
                   {
@@ -750,6 +747,25 @@ namespace casual
          bool terminate( platform::pid::type pid)
          {
             return signal::send( pid, signal::Type::terminate);
+         }
+
+         void terminate( const Handle& process)
+         {
+            if( process)
+            {
+               message::shutdown::Request request;
+               request.process = handle();
+               communication::ipc::call( process.queue, request);
+            }
+            else if( process.pid)
+            {
+               terminate( process.pid);
+            }
+            else
+            {
+               return;
+            }
+            wait( process.pid);
          }
 
 
@@ -824,7 +840,7 @@ namespace casual
 
 
 
-            std::vector< Exit> wait( const std::vector< platform::pid::type> pids)
+            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids)
             {
                log::internal::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
 
@@ -835,7 +851,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< platform::pid::type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout)
             {
                trace::internal::Scope trace{ "common::process::lifetime::wait"};
 
@@ -861,12 +877,12 @@ namespace casual
             }
 
 
-            std::vector< Exit> terminate( std::vector< platform::pid::type> pids)
+            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids)
             {
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( std::vector< platform::pid::type> pids, std::chrono::microseconds timeout)
+            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

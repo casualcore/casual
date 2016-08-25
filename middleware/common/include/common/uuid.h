@@ -1,8 +1,5 @@
 //!
-//! casual_utility_uuid.h
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_UUID_H_
@@ -50,6 +47,7 @@ namespace casual
 			explicit operator bool() const noexcept;
 
 			bool empty() const;
+
 
 
 

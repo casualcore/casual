@@ -3,7 +3,6 @@
 //!
 
 #include <gtest/gtest.h>
-
 #include "common/unittest.h"
 
 
@@ -109,12 +108,13 @@ namespace casual
                process::Handle external;
             };
 
+
          } // <unnamed>
       } // local
 
-      TEST( casual_gateway_inbound, shutdown_before_connection__expect_gracefull_shutdown)
+      TEST( casual_gateway_inbound_ipc, shutdown_before_connection__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          //
          // We need to have a domain manager to 'connect the process'
@@ -128,9 +128,9 @@ namespace casual
          communication::ipc::inbound::device().clear();
       }
 
-      TEST( casual_gateway_inbound, connection_then_force_shutdown__expect_gracefull_shutdown)
+      TEST( casual_gateway_inbound_ipc, connection_then_force_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain doman;
@@ -138,9 +138,9 @@ namespace casual
 
       }
 
-      TEST( casual_gateway_inbound, connection_then_shutdown__expect_gracefull_shutdown)
+      TEST( casual_gateway_inbound_ipc, connection_then_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_THROW({
             local::Domain domain;
@@ -155,9 +155,9 @@ namespace casual
       }
 
 
-      TEST( casual_gateway_inbound, service_call__service1__expect_echo)
+      TEST( casual_gateway_inbound_ipc, service_call__service1__expect_echo)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
@@ -166,27 +166,29 @@ namespace casual
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         common::message::service::call::callee::Request request;
+
+         message::interdomain::service::call::receive::Request request;
          {
             request.service.name = "service1";
             request.process = process::handle();
             request.buffer = buffer::Payload{ buffer::type::binary(), paylaod};
          }
 
+
          auto reply = communication::ipc::call( domain.external.queue, request);
 
          EXPECT_TRUE( reply.buffer.memory == paylaod);
       }
 
-      TEST( casual_gateway_inbound, service_call__absent_service__expect_reply_with_TPESVCERR)
+      TEST( casual_gateway_inbound_ipc, service_call__absent_service__expect_reply_with_TPESVCERR)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         common::message::service::call::callee::Request request;
+         message::interdomain::service::call::receive::Request request;
          {
             request.service.name = "absent_service";
             request.process = process::handle();
@@ -200,15 +202,15 @@ namespace casual
       }
 
 
-      TEST( casual_gateway_inbound, service_call__removed_ipc_queue___expect_reply_with_TPESVCERR)
+      TEST( casual_gateway_inbound_ipc, service_call__removed_ipc_queue___expect_reply_with_TPESVCERR)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         common::message::service::call::callee::Request request;
+         message::interdomain::service::call::receive::Request request;
          {
             request.service.name = "removed_ipc_queue";
             request.process = process::handle();

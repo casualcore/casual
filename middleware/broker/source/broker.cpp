@@ -5,6 +5,7 @@
 #include "broker/broker.h"
 #include "broker/handle.h"
 #include "broker/transform.h"
+#include "broker/common.h"
 
 #include "broker/admin/server.h"
 
@@ -17,6 +18,7 @@
 #include "common/internal/log.h"
 
 #include "common/message/dispatch.h"
+#include "common/message/domain.h"
 #include "common/message/handle.h"
 #include "common/process.h"
 #include "common/domain.h"
@@ -42,14 +44,63 @@ namespace casual
 	{
 
 
-		Broker::Broker( Settings&& arguments)
-		{
-		   Trace trace{ "Broker::Broker ctor", log::internal::debug};
+	   namespace local
+      {
+         namespace
+         {
+            std::string forward( const Settings& settings)
+            {
+               if( settings.forward.empty())
+               {
+                  return environment::directory::casual() + "/bin/casual-forward-cache";
+               }
+               return settings.forward;
+            }
 
-		   //
-		   // Connect to domain
-		   //
-		   process::instance::connect( process::instance::identity::broker());
+            void connect( State& state, const Settings& settings)
+            {
+               //
+               // Connect to domain
+               //
+               process::instance::connect( process::instance::identity::broker());
+
+               //
+               // Register for process termination
+               //
+               {
+                  Trace trace{ "broker::connect process::termination"};
+
+                  common::message::domain::process::termination::Registration message;
+                  message.process = common::process::handle();
+
+                  ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+               }
+
+               //
+               // Start forward
+               //
+               {
+                  Trace trace{ "broker::connect spawn forward"};
+
+                  common::process::spawn( forward( settings), {});
+
+                  state.forward = common::process::instance::fetch::handle(
+                        common::process::instance::identity::forward::cache());
+
+               }
+
+            }
+
+         } // <unnamed>
+      } // local
+
+
+
+		Broker::Broker( Settings&& settings)
+		{
+		   Trace trace{ "Broker::Broker ctor"};
+
+		   local::connect( m_state, settings);
 		}
 
 
@@ -61,6 +112,7 @@ namespace casual
             //
             // Terminate
             //
+		      process::terminate( m_state.forward);
 		   }
          catch( ...)
          {
@@ -78,7 +130,7 @@ namespace casual
          catch( const common::exception::signal::Terminate&)
          {
             // we do nothing, and let the dtor take care of business
-            common::log::internal::debug << "broker has been terminated\n";
+            log << "broker has been terminated\n";
          }
          catch( ...)
          {
@@ -98,12 +150,12 @@ namespace casual
                // Prepare message-pump handlers
                //
 
-               common::log::internal::debug << "prepare message-pump handlers\n";
+               log << "prepare message-pump handlers\n";
 
 
                auto handler = broker::handler( state);
 
-               common::log::internal::debug << "start message pump\n";
+               log << "start message pump\n";
 
 
                while( true)
@@ -122,7 +174,7 @@ namespace casual
                      //
                      {
 
-                        common::log::internal::debug << "pending replies: " << range::make( state.pending.replies) << '\n';
+                        log << "pending replies: " << range::make( state.pending.replies) << '\n';
 
                         decltype( state.pending.replies) replies;
                         std::swap( replies, state.pending.replies);
@@ -147,7 +199,7 @@ namespace casual
                         //
                         // TODO: Should we have some sort of TTL for the pending?
                         //
-                        auto count = common::platform::batch::transaction;
+                        auto count = common::platform::batch::transaction();
 
                         while( handler( ipc::device().non_blocking_next()) && count-- > 0)
                            ;
@@ -161,7 +213,7 @@ namespace casual
             catch( const common::exception::signal::Terminate&)
             {
                // we do nothing, and let the dtor take care of business
-               common::log::internal::debug << "broker has been terminated\n";
+               log << "broker has been terminated\n";
             }
             catch( ...)
             {
