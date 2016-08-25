@@ -1,0 +1,10 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/casual-app.html",
+  "fragments": [
+    "src/casual-server-view.html",
+    "src/casual-group-view.html",
+    "src/casual-instance-view.html",
+    "src/casual-service-view.html"
+  ]
+}

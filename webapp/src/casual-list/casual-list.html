@@ -3,11 +3,16 @@
 <dom-module id="casual-list">
     <template>
         <style>
-
-        .listHead {
+        
+        .casual-list-header {
             width: 100%;
             border: 1px solid #d0d0d0;
             overflow: hidden;
+            border-radius: 10px 10px 0 0;
+
+            background-color: var(--casual-list-header-bgcolor, #FFFFFF);
+            color: var(--casual-list-header-color, #000000);
+            font-family: var(--casual-list-font-family, 'Roboto', 'Noto', sans-serif);
 
             /* Display divs in a row */
             display: flex;
@@ -16,19 +21,19 @@
             justify-content: space-between; 
         }
 
-        .listName,.listActions {
+        .casual-list-name,.casual-list-actions {
             padding: 10px;
         }
 
-        .listName {
+        .casual-list-name {
             font-size: 1.5em;
         }
 
-        .listActions {
+        .casual-list-actions {
             
         }
 
-        .list {
+        .casual-list-content {
             width: 100%;
             border-top: 0;
             border-right: 1px;
@@ -36,18 +41,19 @@
             border-left: 1px;
             border-style: solid;
             border-color: #d0d0d0;
+            background-color: #FFFFFF;
         }
 
         </style>
 
-        <div class="listHead">
-            <div class="listName">{{listname}}</div>
-            <div class="listActions">Sort to be here!</div>
+        <div class="casual-list-header">
+            <div class="casual-list-name">{{listname}}</div>
+            <div class="casual-list-actions">Sort to be here!</div>
         </div>
 
         <content id="content" select="*"></content>
 
-        <div class="list" id="list"></div>
+        <div class="casual-list-content" id="list"></div>
 
     </template>
 
@@ -85,7 +91,9 @@
                         vaule: function() {
                             return {};
                         }
-                    }
+                    },
+
+
                 },
 
                 attached: function() {

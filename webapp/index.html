@@ -1,7 +1,6 @@
-<!DOCTYPE html>
 <!--
 @license
-Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
 This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
 The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
@@ -9,139 +8,73 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 
+<!doctype html>
 <html lang="en">
+	<head>
+			<meta charset="utf-8">
+			<meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
 
-<head>
-	<meta charset="utf-8">
-	<meta name="description" content="">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="generator" content="Polymer Starter Kit">
-	<title>Casual</title>
+			<title>Casual</title>
 
-	<link rel="icon" type="image/png" href="/assets/ico.png" />
+			<link rel="shortcut icon" sizes="32x32" href="/images/casual-app-icon-32.png">
 
-	<!-- build:css styles/main.css -->
-	<link rel="stylesheet" href="styles/main.css">
-	<!-- endbuild-->
+			<meta name="theme-color" content="#fff">
+			<link rel="manifest" href="/manifest.json">
 
-	<!-- build:js bower_components/webcomponentsjs/webcomponents-lite.min.js -->
-	<script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-	<!-- endbuild -->
+			<style is="custom-style">
 
-	<!-- Because this project uses vulcanize this should be your only html import
-			 in this file. All other imports should go in elements.html -->
-	<link rel="import" href="elements/elements.html">
+				:root {
+					--app-primary-color: #263238;
+					--app-secondary-color: black;
+					--app-primary-hover-color: #455A64;
+				}
 
-	<!-- For shared styles, shared-styles.html import in elements.html -->
-	<style is="custom-style" include="shared-styles"></style>
-	
-</head>
+			</style>
 
-<body unresolved>
-	<!-- build:remove -->
-	<span id="browser-sync-binding"></span>
-	<!-- endbuild -->
+			<script>
 
-	<template is="dom-bind" id="app">
+				// setup Polymer options
+				window.Polymer = {lazyRegister: true, dom: 'shadow'};
 
-		<paper-drawer-panel id="paperDrawerPanel" responsive-width="1280px">
-			<!-- Drawer Scroll Header Panel -->
-			<paper-scroll-header-panel drawer fixed>
+				// load webcomponents polyfills
+				(function() {
+					if ('registerElement' in document
+					&& 'import' in document.createElement('link')
+					&& 'content' in document.createElement('template')) {
+					// browser has web components
+					} else {
+						// polyfill web components
+						var e = document.createElement('script');
+						e.src = '/bower_components/webcomponentsjs/webcomponents-lite.min.js';
+						document.head.appendChild(e);
+					}
+				})();
 
-				<!-- Drawer Content -->
-				<paper-menu class="app-menu" attr-for-selected="data-route" selected="[[route]]">
+				// load pre-caching service worker
+				if ('serviceWorker' in navigator) {
+					window.addEventListener('load', function() {
+						navigator.serviceWorker.register('/service-worker.js');
+					});
+				}
 
-					<a data-route="servers" href="{{baseUrl}}servers">
-						<span>Servers</span>
-					</a>
+			</script>
 
-					<a data-route="groups" href="{{baseUrl}}groups">
-						<span>Groups</span>
-					</a>
+			<link rel="import" href="/src/casual-app.html">
 
-					<a data-route="instances" href="{{baseUrl}}instances">
-						<span>Instances</span>
-					</a>
+			<style>
 
-					<a data-route="services" href="{{baseUrl}}services">
-						<span>Services</span>
-					</a>
+				body {
+					margin: 0;
+					font-family: 'Roboto', 'Noto', sans-serif;
+					line-height: 1.5;
+					min-height: 100vh;
+					background-color: #eee;
+				}
 
-				</paper-menu>
-			</paper-scroll-header-panel>
+			</style>
 
-			<!-- Main Area -->
-			<paper-scroll-header-panel main id="headerPanelMain" fixed keep-condensed-header>
-				<!-- Main Toolbar -->
-				<paper-toolbar id="mainToolbar">
-					<paper-icon-button id="paperToggle" icon="menu" paper-drawer-toggle></paper-icon-button>
-
-					<span class="space"></span>
-
-					<!-- Application name -->
-					<div class="middle middle-container">
-						<div class="app-name">Casual</div>
-					</div>
-
-				</paper-toolbar>
-
-				<!-- Main Content -->
-				<div class="content">
-					<iron-pages attr-for-selected="data-route" selected="{{route}}">
-
-					<!-- url="http://casual.laz.se/casual/casual?service=.casual.broker.state" -->
-
-						<iron-ajax id="serviceReturn"
-							url="http://casual.laz.se/casual/casual?service=.casual.broker.state"
-							handle-as="json" 
-							method="GET"
-							last-response="{{response}}">
-						</iron-ajax>
-
-						<section data-route="servers" tabindex="-1">
-							<paper-material elevation="1">
-								<casual-list listname="Servers" listdata="{{response.serviceReturn.servers}}" listattribute="serverdata">
-									<casual-server></casual-server>
-								</casual-list>
-						</section>
-
-						<section data-route="groups" tabindex="-1">
-							<paper-material elevation="1"> 
-								<casual-list listname="Groups" listdata="{{response.serviceReturn.groups}}" listattribute="groupdata">
-									<casual-group></casual-group>
-								</casual-list>
-							</paper-material>
-						</section>
-
-						<section data-route="instances" tabindex="-1">
-							<paper-material elevation="1">
-								<casual-list listname="Instances" listdata="{{response.serviceReturn.instances}}" listattribute="instancedata">
-									<casual-instance></casual-instance>
-								</casual-list>
-						</section>
-
-						<section data-route="services" tabindex="-1">
-							<paper-material elevation="1">
-								<casual-list listname="Services" listdata="{{response.serviceReturn.services}}" listattribute="servicedata">
-										<casual-service></casual-service>
-									</casual-list>
-							</paper-material>
-						</section>
-
-					</iron-pages>
-				</div>
-			</paper-scroll-header-panel>
-		</paper-drawer-panel>
-
-		<paper-toast id="toast">
-			<span class="toast-hide-button" role="button" tabindex="0" onclick="app.$.toast.hide()">Ok</span>
-		</paper-toast>
-
-	</template>
-
-	<!-- build:js scripts/app.js -->
-	<script src="scripts/app.js"></script>
-	<!-- endbuild-->
-</body>
-
+		</head>
+	<body>
+		<casual-app></casual-app>
+	</body>
 </html>

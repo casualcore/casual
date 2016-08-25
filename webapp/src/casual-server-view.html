@@ -1,0 +1,42 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="./casual-list/casual-list.html">
+<link rel="import" href="./casual-server/casual-server.html">
+
+<dom-module id="casual-server-view">
+
+	<template>
+		<style>
+			:host {
+				display: block;
+				padding: 16px;
+			}
+		</style>
+
+		<iron-ajax id="ironAjaxCall"
+			url="../assets/reply.json"
+			handle-as="json" 
+			method="GET"
+			last-response="{{response}}">
+		</iron-ajax>
+
+		<casual-list listname="Servers" listdata="{{response.serviceReturn.servers}}" listattribute="serverdata">
+			<casual-server></casual-server>
+		</casual-list>
+	</template>
+
+	<script>
+		Polymer({
+			is: 'casual-server-view',
+			properties: {
+			route: Object
+		},
+
+		attached: function() {
+			(this.$.ironAjaxCall).generateRequest();
+		}
+
+		});
+	</script>
+
+</dom-module>
