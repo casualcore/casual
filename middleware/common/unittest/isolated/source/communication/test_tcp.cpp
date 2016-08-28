@@ -55,7 +55,6 @@ namespace casual
          TEST( casual_common_communication_tcp, connect_to_non_existent_port__expect_connection_refused)
          {   
             common::unittest::Trace trace;
-            signal::clear();
 
             EXPECT_THROW( {
                tcp::connect( tcp::Address::Port{ "23666"});
@@ -65,7 +64,6 @@ namespace casual
          TEST( casual_common_communication_tcp, listener_port_23666)
          {
             common::unittest::Trace trace;
-            signal::clear();
 
             EXPECT_NO_THROW({
                tcp::Listener listener{ tcp::Address::Port{ "23666"}};
@@ -74,8 +72,7 @@ namespace casual
 
          TEST( casual_common_communication_tcp, connect_to_listener_on_localhost__expect_correct_info)
          {
-            CASUAL_UNITTEST_TRACE();
-            signal::clear();
+            common::unittest::Trace trace;
 
             //const std::string host{ "127.0.0.1"};
             const std::string host{ "localhost"};
@@ -103,7 +100,6 @@ namespace casual
          TEST( casual_common_communication_tcp, listener_port_23666__connect_to_port__expect_connection)
          {
             common::unittest::Trace trace;
-            signal::clear();
 
             mockup::Thread server{ &local::simple_server, std::string{ "23666"}};
 
@@ -116,7 +112,6 @@ namespace casual
          TEST( casual_common_communication_tcp, listener_port_23666__connect_to_port_10_times__expect_connections)
          {
             common::unittest::Trace trace;
-            signal::clear();
 
             mockup::Thread server{ &local::simple_server, std::string{ "23666"}};
 
@@ -186,7 +181,6 @@ namespace casual
          TEST( casual_common_communication_tcp, echo_server_port_23666__connect_to_port__expect_connection)
          {
             common::unittest::Trace trace;
-            signal::clear();
 
             const std::string port{ "23666"};
 
@@ -223,7 +217,6 @@ namespace casual
          TEST( casual_common_communication_tcp, echo_server_port_23666__10_connect_to_port__expect_echo_from_10)
          {
             common::unittest::Trace trace;
-            signal::clear();
 
             const std::string port{ "23666"};
 
@@ -267,7 +260,6 @@ namespace casual
          TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__expect_connection)
          {
             common::unittest::Trace trace;
-            signal::clear();
 
             const std::string port{ "23666"};
 
