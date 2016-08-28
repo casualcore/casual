@@ -95,7 +95,12 @@ namespace casual
          {
             pid = process::spawn( "sleep", { "3600"});
          }
-
+        
+         // some glitch with posix_spawn and signal. Sometimes the signal
+         // does not arrive to the last spawned processes.
+         // we try to compensate by sleeping a few ms...
+         process::sleep( std::chrono::milliseconds( 20));  
+        
          auto terminated = process::lifetime::terminate( pids, std::chrono::seconds( 5));
 
 
