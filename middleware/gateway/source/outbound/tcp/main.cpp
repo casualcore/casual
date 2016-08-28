@@ -59,6 +59,12 @@ namespace casual
 
                   outbound_device_type& outbound() { return m_outbound;}
 
+                  static std::vector< std::string> address( const outbound_device_type& device)
+                  {
+                     auto address = communication::tcp::socket::address::peer( device.connector().socket().descriptor());
+                     return { address.host + ':' + address.port};
+                  }
+
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
                   {
                      return out << "{ outbound: " << value.m_outbound
@@ -73,8 +79,7 @@ namespace casual
                struct external_type
                {
                   external_type( Settings&& settings)
-                   : m_adress{ settings.address},
-                     m_inbound{ communication::tcp::retry::connect( m_adress, {
+                   : m_inbound{ communication::tcp::retry::connect( settings.address, {
                            { std::chrono::milliseconds{ 100}, 100}, // 10s
                            { std::chrono::seconds{ 1}, 3600}, // 1h
                            { std::chrono::seconds{ 5}, 0} // forever
@@ -99,11 +104,6 @@ namespace casual
 
                   inbound_device_type& inbound() { return m_inbound;}
 
-                  std::vector< std::string> address() const
-                  {
-                     return { m_adress.host + ':' + m_adress.port};
-                  }
-
 
                   configuration_type configuration() const
                   {
@@ -112,15 +112,12 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const external_type& value)
                   {
-                     return out << "{ adress: " << value.m_adress
-                           << ", inbound: " << value.m_inbound
+                     return out << "{ inbound: " << value.m_inbound
                            << '}';
                   }
 
                private:
-                  communication::tcp::Address m_adress;
                   inbound_device_type m_inbound;
-
                };
             };
 

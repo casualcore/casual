@@ -170,12 +170,10 @@ namespace casual
             struct Connect : common::message::basic_message< common::message::Type::gateway_worker_connect>
             {
                common::platform::binary_type information;
-               std::vector< std::string> address;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);
                   archive & information;
-                  archive & address;
                })
 
             };

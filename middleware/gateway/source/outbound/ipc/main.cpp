@@ -133,6 +133,11 @@ namespace casual
 
                   outbound_device_type outbound() { return { m_outbound};}
 
+                  static std::vector< std::string> address( const outbound_device_type& device)
+                  {
+                     return { std::to_string( device.connector().id())};
+                  }
+
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
                   {
                      return out << "{ outbound: " << value.m_outbound
@@ -181,9 +186,6 @@ namespace casual
                   }
 
                   inbound_device_type& inbound() { return m_inbound;}
-
-                  std::vector< std::string> address() const { return {};}
-
 
                   configuration_type configuration() const
                   {

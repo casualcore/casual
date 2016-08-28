@@ -252,11 +252,6 @@ namespace casual
 
             using ipc_policy = common::communication::ipc::policy::Blocking;
 
-            struct connect_type
-            {
-               configuration_type configuration;
-               std::vector< std::string> address;
-            };
 
             template< typename S>
             Gateway( S&& settings)
@@ -322,9 +317,7 @@ namespace casual
                // Now we wait for the worker to establish connection with
                // the other domain. We're still active and can be shut down
                //
-               auto configuration = connect();
-
-               internal_policy_type policy{ std::move( configuration.configuration)};
+               internal_policy_type policy{ connect()};
 
                auto&& outbound_device = policy.outbound();
 
@@ -339,7 +332,7 @@ namespace casual
 
                   message::outbound::Connect connect;
                   connect.process = common::process::handle();
-                  connect.address = std::move( configuration.address);
+                  connect.address = policy.address( outbound_device);
 
                   common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
                }
@@ -376,7 +369,7 @@ namespace casual
 
          private:
 
-            connect_type connect()
+            configuration_type connect()
             {
                Trace trace{ "gateway::outbound::Gateway::connect"};
 
@@ -394,13 +387,12 @@ namespace casual
                   handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                }
 
-               connect_type result;
-               result.address = std::move( message.address);
+               configuration_type configuration;
 
                common::marshal::binary::Input marshal{ message.information};
-               marshal >> result.configuration;
+               marshal >> configuration;
 
-               return result;
+               return configuration;
             }
 
             template< typename S>
@@ -444,7 +436,7 @@ namespace casual
                      common::Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect", log};
 
                      message::worker::Connect message;
-                     message.address = policy.address();
+                     //message.address = policy.address();
 
                      {
                         auto configuration = policy.configuration();

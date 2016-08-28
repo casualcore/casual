@@ -53,6 +53,12 @@ namespace casual
 
                   outbound_device_type& outbound() { return m_outbound;}
 
+                  static std::vector< std::string> address( const outbound_device_type& device)
+                  {
+                     auto address = communication::tcp::socket::address::peer( device.connector().socket().descriptor());
+                     return { address.host + ':' + address.port};
+                  }
+
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
                   {
                      return out << "{ outbound: " << value.m_outbound
@@ -80,9 +86,6 @@ namespace casual
                   }
 
                   inbound_device_type& device() { return m_inbound;}
-
-                  std::vector< std::string> address() const { return {};}
-
 
                   configuration_type configuration() const
                   {
