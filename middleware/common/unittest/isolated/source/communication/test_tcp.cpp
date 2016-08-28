@@ -72,6 +72,34 @@ namespace casual
             });
          }
 
+         TEST( casual_common_communication_tcp, connect_to_listener_on_localhost__expect_correct_info)
+         {
+            CASUAL_UNITTEST_TRACE();
+            signal::clear();
+
+            //const std::string host{ "127.0.0.1"};
+            const std::string host{ "localhost"};
+            const std::string port{ "6666"};
+
+            mockup::Thread server{ &local::simple_server, port};
+
+            const auto socket =
+                  tcp::retry::connect(
+                        { tcp::Address::Host{ host}, tcp::Address::Port{ port}},
+                        { { std::chrono::milliseconds{ 1}, 0}});
+
+            {
+               const auto client = tcp::socket::address::host( socket.descriptor());
+               EXPECT_TRUE( client.host == host) << client.host;
+            }
+
+            {
+               const auto server = tcp::socket::address::peer( socket.descriptor());
+               EXPECT_TRUE( server.host == host) << server.host;
+               EXPECT_TRUE( server.port == port) << server.port;
+            }
+         }
+
          TEST( casual_common_communication_tcp, listener_port_23666__connect_to_port__expect_connection)
          {
             common::unittest::Trace trace;
