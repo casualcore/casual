@@ -233,6 +233,7 @@ namespace casual
                      {
                         char host[ NI_MAXHOST];
                         char serv[ NI_MAXSERV];
+                        //const int flags{ NI_NUMERICHOST | NI_NUMERICSERV};
                         const int flags{ };
 
                         check::result(
