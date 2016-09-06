@@ -37,7 +37,7 @@ endif
 # Compile and link directives
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++11
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++14
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
    LINK_DIRECTIVES_EXE = -g -pthread  -fpic
    LINK_DIRECTIVES_ARCHIVE = -g  
@@ -49,14 +49,14 @@ ifdef DEBUG
    endif
 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++11 -Wall -pedantic
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++14 -Wall -pedantic
    LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic -Wall -pedantic
    LINK_DIRECTIVES_EXE = -pthread -O3 -fpic -Wall -pedantic
    LINK_DIRECTIVES_ARCHIVE = 
 endif
 
 
-CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT -std=c++11
+CROSS_COMPILE_DIRECTIVES = -g -c -Wall -pedantic -fcolor-diagnostics -Wno-long-long -Wno-variadic-macros -DNOWHAT -std=c++14
 
 BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER) 
 #BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
@@ -84,7 +84,7 @@ DEFAULT_LIBRARY_PATHS_DIRECTIVE := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) ) $(
 #
 # Header dependency stuff
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++11
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++14
 
 
 #

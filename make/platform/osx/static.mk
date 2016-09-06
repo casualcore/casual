@@ -24,7 +24,7 @@ CROSSCOMPILER = clang++
 LIBRARY_LINKER = g++
 ARCHIVE_LINKER = ar rcs
 
-STD_DIRECTIVE = -std=c++11
+STD_DIRECTIVE = -std=c++14
 
 #
 # We make sure we use bash
@@ -87,7 +87,7 @@ DEFAULT_LIBRARY_PATHS_DIRECTIVE = $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) )
 #
 # Header dependency stuff
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -M -std=c++11
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -M -std=c++14
 
 #
 # Directive for setting SONAME

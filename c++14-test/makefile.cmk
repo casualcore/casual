@@ -1,0 +1,14 @@
+from casual.middleware.make.dsl import *
+
+install_libs = []
+
+
+objectfiles = [
+    Compile( 'main.cpp'),
+]
+
+
+common = LinkExecutable( 'bin/c++14-test', 
+	objectfiles,
+	)
+
