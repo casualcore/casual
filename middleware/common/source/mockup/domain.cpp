@@ -326,14 +326,14 @@ namespace casual
                         lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
-
                      //log << "services: " << range::make( m_state.services) << '\n';
                   },
-                  [&]( message::gateway::domain::service::Advertise& m)
+                  [&]( message::gateway::domain::Advertise& m)
                   {
                      Trace trace{ "mockup gateway::domain::service::Advertise"};
 
                      log  << "message: " << m << '\n';
+
 
                      for( auto& service : m.services)
                      {
@@ -355,7 +355,7 @@ namespace casual
                   {
                      range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
                   },
-                  [&]( message::gateway::domain::discover::Request& m)
+                  [&]( message::gateway::domain::discover::internal::Request& m)
                   {
                      Trace trace{ "mockup gateway::domain::discover::Request"};
 
@@ -519,9 +519,10 @@ namespace casual
                {
                   Trace trace{ "mockup echo::Server::unadvertise"};
 
-                  message::service::Unadvertise unadvertise;
+                  message::service::Advertise unadvertise;
+                  unadvertise.directive = message::service::Advertise::Directive::remove;
                   unadvertise.process = m_replier.process();
-                  unadvertise.services = std::move( services);
+                  range::copy( services, std::back_inserter( unadvertise.services));
 
                   communication::ipc::blocking::send( communication::ipc::broker::device(), unadvertise);
                }

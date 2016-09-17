@@ -232,6 +232,32 @@ namespace casual
                }
             } // group
 
+            namespace domain
+            {
+
+               namespace discover
+               {
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "handle::domain::discover::Request"};
+
+                     auto reply = common::message::reverse::type( message);
+
+                     reply.domain = common::domain::identity();
+
+                     for( auto& queue : message.queues)
+                     {
+                        if( common::range::find( m_state.queues, queue))
+                        {
+                           reply.queues.emplace_back( queue);
+                        }
+                     }
+
+                     ipc::device().blocking_send( message.process.queue, reply);
+                  }
+               } // discover
+            } // domain
+
 
             namespace transaction
             {

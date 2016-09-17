@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Jun 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef QUEUE_BROKER_HANDLE_H_
@@ -12,6 +9,7 @@
 
 #include "common/message/queue.h"
 #include "common/message/transaction.h"
+#include "common/message/gateway.h"
 #include "common/message/domain.h"
 #include "common/communication/ipc.h"
 
@@ -105,14 +103,26 @@ namespace casual
                struct Involved : Base
                {
                   using message_type = common::message::queue::group::Involved;
-
                   using Base::Base;
 
                   void operator () ( message_type& message);
                };
+            } // group
 
+            namespace domain
+            {
+               namespace discover
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::gateway::domain::discover::internal::Request;
+                     using Base::Base;
 
-            }
+                     void operator () ( message_type& message);
+                  };
+
+               } // discover
+            } // domain
 
             namespace transaction
             {

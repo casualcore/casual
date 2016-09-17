@@ -152,6 +152,7 @@ namespace casual
 
                namespace instance
                {
+                  template< process::instance::fetch::Directive directive>
                   struct Connector : outbound::Connector
                   {
                      Connector( const Uuid& identity, std::string environment);
@@ -163,7 +164,20 @@ namespace casual
                      std::string m_environment;
                   };
 
-                  using Device = communication::outbound::Device< Connector>;
+                  //!
+                  //! Will wait until the instance is online, could block for ever.
+                  //!
+                  using Device = communication::outbound::Device< Connector< process::instance::fetch::Directive::wait>>;
+
+                  namespace optional
+                  {
+
+                     //!
+                     //! Will fail if the instance is offline.
+                     //!
+                     using Device = communication::outbound::Device< Connector< process::instance::fetch::Directive::direct>>;
+
+                  } // optional
                } // instance
 
                namespace domain
@@ -298,6 +312,12 @@ namespace casual
                namespace broker
                {
                   outbound::instance::Device& device();
+
+                  namespace optional
+                  {
+                     outbound::instance::optional::Device& device();
+                  } // optional
+
                } // broker
             } // queue
 

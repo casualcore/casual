@@ -15,7 +15,7 @@ DEFAULT_LIBS :=
 
 
 
-COMPILER = g++
+COMPILER = g++ -fcolor-diagnostics
 CROSSCOMPILER = clang++
 
 #

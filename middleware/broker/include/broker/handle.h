@@ -91,9 +91,12 @@ namespace casual
 
 		   namespace service
          {
-	         //!
-	         //! Advertise 0..N services for a server.
-	         //!
+            //!
+            //! Handles local advertise
+            //!  - add  0..* services
+            //!  - remove 0..* services
+            //!  - replace == remove all services for instance and then add 0..* services
+            //!
 	         struct Advertise : Base
 	         {
 	            typedef common::message::service::Advertise message_type;
@@ -104,51 +107,31 @@ namespace casual
 	         };
 
 
-	         //!
-	         //! Unadvertise 0..N services for a server.
-	         //!
-	         struct Unadvertise : Base
-	         {
-	            typedef common::message::service::Unadvertise message_type;
-
-	            using Base::Base;
-
-	            void operator () ( message_type& message);
-	         };
 
 	         namespace gateway
             {
 
 	            //!
-	            //! Advertise 0..N services for a server.
+	            //! Handles remote advertise
+	            //!  - add  0..* services
+	            //!  - remove 0..* services
+	            //!  - replace == remove all services for instance and then add 0..* services
 	            //!
 	            struct Advertise : Base
 	            {
-	               using message_type = common::message::gateway::domain::service::Advertise;
+	               using message_type = common::message::gateway::domain::Advertise;
 
 	               using Base::Base;
 
 	               void operator () ( message_type& message);
 	            };
 
-
-	            //!
-	            //! Unadvertise 0..N services for a server.
-	            //!
-	            struct Unadvertise : Base
-	            {
-	               using message_type = common::message::gateway::domain::service::Unadvertise;
-
-	               using Base::Base;
-
-	               void operator () ( message_type& message);
-	            };
 
 	            namespace discover
                {
 	               struct Reply : Base
 	               {
-	                  using message_type = common::message::gateway::domain::discover::automatic::Reply;
+	                  using message_type = common::message::gateway::domain::discover::external::Reply;
 
 	                  using Base::Base;
 
@@ -181,7 +164,7 @@ namespace casual
             {
 	            struct Request : Base
 	            {
-	               using message_type = common::message::gateway::domain::discover::Request;
+	               using message_type = common::message::gateway::domain::discover::internal::Request;
 	               using Base::Base;
 
 	               void operator () ( message_type& message);

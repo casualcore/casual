@@ -150,7 +150,8 @@ namespace casual
                throw common::exception::xatmi::service::no::Entry( "service name: " + service);
             }
 
-            message::service::Unadvertise message;
+            message::service::Advertise message;
+            message.directive = message::service::Advertise::Directive::remove;
             message.process = process::handle();
             message.services.emplace_back( service);
 

@@ -281,10 +281,8 @@ namespace casual
          void remove_process( common::platform::pid::type pid);
 
 
-         void add( common::message::service::Advertise& message);
-         void add( common::message::gateway::domain::service::Advertise& message);
-         void remove( const common::message::service::Unadvertise& message);
-         void remove( const common::message::gateway::domain::service::Unadvertise& message);
+         void update( common::message::service::Advertise& message);
+         void update( common::message::gateway::domain::Advertise& mesage);
 
 
          //!

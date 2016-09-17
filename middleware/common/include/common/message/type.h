@@ -63,7 +63,6 @@ namespace casual
             // Service
             SERVICE_BASE = 3000,
             service_advertise,
-            service_unadvertise,
             service_name_lookup_request,
             service_name_lookup_reply,
             service_call = SERVICE_BASE + 100,
@@ -141,17 +140,16 @@ namespace casual
             gateway_domain_discover_reply,
             gateway_domain_automatic_discover_request,
             gateway_domain_automatic_discover_reply,
-            gateway_service_advertise,
-            gateway_service_unadvertise,
+            gateway_domain_advertise,
             gateway_domain_id,
 
             // Innterdomain messages, part of gateway
             INTERDOMAIN_BASE = 8000,
             ineterdomain_domain_discover_request,
             ineterdomain_domain_discover_reply,
-            ineterdomain_service_call,
+            ineterdomain_service_call = INTERDOMAIN_BASE + 100,
             ineterdomain_service_reply,
-            ineterdomain_transaction_resource_prepare_request,
+            ineterdomain_transaction_resource_prepare_request = INTERDOMAIN_BASE + 300,
             ineterdomain_transaction_resource_prepare_reply,
             ineterdomain_transaction_resource_commit_request,
             ineterdomain_transaction_resource_commit_reply,

@@ -77,32 +77,35 @@ namespace casual
             {
                namespace discover
                {
-                  struct Reply : Base
+                  namespace inbound
                   {
-                     using Base::Base;
-                     using message_type = common::message::gateway::domain::discover::Reply;
+                     struct Reply : Base
+                     {
+                        using Base::Base;
+                        using message_type = common::message::gateway::domain::discover::internal::Reply;
 
-                     void operator () ( message_type& message);
-                  };
+                        void operator () ( message_type& message);
+                     };
 
-                  struct Request : Base
-                  {
-                     using Base::Base;
-                     using message_type = common::message::gateway::domain::discover::Request;
+                     struct Request : Base
+                     {
+                        using Base::Base;
+                        using message_type = common::message::gateway::domain::discover::internal::Request;
 
-                     void operator () ( message_type& message);
-                  };
+                        void operator () ( message_type& message);
+                     };
+                  } // inbound
 
-                  namespace automatic
+                  namespace outbound
                   {
                      struct Request : Base
                      {
                         using Base::Base;
-                        using message_type = common::message::gateway::domain::discover::automatic::Request;
+                        using message_type = common::message::gateway::domain::discover::external::Request;
 
                         void operator () ( message_type& message);
                      };
-                  } // automatic
+                  } // outbound
 
                } // discovery
 

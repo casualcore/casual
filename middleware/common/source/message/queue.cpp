@@ -43,6 +43,12 @@ namespace casual
                         << '}';
                }
 
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ id: " << value.id
+                        << '}';
+               }
+
             } // enqueue
 
             namespace dequeue

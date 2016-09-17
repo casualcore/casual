@@ -339,7 +339,7 @@ namespace casual
                   handle::create::forward< common::message::transaction::resource::prepare::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::rollback::Reply>( outbound_device),
-                  handle::create::forward< common::message::gateway::domain::discover::Reply>( outbound_device),
+                  handle::create::forward< common::message::gateway::domain::discover::internal::Reply>( outbound_device),
                };
 
                log << "start internal message pump\n";

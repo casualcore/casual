@@ -19,6 +19,9 @@ namespace casual
       {
          namespace error
          {
+
+
+
             using type = std::function<void()>;
 
             namespace handler
@@ -526,7 +529,7 @@ namespace casual
                         //
                         // Let connector take a crack at resolving this problem...
                         //
-                       m_connector.reconnect();
+                        m_connector.reconnect();
                      }
                      catch( ...)
                      {

@@ -88,8 +88,6 @@ namespace casual
          }
 
 
-
-
          namespace service
          {
             void Advertise::operator () ( message_type& message)
@@ -98,16 +96,7 @@ namespace casual
 
                log << "message: " << message << '\n';
 
-               m_state.add( message);
-            }
-
-            void Unadvertise::operator () ( message_type& message)
-            {
-               Trace trace{ "broker::handle::Unadvertise"};
-
-               log << "message: " << message << '\n';
-
-               m_state.remove( message);
+               m_state.update( message);
             }
 
             namespace gateway
@@ -118,16 +107,7 @@ namespace casual
 
                   log << "message: " << message << '\n';
 
-                  m_state.add( message);
-               }
-
-               void Unadvertise::operator () ( message_type& message)
-               {
-                  Trace trace{ "broker::handle::gateway::Unadvertise"};
-
-                  log << "message: " << message << '\n';
-
-                  m_state.remove( message);
+                  m_state.update( message);
                }
 
                namespace discover
@@ -294,7 +274,7 @@ namespace casual
                      //
                      log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
 
-                     common::message::gateway::domain::discover::automatic::Request request;
+                     common::message::gateway::domain::discover::external::Request request;
                      request.correlation = message.correlation;
                      request.domain = common::domain::identity();
                      request.process = common::process::handle();
@@ -468,9 +448,7 @@ namespace casual
          return {
             handle::process::Exit{ state},
             handle::service::Advertise{ state},
-            handle::service::Unadvertise{ state},
             handle::service::gateway::Advertise{ state},
-            handle::service::gateway::Unadvertise{ state},
             handle::service::gateway::discover::Reply{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},

@@ -30,21 +30,24 @@ namespace casual
             }
 
 
+            std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
+            {
+               switch( value)
+               {
+                  case Advertise::Directive::add: return out << "add";
+                  case Advertise::Directive::remove: return out << "remove";
+                  case Advertise::Directive::replace: return out << "replace";
+               }
+               return out << "unknown";
+            }
 
             std::ostream& operator << ( std::ostream& out, const Advertise& message)
             {
                return out << "{ process: " << message.process
+                     << ", directive: " << message.directive
                      << ", services: " << range::make( message.services)
                      << '}';
             }
-
-            std::ostream& operator << ( std::ostream& out, const Unadvertise& message)
-            {
-               return out << "{ process: " << message.process
-                     << ", services: " << range::make( message.services)
-                     << '}';
-            }
-
 
             namespace lookup
             {

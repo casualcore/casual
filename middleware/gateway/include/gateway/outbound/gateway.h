@@ -138,6 +138,20 @@ namespace casual
 
             } // call
 
+            namespace queue
+            {
+               namespace enqueue
+               {
+
+               } // enqueue
+
+               namespace dequeue
+               {
+
+               } // dequeue
+
+            } // queue
+
 
             template< typename M>
             struct basic_reply : Base
@@ -358,7 +372,7 @@ namespace casual
                   handle::create< common::message::transaction::resource::commit::Request>( m_routing, outbound_device),
                   handle::create< common::message::transaction::resource::rollback::Request>( m_routing, outbound_device),
 
-                  handle::create< common::message::gateway::domain::discover::Request>( m_routing, outbound_device),
+                  handle::create< common::message::gateway::domain::discover::internal::Request>( m_routing, outbound_device),
 
 
 

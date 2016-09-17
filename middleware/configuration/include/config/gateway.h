@@ -40,6 +40,7 @@ namespace casual
             std::string address;
             std::string restart;
             std::vector< std::string> services;
+            std::vector< std::string> queues;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -48,6 +49,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( address);
                archive & CASUAL_MAKE_NVP( restart);
                archive & CASUAL_MAKE_NVP( services);
+               archive & CASUAL_MAKE_NVP( queues);
             )
 
             friend bool operator == ( const Connection& lhs, const Connection& rhs);

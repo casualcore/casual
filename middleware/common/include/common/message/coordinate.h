@@ -54,10 +54,11 @@ namespace casual
 
          } // coordinate
 
-         template< typename Message, typename Policy, typename MP = coordinate::policy::Message>
+         template< typename Policy, typename MP = coordinate::policy::Message>
          struct Coordinate
          {
             using policy_type = Policy;
+            using message_type = typename policy_type::message_type;
             using message_policy_type = MP;
 
             template< typename... Args>
@@ -75,7 +76,7 @@ namespace casual
 
                if( m_messages.back().policy.done())
                {
-                  m_policy( m_messages.back().queue, m_messages.back().message);
+                  m_policy.send( m_messages.back().queue, m_messages.back().message);
                   m_messages.pop_back();
                }
             }
@@ -92,7 +93,7 @@ namespace casual
                   //
                   // Accumulate message
                   //
-                  m_policy( found->message, message);
+                  m_policy.accumulate( found->message, std::forward< Reply>( message));
 
 
                   if( found->policy.done())
@@ -100,7 +101,7 @@ namespace casual
                      //
                      // We're done, send reply...
                      //
-                     m_policy( found->queue, found->message);
+                     m_policy.send( found->queue, found->message);
                      m_messages.erase( std::begin( found));
                   }
 
@@ -114,7 +115,7 @@ namespace casual
                range::trim( m_messages, range::remove_if( m_messages, [=]( holder_type& h){
                   if( h.policy.consume( pid) && h.policy.done())
                   {
-                     m_policy( h.queue, h.message);
+                     m_policy.send( h.queue, h.message);
                      return true;
                   }
                   return false;
@@ -141,7 +142,7 @@ namespace casual
 
                platform::ipc::id::type queue;
                message_policy_type policy;
-               Message message;
+               message_type message;
             };
 
 

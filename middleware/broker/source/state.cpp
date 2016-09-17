@@ -297,7 +297,7 @@ namespace casual
 
                for( auto& s : services)
                {
-                  auto service = state.find_service( s);
+                  auto service = state.find_service( s.name);
 
                   if( service)
                   {
@@ -323,55 +323,83 @@ namespace casual
       }
 
 
-      void State::add( common::message::service::Advertise& message)
+      void State::update( common::message::service::Advertise& message)
       {
-         Trace trace{ "broker::State::add local"};
+         Trace trace{ "broker::State::update local"};
 
-         //
-         // Local instance
-         //
-
-         auto& instance = local::find_or_add( instances.local, message.process);
-
-         for( auto& s : message.services)
+         switch( message.directive)
          {
-            auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
-            service.add( instance);
+            case common::message::service::Advertise::Directive::add:
+            {
+
+               //
+               // Local instance
+               //
+
+               auto& instance = local::find_or_add( instances.local, message.process);
+
+               for( auto& s : message.services)
+               {
+                  auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
+                  service.add( instance);
+               }
+
+               break;
+            }
+            case common::message::service::Advertise::Directive::remove:
+            {
+               local::remove_services( *this, instances.local, message.services, message.process);
+               break;
+            }
+            case common::message::service::Advertise::Directive::replace:
+            {
+
+               break;
+            }
+            default:
+            {
+               log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+            }
          }
       }
 
-      void State::add( common::message::gateway::domain::service::Advertise& message)
+
+      void State::update( common::message::gateway::domain::Advertise& message)
       {
-         Trace trace{ "broker::State::add remote"};
+         Trace trace{ "broker::State::update remote"};
 
-         //
-         // Remote instance
-         //
-
-         auto& instance = local::find_or_add( instances.remote, message.process);
-         instance.order = message.order;
-
-         for( auto& s : message.services)
+         switch( message.directive)
          {
-            auto hops = s.hops;
-            auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
-            service.add( instance, hops);
+            case common::message::gateway::domain::Advertise::Directive::add:
+            {
+
+               auto& instance = local::find_or_add( instances.remote, message.process);
+               instance.order = message.order;
+
+               for( auto& s : message.services)
+               {
+                  auto hops = s.hops;
+                  auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
+                  service.add( instance, hops);
+               }
+
+               break;
+            }
+            case common::message::gateway::domain::Advertise::Directive::remove:
+            {
+               local::remove_services( *this, instances.remote, message.services, message.process);
+               break;
+            }
+            case common::message::gateway::domain::Advertise::Directive::replace:
+            {
+
+               break;
+            }
+            default:
+            {
+               log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+            }
          }
-
-      }
-
-      void State::remove( const common::message::service::Unadvertise& message)
-      {
-         Trace trace{ "broker::State::remove local"};
-
-         local::remove_services( *this, instances.local, message.services, message.process);
-      }
-
-      void State::remove( const common::message::gateway::domain::service::Unadvertise& message)
-      {
-         Trace trace{ "broker::State::remove local"};
-
-         local::remove_services( *this, instances.remote, message.services, message.process);
 
       }
 
@@ -393,10 +421,11 @@ namespace casual
       {
          common::message::service::Advertise message;
 
+         message.directive = common::message::service::Advertise::Directive::add;
          message.services = std::move( services);
          message.process = process::handle();
 
-         add( message);
+         update( message);
       }
 
 

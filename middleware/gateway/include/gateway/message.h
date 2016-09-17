@@ -242,10 +242,10 @@ namespace casual
                constexpr common::message::Type message_type( common::message::service::call::Reply&&)
                { return common::message::Type::ineterdomain_service_reply;}
 
-               constexpr common::message::Type message_type( common::message::gateway::domain::discover::Request&&)
+               constexpr common::message::Type message_type( common::message::gateway::domain::discover::internal::Request&&)
                { return common::message::Type::ineterdomain_domain_discover_request;}
 
-               constexpr common::message::Type message_type( common::message::gateway::domain::discover::Reply&&)
+               constexpr common::message::Type message_type( common::message::gateway::domain::discover::internal::Reply&&)
                { return common::message::Type::ineterdomain_domain_discover_reply;}
 
 
@@ -466,15 +466,15 @@ namespace casual
 
                   namespace send
                   {
-                     using Request = basic_request< detail::external_send_wrapper< common::message::gateway::domain::discover::Request>>;
-                     using Reply = basic_reply< detail::external_send_wrapper< common::message::gateway::domain::discover::Reply>>;
+                     using Request = basic_request< detail::external_send_wrapper< common::message::gateway::domain::discover::internal::Request>>;
+                     using Reply = basic_reply< detail::external_send_wrapper< common::message::gateway::domain::discover::internal::Reply>>;
 
                   } // send
 
                   namespace receive
                   {
-                     using Request = basic_request< detail::external_receive_wrapper< common::message::gateway::domain::discover::Request>>;
-                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::gateway::domain::discover::Reply>>;
+                     using Request = basic_request< detail::external_receive_wrapper< common::message::gateway::domain::discover::internal::Request>>;
+                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::gateway::domain::discover::internal::Reply>>;
                   } // receive
 
                } // discovery
@@ -513,10 +513,10 @@ namespace casual
                { return { message};}
 
 
-               inline domain::discovery::send::Request wrap( common::message::gateway::domain::discover::Request& message)
+               inline domain::discovery::send::Request wrap( common::message::gateway::domain::discover::internal::Request& message)
                { return { message};}
 
-               inline domain::discovery::send::Reply wrap( common::message::gateway::domain::discover::Reply& message)
+               inline domain::discovery::send::Reply wrap( common::message::gateway::domain::discover::internal::Reply& message)
                { return { message};}
 
             } // send

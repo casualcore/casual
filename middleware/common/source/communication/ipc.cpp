@@ -222,7 +222,10 @@ namespace casual
                   {
                      namespace
                      {
-                        platform::ipc::id::type fetch( const Uuid& identity, const std::string& environment)
+                        platform::ipc::id::type fetch(
+                              const Uuid& identity,
+                              const std::string& environment,
+                              process::instance::fetch::Directive directive)
                         {
                            if( environment::variable::exists( environment))
                            {
@@ -234,7 +237,9 @@ namespace casual
                               }
                            }
 
-                           auto result = process::instance::fetch::handle( identity).queue;
+
+                           auto result = process::instance::fetch::handle( identity, directive).queue;
+
 
                            if( ! environment.empty())
                            {
@@ -247,19 +252,29 @@ namespace casual
                   } // local
 
 
-                  Connector::Connector( const Uuid& identity, std::string environment)
-                     : outbound::Connector( local::fetch( identity, environment)),
+                  template< process::instance::fetch::Directive directive>
+                  Connector< directive>::Connector( const Uuid& identity, std::string environment)
+                     : outbound::Connector( local::fetch( identity, environment, directive)),
                        m_identity{ identity}, m_environment{ std::move( environment)}
                   {
 
                   }
 
-                  void Connector::reconnect()
+                  template< process::instance::fetch::Directive directive>
+                  void Connector< directive>::reconnect()
                   {
                      Trace trace{ "ipc::outbound::instance::Connector::reconnect"};
 
-                     m_id = local::fetch( m_identity, m_environment);
+                     m_id = local::fetch( m_identity, m_environment, directive);
+
+                     if( ! communication::ipc::exists( m_id))
+                     {
+                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue for instance", CASUAL_NIP( m_identity)};
+                     }
                   }
+
+                  template struct Connector< process::instance::fetch::Directive::direct>;
+                  template struct Connector< process::instance::fetch::Directive::wait>;
 
                } // instance
 
@@ -435,6 +450,18 @@ namespace casual
 
                      return singelton;
                   }
+
+                  namespace optional
+                  {
+                     outbound::instance::optional::Device& device()
+                     {
+                        static outbound::instance::optional::Device singelton{
+                           process::instance::identity::queue::broker(),
+                           environment::variable::name::ipc::queue::broker()};
+
+                        return singelton;
+                     }
+                  } // optional
                } // broker
             } // queue
 

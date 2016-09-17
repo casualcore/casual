@@ -99,6 +99,15 @@ namespace casual
 
             struct Advertise : basic_message< Type::service_advertise>
             {
+               enum class Directive : char
+               {
+                  add,
+                  remove,
+                  replace
+               };
+
+               Directive directive = Directive::add;
+
                common::process::Handle process;
                std::vector< advertise::Service> services;
 
@@ -106,26 +115,13 @@ namespace casual
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
+                  archive & directive;
                   archive & process;
                   archive & services;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, Directive value);
                friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
-            };
-
-            struct Unadvertise : basic_message< Type::service_unadvertise>
-            {
-               common::process::Handle process;
-               std::vector< std::string> services;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  base_type::marshal( archive);
-                  archive & process;
-                  archive & services;
-               })
-
-               friend std::ostream& operator << ( std::ostream& out, const Unadvertise& message);
             };
 
 

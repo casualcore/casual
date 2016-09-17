@@ -116,6 +116,8 @@ namespace casual
                      base_type::marshal( archive);
                      archive & id;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
 
             } // enqueue
