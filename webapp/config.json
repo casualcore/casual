@@ -1,0 +1,16 @@
+{
+	"path" : "production",
+
+	"production" : {
+		"url" : "/casual/casual"
+	},
+
+	"development" : {
+		"url" : "http://localhost:3000/casual/casual"
+	},
+
+	"remote" : {
+		"url" : "http://casual.laz.se/casual/casual"
+	}
+
+}

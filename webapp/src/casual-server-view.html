@@ -14,13 +14,13 @@
 		</style>
 
 		<iron-ajax id="ironAjaxCall"
-			url="http://casual.laz.se/casual/casual?service=.casual.broker.state"
-			handle-as="json" 
-			method="GET"
+			handle-as="json"
+			contentType="application/json"
+			method="POST"
 			last-response="{{response}}">
 		</iron-ajax>
 
-		<casual-list listname="Servers" listdata="{{response.serviceReturn.servers}}" listattribute="serverdata">
+		<casual-list listname="Servers" listdata="{{response.serviceReturn.executables}}" listattribute="serverdata">
 			<casual-server></casual-server>
 		</casual-list>
 	</template>
@@ -29,10 +29,21 @@
 		Polymer({
 			is: 'casual-server-view',
 			properties: {
-			route: Object
+				route: Object,
+				_baseURL: {
+					type: String,
+					value: "service=.casual.domain.state",
+					readOnly: true
+				}
 		},
 
 		attached: function() {
+			fetchGlobalConfiguration(this);
+		},
+
+		doRequest: function() {
+			(this.$.ironAjaxCall).url = global_configuration[global_path].url + "?" + this._baseURL;
+			(this.$.ironAjaxCall).body = "{}";
 			(this.$.ironAjaxCall).generateRequest();
 		}
 

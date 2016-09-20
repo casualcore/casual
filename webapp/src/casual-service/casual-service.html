@@ -80,7 +80,7 @@
 
                         <li>
                             <span id="service-instances-text" on-tap="toggleInstances">Instances:</span>
-                            <span id="service-instances-counter"> {{servicedata.instances.length}}</span>
+                            <span id="service-instances-counter"> {{servicedata.instances.local.length}}</span>
                             <template is="dom-if" if="{{servicedata.instances.length}}">
                                 <span id="service-instances-field">
                                     <template is="dom-if" if="{{showinstances}}">[ - ]</template>

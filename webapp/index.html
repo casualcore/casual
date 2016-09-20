@@ -33,6 +33,32 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 			<script>
 
+				//Fetch global configuration:
+				var global_configuration = {};
+				var global_path;
+
+				function fetchGlobalConfiguration(callObject) {
+					if(global_configuration) {
+						var url = "config.json";
+						var xhr = new XMLHttpRequest();
+						xhr.onreadystatechange = function()
+						{
+							if (xhr.readyState === XMLHttpRequest.DONE) {
+							    if (xhr.status === 200) {
+							        global_configuration = JSON.parse(xhr.responseText);
+							        global_path = global_configuration["path"];
+							        callObject.doRequest();
+							    } else {
+							        console.error("Could not load configuration:", url)
+							    }
+						}
+						};
+
+						xhr.open("GET", url, true);
+						xhr.send();
+					}
+				}
+
 				// setup Polymer options
 				window.Polymer = {lazyRegister: true, dom: 'shadow'};
 
