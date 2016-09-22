@@ -36,6 +36,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				//Fetch global configuration:
 				var global_configuration = {};
 				var global_path;
+				var global_service;
 
 				function fetchGlobalConfiguration(callObject) {
 					if(global_configuration) {
@@ -47,6 +48,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 							    if (xhr.status === 200) {
 							        global_configuration = JSON.parse(xhr.responseText);
 							        global_path = global_configuration["path"];
+							        global_service = global_configuration["service"];
 							        callObject.doRequest();
 							    } else {
 							        console.error("Could not load configuration:", url)

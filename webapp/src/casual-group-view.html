@@ -31,12 +31,9 @@
 		Polymer({
 			is: 'casual-group-view',
 			properties: {
-				route: Object,
-				
-				_baseURL: {
+				_url: {
 					type: String,
-					value: "service=.casual.domain.state",
-					readOnly: true
+					value: undefined
 				}
 		},
 
@@ -45,9 +42,14 @@
 		},
 
 		doRequest: function() {
-			(this.$.ironAjaxCall).url = global_configuration[global_path].url + "?" + this._baseURL;
-			(this.$.ironAjaxCall).body = "{}";
-			(this.$.ironAjaxCall).generateRequest();
+			if(!this._url) {
+				this._url = global_configuration[global_path].url + global_service["url"] + global_service["domain"]["state"];
+			}
+
+			var ironAjax = (this.$.ironAjaxCall);
+			ironAjax.url = this._url;
+			ironAjax.body = "{}";
+			ironAjax.generateRequest();
 		}
 
 		});
