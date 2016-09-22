@@ -1,5 +1,5 @@
 {
-	"path" : "production",
+	"path" : "development",
 
 	"production" : {
 		"url" : "/casual/casual"
