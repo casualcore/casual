@@ -1,8 +1,8 @@
 {
-	"path" : "development",
+	"path" : "production",
 
 	"production" : {
-		"url" : "/casual/casual"
+		"url" : "/casual/"
 	},
 
 	"development" : {
@@ -10,7 +10,7 @@
 	},
 
 	"remote" : {
-		"url" : "http://casual.laz.se/casual/casual"
+		"url" : "http://casual.laz.se/casual"
 	},
 
 	"service" : {
