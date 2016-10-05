@@ -152,7 +152,7 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
         Compile( 'unittest/isolated/source/tcp/test_manager.cpp'),
         
    ], 
-   [ common_archive, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment']) 
+   [ common_archive, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment', 'casual-unittest']) 
 
 #
 # Make sure we link the executables before we run the unittest

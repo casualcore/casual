@@ -155,6 +155,10 @@ namespace casual
             ineterdomain_transaction_resource_commit_reply,
             ineterdomain_transaction_resource_rollback_request,
             ineterdomain_transaction_resource_rollback_reply,
+            interdomain_queue_enqueue_request = INTERDOMAIN_BASE + 400,
+            interdomain_queue_enqueue_reply,
+            interdomain_queue_dequeue_request,
+            interdomain_queue_dequeue_reply,
 
 
 

@@ -31,6 +31,22 @@ namespace casual
                      << '}';
             }
 
+            namespace lookup
+            {
+               std::ostream& operator << ( std::ostream& out, const Request& value)
+               {
+                  return out << "{ name: " << value.name
+                        << '}';
+
+               }
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ process: " << value.process
+                        << " queue: , " << value.queue
+                      << '}';
+               }
+            } // lookup
+
             namespace enqueue
             {
                std::ostream& operator << ( std::ostream& out, const Request& value)
@@ -39,6 +55,7 @@ namespace casual
                         << ", process: " << value.process
                         << ", trid: " << value.trid
                         << ", queue: " << value.queue
+                        << ", name: " << value.name
                         << ", message: " << value.message
                         << '}';
                }
@@ -63,12 +80,18 @@ namespace casual
                std::ostream& operator << ( std::ostream& out, const Request& value)
                {
                   return out << "{ qid: " << value.queue
+                     << ", name: " << value.name
                      << ", block: " << std::boolalpha << value.block
                      << ", selector: " << value.selector
                      << ", process: " << value.process
                      << ", trid: " << value.trid << '}';
                }
 
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ message: " << range::make( value.message)
+                        << '}';
+               }
 
                namespace forget
                {

@@ -78,7 +78,7 @@ namespace casual
                      replace
                   };
 
-                  Directive directive;
+                  Directive directive = Directive::add;
 
                   common::process::Handle process;
                   common::domain::Identity domain;

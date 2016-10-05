@@ -87,6 +87,7 @@ casual_common_objectfiles = [
     
     Compile( 'source/arguments.cpp'),
     Compile( 'source/terminal.cpp'),
+
     
 ]
 
@@ -104,6 +105,16 @@ install_libs.append( common)
 # 
 # install_libs.append( lib_terminal)
 
+
+#
+# The mockup-rm, only for testing
+#
+target_unittest = LinkLibrary( 'bin/casual-unittest', 
+     [
+       Compile( 'source/unittest.cpp'),
+     ],
+     [ common, "gtest"])
+
 #
 # Mockup stuff, only for unittest
 #
@@ -116,7 +127,7 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/thread.cpp'),
        Compile( 'source/mockup/log.cpp'),
      ],
-     [ common])
+     [ common, target_unittest])
 
 install_libs.append( mockup)
 
@@ -211,6 +222,7 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
      common,
      mockup,
      mockup_unittest,
+    target_unittest,
     ])		
 
 #

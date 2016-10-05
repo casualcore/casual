@@ -10,6 +10,7 @@
 #include "common/message/gateway.h"
 
 
+
 #include "common/flag.h"
 #include "common/trace.h"
 
@@ -450,6 +451,81 @@ namespace casual
                }
 
             } // transaction
+
+            namespace queue
+            {
+               Broker::Broker() : Broker( default_handler())
+               {
+
+
+               }
+
+               Broker::Broker( message::dispatch::Handler&& handler)
+                  : m_replier{ std::move( handler)}
+               {
+                  //
+                  // Connect to the domain
+                  //
+                  local::send::connect::domain( m_replier, process::instance::identity::queue::broker());
+
+                  //
+                  // Set environment variable to make it easier for other processes to
+                  // reach this broker (should work any way...)
+                  //
+                  environment::variable::set( environment::variable::name::ipc::queue::broker(), m_replier.input());
+               }
+
+               message::dispatch::Handler Broker::default_handler()
+               {
+
+
+
+                  return {
+                     [&]( message::queue::lookup::Request& r)
+                     {
+                        Trace trace{ "mockup::queue::lookup::Request"};
+
+                        auto reply = message::reverse::type( r);
+                        reply.process = m_replier.process();
+                        reply.queue = 42;
+
+                        ipc::eventually::send( r.process.queue, reply);
+                     },
+                     [&]( message::queue::enqueue::Request& r)
+                     {
+                        Trace trace{ "mockup::queue::enqueue::Request"};
+
+                        auto reply = message::reverse::type( r);
+                        reply.id = uuid::make();
+
+                        Broker::Message message{ r.message};
+                        message.timestamp = platform::clock_type::now();
+                        message.id = reply.id;
+
+                        m_queues[ r.name].push( std::move( message));
+
+                        ipc::eventually::send( r.process.queue, reply);
+                     },
+                     [&]( message::queue::dequeue::Request& r)
+                     {
+                        Trace trace{ "mockup::queue::dequeue::Request"};
+
+                        auto reply = message::reverse::type( r);
+
+                        auto& queue = m_queues[ r.name];
+
+                        if( ! queue.empty())
+                        {
+                           reply.message.push_back( std::move( queue.front()));
+                           queue.pop();
+                        }
+
+                        ipc::eventually::send( r.process.queue, reply);
+                     }
+                  };
+               }
+
+            } // queue
 
             namespace local
             {

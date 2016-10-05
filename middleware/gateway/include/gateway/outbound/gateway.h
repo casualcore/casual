@@ -140,14 +140,53 @@ namespace casual
 
             namespace queue
             {
+               template< typename M, typename D>
+               struct basic_request : handle::basic_request< M, D>
+               {
+                  using message_type = M;
+                  using request_base = handle::basic_request< M, D>;
+
+                  basic_request( const Routing& routing, D& device, const common::domain::Identity& remote)
+                     : request_base{ routing, device}, m_remote( remote) {}
+
+
+                  void operator() ( message_type& message)
+                  {
+                     Trace trace{ "gateway::outbound::handle::queue::basic_request"};
+
+                     log << "message: " << message << '\n';
+
+                     if( message.trid)
+                     {
+                        //
+                        // Notify TM that this "resource" is involved in the transaction
+                        //
+                        common::communication::ipc::blocking::send(
+                              common::communication::ipc::transaction::manager::device(),
+                              common::message::transaction::resource::domain::involved::create(
+                                    m_remote.id, message));
+                     }
+
+                     this->routing.add( message.correlation, message.process);
+
+                     auto&& request = message::interdomain::send::wrap( message);
+                     this->device.blocking_send( request);
+                  }
+
+               private:
+                  const common::domain::Identity& m_remote;
+               };
+
                namespace enqueue
                {
-
+                  template< typename D>
+                  using Request = basic_request< common::message::queue::enqueue::Request, D>;
                } // enqueue
 
                namespace dequeue
                {
-
+                  template< typename D>
+                  using Request = basic_request< common::message::queue::dequeue::Request, D>;
                } // dequeue
 
             } // queue
@@ -183,6 +222,8 @@ namespace casual
 
             private:
                void process( common::message::service::call::Reply& message) const { }
+               void process( common::message::queue::enqueue::Reply& message) const { }
+               void process( common::message::queue::dequeue::Reply& message) const { }
 
                template< typename T>
                void process( T& message) const { message.process = common::process::handle();}
@@ -368,6 +409,10 @@ namespace casual
                   // external messages, that will be forward to remote domain
                   //
                   handle::call::Request< outbound_device_type>{ m_routing, outbound_device, remote},
+
+                  handle::queue::enqueue::Request< outbound_device_type>{ m_routing, outbound_device, remote},
+                  handle::queue::dequeue::Request< outbound_device_type>{ m_routing, outbound_device, remote},
+
                   handle::create< common::message::transaction::resource::prepare::Request>( m_routing, outbound_device),
                   handle::create< common::message::transaction::resource::commit::Request>( m_routing, outbound_device),
                   handle::create< common::message::transaction::resource::rollback::Request>( m_routing, outbound_device),
@@ -473,6 +518,10 @@ namespace casual
                      // External messages from the other domain
                      //
                      handle::basic_reply< message::interdomain::service::call::receive::Reply>{ routing},
+
+                     handle::basic_reply< message::interdomain::queue::enqueue::receive::Reply>{ routing},
+                     handle::basic_reply< message::interdomain::queue::dequeue::receive::Reply>{ routing},
+
                      handle::basic_reply< message::interdomain::transaction::resource::receive::prepare::Reply>{ routing},
                      handle::basic_reply< message::interdomain::transaction::resource::receive::commit::Reply>{ routing},
                      handle::basic_reply< message::interdomain::transaction::resource::receive::rollback::Reply>{ routing},

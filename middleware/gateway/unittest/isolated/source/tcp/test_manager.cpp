@@ -266,7 +266,7 @@ domain:
          // exposes service "remote1"
          local::domain::Service domain{ local::configuration::connect_to_our_self_services_service1()};
 
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
 
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
@@ -287,6 +287,86 @@ domain:
             EXPECT_TRUE( reply.service.name == "remote1");
             EXPECT_TRUE( reply.process == state.connections.at( 0).process) << "reply.process: "
                   << reply.process << " - state.connections.at( 0).process: " << state.connections.at( 0).process;
+         }
+
+      }
+
+      namespace local
+      {
+         namespace
+         {
+
+            namespace domain
+            {
+               struct Queue
+               {
+                  Queue( const std::string& configuration) : gateway{ configuration}
+                  {
+
+                  }
+
+                  mockup::domain::Manager manager;
+                  mockup::domain::Broker broker;
+                  mockup::domain::transaction::Manager tm;
+                  mockup::domain::queue::Broker queue;
+
+                  Gateway gateway;
+
+               };
+
+            } // domain
+
+         } // <unnamed>
+      } // local
+
+      TEST( casual_gateway_manager_tcp,  connect_to_our_self__enqueue_dequeue___expect_message)
+      {
+         common::unittest::Trace trace;
+
+         local::domain::Queue domain{ local::one_listener_configuration()};
+
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
+
+         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+
+
+         auto state = local::call::wait::ready::state();
+         ASSERT_TRUE( state.connections.size() == 2);
+         range::sort( state.connections);
+
+         //
+         // Gateway is connected to it self. Hence we can send a request to the outbound, and it
+         // will send it to the corresponding inbound, and back in the current (mockup) domain
+         //
+
+         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::vo::Connection::Bound::out);
+         auto outbound =  state.connections.at( 0).process;
+
+         const auto payload = unittest::random::binary( 1000);
+
+         // enqueue
+         {
+            message::queue::enqueue::Request request;
+            request.process = process::handle();
+            request.name = "queue1";
+            request.message.type.name = "json";
+            request.message.payload = payload;
+
+
+            auto reply = communication::ipc::call( outbound.queue, request);
+            EXPECT_TRUE( ! reply.id.empty());
+         }
+
+         // dequeue
+         {
+            message::queue::dequeue::Request request;
+            request.process = process::handle();
+            request.name = "queue1";
+
+            auto reply = communication::ipc::call( outbound.queue, request);
+            ASSERT_TRUE( ! reply.message.empty());
+            EXPECT_TRUE( reply.message.front().payload == payload);
+            EXPECT_TRUE( reply.message.front().type.name == "json");
          }
 
       }

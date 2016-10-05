@@ -61,6 +61,8 @@ namespace casual
                      archive & process;
                      archive & name;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
 
                struct Reply : basic_message< Type::queue_lookup_reply>
@@ -75,13 +77,10 @@ namespace casual
                      archive & process;
                      archive & queue;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
-
-               //using Reply = message::type_wrapper< base_reply, Type::queue_lookup_reply>;
-
             } // lookup
-
-
 
             namespace enqueue
             {
@@ -92,6 +91,7 @@ namespace casual
                   common::process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
+                  std::string name;
 
                   Message message;
 
@@ -101,6 +101,7 @@ namespace casual
                      archive & process;
                      archive & trid;
                      archive & queue;
+                     archive & name;
                      archive & message;
                   })
 
@@ -142,6 +143,7 @@ namespace casual
                   common::process::Handle process;
                   common::transaction::ID trid;
                   std::size_t queue;
+                  std::string name;
                   Selector selector;
                   bool block = false;
 
@@ -151,6 +153,7 @@ namespace casual
                      archive & process;
                      archive & trid;
                      archive & queue;
+                     archive & name;
                      archive & selector;
                      archive & block;
                   })
@@ -162,6 +165,13 @@ namespace casual
                {
                   struct Message : base_message
                   {
+                     Message( const base_message& m) : base_message( m) {}
+                     Message() = default;
+
+                     Message( Message&&) = default;
+                     Message& operator = ( Message&&) = default;
+
+
                      std::size_t redelivered = 0;
                      common::platform::time_point timestamp;
 
@@ -181,6 +191,8 @@ namespace casual
                      base_type::marshal( archive);
                      archive & message;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
 
                namespace forget
@@ -425,6 +437,21 @@ namespace casual
 
 
          } // queue
+
+         namespace reverse
+         {
+
+            template<>
+            struct type_traits< queue::enqueue::Request> : detail::type< queue::enqueue::Reply> {};
+            template<>
+            struct type_traits< queue::dequeue::Request> : detail::type< queue::dequeue::Reply> {};
+
+            template<>
+            struct type_traits< queue::lookup::Request> : detail::type< queue::lookup::Reply> {};
+
+         } // reverse
+
+
       } // message
    } // common
 

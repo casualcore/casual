@@ -5,7 +5,7 @@
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
 
-#include "common/signal.h"
+#include "common/platform.h"
 #include "common/log.h"
 
 #include <gtest/gtest.h>
@@ -23,11 +23,12 @@ namespace casual
             //!
             struct Scope
             {
-               Scope() { signal::clear();}
-               ~Scope() { signal::clear();}
+               Scope();
+               ~Scope();
             };
 
          } // clean
+
 
          struct Trace : clean::Scope
          {
@@ -42,6 +43,12 @@ namespace casual
                log::trace << "TEST( " << test_info->test_case_name() << ", " << test_info->name() << ") - out\n";
             }
          };
+
+
+         namespace random
+         {
+            platform::binary_type binary( std::size_t size);
+         } // random
 
       } // unittest
    } // common

@@ -62,9 +62,7 @@ namespace casual
                }
             };
 
-
-
-            namespace call
+            namespace cache
             {
                struct Base
                {
@@ -74,11 +72,15 @@ namespace casual
                   const Cache& m_cache;
                };
 
-               struct Request : Base
+            } // cache
+
+            namespace call
+            {
+               struct Request : cache::Base
                {
                   using message_type = message::interdomain::service::call::receive::Request;
 
-                  using Base::Base;
+                  using cache::Base::Base;
 
 
                   void operator() ( message_type& message)
@@ -115,11 +117,11 @@ namespace casual
 
                namespace lookup
                {
-                  struct Reply : Base
+                  struct Reply : cache::Base
                   {
                      using message_type = common::message::service::lookup::Reply;
 
-                     using Base::Base;
+                     using cache::Base::Base;
 
                      void operator() ( message_type& message)
                      {
@@ -168,8 +170,187 @@ namespace casual
                   };
 
                } // lookup
-
             } // call
+
+            namespace queue
+            {
+               namespace lookup
+               {
+                  template< typename M>
+                  void send( const Cache& cache, M&& message)
+                  {
+                     Trace trace{ "gateway::inbound::handle::queue::lookup::send"};
+
+                     //
+                     // Change 'sender' so we (our main thread) get the reply
+                     //
+                     message.process = common::process::handle();
+
+                     //
+                     // Prepare queue lookup
+                     //
+                     common::message::queue::lookup::Request request;
+                     {
+                        request.correlation = message.correlation;
+                        request.name = message.name;
+                        request.process = common::process::handle();
+                     }
+
+                     //
+                     // Add message to cache, this could block
+                     //
+                     cache.add( common::marshal::complete( std::move( message.get())));
+
+                     auto remove = common::scope::execute( [&](){
+                        cache.get( request.correlation);
+                     });
+
+                     //
+                     // Send lookup
+                     //
+
+                     blocking::send( common::communication::ipc::queue::broker::optional::device(), request);
+
+                     //
+                     // We could send the lookup, so we won't remove the message from the cache
+                     //
+                     remove.release();
+                  }
+
+                  struct Reply : cache::Base
+                  {
+                     using message_type = common::message::queue::lookup::Reply;
+                     using cache::Base::Base;
+
+
+                     void operator() ( message_type& message) const
+                     {
+                        Trace trace{ "gateway::inbound::handle::queue::lookup::Reply"};
+
+                        auto request = m_cache.get( message.correlation);
+
+                        if( message.process)
+                        {
+                           common::communication::ipc::outbound::Device ipc{ message.process.queue};
+                           ipc.put( request, common::communication::ipc::policy::Blocking{});
+                        }
+                        else
+                        {
+                           send_error_reply( message, request.type);
+                        }
+
+                     }
+
+                  private:
+
+                     template< typename R>
+                     void send_error_reply( message_type& message) const
+                     {
+                        R reply;
+                        reply.correlation = message.correlation;
+                        common::communication::ipc::inbound::device().push( reply);
+                     }
+
+                     void send_error_reply( message_type& message, common::message::Type type) const
+                     {
+                        switch( type)
+                        {
+                           case common::message::Type::queue_dequeue_request:
+                           {
+                              send_error_reply< common::message::queue::dequeue::Reply>( message);
+                              break;
+                           }
+                           case common::message::Type::queue_enqueue_request:
+                           {
+                              send_error_reply< common::message::queue::enqueue::Reply>( message);
+                              break;
+                           }
+                           default:
+                           {
+                              common::log::error << "unexpected message type for queue request: " << message << " - action: drop message\n";
+                           }
+                        }
+                     }
+
+                  };
+
+               } // lookup
+
+               namespace enqueue
+               {
+                  struct Request : cache::Base
+                  {
+                     using message_type = message::interdomain::queue::enqueue::receive::Request;
+
+                     using cache::Base::Base;
+
+                     void operator() ( message_type& message) const
+                     {
+                        Trace trace{ "gateway::inbound::handle::queue::enqueue::Request::operator()"};
+
+                        //
+                        // Send lookup
+                        //
+                        try
+                        {
+                           queue::lookup::send( m_cache, message);
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           common::log::error << "failed to lookup queue - action: send error reply\n";
+
+                           common::message::queue::enqueue::Reply reply;
+                           reply.correlation = message.correlation;
+                           reply.execution = message.execution;
+
+                           // empty uuid represent error. TODO: is this enough?
+                           reply.id = common::uuid::empty();
+
+                           blocking::send( common::communication::ipc::inbound::device().connector().id(), reply);
+                        }
+                     }
+
+                  };
+
+               } // enqueue
+
+               namespace dequeue
+               {
+                  struct Request : cache::Base
+                  {
+                     using message_type = message::interdomain::queue::dequeue::receive::Request;
+
+                     using cache::Base::Base;
+
+                     void operator() ( message_type& message) const
+                     {
+                        Trace trace{ "gateway::inbound::handle::queue::dequeue::Request::operator()"};
+
+                        //
+                        // Send lookup
+                        //
+                        try
+                        {
+                           queue::lookup::send( m_cache, message);
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           common::log::error << "failed to lookup queue - action: send error reply\n";
+
+                           common::message::queue::enqueue::Reply reply;
+                           reply.correlation = message.correlation;
+                           reply.execution = message.execution;
+
+                           // empty uuid represent error. TODO: is this enough?
+                           reply.id = common::uuid::empty();
+
+                           blocking::send( common::communication::ipc::inbound::device().connector().id(), reply);
+                        }
+                     }
+
+                  };
+               } // dequeue
+            } // queue
 
 
             template< typename M, typename D>
@@ -331,6 +512,7 @@ namespace casual
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
                   handle::call::lookup::Reply{ m_cache},
+                  handle::queue::lookup::Reply{ m_cache},
 
                   //
                   // External messages that will be forward to the other domain
@@ -340,6 +522,12 @@ namespace casual
                   handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::rollback::Reply>( outbound_device),
                   handle::create::forward< common::message::gateway::domain::discover::internal::Reply>( outbound_device),
+
+                  //
+                  // Queue replies
+                  //
+                  handle::create::forward< common::message::queue::dequeue::Reply>( outbound_device),
+                  handle::create::forward< common::message::queue::enqueue::Reply>( outbound_device),
                };
 
                log << "start internal message pump\n";
@@ -445,6 +633,10 @@ namespace casual
                      handle::basic_transaction_request< message::interdomain::transaction::resource::receive::commit::Request>{},
                      handle::basic_transaction_request< message::interdomain::transaction::resource::receive::rollback::Request>{},
                      handle::domain::discover::Request{},
+
+                     handle::queue::dequeue::Request{ cache},
+                     handle::queue::enqueue::Request{ cache},
+
                   };
              
                   log << "start external message pump\n";

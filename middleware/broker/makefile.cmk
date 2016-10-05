@@ -97,6 +97,7 @@ LinkUnittest( 'bin/test-casual-broker-isolated',
      'casual-configuration', 
      'casual-mockup-unittest-environment', 
      'casual-mockup',
+     'casual-unittest',
      ])
 
 

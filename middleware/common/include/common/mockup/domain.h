@@ -12,6 +12,7 @@
 #include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+#include "common/message/queue.h"
 
 
 #include <vector>
@@ -140,6 +141,27 @@ namespace casual
 
             } // transaction
 
+
+            namespace queue
+            {
+               struct Broker
+               {
+                  Broker();
+                  Broker( message::dispatch::Handler&& handler);
+
+               private:
+                  message::dispatch::Handler default_handler();
+
+                  using Message = message::queue::dequeue::Reply::Message;
+
+                  std::unordered_map< std::string, std::queue< Message>> m_queues;
+
+                  ipc::Replier m_replier;
+               };
+
+
+            } // queue
+
             namespace echo
             {
 
@@ -192,7 +214,6 @@ namespace casual
 
 
             } // minimal
-
 
 
          } // domain

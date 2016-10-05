@@ -12,6 +12,7 @@
 #include "common/message/transaction.h"
 #include "common/message/service.h"
 #include "common/message/gateway.h"
+#include "common/message/queue.h"
 #include "common/domain.h"
 
 #include <thread>
@@ -249,6 +250,18 @@ namespace casual
                { return common::message::Type::ineterdomain_domain_discover_reply;}
 
 
+               constexpr common::message::Type message_type( common::message::queue::enqueue::Request&&)
+               { return common::message::Type::interdomain_queue_enqueue_request;}
+
+               constexpr common::message::Type message_type( common::message::queue::enqueue::Reply&&)
+               { return common::message::Type::interdomain_queue_enqueue_reply;}
+
+               constexpr common::message::Type message_type( common::message::queue::dequeue::Request&&)
+               { return common::message::Type::interdomain_queue_dequeue_request;}
+
+               constexpr common::message::Type message_type( common::message::queue::dequeue::Reply&&)
+               { return common::message::Type::interdomain_queue_dequeue_reply;}
+
 
                template< typename Message>
                struct external_send_wrapper : std::reference_wrapper< Message>
@@ -435,6 +448,96 @@ namespace casual
                } // call
             } // service
 
+            namespace queue
+            {
+               namespace enqueue
+               {
+                  template< typename Wrapper>
+                  struct basic_request : Wrapper
+                  {
+                     using Wrapper::Wrapper;
+
+                     CASUAL_CONST_CORRECT_MARSHAL({
+                        archive & this->get().execution;
+                        archive & this->get().name;
+                        archive & this->get().trid.xid;
+                        archive & this->get().message;
+                     })
+                  };
+
+                  template< typename Wrapper>
+                  struct basic_reply : Wrapper
+                  {
+                     using Wrapper::Wrapper;
+
+                     CASUAL_CONST_CORRECT_MARSHAL({
+                        archive & this->get().execution;
+                        archive & this->get().id;
+                     })
+                  };
+
+                  namespace send
+                  {
+                     using Request = basic_request< detail::external_send_wrapper< common::message::queue::enqueue::Request>>;
+                     using Reply = basic_reply< detail::external_send_wrapper< common::message::queue::enqueue::Reply>>;
+
+                  } // send
+
+                  namespace receive
+                  {
+                     using Request = basic_request< detail::external_receive_wrapper< common::message::queue::enqueue::Request>>;
+                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::queue::enqueue::Reply>>;
+                  } // receive
+
+
+               } // enqueue
+
+               namespace dequeue
+               {
+
+                  template< typename Wrapper>
+                  struct basic_request : Wrapper
+                  {
+                     using Wrapper::Wrapper;
+
+                     CASUAL_CONST_CORRECT_MARSHAL({
+                        archive & this->get().execution;
+                        archive & this->get().name;
+                        archive & this->get().trid.xid;
+                        archive & this->get().selector;
+                        archive & this->get().block;
+                     })
+                  };
+
+                  template< typename Wrapper>
+                  struct basic_reply : Wrapper
+                  {
+                     using Wrapper::Wrapper;
+
+                     CASUAL_CONST_CORRECT_MARSHAL({
+                        archive & this->get().execution;
+                        archive & this->get().message;
+                     })
+                  };
+
+
+                  namespace send
+                  {
+                     using Request = basic_request< detail::external_send_wrapper< common::message::queue::dequeue::Request>>;
+                     using Reply = basic_reply< detail::external_send_wrapper< common::message::queue::dequeue::Reply>>;
+
+                  } // send
+
+                  namespace receive
+                  {
+                     using Request = basic_request< detail::external_receive_wrapper< common::message::queue::dequeue::Request>>;
+                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::queue::dequeue::Reply>>;
+                  } // receive
+
+               } // dequeue
+
+            } // queue
+
 
             namespace domain
             {
@@ -517,6 +620,18 @@ namespace casual
                { return { message};}
 
                inline domain::discovery::send::Reply wrap( common::message::gateway::domain::discover::internal::Reply& message)
+               { return { message};}
+
+               inline queue::dequeue::send::Request wrap( common::message::queue::dequeue::Request& message)
+               { return { message};}
+
+               inline queue::dequeue::send::Reply wrap( common::message::queue::dequeue::Reply& message)
+               { return { message};}
+
+               inline queue::enqueue::send::Request wrap( common::message::queue::enqueue::Request& message)
+               { return { message};}
+
+               inline queue::enqueue::send::Reply wrap( common::message::queue::enqueue::Reply& message)
                { return { message};}
 
             } // send

@@ -85,6 +85,7 @@ LinkUnittest( 'bin/test-casual-domain',
      'casual-mockup-unittest-environment',
      'casual-sf',
      'casual-xatmi',
+     'casual-unittest',
     ]) 
 
 
@@ -120,6 +121,7 @@ target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay',
      'casual-common',
      'casual-mockup',
      'casual-mockup-unittest-environment',
+     'casual-unittest',
     ])        
 
 #

@@ -81,8 +81,6 @@ namespace casual
 
             struct Proxy
             {
-
-
                struct Instance
                {
                   enum class State
@@ -501,7 +499,7 @@ namespace casual
             //!
             //! Resource request, that will be processed after an atomic
             //! write to the log. If corresponding resources is busy, for some
-            //! requests, these will be moved to pendingRequests
+            //! requests, these will be moved to pending.requests
             //!
             std::vector< state::pending::Request> requests;
 
