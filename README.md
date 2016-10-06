@@ -35,7 +35,8 @@ The following packages need to be installed:
 *Note: casual will not build on a 32-bit system*
 
 #### Set up the environment
-Latest version is on *develop* branch (default)<br>
+Latest version is on *develop* branch (default)
+
 Use templatefile to setup environment
 
     git clone https://bitbucket.org/casualcore/casual.git
@@ -61,7 +62,8 @@ Edit file, set correct paths and source file
 
      casual-make test
 
-Tested on e.g. OS X and Ubuntu so far. More unix flavors needed<br>
+Tested on e.g. OS X and Ubuntu so far. More unix flavors needed
+
 Please report failed test cases (contact info below)    
 
 ### Use casual-middleware
