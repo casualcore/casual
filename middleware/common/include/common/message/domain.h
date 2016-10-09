@@ -32,6 +32,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Executable& value);
                };
+               static_assert( traits::is_movable< Executable>::value, "not movable");
 
             } // scale
 
@@ -53,6 +54,7 @@ namespace casual
                         archive & identification;
                      })
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   struct Reply : basic_message< Type::domain_process_connect_reply>
                   {
@@ -71,6 +73,7 @@ namespace casual
                         archive & directive;
                      })
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // connect
 
@@ -97,6 +100,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Event& value);
                   };
+                  static_assert( traits::is_movable< Event>::value, "not movable");
 
                } // termination
 
@@ -126,6 +130,7 @@ namespace casual
                      friend std::ostream& operator << ( std::ostream& out, Directive value);
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   using base_reply = server::basic_id< Type::domain_process_lookup_reply>;
 
@@ -139,6 +144,7 @@ namespace casual
                         archive & identification;
                      })
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // lookup
 
@@ -175,6 +181,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Resource& value);
                   };
+                  static_assert( traits::is_movable< Resource>::value, "not movable");
 
                   namespace resource
                   {
@@ -194,8 +201,8 @@ namespace casual
                            base_request::marshal( archive);
                            archive & scope;
                         })
-
                      };
+                     static_assert( traits::is_movable< Request>::value, "not movable");
 
                      using base_reply = server::basic_id< Type::domain_configuration_transaction_resource_reply>;
                      struct Reply : base_reply
@@ -210,6 +217,7 @@ namespace casual
 
                         friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                      };
+                     static_assert( traits::is_movable< Reply>::value, "not movable");
 
 
                   } // Resource
@@ -230,6 +238,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Listener& value);
                   };
+
 
 
                   struct Connection
@@ -258,12 +267,14 @@ namespace casual
                      friend std::ostream& operator << ( std::ostream& out, Type value);
                      friend std::ostream& operator << ( std::ostream& out, const Connection& value);
                   };
+                  static_assert( traits::is_movable< Connection>::value, "not movable");
 
                   using base_request = server::basic_id< Type::domain_configuration_gateway_request>;
                   struct Request : base_request
                   {
 
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   using base_reply = server::basic_id< Type::domain_configuration_gateway_reply>;
                   struct Reply : base_reply
@@ -279,6 +290,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
 
                } // gateway

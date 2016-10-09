@@ -309,7 +309,7 @@ namespace casual
                {
                   auto output = buffer::pool::Holder::instance().get( *odata);
 
-                  if( output.payload.type != reply.buffer.type)
+                  if( output.payload().type != reply.buffer.type)
                   {
                      throw exception::xatmi::buffer::type::Output{};
                   }

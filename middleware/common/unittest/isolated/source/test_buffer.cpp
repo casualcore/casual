@@ -170,8 +170,8 @@ namespace casual
             auto holder = buffer::pool::Holder::instance().get( handle, 100);
 
             EXPECT_TRUE( holder.transport == 100);
-            EXPECT_TRUE( holder.payload.memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload.memory.size();
-            EXPECT_TRUE( holder.payload.memory.data() == info);
+            EXPECT_TRUE( holder.payload().memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload().memory.size();
+            EXPECT_TRUE( holder.payload().memory.data() == info);
 
             buffer::pool::Holder::instance().deallocate( handle);
          }
@@ -193,8 +193,8 @@ namespace casual
                message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
 
                EXPECT_TRUE( message.buffer.transport == 100);
-               EXPECT_TRUE( message.buffer.payload.memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload.memory.size();
-               EXPECT_TRUE( message.buffer.payload.memory.data() == info);
+               EXPECT_TRUE( message.buffer.payload().memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().memory.size();
+               EXPECT_TRUE( message.buffer.payload().memory.data() == info);
 
                marshal::binary::Output output( marshal_buffer);
                output << message;

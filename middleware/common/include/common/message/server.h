@@ -1,8 +1,5 @@
 //!
-//! server.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMON_MESSAGE_SERVER_H_
@@ -28,6 +25,7 @@ namespace casual
                {
 
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_id< Type::server_ping_reply>
                {
@@ -38,8 +36,8 @@ namespace casual
                      basic_id< Type::server_ping_reply>::marshal( archive);
                      archive & uuid;
                   })
-
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
             } // ping
 

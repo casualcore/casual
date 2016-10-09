@@ -260,6 +260,10 @@ namespace casual
          template< typename T>
          using decay_t = typename std::decay< T>::type;
 
+         template< typename T>
+         struct is_movable : std::integral_constant< bool,
+            std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
+
       } // traits
    } // common
 } // casual

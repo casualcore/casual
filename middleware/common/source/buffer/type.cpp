@@ -103,7 +103,7 @@ namespace casual
          {
             std::ostream& operator << ( std::ostream& out, const Send& value)
             {
-               return out << "{ payload: " << value.payload << ", transport: " << value.transport << ", reserved: " << value.reserved <<'}';
+               return out << "{ payload: " << value.payload() << ", transport: " << value.transport << ", reserved: " << value.reserved <<'}';
             }
          }
 

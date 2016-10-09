@@ -110,7 +110,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          auto destination = casual::common::range::make( type, 8);
          casual::common::memory::set( destination, '\0');
-         casual::common::memory::copy( casual::common::range::make( buffer.payload.type.name), destination);
+         casual::common::memory::copy( casual::common::range::make( buffer.payload().type.name), destination);
       }
 
       //
@@ -120,7 +120,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          auto destination = casual::common::range::make( subtype, 16);
          casual::common::memory::set( destination, '\0');
-         casual::common::memory::copy( casual::common::range::make( buffer.payload.type.subname), destination);
+         casual::common::memory::copy( casual::common::range::make( buffer.payload().type.subname), destination);
       }
 
       return buffer.reserved;

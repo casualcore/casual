@@ -66,8 +66,8 @@ namespace casual
 
          EXPECT_TRUE( buffer.transport == 0) << "transport: " <<  buffer.transport;
          EXPECT_TRUE( buffer.reserved == 666) << "reserved: " <<  buffer.reserved;
-         EXPECT_TRUE( buffer.payload.type.name == CASUAL_FIELD) << "buffer.type.name: " << buffer.payload.type.name;
-         EXPECT_TRUE( buffer.payload.type.subname.empty());
+         EXPECT_TRUE( buffer.payload().type.name == CASUAL_FIELD) << "buffer.type.name: " << buffer.payload().type.name;
+         EXPECT_TRUE( buffer.payload().type.subname.empty());
 
          buffer::pool::Holder::instance().deallocate( handle);
       }

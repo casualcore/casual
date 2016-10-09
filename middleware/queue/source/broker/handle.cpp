@@ -255,6 +255,14 @@ namespace casual
 
                      ipc::device().blocking_send( message.process.queue, reply);
                   }
+
+                  void Reply::operator () ( message_type& message)
+                  {
+                     Trace trace{ "handle::domain::discover::Reply"};
+
+
+
+                  }
                } // discover
             } // domain
 

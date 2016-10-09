@@ -121,6 +121,14 @@ namespace casual
                      void operator () ( message_type& message);
                   };
 
+                  struct Reply : Base
+                  {
+                     using message_type = common::message::gateway::domain::discover::external::Reply;
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+
                } // discover
             } // domain
 

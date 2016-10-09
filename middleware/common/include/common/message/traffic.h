@@ -68,6 +68,7 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Event& value);
             };
+            static_assert( traits::is_movable< Event>::value, "not movable");
 
          } // traffic
 

@@ -156,6 +156,5 @@ namespace casual
       */
 
 
-
    } // common
 } // casual

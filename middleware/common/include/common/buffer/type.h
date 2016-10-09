@@ -96,25 +96,30 @@ namespace casual
             struct Send
             {
                Send( const Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
-                  : payload( payload), transport( transport), reserved( reserved) {}
+                  :  transport( transport), reserved( reserved), m_payload( payload) {}
 
                Send( const Payload& payload)
-                  : payload( payload) {}
+                  : m_payload( payload) {}
 
-               const Payload& payload;
+
+               inline const Payload& payload() const { return m_payload.get();};
                platform::binary_size_type transport = 0;
                platform::binary_size_type reserved = 0;
+
+
 
                template< typename A>
                void marshal( A& archive) const
                {
-                  archive << payload.type;
+                  archive << payload().type;
                   archive << transport;
-                  archive.append( std::begin( payload.memory), std::begin( payload.memory) + transport);
+                  archive.append( std::begin( payload().memory), std::begin( payload().memory) + transport);
                }
 
                friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
+            private:
+               std::reference_wrapper< const Payload> m_payload;
             };
 
          } // payload

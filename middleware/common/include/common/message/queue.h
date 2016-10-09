@@ -47,6 +47,7 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const base_message& value);
             };
+            static_assert( traits::is_movable< base_message>::value, "not movable");
 
             namespace lookup
             {
@@ -64,6 +65,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_lookup_reply>
                {
@@ -80,6 +82,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
             } // lookup
 
             namespace enqueue
@@ -107,6 +110,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_enqueue_reply>
                {
@@ -120,6 +124,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
             } // enqueue
 
@@ -160,6 +165,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_dequeue_reply>
                {
@@ -194,6 +200,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
                namespace forget
                {
@@ -211,6 +218,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   struct Reply : basic_message< Type::queue_dequeue_forget_reply>
                   {
@@ -224,6 +232,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // forget
 
@@ -264,6 +273,7 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Queue& value);
             };
+            static_assert( traits::is_movable< Queue>::value, "not movable");
 
 
 
@@ -290,6 +300,7 @@ namespace casual
                      archive & timestamp;
                   })
                };
+               static_assert( traits::is_movable< Queue>::value, "not movable");
 
                template< message::Type type>
                struct basic_information : basic_message< type>
@@ -340,6 +351,7 @@ namespace casual
                      archive & size;
                   })
                };
+               static_assert( traits::is_movable< Message>::value, "not movable");
 
 
                namespace queues
@@ -366,6 +378,7 @@ namespace casual
                      })
 
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   struct Reply : common::message::server::basic_id< Type::queue_queue_information_reply>
                   {
@@ -380,6 +393,7 @@ namespace casual
                      })
 
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // messages
 
@@ -402,6 +416,7 @@ namespace casual
                      archive & process;
                   })
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_connect_reply>
                {
@@ -415,6 +430,7 @@ namespace casual
                      archive & queues;
                   })
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
             } // connect
 
             namespace group
@@ -430,8 +446,8 @@ namespace casual
                      archive & process;
                      archive & trid;
                   })
-
                };
+               static_assert( traits::is_movable< Involved>::value, "not movable");
 
             } // group
 

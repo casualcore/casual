@@ -124,7 +124,7 @@ namespace casual
             //
             copy::Message send_message{
                message.id, message.attributes,
-                 { send.payload.type, send.payload.memory.begin(), send.payload.memory.begin() + send.transport}};
+                 { send.payload().type, send.payload().memory.begin(), send.payload().memory.begin() + send.transport}};
 
             return local::enqueue( queue, send_message);
          }

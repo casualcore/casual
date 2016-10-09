@@ -50,6 +50,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Service& message);
                   };
+                  static_assert( traits::is_movable< Service>::value, "not movable");
 
                   struct Queue
                   {
@@ -65,6 +66,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Queue& message);
                   };
+                  static_assert( traits::is_movable< Queue>::value, "not movable");
 
                } // advertise
 
@@ -101,6 +103,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, Directive message);
                   friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
                };
+               static_assert( traits::is_movable< Advertise>::value, "not movable");
 
 
 
@@ -134,6 +137,7 @@ namespace casual
 
                         friend std::ostream& operator << ( std::ostream& out, const Request& value);
                      };
+                     static_assert( traits::is_movable< Request>::value, "not movable");
 
                      //!
                      //! Reply from a domain
@@ -160,6 +164,7 @@ namespace casual
 
                         friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                      };
+                     static_assert( traits::is_movable< Reply>::value, "not movable");
 
                   } // internal
 
@@ -191,6 +196,7 @@ namespace casual
 
                         friend std::ostream& operator << ( std::ostream& out, const Request& value);
                      };
+                     static_assert( traits::is_movable< Request>::value, "not movable");
 
                      //!
                      //! Reply from the gateway with accumulated replies from other domains
@@ -208,6 +214,7 @@ namespace casual
 
                         friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                      };
+                     static_assert( traits::is_movable< Reply>::value, "not movable");
                   } // automatic
 
                } // discover

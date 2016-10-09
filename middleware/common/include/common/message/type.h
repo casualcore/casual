@@ -269,7 +269,9 @@ namespace casual
                   archive & reply;
                })
             };
+            static_assert( traits::is_movable< Request>::value, "not movable");
 
+            /*
             struct Reply : basic_message< Type::shutdown_reply>
             {
                template< typename ID>
@@ -296,6 +298,8 @@ namespace casual
                   archive & servers;
                })
             };
+            static_assert( traits::is_movable< Reply>::value, "not movable");
+            */
 
          } // shutdown
 
@@ -386,8 +390,8 @@ namespace casual
                      archive & arguments;
                      archive & environment;
                   })
-
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
             } // spawn
          } // process
@@ -414,8 +418,8 @@ namespace casual
                };
             } // detail
 
-            template<>
-            struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
+            //template<>
+            //struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
 
 
 

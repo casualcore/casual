@@ -84,7 +84,7 @@ namespace casual
 
             const Type& Holder::type( platform::const_raw_buffer_type handle)
             {
-               return get( handle).payload.type;
+               return get( handle).payload().type;
             }
 
             void Holder::deallocate( platform::const_raw_buffer_type handle)
