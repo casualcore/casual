@@ -1,4 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
 
 <dom-module id="casual-list">
     <template>
@@ -21,16 +24,14 @@
             justify-content: space-between; 
         }
 
-        .casual-list-name,.casual-list-actions {
+        .casual-list-name,.casual-list-sort {
             padding: 10px;
+
         }
 
-        .casual-list-name {
-            font-size: 1.5em;
-        }
-
-        .casual-list-actions {
-            
+        .casual-list-sort {
+            vertical-align: middle;
+            text-align: center;
         }
 
         .casual-list-content {
@@ -44,11 +45,53 @@
             background-color: #FFFFFF;
         }
 
+        paper-dropdown-menu.custom {
+
+            cursor: pointer;
+
+            --paper-input-container: {
+                padding: 0px;
+            }
+
+            --paper-input-container-input: {
+                color: inherit;
+                /*text-align: right;*/
+            }
+
+            --paper-input-container-underline-focus: {
+                display: none;
+            }
+
+            --paper-input-container-underline: {
+                /*display: none;*/
+            };
+
+            --paper-dropdown-menu-focus-color: {
+                color: inherit;
+            }
+        }
+
+        paper-item.custom:hover {
+            cursor: pointer;
+            background-color: var(--casual-list-hover-color, #e5e5e5);
+            color: var(--casual-list-hover-font-color, #000000);
+        }
+
         </style>
 
         <div class="casual-list-header">
             <div class="casual-list-name">{{listname}}</div>
-            <div class="casual-list-actions">Sort to be here!</div>
+            <template is="dom-if" if="{{sortable}}">
+                <div class="casual-list-sort">
+                    <paper-dropdown-menu class="custom" vertical-align="top" horizontal-align="right" noink no-animations no-label-float>
+                        <paper-listbox class="dropdown-content" selected="{{sort}}">
+                            <template is="dom-repeat" items="{{_sortableElements}}" as="{{item}}">
+                                <paper-item class="custom">{{item}}</paper-item>
+                            </template>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                </div>
+            </template>
         </div>
 
         <content id="content" select="*"></content>
@@ -72,6 +115,7 @@
                     listdata: {
                         type: Array,
                         notify: true,
+                        value: [],
                         observer: "listdataChanged"
                     },
 
@@ -93,15 +137,48 @@
                         }
                     },
 
+                    sortable: {
+                        type: Boolean,
+                        value: false
+                    },
 
+                    _sortableElements: {
+                        type: Array,
+                        notify: true,
+                        value: []
+                    },
+
+                    sort: {
+                        type: String,
+                        value: "0",
+                        reflectToAttribute: true,
+                        observer: "_sortChanged"
+                    },
+                },
+
+                _sortChanged: function(item) {
+                    var attribute = this._sortableElements[item];
+                    if(attribute && this.listdata.length) {
+                        var temp = this.listdata.sort(function(a, b) {
+                            if(a[attribute] < b[attribute]) {
+                                return -1;    
+                            } else if(b[attribute] < a[attribute]) {
+                                return 1;
+                            } else {
+                                return 0;
+                            }
+                        });
+                        this.listdata = [];
+                        this.listdata = temp;
+                    }
                 },
 
                 attached: function() {
-                    this.setListElement();
+                    this.createList();
                     this.removeEffectiveElements();
                 },
 
-                setListElement: function(elements) {
+                createList: function() {
                     var elements = this.queryAllEffectiveChildren("*");
                     if(elements.length > 0) {
                         var element = elements[0];
@@ -114,7 +191,18 @@
                     }
                 },
 
-                removeEffectiveElements: function(element) {
+                _createSort: function() {
+                    if(this.sortable && this.listdata && this.listdata.length) {
+                        var list = [];
+                        var element = this.listdata[0];
+                        for(var attribute in element) {
+                            list.push(attribute);
+                        }
+                        this._sortableElements = list;
+                    }
+                },
+
+                removeEffectiveElements: function() {
                     var elements = this.queryAllEffectiveChildren("*");
                     if(elements.length > 0) {
                         for(var element in elements) {
@@ -133,9 +221,13 @@
                     }
                 },
 
-                listdataChanged: function(name, type) {
+                listdataChanged: function() {
+                    
                     var list = (this.$.list);
                     this.removeElements(list);
+
+                    this._createSort();
+
                     for(var item in this.listdata) {
                         var listItem = document.createElement(this.listelementname);
                         for(var attribute in this.listelementattributes) {
