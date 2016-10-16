@@ -607,7 +607,7 @@ namespace casual
 
                void Gateway::operator () ( const common::message::domain::configuration::gateway::Request& message)
                {
-                  Trace trace{ "domain::manager::handle::configuration:::Gateway"};
+                  Trace trace{ "domain::manager::handle::configuration::Gateway"};
 
                   auto reply = config::gateway::transform::gateway( state().configuration.gateway);
                   reply.correlation = message.correlation;
@@ -618,6 +618,17 @@ namespace casual
 
                }
 
+               void Queue::operator () ( const common::message::domain::configuration::queue::Request& message)
+               {
+                  Trace trace{ "domain::manager::handle::configuration::Queue"};
+
+                  auto reply = config::queue::transform::manager( state().configuration.queue);
+                  reply.correlation = message.correlation;
+
+                  log << "reply: " << reply << '\n';
+
+                  manager::local::ipc::send( state(), message.process, reply);
+               }
 
             } // configuration
 
@@ -662,6 +673,7 @@ namespace casual
                manager::handle::process::Lookup{ state},
                manager::handle::configuration::transaction::Resource{ state},
                manager::handle::configuration::Gateway{ state},
+               manager::handle::configuration::Queue{ state},
                handle::local::server::Handle{
                   manager::admin::services( state),
                   ipc::device().error_handler()}

@@ -304,6 +304,18 @@ namespace casual
                namespace manager
                {
                   outbound::instance::Device& device();
+
+
+                  namespace optional
+                  {
+                     //!
+                     //! Can be missing. That is, this will not block
+                     //! until the device is found (the gateway is online)
+                     //!
+                     //! @return device to gateway-manager
+                     //!
+                     outbound::instance::optional::Device& device();
+                  } // optional
                } // manager
             } // gateway
 
@@ -315,6 +327,12 @@ namespace casual
 
                   namespace optional
                   {
+                     //!
+                     //! Can be missing. That is, this will not block
+                     //! until the device is found (the queue is online)
+                     //!
+                     //! @return device to queue-broker
+                     //!
                      outbound::instance::optional::Device& device();
                   } // optional
 

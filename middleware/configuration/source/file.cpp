@@ -41,10 +41,6 @@ namespace casual
             return find( directory::domain(), "domain");
          }
 
-         std::string queue()
-         {
-            return find( directory::domain(), "queue");
-         }
 
          std::string gateway()
          {

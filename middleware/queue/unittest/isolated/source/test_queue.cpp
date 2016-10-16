@@ -131,28 +131,28 @@ namespace casual
                return R"(
 
 domain:
-  name: test-queue
+  queue:
   
-  default:  
-    queue:
-      retries: 3
-   
-  groups:
-    - name: group_A
-      queuebase: ":memory:"
+     default:  
+       queue:
+         retries: 3
       
-      queues:
-        - name: queueA1
-        - name: queueA2
-        - name: queueA3
-    
-    - name: group_B
-      queuebase: ":memory:"
-      
-      queues:
-        - name: queueB1
-        - name: queueB2
-        - name: queueB3
+     groups:
+       - name: group_A
+         queuebase: ":memory:"
+         
+         queues:
+           - name: queueA1
+           - name: queueA2
+           - name: queueA3
+       
+       - name: group_B
+         queuebase: ":memory:"
+         
+         queues:
+           - name: queueB1
+           - name: queueB2
+           - name: queueB3
 )";
             }
 

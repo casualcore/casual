@@ -1,9 +1,6 @@
-/*
- * environment.h
- *
- *  Created on: 23 apr 2015
- *      Author: 40043280
- */
+//!
+//! casual
+//!
 
 #ifndef CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
 #define CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_

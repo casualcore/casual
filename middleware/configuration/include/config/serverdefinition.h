@@ -1,8 +1,5 @@
 //!
-//! servicedefinition.h
-//!
-//! Created on: May 10, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SERVICEDEFINITION_H_

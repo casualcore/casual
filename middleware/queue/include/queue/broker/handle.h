@@ -98,19 +98,23 @@ namespace casual
 
             } // connect
 
-            namespace group
+
+            namespace domain
             {
-               struct Involved : Base
+               //!
+               //! Handles remote advertise
+               //!  - add  0..* queues
+               //!  - remove 0..* queues
+               //!  - replace == remove all queues for instance and then add 0..* queues
+               //!
+               struct Advertise : Base
                {
-                  using message_type = common::message::queue::group::Involved;
+                  using message_type = common::message::gateway::domain::Advertise;
                   using Base::Base;
 
                   void operator () ( message_type& message);
                };
-            } // group
 
-            namespace domain
-            {
                namespace discover
                {
                   struct Request : Base
@@ -131,72 +135,6 @@ namespace casual
 
                } // discover
             } // domain
-
-            namespace transaction
-            {
-               namespace commit
-               {
-                  //!
-                  //! Invoked from the casual-queue-rm
-                  //!
-                  struct Request : Base
-                  {
-                     using message_type = common::message::transaction::resource::commit::Request;
-
-                     using Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-                  //!
-                  //! Invoked from 1..* groups
-                  //!
-                  struct Reply : Base
-                  {
-                     using message_type = common::message::transaction::resource::commit::Reply;
-
-                     using Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-               } // commit
-
-               namespace rollback
-               {
-                  //!
-                  //! Invoked from the casual-queue-rm
-                  //!
-                  struct Request : Base
-                  {
-                     using message_type = common::message::transaction::resource::rollback::Request;
-
-                     using Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-                  //!
-                  //! Invoked from 1..* groups
-                  //!
-                  struct Reply : Base
-                  {
-                     using message_type = common::message::transaction::resource::rollback::Reply;
-
-                     using Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-               } // rollback
-
-
-            } // transaction
-
          } // handle
       } // broker
    } // queue

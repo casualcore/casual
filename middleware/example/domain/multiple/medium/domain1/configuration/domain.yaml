@@ -1,0 +1,42 @@
+
+
+domain:
+
+  # name of this domain
+  name: md-medium-domain1
+      
+  servers: 
+         
+      #  
+      # path to the server. If servers path are in PATH environment variable
+      # one can omitt the path part, and only use the executable name
+      #  
+    - path: ${CASUAL_HOME}/example/bin/casual-example-server
+      instances: 1 # how many instances should be started
+      note: Arbitary information of this server
+
+
+  #
+  # Queue configuration
+  #
+  queue:
+  
+    groups:
+      - name: domain-1
+        queues:
+          - name: queue1
+        
+
+  #
+  # gateway configuration
+  #
+  gateway:
+    listeners:
+      # which adress this domain should listen on
+      - address: 127.0.0.1:7771
+    
+    connections:
+      # We connect to domain2
+      - address: 127.0.0.1:7772
+
+

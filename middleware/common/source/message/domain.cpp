@@ -118,6 +118,33 @@ namespace casual
                   }
                } // gateway
 
+               namespace queue
+               {
+                  std::ostream& operator << ( std::ostream& out, const Queue& value)
+                  {
+                     return out << "{ name: " << value.name
+                           << ", retries: " << value.retries
+                           //<< ", note: " << value.note
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Group& value)
+                  {
+                     return out << "{ name: " << value.name
+                           << ", queuebase: " << value.queuebase
+                           //<< ", note: " << value.note
+                           << ", queues: " << range::make( value.queues)
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ groups: " << range::make( value.groups)
+                           << '}';
+                  }
+
+               } // queue
+
             } // configuration
 
 

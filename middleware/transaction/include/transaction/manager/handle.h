@@ -1,8 +1,5 @@
 //!
-//! manager_handle.h
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef MANAGER_HANDLE_H_
@@ -194,18 +191,24 @@ namespace casual
          using Rollback = user_reply_wrapper< basic_rollback>;
 
 
+         namespace external
+         {
+            struct Involved : public state::Base
+            {
+               using Base::Base;
+
+               void operator () ( common::message::transaction::resource::external::Involved& message);
+            };
+         }
+
+
          //!
          //! This is used when this TM act as an resource to
          //! other TM:s, as in other domains.
          //!
          namespace domain
          {
-            struct Involved : public state::Base
-            {
-               using Base::Base;
 
-               void operator () ( common::message::transaction::resource::domain::Involved& message);
-            };
 
             struct Prepare : public state::Base
             {

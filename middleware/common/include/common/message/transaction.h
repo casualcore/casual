@@ -264,24 +264,20 @@ namespace casual
 
                //!
                //! These request and replies are used between TM and resources when
-               //! the context is of "inter-domain", that is, when TM is acting as
-               //! a resource to other domains.
+               //! the context is of "external proxies", that is, when some other part
+               //! act as a resource proxy. This semantic is used when:
+               //!  * a transaction cross to another domain
+               //!  * casual-queue groups enqueue and/or dequeue
+               //!
                //! The resource is doing exactly the same thing but the context is
                //! preserved, so that when the TM is invoked by the reply it knows
                //! the context, and can act accordingly
                //!
-               namespace domain
+               namespace external
                {
 
-                  struct Involved : basic_transaction< Type::transaction_domain_resource_involved>
+                  struct Involved : basic_transaction< Type::transaction_external_resource_involved>
                   {
-                     Uuid domain;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        base_type::marshal( archive);
-                        archive & domain;
-                     })
 
                      friend std::ostream& operator << ( std::ostream& out, const Involved& value);
                   };
@@ -290,11 +286,10 @@ namespace casual
                   namespace involved
                   {
                      template< typename M>
-                     Involved create( const Uuid& domain, M&& message)
+                     Involved create( M&& message)
                      {
                         Involved involved;
 
-                        involved.domain = domain;
                         involved.correlation = message.correlation;
                         involved.execution = message.execution;
                         involved.process = common::process::handle();

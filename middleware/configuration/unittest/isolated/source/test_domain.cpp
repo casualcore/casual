@@ -1,8 +1,5 @@
 //!
-//! test_domain.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>

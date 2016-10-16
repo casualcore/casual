@@ -8,6 +8,7 @@
 
 #include "config/environment.h"
 #include "config/gateway.h"
+#include "config/queue.h"
 
 
 #include "sf/namevaluepair.h"
@@ -172,6 +173,8 @@ namespace casual
 
             gateway::Gateway gateway;
 
+            queue::Manager queue;
+
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -183,6 +186,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( executables);
                archive & CASUAL_MAKE_NVP( services);
                archive & CASUAL_MAKE_NVP( gateway);
+               archive & CASUAL_MAKE_NVP( queue);
 
             )
 

@@ -51,6 +51,8 @@ namespace casual
             domain_configuration_transaction_resource_reply,
             domain_configuration_gateway_request,
             domain_configuration_gateway_reply,
+            domain_configuration_queue_request,
+            domain_configuration_queue_reply,
 
             // Server
             SERVER_BASE = 2000,
@@ -102,7 +104,7 @@ namespace casual
 
 
             transaction_resource_involved = TRANSACTION_BASE + 400,
-            transaction_domain_resource_involved,
+            transaction_external_resource_involved,
 
             transaction_resource_id_request = TRANSACTION_BASE + 500,
             transaction_resource_id_reply,
@@ -124,7 +126,6 @@ namespace casual
             queue_queue_information_reply,
             queue_lookup_request = QUEUE_BASE + 400,
             queue_lookup_reply,
-            queue_group_involved = QUEUE_BASE + 500,
 
 
             GATEWAY_BASE = 7000,

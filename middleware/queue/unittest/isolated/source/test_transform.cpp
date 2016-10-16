@@ -27,13 +27,6 @@ namespace casual
                group.process.queue = 1;
                group.name = "group1";
 
-
-               common::message::queue::lookup::Reply reply{ group.process, 3};
-
-               result.queues.emplace( "q11", reply);
-               result.queues.emplace( "q12", reply);
-               result.queues.emplace( "q13", reply);
-
                result.groups.push_back( std::move( group));
 
             }
@@ -43,12 +36,6 @@ namespace casual
                group.process.pid = 2;
                group.process.queue = 2;
                group.name = "group2";
-
-               common::message::queue::lookup::Reply reply{ group.process, 2};
-
-               result.queues.emplace( "q21", reply);
-               result.queues.emplace( "q22", reply);
-               result.queues.emplace( "q23", reply);
 
                result.groups.push_back( std::move( group));
             }

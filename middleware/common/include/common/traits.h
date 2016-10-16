@@ -260,6 +260,9 @@ namespace casual
          template< typename T>
          using decay_t = typename std::decay< T>::type;
 
+         template< class T >
+         using remove_reference_t = typename std::remove_reference< T>::type;
+
          template< typename T>
          struct is_movable : std::integral_constant< bool,
             std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};

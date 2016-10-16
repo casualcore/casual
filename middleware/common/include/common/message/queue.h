@@ -433,25 +433,6 @@ namespace casual
                static_assert( traits::is_movable< Reply>::value, "not movable");
             } // connect
 
-            namespace group
-            {
-               struct Involved : basic_message< Type::queue_group_involved>
-               {
-                  common::process::Handle process;
-                  common::transaction::ID trid;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     base_type::marshal( archive);
-                     archive & process;
-                     archive & trid;
-                  })
-               };
-               static_assert( traits::is_movable< Involved>::value, "not movable");
-
-            } // group
-
-
          } // queue
 
          namespace reverse

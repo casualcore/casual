@@ -1,8 +1,5 @@
 //!
-//! broker.h
-//!
-//! Created on: Jun 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef QUEUE_BROKER_BROKER_H_

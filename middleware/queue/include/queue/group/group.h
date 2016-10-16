@@ -30,6 +30,7 @@ namespace casual
             std::string name;
          };
 
+
          struct State
          {
             State( std::string filename, std::string name)
@@ -45,6 +46,12 @@ namespace casual
             }
 
             std::vector< common::message::pending::Message> persistent;
+
+            //!
+            //! A log to know if we already have notified TM about
+            //! a given transaction.
+            //!
+            std::vector< common::transaction::ID> involved;
 
 
             //!

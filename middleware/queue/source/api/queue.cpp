@@ -4,9 +4,15 @@
 
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
+#include "queue/common/queue.h"
+#include "queue/common/transform.h"
 
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
+#include "common/message/dispatch.h"
+#include "common/message/handle.h"
+#include "common/transaction/context.h"
+#include "common/communication/ipc.h"
 
 
 #include "sf/xatmi_call.h"
@@ -21,22 +27,141 @@ namespace casual
       {
          namespace
          {
+
             template< typename M>
-            sf::platform::Uuid enqueue( const std::string& queue, M&& message)
+            sf::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
             {
                Trace trace( "casual::queue::enqueue");
 
-               sf::xatmi::service::binary::Sync service{ "casual.enqueue"};
-               service << CASUAL_MAKE_NVP( queue);
-               service << CASUAL_MAKE_NVP( message);
+               common::message::queue::enqueue::Request request;
+               request.trid = common::transaction::Context::instance().current().trid;
 
-               auto reply = service();
+               request.process = common::process::handle();
 
-               sf::platform::Uuid returnValue;
+               request.message.payload = message.payload.data;
+               request.message.type.name = message.payload.type.type;
+               request.message.type.subname = message.payload.type.subtype;
+               request.message.properties = message.attributes.properties;
+               request.message.reply = message.attributes.reply;
+               request.message.avalible = message.attributes.available;
 
-               reply >> CASUAL_MAKE_NVP( returnValue);
+               auto group = lookup();
 
-               return returnValue;
+               if( group.queue == 0)
+               {
+                  throw common::exception::invalid::Argument{ "failed to look up queue"};
+               }
+               request.queue = group.queue;
+
+               //log << "message: " << message << '\n';
+
+               return common::communication::ipc::call( group.process.queue, request).id;
+
+            }
+
+
+            std::vector< Message> dequeue( const queue::Lookup& lookup, const Selector& selector, bool block = false)
+            {
+               Trace trace{ "casual::queue::dequeue"};
+
+
+               casual::common::communication::ipc::Helper ipc;
+
+               auto group = lookup();
+
+
+               auto forget_blocking = common::scope::execute( [&]()
+               {
+                  common::message::queue::dequeue::forget::Request request;
+                  request.process = common::process::handle();
+
+                  request.queue = group.queue;
+
+                  try
+                  {
+                     ipc.blocking_send( group.process.queue, request);
+
+                     common::message::dispatch::Handler handler{
+                        []( common::message::queue::dequeue::forget::Request& request)
+                        {
+                           // no-op
+                        },
+                        []( common::message::queue::dequeue::forget::Reply& request)
+                        {
+                           // no-op
+                        }
+                     };
+
+                     handler( ipc.blocking_next( handler.types()));
+                  }
+                  catch( const common::exception::communication::Unavailable&)
+                  {
+                     // queue-broker is off-line
+                  }
+               });
+
+               auto send_request = [&]()
+               {
+                  common::message::queue::dequeue::Request request;
+                  request.trid = common::transaction::Context::instance().current().trid;
+
+                  request.process = common::process::handle();
+
+                  request.queue = group.queue;
+                  request.block = block;
+                  request.selector.id = selector.id;
+                  request.selector.properties = selector.properties;
+
+                  log << "async::dequeue - request: " << request << std::endl;
+
+                  return ipc.blocking_send( group.process.queue, request);
+               };
+
+               auto correlation = send_request();
+
+               std::vector< Message> result;
+
+
+               //
+               // We need to listen to shutdown-message.
+               // TODO: Don't know if we really should do this here, but otherwise we have
+               // no way of "interrupt" if it's a blocking request. We could rely only on terminate-signal
+               // (which we now also do) but it isn't really coherent with how casual otherwise works
+               //
+
+               common::message::dispatch::Handler handler{
+                  [&]( common::message::queue::dequeue::Reply& reply)
+                  {
+                     if( reply.correlation != correlation)
+                     {
+                        throw common::exception::invalid::Semantic{ "correlation mismatch"};
+                     }
+                     common::range::transform( reply.message, result, queue::transform::Message{});
+                  },
+                  [&]( common::message::queue::dequeue::forget::Request& request)
+                  {
+                     //
+                     // The group we're waiting for is going off-line, we just
+                     // return an empty message.
+                     //
+                     // We don't need to send forget to group ( since that is exactly what
+                     // it is telling us...)
+                     //
+                     forget_blocking.release();
+                  },
+                  common::message::handle::Shutdown{}
+               };
+
+               handler( ipc.blocking_next());
+
+
+
+               //
+               // We don't need to send forget, since it went as it should.
+               //
+               forget_blocking.release();
+
+               return result;
             }
 
          } // <unnamed>
@@ -46,30 +171,43 @@ namespace casual
       {
          Trace trace( "casual::queue::enqueue");
 
-         return local::enqueue( queue, message);
+         queue::Lookup lookup( queue);
+
+         return local::enqueue( lookup, message);
       }
 
       std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
       {
          Trace trace{ "casual::queue::dequeue"};
 
-         sf::xatmi::service::binary::Sync service{ "casual.dequeue"};
-         service << CASUAL_MAKE_NVP( queue);
-         service << CASUAL_MAKE_NVP( selector);
+         queue::Lookup lookup( queue);
 
-         auto reply = service();
-
-         std::vector< Message> returnValue;
-
-         reply >> CASUAL_MAKE_NVP( returnValue);
-
-         return returnValue;
+         return local::dequeue( lookup, selector, false);
       }
 
       std::vector< Message> dequeue( const std::string& queue)
       {
          return dequeue( queue, Selector{});
       }
+
+      namespace blocking
+      {
+         std::vector< Message> dequeue( const std::string& queue)
+         {
+            Trace trace{ "casual::queue::blocking::dequeue"};
+
+            return blocking::dequeue( queue, Selector{});
+         }
+
+         std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
+         {
+            Trace trace{ "casual::queue::blocking::dequeue"};
+
+            queue::Lookup lookup( queue);
+
+            return local::dequeue( lookup, selector, true);
+         }
+      } // blocking
 
       namespace xatmi
       {

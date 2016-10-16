@@ -20,6 +20,9 @@ namespace casual
 
          common::message::queue::lookup::Reply operator () () const;
 
+      private:
+         common::Uuid m_correlation;
+
       };
 
    } // queue

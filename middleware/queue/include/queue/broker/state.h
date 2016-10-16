@@ -1,8 +1,5 @@
 //!
-//! state.h
-//!
-//! Created on: Aug 16, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_BROKER_STATE_H_
@@ -11,6 +8,8 @@
 
 #include "common/communication/ipc.h"
 #include "common/message/queue.h"
+#include "common/message/gateway.h"
+#include "common/domain.h"
 
 #include <string>
 #include <vector>
@@ -47,61 +46,65 @@ namespace casual
 
             };
 
+            //!
+            //! Represent a remote gateway that exports 0..* queues
+            //!
+            struct Gateway
+            {
+               Gateway();
+               Gateway( common::domain::Identity id, common::process::Handle process);
+
+               common::domain::Identity id;
+               common::process::Handle process;
+               std::size_t order = 0;
+
+               friend bool operator == ( const Gateway& lhs, const common::domain::Identity& rhs);
+
+            };
+
+            struct Queue
+            {
+               Queue() = default;
+               Queue( common::process::Handle process, std::size_t queue, std::size_t order = 0)
+                  : process{ std::move( process)}, queue{ queue}, order{ order} {}
+
+               common::process::Handle process;
+               std::size_t queue = 0;
+               std::size_t order = 0;
+
+               friend bool operator < ( const Queue& lhs, const Queue& rhs);
+            };
+
 
             std::vector< common::platform::pid::type> processes() const;
+
+            std::unordered_map< std::string, std::vector< Queue>> queues;
+
+            std::deque< common::message::queue::lookup::Request> pending;
 
             std::string group_executable;
             std::string configuration;
 
             std::vector< Group> groups;
+            std::vector< Gateway> gateways;
 
-            std::unordered_map< std::string, common::message::queue::lookup::Reply> queues;
+            //!
+            //! Removes all queues associated with the process
+            //!
+            //! @param pid process id
+            //!
+            void remove_queues( common::platform::pid::type pid);
 
-            std::map< common::transaction::ID, std::vector< Group::id_type>> involved;
+            //!
+            //! Removes the process (group/gateway) and all queues associated with the process
+            //!
+            //! @param pid process id
+            //!
+            void remove( common::platform::pid::type pid);
 
-
-
-
-            struct Correlation
-            {
-               using id_type = common::process::Handle;
-
-               Correlation( id_type caller, const common::Uuid& reply_correlation, std::vector< Group::id_type> groups);
-
-               enum class Stage
-               {
-                  empty,
-                  pending,
-                  error,
-                  replied,
-               };
-
-               struct Request
-               {
-                  Request();
-                  Request( Group::id_type group);
-
-                  Group::id_type group;
-                  Stage stage = Stage::pending;
-               };
-
-               //!
-               //! @return true if all request has been replied
-               //!
-               bool replied() const;
-
-               Stage stage() const;
-               void stage( const id_type& id, Stage state);
+            void update( common::message::gateway::domain::Advertise& message);
 
 
-               id_type caller;
-
-               common::Uuid reply_correlation;
-               std::vector< Request> requests;
-
-            };
-
-            std::map< common::transaction::ID, Correlation> correlation;
 
             common::communication::ipc::inbound::Device& ipc() { return receive;}
 

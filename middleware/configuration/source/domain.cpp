@@ -1,8 +1,5 @@
 //!
-//! domain.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "config/domain.h"
@@ -128,6 +125,7 @@ namespace casual
                   local::replace_or_add( lhs.services, rhs.services);
 
                   lhs.gateway += std::move( rhs.gateway);
+                  lhs.queue += std::move( rhs.queue);
 
                   return lhs;
                }
@@ -195,6 +193,7 @@ namespace casual
             local::validate( configuration);
 
             configuration.gateway.finalize();
+            configuration.queue.finalize();
 
          }
 

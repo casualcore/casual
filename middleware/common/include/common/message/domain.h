@@ -284,6 +284,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
+                        base_reply::marshal( archive);
                         archive & listeners;
                         archive & connections;
                      )
@@ -295,6 +296,65 @@ namespace casual
 
                } // gateway
 
+               namespace queue
+               {
+                  struct Queue
+                  {
+                     std::string name;
+                     std::size_t retries = 0;
+                     std::string note;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & name;
+                        archive & retries;
+                        archive & note;
+                     )
+
+                     friend std::ostream& operator << ( std::ostream& out, const Queue& value);
+                  };
+
+                  struct Group
+                  {
+                     std::string name;
+                     std::string queuebase;
+                     std::string note;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & name;
+                        archive & queuebase;
+                        archive & note;
+                        archive & queues;
+                     )
+
+                     friend std::ostream& operator << ( std::ostream& out, const Group& value);
+                  }; // Group
+
+
+                  using base_request = server::basic_id< Type::domain_configuration_queue_request>;
+                  struct Request : base_request
+                  {
+
+                  };
+
+                  using base_reply = server::basic_id< Type::domain_configuration_queue_reply>;
+                  struct Reply : base_reply
+                  {
+                     std::vector< Group> groups;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        base_reply::marshal( archive);
+                        archive & groups;
+                     )
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
+
+               } // queue
 
             } // configuration
 
@@ -313,6 +373,9 @@ namespace casual
 
             template<>
             struct type_traits< domain::configuration::gateway::Request> : detail::type< domain::configuration::gateway::Reply> {};
+
+            template<>
+            struct type_traits< domain::configuration::queue::Request> : detail::type< domain::configuration::queue::Reply> {};
 
 
          } // reverse

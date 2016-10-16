@@ -1,8 +1,5 @@
 //!
-//! file.h
-//!
-//! Created on: Jul 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_CONFIG_FILE_H_
@@ -51,7 +48,6 @@ namespace casual
 
          std::string domain();
 
-         std::string queue();
 
          std::string gateway();
 

@@ -1,8 +1,5 @@
 //!
-//! main.cpp
-//!
-//! Created on: Jun 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/broker/broker.h"

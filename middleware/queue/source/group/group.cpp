@@ -117,18 +117,7 @@ namespace casual
          {
             void pump( group::State& state)
             {
-               common::message::dispatch::Handler handler{
-                  handle::dead::Process{ state},
-                  handle::enqueue::Request{ state},
-                  handle::dequeue::Request{ state},
-                  handle::dequeue::forget::Request{ state},
-                  handle::transaction::commit::Request{ state},
-                  handle::transaction::rollback::Request{ state},
-                  handle::information::queues::Request{ state},
-                  handle::information::messages::Request{ state},
-                  common::message::handle::Shutdown{},
-               };
-
+               auto handler = group::handler( state);
 
                common::communication::ipc::Helper ipc;
 

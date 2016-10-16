@@ -128,6 +128,13 @@ namespace casual
                   void operator () ( const common::message::domain::configuration::gateway::Request& message);
                };
 
+               struct Queue : public Base
+               {
+                  using Base::Base;
+
+                  void operator () ( const common::message::domain::configuration::queue::Request& message);
+               };
+
             } // configuration
 
          } // handle

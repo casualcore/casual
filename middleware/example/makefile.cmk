@@ -55,6 +55,16 @@ Install( [ 'domain/multiple/minimal/domain2/domain.env'],'$(CASUAL_HOME)/example
 Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain2/configuration')
 
 
+# multi domian medium example
+Install( [ 'domain/multiple/medium/medium.md'],'$(CASUAL_HOME)/example/domain/multiple/medium')
+
+Install( [ 'domain/multiple/medium/domain1/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain1')
+Install( [ 'domain/multiple/medium/domain1/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain1/configuration')
+
+Install( [ 'domain/multiple/medium/domain2/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain2')
+Install( [ 'domain/multiple/medium/domain2/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain2/configuration')
+
+
 
 
 

@@ -1,8 +1,5 @@
 //!
-//! queue.h
-//!
-//! Created on: Jul 9, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_QUEUE_H_
@@ -23,6 +20,12 @@ namespace casual
 
       std::vector< Message> dequeue( const std::string& queue);
       std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
+
+      namespace blocking
+      {
+         std::vector< Message> dequeue( const std::string& queue);
+         std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
+      } // blocking
 
       namespace xatmi
       {

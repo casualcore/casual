@@ -448,12 +448,10 @@ namespace casual
          mockup::ipc::Collector gateway;
 
          auto trid = common::transaction::ID::create();
-         auto domain_id = uuid::make();
 
          // gateway involved
          {
-            common::message::transaction::resource::domain::Involved message;
-            message.domain = domain_id;
+            common::message::transaction::resource::external::Involved message;
             message.trid = trid;
             message.process = gateway.process();
 
@@ -516,15 +514,13 @@ namespace casual
 
          // gateway involved
          {
-            common::message::transaction::resource::domain::Involved message;
+            common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
             message.process = gateway1.process();
-            message.domain = uuid::make();
             local::send::tm( message);
 
             message.process = gateway2.process();
-            message.domain = uuid::make();
             local::send::tm( message);
          }
 
@@ -621,15 +617,13 @@ namespace casual
 
          // gateway involved
          {
-            common::message::transaction::resource::domain::Involved message;
+            common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
             message.process = gateway1.process();
-            message.domain = uuid::make();
             local::send::tm( message);
 
             message.process = gateway2.process();
-            message.domain = uuid::make();
             local::send::tm( message);
          }
 
@@ -690,15 +684,13 @@ namespace casual
 
          // gateway involved
          {
-            common::message::transaction::resource::domain::Involved message;
+            common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
             message.process = gateway1.process();
-            message.domain = uuid::make();
             local::send::tm( message);
 
             message.process = gateway2.process();
-            message.domain = uuid::make();
             local::send::tm( message);
          }
 
@@ -785,15 +777,13 @@ namespace casual
 
          // gateway involved
          {
-            common::message::transaction::resource::domain::Involved message;
+            common::message::transaction::resource::external::Involved message;
             message.trid = trid;
 
             message.process = gateway1.process();
-            message.domain = uuid::make();
             local::send::tm( message);
 
             message.process = gateway2.process();
-            message.domain = uuid::make();
             local::send::tm( message);
          }
 

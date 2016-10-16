@@ -193,7 +193,7 @@ namespace casual
                   handle::resource::reply::Prepare{ state},
                   handle::resource::reply::Commit{ state},
                   handle::resource::reply::Rollback{ state},
-                  handle::domain::Involved{ state},
+                  handle::external::Involved{ state},
                   handle::domain::Prepare{ state},
                   handle::domain::Commit{ state},
                   handle::domain::Rollback{ state},

@@ -163,36 +163,38 @@ namespace casual
             }
 
 
-            Domain::Domain( const common::process::Handle& process, const common::Uuid& remote, id::type id)
-              : process{ process}, remote{ remote}, id{ id}
+            namespace external
             {
-
-            }
-
-            bool operator == ( const Domain& lhs, const common::process::Handle& rhs)
-            {
-               return lhs.process == rhs;
-            }
-
-            namespace domain
-            {
-               id::type id( State& state, const common::process::Handle& process, const common::Uuid& remote)
+               Proxy::Proxy( const common::process::Handle& process, id::type id)
+                  : process{ process}, id{ id}
                {
-                  auto found = range::find( state.domains, process);
-
-                  if( found)
-                  {
-                     return found->id;
-                  }
-
-                  static id::type base_id = 0;
-
-                  state.domains.emplace_back( process, remote, --base_id);
-                  return state.domains.back().id;
                }
 
-            } // domain
+               bool operator == ( const Proxy& lhs, const common::process::Handle& rhs)
+               {
+                  return lhs.process == rhs;
+               }
 
+               namespace proxy
+               {
+                  id::type id( State& state, const common::process::Handle& process)
+                  {
+                     auto found = range::find( state.externals, process);
+
+                     if( found)
+                     {
+                        return found->id;
+                     }
+
+                     static id::type base_id = 0;
+
+                     state.externals.emplace_back( process, --base_id);
+                     return state.externals.back().id;
+                  }
+
+               } // proxy
+
+            } // external
 
          } // resource
 
@@ -445,17 +447,18 @@ namespace casual
          return common::range::find_if( resource.instances, state::filter::Idle{});
       }
 
-      const state::resource::Domain& State::get_domain( state::resource::id::type rm) const
+      const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
       {
-         auto found = range::find_if( domains, [=]( const state::resource::Domain& d){
-            return d.id == rm;
+         auto found = range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
+            return p.id == rm;
          });
 
-         if( ! found)
+         if( found)
          {
-            throw common::exception::invalid::Argument{ "failed to find domain", CASUAL_NIP( rm)};
+            return *found;
          }
-         return *found;
+
+         throw common::exception::invalid::Argument{ "failed to find external resource proxy", CASUAL_NIP( rm)};
       }
 
    } // transaction

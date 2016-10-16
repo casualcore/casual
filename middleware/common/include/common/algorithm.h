@@ -670,16 +670,34 @@ namespace casual
          } // position
 
 
+         template< typename R>
+         std::size_t size( const R& range)
+         {
+            return detail::size_traits< typename std::remove_reference< R>::type>::size( range);
+         }
 
          template< typename R>
          auto to_vector( R&& range) -> std::vector< typename std::decay< decltype( *std::begin( range))>::type>
          {
             std::vector< typename std::decay< decltype( *std::begin( range))>::type> result;
+            result.reserve( size( range));
 
             std::copy( std::begin( range), std::end( range), std::back_inserter( result));
 
             return result;
          }
+
+         template< typename R>
+         auto to_reference( R&& range) -> std::vector< std::reference_wrapper< common::traits::remove_reference_t< decltype( *std::begin( range))>>>
+         {
+            std::vector< std::reference_wrapper< common::traits::remove_reference_t< decltype( *std::begin( range))>>> result;
+            result.reserve( size( range));
+
+            std::copy( std::begin( range), std::end( range), std::back_inserter( result));
+
+            return result;
+         }
+
 
          template< typename R>
          std::string to_string( R&& range)
@@ -710,12 +728,6 @@ namespace casual
                result.first = result.last - 1;
             }
             return result;
-         }
-
-         template< typename R>
-         std::size_t size( const R& range)
-         {
-            return detail::size_traits< typename std::remove_reference< R>::type>::size( range);
          }
 
 
@@ -932,6 +944,31 @@ namespace casual
             return container;
          }
 
+         //!
+         //! Erases occurrences from an associative container that
+         //! fulfill the predicate
+         //!
+         //! @param container associative
+         //! @param predicate that takes C::mapped_type as parameter and returns bool
+         //! @return the container
+         //!
+         template< typename C, typename P>
+         C& erase_if( C& container, P&& predicate)
+         {
+            for( auto current = std::begin( container); current != std::end( container);)
+            {
+               if( predicate( current->second))
+               {
+                  current = container.erase( current);
+               }
+               else
+               {
+                  ++current;
+               }
+            }
+            return container;
+         }
+
          template< typename R, typename T>
          auto remove( R&& range, const T& value) -> decltype( make( std::forward< R>( range)))
          {
@@ -1037,6 +1074,20 @@ namespace casual
          auto find_if( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
          {
             return make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
+         }
+
+
+         template< typename R>
+         auto adjacent_find( R&& range) -> decltype( make( std::forward< R>( range)))
+         {
+            return make( std::adjacent_find( std::begin( range), std::end( range)), std::end( range));
+         }
+
+
+         template< typename R, typename P>
+         auto adjacent_find( R&& range, P predicate) -> decltype( make( std::forward< R>( range)))
+         {
+            return make( std::adjacent_find( std::begin( range), std::end( range), predicate), std::end( range));
          }
 
 

@@ -1262,17 +1262,17 @@ namespace casual
          template struct user_reply_wrapper< basic_rollback>;
 
 
-         namespace domain
+         namespace external
          {
-            void Involved::operator () (common::message::transaction::resource::domain::Involved& message)
+            void Involved::operator () ( common::message::transaction::resource::external::Involved& message)
             {
-               Trace trace{ "transaction::handle::domain::Involved"};
+               Trace trace{ "transaction::handle::external::Involved"};
 
                log << "involved message: " << message << '\n';
 
                auto& transaction = *local::transaction::find_or_add( m_state, message);
 
-               auto id = state::resource::domain::id( m_state, message.process, message.domain);
+               auto id = state::resource::external::proxy::id( m_state, message.process);
 
                if( ! common::range::find( transaction.resources, id))
                {
@@ -1281,6 +1281,11 @@ namespace casual
 
                log << "transaction: " << transaction << '\n';
             }
+         } // external
+
+         namespace domain
+         {
+
 
             void Prepare::operator () ( message_type& message)
             {

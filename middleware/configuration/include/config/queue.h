@@ -1,8 +1,5 @@
 //!
-//! queue.h
-//!
-//! Created on: Jun 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CONFIG_QUEUE_H_
@@ -10,6 +7,8 @@
 
 
 #include "sf/namevaluepair.h"
+
+#include "common/message/domain.h"
 
 #include <string>
 #include <vector>
@@ -26,12 +25,14 @@ namespace casual
          {
             std::string name;
             std::string retries;
+            std::string note;
 
             template< typename A>
             void serialize( A& archive)
             {
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( retries);
+               archive & CASUAL_MAKE_NVP( note);
             }
 
             friend bool operator < ( const Queue& lhs, const Queue& rhs);
@@ -42,6 +43,7 @@ namespace casual
          {
             std::string name;
             std::string queuebase;
+            std::string note;
             std::vector< Queue> queues;
 
             template< typename A>
@@ -49,6 +51,7 @@ namespace casual
             {
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( queuebase);
+               archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( queues);
             }
 
@@ -59,6 +62,8 @@ namespace casual
 
          struct Default
          {
+            Default();
+
             Queue queue;
 
             template< typename A>
@@ -68,7 +73,7 @@ namespace casual
             }
          };
 
-         struct Domain
+         struct Manager
          {
             Default casual_default;
             std::vector< Group> groups;
@@ -79,24 +84,33 @@ namespace casual
                archive & sf::makeNameValuePair( "default", casual_default);
                archive & CASUAL_MAKE_NVP( groups);
             }
+
+            //!
+            //! Complement with defaults and validates
+            //!
+            void finalize();
+
+            Manager& operator += ( const Manager& rhs);
+            Manager& operator += ( Manager&& rhs);
+            friend Manager operator + ( const Manager& lhs, const Manager& rhs);
          };
 
 
-         Domain get( const std::string& file);
 
-         Domain get();
+         namespace transform
+         {
+            common::message::domain::configuration::queue::Reply manager( const Manager& value);
+
+         } // transform
+
 
          namespace unittest
          {
-            void validate( const Domain& domain);
-            void default_values( Domain& domain);
+            void validate( const Manager& manager);
+            void default_values( Manager& manager);
          } // unittest
-
       } // queue
-
    } // config
-
-
 } // casual
 
 #endif // QUEUE_H_

@@ -228,7 +228,7 @@ namespace casual
                }
                else
                {
-                  auto& domain = state.get_domain( message.resource);
+                  auto& domain = state.get_external( message.resource);
 
                   ipc::device().blocking_push( domain.process.queue, message.message);
                }

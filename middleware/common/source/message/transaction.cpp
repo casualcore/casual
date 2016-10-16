@@ -67,12 +67,11 @@ namespace casual
                         << '}';
                }
 
-               namespace domain
+               namespace external
                {
                   std::ostream& operator << ( std::ostream& out, const Involved& value)
                   {
                      return out << "{ process: " << value.process
-                           << ", domain: " << value.domain
                            << ", trid: " << value.trid
                            << '}';
                   }

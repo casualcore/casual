@@ -121,8 +121,7 @@ namespace casual
                            //
                            common::communication::ipc::blocking::send(
                                  common::communication::ipc::transaction::manager::device(),
-                                 common::message::transaction::resource::domain::involved::create(
-                                       m_remote.id, message));
+                                 common::message::transaction::resource::external::involved::create( message));
                         }
 
                         this->routing.add( message.correlation, message.process);
@@ -163,8 +162,7 @@ namespace casual
                         //
                         common::communication::ipc::blocking::send(
                               common::communication::ipc::transaction::manager::device(),
-                              common::message::transaction::resource::domain::involved::create(
-                                    m_remote.id, message));
+                              common::message::transaction::resource::external::involved::create( message));
                      }
 
                      this->routing.add( message.correlation, message.process);

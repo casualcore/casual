@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef QUEUE_SERVER_HANDLE_H_
@@ -11,6 +8,7 @@
 #include "queue/group/group.h"
 
 #include "common/message/queue.h"
+#include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/message/domain.h"
 
@@ -132,7 +130,7 @@ namespace casual
                namespace commit
                {
                   //!
-                  //! Invoked from the casual-queue-broker
+                  //! Invoked from the TM
                   //!
                   struct Request : Base
                   {
@@ -145,10 +143,28 @@ namespace casual
                   };
                }
 
+               namespace prepare
+               {
+                  //!
+                  //! Invoked from the TM
+                  //!
+                  //! This will always reply ok.
+                  //!
+                  struct Request : Base
+                  {
+                     using message_type = common::message::transaction::resource::prepare::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+
+                  };
+               }
+
                namespace rollback
                {
                   //!
-                  //! Invoked from the casual-queue-broker
+                  //! Invoked from the TM
                   //!
                   struct Request : Base
                   {
@@ -163,6 +179,9 @@ namespace casual
             }
 
          } // handle
+
+         common::message::dispatch::Handler handler( State& state);
+
       } // group
    } // queue
 

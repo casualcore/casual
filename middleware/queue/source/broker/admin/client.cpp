@@ -1,8 +1,5 @@
 //!
-//! client.cpp
-//!
-//! Created on: Oct 4, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/broker/admin/queuevo.h"

@@ -435,6 +435,19 @@ namespace casual
 
                      return singelton;
                   }
+
+                  namespace optional
+                  {
+                     outbound::instance::optional::Device& device()
+                     {
+                        static outbound::instance::optional::Device singelton{
+                           process::instance::identity::gateway::manager(),
+                           environment::variable::name::ipc::gateway::manager()};
+
+                        return singelton;
+                     }
+                  } // optional
+
                } // manager
             } // gateway
 
