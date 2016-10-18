@@ -67,12 +67,14 @@ Tested on e.g. OS X and Ubuntu so far. More unix flavors needed
 Please report failed test cases (contact info below)    
 
 ### Use casual-middleware
-TODO: this documentation should be separated from this repo? At least conceptually
+TODO: user/operation documentation to come.
+
+Meanwhile there are some configuration examples that could shed some light under: middleware/example
+
 
 ### Status
 
 #### Whats left to do?
-* gateway
 * JCA implementation
 * COBOL bindings
 * some redesign of internal parts (for maintainability)
