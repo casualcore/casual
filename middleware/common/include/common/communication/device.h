@@ -313,7 +313,7 @@ namespace casual
 
                         auto found = range::find_if( m_cache, predicate);
 
-                        while( ! found && policy( m_connector, transport))
+                        while( ! found && policy.receive( m_connector, transport))
                         {
                            //
                            // Check if the message should be discarded
@@ -522,7 +522,7 @@ namespace casual
                         //
                         // Delegate the invocation to the policy
                         //
-                        return policy( m_connector, transport);
+                        return policy.send( m_connector, transport);
                      }
                      catch( const exception::communication::Unavailable&)
                      {

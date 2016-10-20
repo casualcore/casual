@@ -577,24 +577,24 @@ namespace casual
 
             namespace policy
             {
-               bool basic_blocking::operator() ( const inbound::Connector& tcp, message::Transport& transport)
+               bool basic_blocking::receive( const inbound::Connector& tcp, message::Transport& transport)
                {
                   return native::receive( tcp.socket(), transport, {});
                }
 
-               bool basic_blocking::operator() ( const outbound::Connector& tcp, const message::Transport& transport)
+               bool basic_blocking::send( const outbound::Connector& tcp, const message::Transport& transport)
                {
                   return native::send( tcp.socket(), transport, {});
                }
 
                namespace non
                {
-                  bool basic_blocking::operator() ( const inbound::Connector& tcp, message::Transport& transport)
+                  bool basic_blocking::receive( const inbound::Connector& tcp, message::Transport& transport)
                   {
                      return native::receive( tcp.socket(), transport, native::Flag::non_blocking);
                   }
 
-                  bool basic_blocking::operator() ( const outbound::Connector& tcp, const message::Transport& transport)
+                  bool basic_blocking::send( const outbound::Connector& tcp, const message::Transport& transport)
                   {
                      return native::send( tcp.socket(), transport, native::Flag::non_blocking);
                   }

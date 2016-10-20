@@ -7,9 +7,8 @@
 
 #include "queue/group/group.h"
 #include "queue/common/environment.h"
-#include "queue/api/rm/queue.h"
+#include "queue/api/queue.h"
 #include "queue/broker/admin/queuevo.h"
-#include "queue/rm/switch.h"
 
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
@@ -57,10 +56,8 @@ namespace casual
             struct Domain
             {
                Domain( const std::string& configuration)
-               : manager{ handle_resource_configuration{}}, queue_broker{ configuration}
+               : queue_broker{ configuration}
                {
-                  common::transaction::Resource resource{ "casual-queue-rm", &casual_queue_xa_switch_dynamic};
-                  common::transaction::Context::instance().set( { resource});
 
                   //
                   // We make sure queue-broker is up'n running, we send ping
@@ -74,26 +71,6 @@ namespace casual
 
                Broker queue_broker;
 
-            private:
-
-               struct handle_resource_configuration
-               {
-                  void operator () ( common::message::domain::configuration::transaction::resource::Request& request) const
-                  {
-                     auto reply = common::message::reverse::type( request);
-
-                     reply.resources.emplace_back(
-                           []( common::message::domain::configuration::transaction::Resource& m)
-                           {
-                              m.id = 10;
-                              m.key = "casual-queue-rm";
-                              m.instances = 1;
-                              m.openinfo = "id:10";
-                           });
-
-                     common::mockup::ipc::eventually::send( request.process.queue, reply);
-                  }
-               };
             };
 
             namespace call
@@ -189,7 +166,7 @@ domain:
          message.payload.type.subtype = common::buffer::type::binary().subname;
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
-         queue::rm::enqueue( "queueA1", message);
+         queue::enqueue( "queueA1", message);
          auto messages = local::call::messages( "queueA1");
 
          EXPECT_TRUE( messages.size() == 1);
@@ -208,7 +185,7 @@ domain:
             queue::Message message;
             message.payload.data.assign( std::begin( payload), std::end( payload));
 
-            queue::rm::enqueue( "queueA1", message);
+            queue::enqueue( "queueA1", message);
          }
 
          auto messages = local::call::messages( "queueA1");

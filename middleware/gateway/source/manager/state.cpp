@@ -116,28 +116,6 @@ namespace casual
                   }
                } // outbound
 
-               namespace inbound
-               {
-                  void Policy::accumulate( message_type& message, common::message::gateway::domain::discover::internal::Reply& reply)
-                  {
-                     Trace trace{ "manager::state::coordinate::inbound::Policy accumulate"};
-
-                     message.domain = reply.domain;
-                     message.process = process::handle();
-
-                     range::copy( reply.services, std::back_inserter( message.services));
-                     range::copy( reply.queues, std::back_inserter( message.queues));
-
-                  }
-
-                  void Policy::send( common::platform::ipc::id::type queue, message_type& message)
-                  {
-                     Trace trace{ "manager::state::coordinate::inbound::Policy send"};
-
-                     manager::ipc::device().blocking_send( queue, message);
-                  }
-
-               } // inbound
             } // coordinate
          } // state
 
@@ -170,7 +148,6 @@ namespace casual
          void State::Discover::remove( common::platform::pid::type pid)
          {
             outbound.remove( pid);
-            inbound.remove( pid);
          }
 
          std::ostream& operator << ( std::ostream& out, const State::Runlevel& value)

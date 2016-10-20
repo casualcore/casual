@@ -4,7 +4,7 @@
 
 #include "queue/forward/common.h"
 #include "queue/common/log.h"
-#include "queue/api/rm/queue.h"
+#include "queue/api/queue.h"
 
 #include "common/arguments.h"
 #include "common/exception.h"
@@ -85,7 +85,7 @@ namespace casual
                   reply.payload.type.type = std::move( data.type.name);
                   reply.payload.type.subtype = std::move( data.type.subname);
 
-                  queue::rm::enqueue( replyqueue, reply);
+                  queue::enqueue( replyqueue, reply);
 
                }
             }

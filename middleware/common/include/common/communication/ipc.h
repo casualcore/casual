@@ -64,16 +64,36 @@ namespace casual
 
                struct Blocking
                {
-                  bool operator() ( inbound::Connector& ipc, message::Transport& transport);
-                  bool operator() ( const outbound::Connector& ipc, const message::Transport& transport);
+                  template< typename Connector>
+                  bool receive( Connector&& ipc, message::Transport& transport)
+                  {
+                     return native::receive( ipc.id(), transport, {});
+                  }
+
+                  template< typename Connector>
+                  bool send( Connector&& connector, const message::Transport& transport)
+                  {
+                     return native::send( std::forward< Connector>( connector), transport, {});
+                  }
+
                };
 
                namespace non
                {
                   struct Blocking
                   {
-                     bool operator() ( inbound::Connector& ipc, message::Transport& transport);
-                     bool operator() ( const outbound::Connector& ipc, const message::Transport& transport);
+                     template< typename Connector>
+                     bool receive( Connector&& connector, message::Transport& transport)
+                     {
+                        return native::receive( connector.id(), transport, native::Flag::non_blocking);
+                     }
+
+                     template< typename Connector>
+                     bool send( Connector&& connector, const message::Transport& transport)
+                     {
+                        return native::send( connector, transport, native::Flag::non_blocking);
+                     }
+
                   };
 
                } // non
@@ -153,13 +173,25 @@ namespace casual
                namespace instance
                {
                   template< process::instance::fetch::Directive directive>
-                  struct Connector : outbound::Connector
+                  struct Connector
                   {
+                     using handle_type = ipc::handle_type;
+                     using transport_type = ipc::message::Transport;
+                     using blocking_policy = policy::Blocking;
+                     using non_blocking_policy = policy::non::Blocking;
+
                      Connector( const Uuid& identity, std::string environment);
+
+                     inline operator handle_type() const { return m_process.queue;}
+                     inline handle_type id() const { return m_process.queue;}
+                     inline const common::process::Handle& process() const { return m_process;}
 
                      void reconnect();
 
+                     friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
+
                   private:
+                     common::process::Handle m_process;
                      Uuid m_identity;
                      std::string m_environment;
                   };

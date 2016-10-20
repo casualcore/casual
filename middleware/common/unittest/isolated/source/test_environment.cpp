@@ -55,6 +55,18 @@ namespace casual
             environment::string( "${HOME/a/b/c");
          }, exception::invalid::Argument);
       }
+
+      TEST( casual_common_environment, process___expect_serialized)
+      {
+         common::unittest::Trace trace;
+
+         auto process = common::process::handle();
+
+         environment::variable::process::set( "TEST_PROCESS_VARIABLE", process);
+
+         EXPECT_TRUE( process == environment::variable::process::get( "TEST_PROCESS_VARIABLE"));
+
+      }
    } // common
 } // casual
 

@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/uuid.h"
+#include "common/process.h"
 
 namespace casual
 {
@@ -22,7 +23,7 @@ namespace casual
 				bool exists( const std::string& name);
 
 				//!
-				//! @return value of invironment variable with @p name
+				//! @return value of environment variable with @p name
 				//! @throws exception::EnvironmentVariableNotFound if not found
 				//!
 				std::string get( const std::string& name);
@@ -53,6 +54,13 @@ namespace casual
 				   const std::string& string = converter.str();
 				   set( name, string);
 				}
+
+				namespace process
+            {
+				   common::process::Handle get( const std::string& name);
+				   void set( const std::string& name, const common::process::Handle& process);
+
+            } // process
 
 				namespace name
             {

@@ -192,20 +192,20 @@ namespace casual
 
       namespace blocking
       {
-         std::vector< Message> dequeue( const std::string& queue)
+         Message dequeue( const std::string& queue)
          {
             Trace trace{ "casual::queue::blocking::dequeue"};
 
             return blocking::dequeue( queue, Selector{});
          }
 
-         std::vector< Message> dequeue( const std::string& queue, const Selector& selector)
+         Message dequeue( const std::string& queue, const Selector& selector)
          {
             Trace trace{ "casual::queue::blocking::dequeue"};
 
             queue::Lookup lookup( queue);
 
-            return local::dequeue( lookup, selector, true);
+            return std::move( local::dequeue( lookup, selector, true).at( 0));
          }
       } // blocking
 

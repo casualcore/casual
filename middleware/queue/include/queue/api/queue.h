@@ -23,8 +23,8 @@ namespace casual
 
       namespace blocking
       {
-         std::vector< Message> dequeue( const std::string& queue);
-         std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
+         Message dequeue( const std::string& queue);
+         Message dequeue( const std::string& queue, const Selector& selector);
       } // blocking
 
       namespace xatmi

@@ -135,17 +135,7 @@ namespace casual
             {
                log << "qeueue broker start" << std::endl;
 
-               casual::common::message::dispatch::Handler handler{
-                  broker::handle::process::Exit{ state},
-                  broker::handle::connect::Request{ state},
-                  broker::handle::shutdown::Request{ state},
-                  broker::handle::lookup::Request{ state},
-                  //broker::handle::peek::queue::Request{ m_state},
-                  common::server::handle::basic_admin_call{
-                     broker::admin::services( state),
-                     ipc::device().error_handler()},
-                  common::message::handle::ping(),
-               };
+               auto handler = broker::handlers( state);
 
                common::log::information << "casual-queue-broker is on-line" << std::endl;
 

@@ -203,7 +203,7 @@ namespace casual
 
             namespace outbound
             {
-               Connector::Connector( handle_type id) : m_id( id)
+               Connector::Connector( handle_type id) : m_id{ id}
                {}
 
                Connector::operator handle_type() const { return m_id;}
@@ -222,30 +222,29 @@ namespace casual
                   {
                      namespace
                      {
-                        platform::ipc::id::type fetch(
+
+                        process::Handle fetch(
                               const Uuid& identity,
                               const std::string& environment,
                               process::instance::fetch::Directive directive)
                         {
-                           if( environment::variable::exists( environment))
+                           if( common::environment::variable::exists( environment))
                            {
-                              auto result = environment::variable::get< platform::ipc::id::type>( environment);
+                              auto process = environment::variable::process::get( environment);
 
-                              if( communication::ipc::exists( result))
+                              if( communication::ipc::exists( process.queue))
                               {
-                                 return result;
+                                 return process;
                               }
                            }
 
-
-                           auto result = process::instance::fetch::handle( identity, directive).queue;
-
+                           auto process = process::instance::fetch::handle( identity, directive);
 
                            if( ! environment.empty())
                            {
-                              environment::variable::set( environment, result);
+                              environment::variable::process::set( environment, process);
                            }
-                           return result;
+                           return process;
                         }
 
                      } // <unnamed>
@@ -254,23 +253,33 @@ namespace casual
 
                   template< process::instance::fetch::Directive directive>
                   Connector< directive>::Connector( const Uuid& identity, std::string environment)
-                     : outbound::Connector( local::fetch( identity, environment, directive)),
+                     : m_process( local::fetch( identity, environment, directive)),
                        m_identity{ identity}, m_environment{ std::move( environment)}
                   {
 
                   }
+
 
                   template< process::instance::fetch::Directive directive>
                   void Connector< directive>::reconnect()
                   {
                      Trace trace{ "ipc::outbound::instance::Connector::reconnect"};
 
-                     m_id = local::fetch( m_identity, m_environment, directive);
+                     m_process = local::fetch( m_identity, m_environment, directive);
 
-                     if( ! communication::ipc::exists( m_id))
+                     if( ! communication::ipc::exists( m_process.queue))
                      {
-                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue for instance", CASUAL_NIP( m_identity)};
+                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue for instance", CASUAL_NIP( m_identity), CASUAL_NIP( m_environment), CASUAL_NIP( m_process)};
                      }
+                  }
+
+                  template< process::instance::fetch::Directive directive>
+                  std::ostream& operator << ( std::ostream& out, const Connector< directive>& rhs)
+                  {
+                     return out << "{ process: " << rhs.m_process
+                           << ", identity:" << rhs.m_identity
+                           << ", environment:" << rhs.m_environment
+                           << '}';
                   }
 
                   template struct Connector< process::instance::fetch::Directive::direct>;
@@ -365,35 +374,6 @@ namespace casual
 
 
 
-            namespace policy
-            {
-
-               bool Blocking::operator() ( inbound::Connector& ipc, message::Transport& transport)
-               {
-                  return native::receive( ipc.id(), transport, {});
-               }
-
-               bool Blocking::operator() ( const outbound::Connector& ipc, const message::Transport& transport)
-               {
-                  return native::send( ipc, transport, {});
-               }
-
-
-               namespace non
-               {
-                  bool Blocking::operator() ( inbound::Connector& ipc, message::Transport& transport)
-                  {
-                     return native::receive( ipc.id(), transport, native::Flag::non_blocking);
-                  }
-
-                  bool Blocking::operator() ( const outbound::Connector& ipc, const message::Transport& transport)
-                  {
-                     return native::send( ipc, transport, native::Flag::non_blocking);
-                  }
-
-               } // non
-            } // policy
-
 
             namespace broker
             {
@@ -401,7 +381,7 @@ namespace casual
                {
                   static outbound::instance::Device singelton{
                      process::instance::identity::broker(),
-                     environment::variable::name::ipc::broker()};
+                     common::environment::variable::name::ipc::broker()};
 
                   return singelton;
                }
@@ -416,7 +396,7 @@ namespace casual
                   {
                      static outbound::instance::Device singelton{
                         process::instance::identity::transaction::manager(),
-                        environment::variable::name::ipc::transaction::manager()};
+                        common::environment::variable::name::ipc::transaction::manager()};
                      return singelton;
                   }
 

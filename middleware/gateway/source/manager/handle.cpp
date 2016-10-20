@@ -26,13 +26,6 @@ namespace casual
    {
       namespace manager
       {
-         namespace local
-         {
-            namespace
-            {
-
-            } // <unnamed>
-         } // local
 
          namespace ipc
          {
@@ -41,6 +34,8 @@ namespace casual
                static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process::exit}};
                return singleton;
             }
+
+
          } // ipc
 
          namespace handle
@@ -50,6 +45,23 @@ namespace casual
             {
                namespace
                {
+                  namespace optional
+                  {
+                     template< typename D, typename M>
+                     bool send( D&& device, M&& message)
+                     {
+                        try
+                        {
+                           ipc::device().blocking_send( device, message);
+                           return true;
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           return false;
+                        }
+                     }
+
+                  } // optional
 
                   namespace shutdown
                   {
@@ -126,13 +138,15 @@ namespace casual
                      {
                         Trace trace{ "gateway::manager::handle::local::Boot"};
 
+
                         if( connection.runlevel == manager::state::outbound::Connection::Runlevel::absent)
                         {
                            try
                            {
                               connection.process.pid = common::process::spawn(
                                     local::executable( connection),
-                                    { "--address", common::string::join( connection.address, " ")});
+                                    { "--address", common::string::join( connection.address, " "),
+                                      "--order", std::to_string( connection.order)});
 
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::connecting;
                            }
@@ -323,26 +337,6 @@ namespace casual
                            found->remote = message.domain;
 
                            //
-                           // advertise the services
-                           //
-                           {
-                              common::message::gateway::domain::Advertise advertise;
-                              advertise.process = message.process;
-                              advertise.domain = message.domain;
-                              advertise.order = found->order;
-
-                              advertise.queues = message.queues;
-                              advertise.services = message.services;
-
-                              //
-                              // add one hop, since we now it has passed a domain boundary
-                              //
-                              for( auto& service : advertise.services) { ++service.hops;}
-
-                              manager::ipc::device().blocking_send( communication::ipc::broker::device(), advertise);
-                           }
-
-                           //
                            // If this reply is part of an automatic discovery request, we'll handle it here.
                            // if this is the last reply, the accumulated reply will be sent to the caller.
                            //
@@ -370,10 +364,32 @@ namespace casual
                         {
                            found->remote = message.domain;
 
+                           std::vector< platform::pid::type> requested;
+
                            //
-                           // Forward to broker
+                           // Make sure we get the reply
                            //
-                           manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
+                           auto source = message.process.queue;
+                           message.process = common::process::handle();
+
+                           //
+                           // Forward to broker and possible casual-queue
+                           //
+                           {
+                              if( ! message.services.empty())
+                              {
+                                 manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
+                                 requested.push_back( communication::ipc::broker::device().connector().process().pid);
+                              }
+
+                              if( ! message.queues.empty() &&
+                                    local::optional::send( communication::ipc::queue::broker::optional::device(), message))
+                              {
+                                 requested.push_back( communication::ipc::queue::broker::optional::device().connector().process().pid);
+                              }
+                              state().discover.inbound.add( message.correlation, source, requested);
+                           }
+
                            return;
                         }
 
@@ -382,7 +398,7 @@ namespace casual
                      }
                   } // inbound
 
-                  namespace outbound
+                  namespace external
                   {
                      void Request::operator () ( message_type& message)
                      {
@@ -401,31 +417,27 @@ namespace casual
                         request.services = std::move( message.services);
 
 
-                        auto send_request = [&]( const state::outbound::Connection& outbound){
+                        auto send_request = [&]( const state::outbound::Connection& outbound)
+                              {
 
-                           //
-                           // We don't send to the same domain that is the requester.
-                           //
-                           if( outbound.remote != request.domain)
-                           {
-                              try
-                              {
-                                 ipc::device().blocking_send( outbound.process.queue, request);
-                                 requested.push_back( outbound.process.pid);
-                              }
-                              catch( const exception::queue::Unavailable&)
-                              {
-                                 // ignore
-                              }
-                           }
-                        };
+                                 //
+                                 // We don't send to the same domain that is the requester.
+                                 //
+                                 if( outbound.remote != request.domain)
+                                 {
+                                    if( local::optional::send( outbound.process.queue, request))
+                                    {
+                                       requested.push_back( outbound.process.pid);
+                                    }
+                                 }
+                              };
 
                         range::for_each( state().connections.outbound, send_request);
 
                         state().discover.outbound.add( request.correlation, message.process.queue, std::move( requested));
                      }
 
-                  } // outbound
+                  } // external
 
                } // discovery
             } // domain

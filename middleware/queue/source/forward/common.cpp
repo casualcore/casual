@@ -1,21 +1,16 @@
 //!
-//! common.cpp
-//!
-//! Created on: Nov 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/forward/common.h"
 #include "queue/common/queue.h"
-#include "queue/api/rm/queue.h"
+#include "queue/api/queue.h"
 
 #include "common/communication/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/transaction/context.h"
 #include "common/server/handle.h"
-
-#include "queue/rm/switch.h"
 
 
 #include "tx.h"
@@ -46,7 +41,7 @@ namespace casual
                            tx_rollback();
                      });
 
-                     task.dispatch( rm::blocking::dequeue( task.queue));
+                     task.dispatch( blocking::dequeue( task.queue));
 
                      //
                      // Check what we should do with the transaction
@@ -80,9 +75,6 @@ namespace casual
 
 
          Dispatch::Dispatch( std::vector< forward::Task> tasks)
-            : Dispatch( std::move( tasks), { { "casual-queue-rm",  &casual_queue_xa_switch_dynamic}}) {}
-
-         Dispatch::Dispatch( std::vector< forward::Task> tasks, const std::vector< common::transaction::Resource>& resources)
            : m_tasks( std::move( tasks))
          {
             if( m_tasks.size() != 1)
@@ -91,7 +83,6 @@ namespace casual
             }
 
             common::process::instance::connect();
-            common::transaction::Context::instance().set( resources);
          }
 
 

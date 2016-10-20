@@ -3,7 +3,7 @@
 //!
 
 #include "queue/forward/common.h"
-#include "queue/api/rm/queue.h"
+#include "queue/api/queue.h"
 #include "queue/common/log.h"
 
 #include "common/arguments.h"
@@ -49,7 +49,7 @@ namespace casual
             void operator () ( queue::Message&& message)
             {
                Trace trace{ "queue::forward::Enqueuer::operator()"};
-               queue::rm::enqueue( m_queue, message);
+               queue::enqueue( m_queue, message);
             }
 
          private:

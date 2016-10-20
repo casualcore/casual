@@ -119,6 +119,43 @@ namespace casual
 				   //log::internal::debug << "environment variable: " << name << " set to: " << value << std::endl;
 				}
 
+            namespace process
+            {
+               common::process::Handle get( const std::string& variable)
+               {
+
+                  auto value = common::environment::variable::get( variable);
+
+                  common::process::Handle result;
+                  {
+                     auto split = range::divide( value, '|');
+
+                     auto& pid = std::get< 0>( split);
+                     if( ! pid.empty())
+                     {
+                        result.pid = std::stoi( std::string( std::begin( pid), std::end( pid)));
+                     }
+
+                     auto& queue = std::get< 1>( split);
+                     if( ! queue.empty())
+                     {
+                        ++queue;
+                        result.queue = std::stol( std::string( std::begin( queue), std::end( queue)));
+                     }
+                  }
+
+                  return result;
+               }
+
+               void set( const std::string& variable, const common::process::Handle& process)
+               {
+                  variable::set(
+                        variable,
+                        std::to_string( process.pid) + '|' + std::to_string( process.queue));
+               }
+
+            } // process
+
             namespace name
             {
                const std::string& home()
@@ -160,14 +197,14 @@ namespace casual
                   {
                      const std::string& manager()
                      {
-                        static std::string name{ "CASUAL_DOMAIN_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_DOMAIN_PROCESS"};
                         return name;
                      }
                   } // domain
 
                   const std::string& broker()
                   {
-                     static std::string name{ "CASUAL_BROKER_IPC_QUEUE"};
+                     static std::string name{ "CASUAL_BROKER_PROCESS"};
                      return name;
                   }
 
@@ -175,7 +212,7 @@ namespace casual
                   {
                      const std::string& manager()
                      {
-                        static std::string name{ "CASUAL_TM_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_TM_PROCESS"};
                         return name;
                      }
                   } // transaction
@@ -184,7 +221,7 @@ namespace casual
                   {
                      const std::string& broker()
                      {
-                        static std::string name{ "CASUAL_QUEUE_BROKER_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_QUEUE_BROKER_PROCESS"};
                         return name;
                      }
                   } // queue
@@ -193,7 +230,7 @@ namespace casual
                   {
                      const std::string& manager()
                      {
-                        static std::string name{ "CASUAL_GATEWAY_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_GATEWAY_PROCESS"};
                         return name;
                      }
                   } // gateway

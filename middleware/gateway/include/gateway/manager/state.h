@@ -121,19 +121,6 @@ namespace casual
 
                } // outbound
 
-               namespace inbound
-               {
-                  struct Policy
-                  {
-                     using message_type = common::message::gateway::domain::discover::internal::Reply;
-                     void accumulate( message_type& message, common::message::gateway::domain::discover::internal::Reply& reply);
-
-                     void send( common::platform::ipc::id::type queue, message_type& message);
-                  };
-
-                  using Discover = common::message::Coordinate< Policy>;
-
-               } // inbound
 
             } // coordinate
 
@@ -162,8 +149,6 @@ namespace casual
             struct Discover
             {
                state::coordinate::outbound::Discover outbound;
-               state::coordinate::inbound::Discover inbound;
-
                void remove( common::platform::pid::type pid);
 
             } discover;

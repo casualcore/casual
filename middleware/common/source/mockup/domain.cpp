@@ -269,7 +269,9 @@ namespace casual
                // Set environment variable to make it easier for other processes to
                // reach this broker (should work any way...)
                //
-               environment::variable::set( environment::variable::name::ipc::broker(), m_replier.input());
+               common::environment::variable::process::set(
+                     common::environment::variable::name::ipc::broker(),
+                     m_replier.process());
 
             }
 
@@ -278,6 +280,7 @@ namespace casual
 
             message::dispatch::Handler Broker::default_handler()
             {
+
 
 
                return message::dispatch::Handler{
@@ -365,6 +368,7 @@ namespace casual
                      auto reply = message::reverse::type( m);
 
                      reply.domain = m.domain;
+                     reply.process = m_replier.process();
 
                      for( auto&& s : m.services)
                      {
@@ -448,6 +452,14 @@ namespace casual
                   // Connect to the domain
                   //
                   local::send::connect::domain( m_replier, process::instance::identity::transaction::manager());
+
+                  //
+                  // Set environment variable to make it easier for other processes to
+                  // reach TM (should work any way...)
+                  //
+                  common::environment::variable::process::set(
+                        common::environment::variable::name::ipc::transaction::manager(),
+                        m_replier.process());
                }
 
             } // transaction

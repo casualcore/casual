@@ -11,6 +11,7 @@
 #include "common/message/transaction.h"
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
+#include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -136,6 +137,9 @@ namespace casual
                } // discover
             } // domain
          } // handle
+
+         casual::common::message::dispatch::Handler handlers( State& state);
+
       } // broker
    } // queue
 

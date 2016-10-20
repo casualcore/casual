@@ -267,6 +267,25 @@ namespace casual
          struct is_movable : std::integral_constant< bool,
             std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
 
+
+
+
+         //!
+         //! Arbitrary number of types to compare if same
+         //!
+         //! @{
+         template< typename T1, typename T2, typename... Args>
+         struct is_same : std::integral_constant< bool, is_same< T1, T2>::value && is_same< T2, Args...>::value>
+         {
+
+         };
+
+         template< typename T1, typename T2>
+         struct is_same< T1, T2> : std::is_same< T1, T2>
+         {
+         };
+         //! @}
+
       } // traits
    } // common
 } // casual

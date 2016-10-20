@@ -96,7 +96,7 @@ namespace casual
                      };
                   } // inbound
 
-                  namespace outbound
+                  namespace external
                   {
                      struct Request : Base
                      {
@@ -105,7 +105,7 @@ namespace casual
 
                         void operator () ( message_type& message);
                      };
-                  } // outbound
+                  } // external
 
                } // discovery
 

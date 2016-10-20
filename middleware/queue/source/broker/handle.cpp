@@ -4,11 +4,13 @@
 
 #include "queue/broker/handle.h"
 #include "queue/common/log.h"
+#include "queue/broker/admin/server.h"
 
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/process.h"
 #include "common/server/lifetime.h"
+#include "common/server/handle.h"
 
 
 
@@ -172,7 +174,7 @@ namespace casual
                      //
 
                      common::message::gateway::domain::discover::external::Request request;
-
+                     request.correlation = message.correlation;
                      request.domain = common::domain::identity();
                      request.process = common::process::handle();
                      request.queues.push_back(  message.name);
@@ -180,6 +182,8 @@ namespace casual
                      if( local::optional::send( common::communication::ipc::gateway::manager::optional::device(), std::move( request)))
                      {
                         m_state.pending.push_back( std::move( message));
+
+                        log << "pending request added to pending: " << common::range::make( m_state.pending) << '\n';
 
                         //
                         // We don't send reply, we'll do it when we get the reply from the gateway.
@@ -233,9 +237,30 @@ namespace casual
 
                   m_state.update( message);
 
-                  for( const auto& queue : message.queues)
-                  {
+                  using directive_type = decltype( message.directive);
 
+                  if( common::compare::any( message.directive, { directive_type::add, directive_type::replace}))
+                  {
+                     //
+                     // Queues has been added, we check if there are any pending
+                     //
+
+                     auto split = common::range::stable_partition( m_state.pending,[&]( decltype( m_state.pending.front()) p){
+
+                        return ! common::range::any_of( message.queues, [&]( decltype( message.queues.front()) q){
+                           return q.name == p.name;});
+                     });
+
+                     common::traits::concrete::type_t< decltype( m_state.pending)> pending;
+
+                     common::range::move( std::get< 1>( split), pending);
+                     common::range::trim( m_state.pending, std::get< 0>( split));
+
+                     log << "pending to lookup: " << common::range::make( pending) << '\n';
+
+                     common::range::for_each( pending, [&]( decltype( pending.front()) pending){
+                        lookup::Request{ m_state}( pending);
+                     });
 
                   }
                }
@@ -301,6 +326,26 @@ namespace casual
                } // discover
             } // domain
          } // handle
+
+         casual::common::message::dispatch::Handler handlers( State& state)
+         {
+            return {
+               broker::handle::process::Exit{ state},
+               broker::handle::connect::Request{ state},
+               broker::handle::shutdown::Request{ state},
+               broker::handle::lookup::Request{ state},
+               //broker::handle::peek::queue::Request{ m_state},
+               broker::handle::domain::Advertise{ state},
+               broker::handle::domain::discover::Request{ state},
+               broker::handle::domain::discover::Reply{ state},
+
+               common::server::handle::basic_admin_call{
+                  broker::admin::services( state),
+                  ipc::device().error_handler()},
+               common::message::handle::ping(),
+            };
+         };
+
       } // broker
    } // queue
 } // casual

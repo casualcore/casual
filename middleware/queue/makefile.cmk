@@ -103,40 +103,7 @@ queue_broker = LinkExecutable( 'bin/casual-queue-broker',
 
 install_bin.append( queue_broker);
 
-#
-# rm
-#  
-rm = LinkLibrary( 'bin/casual-queue-rm',
-    [
-     Compile( 'source/rm/switch.cpp'),
-    ],       
-     [ common,
-      'casual-common',
-      ]);
 
-
-install_lib.append( rm);
-
-
-
-
-
-#
-# Client rm-API
-#
-
-queue_api_rm = LinkLibrary( 'bin/casual-queue-api-rm', 
-   [
-       Compile( 'source/api/rm/queue.cpp')
-   ],
-   [ 
-    common, 
-    rm, 
-    'casual-common', 
-    'casual-xatmi'
-    ])
-
-install_lib.append( queue_api_rm);
 
 queue_api = LinkLibrary( 'bin/casual-queue-api', 
    [
@@ -151,25 +118,6 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
 install_lib.append( queue_api);
 
 
-#
-# Server
-#
-server = LinkServer( 'bin/casual-queue-server',
-    [
-       Compile( 'source/server/server.cpp'),
-     ],
-    [
-      queue_api_rm,
-     'casual-common',
-     'casual-xatmi',
-     'casual-sf',
-     ],
-    'source/server/server.yaml',
-    [ 'casual-queue-rm' ],
-    '../configuration/resources.yaml' );
-
-install_bin.append( server);
-
 
 #
 # Forward 
@@ -183,13 +131,13 @@ forward_service = LinkExecutable( 'bin/casual-queue-forward-service',
     [
         Compile( 'source/forward/service.cpp'),
     ],
-    [ forward_common, queue_api_rm, rm, common, 'casual-xatmi', 'casual-common', 'casual-buffer'])
+    [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer'])
 
 forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     [
         Compile( 'source/forward/queue.cpp'),
     ],
-    [ forward_common, queue_api_rm, rm, common, 'casual-xatmi', 'casual-common', 'casual-buffer'])
+    [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer'])
 
 install_bin.append( forward_service);
 install_bin.append( forward_queue);
@@ -206,14 +154,6 @@ queue_client = LinkExecutable( 'bin/casual-queue-admin',
  
 Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 
-
-
-resource_proxy = LinkResourceProxy( 'bin/casual-queue-resource-proxy', 
-    'casual-queue-rm', 
-    [ rm], 
-    directive = '--xa-resource-file ../configuration/resources.yaml')
-
-install_bin.append( resource_proxy);
 
 
 
@@ -233,9 +173,8 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
     [
      group_archive,
      broker_archive,
-     queue_api_rm,
-     rm,
      common,
+     queue_api,
      'casual-mockup',
      'casual-mockup-unittest-environment',
      'casual-common',

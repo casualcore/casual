@@ -39,14 +39,26 @@ namespace casual
                common::communication::ipc::blocking::send( std::forward< D>( device), std::forward< M>( message));
             }
 
+            namespace optional
+            {
+               template< typename D, typename M>
+               bool send( D&& device, M&& message)
+               {
+                  try
+                  {
+                     blocking::send( std::forward< D>( device), std::forward< M>( message));
+                     return true;
+                  }
+                  catch( const common::exception::communication::Unavailable&)
+                  {
+                     return false;
+                  }
+               }
+            } // optional
          } // blocking
 
          namespace handle
          {
-
-
-
-
             template< typename M>
             struct basic_transaction_request
             {
@@ -391,9 +403,69 @@ namespace casual
             {
                namespace discover
                {
+
+                  namespace coordinate
+                  {
+                     //!
+                     //! Policy to coordinate discover request from another domain
+                     //!
+                     template< typename D>
+                     struct Policy
+                     {
+                        using device_type = D;
+
+                        using message_type = common::message::gateway::domain::discover::internal::Reply;
+
+                        Policy( device_type& device) : m_device( device) {}
+
+                        inline void accumulate( message_type& message, common::message::gateway::domain::discover::internal::Reply& reply)
+                        {
+                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::accumulate"};
+
+                           message.domain = reply.domain;
+                           message.process = common::process::handle();
+
+                           common::range::copy( reply.services, std::back_inserter( message.services));
+                           common::range::copy( reply.queues, std::back_inserter( message.queues));
+                        }
+
+                        inline void send( common::platform::ipc::id::type queue, message_type& message)
+                        {
+                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
+
+                           auto&& wrapper = gateway::message::interdomain::send::wrap( message);
+
+                           log << "forward message: " << message << '\n';
+
+                           m_device.blocking_send( wrapper);
+                        }
+                     private:
+                        device_type& m_device;
+                     };
+
+                     template< typename D>
+                     using Discover = common::message::Coordinate< Policy< D>>;
+
+
+                     namespace internal
+                     {
+                        struct Message : common::message::basic_message< common::message::Type::gateway_domain_discover_internal_coordination>
+                        {
+                           std::vector< common::platform::pid::type> pids;
+
+                           CASUAL_CONST_CORRECT_MARSHAL(
+                           {
+                              archive & pids;
+                           })
+                        };
+
+                     } // internal
+
+                  } // coordinate
+
                   struct Request
                   {
-                     void operator () ( message::interdomain::domain::discovery::receive::Request& request) const
+                     void operator () ( message::interdomain::domain::discovery::receive::Request& message) const
                      {
                         Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
 
@@ -404,15 +476,79 @@ namespace casual
                         //
                         // Make sure the main thread gets the reply
                         //
-                        request.process = common::process::handle();
+                        message.process = common::process::handle();
+
+                        coordinate::internal::Message coordinate;
+                        coordinate.correlation = message.correlation;
+
+                        auto send_coordinate = common::scope::execute( [&](){
+                           blocking::send( common::process::handle().queue, coordinate);
+                        });
+
 
                         //
-                        // Forward to gateway, which will forward the message to broker, after it
-                        // has extracted some information about the remote domain.
+                        // Forward to broker and possible casual-queue
                         //
-                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), request.get());
+                        {
+                           if( ! message.services.empty())
+                           {
+                              blocking::send( common::communication::ipc::broker::device(), message.get());
+                              coordinate.pids.push_back( common::communication::ipc::broker::device().connector().process().pid);
+                           }
+
+                           if( ! message.queues.empty() &&
+                                 blocking::optional::send( common::communication::ipc::queue::broker::optional::device(), message.get()))
+                           {
+                              coordinate.pids.push_back( common::communication::ipc::queue::broker::optional::device().connector().process().pid);
+                           }
+                        }
                      }
                   };
+
+
+                  template< typename D>
+                  struct Reply
+                  {
+                     using discover_type = coordinate::Discover< D>;
+                     using message_type = common::message::gateway::domain::discover::internal::Reply;
+
+                     Reply( discover_type& device) : m_discover( device) {}
+
+                     void operator() ( message_type& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle::domain::discover::Reply::operator()"};
+
+                        //
+                        // Might send the accumulated message if all requested has replied.
+                        // (via the Policy)
+                        //
+                        m_discover.accumulate( message);
+                     }
+
+                  private:
+                     discover_type& m_discover;
+
+                  };
+
+
+                  template< typename D>
+                  struct Coordinate
+                  {
+                     using discover_type = coordinate::Discover< D>;
+
+                     Coordinate( discover_type& device) : m_discover( device) {}
+
+                     void operator() ( coordinate::internal::Message& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle::domain::discover::Coordinate::operator()"};
+
+                        m_discover.add( message.correlation, 0, message.pids);
+                     }
+
+                  private:
+                     discover_type& m_discover;
+                  };
+
                } // discover
             } // domain
          } // handle
@@ -504,6 +640,13 @@ namespace casual
                }
 
 
+               using outbound_type = common::traits::concrete::type_t< decltype( outbound_device)>;
+
+               //
+               // Coordinates discover replies
+               //
+               handle::domain::discover::coordinate::Discover< outbound_type> discover{ outbound_device};
+
                common::message::dispatch::Handler handler{
                   //
                   // Internal messages
@@ -521,7 +664,13 @@ namespace casual
                   handle::create::forward< common::message::transaction::resource::prepare::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::rollback::Reply>( outbound_device),
-                  handle::create::forward< common::message::gateway::domain::discover::internal::Reply>( outbound_device),
+
+                  //
+                  // accumulates discover replies, and forward the accumulated message when all has
+                  // replied
+                  //
+                  handle::domain::discover::Reply< outbound_type>{ discover},
+                  handle::domain::discover::Coordinate< outbound_type>{ discover},
 
                   //
                   // Queue replies

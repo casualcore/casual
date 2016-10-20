@@ -1,16 +1,11 @@
 //!
-//! common.h
-//!
-//! Created on: Nov 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_FROWARD_COMMON_H_
 #define CASUAL_QUEUE_FROWARD_COMMON_H_
 
 #include "queue/api/message.h"
-
-#include "common/transaction/resource.h"
 
 
 #include <functional>
@@ -36,7 +31,6 @@ namespace casual
          struct Dispatch
          {
             Dispatch( std::vector< forward::Task> tasks);
-            Dispatch( std::vector< forward::Task> tasks, const std::vector< common::transaction::Resource>& resources);
 
             void execute();
 

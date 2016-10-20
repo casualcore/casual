@@ -263,11 +263,10 @@ namespace casual
 
                namespace discover
                {
-                  struct Reply : basic_reply< message::interdomain::domain::discovery::receive::Reply>
+                  using base_type = basic_reply< message::interdomain::domain::discovery::receive::Reply>;
+                  struct Reply : base_type
                   {
-                     using base_type = basic_reply< message::interdomain::domain::discovery::receive::Reply>;
-
-                     using base_type::base_type;
+                     Reply( const Routing& routing, std::size_t order) : base_type{ routing}, m_order{ order} {}
 
                      void operator () ( message::interdomain::domain::discovery::receive::Reply& reply) const
                      {
@@ -285,8 +284,51 @@ namespace casual
                            common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
                         });
 
+                        //
+                        // Advertise services and queues.
+                        //
+                        {
+                           Trace trace{ "gateway::outbound::handle::domain::discover::Reply Advertise"};
+
+                           common::message::gateway::domain::Advertise advertise;
+                           advertise.execution = reply.execution;
+                           advertise.domain = reply.domain;
+                           advertise.process = common::process::handle();
+                           advertise.order = m_order;
+                           advertise.services = reply.services;
+                           advertise.queues = reply.queues;
+
+                           if( ! advertise.services.empty())
+                           {
+                              //
+                              // add one hop, since we now it has passed a domain boundary
+                              //
+                              for( auto& service : advertise.services) { ++service.hops;}
+
+                              common::communication::ipc::blocking::send( common::communication::ipc::broker::device(), advertise);
+                           }
+
+                           if( ! advertise.queues.empty())
+                           {
+                              try
+                              {
+                                 common::communication::ipc::blocking::send(
+                                       common::communication::ipc::queue::broker::optional::device(),
+                                       advertise);
+                              }
+                              catch( const common::exception::communication::Unavailable&)
+                              {
+                                 common::log::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
+                              }
+                           }
+                        }
+
+
                         base_type::operator() ( reply);
                      }
+                  private:
+                     std::size_t m_order;
+
                   };
 
 
@@ -476,6 +518,11 @@ namespace casual
                try
                {
                   //
+                  // Keep track of the order, we need to advertise services and queues
+                  //
+                  auto order = settings.order;
+
+                  //
                   // Instantiate the external policy
                   //
                   external_policy_type policy{ std::forward< S>( settings)};
@@ -523,7 +570,7 @@ namespace casual
                      handle::basic_reply< message::interdomain::transaction::resource::receive::prepare::Reply>{ routing},
                      handle::basic_reply< message::interdomain::transaction::resource::receive::commit::Reply>{ routing},
                      handle::basic_reply< message::interdomain::transaction::resource::receive::rollback::Reply>{ routing},
-                     handle::domain::discover::Reply{ routing},
+                     handle::domain::discover::Reply{ routing, order},
                   };
 
                   log << "start reply message pump\n";

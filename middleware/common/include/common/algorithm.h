@@ -306,19 +306,6 @@ namespace casual
       } // detail
 
 
-
-      template< typename T1, typename T2, typename... Args>
-      struct is_same : std::integral_constant< bool, is_same< T1, T2>::value && is_same< T2, Args...>::value>
-      {
-
-      };
-
-      template< typename T1, typename T2>
-      struct is_same< T1, T2> : std::is_same< T1, T2>
-      {
-      };
-
-
       //!
       //! Chooses the first argument that is not 'empty'
       //!
@@ -330,7 +317,7 @@ namespace casual
       template< typename T, typename... Args>
       auto coalesce( T&& value,  Args&&... args)
          -> typename std::conditional<
-               is_same< T, Args...>::value,
+               traits::is_same< T, Args...>::value,
                T, // only if T1 and T1 are exactly the same
                typename std::common_type< T, Args...>::type
             >::type
@@ -338,7 +325,7 @@ namespace casual
 
       {
          using return_type = typename std::conditional<
-               is_same< T, Args...>::value,
+               traits::is_same< T, Args...>::value,
                T, // only if T1 and T1 are exactly the same
                typename std::common_type< T, Args...>::type
             >::type;
@@ -1520,6 +1507,21 @@ namespace casual
          return static_cast< bool>( lhs) ==  rhs;
       }
 
+
+      namespace compare
+      {
+         template< typename T, typename R>
+         bool any( T&& value, R&& range)
+         {
+            return ! range::find( range, value).empty();
+         }
+
+         template< typename T, typename V>
+         bool any( T&& value, std::initializer_list< V> range)
+         {
+            return ! range::find( range, value).empty();
+         }
+      } // compare
 
    } // common
 } // casual

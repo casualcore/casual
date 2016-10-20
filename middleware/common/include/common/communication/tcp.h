@@ -185,8 +185,8 @@ namespace casual
             {
                struct basic_blocking
                {
-                  bool operator() ( const inbound::Connector& ipc, message::Transport& transport);
-                  bool operator() ( const outbound::Connector& tcp, const message::Transport& transport);
+                  bool receive( const inbound::Connector& ipc, message::Transport& transport);
+                  bool send( const outbound::Connector& tcp, const message::Transport& transport);
                };
 
                using Blocking = basic_blocking;
@@ -195,8 +195,8 @@ namespace casual
                {
                   struct basic_blocking
                   {
-                     bool operator() ( const inbound::Connector& ipc, message::Transport& transport);
-                     bool operator() ( const outbound::Connector& tcp, const message::Transport& transport);
+                     bool receive( const inbound::Connector& ipc, message::Transport& transport);
+                     bool send( const outbound::Connector& tcp, const message::Transport& transport);
                   };
 
                   using Blocking = basic_blocking;
