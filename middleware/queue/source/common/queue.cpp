@@ -28,11 +28,11 @@ namespace casual
          } // <unnamed>
       } // local
 
-      Lookup::Lookup( const std::string& queue)
-         : m_correlation{
+      Lookup::Lookup( std::string queue)
+         : m_name( std::move( queue)), m_correlation{
             common::communication::ipc::blocking::send(
                   common::communication::ipc::queue::broker::optional::device(),
-                  local::request( queue))}
+                  local::request( m_name))}
       {
       }
 
@@ -46,6 +46,11 @@ namespace casual
                m_correlation);
 
          return reply;
+      }
+
+      const std::string& Lookup::name() const
+      {
+         return m_name;
       }
 
 

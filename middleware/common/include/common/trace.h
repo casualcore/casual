@@ -1,8 +1,5 @@
 //!
-//! trace.h
-//!
-//! Created on: Nov 25, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef TRACE_H_

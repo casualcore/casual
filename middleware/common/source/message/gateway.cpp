@@ -29,6 +29,7 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Queue& message)
                   {
                      return out << "{ name: " << message.name
+                           << ", retries: " << message.retries
                            << '}';
                   }
                } // advertise
@@ -57,38 +58,30 @@ namespace casual
 
                namespace discover
                {
-                  namespace internal
+
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
                   {
-                     std::ostream& operator << ( std::ostream& out, const Request& value)
-                     {
-                        return out << "{ process: " << value.process
-                              << ", domain: " << value.domain
-                              << ", services: " << range::make( value.services)
-                              << ", queues: " << range::make( value.queues)
-                              << '}';
-                     }
+                     return out << "{ process: " << value.process
+                           << ", domain: " << value.domain
+                           << ", services: " << range::make( value.services)
+                           << ", queues: " << range::make( value.queues)
+                           << '}';
+                  }
 
 
 
-                     std::ostream& operator << ( std::ostream& out, const Reply& value)
-                     {
-                        return out << "{ domain: " << value.domain
-                              << ", process: " << value.process
-                              << ", services: " << range::make( value.services)
-                              << ", queues: " << range::make( value.queues)
-                              << '}';
-                     }
-                  } // internal
-
-                  namespace external
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
                   {
-                     std::ostream& operator << ( std::ostream& out, const Request& value)
-                     {
-                        return out << "{ process: " << value.process
-                              << ", domain: " << value.domain
-                              << ", services: " << range::make( value.services)
-                              << '}';
-                     }
+                     return out << "{ domain: " << value.domain
+                           << ", process: " << value.process
+                           << ", services: " << range::make( value.services)
+                           << ", queues: " << range::make( value.queues)
+                           << '}';
+                  }
+
+
+                  namespace accumulated
+                  {
 
                      std::ostream& operator << ( std::ostream& out, const Reply& value)
                      {
@@ -96,7 +89,7 @@ namespace casual
                            << '}';
                      }
 
-                  } // external
+                  } // accumulated
 
 
                } // discover

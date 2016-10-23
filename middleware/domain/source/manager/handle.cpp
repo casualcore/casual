@@ -481,21 +481,33 @@ namespace casual
                                  });
 
                            manager::local::ipc::send( state, process, message);
-                           environment::variable::set( environment::variable::name::ipc::broker(), process.queue);
+
+                           environment::variable::process::set( environment::variable::name::ipc::broker(), process);
                         }
 
                         void tm( State& state, const common::process::Handle& process)
                         {
                            Trace trace{ "domain::manager::handle::local::singleton::tm"};
 
-                           environment::variable::set( environment::variable::name::ipc::transaction::manager(), process.queue);
+                           environment::variable::process::set( environment::variable::name::ipc::transaction::manager(), process);
+                        }
+
+                        void queue( State& state, const common::process::Handle& process)
+                        {
+                           Trace trace{ "domain::manager::handle::local::singleton::queue"};
+
+                           environment::variable::process::set(
+                                 environment::variable::name::ipc::queue::broker(), process);
                         }
 
                         void connect( State& state, const common::message::domain::process::connect::Request& message)
                         {
+                           Trace trace{ "domain::manager::handle::local::singleton::connect"};
+
                            static const std::map< Uuid, std::function< void(State&, const common::process::Handle&)>> tasks{
                               { common::process::instance::identity::broker(), &broker},
-                              { common::process::instance::identity::transaction::manager(), &tm}
+                              { common::process::instance::identity::transaction::manager(), &tm},
+                              { common::process::instance::identity::queue::broker(), &queue}
                            };
 
                            auto found = range::find( tasks, message.identification);

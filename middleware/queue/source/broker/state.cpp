@@ -44,6 +44,14 @@ namespace casual
             return lhs.order < rhs.order;
          }
 
+         std::ostream& operator << ( std::ostream& out, const State::Queue& value)
+         {
+            return out << "{ process:" << value.process
+                  << ", qid: " << value.queue
+                  << ", order: " << value.order
+                  << '}';
+         }
+
          std::vector< common::platform::pid::type> State::processes() const
          {
             std::vector< common::platform::pid::type> result;

@@ -12,6 +12,7 @@
 
 
 #include "common/trace.h"
+#include "common/environment.h"
 
 
 namespace casual
@@ -35,6 +36,14 @@ namespace casual
                   // Connect to domain
                   //
                   process::instance::connect( process::instance::identity::gateway::manager());
+
+                  //
+                  // Set environment variable to make it easier for connections to get in
+                  // touch with us
+                  //
+                  common::environment::variable::process::set(
+                        common::environment::variable::name::ipc::gateway::manager(),
+                        process::handle());
 
 
                   if( ! settings.configuration.empty())

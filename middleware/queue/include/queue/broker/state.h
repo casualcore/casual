@@ -73,6 +73,7 @@ namespace casual
                std::size_t order = 0;
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
+               friend std::ostream& operator << ( std::ostream& out, const Queue& value);
             };
 
 

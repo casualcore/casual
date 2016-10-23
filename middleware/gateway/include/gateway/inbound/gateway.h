@@ -20,6 +20,7 @@
 #include "common/message/gateway.h"
 #include "common/message/transaction.h"
 #include "common/message/dispatch.h"
+#include "common/message/coordinate.h"
 #include "common/message/handle.h"
 
 #include "common/trace.h"
@@ -414,24 +415,32 @@ namespace casual
                      {
                         using device_type = D;
 
-                        using message_type = common::message::gateway::domain::discover::internal::Reply;
+                        using message_type = common::message::gateway::domain::discover::Reply;
 
                         Policy( device_type& device) : m_device( device) {}
 
-                        inline void accumulate( message_type& message, common::message::gateway::domain::discover::internal::Reply& reply)
+                        inline void accumulate( message_type& message, message_type& reply)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::accumulate"};
 
-                           message.domain = reply.domain;
-                           message.process = common::process::handle();
 
                            common::range::copy( reply.services, std::back_inserter( message.services));
                            common::range::copy( reply.queues, std::back_inserter( message.queues));
+
+                           log << "reply: " << reply << '\n';
+                           log << "message: " << message << '\n';
+
                         }
 
                         inline void send( common::platform::ipc::id::type queue, message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
+
+                           //
+                           // Set our domain-id to the reply so the outbound can deduce stuff
+                           //
+                           message.domain = common::domain::identity();
+                           message.process = common::process::handle();
 
                            auto&& wrapper = gateway::message::interdomain::send::wrap( message);
 
@@ -451,10 +460,12 @@ namespace casual
                      {
                         struct Message : common::message::basic_message< common::message::Type::gateway_domain_discover_internal_coordination>
                         {
+                           common::domain::Identity remote;
                            std::vector< common::platform::pid::type> pids;
 
                            CASUAL_CONST_CORRECT_MARSHAL(
                            {
+                              archive & remote;
                               archive & pids;
                            })
                         };
@@ -469,6 +480,8 @@ namespace casual
                      {
                         Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
 
+                        log << "message: " << message << '\n';
+
                         //
                         // Request from remote domain about this domain
                         //
@@ -479,10 +492,13 @@ namespace casual
                         message.process = common::process::handle();
 
                         coordinate::internal::Message coordinate;
-                        coordinate.correlation = message.correlation;
 
                         auto send_coordinate = common::scope::execute( [&](){
-                           blocking::send( common::process::handle().queue, coordinate);
+
+                           coordinate.remote = message.domain;
+                           coordinate.correlation = message.correlation;
+
+                           blocking::send( common::communication::ipc::inbound::id(), coordinate);
                         });
 
 
@@ -510,13 +526,15 @@ namespace casual
                   struct Reply
                   {
                      using discover_type = coordinate::Discover< D>;
-                     using message_type = common::message::gateway::domain::discover::internal::Reply;
+                     using message_type = common::message::gateway::domain::discover::Reply;
 
                      Reply( discover_type& device) : m_discover( device) {}
 
                      void operator() ( message_type& message)
                      {
                         Trace trace{ "gateway::inbound::handle::domain::discover::Reply::operator()"};
+
+                        log << "message: " << message << '\n';
 
                         //
                         // Might send the accumulated message if all requested has replied.
@@ -534,7 +552,7 @@ namespace casual
                   template< typename D>
                   struct Coordinate
                   {
-                     using discover_type = coordinate::Discover< D>;
+                     using discover_type = D;
 
                      Coordinate( discover_type& device) : m_discover( device) {}
 
@@ -548,6 +566,16 @@ namespace casual
                   private:
                      discover_type& m_discover;
                   };
+
+                  namespace coordinate
+                  {
+                     template< typename C>
+                     auto make( C&& cooordintate) -> Coordinate< common::traits::remove_reference_t< C>>
+                     {
+                        return { std::forward< C>( cooordintate)};
+                     }
+                  } // coordinate
+
 
                } // discover
             } // domain
@@ -627,17 +655,6 @@ namespace casual
 
                auto&& outbound_device = policy.outbound();
 
-               //
-               // Send connect to gateway so it knows we're up'n running
-               //
-               {
-                  Trace trace{ "gateway::inbound::Gateway::operator() gateway connect"};
-
-                  message::inbound::Connect connect;
-                  connect.process = common::process::handle();
-                  connect.address = policy.address( outbound_device);
-                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
-               }
 
 
                using outbound_type = common::traits::concrete::type_t< decltype( outbound_device)>;
@@ -646,6 +663,14 @@ namespace casual
                // Coordinates discover replies
                //
                handle::domain::discover::coordinate::Discover< outbound_type> discover{ outbound_device};
+
+
+               //
+               // Initialize and connect to gateway
+               //
+               initialize( discover, policy.address( outbound_device));
+
+
 
                common::message::dispatch::Handler handler{
                   //
@@ -670,7 +695,7 @@ namespace casual
                   // replied
                   //
                   handle::domain::discover::Reply< outbound_type>{ discover},
-                  handle::domain::discover::Coordinate< outbound_type>{ discover},
+                  handle::domain::discover::coordinate::make( discover),
 
                   //
                   // Queue replies
@@ -699,7 +724,7 @@ namespace casual
                   common::message::handle::assign( message),
                };
 
-               while( ! message.execution)
+               while( ! message.correlation)
                {
                   handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                }
@@ -710,6 +735,54 @@ namespace casual
                marshal >> configuration;
 
                return configuration;
+            }
+
+            template< typename D, typename A>
+            void initialize( D&& discover, A&& address)
+            {
+               Trace trace{ "gateway::inbound::Gateway::initialize"};
+
+               //
+               // We wait for the remote outbound domain to send discover, and for our inbound thread to
+               // send coordinate::internal::Message.
+               // This is part of the outbound initialization dance, and we use it to initialize the inbound
+               // part as well.
+               // The objective is to get the remote-id
+               //
+
+               handle::domain::discover::coordinate::internal::Message message;
+
+               common::message::dispatch::Handler handler{
+                  common::message::handle::Shutdown{},
+                  common::message::handle::ping(),
+                  gateway::handle::Disconnect{ m_request_thread},
+                  common::message::handle::assign( message),
+               };
+
+               while( ! message.correlation)
+               {
+                  handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
+               }
+
+               //
+               // Send connect to gateway
+               //
+               {
+                  Trace trace{ "gateway::inbound::Gateway::operator() gateway connect"};
+
+                  message::inbound::Connect connect;
+                  connect.domain = message.remote;
+                  connect.process = common::process::handle();
+                  connect.address = std::forward< A>( address);
+                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
+               }
+
+               //
+               // Handle the message, so the remote oubound gets what it wants.
+               //
+               {
+                  handle::domain::discover::coordinate::make( discover)( message);
+               }
             }
 
             template< typename S>

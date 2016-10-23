@@ -120,7 +120,7 @@ namespace casual
                {
                   struct Request : Base
                   {
-                     using message_type = common::message::gateway::domain::discover::internal::Request;
+                     using message_type = common::message::gateway::domain::discover::Request;
                      using Base::Base;
 
                      void operator () ( message_type& message);
@@ -128,7 +128,7 @@ namespace casual
 
                   struct Reply : Base
                   {
-                     using message_type = common::message::gateway::domain::discover::external::Reply;
+                     using message_type = common::message::gateway::domain::discover::accumulated::Reply;
                      using Base::Base;
 
                      void operator () ( message_type& message);

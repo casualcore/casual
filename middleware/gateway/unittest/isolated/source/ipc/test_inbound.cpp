@@ -60,6 +60,10 @@ namespace casual
                   try
                   {
 
+                     //
+                     // We act both as the remote outbound connection and the local gateway. Might
+                     // be a little confusing, but it probably easier than to mockup all the parts.
+                     //
 
                      //
                      // Do the connection dance...
@@ -71,14 +75,31 @@ namespace casual
 
                      log << "external: " << external << std::endl;
 
+                     //
+                     // act as the oubound and send discover
+                     //
+                     {
+                        Trace trace{ "gateway::local::Domain outbound -> discover"};
 
-                     /*
-                     common::message::dispatch::Handler handler{
-                        common::message::handle::ping()
-                     };
 
-                     handler( communication::ipc::inbound::device().next( communication::ipc::policy::Blocking{}));
-                     */
+                        message::interdomain::domain::discovery::receive::Request request;
+                        request.process = process::handle();
+                        request.domain = remote;
+                        communication::ipc::blocking::send( external.queue , request);
+
+                     }
+
+                     //
+                     // wait for the connect from the inbound
+                     //
+                     {
+                        message::inbound::Connect connect;
+                        communication::ipc::blocking::receive( communication::ipc::inbound::device(), connect);
+
+                        EXPECT_TRUE( connect.domain == remote) << "connect: " << connect;
+
+                     }
+
                   }
                   catch( ...)
                   {
@@ -106,6 +127,7 @@ namespace casual
                common::mockup::domain::transaction::Manager tm;
                Inbound inbound;
                process::Handle external;
+               common::domain::Identity remote = common::domain::Identity{ uuid::make(), "remote-domain"};
             };
 
 

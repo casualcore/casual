@@ -100,7 +100,7 @@ namespace casual
             {
                namespace outbound
                {
-                  void Policy::accumulate( message_type& message, common::message::gateway::domain::discover::internal::Reply& reply)
+                  void Policy::accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply)
                   {
                      Trace trace{ "manager::state::coordinate::outbound::Policy accumulate"};
 

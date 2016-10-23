@@ -359,7 +359,7 @@ namespace casual
                   {
                      range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
                   },
-                  [&]( message::gateway::domain::discover::internal::Request& m)
+                  [&]( message::gateway::domain::discover::Request& m)
                   {
                      Trace trace{ "mockup gateway::domain::discover::Request"};
 

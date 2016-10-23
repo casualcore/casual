@@ -45,9 +45,11 @@ namespace casual
                request.message.reply = message.attributes.reply;
                request.message.avalible = message.attributes.available;
 
+               request.name = lookup.name();
+
                auto group = lookup();
 
-               if( group.queue == 0)
+               if( group.process.queue == 0)
                {
                   throw common::exception::invalid::Argument{ "failed to look up queue"};
                }
@@ -249,6 +251,8 @@ namespace casual
          {
             Trace trace{ "casual::queue::xatmi::enqueue"};
 
+            const queue::Lookup lookup{ queue};
+
             auto send = common::buffer::pool::Holder::instance().get( message.payload.buffer, message.payload.size);
 
             //
@@ -264,7 +268,7 @@ namespace casual
                message.id, message.attributes,
                  { send.payload().type, send.payload().memory.begin(), send.payload().memory.begin() + send.transport}};
 
-            return local::enqueue( queue, send_message);
+            return local::enqueue( lookup, send_message);
          }
 
 

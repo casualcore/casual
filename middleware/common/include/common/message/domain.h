@@ -254,6 +254,7 @@ namespace casual
                      Type type = Type::tcp;
                      bool restart = false;
                      std::vector< std::string> services;
+                     std::vector< std::string> queues;
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
@@ -262,6 +263,7 @@ namespace casual
                         archive & address;
                         archive & restart;
                         archive & services;
+                        archive & queues;
                      )
 
                      friend std::ostream& operator << ( std::ostream& out, Type value);

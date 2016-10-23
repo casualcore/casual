@@ -99,63 +99,6 @@ namespace casual
                m_state.update( message);
             }
 
-            namespace gateway
-            {
-               void Advertise::operator () ( message_type& message)
-               {
-                  Trace trace{ "broker::handle::gateway::Advertise"};
-
-                  log << "message: " << message << '\n';
-
-                  m_state.update( message);
-               }
-
-               namespace discover
-               {
-                  void Reply::operator () ( message_type& message)
-                  {
-                     Trace trace{ "broker::handle::gateway::discover::Reply"};
-
-                     auto found = range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
-                        return r.correlation == message.correlation;
-                     });
-
-                     if( found)
-                     {
-                        auto pending = std::move( *found);
-                        m_state.pending.requests.erase( std::begin( found));
-
-                        auto service = m_state.find_service( pending.requested);
-
-                        if( service && ! service->instances.empty())
-                        {
-                           //
-                           // The requested service is now available, use
-                           // the lookup to decide how to progress.
-                           //
-                           Lookup{ m_state}( pending);
-                        }
-                        else
-                        {
-                           auto reply = common::message::reverse::type( pending);
-                           reply.service.name = pending.requested;
-                           reply.state = decltype( reply.state)::absent;
-
-                           ipc::device().blocking_send( pending.process.queue, reply);
-                        }
-
-                     }
-                     else
-                     {
-                        log << "failed to correlate pending request - assume it has been consumed by a recent started local server\n";
-                     }
-                  }
-
-
-               } // discover
-
-            } // gateway
-
 
             void Lookup::operator () ( message_type& message)
             {
@@ -274,7 +217,7 @@ namespace casual
                      //
                      log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
 
-                     common::message::gateway::domain::discover::external::Request request;
+                     common::message::gateway::domain::discover::Request request;
                      request.correlation = message.correlation;
                      request.domain = common::domain::identity();
                      request.process = common::process::handle();
@@ -294,6 +237,15 @@ namespace casual
 
          namespace domain
          {
+            void Advertise::operator () ( message_type& message)
+            {
+               Trace trace{ "broker::handle::gateway::Advertise"};
+
+               log << "message: " << message << '\n';
+
+               m_state.update( message);
+            }
+
             namespace discover
             {
                void Request::operator () ( message_type& message)
@@ -333,8 +285,48 @@ namespace casual
                   }
 
                   ipc::device().blocking_send( message.process.queue, reply);
-
                }
+
+               void Reply::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::gateway::discover::Reply"};
+
+                  auto found = range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
+                     return r.correlation == message.correlation;
+                  });
+
+                  if( found)
+                  {
+                     auto pending = std::move( *found);
+                     m_state.pending.requests.erase( std::begin( found));
+
+                     auto service = m_state.find_service( pending.requested);
+
+                     if( service && ! service->instances.empty())
+                     {
+                        //
+                        // The requested service is now available, use
+                        // the lookup to decide how to progress.
+                        //
+                        service::Lookup{ m_state}( pending);
+                     }
+                     else
+                     {
+                        auto reply = common::message::reverse::type( pending);
+                        reply.service.name = pending.requested;
+                        reply.state = decltype( reply.state)::absent;
+
+                        ipc::device().blocking_send( pending.process.queue, reply);
+                     }
+
+                  }
+                  else
+                  {
+                     log << "failed to correlate pending request - assume it has been consumed by a recent started local server\n";
+                  }
+               }
+
+
             } // discover
 
          } // domain
@@ -448,14 +440,14 @@ namespace casual
          return {
             handle::process::Exit{ state},
             handle::service::Advertise{ state},
-            handle::service::gateway::Advertise{ state},
-            handle::service::gateway::discover::Reply{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},
             handle::traffic::Connect{ state},
             handle::traffic::Disconnect{ state},
             handle::Call{ admin::services( state), state},
+            handle::domain::Advertise{ state},
             handle::domain::discover::Request{ state},
+            handle::domain::discover::Reply{ state},
             common::message::handle::Ping{},
             common::message::handle::Shutdown{},
          };

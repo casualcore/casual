@@ -16,11 +16,14 @@ namespace casual
    {
       struct Lookup
       {
-         Lookup( const std::string& queue);
+         explicit Lookup( std::string queue);
 
          common::message::queue::lookup::Reply operator () () const;
 
+         const std::string& name() const;
+
       private:
+         std::string m_name;
          common::Uuid m_correlation;
 
       };

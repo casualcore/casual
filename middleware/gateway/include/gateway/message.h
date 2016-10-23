@@ -94,15 +94,19 @@ namespace casual
          } // manager
 
 
+
+
          template< common::message::Type type>
          struct basic_connect : common::message::basic_message< type>
          {
             common::process::Handle process;
+            common::domain::Identity domain;
             std::vector< std::string> address;
 
             CASUAL_CONST_CORRECT_MARSHAL({
                common::message::basic_message< type>::marshal( archive);
                archive & process;
+               archive & domain;
                archive & address;
             })
 
@@ -110,12 +114,40 @@ namespace casual
             {
                return out << "{ process: " << value.process
                      << ", address: " << common::range::make( value.address)
+                     << ", domain: " << value.domain
                      << '}';
             }
          };
 
          namespace outbound
          {
+            namespace configuration
+            {
+
+               struct Request : common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_request>
+               {
+
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
+               };
+
+
+               using base_reply = common::message::server::basic_id< common::message::Type::gateway_outbound_configuration_reply>;
+               struct Reply : base_reply
+               {
+                  std::vector< std::string> services;
+                  std::vector< std::string> queues;
+
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     base_reply::marshal( archive);
+                     archive & services;
+                     archive & queues;
+                  })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+               };
+
+            } // configuration
+
             struct Connect : basic_connect< common::message::Type::gateway_outbound_connect>
             {
             };
@@ -243,10 +275,10 @@ namespace casual
                constexpr common::message::Type message_type( common::message::service::call::Reply&&)
                { return common::message::Type::ineterdomain_service_reply;}
 
-               constexpr common::message::Type message_type( common::message::gateway::domain::discover::internal::Request&&)
+               constexpr common::message::Type message_type( common::message::gateway::domain::discover::Request&&)
                { return common::message::Type::ineterdomain_domain_discover_request;}
 
-               constexpr common::message::Type message_type( common::message::gateway::domain::discover::internal::Reply&&)
+               constexpr common::message::Type message_type( common::message::gateway::domain::discover::Reply&&)
                { return common::message::Type::ineterdomain_domain_discover_reply;}
 
 
@@ -552,6 +584,7 @@ namespace casual
                         archive & this->get().execution;
                         archive & this->get().domain;
                         archive & this->get().services;
+                        archive & this->get().queues;
                      })
                   };
 
@@ -564,20 +597,21 @@ namespace casual
                         archive & this->get().execution;
                         archive & this->get().domain;
                         archive & this->get().services;
+                        archive & this->get().queues;
                      })
                   };
 
                   namespace send
                   {
-                     using Request = basic_request< detail::external_send_wrapper< common::message::gateway::domain::discover::internal::Request>>;
-                     using Reply = basic_reply< detail::external_send_wrapper< common::message::gateway::domain::discover::internal::Reply>>;
+                     using Request = basic_request< detail::external_send_wrapper< common::message::gateway::domain::discover::Request>>;
+                     using Reply = basic_reply< detail::external_send_wrapper< common::message::gateway::domain::discover::Reply>>;
 
                   } // send
 
                   namespace receive
                   {
-                     using Request = basic_request< detail::external_receive_wrapper< common::message::gateway::domain::discover::internal::Request>>;
-                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::gateway::domain::discover::internal::Reply>>;
+                     using Request = basic_request< detail::external_receive_wrapper< common::message::gateway::domain::discover::Request>>;
+                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::gateway::domain::discover::Reply>>;
                   } // receive
 
                } // discovery
@@ -616,10 +650,10 @@ namespace casual
                { return { message};}
 
 
-               inline domain::discovery::send::Request wrap( common::message::gateway::domain::discover::internal::Request& message)
+               inline domain::discovery::send::Request wrap( common::message::gateway::domain::discover::Request& message)
                { return { message};}
 
-               inline domain::discovery::send::Reply wrap( common::message::gateway::domain::discover::internal::Reply& message)
+               inline domain::discovery::send::Reply wrap( common::message::gateway::domain::discover::Reply& message)
                { return { message};}
 
                inline queue::dequeue::send::Request wrap( common::message::queue::dequeue::Request& message)
@@ -652,6 +686,10 @@ namespace casual
             template<>
             struct type_traits< casual::gateway::message::interdomain::service::call::receive::Request>
             : detail::type< casual::gateway::message::interdomain::service::call::receive::Reply> {};
+
+
+            template<>
+            struct type_traits< casual::gateway::message::outbound::configuration::Request> : detail::type< casual::gateway::message::outbound::configuration::Reply> {};
 
 
          } // reverse

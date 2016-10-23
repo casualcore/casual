@@ -44,7 +44,8 @@ namespace casual
                      result.type = local::type( connection.type);
                      result.address.push_back( common::environment::string( connection.address));
                      result.restart = connection.restart;
-                     result.services = connection.services;
+                     result.services = std::move( connection.services);
+                     result.queues = std::move( connection.queues);
 
                      return result;
                   }

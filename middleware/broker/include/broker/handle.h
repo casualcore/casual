@@ -107,42 +107,6 @@ namespace casual
 	         };
 
 
-
-	         namespace gateway
-            {
-
-	            //!
-	            //! Handles remote advertise
-	            //!  - add  0..* services
-	            //!  - remove 0..* services
-	            //!  - replace == remove all services for instance and then add 0..* services
-	            //!
-	            struct Advertise : Base
-	            {
-	               using message_type = common::message::gateway::domain::Advertise;
-
-	               using Base::Base;
-
-	               void operator () ( message_type& message);
-	            };
-
-
-	            namespace discover
-               {
-	               struct Reply : Base
-	               {
-	                  using message_type = common::message::gateway::domain::discover::external::Reply;
-
-	                  using Base::Base;
-
-	                  void operator () ( message_type& message);
-	               };
-
-               } // discover
-
-            } // gateway
-
-
 	         //!
 	         //! Looks up a service-name
 	         //!
@@ -160,15 +124,40 @@ namespace casual
 
 		   namespace domain
          {
+		      //!
+            //! Handles remote advertise
+            //!  - add  0..* services
+            //!  - remove 0..* services
+            //!  - replace == remove all services for instance and then add 0..* services
+            //!
+            struct Advertise : Base
+            {
+               using message_type = common::message::gateway::domain::Advertise;
+
+               using Base::Base;
+
+               void operator () ( message_type& message);
+            };
+
 		      namespace discover
             {
 	            struct Request : Base
 	            {
-	               using message_type = common::message::gateway::domain::discover::internal::Request;
+	               using message_type = common::message::gateway::domain::discover::Request;
 	               using Base::Base;
 
 	               void operator () ( message_type& message);
 	            };
+
+               struct Reply : Base
+               {
+                  using message_type = common::message::gateway::domain::discover::accumulated::Reply;
+
+                  using Base::Base;
+
+                  void operator () ( message_type& message);
+               };
+
 
             } // discover
 

@@ -22,7 +22,7 @@ namespace casual
             {
                struct Policy
                {
-                  using message_type = gateway::domain::discover::internal::Reply;
+                  using message_type = gateway::domain::discover::Reply;
 
                   template< typename M, typename R>
                   void accumulate( M&& request, R&& reply)
@@ -81,7 +81,7 @@ namespace casual
             }
 
             {
-               gateway::domain::discover::internal::Reply reply;
+               gateway::domain::discover::Reply reply;
                reply.process.pid = 42;
                reply.process.queue = 42;
                reply.correlation = correlation;
@@ -104,7 +104,7 @@ namespace casual
             }
 
             {
-               gateway::domain::discover::internal::Reply reply;
+               gateway::domain::discover::Reply reply;
                reply.process.pid = 42;
                reply.process.queue = 42;
                reply.correlation = correlation;
@@ -128,7 +128,7 @@ namespace casual
             }
 
             {
-               gateway::domain::discover::internal::Reply reply;
+               gateway::domain::discover::Reply reply;
                reply.process.pid = 42;
                reply.process.queue = 42;
                reply.correlation = correlation;

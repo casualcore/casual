@@ -77,35 +77,21 @@ namespace casual
             {
                namespace discover
                {
-                  namespace inbound
+                  struct Request : Base
                   {
-                     struct Reply : Base
-                     {
-                        using Base::Base;
-                        using message_type = common::message::gateway::domain::discover::internal::Reply;
+                     using Base::Base;
+                     using message_type = common::message::gateway::domain::discover::Request;
 
-                        void operator () ( message_type& message);
-                     };
+                     void operator () ( message_type& message);
+                  };
 
-                     struct Request : Base
-                     {
-                        using Base::Base;
-                        using message_type = common::message::gateway::domain::discover::internal::Request;
-
-                        void operator () ( message_type& message);
-                     };
-                  } // inbound
-
-                  namespace external
+                  struct Reply : Base
                   {
-                     struct Request : Base
-                     {
-                        using Base::Base;
-                        using message_type = common::message::gateway::domain::discover::external::Request;
+                     using Base::Base;
+                     using message_type = common::message::gateway::domain::discover::Reply;
 
-                        void operator () ( message_type& message);
-                     };
-                  } // external
+                     void operator () ( message_type& message);
+                  };
 
                } // discovery
 
@@ -115,6 +101,18 @@ namespace casual
 
             namespace outbound
             {
+               namespace configuration
+               {
+                  struct Request : Base
+                  {
+                     using Base::Base;
+                     using message_type = message::outbound::configuration::Request;
+
+                     void operator () ( message_type& message);
+                  };
+
+               } // configuration
+
                struct Connect : Base
                {
                   using Base::Base;

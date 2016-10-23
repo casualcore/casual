@@ -131,6 +131,8 @@ namespace casual
             GATEWAY_BASE = 7000,
             gateway_manager_listener_event,
             gateway_manager_tcp_connect,
+            gateway_outbound_configuration_request,
+            gateway_outbound_configuration_reply,
             gateway_outbound_connect,
             gateway_inbound_connect,
             gateway_worker_connect,
@@ -139,9 +141,8 @@ namespace casual
             gateway_ipc_connect_reply,
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
+            gateway_domain_discover_accumulated_reply,
             gateway_domain_discover_internal_coordination,
-            gateway_domain_automatic_discover_request,
-            gateway_domain_automatic_discover_reply,
             gateway_domain_advertise,
             gateway_domain_id,
 
@@ -273,38 +274,7 @@ namespace casual
             };
             static_assert( traits::is_movable< Request>::value, "not movable");
 
-            /*
-            struct Reply : basic_message< Type::shutdown_reply>
-            {
-               template< typename ID>
-               struct holder_t
-               {
-                  std::vector< ID> online;
-                  std::vector< ID> offline;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     archive & online;
-                     archive & offline;
-                  })
-               };
-
-               holder_t< platform::pid::type> executables;
-               holder_t< common::process::Handle> servers;
-
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  base_type::marshal( archive);
-                  archive & executables;
-                  archive & servers;
-               })
-            };
-            static_assert( traits::is_movable< Reply>::value, "not movable");
-            */
-
          } // shutdown
-
 
 
          //

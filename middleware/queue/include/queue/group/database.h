@@ -1,8 +1,5 @@
 //!
-//! database.h
-//!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUALQUEUESERVERDATABASE_H_

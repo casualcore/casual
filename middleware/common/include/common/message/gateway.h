@@ -55,13 +55,17 @@ namespace casual
                   struct Queue
                   {
                      Queue() = default;
+
+                     Queue( std::string name, std::size_t retries) : name{ std::move( name)}, retries{ retries} {}
                      Queue( std::string name) : name{ std::move( name)} {}
 
                      std::string name;
+                     std::size_t retries = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         archive & name;
+                        archive & retries;
                      })
 
                      friend std::ostream& operator << ( std::ostream& out, const Queue& message);
@@ -109,102 +113,78 @@ namespace casual
 
                namespace discover
                {
-                  namespace internal
+
+                  //!
+                  //! Request from another domain to the local gateway, that's then
+                  //! 'forwarded' to broker and possible casual-queue to revel stuff about
+                  //! this domain.
+                  //!
+                  //! other domain -> inbound-connection -> gateway ---> casual-broker
+                  //!                                               [ \-> casual-gueue ]
+                  //!
+                  struct Request : basic_message< Type::gateway_domain_discover_request>
                   {
-                     //!
-                     //! Request from another domain to the local gateway, that's then
-                     //! 'forwarded' to broker and possible casual-queue to revel stuff about
-                     //! this domain.
-                     //!
-                     //! other domain -> inbound-connection -> gateway ---> casual-broker
-                     //!                                               [ \-> casual-gueue ]
-                     //!
-                     struct Request : basic_message< Type::gateway_domain_discover_request>
+                     common::process::Handle process;
+                     common::domain::Identity domain;
+                     std::vector< std::string> services;
+                     std::vector< std::string> queues;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        common::process::Handle process;
-                        common::domain::Identity domain;
-                        std::vector< std::string> services;
-                        std::vector< std::string> queues;
+                        base_type::marshal( archive);
+                        archive & process;
+                        archive & domain;
+                        archive & services;
+                        archive & queues;
+                     })
 
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-                           base_type::marshal( archive);
-                           archive & process;
-                           archive & domain;
-                           archive & services;
-                           archive & queues;
-                        })
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
-                        friend std::ostream& operator << ( std::ostream& out, const Request& value);
-                     };
-                     static_assert( traits::is_movable< Request>::value, "not movable");
-
-                     //!
-                     //! Reply from a domain
-                     //!    [casual-queue -\ ]
-                     //!    casual-broker ----> gateway -> inbound-connection -> other domain
-                     //!
-                     struct Reply : basic_message< Type::gateway_domain_discover_reply>
-                     {
-                        using Service = domain::advertise::Service;
-                        using Queue = domain::advertise::Queue;
-
-                        common::process::Handle process;
-                        common::domain::Identity domain;
-                        std::vector< Service> services;
-                        std::vector< Queue> queues;
-
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-                           base_type::marshal( archive);
-                           archive & process;
-                           archive & domain;
-                           archive & services;
-                        })
-
-                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-                     };
-                     static_assert( traits::is_movable< Reply>::value, "not movable");
-
-                  } // internal
-
-                  namespace external
+                  //!
+                  //! Reply from a domain
+                  //!    [casual-queue -\ ]
+                  //!    casual-broker ----> gateway -> inbound-connection -> other domain
+                  //!
+                  struct Reply : basic_message< Type::gateway_domain_discover_reply>
                   {
-                     //!
-                     //! Request from within a domain to the gateway to discover stuff about
-                     //! other domains
-                     //!
-                     //! casual-broker | casual-queue -> gateway ---> outbound connection -> domain 1
-                     //!                                          |-> outbound connection -> domain 2
-                     //!                                             ...
-                     //!                                          |-> outbound connection -> domain N
-                     //!
-                     struct Request : basic_message< Type::gateway_domain_automatic_discover_request>
+                     using Service = domain::advertise::Service;
+                     using Queue = domain::advertise::Queue;
+
+                     common::process::Handle process;
+                     common::domain::Identity domain;
+                     std::vector< Service> services;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        common::process::Handle process;
-                        common::domain::Identity domain;
-                        std::vector< std::string> services;
-                        std::vector< std::string> queues;
+                        base_type::marshal( archive);
+                        archive & process;
+                        archive & domain;
+                        archive & services;
+                        archive & queues;
+                     })
 
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-                           base_type::marshal( archive);
-                           archive & process;
-                           archive & domain;
-                           archive & services;
-                        })
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
-                        friend std::ostream& operator << ( std::ostream& out, const Request& value);
-                     };
-                     static_assert( traits::is_movable< Request>::value, "not movable");
+
+                  namespace accumulated
+                  {
 
                      //!
                      //! Reply from the gateway with accumulated replies from other domains
                      //!
+                     //!                   requester  <-- gateway <--- outbound connection -> domain 1
+                     //!                                            \- outbound connection -> domain 2
+                     //!                                               ...
+                     //!                                             |- outbound connection -> domain N
                      //!
-                     struct Reply : basic_message< Type::gateway_domain_automatic_discover_reply>
+                     struct Reply : basic_message< Type::gateway_domain_discover_accumulated_reply>
                      {
-                        std::vector< discover::internal::Reply> replies;
+                        std::vector< discover::Reply> replies;
 
                         CASUAL_CONST_CORRECT_MARSHAL(
                         {
@@ -215,7 +195,7 @@ namespace casual
                         friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                      };
                      static_assert( traits::is_movable< Reply>::value, "not movable");
-                  } // automatic
+                  } // accumulated
 
                } // discover
 
@@ -226,7 +206,7 @@ namespace casual
          namespace reverse
          {
             template<>
-            struct type_traits< gateway::domain::discover::internal::Request> : detail::type< gateway::domain::discover::internal::Reply> {};
+            struct type_traits< gateway::domain::discover::Request> : detail::type< gateway::domain::discover::Reply> {};
 
          } // reverse
 

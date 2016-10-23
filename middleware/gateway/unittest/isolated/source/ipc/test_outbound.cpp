@@ -56,6 +56,10 @@ namespace casual
                return file;
             }
 
+            //!
+            //! Act as both the local and the remote gateway. Which might be a little tricky to
+            //! reason about, but, as for now, it's still easier then mocking up two gateways (I think...)
+            //!
             struct Domain
             {
 
@@ -66,14 +70,17 @@ namespace casual
                   try
                   {
 
+
                      //
                      // Wait for the outbound to connect (which it think we are it's remote gateway)
                      //
                      {
-                        Trace trace{ "wait for connect from outbound"};
+                        Trace trace{ "remote - wait for connect from outbound"};
 
                         message::ipc::connect::Request request;
                         communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
+
+                        log::debug << "request: " << request << '\n';
 
                         //
                         // save the external entry point
@@ -86,6 +93,44 @@ namespace casual
                         //
                         reply.process = remote.process();
                         communication::ipc::blocking::send( external.queue, reply);
+                     }
+
+                     //
+                     // Act as the local gateway
+                     //
+                     {
+                        Trace trace{ "local - wait for connect from outbound to local domain"};
+
+                        message::outbound::configuration::Request request;
+                        communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
+
+                        log::debug << "request: " << request << '\n';
+
+                        auto reply = common::message::reverse::type( request);
+                        reply.services.push_back( "service1");
+                        communication::ipc::blocking::send( request.process.queue, reply);
+
+                     }
+
+                     //
+                     // Act as the reomte domain
+                     //
+                     {
+                        Trace trace{ "remote - wait for discovery from outbound to 'local' inbound"};
+
+                        message::interdomain::domain::discovery::receive::Request request;
+                        communication::ipc::blocking::receive( remote.output(), request);
+
+                        log::debug << "request: " << request << '\n';
+
+                        message::interdomain::domain::discovery::receive::Reply reply;
+                        reply.correlation = request.correlation;
+                        reply.execution = request.execution;
+                        reply.process = remote.process();
+                        reply.services.emplace_back( "service1");
+
+                        communication::ipc::blocking::send(
+                              external.queue, reply);
                      }
 
                   }

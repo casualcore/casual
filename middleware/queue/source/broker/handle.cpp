@@ -157,6 +157,8 @@ namespace casual
 
                   if( found && ! found->second.empty())
                   {
+                     log << "queue found: " << common::range::make( found->second) << '\n';
+
                      auto& queue = found->second.front();
                      reply.queue = queue.queue;
                      reply.process = queue.process;
@@ -173,7 +175,7 @@ namespace casual
                      // We didn't find the queue, let's ask our neighbors.
                      //
 
-                     common::message::gateway::domain::discover::external::Request request;
+                     common::message::gateway::domain::discover::Request request;
                      request.correlation = message.correlation;
                      request.domain = common::domain::identity();
                      request.process = common::process::handle();
@@ -274,6 +276,7 @@ namespace casual
 
                      auto reply = common::message::reverse::type( message);
 
+                     reply.process = common::process::handle();
                      reply.domain = common::domain::identity();
 
                      for( auto& queue : message.queues)

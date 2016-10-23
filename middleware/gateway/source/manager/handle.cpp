@@ -288,162 +288,100 @@ namespace casual
             } // process
 
 
-
-
-            namespace local
-            {
-               namespace
-               {
-                  namespace discover
-                  {
-                     void send(
-                           const state::outbound::Connection& connection,
-                           std::vector< std::string> services,
-                           std::vector< std::string> queues)
-                     {
-                        Trace trace{ "gateway::manager::handle::local::discover send"};
-
-                        common::message::gateway::domain::discover::internal::Request request;
-                        request.domain = common::domain::identity();
-                        request.process = common::process::handle();
-                        request.services = std::move( services);
-                        request.queues = std::move( queues);
-
-                        manager::ipc::device().blocking_send( connection.process.queue, request);
-                     }
-                  } // discover
-               } // <unnamed>
-            } // local
-
             namespace domain
             {
                namespace discover
                {
-                  namespace inbound
+
+                  void Request::operator () ( message_type& message)
                   {
-                     void Reply::operator () ( message_type& message)
-                     {
-                        Trace trace{ "gateway::manager::handle::domain::discover::Reply"};
+                     Trace trace{ "gateway::manager::handle::domain::discover::Request"};
 
-                        log << "message: " << message << '\n';
+                     log << "message: " << message << '\n';
 
-                        //
-                        // This message can only come from an outbound connection.
-                        //
-                        auto found = range::find( state().connections.outbound, message.process.pid);
+                     std::vector< platform::pid::type> requested;
 
-                        if( found)
-                        {
-                           found->remote = message.domain;
+                     auto destination = message.process.queue;
 
-                           //
-                           // If this reply is part of an automatic discovery request, we'll handle it here.
-                           // if this is the last reply, the accumulated reply will be sent to the caller.
-                           //
-                           state().discover.outbound.accumulate( message);
+                     //
+                     // Make sure we get the response
+                     //
+                     message.process = common::process::handle();
 
-                           return;
-                        }
+                     //
+                     // Forward the request to all outbound connections
+                     //
 
-                        log::error << "discovery reply from unknown connection " << message << " - action: discard\n";
-                     }
-
-                     void Request::operator () ( message_type& message)
-                     {
-                        Trace trace{ "gateway::manager::handle::domain::discover::Request"};
-
-                        log << "message: " << message << '\n';
-
-                        //
-                        // This message can only come from an inbound connection.
-                        //
-
-                        auto found = range::find( state().connections.inbound, message.process.pid);
-
-                        if( found)
-                        {
-                           found->remote = message.domain;
-
-                           std::vector< platform::pid::type> requested;
-
-                           //
-                           // Make sure we get the reply
-                           //
-                           auto source = message.process.queue;
-                           message.process = common::process::handle();
-
-                           //
-                           // Forward to broker and possible casual-queue
-                           //
+                     auto send_request = [&]( const state::outbound::Connection& outbound)
                            {
-                              if( ! message.services.empty())
+
+                              //
+                              // We don't send to the same domain that is the requester.
+                              //
+                              if( outbound.remote != message.domain)
                               {
-                                 manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
-                                 requested.push_back( communication::ipc::broker::device().connector().process().pid);
-                              }
-
-                              if( ! message.queues.empty() &&
-                                    local::optional::send( communication::ipc::queue::broker::optional::device(), message))
-                              {
-                                 requested.push_back( communication::ipc::queue::broker::optional::device().connector().process().pid);
-                              }
-                              state().discover.inbound.add( message.correlation, source, requested);
-                           }
-
-                           return;
-                        }
-
-                        log::error << "discovery request from unknown connection " << message << " - action: discard\n";
-
-                     }
-                  } // inbound
-
-                  namespace external
-                  {
-                     void Request::operator () ( message_type& message)
-                     {
-                        Trace trace{ "gateway::manager::handle::domain::discover::automatic::Request"};
-
-                        std::vector< platform::pid::type> requested;
-
-                        //
-                        // Prepare the request
-                        //
-                        common::message::gateway::domain::discover::internal::Request request;
-                        request.process = common::process::handle();
-                        request.correlation = message.correlation;
-                        request.execution = message.execution;
-                        request.domain = std::move( message.domain);
-                        request.services = std::move( message.services);
-
-
-                        auto send_request = [&]( const state::outbound::Connection& outbound)
-                              {
-
-                                 //
-                                 // We don't send to the same domain that is the requester.
-                                 //
-                                 if( outbound.remote != request.domain)
+                                 if( local::optional::send( outbound.process.queue, message))
                                  {
-                                    if( local::optional::send( outbound.process.queue, request))
-                                    {
-                                       requested.push_back( outbound.process.pid);
-                                    }
+                                    requested.push_back( outbound.process.pid);
                                  }
-                              };
+                              }
+                           };
 
-                        range::for_each( state().connections.outbound, send_request);
+                     range::for_each( state().connections.outbound, send_request);
 
-                        state().discover.outbound.add( request.correlation, message.process.queue, std::move( requested));
-                     }
+                     state().discover.outbound.add( message.correlation, destination, std::move( requested));
+                  }
 
-                  } // external
+                  void Reply::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::domain::discover::Reply"};
+
+                     log << "message: " << message << '\n';
+
+                     //
+                     // Accumulate the reply, might trigger a accumulated reply to the requester
+                     //
+                     state().discover.outbound.accumulate( message);
+                  }
 
                } // discovery
             } // domain
 
             namespace outbound
             {
+               namespace configuration
+               {
+
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::outbound::configuration::Request"};
+
+                     log << "message: " << message << '\n';
+
+                     auto reply = common::message::reverse::type( message);
+
+                     auto send_reply = common::scope::execute( [&](){
+                        local::optional::send( message.process.queue, reply);
+                     });
+
+
+                     auto found = range::find( state().connections.outbound, message.process.pid);
+
+                     if( found)
+                     {
+                        reply.process = common::process::handle();
+                        reply.services = found->services;
+                        reply.queues = found->queues;
+                     }
+                     else
+                     {
+                        common::log::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
+                     }
+                  }
+
+
+               } // configuration
+
                void Connect::operator () ( message_type& message)
                {
                   Trace trace{ "gateway::manager::handle::outbound::Connect"};
@@ -454,13 +392,13 @@ namespace casual
 
                   if( found)
                   {
+                     found->process = message.process;
+                     found->remote = message.domain;
+                     found->address = std::move( message.address);
+
                      if( found->runlevel == state::outbound::Connection::Runlevel::connecting)
                      {
-                        found->process = message.process;
-                        found->address = std::move( message.address);
                         found->runlevel = state::outbound::Connection::Runlevel::online;
-
-                        local::discover::send( *found, found->services, found->queues);
                      }
                      else
                      {
@@ -487,8 +425,9 @@ namespace casual
                   if( found)
                   {
                      found->process = message.process;
+                     found->remote = message.domain;
                      found->address = std::move( message.address);
-                     found->runlevel = state::outbound::Connection::Runlevel::online;
+                     found->runlevel = state::inbound::Connection::Runlevel::online;
 
                      //
                      // It will soon arrive a discovery message, where we can pick up domain-id and such.
@@ -583,13 +522,13 @@ namespace casual
                common::message::handle::Shutdown{},
                manager::handle::process::Exit{ state},
                manager::handle::listener::Event{ state},
+               manager::handle::outbound::configuration::Request{ state},
                manager::handle::inbound::Connect{ state},
                manager::handle::outbound::Connect{ state},
                manager::handle::inbound::ipc::Connect{ state},
                manager::handle::inbound::tcp::Connect{ state},
-               handle::domain::discover::inbound::Request{ state},
-               handle::domain::discover::inbound::Reply{ state},
-               handle::domain::discover::outbound::Request{ state},
+               handle::domain::discover::Request{ state},
+               handle::domain::discover::Reply{ state},
                std::ref( admin),
 
             };

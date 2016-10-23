@@ -110,9 +110,9 @@ namespace casual
 
                   struct Policy
                   {
-                     using message_type = common::message::gateway::domain::discover::external::Reply;
+                     using message_type = common::message::gateway::domain::discover::accumulated::Reply;
 
-                     void accumulate( message_type& message, common::message::gateway::domain::discover::internal::Reply& reply);
+                     void accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply);
 
                      void send( common::platform::ipc::id::type queue, message_type& message);
                   };
