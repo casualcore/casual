@@ -149,7 +149,7 @@ queue_client = LinkExecutable( 'bin/casual-queue-admin',
     [
         Compile( 'source/broker/admin/client.cpp'),
      ], 
-   [common, queue_api, 'casual-common', 'casual-sf'])
+   [common, queue_api, 'casual-common', 'casual-sf', 'casual-xatmi'])
  
  
 Install( queue_client, '$(CASUAL_HOME)/internal/bin')

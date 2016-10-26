@@ -42,8 +42,8 @@ namespace casual
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {
                   return out << "{ process: " << value.process
-                        << " queue: , " << value.queue
-                      << '}';
+                        << ", queue: " << value.queue
+                        << '}';
                }
             } // lookup
 
@@ -79,12 +79,12 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const Request& value)
                {
-                  return out << "{ qid: " << value.queue
-                     << ", name: " << value.name
-                     << ", block: " << std::boolalpha << value.block
-                     << ", selector: " << value.selector
-                     << ", process: " << value.process
-                     << ", trid: " << value.trid << '}';
+                  return out << "{ name: " << value.name
+                        << ", queue: " << value.queue
+                        << ", block: " << std::boolalpha << value.block
+                        << ", selector: " << value.selector
+                        << ", process: " << value.process
+                        << ", trid: " << value.trid << '}';
                }
 
                std::ostream& operator << ( std::ostream& out, const Reply& value)
@@ -100,7 +100,8 @@ namespace casual
                   {
                      return out << "{ correlation: " << value.correlation
                         << ", process: " << value.process
-                        << ", queue: " << value.queue << '}';
+                        << ", queue: " << value.queue
+                        << ", name: " << value.name << '}';
                   }
 
 
@@ -113,9 +114,20 @@ namespace casual
                } // forget
             } // dequeue
 
+            std::ostream& operator << ( std::ostream& out, const Queue::Type& value)
+            {
+               switch( value)
+               {
+                  case Queue::Type::group_error_queue: { return out << "group-error-queue";}
+                  case Queue::Type::error_queue: { return out << "error-queue";}
+                  case Queue::Type::queue: { return out << "queue";}
+               }
+               return out << "unknown";
+            }
+
             std::ostream& operator << ( std::ostream& out, const Queue& value)
             {
-               return out << "{ id: " << value.id
+               return out << "{ queue: " << value.id
                      << ", name: " << value.name
                      << ", type: " << value.type
                      << ", retries: " << value.retries

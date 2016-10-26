@@ -91,6 +91,11 @@ namespace casual
 
             Trace trace{ "Database::Database"};
 
+            auto update_name_mapping = common::scope::execute( [&](){
+               update_mapping();
+            });
+
+
             //
             // Make sure we got FK
             //
@@ -370,14 +375,16 @@ namespace casual
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name + ".error", queue.retries, m_error_queue, Queue::cErrorQueue, now);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name + ".error", queue.retries, m_error_queue, Queue::Type::error_queue, now);
             queue.error = m_connection.rowid();
 
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name, queue.retries, queue.error, Queue::cQueue, now);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name, queue.retries, queue.error, Queue::Type::queue, now);
             queue.id = m_connection.rowid();
-            queue.type = Queue::cQueue;
+            queue.type = Queue::Type::queue;
 
             log << "queue: " << queue << std::endl;
+
+            update_mapping();
 
             return queue;
          }
@@ -392,7 +399,6 @@ namespace casual
             {
                m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name, queue.retries, queue.id);
                m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error);
-
             }
          }
          void Database::removeQueue( Queue::id_type id)
@@ -412,7 +418,7 @@ namespace casual
          {
             std::vector< Queue> result;
 
-            auto query = m_connection.query( "SELECT q.id, q.name, q.retries, q.error FROM queue q WHERE q.id = :id AND q.type = :type", id, Queue::cQueue);
+            auto query = m_connection.query( "SELECT q.id, q.name, q.retries, q.error FROM queue q WHERE q.id = :id AND q.type = :type", id, Queue::Type::queue);
 
             auto row = query.fetch();
 
@@ -424,8 +430,40 @@ namespace casual
             return result;
          }
 
+         void Database::update_mapping()
+         {
+            Trace trace{ "queue::Database::update_mapping"};
+
+            m_name_mapping.clear();
+
+            for( auto&& queue : queues())
+            {
+               m_name_mapping[ queue.name] = queue.id;
+            }
+         }
+
+         template< typename M>
+         Queue::id_type Database::queue_id( M&& message) const
+         {
+            if( message.queue != 0)
+            {
+               return message.queue;
+            }
+
+            auto found = common::range::find( m_name_mapping, message.name);
+
+            if( found)
+            {
+               return found->second;
+            }
+
+            throw common::exception::invalid::Argument{ "requested queue is not hosted by this queue-group", CASUAL_NIP( message)};
+         }
+
          std::vector< Queue> Database::update( std::vector< Queue> update, const std::vector< Queue::id_type>& remove)
          {
+            Trace trace{ "queue::Database::update"};
+
             std::vector< Queue> result;
 
             auto create = common::range::partition( update, []( const Queue& q){ return q.id == 0;});
@@ -436,6 +474,8 @@ namespace casual
 
             common::range::for_each( remove, std::bind( &Database::removeQueue, this, std::placeholders::_1));
 
+
+            update_mapping();
 
             return result;
          }
@@ -449,14 +489,18 @@ namespace casual
 
             log << "request: " << message << std::endl;
 
-            common::message::queue::enqueue::Reply reply;
+            auto reply = common::message::reverse::type( message);
+
 
             //
             // We create a unique id if none is provided.
             //
             reply.id = message.message.id ? message.message.id : common::uuid::make();
 
-
+            //
+            // Get the corresponding queue-id
+            //
+            auto queue = queue_id( message);
 
 
             auto gtrid = common::transaction::global( message.trid);
@@ -466,8 +510,8 @@ namespace casual
 
             m_statement.enqueue.execute(
                   reply.id.get(),
-                  message.queue,
-                  message.queue,
+                  queue,
+                  queue,
                   gtrid,
                   message.message.properties,
                   state,

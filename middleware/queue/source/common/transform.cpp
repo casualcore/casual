@@ -1,8 +1,5 @@
 //!
-//! transform.cpp
-//!
-//! Created on: Oct 4, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/common/transform.h"
@@ -59,10 +56,20 @@ namespace casual
          {
             broker::admin::Queue result;
 
+            auto queue_type = []( common::message::queue::information::Queue::Type type )
+                  {
+                     switch( type)
+                     {
+                        case common::message::queue::information::Queue::Type::group_error_queue: return broker::admin::Queue::Type::group_error_queue;
+                        case common::message::queue::information::Queue::Type::error_queue: return broker::admin::Queue::Type::error_queue;
+                        default: return broker::admin::Queue::Type::queue;
+                     }
+                  };
+
             result.id = queue.id;
             result.name = queue.name;
             result.retries = queue.retries;
-            result.type = queue.type;
+            result.type = queue_type( queue.type);
             result.error = queue.error;
 
             result.count = queue.count;

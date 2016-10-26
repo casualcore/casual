@@ -214,6 +214,17 @@ namespace casual
          //
          common::process::instance::connect( common::process::instance::identity::queue::broker());
 
+         common::environment::variable::process::set(
+               common::environment::variable::name::ipc::queue::broker(),
+               common::process::handle());
+
+
+         //
+         // Register for process termination events
+         //
+         common::process::instance::termination::registration( common::process::handle());
+
+
 
          if( ! settings.configuration.empty())
          {

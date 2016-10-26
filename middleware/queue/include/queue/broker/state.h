@@ -83,11 +83,13 @@ namespace casual
 
             std::deque< common::message::queue::lookup::Request> pending;
 
-            std::string group_executable;
+
             std::string configuration;
 
             std::vector< Group> groups;
             std::vector< Gateway> gateways;
+
+            std::string group_executable;
 
             //!
             //! Removes all queues associated with the process

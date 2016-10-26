@@ -60,7 +60,7 @@ namespace casual
                   {
                      void replies( State& state, const common::transaction::ID& trid)
                      {
-                        Trace trace{ "queue::handle::pending"};
+                        Trace trace{ "queue::handle::local::pending::replies"};
 
 
                         auto pending = state.pending.commit( trid);
@@ -193,7 +193,7 @@ namespace casual
             {
                void Request::operator () ( message_type& message)
                {
-                  Trace trace{ "queue::handle::enqueue::request"};
+                  Trace trace{ "queue::handle::enqueue::Request"};
 
                   try
                   {
@@ -315,6 +315,7 @@ namespace casual
 
                      auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
+                     reply.resource = message.resource;
                      reply.trid = message.trid;
                      reply.state = XA_OK;
 
@@ -347,6 +348,7 @@ namespace casual
 
                      auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
+                     reply.resource = message.resource;
                      reply.trid = message.trid;
                      reply.state = XA_OK;
 
@@ -364,6 +366,7 @@ namespace casual
 
                      auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
+                     reply.resource = message.resource;
                      reply.trid = message.trid;
                      reply.state = XA_OK;
 

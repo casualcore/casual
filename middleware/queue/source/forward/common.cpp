@@ -64,7 +64,7 @@ namespace casual
                   catch( ...)
                   {
                      common::error::handler();
-                     return false;
+                     //return false;
                   }
 
                   return true;

@@ -54,7 +54,7 @@ namespace casual
 
          ASSERT_TRUE( rows.size() == 1);
          EXPECT_TRUE( rows.at( 0).trid == trans.trid);
-         EXPECT_TRUE( rows.at( 0).state == Log::State::cPrepared);
+         EXPECT_TRUE( rows.at( 0).state == Log::State::prepared);
       }
 
 

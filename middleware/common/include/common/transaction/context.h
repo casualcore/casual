@@ -1,8 +1,5 @@
 //!
-//! context.h
-//!
-//! Created on: Jul 14, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_TRANSACTION_CONTEXT_H_

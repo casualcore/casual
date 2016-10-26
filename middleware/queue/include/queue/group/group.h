@@ -36,6 +36,9 @@ namespace casual
             State( std::string filename, std::string name)
                : queuebase( std::move( filename), std::move( name)) {}
 
+
+            std::unordered_map< std::string, queue_id_type> queue_id;
+
             Database queuebase;
 
 

@@ -51,10 +51,17 @@ namespace casual
 
             struct Queue
             {
+               enum class Type : int
+               {
+                  group_error_queue = 1,
+                  error_queue = 2,
+                  queue = 3,
+               };
+
                sf::platform::pid::type group;
                std::size_t id;
                std::string name;
-               std::size_t type;
+               Type type;
                std::size_t retries;
                std::size_t error;
 

@@ -35,10 +35,10 @@ namespace casual
          public:
             Database( const std::string& database, std::string groupname);
 
-            Queue create( Queue queue);
-
 
             std::string file() const;
+
+            Queue create( Queue queue);
 
             //!
             //! @return the created queues
@@ -89,11 +89,24 @@ namespace casual
 
          private:
 
+
             void updateQueue( const Queue& queue);
             void removeQueue( Queue::id_type id);
 
             std::vector< Queue> queue( Queue::id_type id);
 
+            void update_mapping();
+
+            //!
+            //! If message has a queue-id that will be returned,
+            //! otherwise we lookup id from name
+            //!
+            //! @param message enqueue or dequeue message
+            //! @return id to the queue
+            template< typename M>
+            Queue::id_type queue_id( M&& message) const;
+
+            std::unordered_map< std::string, Queue::id_type> m_name_mapping;
 
 
             sql::database::Connection m_connection;

@@ -70,7 +70,7 @@ namespace casual
                struct Reply : basic_message< Type::queue_lookup_reply>
                {
                   Reply() = default;
-                  Reply( common::process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
+                  Reply( common::process::Handle process) : process( std::move( process)) {}
 
                   common::process::Handle process;
                   std::size_t queue = 0;
@@ -93,7 +93,7 @@ namespace casual
 
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  std::size_t queue;
+                  std::size_t queue = 0;
                   std::string name;
 
                   Message message;
@@ -147,7 +147,7 @@ namespace casual
                {
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  std::size_t queue;
+                  std::size_t queue = 0;
                   std::string name;
                   Selector selector;
                   bool block = false;
@@ -207,13 +207,15 @@ namespace casual
                   struct Request : basic_message< Type::queue_dequeue_forget_request>
                   {
                      common::process::Handle process;
-                     std::size_t queue;
+                     std::size_t queue = 0;
+                     std::string name;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_type::marshal( archive);
                         archive & process;
                         archive & queue;
+                        archive & name;
                      })
 
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
@@ -241,11 +243,11 @@ namespace casual
 
             struct Queue
             {
-               enum Type
+               enum class Type : int
                {
-                  cGroupErrorQueue = 1,
-                  cErrorQueue,
-                  cQueue,
+                  group_error_queue = 1,
+                  error_queue = 2,
+                  queue = 3,
                };
 
                using id_type = std::size_t;
@@ -258,7 +260,7 @@ namespace casual
                std::string name;
                std::size_t retries = 0;
                id_type error = 0;
-               int type;
+               Type type = Type::queue;
 
 
 
@@ -271,11 +273,10 @@ namespace casual
                   archive & type;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, const Type& value);
                friend std::ostream& operator << ( std::ostream& out, const Queue& value);
             };
             static_assert( traits::is_movable< Queue>::value, "not movable");
-
-
 
 
 

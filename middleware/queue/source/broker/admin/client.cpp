@@ -207,6 +207,11 @@ namespace casual
 
       void enqueue_( const std::string& queue)
       {
+         tx_begin();
+
+         auto rollback = scope::execute( [](){
+            tx_rollback();
+         });
 
          queue::Message message;
 
@@ -221,6 +226,9 @@ namespace casual
 
          auto id = queue::enqueue( queue, message);
 
+         tx_commit();
+         rollback.release();
+
          std::cout << id << std::endl;
       }
 
@@ -231,10 +239,16 @@ namespace casual
 
       void dequeue_( const std::string& queue)
       {
+         tx_begin();
+
+         auto rollback = scope::execute( [](){
+            tx_rollback();
+         });
 
          const auto message = queue::dequeue( queue);
 
-         //std::cout << CASUAL_MAKE_NVP( message);
+         tx_commit();
+         rollback.release();
 
          if( message.empty())
          {
@@ -242,10 +256,9 @@ namespace casual
          }
          else
          {
-            for( auto c : message.front().payload.data)
-            {
-               std::cout.put( c);
-            }
+            std::cout.write(
+                  message.front().payload.data.data(),
+                  message.front().payload.data.size());
          }
          std::cout << std::endl;
       }

@@ -217,14 +217,18 @@ namespace casual
                //auto removed = common::range::difference( existing, added);
 
 
+
+
                //
                // Send all our queues to queue-broker
                //
-               common::message::queue::Information information;
-               information.process = common::process::handle();
-               information.queues = m_state.queuebase.queues();
+               {
+                  common::message::queue::Information information;
+                  information.process = common::process::handle();
+                  information.queues = m_state.queuebase.queues();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+                  common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+               }
             }
          }
 

@@ -63,15 +63,6 @@ namespace casual
          }
 
 
-
-         /*
-         void handleXAresponse( std::vector< int>& result)
-         {
-
-         }
-         */
-
-
          Context& Context::instance()
          {
             static Context singleton;

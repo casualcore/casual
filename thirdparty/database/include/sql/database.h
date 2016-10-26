@@ -127,6 +127,14 @@ namespace sql
          return parameter_bind( statement, index, time);
       }
 
+      template< typename T>
+      inline typename std::enable_if< std::is_enum< T>::value, bool>::type
+      parameter_bind( sqlite3_stmt* statement, int column, T value)
+      {
+         return parameter_bind( statement, column, static_cast< casual::common::traits::underlying_type_t< T>>( value));
+      }
+
+
 
 
       inline void column_get( sqlite3_stmt* statement, int column, long& value)
@@ -187,6 +195,17 @@ namespace sql
             std::chrono::microseconds us{ sqlite3_column_int64( statement, column)};
             value = time_point( us);
          }
+      }
+
+      template< typename T>
+      inline typename std::enable_if< std::is_enum< T>::value, void>::type
+      column_get( sqlite3_stmt* statement, int column, T& value)
+      {
+         casual::common::traits::underlying_type_t< T> enum_value;
+         column_get( statement, column, enum_value);
+         value = static_cast< T>( enum_value);
+
+         // column_get( statement, column, static_cast< enum_type&>( value));
       }
 
       struct Row

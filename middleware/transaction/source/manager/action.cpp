@@ -51,10 +51,7 @@ namespace casual
             {
                Trace trace( "event registration");
 
-               message::domain::process::termination::Registration message;
-               message.process = common::process::handle();
-
-               ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+               common::process::instance::termination::registration( common::process::handle());
             }
 
          }
