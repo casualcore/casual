@@ -423,7 +423,8 @@ namespace casual
                                  reply.process = found->second;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
-                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct)
+                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct
+                                    || state().runlevel() == State::Runlevel::shutdown)
                               {
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
@@ -441,7 +442,8 @@ namespace casual
                                  reply.process = found->second;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
-                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct)
+                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct
+                                    || state().runlevel() == State::Runlevel::shutdown)
                               {
                                  manager::local::ipc::send( state(), message.process, reply);
                               }

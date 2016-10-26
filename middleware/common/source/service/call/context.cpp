@@ -138,7 +138,7 @@ namespace casual
                            if( ! flag< TPNOTRAN>( flags) && transaction)
                            {
                               message.trid = transaction.trid;
-                              transaction.associate( message.descriptor);
+                              transaction.associate( message.correlation);
 
                               //
                               // We use the transaction deadline if it's earlier

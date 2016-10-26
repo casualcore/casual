@@ -60,7 +60,7 @@ namespace casual
             Default()
             {
                connection.type = "tcp";
-               connection.restart = "false";
+               connection.restart = "true";
             }
 
             Listener listener;

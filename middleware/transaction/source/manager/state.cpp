@@ -346,6 +346,7 @@ namespace casual
          return out << "{ trid: " << value.trid
             << ", resources: " << common::range::make( value.resources)
             << ", correlation: " << value.correlation
+            << ", remote-resource: " << value.resource
             << '}';
       }
 

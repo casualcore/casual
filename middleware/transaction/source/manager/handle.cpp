@@ -599,6 +599,7 @@ namespace casual
                         {
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
                            local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -622,6 +623,7 @@ namespace casual
                         {
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
                            local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -645,6 +647,7 @@ namespace casual
                         {
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
                            local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -1373,9 +1376,8 @@ namespace casual
                         // sent the request, so we know where to send the accumulated reply.
                         //
                         transaction.trid.owner( message.process);
-
-                        // TODO: set correlation?
-
+                        transaction.correlation = message.correlation;
+                        transaction.resource = message.resource;
 
                         local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                            m_state,
@@ -1438,10 +1440,16 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::Commit::handle"};
 
+               transaction.correlation = message.correlation;
+
                log << "transaction: " << transaction << '\n';
 
                if( transaction.implementation)
                {
+                  //
+                  // We've completed the prepare stage, now it's time for the commit stage
+                  //
+
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
                      m_state,
                      transaction,
@@ -1462,9 +1470,18 @@ namespace casual
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
+                     return;
                   }
 
                   transaction.implementation = local::implementation::one::phase::commit::Remote::instance();
+
+                  //
+                  // Make sure we can send enough stuff so remote domain can correlate,
+                  // when we actually send the accumulated reply
+                  //
+                  transaction.trid.owner( message.process);
+                  transaction.correlation = message.correlation;
+                  transaction.resource = message.resource;
 
                   if( transaction.resources.size() > 1)
                   {

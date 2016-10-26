@@ -33,8 +33,21 @@ namespace casual
             {
                Trace trace( "casual::queue::enqueue");
 
+               auto& transaction = common::transaction::context().current();
+
+               if( transaction)
+               {
+                  //
+                  // Make sure we trigger an interaction with the TM.
+                  // Since the queue-groups act as 'external resources' to
+                  // the TM
+                  //
+                  transaction.external();
+               }
+
+
                common::message::queue::enqueue::Request request;
-               request.trid = common::transaction::Context::instance().current().trid;
+               request.trid = transaction.trid;
 
                request.process = common::process::handle();
 
@@ -65,6 +78,9 @@ namespace casual
             std::vector< Message> dequeue( const queue::Lookup& lookup, const Selector& selector, bool block = false)
             {
                Trace trace{ "casual::queue::dequeue"};
+
+
+               auto& transaction = common::transaction::context().current();
 
 
                casual::common::communication::ipc::Helper ipc;
@@ -105,7 +121,7 @@ namespace casual
                auto send_request = [&]()
                {
                   common::message::queue::dequeue::Request request;
-                  request.trid = common::transaction::Context::instance().current().trid;
+                  request.trid = transaction.trid;
 
                   request.process = common::process::handle();
 
@@ -134,11 +150,24 @@ namespace casual
                common::message::dispatch::Handler handler{
                   [&]( common::message::queue::dequeue::Reply& reply)
                   {
+                     if( ! reply.message.empty() && transaction)
+                     {
+                        //
+                        // Make sure we trigger an interaction with the TM.
+                        // Since the queue-groups act as 'external resources' to
+                        // the TM
+                        //
+                        transaction.external();
+                     }
+
                      if( reply.correlation != correlation)
                      {
                         throw common::exception::invalid::Semantic{ "correlation mismatch"};
                      }
                      common::range::transform( reply.message, result, queue::transform::Message{});
+
+
+
                   },
                   [&]( common::message::queue::dequeue::forget::Request& request)
                   {

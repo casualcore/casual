@@ -12,10 +12,6 @@
 #include "common/trace.h"
 #include "common/error.h"
 
-
-// todo: temp
-//#include <iostream>
-
 namespace casual
 {
 

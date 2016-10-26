@@ -112,18 +112,20 @@ namespace casual
 
             void State::Pending::discard( descriptor_type descriptor)
             {
+               const auto& holder = get( descriptor);
+
                //
                // Can't be associated with a transaction
                //
-               if( common::transaction::Context::instance().associated( descriptor))
+               if( common::transaction::Context::instance().associated( holder.correlation))
                {
-                  throw exception::xatmi::transaction::Support{ "descriptor " + std::to_string( descriptor) + " is associated with a transaction"};
+                  throw exception::xatmi::transaction::Support{ "descriptor " + std::to_string( holder.descriptor) + " is associated with a transaction"};
                }
 
                //
                // Discards the correlation (directly if in cache, or later if not)
                //
-               communication::ipc::inbound::device().discard( get( descriptor).correlation);
+               communication::ipc::inbound::device().discard( holder.correlation);
 
                unreserve( descriptor);
             }

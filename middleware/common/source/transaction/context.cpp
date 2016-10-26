@@ -87,11 +87,11 @@ namespace casual
          }
 
 
-         bool Context::associated( platform::descriptor_type descriptor)
+         bool Context::associated( const Uuid& correlation)
          {
             for( auto& transaction : m_transactions)
             {
-               if( transaction.state == Transaction::State::active && transaction.associated( descriptor))
+               if( transaction.state == Transaction::State::active && transaction.associated( correlation))
                {
                   return true;
                }
@@ -307,7 +307,7 @@ namespace casual
                //
                // this descriptor is done, and we can remove the association to the transaction
                //
-               transaction.discard( reply.descriptor);
+               transaction.replied( reply.correlation);
 
                log::internal::transaction << "updated state: " << transaction << std::endl;
             }
@@ -322,7 +322,7 @@ namespace casual
                //
                for( auto& transaction : m_transactions)
                {
-                  transaction.discard( reply.descriptor);
+                  transaction.replied( reply.correlation);
                }
             }
          }
@@ -343,7 +343,7 @@ namespace casual
 
             auto pending_check = [&]( Transaction& transaction)
             {
-               if( transaction.associated())
+               if( transaction.pending())
                {
                   if( transaction.trid)
                   {
@@ -357,10 +357,12 @@ namespace casual
                   //
                   // Discard pending
                   //
-                  for( auto& descriptor : transaction.descriptors())
+                  /*
+                  for( const auto& correlation : transaction.correlations())
                   {
                      service::call::Context::instance().cancel( descriptor);
                   }
+                  */
                }
             };
 
@@ -645,7 +647,7 @@ namespace casual
                throw exception::tx::Protocol{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
             }
 
-            if( transaction.associated())
+            if( transaction.pending())
             {
                throw exception::tx::Protocol{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }

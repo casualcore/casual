@@ -23,6 +23,10 @@ namespace casual
 
          void State::Pending::dequeue( const common::message::queue::dequeue::Request& request)
          {
+            Trace trace{ "queue::group::State::Pending::dequeue"};
+
+            log << "request: " << request << '\n';
+
             if( request.block)
             {
                requests.push_back( request);
