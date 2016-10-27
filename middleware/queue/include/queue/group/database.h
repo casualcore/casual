@@ -87,6 +87,32 @@ namespace casual
             void rollback();
 
 
+            //!
+            //! If message has a queue-id that will be returned,
+            //! otherwise we lookup id from name
+            //!
+            //! @param message enqueue or dequeue message
+            //! @return id to the queue
+            //!
+            template< typename M>
+            Queue::id_type quid( M&& message) const
+            {
+               if( message.queue != 0)
+               {
+                  return message.queue;
+               }
+
+               auto found = common::range::find( m_name_mapping, message.name);
+
+               if( found)
+               {
+                  return found->second;
+               }
+
+               throw common::exception::invalid::Argument{ "requested queue is not hosted by this queue-group", CASUAL_NIP( message)};
+            }
+
+
          private:
 
 
@@ -97,14 +123,7 @@ namespace casual
 
             void update_mapping();
 
-            //!
-            //! If message has a queue-id that will be returned,
-            //! otherwise we lookup id from name
-            //!
-            //! @param message enqueue or dequeue message
-            //! @return id to the queue
-            template< typename M>
-            Queue::id_type queue_id( M&& message) const;
+
 
             std::unordered_map< std::string, Queue::id_type> m_name_mapping;
 

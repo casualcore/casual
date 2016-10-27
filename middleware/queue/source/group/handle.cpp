@@ -193,6 +193,11 @@ namespace casual
 
                   try
                   {
+                     //
+                     // Make sure we've got the quid.
+                     //
+                     message.queue =  m_state.queuebase.quid( message);
+
                      auto reply = m_state.queuebase.enqueue( message);
                      reply.correlation = message.correlation;
 
@@ -273,6 +278,13 @@ namespace casual
 
                void Request::operator () ( message_type& message)
                {
+                  Trace trace{ "queue::handle::dequeue::Request"};
+
+                  //
+                  // Make sure we've got the quid.
+                  //
+                  message.queue =  m_state.queuebase.quid( message);
+
                   request( m_state, message);
                }
 

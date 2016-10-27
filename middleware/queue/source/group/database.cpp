@@ -442,23 +442,6 @@ namespace casual
             }
          }
 
-         template< typename M>
-         Queue::id_type Database::queue_id( M&& message) const
-         {
-            if( message.queue != 0)
-            {
-               return message.queue;
-            }
-
-            auto found = common::range::find( m_name_mapping, message.name);
-
-            if( found)
-            {
-               return found->second;
-            }
-
-            throw common::exception::invalid::Argument{ "requested queue is not hosted by this queue-group", CASUAL_NIP( message)};
-         }
 
          std::vector< Queue> Database::update( std::vector< Queue> update, const std::vector< Queue::id_type>& remove)
          {
@@ -497,12 +480,6 @@ namespace casual
             //
             reply.id = message.message.id ? message.message.id : common::uuid::make();
 
-            //
-            // Get the corresponding queue-id
-            //
-            auto queue = queue_id( message);
-
-
             auto gtrid = common::transaction::global( message.trid);
 
             long state = message.trid ? message::State::added : message::State::enqueued;
@@ -510,8 +487,8 @@ namespace casual
 
             m_statement.enqueue.execute(
                   reply.id.get(),
-                  queue,
-                  queue,
+                  message.queue,
+                  message.queue,
                   gtrid,
                   message.message.properties,
                   state,

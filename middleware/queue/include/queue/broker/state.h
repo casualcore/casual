@@ -24,7 +24,6 @@ namespace casual
          struct State
          {
 
-            State( common::communication::ipc::inbound::Device& receive);
             State();
 
             struct Group
@@ -107,11 +106,6 @@ namespace casual
 
             void update( common::message::gateway::domain::Advertise& message);
 
-
-
-            common::communication::ipc::inbound::Device& ipc() { return receive;}
-
-            common::communication::ipc::inbound::Device& receive;
          };
 
       } // broker

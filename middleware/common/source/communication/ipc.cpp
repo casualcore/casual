@@ -228,6 +228,8 @@ namespace casual
                               const std::string& environment,
                               process::instance::fetch::Directive directive)
                         {
+                           Trace trace{ "ipc::outbound::instance::local::fetch"};
+
                            if( common::environment::variable::exists( environment))
                            {
                               auto process = environment::variable::process::get( environment);
@@ -238,13 +240,21 @@ namespace casual
                               }
                            }
 
-                           auto process = process::instance::fetch::handle( identity, directive);
-
-                           if( ! environment.empty())
+                           try
                            {
-                              environment::variable::process::set( environment, process);
+                              auto process = process::instance::fetch::handle( identity, directive);
+
+                              if( ! environment.empty())
+                              {
+                                 environment::variable::process::set( environment, process);
+                              }
+                              return process;
                            }
-                           return process;
+                           catch( const exception::communication::Unavailable&)
+                           {
+                              log << "failed to fetch instance with identity: " << identity << '\n';
+                              return {};
+                           }
                         }
 
                      } // <unnamed>
@@ -296,6 +306,8 @@ namespace casual
 
                         platform::ipc::id::type reconnect()
                         {
+                           Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
+
                            auto from_environment = []()
                                  {
                                     if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
@@ -336,10 +348,6 @@ namespace casual
 
                                           log << "domain identity: " << common::domain::identity() << '\n';
                                        }
-
-
-
-
                                     }
                                     return ipc;
                                  };
@@ -348,7 +356,7 @@ namespace casual
 
                            if( ! ipc::exists( queue))
                            {
-                              throw exception::invalid::Semantic{ "failed to locate domain manager"};
+                              throw exception::communication::Unavailable{ "failed to locate domain manager"};
                            }
 
                            return queue;

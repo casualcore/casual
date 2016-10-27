@@ -14,8 +14,7 @@ namespace casual
       namespace broker
       {
 
-         State::State( common::communication::ipc::inbound::Device& receive) : receive( receive) {}
-         State::State() : State( common::communication::ipc::inbound::device()) {}
+         State::State() = default;
 
 
          State::Group::Group() = default;
