@@ -335,7 +335,11 @@ namespace casual
                if( *this)
                {
                   try
-                  {
+                  {  
+                     // 
+                     // first we shutdown the socket, followed by a close
+                     //
+                     //local::socket::check::result( ::shutdown( m_descriptor, SHUT_RDWR));
                      local::socket::check::result( ::close( m_descriptor));
                      log << "Socket::close - descriptor: " << m_descriptor << '\n';
                   }

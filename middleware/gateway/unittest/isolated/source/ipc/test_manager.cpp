@@ -124,6 +124,8 @@ domain:
 
                      bool manager_ready( const manager::admin::vo::State& state)
                      {
+                        Trace trace{ "unittest::gateway::local::call::wait::ready::manager_ready"};
+
                         if( state.connections.empty())
                            return false;
 

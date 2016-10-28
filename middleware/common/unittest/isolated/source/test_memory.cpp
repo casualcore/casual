@@ -24,8 +24,9 @@ namespace casual
             };
 
 
-            struct empty_struct
+            struct char_struct
             {
+               char char_property = '0';
             };
 
             struct pod_struct
@@ -58,7 +59,7 @@ namespace casual
             local::Holder< char[ 10][ 5], sizeof( char) * 10 * 5>,
             local::Holder< long[ 10][ 5], sizeof( long) * 10 * 5>,
             local::Holder< long[ 10][ 5][ 2], sizeof( long) * 10 * 5 * 2>,
-            local::Holder< local::empty_struct, sizeof( local::empty_struct)>,
+            local::Holder< local::char_struct, sizeof( local::char_struct)>,
             local::Holder< local::pod_struct, sizeof( local::pod_struct)>,
             // tuple is not trivially copyable
             //local::Holder< std::tuple< long, double, char, short, int>, sizeof( std::tuple< long, double, char, short, int>)>,
@@ -134,7 +135,7 @@ namespace casual
 
          EXPECT_TRUE( original.size() == memory::size( current_type));
          EXPECT_TRUE( copied.size() == memory::size( current_type));
-         EXPECT_TRUE( original == copied);
+         EXPECT_TRUE( original == copied) << "original: " << range::make( original) << " - copied: " << range::make( copied);
       }
    } // common
 

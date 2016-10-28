@@ -187,8 +187,9 @@ namespace casual
                      inline const common::process::Handle& process() const { return m_process;}
 
                      void reconnect();
-
-                     friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
+                    
+                     template< process::instance::fetch::Directive d> 
+                     friend std::ostream& operator << ( std::ostream& out, const Connector< d>& rhs);
 
                   private:
                      common::process::Handle m_process;

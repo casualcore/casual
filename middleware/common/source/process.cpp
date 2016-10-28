@@ -525,7 +525,6 @@ namespace casual
                   check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
                   auto mask = signal::set::empty();
                   check_error( posix_spawnattr_setsigmask( &attributes, &mask.set), "posix_spawnattr_setsigmask");
-
                   //check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGDEF), "posix_spawnattr_setflags: POSIX_SPAWN_SETSIGDEF");
                }
                ~attribute_t()
