@@ -527,40 +527,35 @@ namespace casual
 
                   const auto first = reinterpret_cast< char*>( &transport.message);
                   auto current = first;
-                  const auto header_end = first + message::Transport::header_size + message::Transport::message_type_size;
+
 
                   try
                   {
-                     //
-                     // First we make sure we got the header
-                     //
-                     while( current != header_end)
-                     {
-                        const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, header_end), flags);
 
-                        if( bytes > std::distance( current, header_end))
+                     //
+                     // First we try to read all that we can, but at least the header
+                     //
+
+                     const auto header_end = first + message::Transport::header_size + message::Transport::message_type_size;
+                     auto current_end = first + message::Transport::message_max_size;
+
+                     while( current != current_end)
+                     {
+                        const auto current_distance = std::distance( current, current_end);
+
+                        const auto bytes = local::receive( socket.descriptor(), current, current_distance, flags);
+
+                        if( bytes > current_distance)
                         {
                            throw exception::Casual( "somehow more bytes was received over the socket than requested");
                         }
 
                         current += bytes;
-                     }
 
-                     auto last = current + transport.message.header.count;
-
-                     //
-                     // Keep going until we've read the whole message
-                     //
-                     while( current != last)
-                     {
-                        const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, last), flags);
-
-                        if( bytes > std::distance( current, last))
+                        if( current >= header_end)
                         {
-                           throw exception::Casual( "somehow more bytes was received over the socket than requested");
+                           current_end = header_end + transport.message.header.count;
                         }
-
-                        current += bytes;
                      }
 
                      log << "tcp receive <---- socket: " << socket << " , transport: " << transport << '\n';

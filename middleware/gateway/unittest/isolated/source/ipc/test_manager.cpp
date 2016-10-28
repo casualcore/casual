@@ -249,7 +249,7 @@ domain:
 
          local::Domain domain{ local::one_connector_configuration()};
 
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
          //
          // We ping it so we know the gateway is up'n running
