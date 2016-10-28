@@ -1,12 +1,10 @@
-/*
- * chronology.cpp
- *
- *  Created on: 5 maj 2013
- *      Author: Kristone
- */
+//!
+//! casual
+//!
 
 #include "common/chronology.h"
 #include "common/exception.h"
+#include "common/environment.h"
 
 #include <ctime>
 
@@ -38,19 +36,23 @@ namespace chronology
          //
          // to_time_t does not exist as a static member in common::clock_type
          //
-         const std::time_t seconds = std::chrono::duration_cast< std::chrono::seconds>( time.time_since_epoch()).count();
-         const auto tm = function( &seconds);
+         auto time_t = platform::clock_type::to_time_t( time);
+
+
+         //const std::time_t seconds = std::chrono::duration_cast< std::chrono::seconds>( time.time_since_epoch()).count();
+         struct tm time_parts;
+         function( &time_t, &time_parts);
 
          const auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( time.time_since_epoch());
 
          std::ostringstream result;
          result << std::setfill( '0') <<
-            std::setw( 4) << tm->tm_year + 1900 << '-' <<
-            std::setw( 2) << tm->tm_mon + 1 << '-' <<
-            std::setw( 2) << tm->tm_mday << 'T' <<
-            std::setw( 2) << tm->tm_hour << ':' <<
-            std::setw( 2) << tm->tm_min << ':' <<
-            std::setw( 2) << tm->tm_sec << '.' <<
+            std::setw( 4) << time_parts.tm_year + 1900 << '-' <<
+            std::setw( 2) << time_parts.tm_mon + 1 << '-' <<
+            std::setw( 2) << time_parts.tm_mday << 'T' <<
+            std::setw( 2) << time_parts.tm_hour << ':' <<
+            std::setw( 2) << time_parts.tm_min << ':' <<
+            std::setw( 2) << time_parts.tm_sec << '.' <<
             std::setw( 3) << ms.count() % 1000;
          return result.str();
       }
@@ -58,14 +60,14 @@ namespace chronology
    }
 
 
+   std::string local( const platform::time_point& time)
+   {
+      return internal::format( time, &environment::localtime_r);
+   }
+
    std::string local()
    {
       return local( platform::clock_type::now());
-   }
-
-   std::string local( const platform::time_point& time)
-   {
-      return internal::format( time, &std::localtime);
    }
 
    std::string universal()
@@ -75,7 +77,7 @@ namespace chronology
 
    std::string universal( const platform::time_point& time)
    {
-      return internal::format( time, &std::gmtime);
+      return internal::format( time, &gmtime_r);
    }
 
    namespace from

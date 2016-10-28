@@ -1,8 +1,5 @@
 //!
-//! casual_utility_environment.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -18,7 +15,7 @@
 
 #include <cstdlib>
 #include <ctime>
-//#include <wordexp.h>
+
 
 
 namespace casual
@@ -76,8 +73,14 @@ namespace casual
                            throw std::system_error{ error::last(), std::system_category()};
                         }
                      }
+
+                     std::mutex& mutex() const
+                     {
+                        return m_mutex;
+                     }
+
                   private:
-                     Variable() = default;
+
                      mutable std::mutex m_mutex;
                   };
 
@@ -85,6 +88,14 @@ namespace casual
 
             } // <unnamed>
          } // local
+
+
+         tm* localtime_r( const time_t* seconds, tm* time)
+         {
+            local::native::Variable::lock_type lock{ local::native::Variable::instance().mutex()};
+
+            return ::localtime_r( seconds, time);
+         }
 
 			namespace variable
 			{

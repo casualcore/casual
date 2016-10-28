@@ -35,7 +35,7 @@ namespace casual
          enum class Type : platform::signal::type
          {
             alarm = SIGALRM,
-            interupt = SIGINT,
+            interrupt = SIGINT,
             kill = SIGKILL,
             quit = SIGQUIT,
             child = SIGCHLD,
@@ -68,6 +68,18 @@ namespace casual
 			//! Clears all pending signals.
 			//!
 			void clear();
+
+
+			namespace current
+         {
+	         //!
+	         //! @returns the current number of pending signals
+	         //!
+	         //! @note only (?) for unittest
+	         //!
+			   long pending();
+         } // current
+
 
 
 			namespace timer

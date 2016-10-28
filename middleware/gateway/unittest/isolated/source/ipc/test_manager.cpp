@@ -160,7 +160,7 @@ domain:
 
 
 
-      TEST( casual_gateway_manager, empty_configuration)
+      TEST( casual_gateway_manager_ipc, empty_configuration)
       {
          common::unittest::Trace trace;
 
@@ -171,7 +171,7 @@ domain:
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
-      TEST( casual_gateway_manager, ipc_non_existent_path__configuration)
+      TEST( casual_gateway_manager_ipc, non_existent_path__configuration)
       {
          common::unittest::Trace trace;
 
@@ -185,7 +185,7 @@ domain:
       }
 
 
-      TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__configuration___expect_connection)
+      TEST( casual_gateway_manager_ipc, same_path_as_unittest_domain__configuration___expect_connection)
       {
          common::unittest::Trace trace;
 
@@ -241,7 +241,7 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
+      TEST( casual_gateway_manager_ipc, same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
       {
          common::unittest::Trace trace;
 
@@ -273,7 +273,7 @@ domain:
          EXPECT_TRUE( inbound.type == vo_type::Type::ipc);
       }
 
-      TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_outbound____expect_call_to_service)
+      TEST( casual_gateway_manager_ipc, same_path_as_unittest_domain__call_outbound____expect_call_to_service)
       {
          common::unittest::Trace trace;
 

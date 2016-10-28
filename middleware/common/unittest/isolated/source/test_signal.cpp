@@ -32,7 +32,7 @@ namespace casual
 
       typedef ::testing::Types<
 
-            holder< common::exception::signal::Terminate, signal::Type::interupt>,
+            holder< common::exception::signal::Terminate, signal::Type::interrupt>,
             holder< common::exception::signal::Terminate, signal::Type::quit>,
             holder< common::exception::signal::Terminate, signal::Type::terminate>,
 
@@ -174,6 +174,39 @@ namespace casual
          }, exception_type);
       }
 
+      TYPED_TEST( casual_common_signal_types, send_signal_twice___expect_1_pending)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_NO_THROW( signal::handle());
+
+         signal::send( process::id(), TestFixture::get_signal());
+         signal::send( process::id(), TestFixture::get_signal());
+
+         EXPECT_TRUE( signal::current::pending() == 1);
+      }
+
+      TYPED_TEST( casual_common_signal_types, send_signal_twice__expect_1_throw)
+      {
+         common::unittest::Trace trace;
+
+         signal::send( process::id(), TestFixture::get_signal());
+         signal::send( process::id(), TestFixture::get_signal());
+
+         using exception_type = typename TestFixture::exception_type;
+
+         EXPECT_THROW(
+         {
+            signal::handle();
+         }, exception_type);
+
+         EXPECT_TRUE( signal::current::pending() == 0);
+
+         EXPECT_NO_THROW({
+            signal::handle();
+         });
+      }
+
 
       TEST( casual_common_signal, send_terminate__expect_throw)
       {
@@ -187,6 +220,40 @@ namespace casual
             process::sleep( std::chrono::seconds{ 2});
 
          }, exception::signal::Terminate) << "signal mask: " << signal::mask::current();
+      }
+
+
+
+      TEST( casual_common_signal, send_terminate_1__child_1___expect_2_pending_signal)
+      {
+         common::unittest::Trace trace;
+
+         signal::send( process::id(), signal::Type::terminate);
+         signal::send( process::id(), signal::Type::child);
+
+         EXPECT_TRUE( signal::current::pending() == 2);
+      }
+
+      TEST( casual_common_signal, send_terminate_1__child_1___expect_2_throws)
+      {
+         common::unittest::Trace trace;
+
+
+         signal::send( process::id(), signal::Type::terminate);
+         signal::send( process::id(), signal::Type::child);
+
+         // note that child is thrown before terminate
+         EXPECT_THROW(
+         {
+            signal::handle();
+         }, exception::signal::child::Terminate);
+
+         EXPECT_THROW(
+         {
+            signal::handle();
+         }, exception::signal::Terminate);
+
+         EXPECT_TRUE( signal::current::pending() == 0);
       }
 
 
@@ -230,6 +297,9 @@ namespace casual
             process::sleep( std::chrono::seconds{ 2});
          }, exception::signal::Timeout);
       }
+
+
+
 
    } // common
 

@@ -525,6 +525,8 @@ namespace casual
                   check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
                   auto mask = signal::set::empty();
                   check_error( posix_spawnattr_setsigmask( &attributes, &mask.set), "posix_spawnattr_setsigmask");
+
+                  //check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGDEF), "posix_spawnattr_setflags: POSIX_SPAWN_SETSIGDEF");
                }
                ~attribute_t()
                {
@@ -568,6 +570,12 @@ namespace casual
                         exception::make_nip( "environment", range::make( environment)),
                         CASUAL_NIP( error::string( status)));
             }
+
+            //
+            // We try to minimize the glitch where the spawned process does not
+            // get signals for a short period of time.
+            //
+            process::sleep( std::chrono::microseconds{ 200});
 
             log::internal::debug << "process::spawned pid: " << pid << '\n';
 

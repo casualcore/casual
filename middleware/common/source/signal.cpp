@@ -78,7 +78,7 @@ namespace casual
             switch( signal)
             {
                case Type::alarm: return out << "alarm";
-               case Type::interupt: return out << "interupt";
+               case Type::interrupt: return out << "interrupt";
                case Type::kill: return out << "kill";
                case Type::quit: return out << "quit";
                case Type::child: return out << "child";
@@ -109,380 +109,184 @@ namespace casual
          {
             namespace
             {
-               extern "C"
-               {
-                  void signal_callback( platform::signal::type signal);
-               }
 
-               namespace handler
-               {
-
-                  struct Type
+                  namespace handler
                   {
-                     Type( signal::Type signal) : signal( signal), flag( 0) {}
-                     Type( signal::Type signal, int flag) : signal( signal), flag( flag) {}
 
-                     signal::Type signal;
-                     int flag;
 
-                     operator signal::Type() const { return signal;}
+                     std::atomic< long> global_total_pending{ 0};
 
-                     friend std::ostream& operator << ( std::ostream& out, const Type& value)
+
+                     template< signal::Type signal>
+                     struct basic_pending
                      {
-                        //return out << "{ signal: " << value.signal << ", flag: " << value.flag << '}';
-                        return out << value.signal;
-                     }
-                  };
-               }
-
-               template< typename F>
-               void resgistration( F function, handler::Type signal)
-               {
-                  struct sigaction sa;
-
-                  memory::set( sa);
-                  sa.sa_handler = function;
-                  sa.sa_flags = signal.flag;
-
-                  if( sigaction( cast::underlying( signal.signal), &sa, 0) == -1)
-                  {
-                     throw std::system_error{ error::last(), std::system_category()};
-                  }
-               }
-
-               namespace handler
-               {
-
-                  template< signal::Type Signal, typename Exception, typename Insurance = std::false_type, int flag = 0>
-                  struct basic_handler
-                  {
-
-                     using insurance_type = Insurance;
-                     using exception_type = Exception;
-
-                     static handler::Type signal() { return { Signal, flag};}
-
-                     void handle()
-                     {
-                        throw exception_type{};
-                     }
-                  };
-
-                  using Terminate = basic_handler< signal::Type::terminate, exception::signal::Terminate, std::true_type>;
-                  using Quit = basic_handler< signal::Type::quit, exception::signal::Terminate, std::true_type>;
-                  using Interupt = basic_handler< signal::Type::interupt, exception::signal::Terminate, std::true_type>;
-
-                  using Alarm = basic_handler< signal::Type::alarm, exception::signal::Timeout>;
-                  using Child = basic_handler< signal::Type::child, exception::signal::child::Terminate, std::false_type, SA_NOCLDSTOP>;
-
-                  using User = basic_handler< signal::Type::user, exception::signal::User>;
-
-                  using Pipe = basic_handler< signal::Type::pipe, exception::signal::Pipe>;
-
-
-               } // handler
-
-
-               struct Handler
-               {
-                  ~Handler() = default;
-
-                  static Handler& instance()
-                  {
-                     static Handler singleton{
-                        handler::Alarm{},
-                        handler::Child{},
-                        handler::User{},
-                        handler::Pipe{},
-                        handler::Terminate{},
-                        handler::Quit{},
-                        handler::Interupt{},
+                        static void clear() { pending = false;}
+                        static std::atomic< bool> pending;
                      };
-                     return singleton;
-                  }
+                     template< signal::Type Signal>
+                     std::atomic< bool> basic_pending< Signal>::pending{ false};
 
-                  Handler( const Handler&) = delete;
-                  Handler& operator = ( const Handler&) = delete;
 
-                  void handle()
-                  {
-                     auto count = m_pendings.load();
 
-                     if( count > 0)
+                     template< signal::Type Signal>
+                     void signal_callback( platform::signal::type signal)
                      {
-                        auto decrement = scope::execute( [&](){
-                           ++m_pendings;
-                        });
-
-                        auto current = signal::mask::current();
-
-                        log::internal::debug << "signal::Handler::handle - handler: " << *this << ", mask: " << current << '\n';
-
-                        for( auto& handler : m_handlers)
+                        if( ! basic_pending< Signal>::pending.exchange( true))
                         {
-                           handler->handle( current);
+                           ++global_total_pending;
                         }
-                        decrement.release();
                      }
-                  }
 
 
-                  void clear()
-                  {
-                     m_pendings.store( 0);
-                     range::for_each( m_handlers, std::mem_fn( &Handler::base_handle::clear));
-                  }
-
-
-                  friend std::ostream& operator << ( std::ostream& out, const Handler& value)
-                  {
-
-                     if( out)
+                     struct Handle
                      {
-                        out << "{ pending: [";
 
-                        bool empty = true;
-                        for( auto& handler : value.m_handlers)
+                        static Handle& instance()
                         {
-                           if( handler->pending())
+                           static Handle handle;
+                           return handle;
+                        }
+
+
+                        void handle()
+                        {
+                           //
+                           // We assume that loading from atomic is cheaper than mutex-lock
+                           //
+
+                           if( handler::global_total_pending.load() > 0)
                            {
-                              if( empty)
+                              std::lock_guard< std::mutex> lock{ m_mutex};
+
+                              //
+                              // We only allow one thread at a time to actually handle the
+                              // pending signals
+                              //
+                              // We check the total-pending again
+                              //
+                              if( handler::global_total_pending.load() > 0)
                               {
-                                 out << handler->signal();
-                                 empty = false;
-                              }
-                              else
-                              {
-                                 out << ',' << handler->signal();
+                                 handle( signal::mask::current());
                               }
                            }
                         }
-                        out << "], blocked: " << signal::pending() << '}';
-                     }
-                     return out;
-                  }
 
-               private:
-
-                  friend void signal_callback( platform::signal::type);
-
-                  template< typename... Handlers>
-                  Handler( Handlers&&... handlers) : Handler( create( std::forward< Handlers>( handlers)...))
-                  {
-
-                  }
-
-
-                  void signal( signal::Type signal)
-                  {
-                     ++m_pendings;
-
-                     for( auto& handler : m_handlers)
-                     {
-                        if( handler->signal() == signal)
+                        void clear()
                         {
-                           handler->signal( signal);
-                           return;
+                           global_total_pending = 0;
+
+                           m_child.clear();
+                           m_terminate.clear();
+                           m_quit.clear();
+                           m_interrupt.clear();
+                           m_alarm.clear();
+                           m_user.clear();
+                           m_pipe.clear();
                         }
-                     }
-                  }
 
-                  static void signal_glitch_insurance_thread(
-                        const std::atomic< platform::signal::type>& pending,
-                        std::atomic< bool>& insurance,
-                        common::thread::native::type target)
-                  {
-                     //
-                     // We don't want any signals at all...
-                     //
-                     signal::mask::block();
+                     private:
 
-                     try
-                     {
-                        log::internal::debug << "signal glitch insurance created for signal: " << pending << '\n';
-
-                        auto done = scope::execute( [&](){
-                           insurance.store( false);
-                        });
-
-                        while( true)
+                        void handle( const signal::Set& current)
                         {
-                           std::this_thread::sleep_for( std::chrono::milliseconds{ 10});
+                           m_child.handle( current);
+                           m_terminate.handle( current);
+                           m_quit.handle( current);
+                           m_interrupt.handle( current);
+                           m_alarm.handle( current);
+                           m_user.handle( current);
+                           m_pipe.handle( current);
+                        }
 
-                           if( ! pending)
+                        Handle() = default;
+
+
+
+                        template< signal::Type Signal, typename Exception, int Flags = 0>
+                        struct basic_handler
+                        {
+                           using pending_type = basic_pending< Signal>;
+
+                           basic_handler()
                            {
                               //
-                              // Something has consumed some signals while we was asleep,
-                              // and we don't need the insurance anymore
-                              // all good, and expected. We return and terminate this thread
+                              // Register the signal handler for this signal
                               //
-                              return;
+
+                              struct sigaction sa;
+
+                              memory::set( sa);
+                              sa.sa_handler = &signal_callback< Signal>;
+                              sa.sa_flags = Flags;
+
+                              if( sigaction( cast::underlying( Signal), &sa, nullptr) == -1)
+                              {
+                                 std::cerr << "failed to register handle for signal: " << Signal << " - " << error::string() << std::endl;
+
+                                 throw std::system_error{ error::last(), std::system_category()};
+                              }
                            }
 
-                           //
-                           // We've got "the glitch", send the signal again.
-                           //
-                           log::internal::debug << "signal glitch - send signal: " << pending << " again\n";
+                           basic_handler( const basic_handler&) = delete;
+                           basic_handler operator = ( const basic_handler&) = delete;
 
-                           signal::thread::send( target, signal::Type( pending.load()));
-                        }
-                     }
-                     catch( ...)
-                     {
-                        error::handler();
-                     }
-                  }
-
-
-                  struct base_handle
-                  {
-                     virtual ~base_handle() = default;
-                     virtual void signal( signal::Type) = 0;
-                     virtual void handle( const signal::Set&) = 0;
-                     virtual void clear() = 0;
-                     virtual handler::Type signal() const = 0;
-                     virtual bool pending() const = 0;
-                  };
-
-                  template< typename T>
-                  struct glitch_base : base_handle
-                  {
-                     void glitch_insurance( const std::atomic< platform::signal::type>& pending)
-                     {
-                        // no-op
-                     }
-                  };
-
-
-
-                  template< typename H>
-                  struct basic_handle : glitch_base< typename H::insurance_type>
-                  {
-                     using handler_type = H;
-
-                     basic_handle( handler_type&& handler)
-                        : m_handler( std::move( handler)), m_pending( 0) {}
-
-                     basic_handle( const basic_handle&) = delete;
-                     basic_handle& operator = ( const basic_handle&) = delete;
-
-
-                     handler::Type signal() const override
-                     {
-                        return handler_type::signal();
-                     }
-
-                     void signal( signal::Type signal) override
-                     {
-                        if( m_pending.exchange( cast::underlying( signal)) == 0)
-                        {
-                           this->glitch_insurance( m_pending);
-                        }
-                     }
-
-                     void handle( const signal::Set& current) override
-                     {
-                        auto signal = m_pending.exchange( 0);
-
-                        if( signal)
-                        {
-                           if( ! current.exists( signal::Type( signal)))
+                           void handle( const signal::Set& current)
                            {
                               //
-                              // Signalen är inte blockad
+                              // We know that this function is invoked with mutex, so we
+                              // can ignore concurrency problem
                               //
-                              log::internal::debug << "signal: handling signal: " << signal << '\n';
 
-                              m_handler.handle();
+                              if( pending_type::pending.load())
+                              {
+                                 if( ! current.exists( Signal))
+                                 {
+                                    //
+                                    // Signal is not blocked
+                                    //
+                                    log::internal::debug << "signal: handling signal: " << Signal << '\n';
+
+                                    //
+                                    // We've consumed the signal
+                                    //
+                                    pending_type::pending.store( false);
+
+                                    //
+                                    // Decrement the global count
+                                    //
+                                    --handler::global_total_pending;
+
+                                    throw Exception{};
+                                 }
+                              }
                            }
-                           else
+
+                           void clear()
                            {
-                              m_pending.store( signal);
+                              basic_pending< Signal>::clear();
                            }
-                        }
-                     }
-
-                     void clear() override
-                     {
-                        m_pending.store( 0);
-                     }
-
-                     bool pending() const override
-                     {
-                        return m_pending != 0;
-                      }
-
-                     handler_type m_handler;
-                     std::atomic< platform::signal::type> m_pending;
-                  };
+                        };
 
 
-                  static std::vector< std::unique_ptr< base_handle>> create()
-                  {
-                     return {};
-                  }
 
-                  template< typename H, typename... Handlers>
-                  static std::vector< std::unique_ptr< base_handle>> create( H&& handler, Handlers&&... handlers)
-                  {
-                     auto result = create( std::forward< Handlers>( handlers)...);
+                        basic_handler< signal::Type::child, exception::signal::child::Terminate, SA_NOCLDSTOP> m_child;
+                        basic_handler< signal::Type::terminate, exception::signal::Terminate> m_terminate;
+                        basic_handler< signal::Type::quit, exception::signal::Terminate> m_quit;
+                        basic_handler< signal::Type::interrupt, exception::signal::Terminate> m_interrupt;
+                        basic_handler< signal::Type::alarm, exception::signal::Timeout> m_alarm;
+                        basic_handler< signal::Type::user, exception::signal::User> m_user;
+                        basic_handler< signal::Type::pipe, exception::signal::Pipe> m_pipe;
 
-                     result.push_back( std::move( make::unique< basic_handle< H>>( std::forward< H>( handler))));
-                     return result;
-                  }
-
-                  Handler( std::vector< std::unique_ptr< base_handle>> handlers)
-                     : m_pendings( 0), m_handlers{ std::move( handlers)}
-                  {
-                     //thread::scope::Block block;
-
-                     for( auto& handler : m_handlers)
-                     {
-                        local::resgistration( &local::signal_callback, handler->signal());
-                     }
-
-                  }
-
-                  std::atomic< long> m_pendings;
-                  std::vector< std::unique_ptr< base_handle>> m_handlers;
-
-               };
+                        //
+                        // Only for handle
+                        //
+                        std::mutex m_mutex;
+                     };
 
 
-               template<>
-               struct Handler::glitch_base< std::true_type> : Handler::base_handle
-               {
-                  glitch_base() : m_insurance{ false} {}
-
-                  void glitch_insurance( const std::atomic< platform::signal::type>& pending)
-                  {
-                     if( ! m_insurance.exchange( true))
-                     {
-                        std::thread{ &signal_glitch_insurance_thread,
-                           std::ref( pending),
-                           std::ref( m_insurance),
-                           common::thread::native::current()}.detach();
-                     }
-                  }
-
-               private:
-                  std::atomic< bool> m_insurance;
-               };
-
-
-               void signal_callback( platform::signal::type signal)
-               {
-                  Handler::instance().signal( signal::Type( signal));
-               }
-
+                  } // handler
 
             } // <unnamed>
          } // local
-
-
-
-
-
 
 
          namespace local
@@ -490,8 +294,10 @@ namespace casual
             namespace
             {
 
-
-               Handler& global_handler = Handler::instance();
+               //
+               // We need to instantiate the handler globally to trigger signal-handler-registration
+               //
+               handler::Handle& global_handler = handler::Handle::instance();
             } // <unnamed>
          } // local
 
@@ -504,6 +310,14 @@ namespace casual
          {
             local::global_handler.clear();
          }
+
+         namespace current
+         {
+            long pending()
+            {
+               return local::handler::global_total_pending.load();
+            }
+         } // current
 
 
          namespace timer
@@ -730,7 +544,7 @@ namespace casual
             out << "[";
 
             bool exists = false;
-            for( auto& signal : { Type::alarm, Type::child, Type::interupt, Type::kill, Type::pipe, Type::quit, Type::terminate, Type::user})
+            for( auto& signal : { Type::alarm, Type::child, Type::interrupt, Type::kill, Type::pipe, Type::quit, Type::terminate, Type::user})
             {
                if( value.exists( signal))
                {

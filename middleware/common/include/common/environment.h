@@ -12,12 +12,24 @@
 #include "common/uuid.h"
 #include "common/process.h"
 
+struct tm;
+
 namespace casual
 {
 	namespace common
 	{
 		namespace environment
 		{
+
+		   //!
+		   //! ::localtime_r is not thread safe, since it accessing environment
+		   //! variable TZ in a non-thread-safe manner under the hood.
+		   //!
+		   //! Until we've found a way to get local time thread safe we roll our
+		   //! own that uses the same mutex as set/get environment variables.
+		   //!
+		   tm* localtime_r( const time_t* seconds, tm* time);
+
 			namespace variable
 			{
 				bool exists( const std::string& name);
