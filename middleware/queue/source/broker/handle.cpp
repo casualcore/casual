@@ -347,7 +347,7 @@ namespace casual
                   ipc::device().error_handler()},
                common::message::handle::ping(),
             };
-         };
+         }
 
       } // broker
    } // queue

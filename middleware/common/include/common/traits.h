@@ -265,8 +265,8 @@ namespace casual
 
          template< typename T>
          struct is_movable : std::integral_constant< bool,
-            std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
-
+            //std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
+            std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
 
 
 

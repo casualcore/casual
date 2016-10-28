@@ -1,8 +1,5 @@
 //!
-//! type.h
-//!
-//! Created on: Sep 17, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_BUFFER_TYPE_H_
@@ -96,13 +93,13 @@ namespace casual
             struct Send
             {
                Send( const Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
-                  :  transport( transport), reserved( reserved), m_payload( payload) {}
+                  :  transport( transport), reserved( reserved), m_payload( &payload) {}
 
                Send( const Payload& payload)
-                  : m_payload( payload) {}
+                  : m_payload( &payload) {}
 
 
-               inline const Payload& payload() const { return m_payload.get();};
+               inline const Payload& payload() const { return *m_payload;};
                platform::binary_size_type transport = 0;
                platform::binary_size_type reserved = 0;
 
@@ -119,7 +116,9 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
             private:
-               std::reference_wrapper< const Payload> m_payload;
+               // gcc 4.9.4 requires Payload to be defined, switch to pointer untill we can use a better compiler
+               //std::reference_wrapper< const Payload> m_payload;
+               const Payload* m_payload;
             };
 
          } // payload
