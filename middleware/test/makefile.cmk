@@ -147,5 +147,11 @@ LinkServer('bin/sf-detoct-test-server',
 #
 Install( install_bin,'$(CASUAL_HOME)/bin')
 
+
+
+
+
+
+
 	
 	

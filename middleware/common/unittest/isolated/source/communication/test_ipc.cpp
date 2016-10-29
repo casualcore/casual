@@ -7,6 +7,7 @@
 
 #include "common/communication/ipc.h"
 #include "common/message/domain.h"
+#include "common/mockup/ipc.h"
 
 #include <random>
 
@@ -167,7 +168,46 @@ namespace casual
 
             common::message::domain::process::lookup::Reply message;
             EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
+         }
 
+         namespace local
+         {
+            namespace
+            {
+               using base_type = common::message::basic_message< common::message::Type::MOCKUP_BASE>;
+               struct exactly_transport_size : base_type
+               {
+
+                  char payload[ ipc::message::Transport::payload_max_size];
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & payload;
+                  })
+               };
+            } // <unnamed>
+         } // local
+
+         TEST( casual_common_communication_ipc, send_receivce__1_exactly_transport_size)
+         {
+            common::unittest::Trace trace;
+
+
+            local::exactly_transport_size send_message;
+            memory::set( send_message.payload, 6);
+
+            mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
+
+            local::exactly_transport_size receive_message;
+            ipc::blocking::receive( ipc::inbound::device(), receive_message);
+
+            {
+               local::exactly_transport_size dummy;
+               EXPECT_FALSE( ipc::non::blocking::receive( ipc::inbound::device(), dummy));
+            }
+
+            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
          }
 
       } // communication

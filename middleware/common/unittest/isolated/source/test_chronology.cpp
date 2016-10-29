@@ -1,8 +1,5 @@
 //!
-//! test_chronology.cpp
-//!
-//! Created on: Oct 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
