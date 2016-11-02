@@ -47,13 +47,12 @@ namespace casual
             namespace eventually
             {
 
+               Uuid send( id_type destination, communication::message::Complete&& complete);
 
-               void send( id_type destination, communication::message::Complete&& complete);
-
-               template< typename M>
-               void send( id_type destination, M&& message)
+               template< typename M, typename C = marshal::binary::create::Output>
+               Uuid send( id_type destination, M&& message, C creator = marshal::binary::create::Output{})
                {
-                  send( destination, marshal::complete( std::move( message)));
+                  return send( destination, marshal::complete( std::forward< M>( message), creator));
                }
 
 

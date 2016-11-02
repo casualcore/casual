@@ -11,6 +11,11 @@
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
 
+
+// todo: temp
+#include <iostream>
+
+
 namespace casual
 {
    namespace common
@@ -142,7 +147,7 @@ namespace casual
                   return find_complete(
                         std::forward< P>( policy),
                         handler,
-                        [&]( const complete_type& m){ return ! range::find( types, m.type).empty();});
+                        [&]( const complete_type& m){ return ! common::range::find( types, m.type).empty();});
                }
 
                //!
@@ -171,7 +176,7 @@ namespace casual
                bool receive( M& message, P&& policy, const error_type& handler = nullptr)
                {
                   return unmarshal(
-                        next(
+                        this->next(
                               common::message::type( message),
                               std::forward< P>( policy),
                               handler),
@@ -187,8 +192,11 @@ namespace casual
                template< typename M, typename P>
                bool receive( M& message, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
+                  // todo: temp
+                  Trace trace{ "common::communication::inbound::Device::receive correlation"};
+
                   return unmarshal(
-                        next(
+                        this->next(
                               correlation,
                               std::forward< P>( policy),
                               handler),
@@ -288,7 +296,7 @@ namespace casual
             private:
 
                using cache_type = std::vector< complete_type>;
-               using range_type = decltype( range::make( cache_type::iterator(), 0));
+               using range_type =  range::type_t< cache_type>;
 
                template< typename C, typename M>
                bool unmarshal( C&& complete, M& message)
@@ -305,6 +313,9 @@ namespace casual
                template< typename Policy, typename Predicate>
                range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
+                  // todo: temp
+                  Trace trace{ "common::communication::inbound::Device::find"};
+
                   while( true)
                   {
                      try
@@ -313,8 +324,24 @@ namespace casual
 
                         auto found = range::find_if( m_cache, predicate);
 
+                        // todo: temp
+                        if( found)
+                        {
+                           log::debug << "found message: " << *found << std::endl;
+                        }
+                        else
+                        {
+                           log::debug << "did not find message" << std::endl;
+                        }
+
                         while( ! found && policy.receive( m_connector, transport))
                         {
+                           // todo: temp
+                           Trace trace{ "while( ! found && policy.receive( m_connector, transport))"};
+
+                           // temp
+                           log::debug << "received transport: " << transport << std::endl;
+
                            //
                            // Check if the message should be discarded
                            //
@@ -324,6 +351,9 @@ namespace casual
                               found = range::find_if( m_cache, predicate);
                            }
                         }
+
+                        // todo: temp
+                        log::debug << "found.size(): " << found.size() << std::endl;
                         return found;
                      }
                      catch( ...)
@@ -343,6 +373,9 @@ namespace casual
                template< typename Policy, typename... Predicates>
                complete_type find_complete( Policy&& policy, const error_type& handler, Predicates&&... predicates)
                {
+                  // todo: temp
+                  Trace trace{ "common::communication::inbound::Device::find_complete"};
+
                   auto found = find(
                         std::forward< Policy>( policy),
                         handler,
@@ -350,10 +383,17 @@ namespace casual
                               []( const message::Complete& m){ return m.complete();},
                               std::forward< Predicates>( predicates)...));
 
+                  // todo: temp
+                  //std::cerr << "pid: " << process::id() << " - found.size(): " << found.size() << std::endl;
+
+
                   if( found)
                   {
+                     // todo: temp
+                     //std::cerr << "pid: " << process::id() << " - found complete message: " << *found << std::endl;
+
                      auto result = std::move( *found);
-                     m_cache.erase( found.begin());
+                     m_cache.erase( std::begin( found));
                      return result;
                   }
                   return {};
@@ -362,16 +402,27 @@ namespace casual
 
                void cache( transport_type& transport)
                {
+
                   auto found = range::find_if( m_cache,
                         [&]( const complete_type& m){ return transport.message.header.correlation == m.correlation;});
 
                   if( found)
                   {
+                     // todo: temp
+                     log::debug << "found complete: " << *found << std::endl;
+
                      found->add( transport);
+
+                     // todo: temp
+                     log::debug << "complete after add: " << *found << std::endl;
                   }
                   else
                   {
+                     log::debug << "new complete - add transport: " << transport << std::endl;
                      m_cache.emplace_back( transport);
+
+                     // todo: temp
+                     log::debug << "complete createion: " << m_cache.back() << std::endl;
                   }
                }
 

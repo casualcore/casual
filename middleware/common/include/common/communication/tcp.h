@@ -8,6 +8,7 @@
 
 #include "common/communication/message.h"
 #include "common/communication/device.h"
+#include "common/marshal/network.h"
 
 #include "common/platform.h"
 #include "common/flag.h"
@@ -233,7 +234,7 @@ namespace casual
                   using base_connector::base_connector;
                };
 
-               using Device = communication::inbound::Device< Connector>;
+               using Device = communication::inbound::Device< Connector, marshal::binary::network::create::Input>;
 
             } // inbound
 
@@ -246,7 +247,7 @@ namespace casual
                   inline void reconnect() const { throw; }
                };
 
-               using Device = communication::outbound::Device< Connector>;
+               using Device = communication::outbound::Device< Connector,  marshal::binary::network::create::Output>;
             } // outbound
 
 

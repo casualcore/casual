@@ -140,16 +140,17 @@ install_bin.append( target)
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/isolated/source/test_inbound_cache.cpp'),
+        Compile( 'unittest/isolated/source/test_message.cpp'),
         
         # ipc
-        Compile( 'unittest/isolated/source/ipc/test_manager.cpp'),
-        Compile( 'unittest/isolated/source/ipc/test_inbound.cpp'),
-        Compile( 'unittest/isolated/source/ipc/test_outbound.cpp'),
+        #Compile( 'unittest/isolated/source/ipc/test_manager.cpp'),
+        #Compile( 'unittest/isolated/source/ipc/test_inbound.cpp'),
+        #Compile( 'unittest/isolated/source/ipc/test_outbound.cpp'),
         
         # tcp
-        Compile( 'unittest/isolated/source/tcp/test_outbound.cpp'),
-        Compile( 'unittest/isolated/source/tcp/test_listener.cpp'),
-        Compile( 'unittest/isolated/source/tcp/test_manager.cpp'),
+        #Compile( 'unittest/isolated/source/tcp/test_outbound.cpp'),
+        #Compile( 'unittest/isolated/source/tcp/test_listener.cpp'),
+        #Compile( 'unittest/isolated/source/tcp/test_manager.cpp'),
         
    ], 
    [ common_archive, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment', 'casual-unittest']) 

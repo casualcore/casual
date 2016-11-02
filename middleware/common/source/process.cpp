@@ -514,9 +514,6 @@ namespace casual
             }
 
 
-
-            auto c_environment = local::current::environment( environment);
-
             struct attribute_t
             {
                attribute_t()
@@ -548,27 +545,37 @@ namespace casual
 
 
 
+
             platform::pid::type pid = 0;
 
             log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
-            auto status =  posix_spawnp(
-                  &pid,
-                  path.c_str(),
-                  nullptr,
-                  &spawn.attributes,
-                  const_cast< char* const*>( c_arguments.data()),
-                  const_cast< char* const*>( c_environment.data())
-                  );
-            switch( status)
             {
-               case 0:
-                  break;
-               default:
-                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
-                        exception::make_nip( "arguments", range::make( arguments)),
-                        exception::make_nip( "environment", range::make( environment)),
-                        CASUAL_NIP( error::string( status)));
+               //
+               // Since we're reading environment variables we need to lock
+               //
+               std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
+
+               auto c_environment = local::current::environment( environment);
+
+               auto status =  posix_spawnp(
+                     &pid,
+                     path.c_str(),
+                     nullptr,
+                     &spawn.attributes,
+                     const_cast< char* const*>( c_arguments.data()),
+                     const_cast< char* const*>( c_environment.data())
+                     );
+               switch( status)
+               {
+                  case 0:
+                     break;
+                  default:
+                     throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                           exception::make_nip( "arguments", range::make( arguments)),
+                           exception::make_nip( "environment", range::make( environment)),
+                           CASUAL_NIP( error::string( status)));
+               }
             }
 
             //

@@ -10,6 +10,8 @@
 #include "common/message/type.h"
 #include "common/memory.h"
 
+// todo: temp
+#include "common/trace.h"
 
 #include <cstdint>
 #include <array>
@@ -29,13 +31,20 @@ namespace casual
             template< std::size_t message_size>
             struct basic_transport
             {
-               using message_type = platform::ipc::message::type;
                using correalation_type = Uuid::uuid_type;
-
-
 
                struct header_t
                {
+                  //!
+                  //! Which logical type of message this transport is carrying
+                  //!
+                  //! @attention has to be the first bytes in the message
+                  //!
+                  common::message::Type type;
+
+                  //!
+                  //! The message correlation id
+                  //!
                   correalation_type correlation;
 
                   //!
@@ -57,7 +66,6 @@ namespace casual
                enum
                {
                   message_max_size = message_size,
-                  message_type_size = sizeof( message_type),
                   header_size = sizeof( header_t),
                   payload_max_size = message_max_size - header_size,
 
@@ -69,38 +77,31 @@ namespace casual
 
                struct message_t
                {
-
-
-                  //
-                  // type has to be first!
-                  //
-                  message_type type;
                   header_t header;
                   payload_type payload;
-
                } message;
 
 
                static_assert( message_max_size - payload_max_size < payload_max_size, "Payload is to small");
                static_assert( std::is_pod< message_t>::value, "Message has be a POD");
-               static_assert( sizeof( message_t) - message_type_size == message_max_size, "something is wrong with padding");
+               static_assert( sizeof( message_t) - header_size == payload_max_size, "something is wrong with padding");
 
 
                basic_transport() { memory::set( message);}
-               basic_transport( common::message::Type type) : basic_transport() { basic_transport::type( type);}
+               basic_transport( common::message::Type type) : basic_transport() { message.header.type = type;}
 
 
                //!
                //! @return the message type
                //!
-               common::message::Type type() const { return static_cast< common::message::Type>( message.type);}
+               common::message::Type type() const { return message.header.type;}
 
                //!
                //! Sets the message type
                //!
                //! @param type type to set
                //!
-               void type( common::message::Type type) { message.type = static_cast< decltype( message.type)>( type);}
+               void type( common::message::Type type) { message.header.type = type;}
 
 
                const_range_type payload() const
@@ -144,11 +145,13 @@ namespace casual
             {
                using transport_type = basic_transport< message_size>;
 
-               return out << "{type: " << value.message.type << ", correlation: " << common::uuid::string( value.message.header.correlation)
-                     << ", offset: " << value.message.header.offset
-                     << ", count: " << value.message.header.count
-                     << ", complete_size: " << value.message.header.complete_size
+               return out << "{ header.type: " << value.message.header.type
+                     << ", header.correlation: " << common::uuid::string( value.message.header.correlation)
+                     << ", header.offset: " << value.message.header.offset
+                     << ", header.count: " << value.message.header.count
+                     << ", header.complete_size: " << value.message.header.complete_size
                      << ", header-size: " << transport_type::header_size
+                     << ", transport-size: " <<  transport_type::header_size + value.message.header.count
                      << ", max-size: " << transport_type::message_max_size << "}";
             }
 
@@ -162,12 +165,13 @@ namespace casual
                Complete();
                Complete( message_type_type type, const Uuid& correlation);
 
-               template< typename T>
-               Complete( T&& transport) :
-                  type{ common::message::Type( transport.message.type)}, correlation{ transport.message.header.correlation},
+               template< std::size_t message_size>
+               Complete( const basic_transport< message_size>& transport) :
+                  type{ transport.message.header.type}, correlation{ transport.message.header.correlation},
                   payload( transport.message.header.complete_size), m_unhandled{ range::make( payload)}
                {
                   add( transport);
+                  //add( std::forward< T>( transport));
                }
 
 
@@ -190,9 +194,12 @@ namespace casual
 
 
                //! @param transport
-               template< typename T>
-               void add( T& transport)
+               template< std::size_t message_size>
+               void add( const basic_transport< message_size>& transport)
                {
+                  // todo: temp
+                  Trace trace{ "common::message::Complete::add"};
+
                   assert( payload.size() == transport.message.header.complete_size);
 
                   auto source = transport.payload();
@@ -254,11 +261,12 @@ namespace casual
                }
 
             private:
-
-
                std::vector< range_type> m_unhandled;
-
             };
+
+            static_assert( traits::is_movable< Complete>::value, "not movable");
+
+
 
          } // message
 

@@ -319,7 +319,7 @@ namespace casual
                            // empty uuid represent error. TODO: is this enough?
                            reply.id = common::uuid::empty();
 
-                           blocking::send( common::communication::ipc::inbound::device().connector().id(), reply);
+                           blocking::send( common::communication::ipc::inbound::id(), reply);
                         }
                      }
 
@@ -357,7 +357,7 @@ namespace casual
                            // empty uuid represent error. TODO: is this enough?
                            reply.id = common::uuid::empty();
 
-                           blocking::send( common::communication::ipc::inbound::device().connector().id(), reply);
+                           blocking::send( common::communication::ipc::inbound::id(), reply);
                         }
                      }
 

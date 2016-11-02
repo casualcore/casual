@@ -12,7 +12,6 @@
 #include "common/uuid.h"
 #include "common/process.h"
 
-struct tm;
 
 namespace casual
 {
@@ -21,17 +20,24 @@ namespace casual
 		namespace environment
 		{
 
-		   //!
-		   //! ::localtime_r is not thread safe, since it accessing environment
-		   //! variable TZ in a non-thread-safe manner under the hood.
-		   //!
-		   //! Until we've found a way to get local time thread safe we roll our
-		   //! own that uses the same mutex as set/get environment variables.
-		   //!
-		   tm* localtime_r( const time_t* seconds, tm* time);
-
 			namespace variable
 			{
+
+			   //!
+			   //! Exposes the mutex that is used to get read and writes to environment variables
+			   //! thread safe.
+			   //!
+			   //! There are a few other places that uses and manipulates environment variables, and
+			   //! we need those to lock and use the same mutex.
+			   //!
+			   //! Known places:
+			   //!
+			   //! - chronology::internal::format  localtime_r uses TZ
+			   //! - process::spawn "forwards" the current environment variables to the child process
+			   //!
+			   //! @return
+			   std::mutex& mutex();
+
 				bool exists( const std::string& name);
 
 				//!

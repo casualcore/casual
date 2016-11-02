@@ -260,6 +260,8 @@ namespace casual
             Broker::Broker( message::dispatch::Handler&& handler)
                : m_replier{ std::move( handler)}
             {
+               Trace trace{ "mockup domain::Broker::Broker"};
+
                //
                // Connect to the domain
                //
@@ -280,9 +282,6 @@ namespace casual
 
             message::dispatch::Handler Broker::default_handler()
             {
-
-
-
                return message::dispatch::Handler{
 
                   [&]( message::service::lookup::Request& r)

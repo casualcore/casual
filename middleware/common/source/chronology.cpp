@@ -37,11 +37,17 @@ namespace chronology
          // to_time_t does not exist as a static member in common::clock_type
          //
          auto time_t = platform::clock_type::to_time_t( time);
-
-
          //const std::time_t seconds = std::chrono::duration_cast< std::chrono::seconds>( time.time_since_epoch()).count();
+
          struct tm time_parts;
-         function( &time_t, &time_parts);
+
+         {
+            //
+            // Until we get a thread safe localtime_r we lock
+            //
+            std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
+            function( &time_t, &time_parts);
+         }
 
          const auto ms = std::chrono::duration_cast< std::chrono::milliseconds>( time.time_since_epoch());
 
@@ -62,7 +68,7 @@ namespace chronology
 
    std::string local( const platform::time_point& time)
    {
-      return internal::format( time, &environment::localtime_r);
+      return internal::format( time, &::localtime_r);
    }
 
    std::string local()
