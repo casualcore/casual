@@ -36,6 +36,8 @@ node {
 
    stage('Build/Unittest Ubuntu') {
 
+       bitbucketStatusNotify: buildState: 'IN PROGRESS', buildKey: 'ubuntu', buildName: 'ubuntu'
+
        build( 'ubuntucompile', 'casual/ubuntu')
 
        step([$class: 'XUnitBuilder',
@@ -43,7 +45,9 @@ node {
           tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
        archive includes: '**/casual.log' 
-       archive includes: '**/casual.tar' 
+       archive includes: 'casual/casual.tar' 
+
+       bitbucketStatusNotify: currentBuild.result, buildKey: 'ubuntu', buildName: 'ubuntu'
    }
 
 }
