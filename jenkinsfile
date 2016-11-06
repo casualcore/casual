@@ -15,7 +15,7 @@ def fetch_repo( repository, branch, directory)
 def build( name, image)
 {
    def current_dir = pwd()
-   writeFile file: 'casual/builder.sh' text: '''
+   writeFile file: 'casual/builder.sh', text: '''
 #! /bin/sh
 cd /git/casual
 casual-make make && casual-make clean && casual-make compile && casual-make link 
@@ -26,11 +26,11 @@ casual-make clean
 chmod a+w -R .
    '''
 
-   sh '''
+   sh """
    chmod +x casual/builder.sh
    if docker ps -a | grep $name; then docker rm $name;fi
    docker run --name $name -v $current_dir/casual:/git/casual $image
-   '''
+   """
 } 
 
 node {
