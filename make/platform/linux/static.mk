@@ -12,14 +12,18 @@ DEFAULT_LIBS :=
 ######################################################################
 
 
+ifndef CXX
+CXX = g++
+endif
 
-COMPILER = g++
+
+COMPILER = $(CXX)
 CROSSCOMPILER = clang++
 
 #
 # Linkers
 #
-LIBRARY_LINKER = g++
+LIBRARY_LINKER = $(CXX)
 ARCHIVE_LINKER = ar rcs
 
 
