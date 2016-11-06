@@ -43,11 +43,7 @@ node {
           tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
        archive includes: '**/casual.log' 
+       archive includes: '**/casual.tar' 
    }
 
-   stage('Build/Unittest debian') {
-
-       build( 'debiancompile', 'casual/debian')
-   }
-   
 }
