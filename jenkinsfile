@@ -47,7 +47,7 @@ node {
        archive includes: '**/casual.log' 
        archive includes: 'casual/casual.tar' 
 
-       bitbucketStatusNotify: currentBuild.result, buildKey: 'ubuntu', buildName: 'ubuntu'
+       bitbucketStatusNotify currentBuild.result, buildKey: 'ubuntu', buildName: 'ubuntu'
    }
 
 }
