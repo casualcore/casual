@@ -129,7 +129,7 @@ domain:
                         if( state.connections.empty())
                            return false;
 
-                        return range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+                        return range::all_of( state.connections, []( const manager::admin::vo::Connection& c){
                            return c.runlevel >= manager::admin::vo::Connection::Runlevel::online;
                         });
                      }

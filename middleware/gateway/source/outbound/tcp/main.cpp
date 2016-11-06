@@ -39,7 +39,6 @@ namespace casual
                using outbound_device_type = communication::tcp::outbound::Device;
                using inbound_device_type = communication::tcp::inbound::Device;
 
-
                struct configuration_type
                {
                   communication::tcp::socket::descriptor_type descriptor;

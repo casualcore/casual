@@ -7,8 +7,13 @@
 
 #include "common/platform.h"
 #include "common/log.h"
+#include "common/marshal/marshal.h"
+#include "common/message/type.h"
 
 #include <gtest/gtest.h>
+
+
+#include <array>
 
 namespace casual
 {
@@ -44,12 +49,42 @@ namespace casual
             }
          };
 
+         namespace message
+         {
+
+            template< std::size_t size, common::message::Type type = common::message::Type::MOCKUP_BASE>
+            struct basic_message : common::message::basic_message< type>
+            {
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  // we don't serialize execution
+                  //base_type::marshal( archive);
+                  archive & payload;
+               })
+
+               std::array< char, size> payload;
+            };
+
+         } // message
 
          namespace random
          {
             platform::binary_type binary( std::size_t size);
-         } // random
 
+
+            platform::binary_type::value_type byte();
+
+            template< typename R>
+            auto range( R&& range) -> decltype( std::forward< R>( range))
+            {
+               for( auto& value : range)
+               {
+                  value = byte();
+               }
+               return std::forward< R>( range);
+            }
+         } // random
       } // unittest
    } // common
 } // casual

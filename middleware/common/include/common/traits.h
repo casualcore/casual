@@ -92,6 +92,22 @@ namespace casual
 
 
 
+         //!
+         //! Removes cv and references
+         //!
+         template< typename T>
+         struct basic_type
+         {
+            using type = typename std::remove_reference< typename std::remove_cv< T>::type>::type;
+         };
+
+
+         //!
+         //! Removes cv and references
+         //!
+         template< typename T>
+         using basic_type_t = typename basic_type< T>::type;
+
 
 
          namespace container
@@ -106,6 +122,8 @@ namespace casual
 
                struct sequence : traversable {};
                struct continuous : sequence {};
+
+               struct array : continuous {};
 
                struct adaptor : container{};
             } // category
@@ -130,8 +148,13 @@ namespace casual
             template< typename T>
             struct traits { using category = void; using iterator = void; using tag = void;};
 
+
+
             template< typename T, std::size_t size>
-            struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::continuous>{};
+            struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::array>{};
+
+
+
             template< typename T>
             struct traits< std::vector< T>> : detail::traits< std::vector< T>, container::category::continuous>{};
             template< typename T>
@@ -169,10 +192,13 @@ namespace casual
             template< typename T, typename Container>
             struct traits< std::priority_queue< T, Container>> : detail::category_traits< container::category::adaptor>{};
 
+            template< typename T>
+            using category_t = typename traits< T>::category;
+
 
             template< typename Container, typename Category>
             struct is_category : std::integral_constant< bool,
-               std::is_base_of< Category, typename traits< Container>::category>::value> {};
+               std::is_base_of< Category, category_t< basic_type_t< Container>>>::value> {};
 
             template< typename Container>
             struct is_container : is_category< Container, category::container> {};
@@ -188,6 +214,9 @@ namespace casual
 
             template< typename Container>
             struct is_adaptor : is_category< Container, category::adaptor> {};
+
+            template< typename Container>
+            struct is_array : is_category< Container, category::array> {};
 
          } // container
 

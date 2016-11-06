@@ -330,7 +330,7 @@ the complete transport message.
 )";
                print::header( out);
 
-               local::type::print( out, transport.message.type, "message.type", "type of the message that the payload contains");
+               local::type::print( out, transport.type(), "message.header.type", "type of the message that the payload contains");
                local::type::print( out, transport.message.header.correlation, "message.header.correlation", "correlation id of the message");
                local::type::print( out, transport.message.header.offset, "message.header.offset", "which offset this transport message represent of the complete message");
                local::type::print( out, transport.message.header.count, "message.header.count", "size of payload in this transport message");

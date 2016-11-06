@@ -32,6 +32,14 @@ namespace casual
                {
                   Trace trace{ "domain::manager::local::singleton"};
 
+
+                  //
+                  // Set our ipc-queue so children easy can send messages to us.
+                  //
+                  environment::variable::process::set(
+                        environment::variable::name::ipc::domain::manager(),
+                        common::process::handle());
+
                   auto path = environment::domain::singleton::file();
 
                   auto temp_file = file::scoped::Path{ file::name::unique( "/tmp/", ".tmp")};
@@ -40,9 +48,12 @@ namespace casual
 
                   if( output)
                   {
-                     output << communication::ipc::inbound::id() << '\n';
+                     output << common::process::handle().queue << '\n';
+                     output << common::process::handle().pid << '\n';
                      output << common::domain::identity().name << '\n';
                      output << common::domain::identity().id << std::endl;
+
+                     log << "domain information - id: " << common::domain::identity() << " - process: " << common::process::handle() << '\n';
                   }
                   else
                   {
@@ -76,10 +87,6 @@ namespace casual
 
             m_singelton = local::singleton();
 
-            //
-            // Set our ipc-queue so children easy can send messages to us.
-            //
-            environment::variable::set( environment::variable::name::ipc::domain::manager(), communication::ipc::inbound::id());
 
             if( ! settings.bare)
             {

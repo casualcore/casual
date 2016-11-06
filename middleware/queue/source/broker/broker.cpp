@@ -110,8 +110,8 @@ namespace casual
                   // Make sure all groups are up and running before we continue
                   //
                   {
-                     casual::common::message::dispatch::Handler handler{
-                        broker::handle::connect::Request{ state}};
+                     auto handler = ipc::device().handler(
+                        broker::handle::connect::Request{ state});
 
                      const auto filter = handler.types();
 

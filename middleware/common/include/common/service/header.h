@@ -26,6 +26,9 @@ namespace casual
 
                struct Field
                {
+                  Field() = default;
+                  Field( std::string key, std::string value) : key{ std::move( key)}, value{ std::move( value)} {}
+
                   std::string key;
                   std::string value;
 

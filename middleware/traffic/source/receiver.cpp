@@ -131,13 +131,14 @@ namespace casual
       {
          try
          {
-            common::message::dispatch::Handler handler{
+            communication::ipc::Helper receiver;
+
+            auto handler = receiver.handler(
                local::handle_traffic{ log},
                common::message::handle::Shutdown{},
-               common::message::handle::ping(),
-            };
+               common::message::handle::ping()
+            );
 
-            communication::ipc::Helper receiver;
 
             while( true)
             {

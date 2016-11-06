@@ -273,7 +273,6 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            EXPECT_TRUE( local::boolean( socket));
 
             auto send = [&](){
                common::message::service::lookup::Request message;
@@ -298,6 +297,129 @@ namespace casual
                EXPECT_TRUE( message.requested == "testservice");
             }
          }
+
+
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__exact_transport_size)
+         {
+            common::unittest::Trace trace;
+
+            const std::string port{ "23666"};
+
+            mockup::Thread server{ &local::echo::server, port};
+
+            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+
+            using message_type = unittest::message::basic_message< tcp::outbound::Device::transport_type::max_payload_size()>;
+
+
+            message_type send_message;
+            unittest::random::range( send_message.payload);
+
+            auto correlation = outbund.blocking_send( send_message);
+
+
+            // receive (the echo)
+            {
+               message_type receive_message;
+               tcp::inbound::Device tcp{ outbund.connector().socket()};
+
+               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+
+               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+            }
+         }
+
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__3x_transport_size)
+         {
+            common::unittest::Trace trace;
+
+            const std::string port{ "23666"};
+
+            mockup::Thread server{ &local::echo::server, port};
+
+            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+
+            using message_type = unittest::message::basic_message< 3 * tcp::outbound::Device::transport_type::max_payload_size()>;
+
+
+            message_type send_message;
+            unittest::random::range( send_message.payload);
+
+            auto correlation = outbund.blocking_send( send_message);
+
+
+            // receive (the echo)
+            {
+               message_type receive_message;
+               tcp::inbound::Device tcp{ outbund.connector().socket()};
+
+               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+
+               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+            }
+         }
+
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__10x_transport_size)
+         {
+            common::unittest::Trace trace;
+
+            const std::string port{ "23666"};
+
+            mockup::Thread server{ &local::echo::server, port};
+
+            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+
+            using message_type = unittest::message::basic_message< 10 * tcp::outbound::Device::transport_type::max_payload_size()>;
+
+
+            message_type send_message;
+            unittest::random::range( send_message.payload);
+
+            auto correlation = outbund.blocking_send( send_message);
+
+
+            // receive (the echo)
+            {
+               message_type receive_message;
+               tcp::inbound::Device tcp{ outbund.connector().socket()};
+
+               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+
+               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+            }
+         }
+
+
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__1_5x_transport_size)
+         {
+            common::unittest::Trace trace;
+
+            const std::string port{ "23666"};
+
+            mockup::Thread server{ &local::echo::server, port};
+
+            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+
+            using message_type = unittest::message::basic_message< static_cast< std::size_t>(  1.5 * tcp::outbound::Device::transport_type::max_payload_size())>;
+
+
+            message_type send_message;
+            unittest::random::range( send_message.payload);
+
+            auto correlation = outbund.blocking_send( send_message);
+
+
+            // receive (the echo)
+            {
+               message_type receive_message;
+               tcp::inbound::Device tcp{ outbund.connector().socket()};
+
+               tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
+
+               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+            }
+         }
+
 
       } // communication
    } // common

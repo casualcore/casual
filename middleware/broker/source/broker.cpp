@@ -82,7 +82,7 @@ namespace casual
                {
                   Trace trace{ "broker::connect spawn forward"};
 
-                  common::process::spawn( forward( settings), {});
+                  state.forward.pid = common::process::spawn( forward( settings), {});
 
                   state.forward = common::process::instance::fetch::handle(
                         common::process::instance::identity::forward::cache());

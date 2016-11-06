@@ -511,7 +511,7 @@ namespace casual
 
          } // handle
 
-         common::message::dispatch::Handler handler( State& state)
+         common::communication::ipc::dispatch::Handler handler( State& state)
          {
             static common::server::handle::basic_admin_call admin{
                manager::admin::services( state),

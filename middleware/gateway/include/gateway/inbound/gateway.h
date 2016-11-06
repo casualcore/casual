@@ -319,7 +319,7 @@ namespace casual
                            // empty uuid represent error. TODO: is this enough?
                            reply.id = common::uuid::empty();
 
-                           blocking::send( common::communication::ipc::inbound::device().connector().id(), reply);
+                           blocking::send( common::communication::ipc::inbound::id(), reply);
                         }
                      }
 
@@ -357,7 +357,7 @@ namespace casual
                            // empty uuid represent error. TODO: is this enough?
                            reply.id = common::uuid::empty();
 
-                           blocking::send( common::communication::ipc::inbound::device().connector().id(), reply);
+                           blocking::send( common::communication::ipc::inbound::id(), reply);
                         }
                      }
 
@@ -593,12 +593,16 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
-              : m_request_thread{ request_thread< S>, std::ref( m_cache), std::forward< S>( settings)}
             {
                //
                // 'connect' to our local domain
                //
                common::process::instance::connect();
+
+               //
+               // Start worker thread
+               //
+               m_request_thread = std::thread{ request_thread< S>, std::ref( m_cache), std::forward< S>( settings)};
             }
 
             ~Gateway()
@@ -672,7 +676,7 @@ namespace casual
 
 
 
-               common::message::dispatch::Handler handler{
+               auto handler = common::communication::ipc::inbound::device().handler(
                   //
                   // Internal messages
                   //
@@ -701,8 +705,8 @@ namespace casual
                   // Queue replies
                   //
                   handle::create::forward< common::message::queue::dequeue::Reply>( outbound_device),
-                  handle::create::forward< common::message::queue::enqueue::Reply>( outbound_device),
-               };
+                  handle::create::forward< common::message::queue::enqueue::Reply>( outbound_device)
+               );
 
                log << "start internal message pump\n";
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
@@ -717,12 +721,12 @@ namespace casual
 
                message::worker::Connect message;
 
-               common::message::dispatch::Handler handler{
+               auto handler = common::communication::ipc::inbound::device().handler(
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
-                  common::message::handle::assign( message),
-               };
+                  common::message::handle::assign( message)
+               );
 
                while( ! message.correlation)
                {
@@ -752,12 +756,12 @@ namespace casual
 
                handle::domain::discover::coordinate::internal::Message message;
 
-               common::message::dispatch::Handler handler{
+               auto handler = common::communication::ipc::inbound::device().handler(
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
-                  common::message::handle::assign( message),
-               };
+                  common::message::handle::assign( message)
+               );
 
                while( ! message.correlation)
                {
@@ -833,7 +837,6 @@ namespace casual
                      Trace trace{ "gateway::inbound::Gateway::request_thread main thread connect"};
 
                      message::worker::Connect message;
-                     //message.address = policy.address();
                      {
                         auto configuration = policy.configuration();
                         common::marshal::binary::Output marshal{ message.information};
@@ -849,7 +852,7 @@ namespace casual
                   //
                   // we start our request-message-pump
                   //
-                  common::message::dispatch::Handler handler{
+                  auto handler = device.handler(
                      handle::call::Request{ cache},
                      handle::basic_transaction_request< message::interdomain::transaction::resource::receive::prepare::Request>{},
                      handle::basic_transaction_request< message::interdomain::transaction::resource::receive::commit::Request>{},
@@ -857,9 +860,8 @@ namespace casual
                      handle::domain::discover::Request{},
 
                      handle::queue::dequeue::Request{ cache},
-                     handle::queue::enqueue::Request{ cache},
-
-                  };
+                     handle::queue::enqueue::Request{ cache}
+                  );
              
                   log << "start external message pump\n";
                   common::message::dispatch::blocking::pump( handler, device);

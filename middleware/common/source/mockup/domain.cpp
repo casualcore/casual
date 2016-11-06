@@ -110,7 +110,7 @@ namespace casual
 
             }
 
-            Manager::Manager( message::dispatch::Handler&& handler)
+            Manager::Manager( dispatch_type&& handler)
                : m_replier{ std::move( handler)}
             {
                local::prepare_domain_manager( m_replier.input());
@@ -118,10 +118,10 @@ namespace casual
 
             Manager::~Manager() = default;
 
-            message::dispatch::Handler Manager::default_handler()
+            dispatch_type Manager::default_handler()
             {
 
-               return message::dispatch::Handler{
+               return dispatch_type{
                   [&]( message::domain::process::connect::Request& r)
                   {
                      Trace trace{ "mockup domain::process::connect::Request"};
@@ -217,8 +217,27 @@ namespace casual
                   [&]( message::domain::process::termination::Registration& m)
                   {
                      Trace trace{ "mockup domain process::termination::Registration"};
+
+
+                     if( ! range::find( m_state.event_listeners, m.process))
+                     {
+                        m_state.event_listeners.push_back( m.process);
+                     }
+
                   },
+                  [&](  message::domain::process::termination::Event& m)
+                  {
+                     Trace trace{ "mockup domain process::termination::Event"};
+
+                     for( auto& listener : m_state.event_listeners)
+                     {
+                        ipc::eventually::send( listener.queue, m);
+                     }
+                  },
+
                };
+
+
             }
 
 
@@ -233,6 +252,7 @@ namespace casual
                      {
                         void domain( const mockup::ipc::Replier& replier)
                         {
+
                            message::domain::process::connect::Request request;
                            request.process = replier.process();
 
@@ -257,9 +277,11 @@ namespace casual
             {
             }
 
-            Broker::Broker( message::dispatch::Handler&& handler)
+            Broker::Broker( dispatch_type&& handler)
                : m_replier{ std::move( handler)}
             {
+               Trace trace{ "mockup domain::Broker::Broker"};
+
                //
                // Connect to the domain
                //
@@ -278,12 +300,9 @@ namespace casual
             Broker::~Broker() = default;
 
 
-            message::dispatch::Handler Broker::default_handler()
+            dispatch_type Broker::default_handler()
             {
-
-
-
-               return message::dispatch::Handler{
+               return dispatch_type{
 
                   [&]( message::service::lookup::Request& r)
                   {
@@ -402,10 +421,10 @@ namespace casual
 
             namespace transaction
             {
-               message::dispatch::Handler Manager::default_handler()
+               dispatch_type Manager::default_handler()
                {
 
-                  return message::dispatch::Handler{
+                  return dispatch_type{
                      [&]( common::message::transaction::commit::Request& message)
                      {
                         Trace trace{ "mockup::transaction::Commit"};
@@ -444,7 +463,7 @@ namespace casual
 
                Manager::Manager() : Manager( default_handler()) {}
 
-               Manager::Manager( message::dispatch::Handler handler)
+               Manager::Manager( dispatch_type handler)
                   : m_replier{ std::move( handler)}
                {
 
@@ -472,7 +491,7 @@ namespace casual
 
                }
 
-               Broker::Broker( message::dispatch::Handler&& handler)
+               Broker::Broker( dispatch_type&& handler)
                   : m_replier{ std::move( handler)}
                {
                   //
@@ -487,7 +506,7 @@ namespace casual
                   environment::variable::set( environment::variable::name::ipc::queue::broker(), m_replier.input());
                }
 
-               message::dispatch::Handler Broker::default_handler()
+               dispatch_type Broker::default_handler()
                {
 
 
@@ -576,7 +595,7 @@ namespace casual
 
 
                Server::Server( std::vector< message::service::advertise::Service> services)
-                : m_replier{ message::dispatch::Handler{ service::Echo{}, local::handle::connect::Reply{ "echo server"},}}
+                : m_replier{ dispatch_type{ service::Echo{}, local::handle::connect::Reply{ "echo server"},}}
                {
                   //
                   // Connect to the domain

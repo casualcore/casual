@@ -227,11 +227,8 @@ namespace casual
 
                   namespace eventually
                   {
-
-
                      struct Sender
                      {
-
                         struct Message
                         {
                            id_type destination;
@@ -275,28 +272,22 @@ namespace casual
 
                               Trace trace{ "mockup ipc::eventually::Sender::worker_thread"};
 
-                              std::vector< Message> cache;
-
                               while( true)
                               {
-                                 if( cache.empty() || ! queue.empty())
+                                 auto message = queue.get();
+
+                                 communication::ipc::outbound::Device ipc{ message.destination};
+
+                                 try
                                  {
-                                    cache.push_back( queue.get());
+                                    log::internal::debug << "mockup ipc::eventually::Sender::worker_thread ipc.put\n";
+
+                                    ipc.put( message.message, communication::ipc::policy::Blocking{});
                                  }
-
-                                 range::trim( cache, range::remove_if( cache, []( Message& message){
-                                    try
-                                    {
-                                       communication::ipc::outbound::Device ipc{ message.destination};
-
-                                       return static_cast< bool>(
-                                             ipc.put( message.message, communication::ipc::policy::non::Blocking{}));
-                                    }
-                                    catch( const exception::queue::Unavailable&)
-                                    {
-                                       return true;
-                                    }
-                                 }));
+                                 catch( const exception::queue::Unavailable&)
+                                 {
+                                    // no-op we just ignore it
+                                 }
                               }
                            }
                            catch( ...)
@@ -318,11 +309,15 @@ namespace casual
             {
 
 
-               void send( id_type destination, communication::message::Complete&& complete)
+               Uuid send( id_type destination, communication::message::Complete&& complete)
                {
                   Trace trace{ "mockup ipc::eventually::send"};
 
+                  auto correlation = complete.correlation;
+
                   local::eventually::Sender::instance().send( destination, std::move( complete));
+
+                  return correlation;
                }
 
 
@@ -528,7 +523,7 @@ namespace casual
 
             struct Replier::Implementation
             {
-               Implementation( message::dispatch::Handler&& replier) : process{ mockup::pid::next()}
+               Implementation( communication::ipc::dispatch::Handler&& replier) : process{ mockup::pid::next()}
                {
                   communication::ipc::inbound::Device ipc;
                   process.queue = ipc.connector().id();
@@ -543,7 +538,7 @@ namespace casual
                   local::shutdown_thread( m_thread, process.queue);
                }
 
-               static void worker_thread( communication::ipc::inbound::Device&& ipc, message::dispatch::Handler&& replier)
+               static void worker_thread( communication::ipc::inbound::Device&& ipc, communication::ipc::dispatch::Handler&& replier)
                {
                   Trace trace{ "Replier::worker_thread"};
 
@@ -569,7 +564,7 @@ namespace casual
 
             };
 
-            Replier::Replier( message::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
+            Replier::Replier( communication::ipc::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
             {
                log << "replier: " << *this << '\n';
             }

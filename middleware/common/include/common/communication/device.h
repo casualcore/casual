@@ -8,8 +8,13 @@
 
 #include "common/communication/message.h"
 
+#include "common/message/dispatch.h"
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
+
+#include "common/internal/trace.h"
+
+
 
 namespace casual
 {
@@ -90,14 +95,25 @@ namespace casual
                using unmarshal_type = Unmarshal;
                using error_type = std::function<void()>;
 
+               using handler_type = common::message::dispatch::basic_handler< Unmarshal>;
+
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
-               //Device( const Device&) = delete;
-               //Device& operator = ( const Device&) = delete;
+
+
+               //!
+               //! Creates a corresponding message-dispatch-handler to this
+               //! inbound device
+               //!
+               template< typename... Args>
+               static handler_type handler( Args&&... args)
+               {
+                  return { std::forward< Args>( args)...};
+               }
 
 
 
@@ -142,7 +158,7 @@ namespace casual
                   return find_complete(
                         std::forward< P>( policy),
                         handler,
-                        [&]( const complete_type& m){ return ! range::find( types, m.type).empty();});
+                        [&]( const complete_type& m){ return ! common::range::find( types, m.type).empty();});
                }
 
                //!
@@ -171,7 +187,7 @@ namespace casual
                bool receive( M& message, P&& policy, const error_type& handler = nullptr)
                {
                   return unmarshal(
-                        next(
+                        this->next(
                               common::message::type( message),
                               std::forward< P>( policy),
                               handler),
@@ -188,7 +204,7 @@ namespace casual
                bool receive( M& message, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
                   return unmarshal(
-                        next(
+                        this->next(
                               correlation,
                               std::forward< P>( policy),
                               handler),
@@ -288,7 +304,7 @@ namespace casual
             private:
 
                using cache_type = std::vector< complete_type>;
-               using range_type = decltype( range::make( cache_type::iterator(), 0));
+               using range_type =  range::type_t< cache_type>;
 
                template< typename C, typename M>
                bool unmarshal( C&& complete, M& message)
@@ -305,6 +321,7 @@ namespace casual
                template< typename Policy, typename Predicate>
                range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
+
                   while( true)
                   {
                      try
@@ -343,6 +360,7 @@ namespace casual
                template< typename Policy, typename... Predicates>
                complete_type find_complete( Policy&& policy, const error_type& handler, Predicates&&... predicates)
                {
+
                   auto found = find(
                         std::forward< Policy>( policy),
                         handler,
@@ -353,7 +371,7 @@ namespace casual
                   if( found)
                   {
                      auto result = std::move( *found);
-                     m_cache.erase( found.begin());
+                     m_cache.erase( std::begin( found));
                      return result;
                   }
                   return {};
@@ -362,8 +380,12 @@ namespace casual
 
                void cache( transport_type& transport)
                {
+
                   auto found = range::find_if( m_cache,
-                        [&]( const complete_type& m){ return transport.message.header.correlation == m.correlation;});
+                        [&]( const complete_type& m)
+                        {
+                           return transport.type() == m.type && transport.message.header.correlation == m.correlation;
+                        });
 
                   if( found)
                   {
@@ -437,18 +459,17 @@ namespace casual
                Uuid put( const message::Complete& message, Policy&& policy, const error_type& handler = nullptr)
                {
                   using transport_type = typename Device::transport_type;
-                  transport_type transport;
+                  transport_type transport{ message.type, message.payload.size()};
 
-                  transport.type( message.type);
-                  message.correlation.copy( transport.message.header.correlation);
-                  transport.message.header.complete_size = message.payload.size();
+                  message.correlation.copy( transport.correlation());
+
 
                   auto part_begin = std::begin( message.payload);
 
                   do
                   {
-                     auto part_end = std::distance( part_begin, std::end( message.payload)) > transport_type::payload_max_size ?
-                           part_begin + transport_type::payload_max_size : std::end( message.payload);
+                     auto part_end = std::distance( part_begin, std::end( message.payload)) > transport.max_payload_size() ?
+                           part_begin + transport.max_payload_size() : std::end( message.payload);
 
                      transport.assign( part_begin, part_end);
                      transport.message.header.offset = std::distance( std::begin( message.payload), part_begin);

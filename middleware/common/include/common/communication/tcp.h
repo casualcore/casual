@@ -8,6 +8,7 @@
 
 #include "common/communication/message.h"
 #include "common/communication/device.h"
+#include "common/marshal/network.h"
 
 #include "common/platform.h"
 #include "common/flag.h"
@@ -163,7 +164,13 @@ namespace casual
 
             namespace message
             {
-               using Transport = communication::message::basic_transport< platform::tcp::message::size>;
+               struct Policy
+               {
+                  static constexpr std::size_t message_size() { return platform::tcp::message::size;}
+                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size + type_size;}
+               };
+
+               using Transport = communication::message::basic_transport< Policy>;
 
             } // message
 
@@ -233,7 +240,7 @@ namespace casual
                   using base_connector::base_connector;
                };
 
-               using Device = communication::inbound::Device< Connector>;
+               using Device = communication::inbound::Device< Connector, marshal::binary::network::create::Input>;
 
             } // inbound
 
@@ -246,9 +253,14 @@ namespace casual
                   inline void reconnect() const { throw; }
                };
 
-               using Device = communication::outbound::Device< Connector>;
+               using Device = communication::outbound::Device< Connector,  marshal::binary::network::create::Output>;
             } // outbound
 
+
+            namespace dispatch
+            {
+               using Handler =  typename inbound::Device::handler_type;
+            } // dispatch
 
          } // tcp
       } // communication

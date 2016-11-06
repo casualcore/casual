@@ -1,22 +1,27 @@
 //!
-//! test_conformance.cpp
-//!
-//! Created on: Dec 21, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 
 #include "common/algorithm.h"
 #include "common/traits.h"
+#include "common/signal.h"
 
 #include <type_traits>
 
 
+
+#include <spawn.h>
+#include <sys/types.h>
+#include <signal.h>
+
+
 //
-// Just a place to test C++-conformance, or rather, casual's view on conformance
+// Just a place to test C++ and POSIX conformance, or rather, casual's view on conformance
 //
 
 
@@ -121,8 +126,6 @@ namespace casual
       }
 
 
-
-
       TEST( casual_common_conformance, search)
       {
          std::string source{ "some string to search in"};
@@ -131,6 +134,73 @@ namespace casual
 
          EXPECT_TRUE( std::search( std::begin( source), std::end( source), std::begin( to_find), std::end( to_find)) != std::end( source));
       }
+
+
+      TEST( casual_common_conformance, posix_spawnp)
+      {
+         common::unittest::Trace trace;
+
+         //
+         // We don't want any sig-child
+         //
+         signal::thread::scope::Block block{ { signal::Type::child}};
+
+         const char* const arguments[] = { "sleep", "20", nullptr };
+
+         const std::size_t count = 30;
+         std::vector< pid_t> pids;
+
+         for( auto counter = count; counter > 0; --counter)
+         {
+            pid_t pid;
+
+            if( posix_spawnp(
+                  &pid,
+                  "sleep",
+                  nullptr,
+                  nullptr,
+                  const_cast< char* const*>( arguments),
+                  nullptr) == 0)
+            {
+               pids.push_back( pid);
+            }
+         }
+
+         EXPECT_TRUE( pids.size() == count);
+
+         {
+            std::vector< pid_t> signaled;
+
+            for( auto pid : pids)
+            {
+               if( kill( pid, SIGINT) == 0)
+               {
+                  signaled.push_back( pid);
+               }
+            }
+
+            EXPECT_TRUE( signaled == pids);
+         }
+
+         {
+            std::vector< pid_t> terminated;
+
+            for( auto pid : pids)
+            {
+               auto result = waitpid( pid, nullptr, 0);
+
+               EXPECT_TRUE( result == pid) << "result: " << result << " - pid: " << pid << " - errno: " << common::error::string();
+
+               if( result == pid)
+               {
+                  terminated.push_back( pid);
+               }
+            }
+            EXPECT_TRUE( terminated == pids) << "terminated: " << range::make( terminated) << " - pids: " << range::make( pids);
+         }
+      }
+
+
 
       /*
        * To bad std::function does not support move-only functors...

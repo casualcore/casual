@@ -14,7 +14,7 @@
 #include <memory>
 
 #include <cstdlib>
-#include <ctime>
+
 
 
 
@@ -90,15 +90,12 @@ namespace casual
          } // local
 
 
-         tm* localtime_r( const time_t* seconds, tm* time)
-         {
-            local::native::Variable::lock_type lock{ local::native::Variable::instance().mutex()};
-
-            return ::localtime_r( seconds, time);
-         }
-
 			namespace variable
 			{
+			   std::mutex& mutex()
+			   {
+			      return local::native::Variable::instance().mutex();
+			   }
 
 				bool exists( const std::string& name)
 				{

@@ -9,6 +9,8 @@
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 
+#include "common/platform.h"
+
 #include "common/flag.h"
 
 namespace casual
@@ -36,7 +38,13 @@ namespace casual
 
             namespace message
             {
-               using Transport = communication::message::basic_transport< platform::ipc::message::size>;
+               struct Policy
+               {
+                  static constexpr std::size_t message_size() { return platform::ipc::message::size;}
+                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size;}
+               };
+
+               using Transport = communication::message::basic_transport< Policy>;
             } // message
 
 
@@ -136,6 +144,8 @@ namespace casual
                   handle_type m_id = cInvalid;
                };
 
+               template< typename S>
+               using basic_device = communication::inbound::Device< Connector, S>;
 
                using Device = communication::inbound::Device< Connector>;
 
@@ -246,19 +256,20 @@ namespace casual
             {
                using error_type = typename inbound::Device::error_type;
 
-               template< typename M>
-               void receive( inbound::Device& ipc, M& message, const error_type& handler = nullptr)
+               template< typename S, typename M>
+               void receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
                {
                   ipc.receive( message, policy::Blocking{}, handler);
                }
 
-               template< typename M>
-               bool receive( inbound::Device& ipc, M& message, const Uuid& correlation, const error_type& handler = nullptr)
+               template< typename S, typename M>
+               bool receive( inbound::basic_device< S>& ipc, M& message, const Uuid& correlation, const error_type& handler = nullptr)
                {
                   return ipc.receive( message, correlation, policy::Blocking{}, handler);
                }
 
-               inline communication::message::Complete next( inbound::Device& ipc, const error_type& handler = nullptr)
+               template< typename S>
+               inline communication::message::Complete next( inbound::basic_device< S>& ipc, const error_type& handler = nullptr)
                {
                   return ipc.next( policy::Blocking{}, handler);
                }
@@ -277,19 +288,20 @@ namespace casual
                {
                   using error_type = typename inbound::Device::error_type;
 
-                  template< typename M>
-                  bool receive( inbound::Device& ipc, M& message, const error_type& handler = nullptr)
+                  template< typename S, typename M>
+                  bool receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
                   {
                      return ipc.receive( message, policy::non::Blocking{}, handler);
                   }
 
-                  template< typename M>
-                  bool receive( inbound::Device& ipc, M& message, const Uuid& correlation, const error_type& handler = nullptr)
+                  template< typename S, typename M>
+                  bool receive( inbound::basic_device< S>& ipc, M& message, const Uuid& correlation, const error_type& handler = nullptr)
                   {
                      return ipc.receive( message, correlation, policy::non::Blocking{}, handler);
                   }
 
-                  inline communication::message::Complete next( inbound::Device& ipc, const error_type& handler = nullptr)
+                  template< typename S>
+                  inline communication::message::Complete next( inbound::basic_device< S>& ipc, const error_type& handler = nullptr)
                   {
                      return ipc.next( policy::non::Blocking{}, handler);
                   }
@@ -402,6 +414,13 @@ namespace casual
                inline Helper() : Helper( nullptr) {}
 
 
+
+               template< typename... Args>
+               static auto handler( Args&&... args) -> decltype( common::communication::ipc::inbound::device().handler())
+               {
+                  return { std::forward< Args>( args)...};
+               }
+
                template< typename D, typename M>
                auto blocking_send( D&& device, M&& message) const
                 -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
@@ -495,6 +514,11 @@ namespace casual
             private:
                std::function<void()> m_error_handler;
             };
+
+            namespace dispatch
+            {
+               using Handler =  typename inbound::Device::handler_type;
+            } // dispatch
 
          } // ipc
 

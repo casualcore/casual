@@ -28,15 +28,14 @@ namespace casual
             {
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
                {
-
-                  auto size = message::Transport::header_size + transport.size();
-
                   //
                   // before we might block we check signals.
                   //
                   common::signal::handle();
 
-                  auto result = msgsnd( id, &const_cast< message::Transport&>( transport).message, size, flags.underlaying());
+                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+
+                  auto result = ::msgsnd( id, &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
                   if( result == -1)
                   {
@@ -69,7 +68,8 @@ namespace casual
                         }
                         case EINVAL:
                         {
-                           if( /* message.size() < MSGMAX  && */ transport.message.type > 0)
+                           //if( /* message.size() < MSGMAX  && */ transport.message.header.type != common::message::Type::absent_message)
+                           if( cast::underlying( transport.type()) > 0)
                            {
                               //
                               // The problem is with queue-id. We guess that it has been removed.
@@ -87,7 +87,7 @@ namespace casual
                      }
                   }
 
-                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+                  //log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
                   return true;
                }
@@ -98,7 +98,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, message::Transport::message_max_size, 0, flags.underlaying());
+                  auto result = msgrcv( id, &transport.message, transport.max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -312,17 +312,17 @@ namespace casual
                                  {
                                     if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
                                     {
-                                       return environment::variable::get< platform::ipc::id::type>( environment::variable::name::ipc::domain::manager());
+                                       return environment::variable::process::get( environment::variable::name::ipc::domain::manager());
                                     }
-                                    return platform::ipc::id::type( 0);
+                                    return process::Handle{};
                                  };
 
-                           auto queue = from_environment();
+                           auto process = from_environment();
 
 
-                           if( ipc::exists( queue))
+                           if( ipc::exists( process.queue))
                            {
-                              return queue;
+                              return process.queue;
                            }
 
                            log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
@@ -331,35 +331,39 @@ namespace casual
                                  {
                                     std::ifstream file{ common::environment::domain::singleton::file()};
 
-                                    platform::ipc::id::type ipc = 0;
+                                    struct
+                                    {
+                                       process::Handle process;
+                                       struct
+                                       {
+                                          std::string name;
+                                          std::string id;
+                                       } identity;
+                                    } domain_info;
 
                                     if( file)
                                     {
-                                       file >> ipc;
-                                       environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
+                                       file >> domain_info.process.queue;
+                                       file >> domain_info.process.pid;
+                                       file >> domain_info.identity.name;
+                                       file >> domain_info.identity.id;
 
-                                       {
-                                          std::string domain_name;
-                                          file >> domain_name;
-                                          std::string domain_id;
-                                          file >> domain_id;
+                                       environment::variable::process::set( environment::variable::name::ipc::domain::manager(), domain_info.process);
+                                       common::domain::identity( { domain_info.identity.id, domain_info.identity.name});
 
-                                          common::domain::identity( { domain_id, domain_name});
-
-                                          log << "domain identity: " << common::domain::identity() << '\n';
-                                       }
+                                       log << "domain information - id: " << common::domain::identity() << ", process: " << domain_info.process << '\n';
                                     }
-                                    return ipc;
+                                    return domain_info.process;
                                  };
 
-                           queue = from_singleton_file();
+                           process = from_singleton_file();
 
-                           if( ! ipc::exists( queue))
+                           if( ! ipc::exists( process.queue))
                            {
                               throw exception::communication::Unavailable{ "failed to locate domain manager"};
                            }
 
-                           return queue;
+                           return process.queue;
                         }
 
                      } // <unnamed>

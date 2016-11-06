@@ -336,9 +336,6 @@ namespace casual
                {
                   try
                   {  
-                     // 
-                     // first we shutdown the socket, followed by a close
-                     //
                      //local::socket::check::result( ::shutdown( m_descriptor, SHUT_RDWR));
                      local::socket::check::result( ::close( m_descriptor));
                      log << "Socket::close - descriptor: " << m_descriptor << '\n';
@@ -498,10 +495,8 @@ namespace casual
                {
                   Trace trace{ "tcp::native::send"};
 
-                  const auto size = message::Transport::header_size + message::Transport::message_type_size + transport.size();
-
                   auto first = &transport.message;
-                  const auto last = first + size;
+                  const auto last = first + transport.size();
 
                   try
                   {
@@ -540,8 +535,8 @@ namespace casual
                      // First we try to read all that we can, but at least the header
                      //
 
-                     const auto header_end = first + message::Transport::header_size + message::Transport::message_type_size;
-                     auto current_end = first + message::Transport::message_max_size;
+                     const auto header_end = first + transport.header_size();
+                     auto current_end = first + transport.max_message_size();
 
                      while( current != current_end)
                      {

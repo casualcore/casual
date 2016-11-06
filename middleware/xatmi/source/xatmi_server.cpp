@@ -80,10 +80,10 @@ int casual_start_server( casual_server_argument* serverArgument)
       //
       common::process::instance::connect();
 
-      common::message::dispatch::Handler handler{
+      auto handler = common::communication::ipc::inbound::device().handler(
          common::server::handle::Call( local::transform::ServerArguments{}( *serverArgument)),
-         common::message::handle::Shutdown{},
-      };
+         common::message::handle::Shutdown{}
+      );
 
 
       //
