@@ -99,7 +99,7 @@ namespace casual
                   {
                      ipc.blocking_send( group.process.queue, request);
 
-                     common::message::dispatch::Handler handler{
+                     auto handler = ipc.handler(
                         []( common::message::queue::dequeue::forget::Request& request)
                         {
                            // no-op
@@ -108,7 +108,7 @@ namespace casual
                         {
                            // no-op
                         }
-                     };
+                     );
 
                      handler( ipc.blocking_next( handler.types()));
                   }
@@ -147,7 +147,7 @@ namespace casual
                // (which we now also do) but it isn't really coherent with how casual otherwise works
                //
 
-               common::message::dispatch::Handler handler{
+               auto handler = ipc.handler(
                   [&]( common::message::queue::dequeue::Reply& reply)
                   {
                      if( ! reply.message.empty() && transaction)
@@ -181,7 +181,7 @@ namespace casual
                      forget_blocking.release();
                   },
                   common::message::handle::Shutdown{}
-               };
+               );
 
                handler( ipc.blocking_next());
 

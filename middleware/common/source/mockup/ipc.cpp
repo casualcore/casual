@@ -280,6 +280,8 @@ namespace casual
 
                                  try
                                  {
+                                    log::internal::debug << "mockup ipc::eventually::Sender::worker_thread ipc.put\n";
+
                                     ipc.put( message.message, communication::ipc::policy::Blocking{});
                                  }
                                  catch( const exception::queue::Unavailable&)
@@ -521,7 +523,7 @@ namespace casual
 
             struct Replier::Implementation
             {
-               Implementation( message::dispatch::Handler&& replier) : process{ mockup::pid::next()}
+               Implementation( communication::ipc::dispatch::Handler&& replier) : process{ mockup::pid::next()}
                {
                   communication::ipc::inbound::Device ipc;
                   process.queue = ipc.connector().id();
@@ -536,7 +538,7 @@ namespace casual
                   local::shutdown_thread( m_thread, process.queue);
                }
 
-               static void worker_thread( communication::ipc::inbound::Device&& ipc, message::dispatch::Handler&& replier)
+               static void worker_thread( communication::ipc::inbound::Device&& ipc, communication::ipc::dispatch::Handler&& replier)
                {
                   Trace trace{ "Replier::worker_thread"};
 
@@ -562,7 +564,7 @@ namespace casual
 
             };
 
-            Replier::Replier( message::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
+            Replier::Replier( communication::ipc::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
             {
                log << "replier: " << *this << '\n';
             }

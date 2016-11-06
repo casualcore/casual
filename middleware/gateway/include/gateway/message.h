@@ -252,34 +252,34 @@ namespace casual
                //!
                //!
                constexpr common::message::Type message_type( common::message::transaction::resource::prepare::Request&&)
-               { return common::message::Type::ineterdomain_transaction_resource_prepare_request;}
+               { return common::message::Type::interdomain_transaction_resource_prepare_request;}
 
                constexpr common::message::Type message_type( common::message::transaction::resource::prepare::Reply&&)
-               { return common::message::Type::ineterdomain_transaction_resource_prepare_reply;}
+               { return common::message::Type::interdomain_transaction_resource_prepare_reply;}
 
                constexpr common::message::Type message_type( common::message::transaction::resource::commit::Request&&)
-               { return common::message::Type::ineterdomain_transaction_resource_commit_request;}
+               { return common::message::Type::interdomain_transaction_resource_commit_request;}
 
                constexpr common::message::Type message_type( common::message::transaction::resource::commit::Reply&&)
-               { return common::message::Type::ineterdomain_transaction_resource_commit_reply;}
+               { return common::message::Type::interdomain_transaction_resource_commit_reply;}
 
                constexpr common::message::Type message_type( common::message::transaction::resource::rollback::Request&&)
-               { return common::message::Type::ineterdomain_transaction_resource_rollback_request;}
+               { return common::message::Type::interdomain_transaction_resource_rollback_request;}
 
                constexpr common::message::Type message_type( common::message::transaction::resource::rollback::Reply&&)
-               { return common::message::Type::ineterdomain_transaction_resource_rollback_reply;}
+               { return common::message::Type::interdomain_transaction_resource_rollback_reply;}
 
                constexpr common::message::Type message_type( common::message::service::call::callee::Request&&)
-               { return common::message::Type::ineterdomain_service_call;}
+               { return common::message::Type::interdomain_service_call;}
 
                constexpr common::message::Type message_type( common::message::service::call::Reply&&)
-               { return common::message::Type::ineterdomain_service_reply;}
+               { return common::message::Type::interdomain_service_reply;}
 
                constexpr common::message::Type message_type( common::message::gateway::domain::discover::Request&&)
-               { return common::message::Type::ineterdomain_domain_discover_request;}
+               { return common::message::Type::interdomain_domain_discover_request;}
 
                constexpr common::message::Type message_type( common::message::gateway::domain::discover::Reply&&)
-               { return common::message::Type::ineterdomain_domain_discover_reply;}
+               { return common::message::Type::interdomain_domain_discover_reply;}
 
 
                constexpr common::message::Type message_type( common::message::queue::enqueue::Request&&)

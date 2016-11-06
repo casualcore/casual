@@ -210,11 +210,11 @@ namespace casual
 
             try
             {
-               message::dispatch::Handler handler{
+               auto handler = communication::ipc::inbound::device().handler(
                      handle::service::name::Lookup{ m_state},
                      handle::service::Call{ m_state},
-                     message::handle::Shutdown{},
-               };
+                     message::handle::Shutdown{}
+               );
 
 
                while( true)

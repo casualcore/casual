@@ -1,8 +1,5 @@
 //!
-//! server.cpp
-//!
-//! Created on: Jul 25, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/resource/proxy.h"
@@ -221,12 +218,12 @@ namespace casual
             //
             common::log::internal::transaction << "prepare message dispatch handlers\n";
 
-            message::dispatch::Handler handler{
+            auto handler = communication::ipc::inbound::device().handler(
                common::message::handle::Shutdown{},
                handle::Prepare{ m_state},
                handle::Commit{ m_state},
-               handle::Rollback{ m_state},
-            };
+               handle::Rollback{ m_state}
+            );
 
 
             common::log::internal::transaction << "start message pump\n";

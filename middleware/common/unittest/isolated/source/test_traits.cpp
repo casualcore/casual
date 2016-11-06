@@ -14,6 +14,14 @@ namespace casual
 
    namespace common
    {
+      TEST( casual_common_traits, is_array_container)
+      {
+         common::unittest::Trace trace;
+
+
+         EXPECT_TRUE( ( traits::container::is_array< std::array< int, 10>>::value));
+      }
+
       TEST( casual_common_traits, is_sequence_container)
       {
          common::unittest::Trace trace;
@@ -22,6 +30,9 @@ namespace casual
          EXPECT_TRUE(  traits::container::is_sequence< std::deque< int>>::value);
          EXPECT_TRUE(  traits::container::is_sequence< std::list< int>>::value);
          EXPECT_TRUE( ( traits::container::is_sequence< std::array< int, 10>>::value));
+
+         EXPECT_TRUE( ( traits::container::is_sequence< std::array< int, 10>>::value));
+
 
          EXPECT_FALSE(  traits::container::is_sequence< std::set< int>>::value);
       }

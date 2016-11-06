@@ -132,7 +132,7 @@ namespace casual
                //!
                //! @param replier invoked on receive, and could send a reply
                //!
-               Replier( message::dispatch::Handler&& replier);
+               Replier( communication::ipc::dispatch::Handler&& replier);
 
                ~Replier();
 

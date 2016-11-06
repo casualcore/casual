@@ -435,7 +435,7 @@ namespace casual
 
       } // handle
 
-      common::message::dispatch::Handler handler( State& state)
+      handle::dispatch_type handler( State& state)
       {
          return {
             handle::process::Exit{ state},

@@ -12,6 +12,7 @@
 #include "common/message/server.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
+#include "common/communication/ipc.h"
 
 #include "common/marshal/complete.h"
 
@@ -28,6 +29,8 @@ namespace casual
       {
          namespace
          {
+            using dispatch_type = communication::ipc::dispatch::Handler;
+
             struct TestHandler
             {
                TestHandler() = default;
@@ -58,7 +61,7 @@ namespace casual
 
       TEST( casual_common_message_dispatch, construct)
       {
-         message::dispatch::Handler handler{ local::TestHandler()};
+         local::dispatch_type handler{ local::TestHandler()};
 
          EXPECT_TRUE( handler.size() == 1);
 
@@ -75,7 +78,7 @@ namespace casual
       {
          local::TestMember holder;
 
-         message::dispatch::Handler handler{ std::bind( &local::TestMember::handle, &holder, std::placeholders::_1)};
+         local::dispatch_type handler{ std::bind( &local::TestMember::handle, &holder, std::placeholders::_1)};
 
          EXPECT_TRUE( handler.size() == 1);
 
@@ -99,7 +102,7 @@ namespace casual
             {
                common::unittest::Trace trace;
 
-               message::dispatch::Handler handler{ local::TestHandler()};
+               local::dispatch_type handler{ local::TestHandler()};
 
                local::TestHandler::message_type message;
                auto complete = marshal::complete( message);
@@ -111,7 +114,7 @@ namespace casual
             {
                common::unittest::Trace trace;
 
-               message::dispatch::Handler handler{ local::TestHandler()};
+               local::dispatch_type handler{ local::TestHandler()};
 
                message::service::call::ACK message;
                auto complete = marshal::complete( message);

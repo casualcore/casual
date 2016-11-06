@@ -8,12 +8,12 @@
 
 #include "common/communication/message.h"
 
+#include "common/message/dispatch.h"
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
 
+#include "common/internal/trace.h"
 
-// todo: temp
-#include <iostream>
 
 
 namespace casual
@@ -95,14 +95,25 @@ namespace casual
                using unmarshal_type = Unmarshal;
                using error_type = std::function<void()>;
 
+               using handler_type = common::message::dispatch::basic_handler< Unmarshal>;
+
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
-               //Device( const Device&) = delete;
-               //Device& operator = ( const Device&) = delete;
+
+
+               //!
+               //! Creates a corresponding message-dispatch-handler to this
+               //! inbound device
+               //!
+               template< typename... Args>
+               static handler_type handler( Args&&... args)
+               {
+                  return { std::forward< Args>( args)...};
+               }
 
 
 
@@ -192,9 +203,6 @@ namespace casual
                template< typename M, typename P>
                bool receive( M& message, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
-                  // todo: temp
-                  Trace trace{ "common::communication::inbound::Device::receive correlation"};
-
                   return unmarshal(
                         this->next(
                               correlation,
@@ -313,8 +321,6 @@ namespace casual
                template< typename Policy, typename Predicate>
                range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
-                  // todo: temp
-                  Trace trace{ "common::communication::inbound::Device::find"};
 
                   while( true)
                   {
@@ -324,24 +330,8 @@ namespace casual
 
                         auto found = range::find_if( m_cache, predicate);
 
-                        // todo: temp
-                        if( found)
-                        {
-                           log::debug << "found message: " << *found << std::endl;
-                        }
-                        else
-                        {
-                           log::debug << "did not find message" << std::endl;
-                        }
-
                         while( ! found && policy.receive( m_connector, transport))
                         {
-                           // todo: temp
-                           Trace trace{ "while( ! found && policy.receive( m_connector, transport))"};
-
-                           // temp
-                           log::debug << "received transport: " << transport << std::endl;
-
                            //
                            // Check if the message should be discarded
                            //
@@ -351,9 +341,6 @@ namespace casual
                               found = range::find_if( m_cache, predicate);
                            }
                         }
-
-                        // todo: temp
-                        log::debug << "found.size(): " << found.size() << std::endl;
                         return found;
                      }
                      catch( ...)
@@ -373,8 +360,6 @@ namespace casual
                template< typename Policy, typename... Predicates>
                complete_type find_complete( Policy&& policy, const error_type& handler, Predicates&&... predicates)
                {
-                  // todo: temp
-                  Trace trace{ "common::communication::inbound::Device::find_complete"};
 
                   auto found = find(
                         std::forward< Policy>( policy),
@@ -383,15 +368,8 @@ namespace casual
                               []( const message::Complete& m){ return m.complete();},
                               std::forward< Predicates>( predicates)...));
 
-                  // todo: temp
-                  //std::cerr << "pid: " << process::id() << " - found.size(): " << found.size() << std::endl;
-
-
                   if( found)
                   {
-                     // todo: temp
-                     //std::cerr << "pid: " << process::id() << " - found complete message: " << *found << std::endl;
-
                      auto result = std::move( *found);
                      m_cache.erase( std::begin( found));
                      return result;
@@ -408,21 +386,11 @@ namespace casual
 
                   if( found)
                   {
-                     // todo: temp
-                     log::debug << "found complete: " << *found << std::endl;
-
                      found->add( transport);
-
-                     // todo: temp
-                     log::debug << "complete after add: " << *found << std::endl;
                   }
                   else
                   {
-                     log::debug << "new complete - add transport: " << transport << std::endl;
                      m_cache.emplace_back( transport);
-
-                     // todo: temp
-                     log::debug << "complete createion: " << m_cache.back() << std::endl;
                   }
                }
 
@@ -488,18 +456,17 @@ namespace casual
                Uuid put( const message::Complete& message, Policy&& policy, const error_type& handler = nullptr)
                {
                   using transport_type = typename Device::transport_type;
-                  transport_type transport;
+                  transport_type transport{ message.type, message.payload.size()};
 
-                  transport.type( message.type);
-                  message.correlation.copy( transport.message.header.correlation);
-                  transport.message.header.complete_size = message.payload.size();
+                  message.correlation.copy( transport.correlation());
+
 
                   auto part_begin = std::begin( message.payload);
 
                   do
                   {
-                     auto part_end = std::distance( part_begin, std::end( message.payload)) > transport_type::payload_max_size ?
-                           part_begin + transport_type::payload_max_size : std::end( message.payload);
+                     auto part_end = std::distance( part_begin, std::end( message.payload)) > transport.max_payload_size() ?
+                           part_begin + transport.max_payload_size() : std::end( message.payload);
 
                      transport.assign( part_begin, part_end);
                      transport.message.header.offset = std::distance( std::begin( message.payload), part_begin);

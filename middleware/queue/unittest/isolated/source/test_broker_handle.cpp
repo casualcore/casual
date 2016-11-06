@@ -48,9 +48,9 @@ namespace casual
                broker::State state;
             };
 
-            common::message::dispatch::Handler handler( State& state)
+            common::communication::ipc::dispatch::Handler handler( State& state)
             {
-               return common::message::dispatch::Handler{
+               return {
                   broker::handle::connect::Request{ state.state},
                   broker::handle::lookup::Request{ state.state},
                   broker::handle::domain::Advertise{ state.state},

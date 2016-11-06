@@ -5,6 +5,8 @@
 #ifndef CASUAL_COMMON_MARSHAL_MARSHAL_H_
 #define CASUAL_COMMON_MARSHAL_MARSHAL_H_
 
+#include <array>
+
 
 #define CASUAL_CONST_CORRECT_MARSHAL( statement) \
    template< typename A> \

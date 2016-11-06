@@ -29,6 +29,8 @@ namespace casual
          namespace domain
          {
 
+            using dispatch_type = communication::ipc::dispatch::Handler;
+
             namespace service
             {
                struct Echo
@@ -41,7 +43,7 @@ namespace casual
             struct Manager
             {
                Manager();
-               Manager( message::dispatch::Handler&& handler);
+               Manager( dispatch_type&& handler);
 
                template< typename... Args>
                Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
@@ -57,12 +59,13 @@ namespace casual
                   std::map< common::Uuid, common::process::Handle> singeltons;
                   std::vector< common::message::domain::process::lookup::Request> pending;
                   std::vector< common::process::Handle> executables;
+                  std::vector< common::process::Handle> event_listeners;
                };
 
-               message::dispatch::Handler default_handler();
+               dispatch_type default_handler();
 
                template< typename... Args>
-               message::dispatch::Handler default_handler( Args&& ...args)
+               dispatch_type default_handler( Args&& ...args)
                {
                   auto result = default_handler();
                   result.insert( std::forward< Args>( args)...);
@@ -84,7 +87,7 @@ namespace casual
                template< typename... Args>
                Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...)) {}
 
-               Broker( message::dispatch::Handler&& handler);
+               Broker( dispatch_type&& handler);
 
                ~Broker();
 
@@ -97,10 +100,10 @@ namespace casual
                };
 
 
-               message::dispatch::Handler default_handler();
+               dispatch_type default_handler();
 
                template< typename... Args>
-               message::dispatch::Handler default_handler( Args&& ...args)
+               dispatch_type default_handler( Args&& ...args)
                {
                   auto result = default_handler();
                   result.insert( std::forward< Args>( args)...);
@@ -124,17 +127,17 @@ namespace casual
 
                private:
 
-                  message::dispatch::Handler default_handler();
+                  dispatch_type default_handler();
 
                   template< typename... Args>
-                  message::dispatch::Handler default_handler( Args&& ...args)
+                  dispatch_type default_handler( Args&& ...args)
                   {
                      auto result = default_handler();
                      result.insert( std::forward< Args>( args)...);
                      return result;
                   }
 
-                  Manager( message::dispatch::Handler handler);
+                  Manager( dispatch_type handler);
 
                   ipc::Replier m_replier;
                };
@@ -147,10 +150,10 @@ namespace casual
                struct Broker
                {
                   Broker();
-                  Broker( message::dispatch::Handler&& handler);
+                  Broker( dispatch_type&& handler);
 
                private:
-                  message::dispatch::Handler default_handler();
+                  dispatch_type default_handler();
 
                   using Message = message::queue::dequeue::Reply::Message;
 

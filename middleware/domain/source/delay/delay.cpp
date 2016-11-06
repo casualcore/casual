@@ -160,11 +160,11 @@ namespace casual
                communication::ipc::Helper ipc{ handle::Timeout{ state}};
 
 
-               common::message::dispatch::Handler handler{
+               auto handler = ipc.handler(
                   common::message::handle::ping(),
                   common::message::handle::Shutdown{},
                   handle::Request{ state}
-               };
+               );
 
                while( true)
                {

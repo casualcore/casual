@@ -80,9 +80,19 @@ namespace casual
 
                void operator() ( message_type& message)
                {
+
+
                   routing.add( message.correlation, message.process);
 
                   auto&& request = message::interdomain::send::wrap( message);
+
+                  // todo: temp
+                  if( log)
+                  {
+                     log << "basic_request::operator() - message: " << message << '\n';
+                     log << "basic_request::operator() - request: " << request << '\n';
+                  }
+
                   device.blocking_send( request);
                }
 
@@ -377,7 +387,7 @@ namespace casual
 
                using outbound_device_type = decltype( outbound_device);
 
-               common::message::dispatch::Handler handler{
+               auto handler = common::communication::ipc::inbound::device().handler(
 
                   //
                   // internal messages
@@ -398,8 +408,8 @@ namespace casual
                   handle::create< common::message::transaction::resource::commit::Request>( m_routing, outbound_device),
                   handle::create< common::message::transaction::resource::rollback::Request>( m_routing, outbound_device),
 
-                  handle::create< common::message::gateway::domain::discover::Request>( m_routing, outbound_device),
-               };
+                  handle::create< common::message::gateway::domain::discover::Request>( m_routing, outbound_device)
+               );
 
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
             }
@@ -412,12 +422,12 @@ namespace casual
 
                message::worker::Connect message;
 
-               common::message::dispatch::Handler handler{
+               auto handler = common::communication::ipc::inbound::device().handler(
                   gateway::handle::Disconnect{ m_reply_thread},
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
-                  common::message::handle::assign( message),
-               };
+                  common::message::handle::assign( message)
+               );
 
                while( ! message.correlation)
                {
@@ -457,11 +467,11 @@ namespace casual
                   //
                   message::outbound::configuration::Reply reply;
 
-                  common::message::dispatch::Handler handler{
+                  auto handler = common::communication::ipc::inbound::device().handler(
                      gateway::handle::Disconnect{ m_reply_thread},
                      common::message::handle::Shutdown{},
                      common::message::handle::ping(),
-                     common::message::handle::assign( reply)};
+                     common::message::handle::assign( reply));
 
 
                   while( ! reply.correlation)
@@ -509,12 +519,12 @@ namespace casual
                   // We need to be able to response to other messages so we don't block "for ever"
                   //
 
-                  common::message::dispatch::Handler handler{
+                  auto handler = common::communication::ipc::inbound::device().handler(
                      gateway::handle::Disconnect{ m_reply_thread},
                      common::message::handle::Shutdown{},
                      common::message::handle::ping(),
-                     common::message::handle::assign( reply),
-                  };
+                     common::message::handle::assign( reply)
+                  );
 
                   while( ! reply.correlation)
                   {
@@ -603,7 +613,7 @@ namespace casual
                   //
                   // we start our reply-message-pump
                   //
-                  common::message::dispatch::Handler handler{
+                  auto handler = inbound.handler(
 
                      //
                      // External messages from the other domain
@@ -616,8 +626,8 @@ namespace casual
                      handle::basic_reply< message::interdomain::transaction::resource::receive::prepare::Reply>{ routing},
                      handle::basic_reply< message::interdomain::transaction::resource::receive::commit::Reply>{ routing},
                      handle::basic_reply< message::interdomain::transaction::resource::receive::rollback::Reply>{ routing},
-                     handle::domain::discover::Reply{ routing, order},
-                  };
+                     handle::domain::discover::Reply{ routing, order}
+                  );
 
                   log << "start reply message pump\n";
 

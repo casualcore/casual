@@ -71,7 +71,7 @@ namespace casual
                   {
                      struct Policy
                      {
-                        constexpr common::message::Type interdomain_type() const { return common::message::Type::ineterdomain_service_call;}
+                        constexpr common::message::Type interdomain_type() const { return common::message::Type::interdomain_service_call;}
 
                         common::message::service::call::callee::Request create_send()
                         {
@@ -126,7 +126,7 @@ namespace casual
                   {
                      struct Policy
                      {
-                        constexpr common::message::Type interdomain_type() const { return common::message::Type::ineterdomain_service_reply;}
+                        constexpr common::message::Type interdomain_type() const { return common::message::Type::interdomain_service_reply;}
 
                         common::message::service::call::Reply create_send()
                         {
@@ -171,6 +171,122 @@ namespace casual
 
                   } // reply
                } // call
+
+               namespace enqueue
+               {
+                  namespace request
+                  {
+                     struct Policy
+                     {
+                        constexpr common::message::Type interdomain_type() const { return common::message::Type::interdomain_queue_enqueue_request;}
+
+                        using send_type = common::message::queue::enqueue::Request;
+                        using receive_type = message::interdomain::queue::enqueue::receive::Request;
+
+                        send_type create_send()
+                        {
+                           send_type message;
+                           general::intitialize( message);
+                           message.name = "queue1";
+                           message.message.payload = common::unittest::random::binary( 1024);
+                           message.message.properties = "bla bla";
+                           message.message.reply = "blo blo";
+                           message.trid = common::transaction::ID::create();
+
+
+                           return message;
+                        }
+
+                        receive_type create_receive()
+                        {
+                           return {};
+                        }
+
+                        void compare( const send_type& send_message, const receive_type& receive_message)
+                        {
+                           EXPECT_TRUE( send_message.correlation == receive_message.correlation);
+                           EXPECT_TRUE( send_message.execution == receive_message.execution);
+                           EXPECT_TRUE( send_message.name == receive_message.name);
+                           EXPECT_TRUE( send_message.message.payload == receive_message.message.payload);
+                        }
+                     };
+                  } // request
+
+
+                  namespace reply
+                  {
+                     struct Policy
+                     {
+                        constexpr common::message::Type interdomain_type() const { return common::message::Type::interdomain_queue_enqueue_reply;}
+
+                        using send_type = common::message::queue::enqueue::Reply;
+                        using receive_type = message::interdomain::queue::enqueue::receive::Reply;
+
+                        send_type create_send()
+                        {
+                           send_type message;
+                           general::intitialize( message);
+                           message.id = common::uuid::make();
+
+                           return message;
+                        }
+
+                        receive_type create_receive()
+                        {
+                           return {};
+                        }
+
+                        void compare( const send_type& send_message, const receive_type& receive_message)
+                        {
+                           EXPECT_TRUE( send_message.correlation == receive_message.correlation);
+                           EXPECT_TRUE( send_message.execution == receive_message.execution);
+                           EXPECT_TRUE( send_message.id == receive_message.id);
+                        }
+                     };
+                  } // reply
+
+               } // enqueue
+
+               namespace discovery
+               {
+                  namespace request
+                  {
+                     struct Policy
+                     {
+                        constexpr common::message::Type interdomain_type() const { return common::message::Type::interdomain_domain_discover_request;}
+
+                        common::message::gateway::domain::discover::Request create_send()
+                        {
+                           common::message::gateway::domain::discover::Request message;
+                           general::intitialize( message);
+                           message.domain = common::domain::identity();
+                           message.queues.emplace_back( "queue1");
+
+
+                           return message;
+                        }
+
+                        message::interdomain::domain::discovery::receive::Request create_receive()
+                        {
+                           return {};
+                        }
+
+                        void compare( const common::message::gateway::domain::discover::Request& send_message,
+                              const message::interdomain::domain::discovery::receive::Request& receive_message)
+                        {
+                           EXPECT_TRUE( send_message.correlation == receive_message.correlation);
+                           EXPECT_TRUE( send_message.execution == receive_message.execution);
+                           EXPECT_TRUE( send_message.domain == receive_message.domain);
+                           EXPECT_TRUE( send_message.queues == receive_message.queues);
+
+                        }
+                     };
+
+                  } // request
+
+
+               } // discovery
+
             } // <unnamed>
          } // local
 
@@ -185,29 +301,32 @@ namespace casual
                local::transaction::Policy<
                   common::message::transaction::resource::prepare::Request,
                   message::interdomain::transaction::resource::receive::prepare::Request,
-                  common::message::Type::ineterdomain_transaction_resource_prepare_request>,
+                  common::message::Type::interdomain_transaction_resource_prepare_request>,
                local::transaction::Policy<
                   common::message::transaction::resource::prepare::Reply,
                   message::interdomain::transaction::resource::receive::prepare::Reply,
-                  common::message::Type::ineterdomain_transaction_resource_prepare_reply>,
+                  common::message::Type::interdomain_transaction_resource_prepare_reply>,
                local::transaction::Policy<
                   common::message::transaction::resource::rollback::Request,
                   message::interdomain::transaction::resource::receive::rollback::Request,
-                  common::message::Type::ineterdomain_transaction_resource_rollback_request>,
+                  common::message::Type::interdomain_transaction_resource_rollback_request>,
                local::transaction::Policy<
                   common::message::transaction::resource::rollback::Reply,
                   message::interdomain::transaction::resource::receive::rollback::Reply,
-                  common::message::Type::ineterdomain_transaction_resource_rollback_reply>,
+                  common::message::Type::interdomain_transaction_resource_rollback_reply>,
                local::transaction::Policy<
                   common::message::transaction::resource::commit::Request,
                   message::interdomain::transaction::resource::receive::commit::Request,
-                  common::message::Type::ineterdomain_transaction_resource_commit_request>,
+                  common::message::Type::interdomain_transaction_resource_commit_request>,
                local::transaction::Policy<
                   common::message::transaction::resource::commit::Reply,
                   message::interdomain::transaction::resource::receive::commit::Reply,
-                  common::message::Type::ineterdomain_transaction_resource_commit_reply>,
+                  common::message::Type::interdomain_transaction_resource_commit_reply>,
                local::call::request::Policy,
-               local::call::reply::Policy
+               local::call::reply::Policy,
+               local::discovery::request::Policy,
+               local::enqueue::request::Policy,
+               local::enqueue::reply::Policy
           > message_types;
 
          TYPED_TEST_CASE(gateway_message_interdomain, message_types);

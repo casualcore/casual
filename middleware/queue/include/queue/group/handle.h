@@ -34,6 +34,7 @@ namespace casual
 
          namespace handle
          {
+            using dispatch_type = common::communication::ipc::dispatch::Handler;
 
             void shutdown( State& state);
 
@@ -180,7 +181,7 @@ namespace casual
 
          } // handle
 
-         common::message::dispatch::Handler handler( State& state);
+         handle::dispatch_type handler( State& state);
 
       } // group
    } // queue

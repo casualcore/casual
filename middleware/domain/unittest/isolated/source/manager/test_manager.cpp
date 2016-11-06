@@ -330,10 +330,10 @@ domain:
             mockup::domain::Broker broker;
 
 
-            //auto state = local::call::state();
+            auto state = local::call::state();
 
-            //ASSERT_TRUE( state.executables.size() == 2);
-            //EXPECT_TRUE( state.executables.at( 1).instances.size() == 5) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 2);
+            EXPECT_TRUE( state.executables.at( 1).instances.size() == 5) << CASUAL_MAKE_NVP( state);
 
          }
 

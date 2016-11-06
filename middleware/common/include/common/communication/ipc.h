@@ -9,6 +9,8 @@
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 
+#include "common/platform.h"
+
 #include "common/flag.h"
 
 namespace casual
@@ -36,7 +38,13 @@ namespace casual
 
             namespace message
             {
-               using Transport = communication::message::basic_transport< platform::ipc::message::size>;
+               struct Policy
+               {
+                  static constexpr std::size_t message_size() { return platform::ipc::message::size;}
+                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size;}
+               };
+
+               using Transport = communication::message::basic_transport< Policy>;
             } // message
 
 
@@ -405,6 +413,13 @@ namespace casual
                inline Helper() : Helper( nullptr) {}
 
 
+
+               template< typename... Args>
+               static auto handler( Args&&... args) -> decltype( common::communication::ipc::inbound::device().handler())
+               {
+                  return { std::forward< Args>( args)...};
+               }
+
                template< typename D, typename M>
                auto blocking_send( D&& device, M&& message) const
                 -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
@@ -498,6 +513,11 @@ namespace casual
             private:
                std::function<void()> m_error_handler;
             };
+
+            namespace dispatch
+            {
+               using Handler =  typename inbound::Device::handler_type;
+            } // dispatch
 
          } // ipc
 

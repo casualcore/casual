@@ -495,10 +495,8 @@ namespace casual
                {
                   Trace trace{ "tcp::native::send"};
 
-                  const auto size = message::Transport::header_size  + transport.size();
-
                   auto first = &transport.message;
-                  const auto last = first + size;
+                  const auto last = first + transport.size();
 
                   try
                   {
@@ -537,8 +535,8 @@ namespace casual
                      // First we try to read all that we can, but at least the header
                      //
 
-                     const auto header_end = first + message::Transport::header_size;
-                     auto current_end = first + message::Transport::message_max_size;
+                     const auto header_end = first + transport.header_size();
+                     auto current_end = first + transport.max_message_size();
 
                      while( current != current_end)
                      {

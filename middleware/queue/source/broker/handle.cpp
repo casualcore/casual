@@ -330,7 +330,7 @@ namespace casual
             } // domain
          } // handle
 
-         casual::common::message::dispatch::Handler handlers( State& state)
+         handle::dispatch_type handlers( State& state)
          {
             return {
                broker::handle::process::Exit{ state},

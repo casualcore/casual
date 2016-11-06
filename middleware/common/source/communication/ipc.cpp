@@ -28,15 +28,12 @@ namespace casual
             {
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
                {
-
-                  auto size = message::Transport::header_size + transport.size();
-
                   //
                   // before we might block we check signals.
                   //
                   common::signal::handle();
 
-                  auto result = msgsnd( id, &const_cast< message::Transport&>( transport).message, size, flags.underlaying());
+                  auto result = ::msgsnd( id, &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
                   if( result == -1)
                   {
@@ -70,7 +67,7 @@ namespace casual
                         case EINVAL:
                         {
                            //if( /* message.size() < MSGMAX  && */ transport.message.header.type != common::message::Type::absent_message)
-                           if( cast::underlying( transport.message.header.type) > 0)
+                           if( cast::underlying( transport.type()) > 0)
                            {
                               //
                               // The problem is with queue-id. We guess that it has been removed.
@@ -99,7 +96,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, message::Transport::message_max_size, 0, flags.underlaying());
+                  auto result = msgrcv( id, &transport.message, transport.max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {

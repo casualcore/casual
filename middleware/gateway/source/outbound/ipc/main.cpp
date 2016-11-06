@@ -114,7 +114,6 @@ namespace casual
                using outbound_device_type = communication::ipc::outbound::Device;
                using inbound_device_type = communication::ipc::inbound::Device;
 
-
                struct configuration_type
                {
                   platform::ipc::id::type id;

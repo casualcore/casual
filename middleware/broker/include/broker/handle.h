@@ -38,6 +38,7 @@ namespace casual
 
       namespace handle
       {
+         using dispatch_type = decltype( ipc::device().handler());
 
          void process_exit( const common::process::lifetime::Exit& exit);
 
@@ -224,7 +225,7 @@ namespace casual
 
 		} // handle
 
-      common::message::dispatch::Handler handler( State& state);
+      handle::dispatch_type handler( State& state);
 
 
 	} // broker

@@ -176,21 +176,7 @@ namespace casual
             namespace
             {
 
-               template< std::size_t size>
-               struct transport_size : common::message::basic_message< common::message::Type::MOCKUP_BASE>
-               {
-
-                  char payload[ size];
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     // we don't serialize execution
-                     //base_type::marshal( archive);
-                     archive & payload;
-                  })
-               };
-
-               using exactly_transport_size = transport_size< ipc::message::Transport::payload_max_size>;
+               using exactly_transport_size = unittest::message::basic_message< ipc::message::Transport::max_payload_size()>;
 
             } // <unnamed>
          } // local
@@ -212,7 +198,7 @@ namespace casual
                ipc::message::Transport transport;
                EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
                EXPECT_TRUE( transport.message.header.offset == 0);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::payload_max_size);
+               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
 
                // we expect no more transports
                {
@@ -232,7 +218,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = local::transport_size< 2 * ipc::message::Transport::payload_max_size>;
+            using message_type = unittest::message::basic_message< 2 * ipc::message::Transport::max_payload_size()>;
 
 
             message_type send_message;
@@ -247,13 +233,13 @@ namespace casual
                ipc::message::Transport transport;
                EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
                EXPECT_TRUE( transport.message.header.offset == 0);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::payload_max_size);
+               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
 
                message::Complete complete{ transport};
 
                EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
                EXPECT_TRUE( transport.message.header.offset == transport.message.header.count);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::payload_max_size);
+               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
 
                // we expect no more transports
                {
@@ -273,7 +259,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = local::transport_size< 10 * ipc::message::Transport::payload_max_size>;
+            using message_type = unittest::message::basic_message< 10 * ipc::message::Transport::max_payload_size()>;
 
 
             message_type send_message;
@@ -292,7 +278,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = local::transport_size< 1103>;
+            using message_type = unittest::message::basic_message< 1103>;
 
 
             message_type send_message;
@@ -313,7 +299,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = local::transport_size< 3 * ipc::message::Transport::payload_max_size>;
+            using message_type = unittest::message::basic_message< 3 * ipc::message::Transport::max_payload_size()>;
 
             std::vector< common::Uuid> correlations;
 

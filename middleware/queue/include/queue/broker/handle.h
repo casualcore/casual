@@ -43,6 +43,9 @@ namespace casual
 
          namespace handle
          {
+
+            using dispatch_type = common::communication::ipc::dispatch::Handler;
+
             namespace process
             {
 
@@ -138,7 +141,7 @@ namespace casual
             } // domain
          } // handle
 
-         casual::common::message::dispatch::Handler handlers( State& state);
+         handle::dispatch_type handlers( State& state);
 
       } // broker
    } // queue

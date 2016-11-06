@@ -164,7 +164,13 @@ namespace casual
 
             namespace message
             {
-               using Transport = communication::message::basic_transport< platform::tcp::message::size>;
+               struct Policy
+               {
+                  static constexpr std::size_t message_size() { return platform::tcp::message::size;}
+                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size + type_size;}
+               };
+
+               using Transport = communication::message::basic_transport< Policy>;
 
             } // message
 
@@ -250,6 +256,11 @@ namespace casual
                using Device = communication::outbound::Device< Connector,  marshal::binary::network::create::Output>;
             } // outbound
 
+
+            namespace dispatch
+            {
+               using Handler =  typename inbound::Device::handler_type;
+            } // dispatch
 
          } // tcp
       } // communication
