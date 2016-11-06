@@ -15,8 +15,7 @@ def fetch_repo( repository, branch, directory)
 def build( name, image)
 {
    def current_dir = pwd()
-   writeFile file: 'casual/builder.sh', text: '''
-#! /bin/sh
+   writeFile file: 'casual/builder.sh', text: '''#! /bin/sh
 cd /git/casual
 casual-make make && casual-make clean && casual-make compile && casual-make link 
 ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
@@ -24,7 +23,7 @@ casual-make install
 tar cvf /git/casual/casual.tar /usr/local/casual
 casual-make clean
 chmod a+w -R .
-   '''
+'''
 
    sh """
    chmod +x casual/builder.sh
