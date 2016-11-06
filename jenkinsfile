@@ -36,7 +36,7 @@ node {
 
    stage('Build/Unittest Ubuntu') {
 
-       bitbucketStatusNotify buildState: 'IN PROGRESS', buildKey: 'ubuntu', buildName: 'ubuntu'
+       bitbucketStatusNotify buildState: 'IN PROGRESS', buildKey: 'ubuntu', buildName: 'ubuntu', credentialsId: env.API_KEY
 
        build( 'ubuntucompile', 'casual/ubuntu')
 
@@ -47,7 +47,7 @@ node {
        archive includes: '**/casual.log' 
        archive includes: 'casual/casual.tar' 
 
-       bitbucketStatusNotify currentBuild.result, buildKey: 'ubuntu', buildName: 'ubuntu'
+       bitbucketStatusNotify currentBuild.result, buildKey: 'ubuntu', buildName: 'ubuntu', credentialsId: env.API_KEY
    }
 
 }
