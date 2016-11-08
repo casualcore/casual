@@ -36,8 +36,6 @@ node {
 
    stage('Build/Unittest Ubuntu') {
 
-       bitbucketStatusNotify buildState: 'IN PROGRESS', buildKey: 'ubuntu', buildName: 'ubuntu', credentialsId: env.API_KEY
-
        build( 'ubuntucompile', 'casual/ubuntu')
 
        step([$class: 'XUnitBuilder',
@@ -47,7 +45,7 @@ node {
        archive includes: '**/casual.log' 
        archive includes: 'casual/casual.tar' 
 
-       bitbucketStatusNotify currentBuild.result, buildKey: 'ubuntu', buildName: 'ubuntu', credentialsId: env.API_KEY
+       sh(['/var/lib/jenkins/buildstatenotifyer.py', env.API_KEY, currentBuild.result])
    }
 
 }
