@@ -1,21 +1,6 @@
 #!groovy
 
-def fetch_repo( repository, branch, directory)
-{
-   checkout([
-       $class: 'GitSCM', 
-       branches: [[name: branch]], 
-       doGenerateSubmoduleConfigurations: false, 
-       extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: directory]], 
-       submoduleCfg: [], 
-       userRemoteConfigs: [[credentialsId: env.API_KEY, url: repository]]
-   ])
-}
-
-def build( name, image)
-{
-   def current_dir = pwd()
-   writeFile file: 'casual/builder.sh', text: '''#! /bin/sh
+def backend_builder = '''#! /bin/sh
 cd /git/casual
 casual-make make && casual-make clean && casual-make compile && casual-make link 
 ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
@@ -25,27 +10,48 @@ casual-make clean
 chmod a+w -R .
 '''
 
+def frontend_builder = '''#! /bin/sh
+cd /git/casual/webapp
+bower update --allow-root
+touch bower_components/app-route/app-location.html
+polymer build
+cd ..
+zip -r casual-webapp.zip webapp
+chmod a+w -R .
+'''
+
+def build( name, image, content)
+{
+   def current_dir = pwd()
+   writeFile file: 'casual/builder.sh', text: content
+
    sh """
    chmod +x casual/builder.sh
    if docker ps -a | grep $name; then docker rm $name;fi
    docker run --name $name -v $current_dir/casual:/git/casual $image
    """
-} 
+}
 
 node {
 
-   stage('Build/Unittest Ubuntu') {
 
-       build( 'ubuntucompile', 'casual/ubuntu')
+   stage('Build backend/Unittest Ubuntu') {
+
+       build( 'ubuntucompile', 'casual/ubuntu', backend_builder)
 
        step([$class: 'XUnitBuilder',
           thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
           tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
-       archive includes: '**/casual.log' 
-       archive includes: 'casual/casual.tar' 
-
-       sh(['/var/lib/jenkins/buildstatenotifyer.py', env.API_KEY, currentBuild.result])
+       archive includes: '**/casual.log'
+       archive includes: 'casual/casual.tar'
    }
 
+   stage('Build frontend') {
+
+       build( 'casualfrontend', 'casual/frontend', frontend_builder)
+
+       archive includes: '**/casual-webapp.zip'
+   }
 }
+
