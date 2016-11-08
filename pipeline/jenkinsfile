@@ -49,7 +49,7 @@ node {
 
    stage('Build frontend') {
 
-       #build( 'casualfrontend', 'casual/frontend', frontend_builder)
+       //build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
        archive includes: '**/casual-webapp.zip'
    }
