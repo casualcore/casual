@@ -85,9 +85,19 @@ namespace casual
 
             namespace from
             {
+               //! @{
+               Holder data();
+               Holder data( std::istream& stream);
+               //! @}
+
+               //! @{
                Holder file( std::string name);
+               //! @}
+
+               //! @{
                Holder name( std::string name);
                Holder name( std::istream& stream, std::string name);
+               //! @}
             } // from
 
          } // reader
@@ -123,9 +133,15 @@ namespace casual
 
             namespace from
             {
+               //! @{
                Holder file( std::string name);
+               //! @}
+
+               //! @{
                Holder name( std::string name);
                Holder name( std::ostream& stream, std::string name);
+               //! @}
+
             } // from
 
          } // writer

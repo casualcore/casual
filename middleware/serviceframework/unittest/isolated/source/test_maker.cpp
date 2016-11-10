@@ -32,6 +32,91 @@ namespace casual
    } // <unnamed>
 
 
+/*
+   TEST( casual_sf_maker, sandbox)
+   {
+      Banana banana;
+      banana.integer = 42;
+
+      auto w = sf::archive::writer::from::name( "ini");
+
+      w << CASUAL_MAKE_NVP( banana);
+   }
+*/
+
+   // Doesn't work for own yaml-documents, since we don't produce with document-separator (%)
+   TEST( casual_sf_maker, DISABLED_decuce_archive_from_yml_input__expecting_success)
+   {
+      Banana banana;
+      banana.integer = 42;
+
+      std::stringstream stream;
+
+      auto w = sf::archive::writer::from::name( stream, "yml");
+
+      w << CASUAL_MAKE_NVP( banana);
+
+      EXPECT_NO_THROW
+      ({
+         sf::archive::reader::from::data( stream);
+      });
+   }
+
+
+   TEST( casual_sf_maker, decuce_archive_from_xml_input__expecting_success)
+   {
+      Banana banana;
+      banana.integer = 42;
+
+      std::stringstream stream;
+
+      auto w = sf::archive::writer::from::name( stream, "xml");
+
+      w << CASUAL_MAKE_NVP( banana);
+
+      EXPECT_NO_THROW
+      ({
+         sf::archive::reader::from::data( stream);
+      });
+   }
+
+   TEST( casual_sf_maker, decuce_archive_from_jsn_input__expecting_success)
+   {
+      Banana banana;
+      banana.integer = 42;
+
+      std::stringstream stream;
+
+      auto w = sf::archive::writer::from::name( stream, "jsn");
+
+      w << CASUAL_MAKE_NVP( banana);
+
+      EXPECT_NO_THROW
+      ({
+         sf::archive::reader::from::data( stream);
+      });
+   }
+
+   // Doesn't work (yet) for own ini-documents, since we have a defect in ini-write
+   TEST( casual_sf_maker, DISABLED_decuce_archive_from_ini_input__expecting_success)
+   {
+      Banana banana;
+      banana.integer = 42;
+
+      std::stringstream stream;
+
+      auto w = sf::archive::writer::from::name( stream, "ini");
+
+      w << CASUAL_MAKE_NVP( banana);
+
+      EXPECT_NO_THROW
+      ({
+         sf::archive::reader::from::data( stream);
+      });
+   }
+
+
+
    TEST( casual_sf_maker, read_from_non_existing_file__expecting_exception)
    {
       EXPECT_THROW

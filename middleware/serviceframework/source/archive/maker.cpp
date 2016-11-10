@@ -23,6 +23,15 @@ namespace casual
    {
       namespace archive
       {
+         namespace
+         {
+            const auto cYML{ "yml"}; const auto cYAML{ "yaml"};
+            const auto cXML{ "xml"};
+            const auto cJSN{ "jsn"}; const auto cJSON{ "json"};
+            const auto cINI{ "ini"};
+         }
+
+
          namespace maker
          {
             namespace
@@ -104,10 +113,10 @@ namespace casual
 
                         static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
                         {
-                           { "yml", yml_type{}}, { "yaml", yml_type{}},
-                           { "xml", xml_type{}},
-                           { "jsn", jsn_type{}}, { "json", jsn_type{}},
-                           { "ini", ini_type{}},
+                           { cYML, yml_type{}}, { cYAML, yml_type{}},
+                           { cXML, xml_type{}},
+                           { cJSN, jsn_type{}}, { cJSON, jsn_type{}},
+                           { cINI, ini_type{}},
                         };
 
                         return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
@@ -115,6 +124,28 @@ namespace casual
 
                   } // <unnamed>
                } // local
+
+               Holder data( std::istream& stream)
+               {
+                  switch( stream.peek())
+                  {
+                  case '%':
+                     return local::name( stream, cYML);
+                  case '<':
+                     return local::name( stream, cXML);
+                  case '{':
+                     return local::name( stream, cJSN);
+                  case '[':
+                     return local::name( stream, cINI);
+                  default:
+                     throw exception::Validation{ "Could not deduce archive from input"};
+                  }
+               }
+
+               Holder data()
+               {
+                  return data( std::cin);
+               }
 
                Holder file( std::string name)
                {
@@ -161,10 +192,10 @@ namespace casual
 
                         static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
                         {
-                           { "yml", yml_type{}}, { "yaml", yml_type{}},
-                           { "xml", xml_type{}},
-                           { "jsn", jsn_type{}}, { "json", jsn_type{}},
-                           { "ini", ini_type{}},
+                           { cYML, yml_type{}}, { cYAML, yml_type{}},
+                           { cXML, xml_type{}},
+                           { cJSN, jsn_type{}}, { cJSON, jsn_type{}},
+                           { cINI, ini_type{}},
                         };
 
                         return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
