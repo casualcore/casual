@@ -44,8 +44,7 @@ namespace casual
    }
 */
 
-   // Doesn't work for own yaml-documents, since we don't produce with document-separator (%)
-   TEST( casual_sf_maker, DISABLED_decuce_archive_from_yml_input__expecting_success)
+   TEST( casual_sf_maker, decuce_archive_from_yml_input__expecting_success)
    {
       Banana banana;
       banana.integer = 42;
@@ -97,8 +96,7 @@ namespace casual
       });
    }
 
-   // Doesn't work (yet) for own ini-documents, since we have a defect in ini-write
-   TEST( casual_sf_maker, DISABLED_decuce_archive_from_ini_input__expecting_success)
+   TEST( casual_sf_maker, decuce_archive_from_ini_input__expecting_success)
    {
       Banana banana;
       banana.integer = 42;

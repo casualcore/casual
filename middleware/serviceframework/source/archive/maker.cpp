@@ -127,9 +127,29 @@ namespace casual
 
                Holder data( std::istream& stream)
                {
+                  //
+                  // Skip any possible whitespace
+                  //
+                  stream >> std::ws;
+
+                  //
+                  // TODO: Maybe do this more fancy
+                  //
+                  // YAML-directive starts with '%'
+                  // YAML-document starts with '-'
+                  // YAML-comment starts with '#'
+                  // XML must start with '<'
+                  // JSON-object starts with '{'
+                  // JSON-array with starts '['
+                  // INI usually starts with '['
+                  //
+
+
                   switch( stream.peek())
                   {
                   case '%':
+                  case '-':
+                  case '#':
                      return local::name( stream, cYML);
                   case '<':
                      return local::name( stream, cXML);
