@@ -22,8 +22,7 @@ namespace casual
       {
          namespace queue
          {
-
-            struct base_message
+            struct base_message_information
             {
                common::Uuid id;
 
@@ -31,9 +30,7 @@ namespace casual
                std::string reply;
 
                common::platform::time_point avalible;
-
                common::buffer::Type type;
-               common::platform::binary_type payload;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -42,6 +39,17 @@ namespace casual
                   archive & reply;
                   archive & avalible;
                   archive & type;
+               })
+
+            };
+
+            struct base_message : base_message_information
+            {
+               common::platform::binary_type payload;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  base_message_information::marshal( archive);
                   archive & payload;
                })
 
@@ -174,8 +182,8 @@ namespace casual
                      Message( const base_message& m) : base_message( m) {}
                      Message() = default;
 
-                     Message( Message&&) = default;
-                     Message& operator = ( Message&&) = default;
+                     //Message( Message&&) = default;
+                     //Message& operator = ( Message&&) = default;
 
 
                      std::size_t redelivered = 0;
@@ -240,6 +248,96 @@ namespace casual
 
 
             } // dequeue
+
+            namespace peek
+            {
+               struct Information : base_message_information
+               {
+                  std::size_t redelivered = 0;
+                  common::platform::time_point timestamp;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_message_information::marshal( archive);
+
+                     archive & redelivered;
+                     archive & timestamp;
+                  })
+                  friend std::ostream& operator << ( std::ostream& out, const Information& value);
+               };
+
+               namespace information
+               {
+                  struct Request : basic_message< Type::queue_peek_information_request>
+                  {
+                     common::process::Handle process;
+                     std::size_t queue = 0;
+                     std::string name;
+                     dequeue::Selector selector;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & process;
+                        archive & queue;
+                        archive & name;
+                        archive & selector;
+                     })
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+
+                  struct Reply : basic_message< Type::queue_peek_information_reply>
+                  {
+                     std::vector< peek::Information> information;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & information;
+                     })
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+
+               } // information
+
+               namespace messages
+               {
+                  struct Request : basic_message< Type::queue_peek_messages_request>
+                  {
+                     common::process::Handle process;
+                     std::vector< Uuid> ids;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & process;
+                        archive & ids;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
+
+
+                  struct Reply : basic_message< Type::queue_peek_messages_reply>
+                  {
+                     std::vector< dequeue::Reply::Message> messages;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & messages;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
+
+
+               } // messages
+
+            } // peek
+
 
             struct Queue
             {
@@ -434,10 +532,15 @@ namespace casual
                static_assert( traits::is_movable< Reply>::value, "not movable");
             } // connect
 
+
+
+
          } // queue
 
          namespace reverse
          {
+
+
 
             template<>
             struct type_traits< queue::enqueue::Request> : detail::type< queue::enqueue::Reply> {};
@@ -446,6 +549,13 @@ namespace casual
 
             template<>
             struct type_traits< queue::lookup::Request> : detail::type< queue::lookup::Reply> {};
+
+
+            template<>
+            struct type_traits< queue::peek::information::Request> : detail::type< queue::peek::information::Reply> {};
+
+            template<>
+            struct type_traits< queue::peek::messages::Request> : detail::type< queue::peek::messages::Reply> {};
 
          } // reverse
 

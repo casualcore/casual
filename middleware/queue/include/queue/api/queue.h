@@ -27,6 +27,15 @@ namespace casual
          Message dequeue( const std::string& queue, const Selector& selector);
       } // blocking
 
+      namespace peek
+      {
+         std::vector< message::Information> information( const std::string& queue);
+         std::vector< message::Information> information( const std::string& queue, const Selector& selector);
+
+         std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids);
+
+      } // peek
+
       namespace xatmi
       {
 
@@ -37,12 +46,6 @@ namespace casual
 
       } // xatmi
 
-
-      namespace peek
-      {
-         std::vector< Message> queue( const std::string& queue);
-
-      } // peek
 
    } // queue
 } // casual

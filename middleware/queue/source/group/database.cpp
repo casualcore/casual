@@ -563,6 +563,36 @@ namespace casual
             return reply;
          }
 
+         common::message::queue::peek::information::Reply Database::peek( const common::message::queue::peek::information::Request& request)
+         {
+            Trace trace{ "queue::Database::peek information"};
+
+            log << "request: " << request << std::endl;
+
+
+            auto reply = common::message::reverse::type( request);
+
+
+
+
+            return reply;
+         }
+
+         common::message::queue::peek::messages::Reply Database::peek( const common::message::queue::peek::messages::Request& request)
+         {
+            Trace trace{ "queue::Database::peek information"};
+
+            log << "request: " << request << std::endl;
+
+
+            auto reply = common::message::reverse::type( request);
+
+
+
+
+            return reply;
+         }
+
 
          void Database::commit( const common::transaction::ID& id)
          {

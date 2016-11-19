@@ -338,12 +338,21 @@ namespace casual
 
       namespace peek
       {
-         std::vector< Message> queue( const std::string& queue)
+         std::vector< message::Information> information( const std::string& queue)
          {
-            std::vector< Message> result;
-
-            return result;
+            return peek::information( queue, Selector{});
          }
+
+         std::vector< message::Information> information( const std::string& queue, const Selector& selector)
+         {
+            return {};
+         }
+
+         std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids)
+         {
+            return {};
+         }
+
 
       } // peek
 

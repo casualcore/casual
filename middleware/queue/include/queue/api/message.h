@@ -93,8 +93,9 @@ namespace casual
       struct basic_message
       {
          using payload_type = P;
+         using id_type = common::Uuid;
 
-         basic_message( common::Uuid id, Attributes attributes, payload_type payload)
+         basic_message( id_type id, Attributes attributes, payload_type payload)
             : id( std::move( id)), attributes( std::move( attributes)), payload( std::move( payload)) {}
 
          basic_message( payload_type payload)
@@ -102,7 +103,7 @@ namespace casual
 
          basic_message() = default;
 
-         common::Uuid id;
+         id_type id;
          Attributes attributes;
          payload_type payload;
 
@@ -120,6 +121,25 @@ namespace casual
 
       namespace peek
       {
+         namespace message
+         {
+            struct Information
+            {
+               common::Uuid id;
+               std::size_t type;
+               std::size_t state;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( type);
+                  archive & CASUAL_MAKE_NVP( state);
+               })
+            };
+
+         } // message
+
+         /*
          struct Message
          {
             common::Uuid id;
@@ -133,6 +153,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( state);
             })
          };
+         */
       } // peek
 
       namespace xatmi

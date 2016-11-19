@@ -114,6 +114,46 @@ namespace casual
                } // forget
             } // dequeue
 
+            namespace peek
+            {
+               std::ostream& operator << ( std::ostream& out, const Information& value)
+               {
+                  return out << "{"
+                        << '}';
+               }
+
+               namespace information
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+               } // information
+
+               namespace messages
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+               } // messages
+
+            } // peek
+
             std::ostream& operator << ( std::ostream& out, const Queue::Type& value)
             {
                switch( value)
