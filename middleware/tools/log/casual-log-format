@@ -12,6 +12,7 @@ import subprocess
 import optparse
 import re
 import signal
+import datetime
 
 from functools import partial
 
@@ -20,16 +21,12 @@ from color import color
 
 
 def time( time):
-    return time[0: 11] + color.white( time[11:]);
-
+    #return time[0: 11] + color.white( time[11:]);
+    return datetime.datetime.fromtimestamp( int( time) / 1000000.0).isoformat()
+    
 def domain( name):
+    return name
     
-    if( len( name) > domain.size):
-        domain.size = len( name);
-    
-    return name.ljust( domain.size);
-    
-domain.size = 0;
 
 
 def normalizePID( id):

@@ -36,8 +36,8 @@ namespace casual
 
          private:
 
-            common::file::scoped::Path m_singelton;
             State m_state;
+            common::file::scoped::Path m_singelton;
 
          };
 

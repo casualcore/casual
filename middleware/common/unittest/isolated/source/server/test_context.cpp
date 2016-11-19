@@ -165,7 +165,6 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         mockup::domain::Manager manager;
          mockup::domain::minimal::Domain domain;
          mockup::ipc::Collector caller;
 

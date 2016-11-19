@@ -23,11 +23,15 @@ An example of a bare bone domain
 [minimal domain]( single/minimal/minimal.md)
 
 
-
-
 ### multiple domains
 
 #### minimal
 An example of a minimal setup for two domains
 
-[minimal domain]( minimal/minimal.md)
+[minimal domain]( multiple/minimal/minimal.md)
+
+
+#### medium
+An example of a _medium_ setup for two domains
+
+[medium domain]( multiple/medium/minimal.md)

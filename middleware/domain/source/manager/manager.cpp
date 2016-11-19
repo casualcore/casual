@@ -23,70 +23,11 @@ namespace casual
       namespace manager
       {
 
-         namespace local
-         {
-            namespace
-            {
-
-               file::scoped::Path singleton()
-               {
-                  Trace trace{ "domain::manager::local::singleton"};
-
-
-                  //
-                  // Set our ipc-queue so children easy can send messages to us.
-                  //
-                  environment::variable::process::set(
-                        environment::variable::name::ipc::domain::manager(),
-                        common::process::handle());
-
-                  auto path = environment::domain::singleton::file();
-
-                  auto temp_file = file::scoped::Path{ file::name::unique( "/tmp/", ".tmp")};
-
-                  std::ofstream output( temp_file);
-
-                  if( output)
-                  {
-                     output << common::process::handle().queue << '\n';
-                     output << common::process::handle().pid << '\n';
-                     output << common::domain::identity().name << '\n';
-                     output << common::domain::identity().id << std::endl;
-
-                     log << "domain information - id: " << common::domain::identity() << " - process: " << common::process::handle() << '\n';
-                  }
-                  else
-                  {
-                     throw common::exception::invalid::File( "failed to write temporary domain singleton file: " + temp_file.path());
-                  }
-
-
-                  if( common::file::exists( path))
-                  {
-                     //
-                     // There is potentially a running casual-domain already - abort
-                     //
-                     throw common::exception::invalid::Process( "can only be one casual-domain running in a domain");
-                  }
-
-                  common::file::move( temp_file, path);
-
-                  temp_file.release();
-
-                  return { std::move( path)};
-               }
-
-            } // <unnamed>
-         } // local
-
-
          Manager::Manager( Settings&& settings)
-           : m_state{ configuration::state( settings)}
+           : m_state{ configuration::state( settings)},
+             m_singelton{ common::domain::singleton::create( common::process::handle(), common::domain::identity())}
          {
             Trace trace{ "domain::Manager ctor"};
-
-            m_singelton = local::singleton();
-
 
             if( ! settings.bare)
             {

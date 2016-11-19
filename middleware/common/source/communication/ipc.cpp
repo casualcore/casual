@@ -327,36 +327,7 @@ namespace casual
 
                            log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
 
-                           auto from_singleton_file = []()
-                                 {
-                                    std::ifstream file{ common::environment::domain::singleton::file()};
-
-                                    struct
-                                    {
-                                       process::Handle process;
-                                       struct
-                                       {
-                                          std::string name;
-                                          std::string id;
-                                       } identity;
-                                    } domain_info;
-
-                                    if( file)
-                                    {
-                                       file >> domain_info.process.queue;
-                                       file >> domain_info.process.pid;
-                                       file >> domain_info.identity.name;
-                                       file >> domain_info.identity.id;
-
-                                       environment::variable::process::set( environment::variable::name::ipc::domain::manager(), domain_info.process);
-                                       common::domain::identity( { domain_info.identity.id, domain_info.identity.name});
-
-                                       log << "domain information - id: " << common::domain::identity() << ", process: " << domain_info.process << '\n';
-                                    }
-                                    return domain_info.process;
-                                 };
-
-                           process = from_singleton_file();
+                           process = common::domain::singleton::read().process;
 
                            if( ! ipc::exists( process.queue))
                            {

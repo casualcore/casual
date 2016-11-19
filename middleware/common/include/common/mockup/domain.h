@@ -14,6 +14,9 @@
 #include "common/message/transaction.h"
 #include "common/message/queue.h"
 
+#include "common/file.h"
+#include "common/domain.h"
+
 
 #include <vector>
 
@@ -43,10 +46,7 @@ namespace casual
             struct Manager
             {
                Manager();
-               Manager( dispatch_type&& handler);
-
-               template< typename... Args>
-               Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
+               Manager( dispatch_type&& handler, const common::domain::Identity& identity = common::domain::Identity{ "unittest-domain"});
 
                ~Manager();
 
@@ -74,6 +74,7 @@ namespace casual
 
                State m_state;
                ipc::Replier m_replier;
+               common::file::scoped::Path m_singlton;
             };
 
 

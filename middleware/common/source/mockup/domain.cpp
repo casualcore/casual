@@ -62,30 +62,8 @@ namespace casual
             {
                namespace
                {
-                  void prepare_domain_manager( platform::ipc::id::type ipc)
-                  {
-                     common::environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
-
-                     log << environment::variable::name::ipc::domain::manager() << " set to: "
-                           << common::environment::variable::get( environment::variable::name::ipc::domain::manager()) << '\n';
-
-                     std::ofstream file{ common::environment::domain::singleton::file()};
-
-                     if( file)
-                     {
-                        file << ipc;
-                        log << "ipc: " << ipc << " to: " << common::environment::domain::singleton::file() << '\n';
-                     }
-                     else
-                     {
-                        log::error << "faild to create mockup domain singleton file: " << common::environment::domain::singleton::file() << '\n';
-                     }
-                  }
-
-
                   namespace handle
                   {
-
                      namespace connect
                      {
                         struct Reply
@@ -110,10 +88,10 @@ namespace casual
 
             }
 
-            Manager::Manager( dispatch_type&& handler)
-               : m_replier{ std::move( handler)}
+            Manager::Manager( dispatch_type&& handler, const common::domain::Identity& identity)
+               : m_replier{ std::move( handler)}, m_singlton{ common::domain::singleton::create( m_replier.process(), identity)}
             {
-               local::prepare_domain_manager( m_replier.input());
+
             }
 
             Manager::~Manager() = default;
