@@ -334,7 +334,7 @@ namespace casual
                         return &singleton;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                     bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
                      {
                         Trace trace{ "transaction::handle::resource::prepare local reply"};
 
@@ -437,7 +437,7 @@ namespace casual
                         return false;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
+                     bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
                      {
                         Trace trace{ "transaction::handle::resource::commit local reply"};
 
@@ -508,7 +508,7 @@ namespace casual
                         return false;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                     bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
                      {
                         Trace trace{ "transaction::handle::resource::rollback local reply"};
 
@@ -584,9 +584,9 @@ namespace casual
                         return &singleton;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                     bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
                      {
-                        Trace trace{ "transaction::handle::implementation::Remote::handle prepare reply"};
+                        Trace trace{ "transaction::handle::implementation::Remote::prepare reply"};
 
                         //
                         // Transaction is owned by another domain, so we just act as a resource.
@@ -608,9 +608,9 @@ namespace casual
                         return false;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
+                     bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
                      {
-                        Trace trace{ "transaction::handle::implementation::Remote::handle commit reply"};
+                        Trace trace{ "transaction::handle::implementation::Remote::commit reply"};
 
                         //
                         // Transaction is owned by another domain, so we just act as a resource.
@@ -632,9 +632,9 @@ namespace casual
                         return true;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                     bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
                      {
-                        Trace trace{ "transaction::handle::implementation::Remote::handle rollback reply"};
+                        Trace trace{ "transaction::handle::implementation::Remote::rollback reply"};
 
                         //
                         // Transaction is owned by another domain, so we just act as a resource.
@@ -676,9 +676,9 @@ namespace casual
                                  return &singleton;
                               }
 
-                              bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                              bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
                               {
-                                 Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::handle prepare reply"};
+                                 Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::prepare reply"};
                                  //
                                  // We're done with the prepare phase, start with commit or rollback
                                  //
@@ -767,7 +767,7 @@ namespace casual
                                  return false;
                               }
 
-                              bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                              bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
                               {
                                  Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::handle rollback reply"};
 
@@ -1007,7 +1007,7 @@ namespace casual
                      return false;
                   }
 
-                  return transaction.implementation->handle( m_state, message, transaction);
+                  return transaction.implementation->prepare( m_state, message, transaction);
 
                }
 
@@ -1033,7 +1033,7 @@ namespace casual
                      return false;
                   }
 
-                  return transaction.implementation->handle( m_state, message, transaction);
+                  return transaction.implementation->commit( m_state, message, transaction);
                }
 
 
@@ -1055,7 +1055,7 @@ namespace casual
                      return false;
                   }
 
-                  return transaction.implementation->handle( m_state, message, transaction);
+                  return transaction.implementation->rollback( m_state, message, transaction);
                }
             } // reply
          } // resource
@@ -1397,6 +1397,11 @@ namespace casual
                         // We remove the transaction
                         //
                         return true;
+                     }
+                     default:
+                     {
+                        common::log::error << "unexpected transaction stage: " << transaction << '\n';
+                        break;
                      }
                   }
                }

@@ -210,12 +210,8 @@ namespace casual
                      ipc::device().blocking_send( message.process.queue, reply);
                   });
 
-                  if( ! m_state.instances.remote.empty())
+                  try
                   {
-                     //
-                     // TODO: This is somewhat fragile.
-                     //
-                     log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
 
                      common::message::gateway::domain::discover::Request request;
                      request.correlation = message.correlation;
@@ -223,11 +219,20 @@ namespace casual
                      request.process = common::process::handle();
                      request.services.push_back( message.requested);
 
-                     ipc::device().blocking_send( communication::ipc::gateway::manager::device(), request);
+                     //
+                     // If there is no gateway, this will throw
+                     //
+                     ipc::device().blocking_send( communication::ipc::gateway::manager::optional::device(), request);
+
+                     log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
 
                      m_state.pending.requests.push_back( std::move( message));
 
                      send_reply.release();
+                  }
+                  catch( ...)
+                  {
+                     error::handler();
                   }
                }
             }
@@ -254,6 +259,7 @@ namespace casual
 
                   auto reply = common::message::reverse::type( message);
 
+                  reply.process = common::process::handle();
                   reply.domain = common::domain::identity();
 
                   for( const auto& s : message.services)

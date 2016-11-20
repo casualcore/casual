@@ -62,30 +62,8 @@ namespace casual
             {
                namespace
                {
-                  void prepare_domain_manager( platform::ipc::id::type ipc)
-                  {
-                     common::environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
-
-                     log << environment::variable::name::ipc::domain::manager() << " set to: "
-                           << common::environment::variable::get( environment::variable::name::ipc::domain::manager()) << '\n';
-
-                     std::ofstream file{ common::environment::domain::singleton::file()};
-
-                     if( file)
-                     {
-                        file << ipc;
-                        log << "ipc: " << ipc << " to: " << common::environment::domain::singleton::file() << '\n';
-                     }
-                     else
-                     {
-                        log::error << "faild to create mockup domain singleton file: " << common::environment::domain::singleton::file() << '\n';
-                     }
-                  }
-
-
                   namespace handle
                   {
-
                      namespace connect
                      {
                         struct Reply
@@ -104,16 +82,16 @@ namespace casual
                } // <unnamed>
             } // local
 
-            Manager::Manager() : Manager( default_handler())
+            Manager::Manager() : Manager( dispatch_type{})
             {
 
 
             }
 
-            Manager::Manager( dispatch_type&& handler)
-               : m_replier{ std::move( handler)}
+            Manager::Manager( dispatch_type&& handler, const common::domain::Identity& identity)
+               : m_replier{ default_handler() + std::move( handler)}, m_singlton{ common::domain::singleton::create( m_replier.process(), identity)}
             {
-               local::prepare_domain_manager( m_replier.input());
+
             }
 
             Manager::~Manager() = default;
@@ -273,12 +251,12 @@ namespace casual
             } // local
 
 
-            Broker::Broker() : Broker( default_handler())
+            Broker::Broker() : Broker( dispatch_type{})
             {
             }
 
             Broker::Broker( dispatch_type&& handler)
-               : m_replier{ std::move( handler)}
+               : m_replier{  default_handler() + std::move( handler)}
             {
                Trace trace{ "mockup domain::Broker::Broker"};
 
@@ -461,10 +439,11 @@ namespace casual
                   };
                }
 
-               Manager::Manager() : Manager( default_handler()) {}
+               Manager::Manager() : Manager( dispatch_type{}) {}
 
-               Manager::Manager( dispatch_type handler)
-                  : m_replier{ std::move( handler)}
+
+               Manager::Manager( dispatch_type&& handler)
+                  : m_replier{ default_handler() + std::move( handler)}
                {
 
                   //
@@ -485,14 +464,14 @@ namespace casual
 
             namespace queue
             {
-               Broker::Broker() : Broker( default_handler())
+               Broker::Broker() : Broker( dispatch_type{})
                {
 
 
                }
 
                Broker::Broker( dispatch_type&& handler)
-                  : m_replier{ std::move( handler)}
+                  : m_replier{ default_handler() + std::move( handler)}
                {
                   //
                   // Connect to the domain
@@ -508,9 +487,6 @@ namespace casual
 
                dispatch_type Broker::default_handler()
                {
-
-
-
                   return {
                      [&]( message::queue::lookup::Request& r)
                      {

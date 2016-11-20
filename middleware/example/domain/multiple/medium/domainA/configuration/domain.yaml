@@ -3,18 +3,16 @@
 domain:
 
   # name of this domain
-  name: md-medium-domain1
+  name: md-medium-domainA
       
   servers: 
          
-      #  
-      # path to the server. If servers path are in PATH environment variable
-      # one can omitt the path part, and only use the executable name
-      #  
+    - path: casual-queue-broker
+      instances: 1
+
+    # advertises casual.example.echo 
     - path: ${CASUAL_HOME}/example/bin/casual-example-server
       instances: 1 # how many instances should be started
-      note: Arbitary information of this server
-
 
   #
   # Queue configuration
@@ -22,9 +20,10 @@ domain:
   queue:
   
     groups:
-      - name: domain-1
+      - name: domain-A
+        queuebase: queue/domainA.db
         queues:
-          - name: queue1
+          - name: queueA1
         
 
   #
@@ -32,11 +31,11 @@ domain:
   #
   gateway:
     listeners:
-      # which adress this domain should listen on
+      # which address this domain should listen on
       - address: 127.0.0.1:7771
     
     connections:
-      # We connect to domain2
+      # We connect to domainB
       - address: 127.0.0.1:7772
 
 

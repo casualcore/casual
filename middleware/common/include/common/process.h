@@ -1,8 +1,5 @@
 //!
-//! process.h
-//!
-//! Created on: May 12, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_PROCESS_H_

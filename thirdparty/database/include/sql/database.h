@@ -1,8 +1,5 @@
 //!
-//! database.h
-//!
-//! Created on: Jul 24, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SQL_DATABASE_H_
@@ -180,7 +177,7 @@ namespace sql
          const auto value_size = sizeof( T) * array_size;
 
          auto blob = sqlite3_column_blob( statement, column);
-         auto blob_size = sqlite3_column_bytes( statement, column);
+         std::size_t blob_size = sqlite3_column_bytes( statement, column);
 
          memcpy( value, blob, value_size > blob_size ? blob_size : value_size);
       }

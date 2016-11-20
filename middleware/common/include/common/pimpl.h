@@ -20,6 +20,7 @@ namespace casual
          public:
 
             using implementation_type = T;
+            using holder_type = std::unique_ptr< implementation_type>;
 
             template< typename ...Args>
             basic_pimpl( Args&&... args) : m_holder( make::unique< implementation_type>( std::forward< Args>( args)...)) {}
@@ -35,7 +36,9 @@ namespace casual
             explicit operator bool () { return m_holder.get();}
 
          protected:
-            std::unique_ptr< implementation_type> m_holder;
+            basic_pimpl( holder_type&& holder) : m_holder{ std::move( holder)} {} 
+
+            holder_type m_holder;
          };
       } // move
 
@@ -55,15 +58,13 @@ namespace casual
          //!
          //! Make a deep copy
          //!
-         basic_pimpl( const basic_pimpl& other)
-         {
-            this->m_holder = make::unique< implementation_type>( *other);
-         }
+         basic_pimpl( const basic_pimpl& other) : base_type{ make::unique< implementation_type>( *other)} {}
+
 
          //!
          //! We need to overload non const copy-ctor, otherwise variadic ctor will take it.
          //!
-         basic_pimpl( basic_pimpl& other) : basic_pimpl( static_cast< const basic_pimpl&>( other)) {}
+         basic_pimpl( basic_pimpl& other) : base_type{ make::unique< implementation_type>( *other)} {}
 
          //!
          //! Make a deep copy

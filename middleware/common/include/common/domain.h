@@ -7,6 +7,8 @@
 
 #include "common/marshal/marshal.h"
 #include "common/uuid.h"
+#include "common/file.h"
+#include "common/process.h"
 
 #include <string>
 #include <iosfwd>
@@ -48,6 +50,24 @@ namespace casual
          //! @param value the new identity
          //!
          void identity( Identity value);
+
+
+         namespace singleton
+         {
+            file::scoped::Path create( const process::Handle& process, const Identity& identity);
+
+            struct Result
+            {
+               process::Handle process;
+               Identity identity;
+            };
+
+            Result read();
+
+         } // singleton
+
+
+
 
       } // domain
    } // common

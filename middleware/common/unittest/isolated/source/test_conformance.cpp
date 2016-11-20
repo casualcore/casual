@@ -200,6 +200,27 @@ namespace casual
          }
       }
 
+      /*
+       * generates error with -Werror=return-type
+       *
+      namespace local
+      {
+         namespace
+         {
+            bool ommit_return()
+            {
+
+            }
+         } // <unnamed>
+      } // local
+
+
+      TEST( casual_common_conformance, ommitt_return)
+      {
+         EXPECT_TRUE( local::ommit_return());
+      }
+      */
+
 
 
       /*

@@ -43,23 +43,23 @@ namespace casual
                   //!
                   //! which offset this transport message represent of the complete message
                   //!
-                  std::uint64_t offset;
+                  std::int64_t offset;
 
                   //!
                   //! Size of payload in this transport message
                   //!
-                  std::uint64_t count;
+                  std::int64_t count;
 
                   //!
                   //! size of the logical complete message
                   //!
-                  std::uint64_t complete_size;
+                  std::int64_t complete_size;
                };
 
 
 
-               static constexpr std::size_t max_message_size() { return policy_type::message_size();}
-               static constexpr std::size_t header_size()
+               static constexpr std::int64_t max_message_size() { return policy_type::message_size();}
+               static constexpr std::int64_t header_size()
                {
                   //
                   // We let the policy decide the size of the header, since on ipc the message type is not
@@ -67,7 +67,7 @@ namespace casual
                   //
                   return policy_type::header_size( sizeof( header_t), sizeof( platform::ipc::message::type));
                }
-               static constexpr std::size_t max_payload_size() { return max_message_size() - header_size();}
+               static constexpr std::int64_t max_payload_size() { return max_message_size() - header_size();}
 
 
                using payload_type = std::array< char, max_payload_size()>;

@@ -103,7 +103,7 @@ namespace casual
             ~Buffer();
 
             buffer_type data() noexcept;
-            const buffer_type data() const noexcept;
+            buffer_type data() const noexcept;
 
             size_type size() const noexcept;
 

@@ -417,14 +417,14 @@ namespace casual
 
          reference at( const difference_type index)
          {
-            if( m_size <= index){ throw std::out_of_range{ std::to_string( index)};}
+            if( m_size <= static_cast< decltype( m_size)>( index)) { throw std::out_of_range{ std::to_string( index)};}
 
             return *( m_first + index);
          }
 
          const reference at( const difference_type index) const
          {
-            if( m_size <= index){ throw std::out_of_range{ std::to_string( index)};}
+            if( m_size <= static_cast< decltype( m_size)>( index)){ throw std::out_of_range{ std::to_string( index)};}
 
             return *( m_first + index);
          }
@@ -824,7 +824,7 @@ namespace casual
          {
             auto inputRange = make( range);
 
-            if( inputRange.size() <= size)
+            if( inputRange.size() <= static_cast< decltype( inputRange.size())>( size))
             {
                copy( inputRange, output);
             }

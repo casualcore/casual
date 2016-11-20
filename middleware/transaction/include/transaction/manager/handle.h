@@ -49,9 +49,9 @@ namespace casual
          {
             struct Interface
             {
-               virtual bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
-               virtual bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
-               virtual bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
+               virtual bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
+               virtual bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
+               virtual bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
             };
          } // implementation
 
