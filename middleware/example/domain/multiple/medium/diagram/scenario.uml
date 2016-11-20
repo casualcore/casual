@@ -1,0 +1,67 @@
+@startuml
+
+title casual medium multiple domain example
+
+box "domainA" #LightBlue
+   actor "You" as AA
+   participant "Server A" as SA
+   participant "casual-queue" as QA
+   participant "gateway" as GA
+end box
+
+box "domainB"
+   participant "gateway" as GB 
+   participant "casual-queue" as QB
+   participant "service-forward" as SFB
+   participant "queue-forward" as QFB
+end box
+
+activate AA
+
+group in transaction
+AA -> GA: enqueue to queueB1
+GA -> GB:
+GB -> QB: enqueue to queueB1
+activate QB
+QB -> GB: message id
+deactivate QB
+GB -> GA:
+GA -> AA: message id
+deactivate AA
+end
+
+group in transaction
+QB -> SFB: dequeue B1
+activate SFB
+SFB -> GB: call casual.example.echo 
+GB -> GA:
+GA -> SA: call casual.example.echo 
+activate SA
+SA -> GA: reply 
+deactivate SA
+GA -> GB
+GB -> SFB: echo reply
+SFB -> QB: enqueue B2
+deactivate SFB
+end
+
+group in transaction
+QB -> QFB: dequeue B2
+activate QFB
+QFB -> GB: enqueue queueA1
+GB -> GA
+GA -> QA: enqueue queueA1
+activate QA
+QA -> GA
+deactivate QA
+GA -> GB
+GB -> QFB: message id
+
+deactivate QFB
+
+
+end
+
+
+
+@enduml
