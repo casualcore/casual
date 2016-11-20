@@ -81,6 +81,21 @@ namespace casual
                   assign( m_handlers, std::forward< Args>( handlers)...);
                }
 
+               basic_handler& operator += ( basic_handler&& other)
+               {
+                  for( auto&& handler : other.m_handlers)
+                  {
+                     m_handlers.insert( std::move( handler));
+                  }
+                  return *this;
+               }
+
+               friend basic_handler operator + ( basic_handler&& lhs, basic_handler&& rhs)
+               {
+                  lhs += std::move( rhs);
+                  return std::move( lhs);
+               }
+
             private:
 
                bool dispatch( communication::message::Complete& complete) const
@@ -155,6 +170,7 @@ namespace casual
 
                static void assign( handlers_type& result)
                {
+
                }
 
                template< typename H, typename... Args>

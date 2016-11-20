@@ -48,6 +48,7 @@ namespace casual
                Manager();
                Manager( dispatch_type&& handler, const common::domain::Identity& identity = common::domain::Identity{ "unittest-domain"});
 
+
                ~Manager();
 
                inline process::Handle process() const { return m_replier.process();}
@@ -64,14 +65,6 @@ namespace casual
 
                dispatch_type default_handler();
 
-               template< typename... Args>
-               dispatch_type default_handler( Args&& ...args)
-               {
-                  auto result = default_handler();
-                  result.insert( std::forward< Args>( args)...);
-                  return result;
-               }
-
                State m_state;
                ipc::Replier m_replier;
                common::file::scoped::Path m_singlton;
@@ -84,10 +77,6 @@ namespace casual
             struct Broker
             {
                Broker();
-
-               template< typename... Args>
-               Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...)) {}
-
                Broker( dispatch_type&& handler);
 
                ~Broker();
@@ -103,42 +92,20 @@ namespace casual
 
                dispatch_type default_handler();
 
-               template< typename... Args>
-               dispatch_type default_handler( Args&& ...args)
-               {
-                  auto result = default_handler();
-                  result.insert( std::forward< Args>( args)...);
-                  return result;
-               }
-
                State m_state;
                ipc::Replier m_replier;
             };
 
             namespace transaction
             {
-
-
                struct Manager
                {
                   Manager();
-
-                  template< typename... Args>
-                  Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
+                  Manager( dispatch_type&& handler);
 
                private:
 
                   dispatch_type default_handler();
-
-                  template< typename... Args>
-                  dispatch_type default_handler( Args&& ...args)
-                  {
-                     auto result = default_handler();
-                     result.insert( std::forward< Args>( args)...);
-                     return result;
-                  }
-
-                  Manager( dispatch_type handler);
 
                   ipc::Replier m_replier;
                };
