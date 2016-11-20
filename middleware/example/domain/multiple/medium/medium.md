@@ -69,6 +69,20 @@ View current state in the two domains
 
 #### domain A
 
+List connections
+
+```bash
+host:domainA$ casual-admin gateway --list-connections
+name               id                                bound  pid    queue    type  runlevel  address        
+-----------------  --------------------------------  -----  -----  -------  ----  --------  ---------------
+md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  out    22351  8060933  tcp   online    localhost:7772 
+md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  in     22376   917521  tcp   online    localhost:64495
+```
+
+We have one inbound and one outbound connection to `domain B
+
+
+
 List services
 ```bash
 host:domainA$ casual-admin broker --list-services
@@ -93,6 +107,19 @@ domain-A.group.error      0     0    0   0  2016-11-20T15:17:34.062  0  domain-A
 ```
 
 #### domain B
+
+List connections
+
+```bash
+host:domainB$ casual-admin gateway --list-connections
+name               id                                bound  pid    queue   type  runlevel  address        
+-----------------  --------------------------------  -----  -----  ------  ----  --------  ---------------
+md-medium-domainA  653081bee12347029d207e8d131cd68f  out    22375  917517  tcp   online    localhost:7771 
+md-medium-domainA  653081bee12347029d207e8d131cd68f  in     22377  720916  tcp   online    localhost:64496
+```
+
+We have one inbound and one outbound connection to `domain A
+
 
 List services
 
