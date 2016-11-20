@@ -20,7 +20,7 @@ endif
 COMPILER = $(CXX)
 CROSSCOMPILER = clang++
 
-WARNING_DIRECTIVE = -Wall -pedantic -Wsign-compare -Werror=return-type -Wuninitialized -Wextra -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter 
+WARNING_DIRECTIVE = -Wall -pedantic -Wsign-compare -Werror=return-type -Wextra -Winit-self -Woverloaded-virtual -Wno-unused-parameter -Wno-missing-field-initializers
 
 #
 # Linkers
