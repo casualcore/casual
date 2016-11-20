@@ -1398,6 +1398,11 @@ namespace casual
                         //
                         return true;
                      }
+                     default:
+                     {
+                        common::log::error << "unexpected transaction stage: " << transaction << '\n';
+                        break;
+                     }
                   }
                }
                return false;

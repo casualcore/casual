@@ -82,7 +82,7 @@ namespace casual
             return m_buffer.get();
          }
 
-         const Buffer::buffer_type Buffer::data() const noexcept
+         Buffer::buffer_type Buffer::data() const noexcept
          {
             return m_buffer.get();
          }
