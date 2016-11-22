@@ -30,6 +30,9 @@ namespace casual
       namespace transform
       {
 
+         common::buffer::Type type( const std::string& type);
+         std::string type( const common::buffer::Type& type);
+
          std::vector< broker::admin::Group> groups( const broker::State& state);
 
 

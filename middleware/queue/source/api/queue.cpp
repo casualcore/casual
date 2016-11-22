@@ -52,8 +52,7 @@ namespace casual
                request.process = common::process::handle();
 
                request.message.payload = message.payload.data;
-               request.message.type.name = message.payload.type.type;
-               request.message.type.subname = message.payload.type.subtype;
+               request.message.type = message.payload.type;
                request.message.properties = message.attributes.properties;
                request.message.reply = message.attributes.reply;
                request.message.avalible = message.attributes.available;
@@ -250,18 +249,16 @@ namespace casual
             struct Payload
             {
                template< typename T, typename Iter>
-               Payload( T&& type_, Iter first, Iter last)
-                 : data( first, last)
+               Payload( T&& type, Iter first, Iter last)
+                 : type( transform::type( type)), data( first, last)
                {
-                  type.type = type_.name;
-                  type.subtype = type_.subname;
+
                }
 
                Payload( Payload&&) = default;
                Payload& operator = ( Payload&&) = default;
 
-               queue::Payload::type_t type;
-
+               std::string type;
                sf::platform::binary_type data;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -316,8 +313,7 @@ namespace casual
 
                {
                   common::buffer::Payload payload;
-                  payload.type.name = std::move( message.payload.type.type);
-                  payload.type.subname = std::move( message.payload.type.subtype);
+                  payload.type = transform::type( message.payload.type);
                   payload.memory = std::move( message.payload.data);
 
                   result.payload.size = payload.memory.size();
@@ -343,9 +339,33 @@ namespace casual
             return peek::information( queue, Selector{});
          }
 
-         std::vector< message::Information> information( const std::string& queue, const Selector& selector)
+         std::vector< message::Information> information( const std::string& queuename, const Selector& selector)
          {
-            return {};
+            queue::Lookup lookup{ queuename};
+
+            std::vector< message::Information> result;
+
+            common::message::queue::peek::information::Request request;
+            request.name = queuename;
+            request.process = common::process::handle();
+            request.selector.properties = selector.properties;
+
+
+
+            auto queue = lookup();
+            request.queue = queue.queue;
+
+            auto reply = common::communication::ipc::call( queue.process.queue, request);
+
+            common::range::transform( reply.messages, result, []( const common::message::queue::information::Message& m){
+               message::Information result;
+               result.id = m.id;
+               result.type = m.type;
+               result.state = m.state;
+               return result;
+            });
+
+            return result;
          }
 
          std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids)

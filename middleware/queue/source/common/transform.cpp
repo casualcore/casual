@@ -41,6 +41,19 @@ namespace casual
          } // local
 
 
+         common::buffer::Type type( const std::string& type)
+         {
+            auto splitted = common::range::split( type, '/');
+            return {
+               std::string( std::begin( std::get< 0>( splitted)), std::end( std::get< 0>( splitted))),
+               std::string( std::begin( std::get< 1>( splitted)), std::end( std::get< 1>( splitted)))
+            };
+         }
+
+         std::string type( const common::buffer::Type& type)
+         {
+            return type.name + '/' + type.subname;
+         }
 
 
          std::vector< broker::admin::Group> groups( const broker::State& state)
@@ -107,8 +120,7 @@ namespace casual
             result.attributes.available = value.avalible;
             result.attributes.properties = value.properties;
             result.attributes.reply = value.reply;
-            result.payload.type.type = value.type.name;
-            result.payload.type.subtype = value.type.subname;
+            result.payload.type = value.type;
             std::swap( result.payload.data, value.payload);
 
             return result;
@@ -123,8 +135,7 @@ namespace casual
             result.origin = message.origin;
             result.reply = message.reply;
             result.trid = message.trid;
-            result.type.main = message.type.name;
-            result.type.sub = message.type.subname;
+            result.type = message.type;
 
             result.state = message.state;
             result.redelivered = message.redelivered;

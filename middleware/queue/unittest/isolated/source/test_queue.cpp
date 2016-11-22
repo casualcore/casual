@@ -7,6 +7,7 @@
 
 #include "queue/group/group.h"
 #include "queue/common/environment.h"
+#include "queue/common/transform.h"
 #include "queue/api/queue.h"
 #include "queue/broker/admin/queuevo.h"
 
@@ -162,8 +163,7 @@ domain:
 
          const std::string payload{ "some message"};
          queue::Message message;
-         message.payload.type.type = common::buffer::type::binary().name;
-         message.payload.type.subtype = common::buffer::type::binary().subname;
+         message.payload.type = transform::type( common::buffer::type::binary());
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "queueA1", message);

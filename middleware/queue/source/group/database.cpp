@@ -32,6 +32,35 @@ namespace casual
                namespace transform
                {
 
+                  void row( sql::database::Row& row, common::message::queue::information::Message& message)
+                  {
+                     row.get( 0, message.id.get());
+                     row.get( 1, message.queue);
+                     row.get( 2, message.origin);
+                     row.get( 3, message.trid);
+                     row.get( 4, message.state);
+                     row.get( 5, message.reply);
+                     row.get( 6, message.redelivered);
+                     row.get( 7, message.type);
+                     row.get( 8, message.avalible);
+                     row.get( 9, message.timestamp);
+                     row.get( 10, message.size);
+                  }
+
+                  void row( sql::database::Row& row, common::message::queue::dequeue::Reply::Message& message, int offset = 0)
+                  {
+                     row.get( offset, message.id.get());
+                     row.get( offset + 1, message.properties);
+                     row.get( offset + 2, message.reply);
+                     row.get( offset + 3, message.redelivered);
+                     row.get( offset + 4, message.type);
+
+                     message.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( offset + 5)}};
+                     message.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( offset + 6)}};
+                     row.get( offset + 7, message.payload);
+                  }
+
+
                   struct Reply
                   {
 
@@ -42,16 +71,7 @@ namespace casual
                         std::tuple< std::int64_t, common::message::queue::dequeue::Reply::Message> result;
                         row.get( 0, std::get< 0>( result));
 
-                        row.get( 1, std::get< 1>( result).id.get());
-                        row.get( 2, std::get< 1>( result).properties);
-                        row.get( 3, std::get< 1>( result).reply);
-                        row.get( 4, std::get< 1>( result).redelivered);
-                        row.get( 5, std::get< 1>( result).type.name);
-                        row.get( 6, std::get< 1>( result).type.subname);
-
-                        std::get< 1>( result).avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 7)}};
-                        std::get< 1>( result).timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 8)}};
-                        row.get( 9, std::get< 1>( result).payload);
+                        transform::row( row, std::get< 1>( result), 1);
 
                         return result;
                      }
@@ -136,7 +156,6 @@ namespace casual
                   reply         TEXT,
                   redelivered   INTEGER,
                   type          TEXT,
-                  subtype       TEXT,
                   avalible      INTEGER,
                   timestamp     INTEGER,
                   payload       BLOB,
@@ -245,25 +264,25 @@ namespace casual
             // Precompile all other statements
             //
             {
-               m_statement.enqueue = m_connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?);");
+               m_statement.enqueue = m_connection.precompile( "INSERT INTO message VALUES (?,?,?,?,?,?,?,?,?,?,?,?);");
 
                m_statement.dequeue.first = m_connection.precompile( R"( 
                      SELECT 
-                        ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
                      FROM 
                         message 
                      WHERE queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
 
                m_statement.dequeue.first_id = m_connection.precompile( R"( 
                      SELECT 
-                        ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
                      FROM 
                         message 
                      WHERE id = :id AND queue = :queue AND state = 2 AND ( avalible is NULL OR avalible < :avalible); )");
 
                m_statement.dequeue.first_match = m_connection.precompile( R"( 
                      SELECT 
-                        ROWID, id, properties, reply, redelivered, type, subtype, avalible, timestamp, payload
+                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
                      FROM 
                         message 
                      WHERE queue = :queue AND state = 2 AND properties = :properties AND ( avalible is NULL OR avalible < :avalible) ORDER BY timestamp ASC LIMIT 1; )");
@@ -328,19 +347,34 @@ namespace casual
                   reply         TEXT,
                   redelivered   INTEGER,
                   type          TEXT,
-                  subtype       TEXT,
                   avalible      INTEGER,
                   timestamp     INTEGER,
                   payload       BLOB,
                 */
                m_statement.information.message = m_connection.precompile( R"(
                   SELECT
-                     m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.subtype, m.avalible, m.timestamp, length( m.payload)
+                     m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
                   FROM
                      message m
                   WHERE
                      m.queue = ?
                 )");
+
+
+               m_statement.peek.match = m_connection.precompile( R"( 
+                     SELECT 
+                        m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
+                     FROM 
+                        message  m
+                     WHERE m.queue = :queue AND m.properties = :properties;)");
+
+
+               m_statement.peek.one_message = m_connection.precompile( R"( 
+                     SELECT 
+                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
+                     FROM 
+                        message 
+                     WHERE id = :id; )");
 
             }
          }
@@ -494,8 +528,7 @@ namespace casual
                   state,
                   message.message.reply,
                   0,
-                  message.message.type.name,
-                  message.message.type.subname,
+                  message.message.type,
                   message.message.avalible,
                   common::platform::clock_type::now(),
                   message.message.payload);
@@ -540,7 +573,7 @@ namespace casual
                return reply;
             }
 
-            auto result = local::transform::Reply()( row);
+            auto result = local::transform::Reply{}( row);
 
             //
             // Update state
@@ -569,26 +602,65 @@ namespace casual
 
             log << "request: " << request << std::endl;
 
-
             auto reply = common::message::reverse::type( request);
 
 
+            auto get_query = [&](){
+               if( ! request.selector.properties.empty())
+               {
+                  return m_statement.peek.match.query( request.queue, request.selector.properties);
+               }
+               return m_statement.information.message.query( request.queue);
 
+            };
+
+            auto query = get_query();
+
+            sql::database::Row row;
+
+            while( query.fetch( row))
+            {
+               /*
+                m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
+                */
+
+               common::message::queue::information::Message message;
+
+               local::transform::row(row, message);
+
+               reply.messages.push_back( std::move( message));
+            }
 
             return reply;
          }
 
          common::message::queue::peek::messages::Reply Database::peek( const common::message::queue::peek::messages::Request& request)
          {
-            Trace trace{ "queue::Database::peek information"};
+            Trace trace{ "queue::Database::peek messages"};
 
             log << "request: " << request << std::endl;
 
-
             auto reply = common::message::reverse::type( request);
 
+            sql::database::Row row;
 
+            for( auto& id : request.ids)
+            {
+               auto query = m_statement.peek.one_message.query( id.get());
 
+               if( query.fetch( row))
+               {
+                  common::message::queue::dequeue::Reply::Message message;
+
+                  local::transform::row(row, message);
+
+                  reply.messages.push_back( std::move( message));
+               }
+               else
+               {
+                  log << "failed to find message with id: " << id << std::endl;
+               }
+            }
 
             return reply;
          }
@@ -692,22 +764,11 @@ namespace casual
             while( query.fetch( row))
             {
                /*
-                m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.subtype, m.avalible, m.timestamp, length( m.payload)
+                m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
                 */
                common::message::queue::information::Message message;
 
-               row.get( 0, message.id.get());
-               row.get( 1, message.queue);
-               row.get( 2, message.origin);
-               row.get( 3, message.trid);
-               row.get( 4, message.state);
-               row.get( 5, message.reply);
-               row.get( 6, message.redelivered);
-               row.get( 7, message.type.name);
-               row.get( 8, message.type.subname);
-               row.get( 9, message.avalible);
-               row.get( 10, message.timestamp);
-               row.get( 11, message.size);
+               local::transform::row(row, message);
 
                result.push_back( std::move( message));
             }
