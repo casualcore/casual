@@ -1,16 +1,16 @@
 #!groovy
 
 def backend_builder = '''#! /bin/sh
+umask 000
 cd /git/casual
 casual-make make && casual-make clean && casual-make compile && casual-make link 
 ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
 casual-make install
 tar cvf /git/casual/casual.tar /usr/local/casual
-casual-make clean
-chmod a+w -R .
 '''
 
 def frontend_builder = '''#! /bin/sh
+umask 000
 cd /git/casual/webapp
 bower update --allow-root
 touch bower_components/app-route/app-location.html
@@ -46,12 +46,26 @@ node {
        archive includes: '**/casual.log'
        archive includes: 'casual/casual.tar'
    }
+   
+   stage('Build Nginx Ubuntu') {
+       
+       def current_dir = pwd()
+
+       sh """
+       export CASUAL_HOME=$current_dir/usr/local/casual
+       export CASUAL_DOMAIN_HOME=$current_dir/test/casual
+       export CASUAL_BUILD_HOME=$current_dir/casual/middleware
+
+       python $current_dir/casual/thirdparty/setup/install_nginx.py
+       """
+
+   }
+
 
    stage('Build frontend') {
 
-       //build( 'casualfrontend', 'casual/frontend', frontend_builder)
+       build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
        archive includes: '**/casual-webapp.zip'
    }
 }
-
