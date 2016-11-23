@@ -24,14 +24,14 @@ nginx are installed under /usr/local/nginx by default.
 
    At the moment the nginx worker process must execute with the same user as casual.
 
-   ```
-   Add statement (or change) user.
-   Ex.
-   user  myuser staff;
+```
+Add statement (or change) user.
+Ex.
+user  myuser staff;
 
-   Add location /casual to appropriate server entry.
-   Ex.
-        location /casual {
-                casual_pass;
-        }
-   ```     
+Add location /casual to appropriate server entry.
+Ex.
+location /casual {
+    casual_pass;
+}
+```     
