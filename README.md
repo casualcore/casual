@@ -95,7 +95,7 @@ We've done some field tests
 
 ### Contact ###
 
-* Fredrik Eriksson (laz@laz.se)
+* casual@laz.se
 
 
 ### License
