@@ -163,7 +163,7 @@ domain:
 
          const std::string payload{ "some message"};
          queue::Message message;
-         message.payload.type = transform::type( common::buffer::type::binary());
+         message.payload.type = common::buffer::type::binary();
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "queueA1", message);

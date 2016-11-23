@@ -217,7 +217,7 @@ namespace casual
          queue::Message message;
 
          message.attributes.reply = queue;
-         message.payload.type = transform::type( common::buffer::type::binary());
+         message.payload.type = common::buffer::type::binary();
 
          while( std::cin)
          {

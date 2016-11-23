@@ -41,21 +41,6 @@ namespace casual
          } // local
 
 
-         common::buffer::Type type( const std::string& type)
-         {
-            auto splitted = common::range::split( type, '/');
-            return {
-               std::string( std::begin( std::get< 0>( splitted)), std::end( std::get< 0>( splitted))),
-               std::string( std::begin( std::get< 1>( splitted)), std::end( std::get< 1>( splitted)))
-            };
-         }
-
-         std::string type( const common::buffer::Type& type)
-         {
-            return type.name + '/' + type.subname;
-         }
-
-
          std::vector< broker::admin::Group> groups( const broker::State& state)
          {
             std::vector< broker::admin::Group> result;

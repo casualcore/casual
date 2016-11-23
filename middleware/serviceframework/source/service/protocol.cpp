@@ -61,7 +61,7 @@ namespace casual
 
             }
 
-            common::buffer::Type Binary::type()
+            const std::string& Binary::type()
             {
                return buffer::type::binary();
             }
@@ -94,7 +94,7 @@ namespace casual
 
             }
 
-            common::buffer::Type Yaml::type()
+            const std::string& Yaml::type()
             {
                return buffer::type::yaml();
             }
@@ -137,7 +137,7 @@ namespace casual
 
             }
 
-            common::buffer::Type Json::type()
+            const std::string& Json::type()
             {
                return buffer::type::json();
             }
@@ -181,7 +181,7 @@ namespace casual
             }
 
 
-            common::buffer::Type Xml::type()
+            const std::string& Xml::type()
             {
                return common::buffer::type::xml();
             }
@@ -238,7 +238,7 @@ namespace casual
                return m_state;
             }
 
-            common::buffer::Type Ini::type()
+            const std::string& Ini::type()
             {
                return common::buffer::type::ini();
             }

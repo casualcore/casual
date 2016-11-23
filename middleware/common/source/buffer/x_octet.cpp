@@ -15,9 +15,9 @@ namespace casual
 
          struct x_octet : public pool::default_pool
          {
-            static const std::vector< Type>& types()
+            static const std::vector< std::string>& types()
             {
-               static const std::vector< Type> result{
+               static const std::vector< std::string> result{
                      type::x_octet(), type::binary(), type::json(), type::yaml(), type::xml(), type::ini()
                   };
                return result;

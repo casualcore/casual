@@ -176,13 +176,13 @@ namespace casual
 
             struct Holder
             {
-               common::buffer::Type type;
+               std::string type;
                function_type create;
             };
 
             static Factory& instance();
 
-            std::unique_ptr< Interface> create( TPSVCINFO* service_info, const buffer::Type& type) const;
+            std::unique_ptr< Interface> create( TPSVCINFO* service_info, const std::string& type) const;
             std::unique_ptr< Interface> create( TPSVCINFO* service_info) const;
 
 

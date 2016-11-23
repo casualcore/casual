@@ -61,7 +61,7 @@ namespace casual
             public:
                Binary( TPSVCINFO* serviceInfo);
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
                reply::State do_finalize() override;
 
@@ -83,7 +83,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
             private:
 
@@ -101,7 +101,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
 
             private:
@@ -120,7 +120,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
             private:
 
@@ -137,7 +137,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
             private:
 

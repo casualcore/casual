@@ -61,7 +61,7 @@ namespace casual
                // Prepare the xatmi-buffer
                //
                common::buffer::Payload payload{
-                  transform::type( message.payload.type),
+                  std::move( message.payload.type),
                   std::move( message.payload.data)};
 
                log << "payload: " << payload << std::endl;
@@ -80,7 +80,7 @@ namespace casual
 
                   queue::Message reply;
                   reply.payload.data = std::move( data.memory);
-                  reply.payload.type = transform::type( data.type);
+                  reply.payload.type = std::move( data.type);
 
                   queue::enqueue( replyqueue, reply);
 

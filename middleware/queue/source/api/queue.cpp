@@ -250,7 +250,7 @@ namespace casual
             {
                template< typename T, typename Iter>
                Payload( T&& type, Iter first, Iter last)
-                 : type( transform::type( type)), data( first, last)
+                 : type( type), data( first, last)
                {
 
                }
@@ -313,7 +313,7 @@ namespace casual
 
                {
                   common::buffer::Payload payload;
-                  payload.type = transform::type( message.payload.type);
+                  payload.type = std::move( message.payload.type);
                   payload.memory = std::move( message.payload.data);
 
                   result.payload.size = payload.memory.size();
