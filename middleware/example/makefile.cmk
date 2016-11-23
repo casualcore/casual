@@ -58,11 +58,11 @@ Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'],'$(CASUA
 # multi domian medium example
 Install( [ 'domain/multiple/medium/medium.md'],'$(CASUAL_HOME)/example/domain/multiple/medium')
 
-Install( [ 'domain/multiple/medium/domain1/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain1')
-Install( [ 'domain/multiple/medium/domain1/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain1/configuration')
+Install( [ 'domain/multiple/medium/domainA/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainA')
+Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainA/configuration')
 
-Install( [ 'domain/multiple/medium/domain2/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain2')
-Install( [ 'domain/multiple/medium/domain2/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domain2/configuration')
+Install( [ 'domain/multiple/medium/domainB/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainB')
+Install( [ 'domain/multiple/medium/domainB/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainB/configuration')
 
 
 
