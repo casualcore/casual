@@ -8,9 +8,10 @@ import os
 import tarfile
 import subprocess
 
+from shutil import copyfile
 
 URL="http://nginx.org/download/"
-FILENAME="nginx-1.8.1.tar.gz"
+FILENAME="nginx-1.10.2.tar.gz"
 TMP="/tmp/"
 
 if not os.getenv("CASUAL_BUILD_HOME") or not os.getenv("CASUAL_HOME") or not os.getenv("CASUAL_DOMAIN_HOME"):
@@ -45,6 +46,5 @@ print( subprocess.check_output(['make']))
 print("Running install")
 print( subprocess.check_output(['make', 'install']))
 print("Updating configuration")
-print( subprocess.check_output(['sed', '-i','.tmp', 's@__CASUAL_DOMAIN_HOME__@' + os.getenv("CASUAL_DOMAIN_HOME") +'@', os.getenv("CASUAL_BUILD_HOME") + '/../thirdparty/nginx/nginx.conf']))
-os.rename(os.getenv("CASUAL_BUILD_HOME") + '/../thirdparty/nginx/nginx.conf.tmp', prefix + '/conf/nginx.conf') 
+copyfile(os.getenv("CASUAL_BUILD_HOME") + '/../thirdparty/nginx/nginx.conf', prefix + '/conf/nginx.conf') 
 print("Done")
