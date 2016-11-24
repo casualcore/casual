@@ -13,55 +13,40 @@ namespace casual
       namespace buffer
       {
 
-         Type::Type() = default;
-         Type::Type( std::string name, std::string subname) : name( std::move( name)), subname( std::move( subname)) {}
-         Type::Type( const char* name, const char* subname) : name( name ? name : ""), subname( subname ? subname : "") {}
-
-
-         bool operator < ( const Type& lhs, const Type& rhs)
-         {
-            if( lhs.name == rhs.name)
-               return lhs.subname < rhs.subname;
-
-            return lhs.name < rhs.name;
-         }
-
-         bool operator == ( const Type& lhs, const Type& rhs)
-         {
-            return lhs.name == rhs.name && lhs.subname == rhs.subname;
-         }
-
-         bool operator != ( const Type& lhs, const Type& rhs)
-         {
-            return ! ( lhs == rhs);
-         }
-
-         std::ostream& operator << ( std::ostream& out, const Type& value)
-         {
-            return out << "{name: " << value.name << " subname: " << value.subname << "}";
-         }
-
          namespace type
          {
-            Type x_octet() { return { X_OCTET, nullptr};}
+            const std::string& x_octet() { static const auto name = combine( X_OCTET); return name;}
 
-            Type binary() { return { CASUAL_BUFFER_BINARY_TYPE, CASUAL_BUFFER_BINARY_SUBTYPE};}
-            Type json() { return { CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE};}
-            Type yaml() { return { CASUAL_BUFFER_YAML_TYPE, CASUAL_BUFFER_YAML_SUBTYPE};}
-            Type xml() { return { CASUAL_BUFFER_XML_TYPE, CASUAL_BUFFER_XML_SUBTYPE};}
-            Type ini() { return { CASUAL_BUFFER_INI_TYPE, CASUAL_BUFFER_INI_SUBTYPE};}
+            const std::string& binary() { static const auto name = combine( CASUAL_BUFFER_BINARY_TYPE, CASUAL_BUFFER_BINARY_SUBTYPE); return name;}
+            const std::string& json() { static const auto name = combine( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE); return name;}
+            const std::string& yaml() { static const auto name = combine( CASUAL_BUFFER_YAML_TYPE, CASUAL_BUFFER_YAML_SUBTYPE); return name;}
+            const std::string& xml() { static const auto name = combine( CASUAL_BUFFER_XML_TYPE, CASUAL_BUFFER_XML_SUBTYPE); return name;}
+            const std::string& ini() { static const auto name = combine( CASUAL_BUFFER_INI_TYPE, CASUAL_BUFFER_INI_SUBTYPE); return name;}
+
+
+            std::string combine( const char* type, const char* subtype )
+            {
+               std::string result{ type};
+               result.push_back( '/');
+
+               if( subtype && subtype[ 0] != '\0') { return result + subtype;}
+
+               return result;
+            }
+
+
          } // type
 
 
 
          Payload::Payload() = default;
 
-         Payload::Payload( std::nullptr_t) : type{ "NULL", ""} {}
+         Payload::Payload( std::nullptr_t) : Payload{ "NULL", 0} {}
 
-         Payload::Payload( Type type, platform::binary_type buffer)
+         Payload::Payload( std::string type, platform::binary_type buffer)
           : type( std::move( type)), memory( std::move( buffer)) {}
 
-         Payload::Payload( Type type, platform::binary_type::size_type size)
+         Payload::Payload( std::string type, platform::binary_type::size_type size)
           : type( std::move( type)), memory( size)
          {
             if( ! memory.data())
@@ -89,13 +74,13 @@ namespace casual
 
          bool Payload::null() const
          {
-            return type.name == "NULL";
+            return type == "NULL";
          }
 
 
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {
-            return out << "{ type: " << value.type << ", @" << static_cast< const void*>( value.memory.data()) << " size: " << value.memory.size() << '}';
+            return out << "{ type: " << value.type << ", memory: " << static_cast< const void*>( value.memory.data()) << ", size: " << value.memory.size() << '}';
          }
 
 
@@ -109,7 +94,7 @@ namespace casual
 
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 
-         Buffer::Buffer( Type type, platform::binary_type::size_type size)
+         Buffer::Buffer( std::string type, platform::binary_type::size_type size)
              : payload( std::move( type), size) {}
 
 

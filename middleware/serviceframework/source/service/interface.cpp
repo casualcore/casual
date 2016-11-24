@@ -97,7 +97,7 @@ namespace casual
          }
 
 
-         std::unique_ptr< Interface> Factory::create( TPSVCINFO* service_info, const buffer::Type& type) const
+         std::unique_ptr< Interface> Factory::create( TPSVCINFO* service_info, const std::string& type) const
          {
             sf::Trace trace( "sf::service::Factory::create");
 
@@ -131,7 +131,7 @@ namespace casual
                return found->create( service_info);
             }
 
-            throw sf::exception::Validation( "no suitable protocol was found for type: " + type.name + " subtype: " + type.subname);
+            throw sf::exception::Validation( "no suitable protocol was found for type: " + type);
 
 
          }

@@ -86,8 +86,7 @@ namespace casual
                            message.service.timeout = std::chrono::microseconds{ 2000};
                            message.service.type = 42;
 
-                           message.buffer.type.name = "bufer-name";
-                           message.buffer.type.subname = "buffer-sub-name";
+                           message.buffer.type = "bufer/type";
 
                            message.buffer.memory = common::unittest::random::binary( 4096);
 
@@ -113,8 +112,7 @@ namespace casual
                            EXPECT_TRUE( send_message.service.transaction == receive_message.service.transaction);
                            //EXPECT_TRUE( send_message.service.type == receive_message.service.type);
 
-                           EXPECT_TRUE( send_message.buffer.type.name == receive_message.buffer.type.name);
-                           EXPECT_TRUE( send_message.buffer.type.subname == receive_message.buffer.type.subname);
+                           EXPECT_TRUE( send_message.buffer.type == receive_message.buffer.type);
 
                            EXPECT_TRUE( send_message.buffer.memory == receive_message.buffer.memory);
 
@@ -138,8 +136,7 @@ namespace casual
                            message.transaction.trid = common::transaction::ID::create();
                            message.transaction.state = 777;
 
-                           message.buffer.type.name = "bufer-name";
-                           message.buffer.type.subname = "buffer-sub-name";
+                           message.buffer.type = "buffer/name";
 
                            message.buffer.memory = common::unittest::random::binary( 4096);
 
@@ -161,8 +158,7 @@ namespace casual
                            EXPECT_TRUE( send_message.transaction.trid == receive_message.transaction.trid);
                            EXPECT_TRUE( send_message.transaction.state == receive_message.transaction.state);
 
-                           EXPECT_TRUE( send_message.buffer.type.name == receive_message.buffer.type.name);
-                           EXPECT_TRUE( send_message.buffer.type.subname == receive_message.buffer.type.subname);
+                           EXPECT_TRUE( send_message.buffer.type == receive_message.buffer.type);
 
                            EXPECT_TRUE( send_message.buffer.memory == receive_message.buffer.memory);
 

@@ -5,6 +5,7 @@
 #include "queue/broker/admin/queuevo.h"
 
 #include "queue/api/queue.h"
+#include "queue/common/transform.h"
 
 #include "common/arguments.h"
 #include "common/message/queue.h"
@@ -105,7 +106,7 @@ namespace casual
                };
 
             auto format_trid = []( const broker::admin::Message& v) { return transcode::hex::encode( v.trid);};
-            auto format_type = []( const broker::admin::Message& v) { return v.type.main + ':' + v.type.sub;};
+            auto format_type = []( const broker::admin::Message& v) { return v.type;};
             auto format_timestamp = []( const broker::admin::Message& v) { return normalize::timestamp( v.timestamp);};
             auto format_avalible = []( const broker::admin::Message& v) { return normalize::timestamp( v.avalible);};
 
@@ -216,8 +217,7 @@ namespace casual
          queue::Message message;
 
          message.attributes.reply = queue;
-         message.payload.type.type = common::buffer::type::binary().name;
-         message.payload.type.subtype = common::buffer::type::binary().subname;
+         message.payload.type = common::buffer::type::binary();
 
          while( std::cin)
          {

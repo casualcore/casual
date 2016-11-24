@@ -1,8 +1,5 @@
 //!
-//! message.h
-//!
-//! Created on: Nov 23, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_API_MESSAGE_H_
@@ -67,18 +64,7 @@ namespace casual
 
       struct Payload
       {
-         struct type_t
-         {
-            std::string type;
-            std::string subtype;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( type);
-               archive & CASUAL_MAKE_NVP( subtype);
-            })
-         } type;
-
+         std::string type;
          sf::platform::binary_type data;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
@@ -93,8 +79,9 @@ namespace casual
       struct basic_message
       {
          using payload_type = P;
+         using id_type = common::Uuid;
 
-         basic_message( common::Uuid id, Attributes attributes, payload_type payload)
+         basic_message( id_type id, Attributes attributes, payload_type payload)
             : id( std::move( id)), attributes( std::move( attributes)), payload( std::move( payload)) {}
 
          basic_message( payload_type payload)
@@ -102,7 +89,7 @@ namespace casual
 
          basic_message() = default;
 
-         common::Uuid id;
+         id_type id;
          Attributes attributes;
          payload_type payload;
 
@@ -120,6 +107,52 @@ namespace casual
 
       namespace peek
       {
+         namespace message
+         {
+            struct Information
+            {
+               common::Uuid id;
+               common::platform::binary_type trid;
+               std::size_t state;
+
+               Attributes attributes;
+
+               struct
+               {
+                  std::string type;
+                  std::size_t size;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( type);
+                     archive & CASUAL_MAKE_NVP( size);
+                  })
+
+               } payload;
+
+
+               std::size_t redelivered;
+               common::platform::time_point timestamp;
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( trid);
+
+                  archive & CASUAL_MAKE_NVP( state);
+
+                  archive & CASUAL_MAKE_NVP( attributes);
+                  archive & CASUAL_MAKE_NVP( payload);
+
+                  archive & CASUAL_MAKE_NVP( redelivered);
+                  archive & CASUAL_MAKE_NVP( timestamp);
+               })
+            };
+
+         } // message
+
+         /*
          struct Message
          {
             common::Uuid id;
@@ -133,6 +166,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( state);
             })
          };
+         */
       } // peek
 
       namespace xatmi

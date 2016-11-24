@@ -1,8 +1,5 @@
 //!
-//! octet.cpp
-//!
-//! Created on: Dec 26, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "buffer/octet.h"
@@ -54,16 +51,16 @@ namespace casual
                {
                   static const types_type result
                   {
-                     { CASUAL_OCTET, ""},
-                     { CASUAL_OCTET, CASUAL_OCTET_XML},
-                     { CASUAL_OCTET, CASUAL_OCTET_JSON},
-                     { CASUAL_OCTET, CASUAL_OCTET_YAML},
+                     common::buffer::type::combine( CASUAL_OCTET),
+                     common::buffer::type::combine( CASUAL_OCTET, CASUAL_OCTET_XML),
+                     common::buffer::type::combine( CASUAL_OCTET, CASUAL_OCTET_JSON),
+                     common::buffer::type::combine( CASUAL_OCTET, CASUAL_OCTET_YAML),
                   };
 
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
+               common::platform::raw_buffer_type allocate( const std::string& type, const common::platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, size);
 
@@ -144,7 +141,11 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool.get( handle);
 
-                  if( name) *name = buffer.payload.type.subname.c_str();
+
+                  if( name)
+                  {
+                     *name = std::get< 1>( common::range::split( buffer.payload.type, '/')).data();
+                  }
                   if( size) *size = buffer.payload.memory.size();
                }
                catch( ...)

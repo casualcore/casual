@@ -507,8 +507,7 @@ Sent to and received from other domains when one domain wants call a service in 
                   request.trid = common::transaction::ID::create();
                   request.service.name.resize( 128);
                   request.parent.resize( 128);
-                  request.buffer.type.name.resize( 8);
-                  request.buffer.type.subname.resize( 16);
+                  request.buffer.type.resize( 8 + 1 + 16);
                   request.buffer.memory.resize( 128);
 
                   local::format::type( out, request, {
@@ -527,10 +526,8 @@ Sent to and received from other domains when one domain wants call a service in 
 
                            { "flags", "XATMI flags sent to the service"},
 
-                           { "buffer.type.name.size", "buffer type name size (max 8)"},
-                           { "buffer.type.name.data", "byte array with buffer type name"},
-                           { "buffer.type.subname.size", "buffer type subname size (max 16)"},
-                           { "buffer.type.subname.data", "byte array with buffer type subname"},
+                           { "buffer.type.size", "buffer type name size"},
+                           { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                            { "buffer.payload.size", "buffer payload size (could be very big)"},
                            { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
 
@@ -552,8 +549,7 @@ Reply to call request
                   message_type message;
 
                   message.transaction.trid = common::transaction::ID::create();
-                  message.buffer.type.name.resize( 8);
-                  message.buffer.type.subname.resize( 16);
+                  message.buffer.type.resize( 8 + 1 + 16);
                   message.buffer.memory.resize( 128);
 
                   local::format::type( out, message, {
@@ -569,10 +565,8 @@ Reply to call request
                            { "transaction.trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
                            { "transaction.state", "state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY"},
 
-                           { "buffer.type.name.size", "buffer type name size (max 8)"},
-                           { "buffer.type.name.data", "byte array with buffer type name"},
-                           { "buffer.type.subname.size", "buffer type subname size (max 16)"},
-                           { "buffer.type.subname.data", "byte array with buffer type subname"},
+                           { "buffer.type.size", "buffer type name size"},
+                           { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                            { "buffer.payload.size", "buffer payload size (could be very big)"},
                            { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
 
