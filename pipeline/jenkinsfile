@@ -3,11 +3,12 @@
 def backend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual
-rm -rf /middleware/.casual/unittest/.singleton/.domain-singleton
+rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make make && casual-make clean && casual-make compile && casual-make link 
 ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
 casual-make install
-tar cvf /git/casual/casual.tar /usr/local/casual
+cd /usr/local/casual
+tar cvf /git/casual/casual-middleware.tar .
 '''
 
 def frontend_builder = '''#! /bin/sh
