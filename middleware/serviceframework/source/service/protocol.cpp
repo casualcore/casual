@@ -277,65 +277,8 @@ namespace casual
                return service_io.finalize();
             }
 
-
-            Example::Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol)
-                  : Base( information), m_protocol( std::move( protocol))
-            {
-               sf::Trace trace{ "protocol::Example::Example"};
-
-
-               m_input.readers.push_back( &m_prepare);
-               m_input.writers = m_protocol->output().writers;
-
-               for( auto& writer : m_input.writers)
-               {
-                  writer->serialtype_start( "input");
-               }
-
-
-               m_output.readers.push_back( &m_prepare);
-               m_output.writers = m_protocol->output().writers;
-
-
-
-            }
-
-
-            bool Example::do_call()
-            {
-               //
-               // Input is by definition deserialized, and after this
-               // we take care of the output
-               //
-
-               for( auto& writer : m_input.writers)
-               {
-                  writer->serialtype_end( "input");
-               }
-
-               for( auto& writer : m_output.writers)
-               {
-                  writer->serialtype_start( "output");
-               }
-
-               return false;
-            }
-
-            reply::State Example::do_finalize()
-            {
-               sf::Trace trace{ "protocol::Example::do_finalize"};
-
-
-               for( auto& writer : m_output.writers)
-               {
-                  writer->serialtype_end( "output");
-               }
-
-               return m_protocol->finalize();
-            }
-
-         }
-      } // protocol
+         } // protocol
+      } // service
    } // sf
 } // casual
 

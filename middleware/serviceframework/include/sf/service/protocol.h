@@ -197,27 +197,6 @@ namespace casual
                std::unique_ptr< Interface> m_protocol;
             };
 
-            //!
-            //! Fills the object model with "random" values and produce an
-            //! example of the API in the requested protocol (json, yaml, ...),
-            //! which could help getting an understanding of an API.
-            //!
-            class Example : public Base
-            {
-            public:
-
-               Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
-
-            private:
-
-               bool do_call() override;
-               reply::State do_finalize() override;
-
-               archive::service::example::Prepare m_prepare;
-
-               std::unique_ptr< Interface> m_protocol;
-            };
-
          } // protocol
       } // service
    } // sf

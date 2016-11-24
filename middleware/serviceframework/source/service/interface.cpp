@@ -117,16 +117,6 @@ namespace casual
                   //
                   return common::make::unique< protocol::Describe>( service_info, found->create( service_info));
                }
-               else if( common::service::header::exists( "casual-service-example") &&
-                     common::service::header::get( "casual-service-example") != "false")
-               {
-                  log::sf << "casual-service-example protocol\n";
-
-                  //
-                  // service-describe protocol
-                  //
-                  return common::make::unique< protocol::Example>( service_info, found->create( service_info));
-               }
 
                return found->create( service_info);
             }
