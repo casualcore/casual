@@ -1,0 +1,110 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="casual-instance">
+  <template>
+    <style>
+
+    	.instance-content{
+    		width: 100%;
+    		overflow: hidden;
+
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-between; 
+
+            border-bottom: 1px solid #ECEFF1;
+    	}
+
+        .instance-content:hover{
+            background-color: #ECEFF1;
+        }
+
+        .left-content{
+            height: 100%;
+            min-width: 100px;
+            text-align: center;
+            border-right: 1px solid #ECEFF1;
+            vertical-align: middle;
+        }
+
+        .middle-content{
+            height: 100%;
+            width: 100%;
+            text-align: left;
+            display: table;
+        }
+
+        .middle-content ul{
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .instance-data{
+            display: table-cell;
+            vertical-align: middle;
+            padding-left: 10px;
+        }
+
+        .pid{
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .queue{
+            font-size: 1em;
+        }
+
+        .server{
+            font-size: 1em;
+        }
+
+    </style>
+
+    <div class="instance" id="casual-instance-{{instancedata.process.pid}}">
+    	<div class="instance-content">
+            <div class="left-content">
+                <span class="pid">{{instancedata.process.pid}}</span>
+            </div>
+            <div class="middle-content">
+                <div class="instance-data">
+                    <ul>
+                        <li><span class="queue">Queue: {{instancedata.process.queue}}</span></li>
+                    </ul>
+                <div>
+            </div>
+        </div>
+    </div>
+
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'casual-instance',
+
+        properties: {
+          instancedata: {
+            type: Object,
+            notify: true,
+            value: function(d){
+                return d.instancedata;
+            }
+          }
+        },
+
+        listeners: {
+            'tap': 'regularTap'
+        },
+
+        regularTap: function(event) {
+            //console.log(event);
+        }
+
+      });
+    })();
+  </script>
+</dom-module>

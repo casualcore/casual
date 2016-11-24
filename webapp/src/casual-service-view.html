@@ -1,0 +1,57 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="./elements/casual-list.html">
+<link rel="import" href="./elements/casual-service.html">
+
+<dom-module id="casual-service-view">
+
+	<template>
+		<style>
+			:host {
+				display: block;
+				padding: 16px;
+			}
+		</style>
+
+		<iron-ajax id="ironAjaxCall"
+			handle-as="json"
+			contentType="application/json"
+			method="POST"
+			last-response="{{response}}">
+		</iron-ajax>
+
+		<casual-list listname="Services" listdata="{{response.serviceReturn.services}}" listattribute="servicedata" sortable>
+			<casual-service></casual-service>
+		</casual-list>
+
+	</template>
+
+	<script>
+		Polymer({
+			is: 'casual-service-view',
+			properties: {
+				_url: {
+					type: String,
+					value: undefined
+				}
+		},
+
+		attached: function() {
+			fetchGlobalConfiguration(this);
+		},
+
+		doRequest: function() {
+			if(!this._url) {
+				this._url = global_configuration[global_path].url + global_service["url"] + global_service["broker"]["state"];
+			}
+
+			var ironAjax = (this.$.ironAjaxCall);
+			ironAjax.url = this._url;
+			ironAjax.body = "{}";
+			ironAjax.generateRequest();
+		}
+
+		});
+	</script>
+
+</dom-module>

@@ -1,0 +1,153 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="casual-server">
+  <template>
+    <style>
+
+    	#content{
+    		min-height: 60px;
+    		width: 100%;
+    		overflow: hidden;
+            vertical-align: middle;
+			flex-direction: column;
+            border-bottom: 1px solid #ECEFF1;
+    	}
+
+        #content:hover{
+            background-color: #ECEFF1;
+        }
+
+    	#content ul{
+    		list-style: none;
+    		margin: 0;
+    		padding: 0;
+    	}
+
+        #server-content{
+            padding: 5px;
+            width: 100%;
+            height: 100%;
+        }
+
+        #server-info{
+            width: 100%;
+            height: 100%;
+        }
+
+        #server-instances{
+            width: 100%;
+        }
+
+        #server-memberships{
+            width: 100%;
+        }
+
+        #server-alias{
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        #server-path{
+            font-style: italic;
+        }
+
+    	#server-instances-text:hover, #server-memberships-text:hover{
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        #server-instances-field, #server-memberships-field{
+            color: grey;
+            font-size: 0.8em;
+            vertical-align: middle;
+        }
+
+    </style>
+
+    <div id="content">
+        <div id="server-content">
+            <div id="server-info">
+                <ul>
+                    <li>
+                        <span id="server-alias">{{serverdata.alias}}</span>
+                        <span id="server-path"> - {{serverdata.path}}</span>
+                    </li>
+                </ul>
+                <ul>
+                    <li>
+                        <span id="server-instances-text" on-tap="toggleInstances">Instances:</span>
+                        <span id="server-instances-counter"> {{serverdata.instances.length}}</span>
+                        <template is="dom-if" if="{{serverdata.instances.length}}">
+                            <span id="server-instances-field">
+                                <template is="dom-if" if="{{showinstances}}">[ - ]</template>
+                                <template is="dom-if" if="{{!showinstances}}">[ + ]</template>
+                            </span>
+                        </template>
+                    </li>
+                    <template is="dom-if" if="{{showinstances}}">
+                        <template is="dom-if" if="{{serverdata.instances.length}}">
+                            <li>{{serverdata.instances}}</li>
+                        </template>
+                    </template>
+                    <li>
+                        <span id="server-memberships-text" on-tap="toggleMemberships">Memberships:</span>
+                        <span id="server-memberships-counter"> {{serverdata.memberships.length}}</span>
+                        <template is="dom-if" if="{{serverdata.memberships.length}}">
+                            <span id="server-memberships-field">
+                                <template is="dom-if" if="{{showmemberships}}">[ - ]</template>
+                                <template is="dom-if" if="{{!showmemberships}}">[ + ]</template>
+                            </span>
+                        </template>
+                    </li>
+                    <template is="dom-if" if="{{showmemberships}}">
+                        <template is="dom-if" if="{{serverdata.memberships.length}}">
+                            <li>{{serverdata.memberships}}</li>
+                        </template>
+                    </template>
+                </ul>
+            </div>
+        </div>
+    </div>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'casual-server',
+
+        properties: {
+            serverdata: {
+                type: Object,
+                notify: true,
+                value: function(d){
+                    return d.serverdata;
+                }
+            },
+
+            showmemberships: {
+                type: Boolean,
+                notify: true,
+                value: false
+            },
+
+            showinstances: {
+                type: Boolean,
+                notify: true,
+                value: false
+            }
+        },
+
+        toggleInstances: function(){
+            this.showinstances = this.showinstances ? false : true;
+        },
+
+        toggleMemberships: function(){
+            this.showmemberships = this.showmemberships ? false : true;
+        }
+
+      });
+    })();
+  </script>
+</dom-module>
