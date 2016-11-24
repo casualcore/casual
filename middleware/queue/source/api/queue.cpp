@@ -341,6 +341,8 @@ namespace casual
 
          std::vector< message::Information> information( const std::string& queuename, const Selector& selector)
          {
+            Trace trace{ "casual::queue::peek::information"};
+
             queue::Lookup lookup{ queuename};
 
             std::vector< message::Information> result;
@@ -357,20 +359,56 @@ namespace casual
 
             auto reply = common::communication::ipc::call( queue.process.queue, request);
 
-            common::range::transform( reply.messages, result, []( const common::message::queue::information::Message& m){
-               message::Information result;
-               result.id = m.id;
-               result.type = m.type;
-               result.state = m.state;
-               return result;
+            common::range::transform( reply.messages, result, []( common::message::queue::information::Message& m){
+
+               message::Information message;
+               message.id = m.id;
+               message.trid = std::move( m.trid);
+               message.state = m.state;
+               message.attributes.available = m.avalible;
+               message.attributes.reply = std::move( m.reply);
+               message.attributes.properties = std::move( m.properties);
+               message.payload.type = std::move( m.type);
+               message.payload.size = m.size;
+               message.redelivered = m.redelivered;
+               message.timestamp = m.timestamp;
+
+               return message;
             });
 
             return result;
          }
 
-         std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids)
+         std::vector< Message> messages( const std::string& queuename, const std::vector< queue::Message::id_type>& ids)
          {
-            return {};
+            Trace trace{ "casual::queue::peek::messages"};
+
+            queue::Lookup lookup{ queuename};
+
+            std::vector< Message> result;
+
+            common::message::queue::peek::messages::Request request;
+            {
+               request.process = common::process::handle();
+               request.ids = ids;
+            }
+
+            auto queue = lookup();
+
+            auto reply = common::communication::ipc::call( queue.process.queue, request);
+
+            common::range::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
+               Message message;
+               message.id = m.id;
+               message.attributes.available = m.avalible;
+               message.attributes.reply = std::move( m.reply);
+               message.attributes.properties = std::move( m.properties);
+               message.payload.type = std::move( m.type);
+               message.payload.data = std::move( m.payload);
+               return message;
+            });
+
+            return result;
          }
 
 

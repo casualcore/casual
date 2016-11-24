@@ -438,6 +438,8 @@ namespace casual
                handle::transaction::rollback::Request{ state},
                handle::information::queues::Request{ state},
                handle::information::messages::Request{ state},
+               handle::peek::information::Request{ state},
+               handle::peek::messages::Request{ state},
                common::message::handle::Shutdown{},
             };
          }

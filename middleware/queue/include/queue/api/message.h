@@ -1,8 +1,5 @@
 //!
-//! message.h
-//!
-//! Created on: Nov 23, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_API_MESSAGE_H_
@@ -115,14 +112,41 @@ namespace casual
             struct Information
             {
                common::Uuid id;
-               std::string type;
+               common::platform::binary_type trid;
                std::size_t state;
+
+               Attributes attributes;
+
+               struct
+               {
+                  std::string type;
+                  std::size_t size;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( type);
+                     archive & CASUAL_MAKE_NVP( size);
+                  })
+
+               } payload;
+
+
+               std::size_t redelivered;
+               common::platform::time_point timestamp;
+
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( id);
-                  archive & CASUAL_MAKE_NVP( type);
+                  archive & CASUAL_MAKE_NVP( trid);
+
                   archive & CASUAL_MAKE_NVP( state);
+
+                  archive & CASUAL_MAKE_NVP( attributes);
+                  archive & CASUAL_MAKE_NVP( payload);
+
+                  archive & CASUAL_MAKE_NVP( redelivered);
+                  archive & CASUAL_MAKE_NVP( timestamp);
                })
             };
 

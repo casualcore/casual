@@ -38,13 +38,14 @@ namespace casual
                      row.get( 1, message.queue);
                      row.get( 2, message.origin);
                      row.get( 3, message.trid);
-                     row.get( 4, message.state);
-                     row.get( 5, message.reply);
-                     row.get( 6, message.redelivered);
-                     row.get( 7, message.type);
-                     row.get( 8, message.avalible);
-                     row.get( 9, message.timestamp);
-                     row.get( 10, message.size);
+                     row.get( 4, message.properties);
+                     row.get( 5, message.state);
+                     row.get( 6, message.reply);
+                     row.get( 7, message.redelivered);
+                     row.get( 8, message.type);
+                     row.get( 9, message.avalible);
+                     row.get( 10, message.timestamp);
+                     row.get( 11, message.size);
                   }
 
                   void row( sql::database::Row& row, common::message::queue::dequeue::Reply::Message& message, int offset = 0)
@@ -342,7 +343,7 @@ namespace casual
                   queue         INTEGER,
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
-                  properties   TEXT,
+                  properties    TEXT,
                   state         INTEGER,
                   reply         TEXT,
                   redelivered   INTEGER,
@@ -353,7 +354,7 @@ namespace casual
                 */
                m_statement.information.message = m_connection.precompile( R"(
                   SELECT
-                     m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
+                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
                   FROM
                      message m
                   WHERE
@@ -362,19 +363,19 @@ namespace casual
 
 
                m_statement.peek.match = m_connection.precompile( R"( 
-                     SELECT 
-                        m.id, m.queue, m.origin, m.gtrid, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
-                     FROM 
-                        message  m
-                     WHERE m.queue = :queue AND m.properties = :properties;)");
+                  SELECT 
+                     m.id, m.queue, m.origin, m.gtrid, m.properties, m.state, m.reply, m.redelivered, m.type, m.avalible, m.timestamp, length( m.payload)
+                  FROM 
+                     message  m
+                  WHERE m.queue = :queue AND m.properties = :properties;)");
 
 
                m_statement.peek.one_message = m_connection.precompile( R"( 
-                     SELECT 
-                        ROWID, id, properties, reply, redelivered, type, avalible, timestamp, payload
-                     FROM 
-                        message 
-                     WHERE id = :id; )");
+                  SELECT 
+                    id, properties, reply, redelivered, type, avalible, timestamp, payload
+                  FROM 
+                     message 
+                  WHERE id = :id; )");
 
             }
          }
