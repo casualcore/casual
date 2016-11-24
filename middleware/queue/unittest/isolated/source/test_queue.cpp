@@ -194,6 +194,17 @@ domain:
 
          EXPECT_TRUE( messages.size() == 5);
       }
+      namespace local
+      {
+         namespace
+         {
+            bool compare( const common::platform::time_point& lhs, const common::platform::time_point& rhs)
+            {
+               return std::chrono::time_point_cast< std::chrono::microseconds>( lhs)
+                     == std::chrono::time_point_cast< std::chrono::microseconds>( rhs);
+            }
+         } // <unnamed>
+      } // local
 
       TEST( casual_queue, enqueue_1_message__peek__information__expect_1_peeked)
       {
@@ -220,7 +231,7 @@ domain:
          ASSERT_TRUE( information.size() == 1);
          auto& info = information.at( 0);
          EXPECT_TRUE( info.id == id);
-         EXPECT_TRUE( info.attributes.available == now);
+         EXPECT_TRUE( local::compare( info.attributes.available, now));
          EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_MAKE_NVP( info);
          EXPECT_TRUE( info.attributes.reply == "queueA2");
          EXPECT_TRUE( info.payload.type == common::buffer::type::binary());
@@ -266,7 +277,7 @@ domain:
          ASSERT_TRUE( messages.size() == 1);
          auto& message = messages.at( 0);
          EXPECT_TRUE( message.id == id) << "message: " << CASUAL_MAKE_NVP( message);
-         EXPECT_TRUE( message.attributes.available == now);
+         EXPECT_TRUE( local::compare( message.attributes.available, now));
          EXPECT_TRUE( message.attributes.properties == "poop");
          EXPECT_TRUE( message.attributes.reply == "queueA2");
          EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
