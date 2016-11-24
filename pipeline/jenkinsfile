@@ -34,6 +34,10 @@ def build( name, image, content)
 
 node {
 
+   stage('Checkout')
+   {
+      checkout scm
+   }
 
    stage('Build backend/Unittest Ubuntu') {
 
