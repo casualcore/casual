@@ -11,6 +11,7 @@
 #include "queue/api/queue.h"
 #include "queue/broker/admin/queuevo.h"
 
+#include "common/message/gateway.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/mockup/file.h"
@@ -291,6 +292,30 @@ domain:
             EXPECT_TRUE( message.id == id);
             EXPECT_TRUE( common::range::equal( message.payload.data, payload));
          }
+      }
+
+      TEST( casual_queue, peek_remote_message___expect_throw)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain{ local::configuration()};
+
+         // make sure casual-broker-queue knows about a "remote queue"
+         {
+            common::message::gateway::domain::Advertise remote;
+
+            remote.process.pid = 666;
+            remote.process.queue = 777;
+
+            remote.queues.push_back( { "remote-queue"});
+
+            common::communication::ipc::blocking::send( domain.queue_broker.process().queue, remote);
+         }
+
+         EXPECT_THROW({
+            queue::peek::information( "remote-queue");
+         }, common::exception::invalid::Argument);
+
       }
 
    } // queue

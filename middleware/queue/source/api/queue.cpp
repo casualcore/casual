@@ -355,6 +355,12 @@ namespace casual
 
 
             auto queue = lookup();
+
+            if( queue.order > 0)
+            {
+               throw common::exception::invalid::Argument{ "not possible to peek a remote queue"};
+            }
+
             request.queue = queue.queue;
 
             auto reply = common::communication::ipc::call( queue.process.queue, request);
@@ -394,6 +400,11 @@ namespace casual
             }
 
             auto queue = lookup();
+
+            if( queue.order > 0)
+            {
+               throw common::exception::invalid::Argument{ "not possible to peek a remote queue"};
+            }
 
             auto reply = common::communication::ipc::call( queue.process.queue, request);
 

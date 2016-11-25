@@ -82,10 +82,12 @@ namespace casual
 
                   common::process::Handle process;
                   std::size_t queue = 0;
+                  std::size_t order = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
                      archive & process;
                      archive & queue;
+                     archive & order;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
