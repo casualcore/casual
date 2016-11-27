@@ -231,7 +231,7 @@ namespace casual
             platform::binary_type buffer;
 
             const std::string info( "test string");
-            const buffer::Type type{ "X_OCTET", "binary"};
+            const std::string type{ "X_OCTET/binary"};
 
             // marshal
             {

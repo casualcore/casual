@@ -101,18 +101,7 @@ namespace casual
                std::size_t state;
                std::string reply;
                std::size_t redelivered;
-
-               struct buffer_t
-               {
-                  std::string main;
-                  std::string sub;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     archive & CASUAL_MAKE_NVP( main);
-                     archive & CASUAL_MAKE_NVP( sub);
-                  })
-               } type;
+               std::string type;
 
                sf::platform::time_point avalible;
                sf::platform::time_point timestamp;

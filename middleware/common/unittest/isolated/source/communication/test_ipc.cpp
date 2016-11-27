@@ -335,7 +335,7 @@ namespace casual
                message.descriptor = 42;
                message.transaction.trid = transaction::ID::create( process::handle());
                message.transaction.state = 666;
-               message.buffer.type.name = ".binary";
+               message.buffer.type = ".binary";
                message.error = 0;
                message.code = 0;
                message.buffer.memory = unittest::random::binary( 1200);

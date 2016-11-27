@@ -1,11 +1,6 @@
-//
-// test_casual_order_buffer.cpp
-//
-//  Created on: 20 okt 2013
-//      Author: Kristone
-//
-
-
+//!
+//! casual
+//!
 
 
 #include <gtest/gtest.h>

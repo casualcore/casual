@@ -162,6 +162,7 @@ namespace casual
                      auto& queue = found->second.front();
                      reply.queue = queue.queue;
                      reply.process = queue.process;
+                     reply.order = queue.order;
                   }
                   else
                   {
@@ -263,7 +264,6 @@ namespace casual
                      common::range::for_each( pending, [&]( decltype( pending.front()) pending){
                         lookup::Request{ m_state}( pending);
                      });
-
                   }
                }
 

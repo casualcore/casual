@@ -53,6 +53,9 @@ namespace casual
 
             common::message::queue::dequeue::Reply dequeue( const common::message::queue::dequeue::Request& message);
 
+            common::message::queue::peek::information::Reply peek( const common::message::queue::peek::information::Request& request);
+            common::message::queue::peek::messages::Reply peek( const common::message::queue::peek::messages::Request& request);
+
 
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
@@ -136,7 +139,7 @@ namespace casual
                sql::database::Statement enqueue;
 
 
-               struct dequeue_t
+               struct
                {
                   sql::database::Statement first;
                   sql::database::Statement first_id;
@@ -144,7 +147,7 @@ namespace casual
 
                } dequeue;
 
-               struct state_t
+               struct
                {
                   sql::database::Statement xid;
                   sql::database::Statement nullxid;
@@ -160,12 +163,19 @@ namespace casual
                sql::database::Statement rollback2;
                sql::database::Statement rollback3;
 
-               struct info_t
+               struct
                {
                   sql::database::Statement queue;
                   sql::database::Statement message;
 
                } information;
+
+               struct
+               {
+                  sql::database::Statement match;
+                  sql::database::Statement first;
+                  sql::database::Statement one_message;
+               } peek;
 
             } m_statement;
 

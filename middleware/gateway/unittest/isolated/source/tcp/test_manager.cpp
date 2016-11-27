@@ -349,7 +349,7 @@ domain:
             message::queue::enqueue::Request request;
             request.process = process::handle();
             request.name = "queue1";
-            request.message.type.name = "json";
+            request.message.type = "json";
             request.message.payload = payload;
 
 
@@ -366,7 +366,7 @@ domain:
             auto reply = communication::ipc::call( outbound.queue, request);
             ASSERT_TRUE( ! reply.message.empty());
             EXPECT_TRUE( reply.message.front().payload == payload);
-            EXPECT_TRUE( reply.message.front().type.name == "json");
+            EXPECT_TRUE( reply.message.front().type == "json");
          }
 
       }

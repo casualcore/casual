@@ -444,6 +444,8 @@ namespace casual
                   {
                      static TPSVCINFO information( message::service::call::callee::Request& message)
                      {
+                        trace::internal::Scope trace{ "server::handle::basic_call::service::information"};
+
                         TPSVCINFO result;
 
                         //

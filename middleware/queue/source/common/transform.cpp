@@ -41,8 +41,6 @@ namespace casual
          } // local
 
 
-
-
          std::vector< broker::admin::Group> groups( const broker::State& state)
          {
             std::vector< broker::admin::Group> result;
@@ -107,8 +105,7 @@ namespace casual
             result.attributes.available = value.avalible;
             result.attributes.properties = value.properties;
             result.attributes.reply = value.reply;
-            result.payload.type.type = value.type.name;
-            result.payload.type.subtype = value.type.subname;
+            result.payload.type = value.type;
             std::swap( result.payload.data, value.payload);
 
             return result;
@@ -123,8 +120,7 @@ namespace casual
             result.origin = message.origin;
             result.reply = message.reply;
             result.trid = message.trid;
-            result.type.main = message.type.name;
-            result.type.sub = message.type.subname;
+            result.type = message.type;
 
             result.state = message.state;
             result.redelivered = message.redelivered;

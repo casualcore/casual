@@ -311,6 +311,32 @@ namespace casual
 
             } // dequeue
 
+            namespace peek
+            {
+               namespace information
+               {
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "queue::handle::peek::information::Request"};
+
+                     local::ipc::blocking::send( message.process.queue, m_state.queuebase.peek( message));
+
+                  }
+
+               } // information
+
+               namespace messages
+               {
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "queue::handle::peek::information::Request"};
+
+                     local::ipc::blocking::send( message.process.queue, m_state.queuebase.peek( message));
+                  }
+               } // messages
+
+            } // peek
+
             namespace transaction
             {
                namespace commit
@@ -412,6 +438,8 @@ namespace casual
                handle::transaction::rollback::Request{ state},
                handle::information::queues::Request{ state},
                handle::information::messages::Request{ state},
+               handle::peek::information::Request{ state},
+               handle::peek::messages::Request{ state},
                common::message::handle::Shutdown{},
             };
          }

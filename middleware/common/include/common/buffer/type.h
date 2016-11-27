@@ -8,7 +8,7 @@
 #include "common/platform.h"
 
 #include "common/marshal/marshal.h"
-
+#include "common/algorithm.h"
 
 
 #include <string>
@@ -24,44 +24,33 @@ namespace casual
       namespace buffer
       {
 
-         struct Type
-         {
-            Type();
-            Type( std::string name, std::string subname);
-            Type( const char* name, const char* subname);
-
-            std::string name;
-            std::string subname;
-
-            CASUAL_CONST_CORRECT_MARSHAL(
-            {
-               archive & name;
-               archive & subname;
-            })
-
-            friend bool operator < ( const Type& lhs, const Type& rhs);
-            friend bool operator == ( const Type& lhs, const Type& rhs);
-            friend bool operator != ( const Type& lhs, const Type& rhs);
-
-            friend std::ostream& operator << ( std::ostream& out, const Type& value);
-         };
 
          namespace type
          {
-            Type x_octet();
-            Type binary();
-            Type json();
-            Type yaml();
-            Type xml();
-            Type ini();
+            const std::string& x_octet();
+            const std::string& binary();
+            const std::string& json();
+            const std::string& yaml();
+            const std::string& xml();
+            const std::string& ini();
+
+            std::string combine( const char* type, const char* subtype = nullptr);
+
+            inline auto dismantle( const std::string& type) -> decltype( range::split( type, '/'))
+            {
+               return range::split( type, '/');
+            }
+
          } // type
+
+
 
          struct Payload
          {
             Payload();
             Payload( std::nullptr_t);
-            Payload( Type type, platform::binary_type buffer);
-            Payload( Type type, platform::binary_type::size_type size);
+            Payload( std::string type, platform::binary_type buffer);
+            Payload( std::string type, platform::binary_type::size_type size);
 
             //!
             //! g++ does not generate noexecpt move ctor/assignment
@@ -76,7 +65,7 @@ namespace casual
 
             bool null() const;
 
-            Type type;
+            std::string type;
             platform::binary_type memory;
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -126,7 +115,7 @@ namespace casual
          struct Buffer
          {
             Buffer( Payload payload);
-            Buffer( Type type, platform::binary_type::size_type size);
+            Buffer( std::string type, platform::binary_type::size_type size);
 
             Buffer( Buffer&&) noexcept;
             Buffer& operator = ( Buffer&&) noexcept;

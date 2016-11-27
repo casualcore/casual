@@ -125,6 +125,34 @@ namespace casual
 
             } // dequeue
 
+            namespace peek
+            {
+               namespace information
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::peek::information::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+               } // information
+
+               namespace messages
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::peek::messages::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+               } // messages
+
+            } // peek
+
 
             namespace transaction
             {

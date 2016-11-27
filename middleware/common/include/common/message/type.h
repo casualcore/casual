@@ -119,12 +119,18 @@ namespace casual
             queue_dequeue_reply,
             queue_dequeue_forget_request,
             queue_dequeue_forget_reply,
-            queue_information = QUEUE_BASE + 300,
+
+            queue_peek_information_request =  QUEUE_BASE + 300,
+            queue_peek_information_reply,
+            queue_peek_messages_request,
+            queue_peek_messages_reply,
+
+            queue_information = QUEUE_BASE + 400,
             queue_queues_information_request,
             queue_queues_information_reply,
             queue_queue_information_request,
             queue_queue_information_reply,
-            queue_lookup_request = QUEUE_BASE + 400,
+            queue_lookup_request = QUEUE_BASE + 500,
             queue_lookup_reply,
 
 

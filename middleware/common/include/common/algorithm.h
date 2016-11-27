@@ -1095,6 +1095,25 @@ namespace casual
          }
 
          //!
+         //! Split @p range in two parts [range-first, divider), [divider + 1, range-last).
+         //! where divider is the first occurrence of @p value
+         //!
+         //! That is, exactly as divide but the divider is omitted in the resulting ranges
+         //!
+         //! @return a tuple with the two ranges
+         //!
+         template< typename R, typename T>
+         auto split( R&& range, T&& value) ->  decltype( divide( std::forward< R>( range), value))
+         {
+            auto result = divide( std::forward< R>( range), std::forward< T>( value));
+            if( ! std::get< 1>( result).empty())
+            {
+               ++std::get< 1>( result);
+            }
+            return result;
+         }
+
+         //!
          //! Divide @p range in two parts [range-first, divider), [divider, range-last).
          //! where divider is the first occurrence where @p predicate is true
          //!
@@ -1156,6 +1175,8 @@ namespace casual
 
             return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
          }
+
+
 
          //!
          //! Divide @p range in two parts [range-first, divider), [divider, range-last).

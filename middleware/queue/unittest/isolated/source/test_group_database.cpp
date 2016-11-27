@@ -7,6 +7,7 @@
 
 
 #include "queue/group/database.h"
+#include "queue/common/transform.h"
 
 
 #include "common/file.h"
@@ -430,7 +431,7 @@ namespace casual
          while( count++ < 100)
          {
             auto m = local::message( queue);
-            m.message.type.name = std::to_string( count);
+            m.message.type = std::to_string( count);
             messages.push_back( std::move( m));
          }
 
@@ -770,7 +771,7 @@ namespace casual
             while( count++ < 100)
             {
                auto m = local::message( queue, xid);
-               m.message.type.subname = std::to_string( count);
+               m.message.type = std::to_string( count);
                database.enqueue( m);
                messages.push_back( std::move( m));
             }

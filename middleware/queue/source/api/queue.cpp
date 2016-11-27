@@ -52,8 +52,7 @@ namespace casual
                request.process = common::process::handle();
 
                request.message.payload = message.payload.data;
-               request.message.type.name = message.payload.type.type;
-               request.message.type.subname = message.payload.type.subtype;
+               request.message.type = message.payload.type;
                request.message.properties = message.attributes.properties;
                request.message.reply = message.attributes.reply;
                request.message.avalible = message.attributes.available;
@@ -250,18 +249,16 @@ namespace casual
             struct Payload
             {
                template< typename T, typename Iter>
-               Payload( T&& type_, Iter first, Iter last)
-                 : data( first, last)
+               Payload( T&& type, Iter first, Iter last)
+                 : type( type), data( first, last)
                {
-                  type.type = type_.name;
-                  type.subtype = type_.subname;
+
                }
 
                Payload( Payload&&) = default;
                Payload& operator = ( Payload&&) = default;
 
-               queue::Payload::type_t type;
-
+               std::string type;
                sf::platform::binary_type data;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -316,8 +313,7 @@ namespace casual
 
                {
                   common::buffer::Payload payload;
-                  payload.type.name = std::move( message.payload.type.type);
-                  payload.type.subname = std::move( message.payload.type.subtype);
+                  payload.type = std::move( message.payload.type);
                   payload.memory = std::move( message.payload.data);
 
                   result.payload.size = payload.memory.size();
@@ -338,12 +334,94 @@ namespace casual
 
       namespace peek
       {
-         std::vector< Message> queue( const std::string& queue)
+         std::vector< message::Information> information( const std::string& queue)
          {
-            std::vector< Message> result;
+            return peek::information( queue, Selector{});
+         }
+
+         std::vector< message::Information> information( const std::string& queuename, const Selector& selector)
+         {
+            Trace trace{ "casual::queue::peek::information"};
+
+            queue::Lookup lookup{ queuename};
+
+            std::vector< message::Information> result;
+
+            common::message::queue::peek::information::Request request;
+            request.name = queuename;
+            request.process = common::process::handle();
+            request.selector.properties = selector.properties;
+
+
+
+            auto queue = lookup();
+
+            if( queue.order > 0)
+            {
+               throw common::exception::invalid::Argument{ "not possible to peek a remote queue"};
+            }
+
+            request.queue = queue.queue;
+
+            auto reply = common::communication::ipc::call( queue.process.queue, request);
+
+            common::range::transform( reply.messages, result, []( common::message::queue::information::Message& m){
+
+               message::Information message;
+               message.id = m.id;
+               message.trid = std::move( m.trid);
+               message.state = m.state;
+               message.attributes.available = m.avalible;
+               message.attributes.reply = std::move( m.reply);
+               message.attributes.properties = std::move( m.properties);
+               message.payload.type = std::move( m.type);
+               message.payload.size = m.size;
+               message.redelivered = m.redelivered;
+               message.timestamp = m.timestamp;
+
+               return message;
+            });
 
             return result;
          }
+
+         std::vector< Message> messages( const std::string& queuename, const std::vector< queue::Message::id_type>& ids)
+         {
+            Trace trace{ "casual::queue::peek::messages"};
+
+            queue::Lookup lookup{ queuename};
+
+            std::vector< Message> result;
+
+            common::message::queue::peek::messages::Request request;
+            {
+               request.process = common::process::handle();
+               request.ids = ids;
+            }
+
+            auto queue = lookup();
+
+            if( queue.order > 0)
+            {
+               throw common::exception::invalid::Argument{ "not possible to peek a remote queue"};
+            }
+
+            auto reply = common::communication::ipc::call( queue.process.queue, request);
+
+            common::range::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
+               Message message;
+               message.id = m.id;
+               message.attributes.available = m.avalible;
+               message.attributes.reply = std::move( m.reply);
+               message.attributes.properties = std::move( m.properties);
+               message.payload.type = std::move( m.type);
+               message.payload.data = std::move( m.payload);
+               return message;
+            });
+
+            return result;
+         }
+
 
       } // peek
 

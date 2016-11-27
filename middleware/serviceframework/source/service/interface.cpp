@@ -97,7 +97,7 @@ namespace casual
          }
 
 
-         std::unique_ptr< Interface> Factory::create( TPSVCINFO* service_info, const buffer::Type& type) const
+         std::unique_ptr< Interface> Factory::create( TPSVCINFO* service_info, const std::string& type) const
          {
             sf::Trace trace( "sf::service::Factory::create");
 
@@ -117,21 +117,11 @@ namespace casual
                   //
                   return common::make::unique< protocol::Describe>( service_info, found->create( service_info));
                }
-               else if( common::service::header::exists( "casual-service-example") &&
-                     common::service::header::get( "casual-service-example") != "false")
-               {
-                  log::sf << "casual-service-example protocol\n";
-
-                  //
-                  // service-describe protocol
-                  //
-                  return common::make::unique< protocol::Example>( service_info, found->create( service_info));
-               }
 
                return found->create( service_info);
             }
 
-            throw sf::exception::Validation( "no suitable protocol was found for type: " + type.name + " subtype: " + type.subname);
+            throw sf::exception::Validation( "no suitable protocol was found for type: " + type);
 
 
          }
