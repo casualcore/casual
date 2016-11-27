@@ -139,7 +139,7 @@ node {
        writeFile file: 'casual/start.sh', text: dockerstart
 
        sh """
-       docker build -t casual-test-ubuntu -f casual/Dockerfile casual
+       docker build -t casual-test-ubuntu -f casual/Dockerfile .
        """
    }
 }
