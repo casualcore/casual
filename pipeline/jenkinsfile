@@ -1,5 +1,8 @@
 #!groovy
 
+#
+# Script for the backend builder
+#
 def backend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual
@@ -11,6 +14,9 @@ cd /usr/local/casual
 tar cvf /git/casual/casual-middleware.tar .
 '''
 
+#
+# Script for the frontend builder
+#
 def frontend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual/webapp
@@ -20,6 +26,52 @@ polymer build
 cd ..
 zip -r casual-webapp.zip webapp
 chmod a+w -R .
+'''
+
+#
+# Dockerfile for creating testcontainer
+#
+def dockerfile = '''FROM ubuntu:latest
+MAINTAINER flurig <flurig@localhost>
+
+RUN apt-get update && apt-get -y upgrade && apt-get -y install uuid-dev libyaml-cpp0.3-dev libjson-c-dev libpugixml-dev libsqlite3-dev wget cmake g++-4.8 python rsync && ln -s /usr/bin/g++-4.8 /usr/bin/g++
+
+RUN wget --no-check-certificate https://github.com/jbeder/yaml-cpp/archive/release-0.3.0.tar.gz && tar xf release-0.3.0.tar.gz && cd yaml-cpp-release-0.3.0 && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=ON .. && make && make install && rm -rf /release-0.3.0.tar.gz /yaml-cpp-release-0.3.0
+
+RUN mkdir -p /opt/casual
+
+COPY casual/casual-middleware.tar /opt/casual/.
+COPY casual/casual-webserver.tar /opt/casual/.
+COPY casual/casual-webapp.zip /opt/casual/.
+COPY casual/start.sh /opt/casual/.
+
+RUN cd /opt/casual && tar xf casual-middleware.tar && tar xf casual-webserver.tar && unzip casual-webapp.zip && chmod 755 /opt/casual/start.sh
+
+ENV CASUAL_HOME /opt/casual
+ENV PATH $CASUAL_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
+ENV CASUAL_DOMAIN_HOME /test/casual
+ENV CASUAL_LOG ".*"
+
+RUN mkdir -p $CASUAL_DOMAIN_HOME
+RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
+RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
+RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
+WORKDIR $CASUAL_DOMAIN_HOME
+
+ENTRYPOINT ["/opt/casual/start.sh"]
+'''
+
+#
+# Startscript for dockercontainer
+#
+def dockerstart = '''#! /bin/bash
+
+casual-admin domain --boot
+
+sleep 5
+
+while $( pgrep ^casual-broker$ > 0); do sleep 5; done
 '''
 
 def build( name, image, content)
@@ -64,7 +116,7 @@ node {
        export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/casual/middleware/common/bin
        python $current_dir/casual/thirdparty/setup/install_nginx.py
        cd $current_dir/usr/local/casual
-       tar cvf $current_dir/casual-webserver.tar nginx
+       tar cvf $current_dir/casual/casual-webserver.tar nginx
        """
 
        archive includes: '**/casual-webserver.tar'
@@ -76,5 +128,18 @@ node {
        build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
        archive includes: '**/casual-webapp.zip'
+   }
+
+   stage('Create container') {
+
+       #
+       # Setup files
+       #
+       writeFile file: 'casual/Dockerfile', text: dockerfile
+       writeFile file: 'casual/start.sh', text: dockerstart
+
+       sh """
+       docker build -t casual-test-ubuntu -f casual/Dockerfile casual
+       """
    }
 }
