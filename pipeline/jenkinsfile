@@ -1,8 +1,8 @@
 #!groovy
 
-#
-# Script for the backend builder
-#
+//
+// Script for the backend builder
+//
 def backend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual
@@ -14,9 +14,9 @@ cd /usr/local/casual
 tar cvf /git/casual/casual-middleware.tar .
 '''
 
-#
-# Script for the frontend builder
-#
+//
+// Script for the frontend builder
+//
 def frontend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual/webapp
@@ -28,9 +28,9 @@ zip -r casual-webapp.zip webapp
 chmod a+w -R .
 '''
 
-#
-# Dockerfile for creating testcontainer
-#
+//
+// Dockerfile for creating testcontainer
+//
 def dockerfile = '''FROM ubuntu:latest
 MAINTAINER flurig <flurig@localhost>
 
@@ -62,9 +62,9 @@ WORKDIR $CASUAL_DOMAIN_HOME
 ENTRYPOINT ["/opt/casual/start.sh"]
 '''
 
-#
-# Startscript for dockercontainer
-#
+//
+// Startscript for dockercontainer
+//
 def dockerstart = '''#! /bin/bash
 
 casual-admin domain --boot
@@ -132,9 +132,9 @@ node {
 
    stage('Create container') {
 
-       #
-       # Setup files
-       #
+       // 
+       // Setup files
+       //
        writeFile file: 'casual/Dockerfile', text: dockerfile
        writeFile file: 'casual/start.sh', text: dockerstart
 
