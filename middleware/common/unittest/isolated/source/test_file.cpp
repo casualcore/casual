@@ -8,6 +8,9 @@
 #include "common/environment.h"
 #include "common/uuid.h"
 
+
+#include <fstream>
+
 namespace casual
 {
 
@@ -159,6 +162,44 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_FALSE( common::file::exists( std::string( __FILE__) + "_not_a_file_"));
+      }
+
+      TEST(casual_common_file, move_file__expect_success)
+      {
+         common::unittest::Trace trace;
+
+         auto path = file::scoped::Path{ file::name::unique( "/tmp/", ".txt")};
+         {
+            std::ofstream out{ path};
+            out << "poop\n";
+         }
+
+         EXPECT_TRUE( common::file::exists( path));
+
+         auto destination = file::scoped::Path{ file::name::unique( "/tmp/", ".txt")};
+
+         EXPECT_NO_THROW({
+            file::move( path, destination);
+         });
+      }
+
+      TEST(casual_common_file, move_file__expect_throw)
+      {
+         common::unittest::Trace trace;
+
+         auto path = file::scoped::Path{ file::name::unique( "/tmp/", ".txt")};
+         {
+            std::ofstream out{ path};
+            out << "poop\n";
+         }
+
+         EXPECT_TRUE( common::file::exists( path));
+
+         auto destination = file::scoped::Path{ file::name::unique( "/", "/non-existent-paht.txt")};
+
+         EXPECT_THROW({
+            file::move( path, destination);
+         }, exception::invalid::File);
       }
 
       TEST(casual_common_directory, create_one_level__expect_true)
