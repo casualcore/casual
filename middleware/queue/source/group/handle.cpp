@@ -423,7 +423,36 @@ namespace casual
                      m_state.persist( std::move( reply), { message.process.queue});
                   }
                }
-            }
+            } // transaction
+
+            namespace restore
+            {
+               void Request::operator () ( message_type& message)
+               {
+                  Trace trace{ "queue::handle::restore::Request"};
+
+                  auto reply = common::message::reverse::type( message);
+
+                  auto send_reply = common::scope::execute( [&](){
+                     local::ipc::blocking::send( message.process.queue, reply);
+                  });
+
+                  reply.affected = common::range::transform( message.queues, [&]( Queue::id_type queue){
+                     common::message::queue::restore::Reply::Affected result;
+
+                     result.queue = queue;
+                     result.restored = m_state.queuebase.restore( queue);
+                     return result;
+                  });
+
+                  //
+                  // Make sure pending get a crack at the restored messages.
+                  //
+                  local::pending::replies( m_state, common::transaction::ID{});
+               }
+
+            } // restore
+
          } // handle
 
          handle::dispatch_type handler( State& state)
@@ -440,6 +469,7 @@ namespace casual
                handle::information::messages::Request{ state},
                handle::peek::information::Request{ state},
                handle::peek::messages::Request{ state},
+               handle::restore::Request{ state},
                common::message::handle::Shutdown{},
             };
          }

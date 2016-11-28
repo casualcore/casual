@@ -46,6 +46,19 @@ namespace casual
 
       } // xatmi
 
+      namespace restore
+      {
+         struct Affected
+         {
+            std::string queue;
+            std::size_t restored = 0;
+         };
+
+         std::vector< Affected> queue( const std::vector< std::string>& queues);
+
+
+      } // restore
+
 
    } // queue
 } // casual

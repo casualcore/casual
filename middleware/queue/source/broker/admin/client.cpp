@@ -263,6 +263,21 @@ namespace casual
          std::cout << std::endl;
       }
 
+      namespace local
+      {
+         namespace
+         {
+            void restore( std::vector< std::string> queues)
+            {
+
+
+
+
+
+            }
+
+         } // <unnamed>
+      } // local
 
    } // queue
 

@@ -315,7 +315,6 @@ domain:
          EXPECT_THROW({
             queue::peek::information( "remote-queue");
          }, common::exception::invalid::Argument);
-
       }
 
    } // queue

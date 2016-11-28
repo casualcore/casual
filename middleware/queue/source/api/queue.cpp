@@ -421,9 +421,62 @@ namespace casual
 
             return result;
          }
-
-
       } // peek
+
+      namespace restore
+      {
+         std::vector< Affected> queue( const std::vector< std::string>& queues)
+         {
+            Trace trace{ "casual::queue::restore::queue"};
+
+            std::vector< Affected> result;
+
+            auto lookups = common::range::transform( queues, []( const std::string& q){
+               return queue::Lookup{ q};
+            });
+
+            auto replies = common::range::transform( lookups, []( const queue::Lookup& lookup){
+               return lookup();
+            });
+
+            using reply_type = common::traits::concrete::type_t< decltype( replies.front())>;
+
+            auto reply_range = std::get< 0>( common::range::partition( replies, []( reply_type r){
+               return r.process.queue != 0 && r.local();
+            }));
+
+            auto order = []( const reply_type& lhs, const reply_type& rhs){
+               return lhs.process.queue < rhs.process.queue;
+            };
+
+            common::range::sort( reply_range, order);
+
+
+            for( auto&& group : common::range::sorted::group( reply_range, order))
+            {
+               common::message::queue::restore::Request request;
+               request.process = common::process::handle();
+
+               common::range::transform( group, request.queues, []( const common::message::queue::lookup::Reply& r){
+                  return r.queue;
+               });
+
+               auto reply = common::communication::ipc::call( group->process.queue, request);
+
+
+               common::range::transform( reply.affected, result, []( const common::message::queue::restore::Reply::Affected& a){
+                  Affected affected;
+                  affected.queue = a.queue;
+                  affected.restored = a.restored;
+                  return affected;
+               });
+            }
+
+            return result;
+         }
+
+
+      } // restore
 
    } // queue
 } // casual

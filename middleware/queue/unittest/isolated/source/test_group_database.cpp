@@ -70,6 +70,19 @@ namespace casual
                return result;
             }
 
+            namespace peek
+            {
+               common::message::queue::peek::information::Request information( group::Queue::id_type queue)
+               {
+                  common::message::queue::peek::information::Request result;
+
+                  result.queue = queue;
+
+                  return result;
+               }
+
+            } // peek
+
          } // <unnamed>
       } // local
 
@@ -797,8 +810,52 @@ namespace casual
          database.commit( xid);
 
          EXPECT_TRUE( database.dequeue( local::request( queue)).message.empty());
+      }
 
 
+      TEST( casual_queue_group_database, restore_empty_error_queue__expect_0_affected)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto restored = database.restore( queue.id);
+         EXPECT_TRUE( restored == 0) << "restored: " << restored;
+      }
+
+      TEST( casual_queue_group_database, restore__1_message_in_error_queue__expect_1_affected)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto message = local::message( queue);
+         {
+            database.enqueue( message);
+
+            auto trid = common::transaction::ID::create();
+            database.dequeue( local::request( queue, trid));
+            database.rollback( trid);
+
+            auto info = database.peek( local::peek::information( queue.error));
+            ASSERT_TRUE( info.messages.size() == 1);
+            EXPECT_TRUE( info.messages.at( 0).id == message.message.id);
+            EXPECT_TRUE( info.messages.at( 0).origin == queue.id);
+            EXPECT_TRUE( info.messages.at( 0).queue == queue.error);
+         }
+
+         auto restored = database.restore( queue.id);
+
+         EXPECT_TRUE( restored == 1) << "restored: " << restored;
+         {
+            auto reply = database.dequeue( local::request(queue));
+            ASSERT_TRUE( reply.message.size() == 1) << "reply: " << reply;
+            EXPECT_TRUE( reply.message.at( 0).payload == message.message.payload);
+         }
       }
 
 
