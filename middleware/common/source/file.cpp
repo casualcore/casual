@@ -48,8 +48,10 @@ namespace casual
          {
             if( ::rename( source.c_str(), destination.c_str()) == -1)
             {
-               throw exception::invalid::File{ "failed to move file", CASUAL_NIP( source), CASUAL_NIP( destination)};
+               throw exception::invalid::File{ "failed to move file", CASUAL_NIP( source), CASUAL_NIP( destination), CASUAL_NIP( error::string())};
             }
+
+            log::internal::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
          }
 
 
