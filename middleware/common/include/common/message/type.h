@@ -130,9 +130,12 @@ namespace casual
             queue_queues_information_reply,
             queue_queue_information_request,
             queue_queue_information_reply,
+
             queue_lookup_request = QUEUE_BASE + 500,
             queue_lookup_reply,
 
+            queue_restore_request = QUEUE_BASE + 600,
+            queue_restore_reply,
 
             GATEWAY_BASE = 7000,
             gateway_manager_listener_event,

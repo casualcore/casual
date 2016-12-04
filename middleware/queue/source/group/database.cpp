@@ -145,7 +145,6 @@ namespace casual
             m_connection.execute(
                   "CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);" );
 
-
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS message 
                 ( id            BLOB PRIMARY KEY,
@@ -153,7 +152,7 @@ namespace casual
                   origin        NUMBER, -- the first queue a message is enqueued to
                   gtrid         BLOB,
                   properties    TEXT,
-                  state         INTEGER,
+                  state         INTEGER, -- (1: enqueued, 2: committed, 3: dequeued)
                   reply         TEXT,
                   redelivered   INTEGER,
                   type          TEXT,
@@ -376,6 +375,11 @@ namespace casual
                   FROM 
                      message 
                   WHERE id = :id; )");
+
+               m_statement.restore = m_connection.precompile(R"( 
+                  UPDATE message 
+                  SET queue = :queue 
+                  WHERE state = 2 AND queue != origin AND origin = :queue; )");
 
             }
          }
@@ -664,6 +668,16 @@ namespace casual
             }
 
             return reply;
+         }
+
+         std::size_t Database::restore( Queue::id_type queue)
+         {
+            Trace trace{ "queue::Database::restore"};
+
+            log << "queue: " << queue << std::endl;
+
+            m_statement.restore.execute( queue);
+            return m_connection.affected();
          }
 
 

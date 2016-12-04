@@ -15,6 +15,7 @@ namespace casual
 {
    namespace queue
    {
+      inline namespace v1  {
 
       sf::platform::Uuid enqueue( const std::string& queue, const Message& message);
 
@@ -46,7 +47,20 @@ namespace casual
 
       } // xatmi
 
+      namespace restore
+      {
+         struct Affected
+         {
+            std::string queue;
+            std::size_t restored = 0;
+         };
 
+         std::vector< Affected> queue( const std::vector< std::string>& queues);
+
+
+      } // restore
+
+      } // v1
    } // queue
 } // casual
 

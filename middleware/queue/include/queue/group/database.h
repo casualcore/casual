@@ -57,6 +57,8 @@ namespace casual
             common::message::queue::peek::messages::Reply peek( const common::message::queue::peek::messages::Request& request);
 
 
+            std::size_t restore( Queue::id_type id);
+
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
 
@@ -176,6 +178,10 @@ namespace casual
                   sql::database::Statement first;
                   sql::database::Statement one_message;
                } peek;
+
+               sql::database::Statement restore;
+
+
 
             } m_statement;
 

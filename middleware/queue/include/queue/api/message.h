@@ -16,6 +16,9 @@ namespace casual
 {
    namespace queue
    {
+      inline namespace v1  {
+
+
       struct Attributes
       {
          //!
@@ -152,21 +155,6 @@ namespace casual
 
          } // message
 
-         /*
-         struct Message
-         {
-            common::Uuid id;
-            std::size_t type;
-            std::size_t state;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( id);
-               archive & CASUAL_MAKE_NVP( type);
-               archive & CASUAL_MAKE_NVP( state);
-            })
-         };
-         */
       } // peek
 
       namespace xatmi
@@ -188,6 +176,7 @@ namespace casual
 
       } // xatmi
 
+      } // v1
    } // queue
 
 } // casual

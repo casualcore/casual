@@ -205,7 +205,20 @@ namespace casual
 
                   };
                }
-            }
+            } // transaction
+
+            namespace restore
+            {
+               struct Request : Base
+               {
+                  using message_type = common::message::queue::restore::Request;
+
+                  using Base::Base;
+
+                  void operator () ( message_type& message);
+               };
+
+            } // restore
 
          } // handle
 

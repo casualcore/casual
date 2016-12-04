@@ -48,7 +48,7 @@ namespace casual
 
          broker::admin::State state()
          {
-            sf::xatmi::service::binary::Sync service( ".casual.queue.list.queues");
+            sf::xatmi::service::binary::Sync service( ".casual/queue/state");
 
             auto reply = service();
 
@@ -72,7 +72,6 @@ namespace casual
 
             return serviceReply;
          }
-
 
       } // call
 
@@ -127,8 +126,8 @@ namespace casual
 
          terminal::format::formatter< broker::admin::Group> groups()
          {
-            auto format_pid = []( const broker::admin::Group& g) { return g.id.pid;};
-            auto format_ipc = []( const broker::admin::Group& g) { return g.id.queue;};
+            auto format_pid = []( const broker::admin::Group& g) { return g.process.pid;};
+            auto format_ipc = []( const broker::admin::Group& g) { return g.process.queue;};
 
             return {
                { global::porcelain, global::color, global::header},
@@ -140,6 +139,18 @@ namespace casual
             };
          }
 
+         terminal::format::formatter< queue::restore::Affected> restored()
+         {
+            auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
+
+            return {
+               { global::porcelain, global::color, global::header},
+               terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
+               terminal::format::column( "restored", std::mem_fn( &queue::restore::Affected::restored), terminal::color::green),
+            };
+         }
+
+
          terminal::format::formatter< broker::admin::Queue> queues( const broker::admin::State& state)
          {
             using q_type = broker::admin::Queue;
@@ -150,7 +161,7 @@ namespace casual
             };
 
             auto format_group = [&]( const q_type& q){
-               return range::find_if( state.groups, [&]( const broker::admin::Group& g){ return q.group == g.id.pid;}).at( 0).name;
+               return range::find_if( state.groups, [&]( const broker::admin::Group& g){ return q.group == g.process.pid;}).at( 0).name;
             };
 
 
@@ -172,7 +183,7 @@ namespace casual
       } // format
 
 
-      void listQueues()
+      void list_queues()
       {
 
          auto state = call::state();
@@ -188,7 +199,7 @@ namespace casual
          }));
       }
 
-      void listGroups()
+      void list_groups()
       {
          auto state = call::state();
 
@@ -197,7 +208,7 @@ namespace casual
          formatter.print( std::cout, state.groups);
       }
 
-      void listMessages( const std::string& queue)
+      void list_messages( const std::string& queue)
       {
          auto messages = call::messages( queue);
 
@@ -263,6 +274,20 @@ namespace casual
          std::cout << std::endl;
       }
 
+      namespace local
+      {
+         namespace
+         {
+            void restore( const std::vector< std::string>& queueus)
+            {
+               auto affected = queue::restore::queue( queueus);
+
+               auto formatter = format::restored();
+               formatter.print( std::cout, affected);
+            }
+
+         } // <unnamed>
+      } // local
 
    } // queue
 
@@ -273,11 +298,12 @@ namespace casual
             common::argument::directive( {"--no-header"}, "do not print headers", &queue::global::no_header),
             common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
             common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
-            common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::listQueues),
-            common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::listGroups),
-            common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::listMessages),
+            common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::list_queues),
+            common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
+            common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
+            common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual-admin queue --restore <queue-name>", &queue::local::restore),
             common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual-admin queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
-            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_)
+            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_),
       }};
 
       return parser;

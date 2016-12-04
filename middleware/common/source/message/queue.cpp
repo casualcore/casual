@@ -1,11 +1,9 @@
 //!
-//! queue.cpp
-//!
-//! Created on: May 2, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/message/queue.h"
+#include "common/transcode.h"
 
 #include "common/chronology.h"
 
@@ -39,12 +37,20 @@ namespace casual
                         << '}';
 
                }
+
+               bool Reply::local() const
+               {
+                  return order == 0;
+               }
+
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {
                   return out << "{ process: " << value.process
                         << ", queue: " << value.queue
                         << '}';
                }
+
+
             } // lookup
 
             namespace enqueue
@@ -132,7 +138,7 @@ namespace casual
 
                   std::ostream& operator << ( std::ostream& out, const Reply& value)
                   {
-                     return out << "{"
+                     return out << "{ messages: " << range::make( value.messages)
                            << '}';
                   }
                } // information
@@ -175,6 +181,25 @@ namespace casual
                      << '}';
 
             }
+
+            namespace information
+            {
+               std::ostream& operator << ( std::ostream& out, const Message& value)
+               {
+                  return out << "{ id: " << value.id
+                        << ", queue: " << value.queue
+                        << ", origin: " << value.origin
+                        << ", state: " << value.state
+                        << ", properties: " << value.properties
+                        << ", reply: " << value.reply
+                        << ", redelivered: " << value.redelivered
+                        << ", trid: " << transcode::hex::encode( value.trid)
+                        << ", type: " << value.type
+                        << ", size: " << value.size
+                        << '}';
+
+               }
+            } // information
 
          } // queue
       } // message

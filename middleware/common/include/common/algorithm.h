@@ -899,6 +899,30 @@ namespace casual
          }
 
          //!
+         //! Transform @p range, using @p transform
+         //!
+         //! @param range source range/container
+         //!
+         //! @return std::vector with the transformed values
+         //!
+         /*
+         template< typename R, typename P, typename T>
+         auto transform_if( R&& range, P predicate, T transformer) -> std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type>
+         {
+            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
+
+            for( auto&& value : range)
+            {
+               if( predicate( value))
+               {
+                  result.push_back( transformer( value));
+               }
+            }
+            return result;
+         }
+         */
+
+         //!
          //! Applies std::unique on [std::begin( range), std::end( range) )
          //!
          //! @return the unique range

@@ -24,7 +24,7 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper device()
+            const common::communication::ipc::Helper& device()
             {
                static common::communication::ipc::Helper ipc{
                   common::communication::error::handler::callback::on::Terminate

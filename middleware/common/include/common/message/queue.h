@@ -90,6 +90,8 @@ namespace casual
                      archive & order;
                   })
 
+                  bool local() const;
+
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");
@@ -352,6 +354,8 @@ namespace casual
                      archive & timestamp;
                      archive & size;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Message& value);
                };
                static_assert( traits::is_movable< Message>::value, "not movable");
 
@@ -511,6 +515,47 @@ namespace casual
             } // connect
 
 
+            namespace restore
+            {
+
+               struct Request : basic_message< Type::queue_restore_request>
+               {
+                  common::process::Handle process;
+                  std::vector< Queue::id_type> queues;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & process;
+                     archive & queues;
+                  })
+               };
+               static_assert( traits::is_movable< Request>::value, "not movable");
+
+               struct Reply : basic_message< Type::queue_restore_request>
+               {
+                  struct Affected
+                  {
+                     Queue::id_type queue;
+                     std::size_t restored = 0;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & queue;
+                        archive & restored;
+                     })
+                  };
+
+                  std::vector< Affected> affected;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & affected;
+                  })
+               };
+            } // restore
+
 
 
          } // queue
@@ -534,6 +579,9 @@ namespace casual
 
             template<>
             struct type_traits< queue::peek::messages::Request> : detail::type< queue::peek::messages::Reply> {};
+
+            template<>
+            struct type_traits< queue::restore::Request> : detail::type< queue::restore::Reply> {};
 
          } // reverse
 
