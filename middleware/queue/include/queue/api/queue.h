@@ -15,6 +15,7 @@ namespace casual
 {
    namespace queue
    {
+      inline namespace v1  {
 
       sf::platform::Uuid enqueue( const std::string& queue, const Message& message);
 
@@ -59,7 +60,7 @@ namespace casual
 
       } // restore
 
-
+      } // v1
    } // queue
 } // casual
 

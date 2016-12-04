@@ -1,8 +1,5 @@
 //!
-//! brokervo.h
-//!
-//! Created on: Sep 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
@@ -23,9 +20,10 @@ namespace casual
          namespace admin
          {
 
+
             struct Group
             {
-               struct id_t
+               struct
                {
                   sf::platform::pid::type pid;
                   sf::platform::ipc::id::type queue;
@@ -35,15 +33,15 @@ namespace casual
                      archive & CASUAL_MAKE_NVP( pid);
                      archive & CASUAL_MAKE_NVP( queue);
                   })
+               } process;
 
-               } id;
                std::string name;
                std::string queuebase;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( process);
                   archive & CASUAL_MAKE_NVP( name);
                   archive & CASUAL_MAKE_NVP( queuebase);
                })
@@ -57,6 +55,7 @@ namespace casual
                   error_queue = 2,
                   queue = 3,
                };
+
 
                sf::platform::pid::type group;
                std::size_t id;
@@ -127,6 +126,7 @@ namespace casual
             };
 
 
+
             struct State
             {
                std::vector< Group> groups;
@@ -140,27 +140,30 @@ namespace casual
 
             };
 
-            /*
-            namespace verbose
-            {
-               struct GroupVO
-               {
-                  sf::platform::pid_type pid;
-                  sf::platform::ipc::id::type queue_id;
-                  std::string name;
 
-                  std::vector< QueueVO> queues;
+            struct Affected
+            {
+               struct
+               {
+                  std::size_t id;
+                  std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
-                     archive & CASUAL_MAKE_NVP( pid);
+                     archive & CASUAL_MAKE_NVP( id);
                      archive & CASUAL_MAKE_NVP( name);
-                     archive & CASUAL_MAKE_NVP( queues);
                   })
+               } queue;
 
-               };
-            }
-            */
+
+               std::size_t restored = 0;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+               {
+                  archive & CASUAL_MAKE_NVP( queue);
+                  archive & CASUAL_MAKE_NVP( restored);
+               })
+            };
 
 
          } // admin

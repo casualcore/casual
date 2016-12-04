@@ -35,7 +35,7 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper device();
+            const common::communication::ipc::Helper& device();
          } // ipc
 
 

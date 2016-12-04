@@ -27,8 +27,8 @@ namespace casual
                   {
                      broker::admin::Group result;
 
-                     result.id.pid = group.process.pid;
-                     result.id.queue = group.process.queue;
+                     result.process.pid = group.process.pid;
+                     result.process.queue = group.process.queue;
 
                      result.name = group.name;
                      result.queuebase = group.queuebase;

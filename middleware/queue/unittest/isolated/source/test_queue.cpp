@@ -81,7 +81,7 @@ namespace casual
             {
                broker::admin::State state()
                {
-                  sf::xatmi::service::binary::Sync service( ".casual.queue.list.queues");
+                  sf::xatmi::service::binary::Sync service( ".casual/queue/state");
 
                   auto reply = service();
 
