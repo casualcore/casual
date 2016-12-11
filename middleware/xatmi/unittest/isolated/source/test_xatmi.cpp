@@ -42,6 +42,20 @@ namespace casual
                      mockup::domain::echo::create::service( "service_1"),
                      mockup::domain::echo::create::service( "timeout_2"),
                      mockup::domain::echo::create::service( "service_urcode"), // will echo with urcode = 42
+
+                     /*
+                      * Will echo with error set to the following
+                        #define TPEOS 7
+                        #define TPEPROTO 9
+                        #define TPESVCERR 10
+                        #define TPESVCFAIL 11
+                        #define TPESYSTEM 12
+                      */
+                     mockup::domain::echo::create::service( "service_TPEOS"),
+                     mockup::domain::echo::create::service( "service_TPEPROTO"),
+                     mockup::domain::echo::create::service( "service_TPESVCERR"),
+                     mockup::domain::echo::create::service( "service_TPESVCFAIL"),
+                     mockup::domain::echo::create::service( "service_TPESYSTEM"),
                   }}
                {
 
@@ -378,6 +392,26 @@ namespace casual
          tpfree( buffer);
       }
 
+      namespace local
+      {
+         namespace
+         {
+
+            bool call( const std::string& service)
+            {
+               auto buffer = tpalloc( X_OCTET, nullptr, 128);
+               auto len = tptypes( buffer, nullptr, nullptr);
+
+               auto code = tpcall( service.c_str(), buffer, 128, &buffer, &len, 0);
+
+               tpfree( buffer);
+
+               return code == 0;
+            }
+
+
+         } // <unnamed>
+      } // local
 
       TEST( casual_xatmi, tpcall_service_urcode__expect_ok__urcode_42)
       {
@@ -385,14 +419,68 @@ namespace casual
 
          local::Domain domain;
 
-         auto buffer = tpalloc( X_OCTET, nullptr, 128);
-         auto len = tptypes( buffer, nullptr, nullptr);
-
-         EXPECT_TRUE( tpcall( "service_urcode", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( local::call( "service_urcode")) << "tperrno: " << common::error::xatmi::error( tperrno);
          EXPECT_TRUE( tpurcode == 42) << "urcode: " << tpurcode;
-         tpfree( buffer);
       }
 
+
+      /*
+       *                      mockup::domain::echo::create::service( "service_TPEOS"),
+                     mockup::domain::echo::create::service( "service_TPEPROTO"),
+                     mockup::domain::echo::create::service( "service_TPESVCERR"),
+                     mockup::domain::echo::create::service( "service_TPESVCFAIL"),
+                     mockup::domain::echo::create::service( "service_TPESYSTEM"),
+       */
+
+      TEST( casual_xatmi, tpcall_service_TPEOS___expect_error_TPEOS)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_FALSE( local::call( "service_TPEOS"));
+         EXPECT_TRUE( tperrno == TPEOS) << "tperrno: " << tperrno;
+      }
+
+      TEST( casual_xatmi, tpcall_service_TPEPROTO___expect_error_TPEPROTO)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_FALSE( local::call( "service_TPEPROTO"));
+         EXPECT_TRUE( tperrno == TPEPROTO) << "tperrno: " << tperrno;
+      }
+
+      TEST( casual_xatmi, tpcall_service_TPESVCERR___expect_error_TPESVCERR)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_FALSE( local::call( "service_TPESVCERR"));
+         EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrno;
+      }
+
+      TEST( casual_xatmi, tpcall_service_TPESYSTEM___expect_error_TPESYSTEM)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_FALSE( local::call( "service_TPESYSTEM"));
+         EXPECT_TRUE( tperrno == TPESYSTEM) << "tperrno: " << tperrno;
+      }
+
+      TEST( casual_xatmi, tpcall_service_TPESVCFAIL___expect_error_TPESVCFAIL)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_FALSE( local::call( "service_TPESVCFAIL"));
+         EXPECT_TRUE( tperrno == TPESVCFAIL) << "tperrno: " << tperrno;
+      }
 
       /*
       TEST( casual_xatmi, tpcall_service_timeout_2__expect_TPETIME)

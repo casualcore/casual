@@ -121,6 +121,44 @@ namespace casual
 
          namespace service
          {
+            namespace pending
+            {
+               struct Metric
+               {
+                  inline std::size_t count() const { return m_count;}
+                  inline std::chrono::microseconds total() const { return m_total;}
+
+                  void add( const common::platform::time_point::duration& duration);
+                  void reset();
+
+               private:
+                  std::size_t m_count = 0;
+                  std::chrono::microseconds m_total = std::chrono::microseconds::zero();
+
+               };
+            } // pending
+            struct Metric
+            {
+
+               inline std::size_t invoked() const { return m_invoked;}
+               inline std::chrono::microseconds total() const { return m_total;}
+
+               void begin( const common::platform::time_point& time);
+               void end( const common::platform::time_point& time);
+
+               void reset();
+
+               inline const common::platform::time_point& used() const { return m_begin;}
+
+               Metric& operator += ( const Metric& rhs);
+
+            private:
+
+               std::size_t m_invoked = 0;
+               common::platform::time_point m_begin;
+
+               std::chrono::microseconds m_total = std::chrono::microseconds::zero();
+            };
 
             namespace instance
             {
@@ -128,8 +166,6 @@ namespace casual
                {
                   virtual void lock( const common::platform::time_point& when) = 0;
                   virtual const common::process::Handle& process() const = 0;
-
-                  std::size_t invoked = 0;
 
                   friend inline bool operator == ( const base_instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
 
@@ -146,6 +182,11 @@ namespace casual
 
                   inline const common::process::Handle& process() const override { return get().process;}
                   void lock( const common::platform::time_point& when) override;
+                  void unlock( const common::platform::time_point& when);
+
+
+                  Metric metric;
+
                };
 
                struct Remote final : std::reference_wrapper< state::instance::Remote>, base_instance
@@ -159,15 +200,25 @@ namespace casual
 
                   inline std::size_t hops() const { return m_hops;}
 
+                  std::size_t invoked = 0;
+
                   friend bool operator < ( const Remote& lhs, const Remote& rhs);
 
                private:
                   std::size_t m_hops = 0;
                };
 
-
-
             } // instance
+
+
+            struct Pending
+            {
+               Pending( common::message::service::lookup::Request::Request&& request, const common::platform::time_point& when)
+                : request{ std::move( request)}, when{ when} {}
+
+               common::message::service::lookup::Request request;
+               common::platform::time_point when;
+            };
 
          } // service
 
@@ -175,10 +226,10 @@ namespace casual
 
          struct Service
          {
+            Service( common::message::service::call::Service information)
+               : information( std::move( information)) {}
 
-
-            Service( common::message::service::call::Service information) : information( std::move( information)) {}
-            Service() {}
+            Service() = default;
 
             template< typename T>
             using instances_type = std::vector< T>;
@@ -193,7 +244,17 @@ namespace casual
             } instances;
 
             common::message::service::call::Service information;
-            std::size_t lookedup = 0;
+            service::Metric metric;
+
+            //!
+            //! Keeps track of the pending metrics for this service
+            //!
+            state::service::pending::Metric pending;
+
+            //!
+            //! Resets the metrics
+            //!
+            void metric_reset();
 
             //!
             //! @return an idle instance or nullptr if no one is found.
@@ -204,6 +265,8 @@ namespace casual
             void add( state::instance::Remote& instance, std::size_t hops);
 
             void remove( common::platform::pid::type instance);
+
+            service::instance::Local& local( common::platform::pid::type instance);
 
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
@@ -249,7 +312,7 @@ namespace casual
 
          struct
          {
-            std::deque< common::message::service::lookup::Request> requests;
+            std::deque< state::service::Pending> requests;
             std::vector< common::message::pending::Message> replies;
          } pending;
 
@@ -276,7 +339,6 @@ namespace casual
 
 
          state::Service& service( const std::string& name);
-         state::instance::Local& local_instance( common::platform::pid::type pid);
 
          void remove_process( common::platform::pid::type pid);
 

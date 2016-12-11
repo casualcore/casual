@@ -302,6 +302,16 @@ namespace casual
                //
                common::transaction::Context::instance().update( reply);
 
+
+               //
+               // Check any errors
+               //
+               if( reply.error != 0 && reply.error != TPESVCFAIL)
+               {
+                  exception::xatmi::propagate( reply.error);
+               }
+
+
                //
                // Check buffer types
                //
@@ -344,6 +354,11 @@ namespace casual
                }
 
                log::internal::debug << "descriptor: " << reply.descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+
+               if( reply.error == TPESVCFAIL)
+               {
+                  throw exception::xatmi::service::Fail{};
+               }
 
             }
 

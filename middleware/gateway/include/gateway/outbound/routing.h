@@ -10,6 +10,7 @@
 #include "common/process.h"
 #include "common/exception.h"
 #include "common/algorithm.h"
+#include "common/message/type.h"
 
 #include <vector>
 #include <mutex>
@@ -35,18 +36,32 @@ namespace casual
 
             struct Point
             {
-               Point();
-               Point( const common::Uuid& correlation, common::process::Handle destination);
+               //Point();
+               Point( const common::Uuid& correlation, common::process::Handle destination, common::message::Type type);
 
                common::Uuid correlation;
                common::process::Handle destination;
+               common::message::Type type;
 
                friend std::ostream& operator << ( std::ostream& out, const Point& value);
             };
 
-            void add( const common::Uuid& correlation, common::process::Handle destination) const;
+            void add( const common::Uuid& correlation, common::process::Handle destination, common::message::Type type) const;
+
+            template< typename M>
+            void add( M&& message) const
+            {
+               add( message.correlation, message.process, common::message::type( message));
+            }
 
             Point get( const common::Uuid& correlation) const;
+
+
+            //!
+            //!
+            //! @return all current routing points
+            //!
+            std::vector< Point> extract() const;
 
          private:
             mutable std::mutex m_mutex;

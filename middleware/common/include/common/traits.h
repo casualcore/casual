@@ -327,6 +327,10 @@ namespace casual
          };
          //! @}
 
+         template< bool Predicate, typename V = void>
+         using enable_if_t = typename std::enable_if< Predicate, V>::type;
+
+
       } // traits
    } // common
 } // casual

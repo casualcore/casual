@@ -399,9 +399,6 @@ namespace casual
                };
             } // detail
 
-            //template<>
-            //struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
-
 
 
             template< typename T>
@@ -414,8 +411,8 @@ namespace casual
 
                return result;
             }
-         } // reverse
 
+         } // reverse
       } // message
    } // common
 } // casual

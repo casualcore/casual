@@ -30,6 +30,28 @@ namespace casual
    {
       namespace outbound
       {
+         namespace ipc
+         {
+            namespace optional
+            {
+               template< typename D, typename M>
+               bool send( D&& destination, M&& message)
+               {
+                  try
+                  {
+                     common::communication::ipc::blocking::send( destination, message);
+                     return true;
+                  }
+                  catch( const common::exception::queue::Unavailable&)
+                  {
+                     log << "destination queue unavailable for correlation: " << message.correlation << " - action: discard\n";
+                  }
+                  return false;
+               }
+            } // optional
+
+
+         } // ipc
 
          namespace handle
          {
@@ -82,7 +104,7 @@ namespace casual
                {
 
 
-                  routing.add( message.correlation, message.process);
+                  routing.add( message);
 
                   auto&& request = message::interdomain::send::wrap( message);
 
@@ -134,7 +156,7 @@ namespace casual
                                  common::message::transaction::resource::external::involved::create( message));
                         }
 
-                        this->routing.add( message.correlation, message.process);
+                        this->routing.add( message);
                      }
 
                      auto&& request = message::interdomain::send::wrap( message);
@@ -172,7 +194,7 @@ namespace casual
                               common::message::transaction::resource::external::involved::create( message));
                      }
 
-                     this->routing.add( message.correlation, message.process);
+                     this->routing.add( message);
 
                      auto&& request = message::interdomain::send::wrap( message);
                      this->device.blocking_send( request);
@@ -208,13 +230,11 @@ namespace casual
 
                   try
                   {
+
                      auto destination = routing.get( reply.correlation);
                      process( reply);
-                     common::communication::ipc::blocking::send( destination.destination.queue, reply);
-                  }
-                  catch( const common::exception::queue::Unavailable&)
-                  {
-                     log << "destination queue unavailable for correlation: " << reply.correlation << " - action: discard\n";
+
+                     ipc::optional::send( destination.destination.queue, reply);
                   }
                   catch( const common::exception::invalid::Argument&)
                   {
@@ -268,7 +288,7 @@ namespace casual
                               //
                               for( auto& service : advertise.services) { ++service.hops;}
 
-                              common::communication::ipc::blocking::send( common::communication::ipc::broker::device(), advertise);
+                              ipc::optional::send( common::communication::ipc::broker::device(), advertise);
                            }
 
                            if( ! advertise.queues.empty())
@@ -299,6 +319,23 @@ namespace casual
             } // domain
 
          } // handle
+
+         namespace error
+         {
+            //!
+            //! Takes care of sending error replies to the
+            //! request that are in flight when a shutdown is
+            //! requested (when connections is lost and such)
+            //!
+            struct Reply
+            {
+               Reply( const Routing& routing);
+               ~Reply();
+
+            private:
+               const Routing& m_routing;
+            };
+         } // error
 
          template< typename Policy>
          struct Gateway
@@ -351,6 +388,11 @@ namespace casual
                      }
                      m_reply_thread.join();
                   }
+
+                  //
+                  // Make sure we take care of messages in flight
+                  //
+                  error::Reply{ m_routing};
 
                }
                catch( ...)

@@ -47,6 +47,20 @@ namespace casual
                         reply.code = 42;
                      }
 
+                     /*
+                        #define TPEOS 7
+                        #define TPEPROTO 9
+                        #define TPESVCERR 10
+                        #define TPESVCFAIL 11
+                        #define TPESYSTEM 12
+                      */
+
+                     if( range::search( request.service.name, std::string{ "TPEOS"})) { reply.error = TPEOS;}
+                     if( range::search( request.service.name, std::string{ "TPEPROTO"})) { reply.error = TPEPROTO;}
+                     if( range::search( request.service.name, std::string{ "TPESVCERR"})) { reply.error = TPESVCERR;}
+                     if( range::search( request.service.name, std::string{ "TPESVCFAIL"})) { reply.error = TPESVCFAIL;}
+                     if( range::search( request.service.name, std::string{ "TPESYSTEM"})) { reply.error = TPESYSTEM;}
+
 
                      ipc::eventually::send( request.process.queue, reply);
                   }

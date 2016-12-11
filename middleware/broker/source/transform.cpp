@@ -91,12 +91,12 @@ namespace casual
 
                struct Pending
                {
-                  admin::PendingVO operator() ( const common::message::service::lookup::Request& value) const
+                  admin::PendingVO operator() ( const state::service::Pending& value) const
                   {
                      admin::PendingVO result;
 
-                     result.process = value.process;
-                     result.requested = value.requested;
+                     result.process = value.request.process;
+                     result.requested = value.request.requested;
 
                      return result;
                   }
@@ -106,11 +106,22 @@ namespace casual
                {
                   admin::ServiceVO operator() ( const state::Service& value) const
                   {
+                     auto transform_metric = []( const state::service::Metric& value)
+                           {
+                              admin::service::Metric result;
+                              result.invoked = value.invoked();
+                              result.last = value.used();
+                              result.total = value.total();
+                              return result;
+                           };
+
                      admin::ServiceVO result;
 
                      result.name = value.information.name;
                      result.timeout = value.information.timeout;
-                     result.lookedup = value.lookedup;
+                     result.metrics = transform_metric( value.metric);
+                     result.pending.count = value.pending.count();
+                     result.pending.total = value.pending.total();
                      result.type = value.information.type;
                      result.transaction = common::cast::underlying( value.information.transaction);
 
@@ -121,15 +132,17 @@ namespace casual
                               return admin::service::instance::Remote{
                                  value.process().pid,
                                  value.invoked,
-                                 value.hops()
+                                 value.hops(),
+                                 value.get().last()
                               };
                            };
 
-                     auto transform_local = []( const state::service::instance::Local& value)
+
+                     auto transform_local = [&]( const state::service::instance::Local& value)
                            {
                               return admin::service::instance::Local{
                                  value.process().pid,
-                                 value.invoked,
+                                 transform_metric( value.metric)
                               };
                            };
 

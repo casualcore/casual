@@ -1,8 +1,5 @@
 //!
-//! transaction.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef TRANSACTION_H_

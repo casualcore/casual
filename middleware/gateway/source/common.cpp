@@ -9,7 +9,7 @@ namespace casual
 {
    namespace gateway
    {
-      common::log::Stream log{ "casual.gatway"};
+      common::log::Stream log{ "casual.gateway"};
 
    } // gateway
 } // casual

@@ -39,6 +39,29 @@ namespace casual
 
       namespace handle
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace optional
+               {
+                  template< typename D, typename M>
+                  bool send( D&& device, M&& message)
+                  {
+                     try
+                     {
+                        ipc::device().blocking_send( device, message);
+                        return true;
+                     }
+                     catch( const common::exception::communication::Unavailable&)
+                     {
+                        return false;
+                     }
+                  }
+               } // optional
+            } // <unnamed>
+         } // local
+
 
          void process_exit( const common::process::lifetime::Exit& exit)
          {
@@ -104,20 +127,16 @@ namespace casual
             {
                Trace trace{ "broker::handle::service::Lookup"};
 
+               auto now = platform::clock_type::now();
+
                try
                {
-                  auto now = platform::clock_type::now();
-
                   auto& service = m_state.service( message.requested);
 
                   auto instance = service.idle();
 
                   if( instance)
                   {
-                     //
-                     // flag it as busy.
-                     //
-                     instance->lock( now);
 
                      auto reply = common::message::reverse::type( message);
                      reply.service = service.information;
@@ -125,9 +144,13 @@ namespace casual
                      reply.state = decltype( reply.state)::idle;
                      reply.process = instance->process();
 
-                     ipc::device().blocking_send( message.process.queue, reply);
-
-                     ++service.lookedup;
+                     if( local::optional::send( message.process.queue, reply))
+                     {
+                        //
+                        // flag it as busy.
+                        //
+                        instance->lock( now);
+                     }
                   }
                   else if( service.instances.empty())
                   {
@@ -155,7 +178,7 @@ namespace casual
                            //
                            reply.state = decltype( reply.state)::idle;
 
-                           ipc::device().blocking_send( message.process.queue, reply);
+                           local::optional::send( message.process.queue, reply);
 
                            break;
                         }
@@ -169,24 +192,24 @@ namespace casual
                            // has change the timeout, TODO: something we need to address? probably not,
                            // since we can't make it 100% any way...)
                            //
-                           m_state.pending.requests.push_back( std::move( message));
+                           m_state.pending.requests.emplace_back( std::move( message), now);
 
                            break;
                         }
                         default:
                         {
                            //
-                           // All instances are busy, we stack the request
-                           //
-                           m_state.pending.requests.push_back( std::move( message));
-
-                           //
-                           // ...and send busy-message to caller, to set timeouts and stuff
+                           // send busy-message to caller, to set timeouts and stuff
                            //
                            reply.state = decltype( reply.state)::busy;
 
-                           ipc::device().blocking_send( message.process.queue, reply);
-
+                           if( local::optional::send( message.process.queue, reply))
+                           {
+                              //
+                              // All instances are busy, we stack the request
+                              //
+                              m_state.pending.requests.emplace_back( std::move( message), now);
+                           }
                            break;
                         }
                      }
@@ -207,7 +230,7 @@ namespace casual
                      reply.service.name = message.requested;
                      reply.state = decltype( reply.state)::absent;
 
-                     ipc::device().blocking_send( message.process.queue, reply);
+                     local::optional::send( message.process.queue, reply);
                   });
 
                   try
@@ -226,7 +249,7 @@ namespace casual
 
                      log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
 
-                     m_state.pending.requests.push_back( std::move( message));
+                     m_state.pending.requests.emplace_back( std::move( message), now);
 
                      send_reply.release();
                   }
@@ -266,7 +289,11 @@ namespace casual
                   {
                      auto&& service = m_state.find_service( s);
 
-                     if( service)
+                     //
+                     // We don't allow other domains to access or know about our
+                     // admin services.
+                     //
+                     if( service && service->information.type != common::service::Type::casual_admin)
                      {
                         if( ! service->instances.local.empty())
                         {
@@ -297,8 +324,8 @@ namespace casual
                {
                   Trace trace{ "broker::handle::gateway::discover::Reply"};
 
-                  auto found = range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
-                     return r.correlation == message.correlation;
+                  auto found = range::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
+                     return p.request.correlation == message.correlation;
                   });
 
                   if( found)
@@ -306,7 +333,7 @@ namespace casual
                      auto pending = std::move( *found);
                      m_state.pending.requests.erase( std::begin( found));
 
-                     auto service = m_state.find_service( pending.requested);
+                     auto service = m_state.find_service( pending.request.requested);
 
                      if( service && ! service->instances.empty())
                      {
@@ -314,15 +341,15 @@ namespace casual
                         // The requested service is now available, use
                         // the lookup to decide how to progress.
                         //
-                        service::Lookup{ m_state}( pending);
+                        service::Lookup{ m_state}( pending.request);
                      }
                      else
                      {
-                        auto reply = common::message::reverse::type( pending);
-                        reply.service.name = pending.requested;
+                        auto reply = common::message::reverse::type( pending.request);
+                        reply.service.name = pending.request.requested;
                         reply.state = decltype( reply.state)::absent;
 
-                        ipc::device().blocking_send( pending.process.queue, reply);
+                        ipc::device().blocking_send( pending.request.process.queue, reply);
                      }
 
                   }
@@ -344,14 +371,15 @@ namespace casual
 
             try
             {
+               auto now = platform::clock_type::now();
+
+
+               auto& service = m_state.service( message.service);
+
                //
                // This message can only come from a local instance
                //
-
-               auto& instance = m_state.local_instance( message.process.pid);
-
-               auto now = platform::clock_type::now();
-
+               auto& instance = service.local( message.process.pid);
                instance.unlock( now);
 
                //
@@ -364,8 +392,9 @@ namespace casual
                   // TODO: make this more efficient...
                   //
 
-                  auto pending = common::range::find_if( m_state.pending.requests, [&]( const common::message::service::lookup::Request& r){
-                     auto service = m_state.find_service( r.requested);
+
+                  auto pending = common::range::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
+                     auto service = m_state.find_service( p.request.requested);
 
                      return service && range::find( service->instances.local, message.process.pid);
                   });
@@ -379,7 +408,12 @@ namespace casual
                      // We can use the normal request to get the response
                      //
                      service::Lookup lookup( m_state);
-                     lookup( *pending);
+                     lookup( pending->request);
+
+                     //
+                     // add pending metrics
+                     //
+                     service.pending.add( now - pending->when);
 
                      //
                      // Remove pending
@@ -388,7 +422,7 @@ namespace casual
                   }
                }
             }
-            catch( state::exception::Missing& exception)
+            catch( const state::exception::Missing&)
             {
                common::log::error << "failed to find instance on ACK - indicate inconsistency - action: ignore\n";
             }

@@ -33,7 +33,7 @@ namespace casual
             {}
 
             std::string name;
-            std::uint64_t type = 0;
+            std::uint64_t type = common::service::Type::xatmi;
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
             common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
 

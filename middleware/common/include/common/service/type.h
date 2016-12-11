@@ -17,6 +17,16 @@ namespace casual
    {
       namespace service
       {
+         namespace Type
+         {
+            enum
+            {
+               xatmi = 0,
+               casual_admin = 10,
+            };
+         } // Type
+
+
          namespace transaction
          {
             enum class Type : std::uint16_t

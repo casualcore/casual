@@ -49,11 +49,11 @@ namespace casual
 #if EAGAIN != EWOULDBLOCK
                               case EWOULDBLOCK:
 #endif
-                                 throw common::exception::communication::no::Message{ common::error::string()};
+                                 throw common::exception::communication::no::Message{ common::error::string( last_error)};
                               case EINVAL:
-                                 throw common::exception::invalid::Argument{ "invalid arguments"};
+                                 throw common::exception::invalid::Argument{ common::error::string( last_error)};
                               case ENOTSOCK:
-                                 throw common::exception::invalid::Argument{ "bad socket"};
+                                 throw common::exception::invalid::Argument{ common::error::string( last_error)};
                               case EINTR:
                               {
                                  common::signal::handle();
@@ -543,6 +543,8 @@ namespace casual
                         const auto current_distance = std::distance( current, current_end);
 
                         const auto bytes = local::receive( socket.descriptor(), current, current_distance, flags);
+
+                        log << "received bytes: " << bytes << '\n';
 
                         if( bytes > current_distance)
                         {
