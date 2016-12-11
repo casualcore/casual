@@ -468,26 +468,34 @@ namespace casual
 
                      }
 
-                     ssize_t receive( const socket::descriptor_type descriptor, void* const data, const std::size_t size, common::Flags< Flag> flags)
+                     char* receive(
+                           const socket::descriptor_type descriptor,
+                           char* first,
+                           char* const last,
+                           common::Flags< Flag> flags)
                      {
-                       log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( data) << ", size: " << size << ", flags: " << flags << '\n';
+                        log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( first) << ", size: " << last - first << ", flags: " << flags << '\n';
 
-                        common::signal::handle();
 
-                        const auto bytes = tcp::local::socket::check::result(
-                              ::recv( descriptor, data, size, flags.underlaying()));
-
-                        if( bytes == 0)
+                        while( first != last)
                         {
-                           //
-                           // Fake an error-description
-                           //
-                           throw common::exception::communication::Unavailable( common::error::string( EPIPE));
+                           common::signal::handle();
+
+                           const auto bytes = tcp::local::socket::check::result(
+                                 ::recv( descriptor, first, last - first, flags.underlaying()));
+
+                           if( bytes == 0)
+                           {
+                              //
+                              // Fake an error-description
+                              //
+                              throw common::exception::communication::Unavailable( common::error::string( EPIPE));
+                           }
+
+                           first += bytes;
                         }
-                        return bytes;
+                        return first;
                      }
-
-
                   } // <unnamed>
                } // local
 
@@ -524,39 +532,27 @@ namespace casual
                {
                   Trace trace{ "tcp::native::receive"};
 
-                  const auto first = reinterpret_cast< char*>( &transport.message);
-                  auto current = first;
-
+                  auto current = reinterpret_cast< char*>( &transport.message);
 
                   try
                   {
 
                      //
-                     // First we try to read all that we can, but at least the header
+                     // First we get the header
                      //
-
-                     const auto header_end = first + transport.header_size();
-                     auto current_end = first + transport.max_message_size();
-
-                     while( current != current_end)
                      {
-                        const auto current_distance = std::distance( current, current_end);
+                        const auto header_end = current + transport.header_size();
 
-                        const auto bytes = local::receive( socket.descriptor(), current, current_distance, flags);
+                        current = local::receive( socket.descriptor(), current, header_end, flags);
+                     }
 
-                        log << "received bytes: " << bytes << '\n';
+                     //
+                     // Now we can get the payload
+                     //
+                     {
+                        const auto payload_end = current + transport.pyaload_size();
 
-                        if( bytes > current_distance)
-                        {
-                           throw exception::Casual( "somehow more bytes was received over the socket than requested");
-                        }
-
-                        current += bytes;
-
-                        if( current >= header_end)
-                        {
-                           current_end = header_end + transport.message.header.count;
-                        }
+                        local::receive( socket.descriptor(), current, payload_end, flags);
                      }
 
                      log << "tcp receive <---- socket: " << socket << " , transport: " << transport << '\n';
