@@ -213,7 +213,7 @@ namespace casual
 
             struct Pending
             {
-               Pending( common::message::service::lookup::Request::Request&& request, const common::platform::time_point& when)
+               Pending( common::message::service::lookup::Request&& request, const common::platform::time_point& when)
                 : request{ std::move( request)}, when{ when} {}
 
                common::message::service::lookup::Request request;
