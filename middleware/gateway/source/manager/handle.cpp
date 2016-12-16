@@ -481,12 +481,13 @@ namespace casual
                      log << "message: " << message << '\n';
 
                      //
-                     // We take ownership of the socket until we've spawned the inbound connection
+                     // The socket (file-handler) is duplicated to the child process, so we can close
+                     // the socket that belongs to this process
                      //
                      auto socket = communication::tcp::adopt( message.descriptor);
 
 
-                     if( state().runlevel != State::Runlevel::shutdown )
+                     if( state().runlevel != State::Runlevel::shutdown)
                      {
                         state::inbound::Connection connection;
                         connection.runlevel = state::inbound::Connection::Runlevel::connecting;
@@ -498,10 +499,7 @@ namespace casual
                                     "--descriptor", std::to_string( socket.descriptor()),
                               });
 
-
                         state().connections.inbound.push_back( std::move( connection));
-
-                        socket.release();
                      }
                   }
 
