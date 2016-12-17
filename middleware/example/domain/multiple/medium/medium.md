@@ -178,7 +178,7 @@ host:domainA$ echo "test" | casual-admin queue --enqueue queueB1
 bec3b4b3cccd4f3b89faee970518ab7d
 ```
 
-The message should be enqueued to `queueA1` and then rollbacked and end up in `queueA1.error` pretty much directly
+The message should be enqueued to `queueA1` and then dequeued and rollbacked, hence end up in `queueA1.error` pretty much directly
 
 ```bash
 host:domainA$ casual-admin queue --list-queues
