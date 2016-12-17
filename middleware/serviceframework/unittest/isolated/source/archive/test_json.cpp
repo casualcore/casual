@@ -87,16 +87,16 @@ namespace casual
 
    }
 
-   TEST( casual_sf_json_archive, DISABLED_simple_write_read)
+   TEST( casual_sf_json_archive, simple_write_read)
    {
       std::string json;
 
       {
-         test::SimpleVO value;
-         value.m_long = 666;
-         value.m_short = 42;
-         value.m_string = "bla bla bla";
-
+         test::SimpleVO value{ []( test::SimpleVO& v){
+            v.m_long = 666;
+            v.m_short = 42;
+            v.m_string = "bla bla bla";
+         }};
          local::value_to_string( value, json);
       }
 

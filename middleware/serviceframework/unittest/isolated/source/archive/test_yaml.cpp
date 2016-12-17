@@ -193,7 +193,18 @@ value:
       std::string yaml;
 
       {
-         std::vector< test::SimpleVO> values = { { 2342342, "one two three", 123 }, { 234234, "four five six", 456}};
+         std::vector< test::SimpleVO> values{
+            { []( test::SimpleVO& v){
+               v.m_long = 2342342;
+               v.m_string = "one two three";
+               v.m_short = 123; }
+            },
+            { []( test::SimpleVO& v){
+               v.m_long = 234234;
+               v.m_string = "four five six";
+               v.m_short = 456; }
+            }
+         };
          local::value_to_string( values, yaml);
       }
 
@@ -217,9 +228,15 @@ value:
       {
          std::map< long, test::Composite> values;
          values[ 10].m_string = "kalle";
-         values[ 10].m_values = { { 11111, "one", 1}, { 22222, "two", 2}};
+         values[ 10].m_values = {
+               { []( test::SimpleVO& v){ v.m_long = 11111; v.m_string = "one"; v.m_short = 1;}},
+               { []( test::SimpleVO& v){ v.m_long = 22222; v.m_string = "two"; v.m_short = 2;}}
+         };
          values[ 2342].m_string = "Charlie";
-         values[ 2342].m_values = { { 33333, "three", 3}, { 444444, "four", 4}};
+         values[ 2342].m_values = {
+               { []( test::SimpleVO& v){ v.m_long = 33333; v.m_string = "three"; v.m_short = 3;}},
+               { []( test::SimpleVO& v){ v.m_long = 444444; v.m_string = "four"; v.m_short = 4;}}
+         };
 
          local::value_to_string( values, yaml);
       }

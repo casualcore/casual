@@ -10,8 +10,11 @@
 #include "sf/archive/archive.h"
 
 #include "sf/platform.h"
-
 #include "sf/pimpl.h"
+
+
+#include <functional>
+
 
 namespace casual
 {
@@ -20,24 +23,19 @@ namespace casual
 
       struct SimpleVO
       {
-         SimpleVO( long p_long = 123456,
-               const std::string& p_string = "foo",
-               short p_short = 256,
-               long long p_longlong = 1234567890123456789
-               )
-         : m_long( p_long), m_string( p_string), m_short( p_short), m_longlong( p_longlong)
-         {
 
-         }
+         SimpleVO() = default;
+         SimpleVO( long value) : m_long{ value} {}
 
-         SimpleVO& operator = ( const SimpleVO&) = default;
+         SimpleVO( std::function<void(SimpleVO&)> foreign) { foreign( *this);}
 
-         bool m_bool;
-         long m_long;
-         std::string m_string;
-         short m_short;
-         long long m_longlong;
-         sf::platform::time_point m_time;
+
+         bool m_bool = false;
+         long m_long = 123456;
+         std::string m_string = "foo";
+         short m_short = 256;
+         long long m_longlong = std::numeric_limits< long long>::max();
+         sf::platform::time_point m_time = sf::platform::time_point::max();
 
          template< typename A>
          void serialize( A& archive)

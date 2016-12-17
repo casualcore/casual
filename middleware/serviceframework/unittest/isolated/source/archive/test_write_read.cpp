@@ -269,7 +269,7 @@ namespace casual
       }
 
       // TODO: gives warning from clang and gives failure on OSX with locale "UTF-8"
-      TYPED_TEST( casual_sf_archive_write_read, DISABLED_type_extended_string)
+      TYPED_TEST( casual_sf_archive_write_read, type_extended_string)
       {
          std::string value = u8"Bängen Trålar";
          EXPECT_TRUE( TestFixture::write_read( value) == u8"Bängen Trålar");
