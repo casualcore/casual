@@ -5,6 +5,7 @@ title casual medium multiple domain example
 box "domainA" #LightBlue
    actor "You" as AA
    participant "Server A" as SA
+   participant "service-forward" as SFA
    participant "casual-queue" as QA
    participant "gateway" as GA
 end box
@@ -58,7 +59,24 @@ GA -> GB
 GB -> QFB: message id
 
 deactivate QFB
+end
 
+group in transaction
+
+QA -> SFA: dequeue A1
+activate SFA
+SFA -> SA: call casual.example.rollback
+activate SA
+SA -> SFA: reply TPFAIL
+note right 
+   This will rollback the dequeue 
+   and move the message to 
+   queueA1.error
+end note
+
+deactivate SA
+
+deactivate SFA
 
 end
 

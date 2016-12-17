@@ -4,9 +4,8 @@
 
 #include "xatmi.h"
 
-#include "common/process.h"
 
-#include <chrono>
+#include <array>
 
 namespace casual
 {
@@ -18,10 +17,19 @@ namespace casual
 
          extern "C"
          {
-            void casual_example_echo( TPSVCINFO *info)
+            void casual_example_echo( TPSVCINFO* info)
             {
-               //common::process::sleep( std::chrono::milliseconds{ 50});
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+            }
+
+            void casual_example_sink( TPSVCINFO* info)
+            {
+               tpreturn( TPSUCCESS, 0, nullptr, 0, 0);
+            }
+
+            void casual_example_rollback( TPSVCINFO* info)
+            {
+               tpreturn( TPFAIL, 0, info->data, info->len, 0);
             }
 
          }

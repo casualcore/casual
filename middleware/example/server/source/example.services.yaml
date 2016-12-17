@@ -23,3 +23,11 @@ server:
       transaction: join
       
 
+    - name: casual.example.sink
+      function: casual_example_sink
+      transaction: join
+
+      
+    - name: casual.example.rollback
+      function: casual_example_rollback
+      transaction: join

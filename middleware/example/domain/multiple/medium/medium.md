@@ -6,6 +6,8 @@
 Explore the abillity of casual to discover resources in remote domains.
 
 We'll set up two domains, **A** and **B**. From within **A** we'll enqueue a message to a queue in **B**. in **B**, a queue-service forward will dequeue the message and call a service in **A** and the reply is enqueued in another queue in **B**. in **B**, a queue-queue forward will dequeue the reply and enqueue it at a queue in **A**.
+A queue service forward dequeue the message and call a service that will abort the transaction, hence the message is moved 
+to the corresponding error queue.
 
 
 ### diagram
@@ -29,14 +31,31 @@ Create a directory where you want your domains to "live"
 
 The following will be used in this example.
 
-    >$ mkdir -p $HOME/casual/example/domain/multiple/medium
-    
+```bash
+host$ mkdir -p $HOME/casual/example/domain/multiple/medium
+```
     
 Copy the domains setup from the example:
 
-    >$ cp -r $CASUAL_HOME/example/domain/multiple/medium/* $HOME/casual/example/domain/multiple/medium/
+```bash
+host$ cp -r $CASUAL_HOME/example/domain/multiple/medium/* $HOME/casual/example/domain/multiple/medium/
+```
 
-If you chose another base directore for this example, please update the following files so they corresponds with your choice 
+### configuration
+
+Each domain has it's configuration in `$CASUAL_DOMAIN_HOME/configuration/domain.yaml`. In our example these will be located at:
+
+* `$HOME/casual/example/domain/multiple/medium/domainA/configuration/domain.yaml`
+* `$HOME/casual/example/domain/multiple/medium/domainB/configuration/domain.yaml`
+
+_The environment variable_ `CASUAL_DOMAIN_HOME` _is the only thing that dictate which domain you're using and working with_
+
+ * [domainA/configuration/domain.yaml](domainA/configuration/domain.yaml)    
+ * [domainB/configuration/domain.yaml](domainB/configuration/domain.yaml) 
+
+
+
+If you chose another base directore for this example, please update the following files so they corresponds with your choice
  
  * [domainA/domain.env](domainA/domain.env)    
  * [domainB/domain.env](domainB/domain.env) 
@@ -45,19 +64,22 @@ If you chose another base directore for this example, please update the followin
 ## start domainA
 
 In terminal A    
-    
-    >$ cd $HOME/casual/example/domain/multiple/medium/domainA
-    >$ source domain.env
-    >$ casual-admin domain --boot 
-    
+
+```bash
+host$ cd $HOME/casual/example/domain/multiple/medium/domainA
+host:domainA$ source domain.env
+host:domainA$ casual-admin domain --boot 
+```
     
 ## start domainB
 
 In terminal B
 
-    >$ cd $HOME/casual/example/domain/multiple/medium/domainB
-    >$ source domain.env
-    >$ casual-admin domain --boot 
+```bash
+host$ cd $HOME/casual/example/domain/multiple/medium/domainB
+host:domainB$ source domain.env
+host:domainB$ casual-admin domain --boot
+```
 
 
 ## interact with the setup
@@ -86,14 +108,15 @@ We have one inbound and one outbound connection to `domain B
 List services
 ```bash
 host:domainA$ casual-admin broker --list-services
-name                                  type  mode  timeout  requested  local  busy  pending  load   remote
-------------------------------------  ----  ----  -------  ---------  -----  ----  -------  -----  ------
-casual.example.echo                      0  join    0.000          0      1     0        0  0.000       0
+name                     type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote                 
+-----------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------ 
+casual.example.echo         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
+casual.example.rollback     0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
+casual.example.sink         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
 ```
 
-_all services starting with `.casual` is casual administration services and omitted in this example_
 
-`casual.example.echo` is advertised from one **local** instance, and no one has requested the service yet.
+`casual.example.echo` and `casual.example.rollback` is advertised from one **local** instance, and no one has requested the services yet.
 
 
 List queus
@@ -129,7 +152,6 @@ name                                  type  mode  timeout  requested  local  bus
 ------------------------------------  ----  ----  -------  ---------  -----  ----  -------  -----  ------
 ```
 
-_all services starting with `.casual` is casual administration services and omitted in this example_
 
 `casual.example.echo` is not yet known in this domain
 
@@ -156,37 +178,40 @@ host:domainA$ echo "test" | casual-admin queue --enqueue queueB1
 bec3b4b3cccd4f3b89faee970518ab7d
 ```
 
-The message should be enqueued to `queueA1` pretty much directly
+The message should be enqueued to `queueA1` and then rollbacked and end up in `queueA1.error` pretty much directly
 
 ```bash
 host:domainA$ casual-admin queue --list-queues
-name                  count  size  avg  uc  updated                  r  error queue           group   
+name                  count  size  avg  uc  updated                  r  error queue           group    
 --------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
-queueA1                   1     6    6   0  2016-11-20T15:29:19.877  0  queueA1.error         domain-A
-queueA1.error             0     0    0   0  2016-11-20T15:17:34.068  0  domain-A.group.error  domain-A
-domain-A.group.error      0     0    0   0  2016-11-20T15:17:34.062  0  domain-A.group.error  domain-A
+queueA1                   0     0    0   0  2016-12-17T14:45:13.119  0  queueA1.error         domain-A
+queueA1.error             1     6    6   0  2016-12-17T14:42:53.620  0  domain-A.group.error  domain-A
+domain-A.group.error      0     0    0   0  2016-12-17T14:42:53.614  0  domain-A.group.error  domain-A
 ```
 
-The service `casual.example.echo` should be reqeusted once
+
+
+The service `casual.example.echo` should be reqeusted once (the call from remote domain B).
+The service `casual.example.rollback` should be reqeusted once from the forward in this domain.
 
 ```bash
 host:domainA$ casual-admin broker --list-services
-name                                  type  mode  timeout  requested  local  busy  pending  load   remote
-------------------------------------  ----  ----  -------  ---------  -----  ----  -------  -----  ------
-casual.example.echo                      0  join    0.000          1      1     0        0  0.000       0
+name                     type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote
+-----------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------
+casual.example.echo         0  join   0.0000        1      1  0.0000  0.0002              0         0.0000       0
+casual.example.rollback     0  join   0.0000        1      1  0.0000  0.0002              0         0.0000       0
+casual.example.sink         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0
 ```
+
 
 In `domain B`, `casual.example.echo` should be known with no local instances:
 
 ```bash
 host:domainB$ casual-admin broker --list-services
-name                                  type  mode  timeout  requested  local  busy  pending  load   remote
-------------------------------------  ----  ----  -------  ---------  -----  ----  -------  -----  ------
-casual.example.echo                      0  join    0.000          1      0     0        0  0.000       1
+name                 type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote
+-------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------
+casual.example.echo     0  join   0.0000        1      0  0.0000  0.0000              0         0.0000       1
 ```
-
-
-
 
 
 
