@@ -111,7 +111,6 @@ namespace casual
 
    }
 
-   /*
    TEST( casual_sf_json_archive, complex_write_read)
    {
       std::string json;
@@ -133,7 +132,7 @@ namespace casual
 
       }
    }
-   */
+
 
    TEST( casual_sf_json_archive, load_invalid_document__expecting_exception)
    {
