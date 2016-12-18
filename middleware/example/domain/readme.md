@@ -20,7 +20,7 @@ Examples that uses only one domain
 #### minimal domain
 An example of a bare bone domain
 
-[minimal domain]( single/minimal/minimal.md)
+[minimal domain]( single/minimal/readme.md)
 
 
 ### multiple domains
@@ -28,10 +28,10 @@ An example of a bare bone domain
 #### minimal
 An example of a minimal setup for two domains
 
-[minimal domain]( multiple/minimal/minimal.md)
+[minimal domain]( multiple/minimal/readme.md)
 
 
 #### medium
 An example of a _medium_ setup for two domains
 
-[medium domain]( multiple/medium/medium.md)
+[medium domain]( multiple/medium/readme.md)

@@ -22,7 +22,7 @@ Follow the [build instructions](build.md)
 
 ### Use casual-middleware
 
-See [examples](/middleware/example/domain/domain.md)
+See [examples](/middleware/example/domain/readme.md)
 
 
 ### Status
