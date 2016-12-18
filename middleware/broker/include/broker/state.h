@@ -155,7 +155,7 @@ namespace casual
             private:
 
                std::size_t m_invoked = 0;
-               common::platform::time_point m_begin;
+               common::platform::time_point m_begin = common::platform::time_point::min();
 
                std::chrono::microseconds m_total = std::chrono::microseconds::zero();
             };
