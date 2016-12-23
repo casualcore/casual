@@ -49,6 +49,11 @@ RUN cd /opt/casual && tar xf casual-middleware.tar && tar xf casual-webserver.ta
 
 RUN useradd -ms /bin/bash casual
 
+ENV CASUAL_HOME /opt/casual
+ENV PATH $CASUAL_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
+ENV CASUAL_DOMAIN_HOME /test/casual
+ENV CASUAL_LOG ".*"
 
 RUN mkdir -p $CASUAL_DOMAIN_HOME
 RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
@@ -58,12 +63,6 @@ RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
 
 USER casual
 WORKDIR $CASUAL_DOMAIN_HOME
-
-ENV CASUAL_HOME /opt/casual
-ENV PATH $CASUAL_HOME/bin:$PATH
-ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
-ENV CASUAL_DOMAIN_HOME /test/casual
-ENV CASUAL_LOG ".*"
 
 ENTRYPOINT ["/opt/casual/start.sh"]
 '''
