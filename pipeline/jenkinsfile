@@ -56,8 +56,12 @@ ENV CASUAL_LOG ".*"
 RUN mkdir -p $CASUAL_DOMAIN_HOME
 RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
 RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
+RUN chown -R 1000 $CASUAL_DOMAIN_HOME
 RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
+
 WORKDIR $CASUAL_DOMAIN_HOME
+
+USER 1000
 
 ENTRYPOINT ["/opt/casual/start.sh"]
 '''
