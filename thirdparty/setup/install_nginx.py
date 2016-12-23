@@ -39,12 +39,12 @@ print( subprocess.check_output(['./configure',
 '--with-debug',
 '--with-cc-opt=-Wno-deprecated',
 '--prefix=' + prefix,
-'--add-module=' + os.getenv('CASUAL_BUILD_HOME') + '/plugin',
+'--add-module=' + os.getenv('CASUAL_BUILD_HOME') + '/middleware/plugin',
 '--without-http_rewrite_module']))
 print("Running make")
 print( subprocess.check_output(['make']))
 print("Running install")
 print( subprocess.check_output(['make', 'install']))
 print("Updating configuration")
-copyfile(os.getenv("CASUAL_BUILD_HOME") + '/../thirdparty/nginx/nginx.conf', prefix + '/conf/nginx.conf') 
+copyfile(os.getenv("CASUAL_BUILD_HOME") + '/thirdparty/nginx/nginx.conf', prefix + '/conf/nginx.conf') 
 print("Done")
