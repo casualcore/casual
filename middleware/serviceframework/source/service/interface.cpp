@@ -23,6 +23,21 @@ namespace casual
    {
       namespace service
       {
+
+         namespace reply
+         {
+            std::ostream& operator << ( std::ostream& out, const State& state)
+            {
+               return out << "{ value: " << state.value
+                     << ", code: " << state.code
+                     << ", data: " << static_cast< void*>( state.data)
+                     << ", size: " << state.size
+                     << ", flags: " << state.flags
+                     << '}';
+            }
+         } // reply
+
+
          Interface::~Interface()
          {
 
@@ -44,7 +59,7 @@ namespace casual
 
          void Interface::handle_exception()
          {
-            do_andle_exception();
+            do_handle_exception();
          }
 
          Interface::Output& Interface::output()

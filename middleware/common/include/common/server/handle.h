@@ -420,7 +420,7 @@ namespace casual
                   static void reply( message::service::call::Reply& reply, const server::State::jump_t& jump)
                   {
                      reply.code = jump.state.code;
-                     reply.error = 0;
+                     reply.error = jump.state.value == TPSUCCESS ? 0 : TPESVCFAIL;
 
                      if( jump.buffer.data != nullptr)
                      {

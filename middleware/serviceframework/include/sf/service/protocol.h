@@ -39,7 +39,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               void do_andle_exception() override;
+               void do_handle_exception() override;
 
                Interface::Input& do_input() override;
 

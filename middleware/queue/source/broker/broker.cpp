@@ -228,7 +228,10 @@ namespace casual
 
          if( ! settings.configuration.empty())
          {
-            broker::local::startup( m_state, config::queue::transform::manager( config::domain::get( settings.configuration).queue));
+            //
+            // Only(?) for unittest
+            //
+            broker::local::startup( m_state, config::queue::transform::manager( config::domain::get( { settings.configuration}).queue));
          }
          else
          {

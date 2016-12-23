@@ -97,14 +97,6 @@ namespace casual
 
          };
 
-
-
-
-         Gateway get( const std::string& file);
-
-         Gateway get();
-
-
          namespace transform
          {
             common::message::domain::configuration::gateway::Reply gateway( const Gateway& value);

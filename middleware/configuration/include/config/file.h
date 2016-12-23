@@ -20,6 +20,8 @@ namespace casual
          //!
          std::string domain();
 
+         std::string persistent();
+
       } // directory
 
       namespace file
@@ -45,12 +47,10 @@ namespace casual
          std::string find( const std::string& path, const std::string& basename);
 
 
-
-         std::string domain();
-
-
-         std::string gateway();
-
+         namespace persistent
+         {
+            std::string domain();
+         } // persistent
 
       } // file
 

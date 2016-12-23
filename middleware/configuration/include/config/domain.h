@@ -197,15 +197,21 @@ namespace casual
          };
 
 
-         Domain get( const std::string& file);
          Domain get( const std::vector< std::string>& files);
 
-         //!
-         //! Deserialize the domain configuration
-         //!
-         //! @return domain configuration
-         //!
-         Domain get();
+
+         namespace persistent
+         {
+            //!
+            //! Get the persistent domain configuration
+            //!
+            //! @return
+            //!
+            Domain get();
+
+            void save( const Domain& domain);
+
+         } // persistent
 
          //!
          //! Complement with defaults and validates

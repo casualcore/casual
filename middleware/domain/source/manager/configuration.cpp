@@ -23,6 +23,12 @@ namespace casual
                return transform::state( config::domain::get( settings.configurationfiles));
             }
 
+            void persist( const State& state)
+            {
+               Trace trace{ "domain::manager::configuration::persist"};
+
+
+            }
 
          } // configuration
       } // manager

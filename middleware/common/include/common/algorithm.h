@@ -498,6 +498,12 @@ namespace casual
          {
             return std::unique_ptr< T>( new T( std::forward< Args>( args)...));
          }
+
+         template< typename P, typename D>
+         auto deleter( P* pointer, D&& deleter) -> std::unique_ptr< P, D>
+         {
+            return std::unique_ptr< P, D>( pointer, std::forward< D>( deleter));
+         }
       } // make
 
 

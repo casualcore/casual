@@ -36,9 +36,11 @@ namespace casual
                return m_state;
             }
 
-            void Base::do_andle_exception()
+            void Base::do_handle_exception()
             {
+               m_state.value = TPFAIL;
 
+               common::error::handler();
             }
 
             Interface::Input& Base::do_input()
@@ -73,6 +75,8 @@ namespace casual
                auto raw = m_writerBuffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
+
+               sf::log::sf << "state: " << m_state << '\n';
 
                return m_state;
             }
@@ -118,6 +122,8 @@ namespace casual
                m_state.data = raw.buffer;
                m_state.size = raw.size;
 
+               sf::log::sf << "state: " << m_state << '\n';
+
                return m_state;
             }
 
@@ -159,6 +165,8 @@ namespace casual
                auto raw = buffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
+
+               sf::log::sf << "state: " << m_state << '\n';
 
                return m_state;
             }
@@ -203,6 +211,8 @@ namespace casual
                auto raw = buffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
+
+               sf::log::sf << "state: " << m_state << '\n';
 
                return m_state;
             }

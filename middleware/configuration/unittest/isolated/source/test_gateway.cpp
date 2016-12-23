@@ -8,6 +8,7 @@
 
 #include "common/mockup/file.h"
 #include "sf/log.h"
+#include "sf/archive/maker.h"
 
 
 
@@ -19,6 +20,25 @@ namespace casual
       {
          namespace
          {
+
+            gateway::Gateway get( const std::string& file)
+            {
+
+               //
+               // Create the reader and deserialize configuration
+               //
+               auto reader = sf::archive::reader::from::file( file);
+
+               gateway::Gateway gateway;
+               reader >> CASUAL_MAKE_NVP( gateway);
+
+               gateway.finalize();
+
+               return gateway;
+            }
+
+
+
             common::file::scoped::Path example_1()
             {
                return common::mockup::file::temporary( ".yaml", R"(
@@ -83,7 +103,7 @@ gateway:
       TEST( casual_configuration_gateway, expect_two_connections)
       {
          auto temp_file = local::example_1();
-         auto gateway = config::gateway::get( temp_file);
+         auto gateway = local::get( temp_file);
 
          EXPECT_TRUE( gateway.listeners.at( 0).address == "127.0.0.1:7777") << CASUAL_MAKE_NVP( gateway.listeners.at( 0).address);
          EXPECT_TRUE( gateway.connections.size() == 2) << CASUAL_MAKE_NVP( gateway);
@@ -93,7 +113,7 @@ gateway:
       TEST( casual_configuration_gateway, expect_4_services_for_connection_1)
       {
          auto temp_file = local::example_1();
-         auto gateway = config::gateway::get( temp_file);
+         auto gateway = local::get( temp_file);
 
          ASSERT_TRUE( gateway.connections.size() == 2);
          ASSERT_TRUE( gateway.connections.at( 0).type == "tcp");
@@ -104,7 +124,7 @@ gateway:
       TEST( casual_configuration_gateway, example_2__expect_default_to_be_set)
       {
          auto temp_file = local::example_2();
-         auto gateway = config::gateway::get( temp_file);
+         auto gateway = local::get( temp_file);
 
          EXPECT_TRUE( gateway.listeners.at( 0).address == "127.0.0.1:7777") << CASUAL_MAKE_NVP( gateway.listeners.at( 0).address);
 

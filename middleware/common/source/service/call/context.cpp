@@ -287,6 +287,8 @@ namespace casual
                   throw common::exception::xatmi::no::Message();
                }
 
+               log::internal::debug << "reply: " << reply << '\n';
+
                descriptor = reply.descriptor;
 
                user_code( reply.code);

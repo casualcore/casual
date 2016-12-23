@@ -117,7 +117,7 @@ namespace casual
                template< typename D>
                Domain& append( Domain& lhs, D&& rhs)
                {
-                  if( ! rhs.name.empty()) { lhs.name = std::move( rhs.name);}
+                  if( lhs.name.empty()) { lhs.name = std::move( rhs.name);}
 
                   local::replace_or_add( lhs.groups, rhs.groups);
                   local::replace_or_add( lhs.executables, rhs.executables);
@@ -198,35 +198,48 @@ namespace casual
          }
 
 
-         Domain get( const std::string& file)
-         {
-            return local::get( Domain{}, file);
-         }
-
          Domain get( const std::vector< std::string>& files)
          {
             if( files.empty())
             {
-               return get();
+               return persistent::get();
             }
 
             return range::accumulate( files, Domain{}, &local::get);
          }
 
 
-         Domain get()
-         {
-            auto configuration = config::file::domain();
 
-            if( ! configuration.empty())
+         namespace persistent
+         {
+            Domain get()
             {
-               return get( configuration);
+               auto configuration = file::persistent::domain();
+
+               if( common::file::exists( configuration))
+               {
+                  return domain::get( { configuration});
+               }
+               else
+               {
+                  throw common::exception::invalid::File{ "failed to get persistent configuration file", CASUAL_NIP( configuration)};
+               }
             }
-            else
+
+            void save( const Domain& domain)
             {
-               throw common::exception::invalid::File{ "could not find domain configuration file",  CASUAL_NIP( configuration)};
+               if( ! common::file::exists( directory::persistent()))
+               {
+                  common::directory::create( directory::persistent());
+               }
+
+               auto configuration = file::persistent::domain();
+
+               auto archive = sf::archive::writer::from::file( configuration);
+               archive << CASUAL_MAKE_NVP( domain);
             }
-         }
+
+         } // persistent
 
       } // domain
 

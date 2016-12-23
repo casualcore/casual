@@ -50,7 +50,7 @@ namespace casual
                   {
                      return gateway::transform::state(
                            config::gateway::transform::gateway(
-                                 config::domain::get( settings.configuration).gateway));
+                                 config::domain::get( { settings.configuration}).gateway));
                   }
 
 

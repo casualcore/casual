@@ -150,30 +150,6 @@ namespace casual
             local::validate( *this);
          }
 
-         Gateway get( const std::string& file)
-         {
-            Trace trace{ "config::gateway::get"};
-
-            //
-            // Create the reader and deserialize configuration
-            //
-            auto reader = sf::archive::reader::from::file( file);
-
-            Gateway gateway;
-            reader >> CASUAL_MAKE_NVP( gateway);
-
-            gateway.finalize();
-
-            log << CASUAL_MAKE_NVP( gateway);
-
-            return gateway;
-
-         }
-
-         Gateway get()
-         {
-            return get( config::file::gateway());
-         }
 
          namespace transform
          {

@@ -193,6 +193,34 @@ namespace casual
                         reply.flags);
                   }
 
+                  void persist_configuration( TPSVCINFO *service_info, manager::State& state)
+                  {
+                     casual::sf::service::reply::State reply;
+
+                     try
+                     {
+                        auto service_io = local::server->createService( service_info);
+
+                        service_io.call( &config::domain::persistent::save, state.configuration);
+
+                        reply = service_io.finalize();
+
+                        casual::domain::log << "reply: " << reply << '\n';
+
+                     }
+                     catch( ...)
+                     {
+                        local::server->handleException( service_info, reply);
+                     }
+
+                     tpreturn(
+                        reply.value,
+                        reply.code,
+                        reply.data,
+                        reply.size,
+                        reply.flags);
+                  }
+
                }
             } // service
 
@@ -213,6 +241,11 @@ namespace casual
 
                result.services.emplace_back( ".casual.domain.shutdown",
                      std::bind( &service::shutdown_domain, std::placeholders::_1, std::ref( state)),
+                     common::server::Service::Type::cCasualAdmin,
+                     common::service::transaction::Type::none);
+
+               result.services.emplace_back( ".casual/domain/configuration/persist",
+                     std::bind( &service::persist_configuration, std::placeholders::_1, std::ref( state)),
                      common::server::Service::Type::cCasualAdmin,
                      common::service::transaction::Type::none);
 

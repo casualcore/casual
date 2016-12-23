@@ -29,6 +29,7 @@ namespace casual
          {
             Trace trace{ "domain::Manager ctor"};
 
+
             if( ! settings.bare)
             {
                handle::mandatory::boot::prepare( m_state);
