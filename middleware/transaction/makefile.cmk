@@ -66,9 +66,7 @@ target = LinkExecutable( 'bin/casual-transaction-admin',
     [ 
       manager_archive, 
      'casual-sf', 
-     'casual-common', 
-     #'casual-configuration', 
-     #'casual-xatmi',
+     'casual-common',
      ])
 
 
