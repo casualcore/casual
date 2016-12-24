@@ -47,6 +47,8 @@ COPY casual/start.sh /opt/casual/start.sh
 
 RUN cd /opt/casual && tar xf casual-middleware.tar && tar xf casual-webserver.tar && unzip casual-webapp.zip && chmod 755 /opt/casual/start.sh
 
+RUN useradd -ms /bin/bash casual
+
 ENV CASUAL_HOME /opt/casual
 ENV PATH $CASUAL_HOME/bin:$PATH
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
@@ -56,7 +58,11 @@ ENV CASUAL_LOG ".*"
 RUN mkdir -p $CASUAL_DOMAIN_HOME
 RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
 RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
+RUN chown -R casual $CASUAL_DOMAIN_HOME
+RUN chown -R casual $CASUAL_HOME/nginx
 RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
+
+USER casual
 WORKDIR $CASUAL_DOMAIN_HOME
 
 ENTRYPOINT ["/opt/casual/start.sh"]
@@ -112,7 +118,7 @@ node {
        sh """
        export CASUAL_HOME=$current_dir/usr/local/casual
        export CASUAL_DOMAIN_HOME=$current_dir/test/casual
-       export CASUAL_BUILD_HOME=$current_dir/casual/middleware
+       export CASUAL_BUILD_HOME=$current_dir/casual
        export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/casual/middleware/common/bin
        python $current_dir/casual/thirdparty/setup/install_nginx.py
        cd $current_dir/usr/local/casual

@@ -40,15 +40,15 @@ Install( install_bin,'$(CASUAL_HOME)/example/bin')
 
 
 # domain examples
-Install( [ 'domain/domain.md'],'$(CASUAL_HOME)/example/domain')
+Install( [ 'domain/readme.md'],'$(CASUAL_HOME)/example/domain')
 
 
 # single domain minimal example
-Install( [ 'domain/single/minimal/minimal.md', 'domain/single/minimal/domain.env'],'$(CASUAL_HOME)/example/domain/single/minimal')
+Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'],'$(CASUAL_HOME)/example/domain/single/minimal')
 Install( [ 'domain/single/minimal/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/single/minimal/configuration')
 
 # multi domian minimal example
-Install( [ 'domain/multiple/minimal/minimal.md'],'$(CASUAL_HOME)/example/domain/multiple/minimal')
+Install( [ 'domain/multiple/minimal/readme.md'],'$(CASUAL_HOME)/example/domain/multiple/minimal')
 
 Install( [ 'domain/multiple/minimal/domain1/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain1')
 Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/minimal/domain1/configuration')
@@ -58,7 +58,8 @@ Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'],'$(CASUA
 
 
 # multi domian medium example
-Install( [ 'domain/multiple/medium/medium.md'],'$(CASUAL_HOME)/example/domain/multiple/medium')
+Install( [ 'domain/multiple/medium/readme.md'],'$(CASUAL_HOME)/example/domain/multiple/medium')
+Install( [ 'domain/multiple/medium/diagram/scenario.png', 'domain/multiple/medium/diagram/scenario.uml'],'$(CASUAL_HOME)/example/domain/multiple/medium/diagram')
 
 Install( [ 'domain/multiple/medium/domainA/domain.env'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainA')
 Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'],'$(CASUAL_HOME)/example/domain/multiple/medium/domainA/configuration')
