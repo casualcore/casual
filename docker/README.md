@@ -1,5 +1,5 @@
 ### Overview
-This is an example of how to run an of casual in two docker containers.
+This is an example of how to run casual in two docker containers.
 
 ### Requirements
 * You need a docker version that handles networks
