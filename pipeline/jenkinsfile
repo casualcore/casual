@@ -31,7 +31,7 @@ chmod a+w -R .
 //
 // Dockerfile for creating testcontainer
 //
-def dockerfile = '''FROM ubuntu:latest
+def dockerfile = '''FROM ubuntu:trusty
 MAINTAINER flurig <flurig@localhost>
 
 RUN apt-get update && apt-get -y upgrade && apt-get -y install uuid-dev libyaml-cpp0.3-dev libjson-c-dev libpugixml-dev libsqlite3-dev wget cmake g++-4.8 python rsync unzip && ln -s /usr/bin/g++-4.8 /usr/bin/g++
