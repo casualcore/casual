@@ -62,6 +62,7 @@ RUN chown -R casual $CASUAL_DOMAIN_HOME
 RUN chown -R casual $CASUAL_HOME/nginx
 RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
 
+EXPOSE 8080 7771
 USER casual
 WORKDIR $CASUAL_DOMAIN_HOME
 
