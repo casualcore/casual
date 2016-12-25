@@ -61,13 +61,26 @@ namespace casual
 
                   void boot( const std::vector< std::string>& files)
                   {
-                     std::vector< std::string> arguments{ "--configuration-files"};
+                     using file_range = decltype( range::make( files));
 
-                     range::transform( files, arguments, &common::file::absolute);
+                     auto get_arguments = []( file_range files){
+                        std::vector< std::string> arguments;
+
+                        if( ! files.empty())
+                        {
+                           if( ! range::all_of( files, &common::file::exists))
+                           {
+                              throw exception::invalid::File{ "at least one file does not exist", CASUAL_NIP( files)};
+                           }
+                           arguments.emplace_back( "--configuration-files");
+                           range::copy( files, std::back_inserter( arguments));
+                        }
+                        return arguments;
+                     };
 
                      common::process::spawn(
                            common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager",
-                           arguments);
+                           get_arguments( range::make( files)));
                   }
 
                   void shutdown()
