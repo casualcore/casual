@@ -7,8 +7,23 @@ This is an example of how to run casual in two docker containers.
 
 ### How to start
 
-    docker run --detach -v $( pwd)/nginx.conf:/opt/casual/nginx/conf/nginx.conf -v $( pwd)/domainA.yaml:/test/casual/configuration/domain.yaml -h domainA --name="domainA" --net isolated_nw casual/middleware
-    docker run --detach -v $( pwd)/nginx.conf:/opt/casual/nginx/conf/nginx.conf -v $( pwd)/domainB.yaml:/test/casual/configuration/domain.yaml -h domainB --name="domainB" --net isolated_nw casual/middleware
+    docker run --detach \
+       -v $( pwd)/configA.json:/opt/casual/webapp/build/unbundled/src/config.json \
+       -v $( pwd)/nginx.conf:/opt/casual/nginx/conf/nginx.conf \
+       -v $( pwd)/domainA.yaml:/test/casual/configuration/domain.yaml \
+       -h domainA \
+       --name="domainA" \
+       --net isolated_nw \
+       casual/middleware
+
+    docker run --detach \
+       -v $( pwd)/configB.json:/opt/casual/webapp/build/unbundled/src/config.json \
+       -v $( pwd)/nginx.conf:/opt/casual/nginx/conf/nginx.conf \
+       -v $( pwd)/domainB.yaml:/test/casual/configuration/domain.yaml \
+       -h domainB \
+       --name="domainB" \
+       --net isolated_nw \
+       casual/middleware
 
 ### How to test
 Check with ***docker inspect domainA*** and ***docker inspect domainB*** after the ipAddress.
