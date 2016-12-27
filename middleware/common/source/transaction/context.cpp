@@ -121,7 +121,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::set( const std::vector< Resource>& resources)
+         void Context::configure( const std::vector< Resource>& resources)
          {
             common::trace::Scope trace{ "transaction::Context::set", common::log::internal::transaction};
 

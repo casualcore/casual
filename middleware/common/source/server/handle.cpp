@@ -53,7 +53,7 @@ namespace casual
                   //
                   // configure resources, if any.
                   //
-                  transaction::Context::instance().set( resources);
+                  transaction::Context::instance().configure( resources);
 
                }
 
