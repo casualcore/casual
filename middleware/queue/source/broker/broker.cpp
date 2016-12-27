@@ -19,10 +19,11 @@
 #include "common/exception.h"
 #include "common/internal/log.h"
 
-#include "config/queue.h"
-#include "config/domain.h"
+#include "configuration/domain.h"
+#include "configuration/queue.h"
 
 #include <fstream>
+
 
 namespace casual
 {
@@ -231,7 +232,7 @@ namespace casual
             //
             // Only(?) for unittest
             //
-            broker::local::startup( m_state, config::queue::transform::manager( config::domain::get( { settings.configuration}).queue));
+            broker::local::startup( m_state, configuration::queue::transform::manager( configuration::domain::get( { settings.configuration}).queue));
          }
          else
          {

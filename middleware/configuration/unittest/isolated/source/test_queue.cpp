@@ -3,10 +3,9 @@
 //!
 
 #include <gtest/gtest.h>
+#include "configuration/domain.h"
+#include "configuration/queue.h"
 
-
-#include "config/queue.h"
-#include "config/domain.h"
 
 #include "common/exception.h"
 #include "common/file.h"
@@ -17,7 +16,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       namespace local
       {
@@ -32,7 +31,7 @@ namespace casual
 
       TEST( casual_configuration_queue, expect_two_groups)
       {
-         auto domain = config::domain::get( { local::get_testfile_path( "queue.yaml")});
+         auto domain = configuration::domain::get( { local::get_testfile_path( "queue.yaml")});
 
          EXPECT_TRUE( domain.queue.groups.size() == 2) << CASUAL_MAKE_NVP( domain);
 
@@ -41,7 +40,7 @@ namespace casual
 
       TEST( casual_configuration_queue, expect_4_queues_in_group_one)
       {
-         auto domain = config::domain::get( { local::get_testfile_path( "queue.yaml")});
+         auto domain = configuration::domain::get( { local::get_testfile_path( "queue.yaml")});
 
          EXPECT_TRUE( domain.queue.groups.at( 0).name == "someGroup");
          EXPECT_TRUE( domain.queue.groups.at( 0).queuebase == "some-group.qb") <<  domain.queue.groups.at( 0).queuebase;

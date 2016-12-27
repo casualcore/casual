@@ -19,7 +19,7 @@ namespace casual
 
    } // sf
 
-   namespace config
+   namespace configuration
    {
       template< typename V>
       struct Type

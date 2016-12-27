@@ -1,13 +1,9 @@
 //!
-//! test_xa_switch.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
-
-#include "config/xa_switch.h"
+#include "configuration/xa_switch.h"
 
 #include "common/file.h"
 
@@ -35,7 +31,7 @@ namespace casual
 
 	TEST_P( casual_configuration_resources, load_configuration)
 	{
-	   auto xa_switch = config::xa::switches::get( local::get_testfile_path( GetParam()));
+	   auto xa_switch = configuration::xa::switches::get( local::get_testfile_path( GetParam()));
 
 	   EXPECT_TRUE( xa_switch.size() >= 2);
 
@@ -43,7 +39,7 @@ namespace casual
 
 	TEST_P( casual_configuration_resources, key__expect_db2_and_rm_mockup)
    {
-	   auto xa_switch = config::xa::switches::get( local::get_testfile_path( GetParam()));
+	   auto xa_switch = configuration::xa::switches::get( local::get_testfile_path( GetParam()));
 
       ASSERT_TRUE( xa_switch.size() >= 2);
       EXPECT_TRUE( xa_switch.at( 0).key == "db2");
@@ -53,7 +49,7 @@ namespace casual
 
 	TEST_P( casual_configuration_resources, xa_struct_name__expect_db2xa_switch_static_std__and__casual_mockup_xa_switch_static)
    {
-	   auto xa_switch = config::xa::switches::get( local::get_testfile_path( GetParam()));
+	   auto xa_switch = configuration::xa::switches::get( local::get_testfile_path( GetParam()));
 
       ASSERT_TRUE( xa_switch.size() >= 2);
       EXPECT_TRUE( xa_switch.at( 0).xa_struct_name == "db2xa_switch_static_std");

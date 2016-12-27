@@ -6,21 +6,19 @@
 #define CONFIG_DOMAIN_H_
 
 
-#include "config/environment.h"
-#include "config/gateway.h"
-#include "config/queue.h"
-
-
 #include "sf/namevaluepair.h"
 
 #include <algorithm>
 #include <string>
 #include <vector>
+#include "configuration/environment.h"
+#include "configuration/gateway.h"
+#include "configuration/queue.h"
 
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       namespace domain
       {

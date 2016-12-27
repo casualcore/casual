@@ -3,10 +3,11 @@
 //!
 
 #include "domain/manager/configuration.h"
+
+#include "configuration/domain.h"
 #include "domain/manager/manager.h"
 #include "domain/transform.h"
 
-#include "config/domain.h"
 
 namespace casual
 {
@@ -20,7 +21,7 @@ namespace casual
 
             State state( const Settings& settings)
             {
-               return transform::state( config::domain::get( settings.configurationfiles));
+               return transform::state( casual::configuration::domain::get( settings.configurationfiles));
             }
 
 

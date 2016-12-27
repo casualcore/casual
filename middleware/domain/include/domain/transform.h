@@ -10,7 +10,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       namespace domain
       {
@@ -28,7 +28,7 @@ namespace casual
 
 
 
-         manager::State state( const config::domain::Domain& domain);
+         manager::State state( const configuration::domain::Domain& domain);
 
          namespace configuration
          {

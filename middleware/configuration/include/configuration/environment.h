@@ -14,7 +14,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
 
       struct Environment
@@ -48,9 +48,9 @@ namespace casual
       namespace environment
       {
 
-         config::Environment get( const std::string& file);
+         configuration::Environment get( const std::string& file);
 
-         std::vector< Environment::Variable> fetch( config::Environment environment);
+         std::vector< Environment::Variable> fetch( configuration::Environment environment);
 
       } // environment
 

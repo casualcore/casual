@@ -11,15 +11,15 @@
 #include "common/algorithm.h"
 #include "common/marshal/complete.h"
 
-#include "config/xa_switch.h"
-
 #include "transaction/manager/log.h"
 
+#include "configuration/xa_switch.h"
 
 
 #include <map>
 #include <deque>
 #include <vector>
+
 
 namespace casual
 {
@@ -518,7 +518,7 @@ namespace casual
          transaction::Log log;
 
 
-         std::map< std::string, config::xa::Switch> xa_switch_configuration;
+         std::map< std::string, configuration::xa::Switch> xa_switch_configuration;
 
 
          //!

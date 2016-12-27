@@ -3,8 +3,7 @@
 //!
 
 #include <gtest/gtest.h>
-
-#include "config/gateway.h"
+#include "configuration/gateway.h"
 
 #include "common/mockup/file.h"
 #include "sf/log.h"
@@ -14,7 +13,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       namespace local
       {

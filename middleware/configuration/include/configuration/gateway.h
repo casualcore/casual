@@ -15,7 +15,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       namespace gateway
       {
@@ -104,7 +104,7 @@ namespace casual
          } // transform
 
       } // gateway
-   } // config
+   } // configuration
 } // casual
 
 #endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_GATEWAY_H_

@@ -2,9 +2,10 @@
 //! casual
 //!
 
-#include "config/queue.h"
-#include "config/file.h"
-#include "config/common.h"
+#include "configuration/queue.h"
+
+#include "configuration/common.h"
+#include "configuration/file.h"
 
 #include "common/internal/log.h"
 #include "common/environment.h"
@@ -20,7 +21,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace config
+   namespace configuration
    {
       namespace queue
       {
@@ -209,7 +210,7 @@ namespace casual
             {
                message::domain::configuration::queue::Reply result;
 
-               auto transform_group = []( const config::queue::Group& g){
+               auto transform_group = []( const configuration::queue::Group& g){
 
                   message::domain::configuration::queue::Group result;
 
@@ -217,7 +218,7 @@ namespace casual
                   result.queuebase = g.queuebase;
                   result.note = g.note;
 
-                  auto transform_queue = []( const config::queue::Queue& q){
+                  auto transform_queue = []( const configuration::queue::Queue& q){
                      message::domain::configuration::queue::Queue result;
 
                      result.name = q.name;

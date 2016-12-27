@@ -3,13 +3,13 @@
 //!
 
 #include "gateway/manager/manager.h"
+
 #include "gateway/manager/handle.h"
 #include "gateway/environment.h"
 #include "gateway/transform.h"
 #include "gateway/common.h"
 
-#include "config/domain.h"
-
+#include "configuration/domain.h"
 
 #include "common/trace.h"
 #include "common/environment.h"
@@ -49,8 +49,8 @@ namespace casual
                   if( ! settings.configuration.empty())
                   {
                      return gateway::transform::state(
-                           config::gateway::transform::gateway(
-                                 config::domain::get( { settings.configuration}).gateway));
+                           configuration::gateway::transform::gateway(
+                                 configuration::domain::get( { settings.configuration}).gateway));
                   }
 
 

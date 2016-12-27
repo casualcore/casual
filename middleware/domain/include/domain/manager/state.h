@@ -13,12 +13,13 @@
 #include "common/platform.h"
 #include "common/process.h"
 
-#include "config/domain.h"
+#include "configuration/domain.h"
 
 #include  "sf/namevaluepair.h"
 
 #include <unordered_map>
 #include <vector>
+
 
 namespace casual
 {
@@ -244,7 +245,7 @@ namespace casual
             //!
             //! @todo How do we handle configuration?
             //!
-            config::domain::Domain configuration;
+            configuration::domain::Domain configuration;
 
          private:
             Runlevel m_runlevel = Runlevel::startup;

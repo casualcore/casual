@@ -10,7 +10,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       extern common::log::Stream log;
 

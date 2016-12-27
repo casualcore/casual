@@ -20,7 +20,7 @@ namespace casual
          {
 
 
-            state::Service Service::operator () ( const config::domain::Service& service) const
+            state::Service Service::operator () ( const casual::configuration::domain::Service& service) const
             {
                state::Service result;
 

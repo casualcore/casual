@@ -1,19 +1,15 @@
 //!
-//! serverdefinition.cpp
-//!
-//! Created on: May 10, 2014
-//!     Author: Lazan
+//! casual
 //!
 
-#include "config/serverdefinition.h"
-
+#include "configuration/serverdefinition.h"
 
 #include "sf/archive/maker.h"
 
 namespace casual
 {
 
-   namespace config
+   namespace configuration
    {
       namespace build
       {

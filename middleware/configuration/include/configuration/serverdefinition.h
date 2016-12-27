@@ -14,7 +14,7 @@
 namespace casual
 {
 
-   namespace config
+   namespace configuration
    {
       namespace build
       {

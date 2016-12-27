@@ -7,13 +7,13 @@
 #include "domain/common.h"
 #include "domain/transform.h"
 
-
-
+#include "configuration/gateway.h"
 
 #include "common/message/handle.h"
 #include "common/server/handle.h"
 #include "common/cast.h"
 #include "common/environment.h"
+
 
 
 namespace casual
@@ -623,7 +623,7 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::configuration::Gateway"};
 
-                  auto reply = config::gateway::transform::gateway( state().configuration.gateway);
+                  auto reply = casual::configuration::gateway::transform::gateway( state().configuration.gateway);
                   reply.correlation = message.correlation;
 
                   log << "reply: " << reply << '\n';
@@ -636,7 +636,7 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::configuration::Queue"};
 
-                  auto reply = config::queue::transform::manager( state().configuration.queue);
+                  auto reply = casual::configuration::queue::transform::manager( state().configuration.queue);
                   reply.correlation = message.correlation;
 
                   log << "reply: " << reply << '\n';

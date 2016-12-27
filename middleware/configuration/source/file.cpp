@@ -2,14 +2,13 @@
 //! casual
 //!
 
-#include "config/file.h"
-
+#include "configuration/file.h"
 #include "common/file.h"
 #include "common/environment.h"
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
 
       namespace directory

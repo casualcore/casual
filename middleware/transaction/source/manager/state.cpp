@@ -1,11 +1,11 @@
 //!
-//! manager_state.cpp
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/state.h"
+
+#include "configuration/domain.h"
+#include "configuration/xa_switch.h"
 
 #include "common/exception.h"
 #include "common/algorithm.h"
@@ -14,8 +14,6 @@
 #include "common/environment.h"
 
 
-#include "config/domain.h"
-#include "config/xa_switch.h"
 
 
 namespace casual
@@ -204,7 +202,7 @@ namespace casual
             {
                Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
-               auto resources = config::xa::switches::get( resource_file);
+               auto resources = configuration::xa::switches::get( resource_file);
 
                for( auto& resource : resources)
                {

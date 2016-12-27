@@ -13,10 +13,27 @@ domain:
     
     server:
       instances: 2
+      
+    transaction:
+      resource: 
+        instances: 3
        
     service:
       timeout: 90
 
+  transaction:
+    
+    manager:
+      path: /Users/Lazan/git/casual/transaction/bin/casual-transaction-manager # development purpose only
+      database: "transaction-manager.db" #optional
+    
+    resources:
+      - key: db2
+        name: db2-test
+        instances: 3
+        openinfo: "db=test,uid=db2,pwd=db2"
+    
+  
    
 
   groups: 

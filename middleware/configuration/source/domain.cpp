@@ -2,9 +2,8 @@
 //! casual
 //!
 
-#include "config/domain.h"
-#include "config/file.h"
-
+#include "configuration/domain.h"
+#include "configuration/file.h"
 
 #include "common/exception.h"
 #include "common/file.h"
@@ -15,11 +14,12 @@
 
 #include <algorithm>
 
+
 namespace casual
 {
    using namespace common;
 
-   namespace config
+   namespace configuration
    {
       namespace domain
       {

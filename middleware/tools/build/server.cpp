@@ -11,18 +11,17 @@
 #include "common/environment.h"
 #include "common/server/service.h"
 
+#include "configuration/serverdefinition.h"
+#include "configuration/xa_switch.h"
+
 #include "sf/namevaluepair.h"
-#include "config/xa_switch.h"
-#include "config/serverdefinition.h"
-
-
-
 #include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <map>
 #include <algorithm>
+
 
 
 
@@ -54,9 +53,9 @@ struct Settings
 
    void set_server_definition_path( const std::string& file)
    {
-      auto server = config::build::server::get( file);
+      auto server = configuration::build::server::get( file);
 
-      using service_type = config::build::server::Server::Service;
+      using service_type = configuration::build::server::Server::Service;
 
       common::range::transform( server.services, services, []( const service_type& service)
             {
@@ -86,19 +85,19 @@ struct Settings
 
 
 
-   const std::vector< config::xa::Switch>& get_xa_swiches() const
+   const std::vector< configuration::xa::Switch>& get_xa_swiches() const
    {
       auto initialize = [&](){
-         std::vector< config::xa::Switch> result;
+         std::vector< configuration::xa::Switch> result;
 
          if( ! resources.empty())
          {
             auto switches = xa_resource_file.empty() ?
-                  config::xa::switches::get() : config::xa::switches::get( xa_resource_file);
+                  configuration::xa::switches::get() : configuration::xa::switches::get( xa_resource_file);
 
             for( auto& resource : resources)
             {
-               auto found = common::range::find_if( switches, [&]( const config::xa::Switch& s){
+               auto found = common::range::find_if( switches, [&]( const configuration::xa::Switch& s){
                   return s.key == resource;
                });
 

@@ -2,9 +2,9 @@
 //! casual 
 //!
 
-#include "config/gateway.h"
-#include "config/file.h"
-#include "config/common.h"
+#include "configuration/gateway.h"
+#include "configuration/common.h"
+#include "configuration/file.h"
 
 #include "common/algorithm.h"
 
@@ -15,7 +15,7 @@
 namespace casual
 {
    using namespace common;
-   namespace config
+   namespace configuration
    {
       namespace gateway
       {
@@ -158,7 +158,7 @@ namespace casual
                common::message::domain::configuration::gateway::Reply result;
 
 
-               range::transform( gateway.listeners, result.listeners, []( const config::gateway::Listener& l){
+               range::transform( gateway.listeners, result.listeners, []( const configuration::gateway::Listener& l){
                   common::message::domain::configuration::gateway::Listener result;
 
                   result.address = l.address;
@@ -167,7 +167,7 @@ namespace casual
                });
 
 
-               range::transform( gateway.connections, result.connections, []( const config::gateway::Connection& c){
+               range::transform( gateway.connections, result.connections, []( const configuration::gateway::Connection& c){
                   using result_type = common::message::domain::configuration::gateway::Connection;
                   result_type result;
 

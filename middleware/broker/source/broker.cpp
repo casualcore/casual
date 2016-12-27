@@ -9,8 +9,6 @@
 
 #include "broker/admin/server.h"
 
-#include "config/domain.h"
-
 #include "common/environment.h"
 #include "common/domain.h"
 
@@ -23,6 +21,8 @@
 #include "common/process.h"
 #include "common/domain.h"
 
+#include "configuration/domain.h"
+
 
 #include "sf/log.h"
 
@@ -32,6 +32,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
+
 
 
 

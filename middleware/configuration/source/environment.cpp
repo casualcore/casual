@@ -1,13 +1,8 @@
-/*
- * environment.cpp
- *
- *  Created on: 23 apr 2015
- *      Author: 40043280
- */
+//!
+//! casual
+//!
 
-
-#include "config/environment.h"
-
+#include "configuration/environment.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 
@@ -15,15 +10,15 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
 
       namespace environment
       {
 
-         config::Environment get( const std::string& file)
+         configuration::Environment get( const std::string& file)
          {
-            config::Environment environment;
+            configuration::Environment environment;
 
             //
             // Create the reader and deserialize configuration
@@ -40,7 +35,7 @@ namespace casual
             namespace
             {
 
-               std::vector< Environment::Variable> fetch( config::Environment environment, std::vector< std::string>& paths)
+               std::vector< Environment::Variable> fetch( configuration::Environment environment, std::vector< std::string>& paths)
                {
                   std::vector< Environment::Variable> result; // = std::move( environment.variables);
 
@@ -67,7 +62,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         std::vector< Environment::Variable> fetch( config::Environment environment)
+         std::vector< Environment::Variable> fetch( configuration::Environment environment)
          {
             //
             // So we only fetch one file one time. If there are circular dependencies.

@@ -1,11 +1,8 @@
 //!
-//! xa_switch.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#include "config/xa_switch.h"
+#include "configuration/xa_switch.h"
 
 #include "common/exception.h"
 #include "common/environment.h"
@@ -16,7 +13,7 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       namespace xa
       {
@@ -38,7 +35,7 @@ namespace casual
                //
                // Make sure we've got valid configuration
                //
-               config::xa::validate( resources);
+               configuration::xa::validate( resources);
 
                return resources;
             }

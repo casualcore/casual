@@ -15,12 +15,11 @@
 #include "common/message/handle.h"
 #include "common/log.h"
 
-
-#include "config/domain.h"
-#include "config/file.h"
-
+#include "configuration/domain.h"
+#include "configuration/file.h"
 
 #include <tx.h>
+
 
 using namespace casual::common;
 
@@ -41,7 +40,7 @@ namespace casual
          {
             std::string file()
             {
-               return config::directory::domain() + "/transaction/log.db";
+               return configuration::directory::domain() + "/transaction/log.db";
             }
          } // log
 

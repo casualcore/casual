@@ -4,8 +4,7 @@
 
 #include "domain/transform.h"
 
-
-#include "config/domain.h"
+#include "configuration/domain.h"
 
 #include "common/domain.h"
 
@@ -66,7 +65,7 @@ namespace casual
 
                struct Resources
                {
-                  manager::state::Group::Resource operator () ( const config::domain::Resource& value) const
+                  manager::state::Group::Resource operator () ( const casual::configuration::domain::Resource& value) const
                   {
                      manager::state::Group::Resource result;
 
@@ -105,7 +104,7 @@ namespace casual
 
                   Group( const manager::State& state) : m_state( state) {}
 
-                  manager::state::Group operator () ( const config::domain::Group& group) const
+                  manager::state::Group operator () ( const casual::configuration::domain::Group& group) const
                   {
                      manager::state::Group result;
 
@@ -144,10 +143,10 @@ namespace casual
 
 
 
-               std::vector< std::string> environment( const config::Environment& environment)
+               std::vector< std::string> environment( const casual::configuration::Environment& environment)
                {
                   std::vector< std::string> result;
-                  for( auto& variable : config::environment::fetch( environment))
+                  for( auto& variable : casual::configuration::environment::fetch( environment))
                   {
                      result.push_back( variable.key + "=" + variable.value);
                   }
@@ -266,7 +265,7 @@ namespace casual
          }
 
 
-         manager::State state( const config::domain::Domain& domain)
+         manager::State state( const casual::configuration::domain::Domain& domain)
          {
 
             //
