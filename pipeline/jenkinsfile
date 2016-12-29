@@ -169,4 +169,14 @@ node {
        docker push casual/middleware
        """
    }
+
+   stage('Deploy') {
+
+       sh """
+       cd /var/lib/jenkins/git/casual/docker
+       ./restart.sh
+       """
+   }
+
+
 }
