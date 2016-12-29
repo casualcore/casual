@@ -81,7 +81,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & sf::makeNameValuePair( "default", casual_default);
+               archive & sf::name::value::pair::make( "default", casual_default);
                archive & CASUAL_MAKE_NVP( listeners);
                archive & CASUAL_MAKE_NVP( connections);
             )

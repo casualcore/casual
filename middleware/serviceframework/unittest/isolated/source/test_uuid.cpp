@@ -30,7 +30,7 @@ namespace casual
       sf::archive::yaml::Reader reader( load());
 
       sf::platform::Uuid out;
-      reader >> sf::makeNameValuePair( "uuid", out);
+      reader >> sf::name::value::pair::make( "uuid", out);
 
       EXPECT_TRUE( uuid == out) << "uuid: " << uuid << " out: " << out;
    }

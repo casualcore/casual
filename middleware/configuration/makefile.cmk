@@ -30,6 +30,8 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
         Compile( 'source/serverdefinition.cpp'),
         Compile( 'source/queue.cpp'),
         Compile( 'source/gateway.cpp'),
+        #Compile( 'source/transaction.cpp'),
+        #Compile( 'source/internal/transaction.cpp'),
     ],
     ['casual-common',
     'casual-sf'])

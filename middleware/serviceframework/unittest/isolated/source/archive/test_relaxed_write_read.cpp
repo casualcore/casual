@@ -41,7 +41,7 @@ namespace casual
                   sf::archive::json::Save save;
                   sf::archive::json::Writer writer( save());
 
-                  writer << sf::makeNameValuePair( "value", from);
+                  writer << sf::name::value::pair::make( "value", from);
 
                   save( data);
 
@@ -52,7 +52,7 @@ namespace casual
                   load( data);
 
                   archive::json::relaxed::Reader reader( load());
-                  reader >> sf::makeNameValuePair( "value", result);
+                  reader >> sf::name::value::pair::make( "value", result);
                }
                return result;
             }
@@ -69,7 +69,7 @@ namespace casual
 
                {
                   archive::yaml::Writer writer( save());
-                  writer << sf::makeNameValuePair( "value", from);
+                  writer << sf::name::value::pair::make( "value", from);
                }
 
                std::string yaml;
@@ -80,7 +80,7 @@ namespace casual
 
                {
                   sf::archive::yaml::relaxed::Reader reader( load());
-                  reader >> sf::makeNameValuePair( "value", result);
+                  reader >> sf::name::value::pair::make( "value", result);
                }
                return result;
             }
@@ -97,7 +97,7 @@ namespace casual
 
                {
                   archive::xml::Writer writer( save());
-                  writer << sf::makeNameValuePair( "value", from);
+                  writer << sf::name::value::pair::make( "value", from);
                }
 
                std::string xml;
@@ -108,7 +108,7 @@ namespace casual
 
                {
                   archive::xml::relaxed::Reader reader( load());
-                  reader >> sf::makeNameValuePair( "value", result);
+                  reader >> sf::name::value::pair::make( "value", result);
                }
                return result;
             }

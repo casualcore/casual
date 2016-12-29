@@ -30,8 +30,6 @@ namespace casual
             Base();
             virtual ~Base();
 
-         //protected:
-
             std::size_t container_start( std::size_t size, const char* name);
             void container_end( const char* name);
 
@@ -51,7 +49,7 @@ namespace casual
 
 
          //!
-         //! TODO:
+         //! Read from archvie
          //!
          class Reader: public Base
          {
@@ -88,9 +86,8 @@ namespace casual
 
          };
 
-
-         template< typename T, typename RV>
-         Reader& operator >>( Reader& archive, const NameValuePair< T, RV>&& nameValuePair);
+         template< typename NVP>
+         Reader& operator >> ( Reader& archive, NVP&& nvp);
 
 
          template< typename T>
@@ -131,7 +128,7 @@ namespace casual
                template< typename T>
                static void serialize( Reader& archive, T& value)
                {
-                  archive >> makeNameValuePair( nullptr, std::get< std::tuple_size< T>::value - index>( value));
+                  archive >> sf::name::value::pair::make( nullptr, std::get< std::tuple_size< T>::value - index>( value));
                   tuple_read< index - 1>::serialize( archive, value);
                }
             };
@@ -181,7 +178,7 @@ namespace casual
 
             for( auto& element : container)
             {
-               archive >> makeNameValuePair( nullptr, element);
+               archive >> sf::name::value::pair::make( nullptr, element);
             }
 
             archive.container_end( name);
@@ -206,7 +203,7 @@ namespace casual
             while( count-- > 0)
             {
                typename detail::value< typename T::value_type>::type element;
-               archive >> makeNameValuePair( nullptr, element);
+               archive >> sf::name::value::pair::make( nullptr, element);
 
                container.insert( std::move( element));
             }
@@ -214,32 +211,22 @@ namespace casual
             archive.container_end( name);
          }
 
-         template< typename T>
-         Reader& operator &( Reader& archive, T&& nameValuePair)
+         template< typename NVP>
+         Reader& operator &( Reader& archive, NVP&& nvp)
          {
-            return operator >> ( archive, std::forward< T>( nameValuePair));
+            return archive >> std::forward< NVP>( nvp);
          }
 
-
-         template< typename T, typename RV>
-         Reader& operator >>( Reader& archive, const NameValuePair< T, RV>& nameValuePair)
+         template< typename NVP>
+         Reader& operator >> ( Reader& archive, NVP&& nvp)
          {
-            serialize( archive, nameValuePair.getValue(), nameValuePair.getName());
-
-            return archive;
-         }
-
-         template< typename T, typename RV>
-         Reader& operator >>( Reader& archive, NameValuePair< T, RV>&& nameValuePair)
-         {
-            serialize( archive, nameValuePair.getValue(), nameValuePair.getName());
-
+            serialize( archive, nvp.value(), nvp.name());
             return archive;
          }
 
 
          //!
-         //! TODO:
+         //! Write to archive
          //!
          class Writer: public Base
          {
@@ -277,8 +264,8 @@ namespace casual
 
          };
 
-         template< typename T, typename RV>
-         Writer& operator <<( Writer& archive, const NameValuePair< T, RV>&& nameValuePair);
+         template< typename NVP>
+         Writer& operator << ( Writer& archive, NVP&& nvp);
 
 
          template< typename T>
@@ -310,7 +297,7 @@ namespace casual
                template< typename T>
                static void serialize( Writer& archive, const T& value)
                {
-                  archive << makeNameValuePair( nullptr, std::get< std::tuple_size< T>::value - index>( value));
+                  archive << sf::name::value::pair::make( nullptr, std::get< std::tuple_size< T>::value - index>( value));
                   tuple_write< index - 1>::serialize( archive, value);
                }
             };
@@ -362,7 +349,7 @@ namespace casual
 
             for( auto& element : container)
             {
-               archive << makeNameValuePair( nullptr, element);
+               archive << sf::name::value::pair::make( nullptr, element);
             }
 
             archive.container_end( name);
@@ -370,28 +357,20 @@ namespace casual
 
 
 
-         template< typename T>
-         Writer& operator & ( Writer& archive, T&& nameValuePair)
+         template< typename NVP>
+         Writer& operator & ( Writer& archive, NVP&& nvp)
          {
-            return operator << ( archive, std::forward< T>( nameValuePair));
+            return operator << ( archive, std::forward< NVP>( nvp));
          }
 
 
-         template< typename T, typename RV>
-         Writer& operator << ( Writer& archive, const NameValuePair< T, RV>& nameValuePair)
+         template< typename NVP>
+         Writer& operator << ( Writer& archive, NVP&& nvp)
          {
-            serialize( archive, nameValuePair.getConstValue(), nameValuePair.getName());
-
+            serialize( archive, nvp.value(), nvp.name());
             return archive;
          }
 
-         template< typename T, typename RV>
-         Writer& operator << ( Writer& archive, NameValuePair< T, RV>&& nameValuePair)
-         {
-            serialize( archive, nameValuePair.getConstValue(), nameValuePair.getName());
-
-            return archive;
-         }
 
       } // archive
    } // sf

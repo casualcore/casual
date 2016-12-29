@@ -14,6 +14,7 @@
 #include "configuration/environment.h"
 #include "configuration/gateway.h"
 #include "configuration/queue.h"
+#include "configuration/transaction.h"
 
 
 namespace casual
@@ -24,6 +25,9 @@ namespace casual
       {
          struct Executable
          {
+            Executable() = default;
+            Executable( std::function< void(Executable&)> foreign) { foreign( *this);}
+
             std::string note;
             std::string alias;
             std::string path;
@@ -50,25 +54,13 @@ namespace casual
             friend bool operator == ( const Executable& lhs, const Executable& rhs);
          };
 
-         namespace transaction
-         {
-            struct Manager
-            {
-               std::string path = "casual-transaction-manager";
-               std::string database = "transaction-manager.db";
-
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
-                  archive & CASUAL_MAKE_NVP( path);
-                  archive & CASUAL_MAKE_NVP( database);
-               )
-            };
-
-         } // transaction
 
 
          struct Server : public Executable
          {
+            Server() = default;
+            Server( std::function< void(Server&)> foreign) { foreign( *this);}
+
             std::vector< std::string> restriction;
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -76,6 +68,8 @@ namespace casual
                Executable::serialize( archive);
                archive & CASUAL_MAKE_NVP( restriction);
             )
+
+            friend bool operator == ( const Server& lhs, const Server& rhs);
          };
 
 
@@ -97,30 +91,16 @@ namespace casual
             friend bool operator == ( const Service& lhs, const Service& rhs);
          };
 
-         struct Resource
-         {
-            std::string key;
-            std::string instances;
-
-            std::string openinfo;
-            std::string closeinfo;
-
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( key);
-               archive & CASUAL_MAKE_NVP( instances);
-               archive & CASUAL_MAKE_NVP( openinfo);
-               archive & CASUAL_MAKE_NVP( closeinfo);
-            )
-
-         };
 
          struct Group
          {
+            Group() = default;
+            Group( std::function< void(Group&)> foreign) { foreign( *this);}
+
             std::string name;
             std::string note;
 
-            std::vector< Resource> resources;
+            std::vector< std::string> resources;
             std::vector< std::string> dependencies;
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -163,7 +143,9 @@ namespace casual
 
             std::string name;
             Default casual_default;
-            transaction::Manager transactionmanager;
+
+            transaction::Transaction transaction;
+
             std::vector< Group> groups;
             std::vector< Server> servers;
             std::vector< Executable> executables;
@@ -177,8 +159,8 @@ namespace casual
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                archive & CASUAL_MAKE_NVP( name);
-               archive & sf::makeNameValuePair( "default", casual_default);
-               archive & CASUAL_MAKE_NVP( transactionmanager);
+               archive & sf::name::value::pair::make( "default", casual_default);
+               archive & CASUAL_MAKE_NVP( transaction);
                archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( executables);

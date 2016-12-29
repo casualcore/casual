@@ -1,10 +1,6 @@
-/*
- * casual_isolatedunittest_namevaluepair.cpp
- *
- *  Created on: Sep 16, 2012
- *      Author: lazan
- */
-
+//!
+//! casual
+//!
 
 #include <gtest/gtest.h>
 
@@ -21,17 +17,16 @@ namespace casual
 
 		auto nvp = CASUAL_MAKE_NVP( someLong);
 
-		EXPECT_TRUE( nvp.getName() == std::string( "someLong"));
-		EXPECT_TRUE( nvp.getConstValue() == 10);
-		EXPECT_TRUE( nvp.getValue() == 10);
+		EXPECT_TRUE( nvp.name() == std::string( "someLong"));
+		EXPECT_TRUE( nvp.value() == 10);
 	}
 
 	TEST( casual_sf_NameValuePair, instansiation_const)
 	{
 		const long someLong = 10;
 
-		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).getName() == std::string( "someLong"));
-		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).getConstValue() == 10);
+		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).name() == std::string( "someLong"));
+		EXPECT_TRUE( CASUAL_MAKE_NVP( someLong).value() == 10);
 
 	}
 
@@ -42,8 +37,8 @@ namespace casual
 
 	TEST( casual_sf_NameValuePair, instansiation_rvalue)
 	{
-		EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).getName() == std::string( "10L"));
-		EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).getConstValue() == 10);
+		EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).name() == std::string( "10L"));
+		EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).value() == 10);
 	}
 
 

@@ -1,8 +1,5 @@
 //!
-//! casual_basic_writer.h
-//!
-//! Created on: Oct 14, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BASIC_WRITER_H_

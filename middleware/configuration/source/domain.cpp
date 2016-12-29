@@ -153,6 +153,12 @@ namespace casual
             return coalesce( lhs.alias, lhs.path) == coalesce( rhs.alias, rhs.path);
          }
 
+         bool operator == ( const Server& lhs, const Server& rhs)
+         {
+            return lhs.restriction == rhs.restriction &&
+                  static_cast< const Executable&>( lhs) == static_cast< const Executable&>( rhs);
+         }
+
          bool operator == ( const Group& lhs, const Group& rhs)
          {
             return lhs.name == rhs.name;

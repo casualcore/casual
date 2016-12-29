@@ -6,6 +6,7 @@
 #include "configuration/domain.h"
 
 #include "sf/log.h"
+#include "sf/archive/maker.h"
 
 
 namespace casual
@@ -17,74 +18,127 @@ namespace casual
 
    INSTANTIATE_TEST_CASE_P( protocol,
          casual_configuration_domain,
-      ::testing::Values("domain.yaml", "domain.json"));
+      ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 
 
    namespace local
    {
       namespace
       {
-         std::string get_testfile_path( const std::string& name)
+         namespace domain
          {
-            return common::directory::name::base( __FILE__) + "/../" + name;
+            configuration::domain::Domain init()
+            {
+               configuration::domain::Domain domain;
+
+               domain.name = "domain1";
+
+               {
+                  domain.casual_default.server.instances = "3";
+                  domain.casual_default.server.restart = "true";
+               }
+
+               {
+                  domain.casual_default.service.timeout = "90";
+               }
+
+
+               domain.groups = {
+                       { []( configuration::domain::Group& g){
+                          g.name = "group1";
+                       }},
+                       { []( configuration::domain::Group& g){
+                           g.name = "group2";
+                       }},
+               };
+
+               domain.servers = {
+                       { []( configuration::domain::Server& s){
+                          s.alias = "server1";
+                       }},
+                       { []( configuration::domain::Server& s){
+                           s.alias = "server2";
+                       }},
+               };
+
+               return domain;
+            }
+
+            const configuration::domain::Domain& get()
+            {
+               static auto domain = init();
+               return domain;
+            }
+         } // domain
+
+
+         common::file::scoped::Path serialize_domain( const std::string& extension)
+         {
+            common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
+
+            auto& domain = domain::get();
+
+            auto archive = sf::archive::writer::from::file( file);
+            archive << CASUAL_MAKE_NVP( domain);
+
+            return file;
          }
+
       } // <unnamed>
    } // local
 
 
-	TEST_P( casual_configuration_domain, load_config)
+	TEST_P( casual_configuration_domain, domain)
 	{
+	   auto path = local::serialize_domain( GetParam());
+	   auto domain = configuration::domain::get( { path.path()});
 
-	   auto domain = configuration::domain::get( { local::get_testfile_path( GetParam())});
-
-	   EXPECT_TRUE( domain.name == "domain1") << "nane: " << domain.name;
-	   EXPECT_TRUE( domain.groups.size() == 5) << "size: " << domain.groups.size();
-	   EXPECT_TRUE( domain.groups.at( 2).resources.size() == 2);
+	   EXPECT_TRUE( domain.name == "domain1") << "name: " << domain.name;
 	}
 
-	TEST_P( casual_configuration_domain, read_defaul)
+   TEST_P( casual_configuration_domain, groups)
    {
-	   auto domain = configuration::domain::get( { local::get_testfile_path( GetParam())});
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
 
-      ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
-      EXPECT_TRUE( domain.casual_default.server.instances == "2");
+      EXPECT_TRUE( domain.groups == local::domain::get().groups);
+   }
+
+	TEST_P( casual_configuration_domain, default_server)
+   {
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
+
+      EXPECT_TRUE( domain.casual_default.server.instances == "3");
+      EXPECT_TRUE( domain.casual_default.server.restart == "true");
+   }
+
+   TEST_P( casual_configuration_domain, default_service)
+   {
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
+
       EXPECT_TRUE( domain.casual_default.service.timeout == "90");
-
    }
 
 
-   TEST_P( casual_configuration_domain, read_servers)
+
+   TEST_P( casual_configuration_domain, servers)
    {
-      auto domain = configuration::domain::get( { local::get_testfile_path( GetParam())});
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
 
-      ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
-      EXPECT_TRUE( domain.servers.at( 0).instances == "1");
-
-      EXPECT_TRUE( domain.servers.at( 3).instances == "10");
-      EXPECT_TRUE( domain.servers.at( 3).memberships.size() == 2);
-
+      EXPECT_TRUE( domain.servers.size() == 2) << "size: " << domain.servers.size();
+      EXPECT_TRUE( domain.servers == local::domain::get().servers);
    }
 
-   TEST_P( casual_configuration_domain, read_transactionmanager)
+   TEST_P( casual_configuration_domain, transaction_manager)
    {
-      auto domain = configuration::domain::get( { local::get_testfile_path( GetParam())});
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.transactionmanager.database == "transaction-manager.db");
-
-   }
-
-   TEST_P( casual_configuration_domain, read_complement)
-   {
-      auto domain = configuration::domain::get( { local::get_testfile_path( GetParam())});
-
-      //sf::archive::logger::Writer debug;
-      //debug << CASUAL_MAKE_NVP( domain);
-
-      ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
-      EXPECT_TRUE( domain.casual_default.server.instances == "2");
-      EXPECT_TRUE( domain.casual_default.service.timeout == "90");
+      EXPECT_TRUE( domain.transaction.manager.database == local::domain::get().transaction.manager.database);
 
    }
-
 
 } // casual

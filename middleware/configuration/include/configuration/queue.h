@@ -81,7 +81,7 @@ namespace casual
             template< typename A>
             void serialize( A& archive)
             {
-               archive & sf::makeNameValuePair( "default", casual_default);
+               archive & sf::name::value::pair::make( "default", casual_default);
                archive & CASUAL_MAKE_NVP( groups);
             }
 

@@ -282,7 +282,7 @@ namespace casual
 
                service::IO service_io{ std::move( m_protocol)};
 
-               service_io << makeNameValuePair( "model", m_model);
+               service_io << name::value::pair::make( "model", m_model);
 
                return service_io.finalize();
             }

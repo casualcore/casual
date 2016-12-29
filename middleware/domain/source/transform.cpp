@@ -65,7 +65,7 @@ namespace casual
 
                struct Resources
                {
-                  manager::state::Group::Resource operator () ( const casual::configuration::domain::Resource& value) const
+                  manager::state::Group::Resource operator () ( const casual::configuration::transaction::Resource& value) const
                   {
                      manager::state::Group::Resource result;
 
@@ -110,7 +110,7 @@ namespace casual
 
                      result.name = group.name;
                      result.note = group.note;
-                     range::transform( group.resources, result.resources, local::Resources{});
+                     //range::transform( group.resources, result.resources, local::Resources{});
 
                      result.dependencies.push_back( id( "global"));
 
