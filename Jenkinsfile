@@ -90,12 +90,12 @@ while $( pgrep ^casual-broker$ > 0); do sleep 5; done
 def build( name, image, content)
 {
    def current_dir = pwd()
-   writeFile file: 'casual/builder.sh', text: content
+   writeFile file: 'builder.sh', text: content
 
    sh """
-   chmod +x casual/builder.sh
+   chmod +x builder.sh
    if docker ps -a | grep $name; then docker rm $name;fi
-   docker run --name $name -v $current_dir/casual:/git/casual $image
+   docker run --name $name -v $current_dir:/git/casual $image
    """
 }
 
@@ -121,7 +121,7 @@ node {
        build( 'ubuntucompile', 'casual/ubuntu', backend_builder)
 
        archive includes: '**/casual.log'
-       archive includes: 'casual/casual-middleware.tar'
+       archive includes: 'casual-middleware.tar'
    }
 
    stage('Build Nginx Ubuntu') {
@@ -132,10 +132,10 @@ node {
        export CASUAL_HOME=$current_dir/usr/local/casual
        export CASUAL_DOMAIN_HOME=$current_dir/test/casual
        export CASUAL_BUILD_HOME=$current_dir/casual
-       export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/casual/middleware/common/bin
-       python $current_dir/casual/thirdparty/setup/install_nginx.py
+       export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/middleware/common/bin
+       python $current_dir/thirdparty/setup/install_nginx.py
        cd $current_dir/usr/local/casual
-       tar cvf $current_dir/casual/casual-webserver.tar nginx
+       tar cvf $current_dir/casual-webserver.tar nginx
        """
 
        archive includes: '**/casual-webserver.tar'
@@ -154,11 +154,11 @@ node {
        // 
        // Setup files
        //
-       writeFile file: 'casual/Dockerfile', text: dockerfile
-       writeFile file: 'casual/start.sh', text: dockerstart
+       writeFile file: 'Dockerfile', text: dockerfile
+       writeFile file: 'start.sh', text: dockerstart
 
        sh """
-       docker build -t casual-test-ubuntu -f casual/Dockerfile .
+       docker build -t casual-test-ubuntu -f Dockerfile .
        """
    }
 
