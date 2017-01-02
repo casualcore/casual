@@ -131,7 +131,7 @@ node {
        sh """
        export CASUAL_HOME=$current_dir/usr/local/casual
        export CASUAL_DOMAIN_HOME=$current_dir/test/casual
-       export CASUAL_BUILD_HOME=$current_dir/casual
+       export CASUAL_BUILD_HOME=$current_dir
        export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/middleware/common/bin
        python $current_dir/thirdparty/setup/install_nginx.py
        cd $current_dir/usr/local/casual
