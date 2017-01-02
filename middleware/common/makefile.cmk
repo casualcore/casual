@@ -1,14 +1,26 @@
 import sys
+import os
 from casual.middleware.make.dsl import *
 
+
+platform_specific_lib_paths = []
+platform_specific_include_paths = []
+    
 if sys.platform.startswith('darwin'):
+    
+    #(sysname, nodename, release, version, machine) = os.uname()
+    
+    release = os.uname()[ 2]
+    print( '# release: ' + str( release))
+    
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
-    platform_specific_lib_paths = [ '/opt/local/lib' ]
-    platform_specific_include_paths = [ '/opt/local/include' ]
+    
+    if release < '16.3.0':
+        platform_specific_lib_paths = [ '/opt/local/lib' ]
+        platform_specific_include_paths = [ '/opt/local/include' ]
+        
 else:
     platform_specific_libs = ['uuid', 'resolv']
-    platform_specific_lib_paths = []
-    platform_specific_include_paths = []
 
 
 IncludePaths( [ 

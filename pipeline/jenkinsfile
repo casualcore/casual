@@ -8,12 +8,18 @@ umask 000
 cd /git/casual
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make make && casual-make clean && casual-make compile && casual-make link 
-ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
 casual-make install
 cd /usr/local/casual
 tar cvf /git/casual/casual-middleware.tar .
 '''
 
+def backend_builder_unittest = '''#! /bin/sh
+umask 000
+cd /git/casual
+rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
+casual-make -d -a --use-valgrind make && casual-make clean && casual-make -d -a --use-valgrind compile && casual-make -d -a --use-valgrind link 
+ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
+'''
 //
 // Script for the frontend builder
 //
@@ -31,7 +37,7 @@ chmod a+w -R .
 //
 // Dockerfile for creating testcontainer
 //
-def dockerfile = '''FROM ubuntu:latest
+def dockerfile = '''FROM ubuntu:trusty
 MAINTAINER flurig <flurig@localhost>
 
 RUN apt-get update && apt-get -y upgrade && apt-get -y install uuid-dev libyaml-cpp0.3-dev libjson-c-dev libpugixml-dev libsqlite3-dev wget cmake g++-4.8 python rsync unzip && ln -s /usr/bin/g++-4.8 /usr/bin/g++
@@ -62,6 +68,7 @@ RUN chown -R casual $CASUAL_DOMAIN_HOME
 RUN chown -R casual $CASUAL_HOME/nginx
 RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
 
+EXPOSE 8080 7771
 USER casual
 WORKDIR $CASUAL_DOMAIN_HOME
 
@@ -99,18 +106,24 @@ node {
       checkout scm
    }
 
-   stage('Build backend/Unittest Ubuntu') {
+   stage('Build backend - Unittest/CodeCoverage') {
 
-       build( 'ubuntucompile', 'casual/ubuntu', backend_builder)
+       build( 'ubuntucompile', 'casual/ubuntu', backend_builder_unittest)
 
        step([$class: 'XUnitBuilder',
           thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
           tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
+   }
+
+   stage('Build backend - Release') {
+
+       build( 'ubuntucompile', 'casual/ubuntu', backend_builder)
+
        archive includes: '**/casual.log'
        archive includes: 'casual/casual-middleware.tar'
    }
-   
+
    stage('Build Nginx Ubuntu') {
        
        def current_dir = pwd()
@@ -148,4 +161,22 @@ node {
        docker build -t casual-test-ubuntu -f casual/Dockerfile .
        """
    }
+
+   stage('Publishing to dockerhub') {
+
+       sh """
+       docker tag -f casual-test-ubuntu casual/middleware:latest
+       docker push casual/middleware
+       """
+   }
+
+   stage('Deploy') {
+
+       sh """
+       cd /var/lib/jenkins/git/casual/docker
+       ./restart.sh
+       """
+   }
+
+
 }

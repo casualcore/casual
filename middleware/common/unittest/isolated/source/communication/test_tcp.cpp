@@ -74,7 +74,6 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            //const std::string host{ "127.0.0.1"};
             const std::string host{ "localhost"};
             const std::string port{ "6666"};
 
@@ -86,19 +85,10 @@ namespace casual
                         { { std::chrono::milliseconds{ 1}, 0}});
 
             {
-               const auto client = tcp::socket::address::host( socket.descriptor());
+               const auto client = tcp::socket::address::host( socket);
+               const auto server = tcp::socket::address::peer( socket);
 
-               //EXPECT_TRUE( client.host == host) << client.host;
-               // Hotfix
-               EXPECT_TRUE( client.host.find( host) != std::string::npos) << client.host;
-            }
-
-            {
-               const auto server = tcp::socket::address::peer( socket.descriptor());
-
-               //EXPECT_TRUE( server.host == host) << server.host;
-               // Hotfix
-               EXPECT_TRUE( server.host.find( host) != std::string::npos) << server.host;
+               EXPECT_TRUE( client.host == server.host) << client.host;
                EXPECT_TRUE( server.port == port) << server.port;
             }
          }

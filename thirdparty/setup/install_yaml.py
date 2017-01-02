@@ -32,7 +32,11 @@ os.chdir(TMP + BUILDDIR)
 print("Start setting up: " + BASENAME)
 print("Running cmake")
 if platform.system() == 'Darwin':
-	print( subprocess.check_output(['cmake', '-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_CXX_FLAGS="-stdlib=libstdc++"', '..' ]))
+    
+    if os.uname()[ 2] < '16.3.0':
+        print( subprocess.check_output(['cmake', '-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_CXX_FLAGS="-stdlib=libstdc++"', '..' ]))
+    else:
+        print( subprocess.check_output(['cmake', '-DBUILD_SHARED_LIBS=OFF', '-DCMAKE_CXX_FLAGS=-std=c++11', '..' ]))
 else:	
     print( subprocess.check_output(['cmake', '-DBUILD_SHARED_LIBS=ON', '..' ]))
 
