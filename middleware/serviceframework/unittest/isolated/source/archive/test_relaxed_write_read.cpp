@@ -31,10 +31,9 @@ namespace casual
          struct json
          {
 
-            template< typename T>
-            static auto write_read( const T& from) -> decltype( from.total())
+            template< typename To, typename From>
+            static To write_read( const From& from)
             {
-               auto result = from.total();
                std::string data;
 
                {
@@ -47,6 +46,7 @@ namespace casual
 
                }
 
+               To result;
                {
                   sf::archive::json::Load load;
                   load( data);
@@ -60,11 +60,9 @@ namespace casual
 
          struct yaml
          {
-            template< typename T>
-            static auto write_read( const T& from) -> decltype( from.total())
+            template< typename To, typename From>
+            static To write_read( const From& from)
             {
-
-               auto result = from.total();
                archive::yaml::Save save;
 
                {
@@ -78,6 +76,7 @@ namespace casual
                archive::yaml::Load load;
                load( yaml);
 
+               To result;
                {
                   sf::archive::yaml::relaxed::Reader reader( load());
                   reader >> sf::name::value::pair::make( "value", result);
@@ -89,10 +88,9 @@ namespace casual
          struct xml
          {
 
-            template< typename T>
-            static auto write_read( const T& from) -> decltype( from.total())
+            template< typename To, typename From>
+            static To write_read( const From& from)
             {
-               auto result = from.total();
                archive::xml::Save save;
 
                {
@@ -106,6 +104,7 @@ namespace casual
                archive::xml::Load load;
                load( xml);
 
+               To result;
                {
                   archive::xml::relaxed::Reader reader( load());
                   reader >> sf::name::value::pair::make( "value", result);
@@ -155,8 +154,6 @@ namespace casual
 
                   struct Reduced
                   {
-                     Total total()  const { return Total{};}
-
                      std::string some_string;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
@@ -183,8 +180,6 @@ namespace casual
 
                   struct Reduced
                   {
-                     Total total()  const { return Total{};}
-
                      std::string some_string;
 
                      std::vector< simple::Reduced> some_set;
@@ -198,6 +193,22 @@ namespace casual
 
                } // medium
 
+               template< typename T>
+               struct Optional
+               {
+                  Optional() = default;
+                  Optional( T value) : optional_value( value) {}
+
+                  // we need to have at least one value for yaml and json to work
+                  std::string dummy_value = "dummy";
+                  sf::optional< T> optional_value;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                      archive & CASUAL_MAKE_NVP( dummy_value);
+                      archive & CASUAL_MAKE_NVP( optional_value);
+                  )
+               };
+
             } // vo
 
 
@@ -206,7 +217,7 @@ namespace casual
 
       TYPED_TEST( casual_sf_relaxed_archive_write_read, simple_vo)
       {
-         auto result = TestFixture::write_read( local::vo::simple::Reduced{ "test"});
+         auto result = TestFixture::template write_read< local::vo::simple::Total>( local::vo::simple::Reduced{ "test"});
 
          EXPECT_TRUE( result.some_string == "test") << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.some_long == 42) << CASUAL_MAKE_NVP( result);
@@ -215,7 +226,7 @@ namespace casual
 
       TYPED_TEST( casual_sf_relaxed_archive_write_read, medium_vo)
       {
-         auto result = TestFixture::write_read( local::vo::medium::Reduced{ "test", { { "index-0"}, { "index-1"}}});
+         auto result = TestFixture::template write_read< local::vo::medium::Total>( local::vo::medium::Reduced{ "test", { { "index-0"}, { "index-1"}}});
 
          EXPECT_TRUE( result.some_string == "test") << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.some_long == 666) << CASUAL_MAKE_NVP( result);
@@ -224,6 +235,38 @@ namespace casual
          EXPECT_TRUE( result.some_set.at( 0).some_long == 42) << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.some_set.at( 1).some_string == "index-1") << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.some_set.at( 1).some_long == 42) << CASUAL_MAKE_NVP( result);
+      }
+
+      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_empty)
+      {
+         auto result = TestFixture::template write_read< local::vo::Optional< int>>( local::vo::Optional< int>{});
+
+         EXPECT_TRUE( ! result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
+      }
+
+      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_set)
+      {
+         auto result = TestFixture::template write_read< local::vo::Optional< int>>( local::vo::Optional< int>{ 42l});
+
+         EXPECT_TRUE( result.optional_value == 42) << CASUAL_MAKE_NVP( result);
+      }
+
+      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_medium)
+      {
+         auto result = TestFixture::template write_read<
+               local::vo::Optional< local::vo::medium::Total>>(
+                     local::vo::Optional< local::vo::medium::Reduced>(
+                           local::vo::medium::Reduced{ "test", { { "index-0"}, { "index-1"}}}));
+
+         EXPECT_TRUE( result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_string == "test") << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_long == 666) << CASUAL_MAKE_NVP( result);
+         ASSERT_TRUE( result.optional_value.value().some_set.size() == 2) << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_set.at( 0).some_string == "index-0") << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_set.at( 0).some_long == 42) << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_set.at( 1).some_string == "index-1") << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_set.at( 1).some_long == 42) << CASUAL_MAKE_NVP( result);
+
       }
 
 

@@ -70,7 +70,7 @@ namespace casual
                      manager::state::Group::Resource result;
 
                      result.key = value.key;
-                     result.instances = std::stoul( coalesce( value.instances, "0"));
+                     result.instances = coalesce( value.instances, 0);
                      result.openinfo = value.openinfo;
                      result.closeinfo = value.closeinfo;
 

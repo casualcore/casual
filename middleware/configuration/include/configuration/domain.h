@@ -7,6 +7,7 @@
 
 
 #include "sf/namevaluepair.h"
+#include "sf/platform.h"
 
 #include <algorithm>
 #include <string>
@@ -31,8 +32,8 @@ namespace casual
             std::string note;
             std::string alias;
             std::string path;
-            std::string instances;
-            std::string restart;
+            sf::optional< std::size_t> instances;
+            sf::optional< bool> restart;
             std::vector< std::string> arguments;
             std::vector< std::string> memberships;
 
@@ -119,7 +120,7 @@ namespace casual
          {
             Default()
             {
-               server.instances = std::to_string( 1);
+               server.instances = 1;
                service.timeout = "1h";
             }
 

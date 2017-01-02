@@ -1,9 +1,6 @@
-/*
- * test_maker.cpp
- *
- *  Created on: Apr 30, 2016
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #include <gtest/gtest.h>
 
@@ -37,7 +34,7 @@ namespace casual
       EXPECT_THROW(
       {
          sf::archive::reader::from::file( "hopefully_this_file_does_not_exist.ini");
-      }, sf::exception::FileNotOpen);
+      }, sf::exception::invalid::File);
    }
 
    TEST( casual_sf_maker, make_writer_from_unknown_archive__expecting_exception)
@@ -45,7 +42,7 @@ namespace casual
       EXPECT_THROW(
       {
          sf::archive::writer::from::file( "casual.foo");
-      }, sf::exception::Validation);
+      }, sf::exception::invalid::File);
    }
 
 

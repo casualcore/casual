@@ -10,15 +10,8 @@ namespace casual
       {
 
 
-         Base::Base()
-         {
-
-         }
-
-         Base::~Base()
-         {
-
-         }
+         Base::Base() = default;
+         Base::~Base() = default;
 
 
          std::size_t Base::container_start( std::size_t size, const char* name)
@@ -43,88 +36,78 @@ namespace casual
 
 
 
-         Reader::Reader()
-         {
+         Reader::Reader() = default;
+         Reader::~Reader() = default;
 
+         bool Reader::read( bool& value, const char* name)
+         {
+            return pod( value, name);
          }
 
-         Reader::~Reader()
+         bool Reader::read( char& value, const char* name)
          {
-
+            return pod( value, name);
          }
 
-         void Reader::read( bool& value, const char* name)
+         bool Reader::read( short& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
-         void Reader::read( char& value, const char* name)
-         {
-            pod( value, name);
-         }
-
-         void Reader::read( short& value, const char* name)
-         {
-            pod( value, name);
-         }
-
-         void Reader::read( int& value, const char* name)
+         bool Reader::read( int& value, const char* name)
          {
             long temp;
-            pod( temp, name);
-            value = temp;
+            if( pod( temp, name))
+            {
+               value = temp;
+               return true;
+            }
+            return false;
          }
 
          //void read (const unsigned int& value);
 
-         void Reader::read( long& value, const char* name)
+         bool Reader::read( long& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
-         void Reader::read( long long& value, const char* name)
+         bool Reader::read( long long& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
-         void Reader::read (unsigned long& value, const char* name)
+         bool Reader::read (unsigned long& value, const char* name)
          {
             long temp;
-            pod( temp, name);
+            return pod( temp, name);
             value = temp;
          }
 
-         void Reader::read( float& value, const char* name)
+         bool Reader::read( float& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
-         void Reader::read( double& value, const char* name)
+         bool Reader::read( double& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
-         void Reader::read( std::string& value, const char* name)
+         bool Reader::read( std::string& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
-         void Reader::read( platform::binary_type& value, const char* name)
+         bool Reader::read( platform::binary_type& value, const char* name)
          {
-            pod( value, name);
+            return pod( value, name);
          }
 
 
 
-         Writer::Writer()
-         {
-
-         }
-
-         Writer::~Writer()
-         {
-
-         }
+         Writer::Writer() = default;
+         Writer::~Writer() = default;
 
          void Writer::write( const bool value, const char* name)
          {

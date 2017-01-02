@@ -61,28 +61,28 @@ namespace casual
 
          private:
 
-            virtual void pod( bool& value, const char* name) = 0;
-            virtual void pod( char& value, const char* name) = 0;
-            virtual void pod( short& value, const char* name) = 0;
-            virtual void pod( long& value, const char* name) = 0;
-            virtual void pod( long long& value, const char* name) = 0;
-            virtual void pod( float& value, const char* name) = 0;
-            virtual void pod( double& value, const char* name) = 0;
-            virtual void pod( std::string& value, const char* name) = 0;
-            virtual void pod( platform::binary_type& value, const char* name) = 0;
+            virtual bool pod( bool& value, const char* name) = 0;
+            virtual bool pod( char& value, const char* name) = 0;
+            virtual bool pod( short& value, const char* name) = 0;
+            virtual bool pod( long& value, const char* name) = 0;
+            virtual bool pod( long long& value, const char* name) = 0;
+            virtual bool pod( float& value, const char* name) = 0;
+            virtual bool pod( double& value, const char* name) = 0;
+            virtual bool pod( std::string& value, const char* name) = 0;
+            virtual bool pod( platform::binary_type& value, const char* name) = 0;
 
          public:
-            void read( bool& value, const char* name);
-            void read( char& value, const char* name);
-            void read( short& value, const char* name);
-            void read( int& value, const char* name);
-            void read( long& value, const char* name);
-            void read( unsigned long& value, const char* name);
-            void read( long long& value, const char* name);
-            void read( float& value, const char* name);
-            void read( double& value, const char* name);
-            void read( std::string& value, const char* name);
-            void read( platform::binary_type& value, const char* name);
+            bool read( bool& value, const char* name);
+            bool read( char& value, const char* name);
+            bool read( short& value, const char* name);
+            bool read( int& value, const char* name);
+            bool read( long& value, const char* name);
+            bool read( unsigned long& value, const char* name);
+            bool read( long long& value, const char* name);
+            bool read( float& value, const char* name);
+            bool read( double& value, const char* name);
+            bool read( std::string& value, const char* name);
+            bool read( platform::binary_type& value, const char* name);
 
          };
 
@@ -91,33 +91,39 @@ namespace casual
 
 
          template< typename T>
-         typename std::enable_if< traits::is_pod< T>::value>::type
+         traits::enable_if_t< traits::is_pod< T>::value, bool>
          serialize( Reader& archive, T& value, const char* name)
          {
-            archive.read( value, name);
+            return archive.read( value, name);
          }
 
 
          template< typename T>
-         typename std::enable_if< traits::has_serialize< T, Reader&>::value>::type
+         traits::enable_if_t< traits::has_serialize< T, Reader&>::value, bool>
          serialize( Reader& archive, T& value, const char* name)
          {
             if( archive.serialtype_start( name))
             {
                value.serialize( archive);
+               archive.serialtype_end( name);
+               return true;
             }
             archive.serialtype_end( name);
+            return false;
          }
 
          template< typename T>
-         typename std::enable_if< std::is_enum< T >::value>::type
+         traits::enable_if_t< std::is_enum< T >::value, bool>
          serialize( Reader& archive, T& value, const char* name)
          {
             typename std::underlying_type< T>::type enum_value;
 
-            serialize( archive, enum_value, name);
-
-            value = static_cast< T>( enum_value);
+            if( serialize( archive, enum_value, name))
+            {
+               value = static_cast< T>( enum_value);
+               return true;
+            }
+            return false;
          }
 
          namespace detail
@@ -147,8 +153,7 @@ namespace casual
                const auto size = archive.container_start( expected_size, name);
                if( expected_size != size)
                {
-                  // TODO: Fix exception
-                  throw exception::archive::invalid::Node{ "got unexpected size" /* CASUAL_NIP( expected_size), CASUAL_NIP( size) */};
+                  throw exception::archive::invalid::Node{ "got unexpected size", CASUAL_NIP( expected_size), CASUAL_NIP( size)};
                }
 
                tuple_read< std::tuple_size< T>::value>::serialize( archive, value);
@@ -171,7 +176,7 @@ namespace casual
 
 
          template< typename T>
-         typename std::enable_if< traits::container::is_sequence< T>::value && ! std::is_same< platform::binary_type, T>::value>::type
+         traits::enable_if_t< traits::container::is_sequence< T>::value && ! std::is_same< platform::binary_type, T>::value, bool>
          serialize( Reader& archive, T& container, const char* name)
          {
             container.resize( archive.container_start( 0, name));
@@ -180,8 +185,8 @@ namespace casual
             {
                archive >> sf::name::value::pair::make( nullptr, element);
             }
-
             archive.container_end( name);
+            return true;
          }
 
          namespace detail
@@ -195,7 +200,7 @@ namespace casual
          } // detail
 
          template< typename T>
-         typename std::enable_if< traits::container::is_associative< T >::value>::type
+         traits::enable_if_t< traits::container::is_associative< T >::value, bool>
          serialize( Reader& archive, T& container, const char* name)
          {
             auto count = archive.container_start( 0, name);
@@ -207,9 +212,23 @@ namespace casual
 
                container.insert( std::move( element));
             }
-
             archive.container_end( name);
+            return true;
          }
+
+         template< typename T>
+         bool serialize( Reader& archive, optional< T>& value, const char* name)
+         {
+            typename optional< T>::value_type contained;
+
+            if( serialize( archive, contained, name))
+            {
+               value = contained;
+               return true;
+            }
+            return false;
+         }
+
 
          template< typename NVP>
          Reader& operator &( Reader& archive, NVP&& nvp)
@@ -269,7 +288,7 @@ namespace casual
 
 
          template< typename T>
-         typename std::enable_if< traits::is_pod< T>::value>::type
+         traits::enable_if_t< traits::is_pod< T>::value>
          serialize( Writer& archive, const T& value, const char* name)
          {
             archive.write( value, name);
@@ -277,7 +296,7 @@ namespace casual
 
 
          template< typename T>
-         typename std::enable_if< traits::has_serialize< T, Writer&>::value || traits::has_serialize< const T, Writer&>::value>::type
+         traits::enable_if_t< traits::has_serialize< T, Writer&>::value || traits::has_serialize< const T, Writer&>::value>
          serialize( Writer& archive, const T& value, const char* name)
          {
             archive.serialtype_start( name);
@@ -332,7 +351,7 @@ namespace casual
 
 
          template< typename T>
-         typename std::enable_if< std::is_enum< T >::value>::type
+         traits::enable_if_t< std::is_enum< T >::value>
          serialize( Writer& archive, const T& value, const char* name)
          {
             auto enum_value = static_cast< typename std::underlying_type< T>::type>( value);
@@ -342,7 +361,7 @@ namespace casual
 
 
          template< typename T>
-         typename std::enable_if< traits::container::is_container< T>::value && ! std::is_same< platform::binary_type, T>::value>::type
+         traits::enable_if_t< traits::container::is_container< T>::value && ! std::is_same< platform::binary_type, T>::value>
          serialize( Writer& archive, const T& container, const char* name)
          {
             archive.container_start( container.size(), name);
@@ -356,6 +375,14 @@ namespace casual
          }
 
 
+         template< typename T>
+         void serialize( Writer& archive, const optional< T>& value, const char* name)
+         {
+            if( value)
+            {
+               archive << name::value::pair::make( name, value.value());
+            }
+         }
 
          template< typename NVP>
          Writer& operator & ( Writer& archive, NVP&& nvp)

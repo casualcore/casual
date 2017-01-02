@@ -31,6 +31,19 @@ namespace casual
 
                namespace complement
                {
+                  template< typename T>
+                  inline void assign_if_empty( sf::optional< T>& value, const sf::optional< T>& def)
+                  {
+                     if( ! value.has_value())
+                        value = def;
+                  }
+
+                  inline void assign_if_empty( std::string& value, const std::string& def)
+                  {
+                     if( value.empty() || value == "~")
+                        value = def;
+                  }
+
                   struct Default
                   {
                      Default( const domain::Default& casual_default)
@@ -60,11 +73,8 @@ namespace casual
 
                   private:
 
-                     inline void assign_if_empty( std::string& value, const std::string& def) const
-                     {
-                        if( value.empty() || value == "~")
-                           value = def;
-                     }
+
+
 
                      std::string nextAlias( const std::string& path) const
                      {

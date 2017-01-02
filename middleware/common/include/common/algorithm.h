@@ -11,6 +11,7 @@
 #include "common/platform.h"
 #include "common/move.h"
 #include "common/cast.h"
+#include "common/optional.h"
 
 #include <algorithm>
 #include <numeric>
@@ -288,6 +289,9 @@ namespace casual
             template< typename T>
             bool empty( T* value) { return value == nullptr;}
 
+            template< typename T>
+            bool empty( common::optional< T>& value) { return ! value.has_value();}
+
             template< typename R, typename T>
             R implementation( T&& value)
             {
@@ -321,9 +325,8 @@ namespace casual
                T, // only if T1 and T1 are exactly the same
                typename std::common_type< T, Args...>::type
             >::type
-
-
       {
+
          using return_type = typename std::conditional<
                traits::is_same< T, Args...>::value,
                T, // only if T1 and T1 are exactly the same

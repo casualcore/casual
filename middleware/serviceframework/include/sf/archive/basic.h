@@ -26,8 +26,7 @@ namespace casual
                {
                   if( ! exist)
                   {
-                     // TODO: Fix better exception
-                     throw exception::archive::invalid::Node{ "failed to find role in document" /*, CASUAL_NIP( role)*/};
+                     throw exception::archive::invalid::Node{ "failed to find role in document", CASUAL_NIP( role)};
                   }
                   return exist;
                }
@@ -36,7 +35,7 @@ namespace casual
             struct Relaxed
             {
                inline static constexpr bool check() { return false;}
-               inline static constexpr bool apply( bool exist, const char* role) { return true;}
+               inline static constexpr bool apply( bool exist, const char* role) { return exist;}
             };
 
          } // policy
@@ -96,20 +95,20 @@ namespace casual
 
 
             template< typename T>
-            void handle_pod( T& value, const char* name)
+            bool handle_pod( T& value, const char* name)
             {
-               policy_type::apply( m_implementation.read( value, name), name);
+               return policy_type::apply( m_implementation.read( value, name), name);
             }
 
-            void pod( bool& value, const char* name) override { handle_pod( value, name);}
-            void pod( char& value, const char* name) override { handle_pod( value, name);}
-            void pod( short& value, const char* name) override { handle_pod( value, name);}
-            void pod( long& value, const char* name) override { handle_pod( value, name);}
-            void pod( long long& value, const char* name) override { handle_pod( value, name);}
-            void pod( float& value, const char* name) override { handle_pod( value, name);}
-            void pod( double& value, const char* name) override { handle_pod( value, name);}
-            void pod( std::string& value, const char* name) override { handle_pod( value, name);}
-            void pod( platform::binary_type& value, const char* name) override { handle_pod( value, name);}
+            bool pod( bool& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( char& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( short& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( long& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( long long& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( float& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( double& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( std::string& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( platform::binary_type& value, const char* name) override { return handle_pod( value, name);}
 
             implementation_type m_implementation;
          };

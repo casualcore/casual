@@ -10,6 +10,7 @@
 #include "common/algorithm.h"
 #include "common/traits.h"
 #include "common/signal.h"
+#include "common/optional.h"
 
 #include <type_traits>
 
@@ -198,6 +199,20 @@ namespace casual
             }
             EXPECT_TRUE( terminated == pids) << "terminated: " << range::make( terminated) << " - pids: " << range::make( pids);
          }
+      }
+
+
+      TEST( casual_common_conformance, optional_default_ctor)
+      {
+         common::optional< std::size_t> optional;
+         EXPECT_TRUE( ! optional.has_value());
+      }
+
+      TEST( casual_common_conformance, optional_ctor)
+      {
+         common::optional< std::size_t> optional{ 42};
+         EXPECT_TRUE( optional.has_value());
+         EXPECT_TRUE( optional.value() == 42);
       }
 
       /*

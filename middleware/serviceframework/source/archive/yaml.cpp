@@ -113,7 +113,7 @@ namespace casual
                   if( size)
                   {
                      //
-                     // If there are elements, it must me a sequence
+                     // If there are elements, it must be a sequence
                      //
 
                      if( node.Type() != YAML::NodeType::Sequence)

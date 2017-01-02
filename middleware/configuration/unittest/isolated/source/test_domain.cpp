@@ -34,8 +34,8 @@ namespace casual
                domain.name = "domain1";
 
                {
-                  domain.casual_default.server.instances = "3";
-                  domain.casual_default.server.restart = "true";
+                  //domain.casual_default.server.instances = 3;
+                  domain.casual_default.server.restart = true;
                }
 
                {
@@ -55,6 +55,7 @@ namespace casual
                domain.servers = {
                        { []( configuration::domain::Server& s){
                           s.alias = "server1";
+                          s.instances = 42;
                        }},
                        { []( configuration::domain::Server& s){
                            s.alias = "server2";
@@ -109,8 +110,10 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.casual_default.server.instances == "3");
-      EXPECT_TRUE( domain.casual_default.server.restart == "true");
+      EXPECT_TRUE( domain.casual_default.server.instances == 3ul) << CASUAL_MAKE_NVP( domain.casual_default.server.instances);// << CASUAL_MAKE_NVP( path.release());
+      EXPECT_TRUE( domain.casual_default.server.restart == true);
+
+
    }
 
    TEST_P( casual_configuration_domain, default_service)
@@ -128,7 +131,8 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.servers.size() == 2) << "size: " << domain.servers.size();
+      ASSERT_TRUE( domain.servers.size() == 2) << "size: " << domain.servers.size();
+      EXPECT_TRUE( domain.servers.at( 0).instances == 42ul) << CASUAL_MAKE_NVP( domain.servers) << CASUAL_MAKE_NVP( local::domain::get().servers);
       EXPECT_TRUE( domain.servers == local::domain::get().servers);
    }
 

@@ -1,13 +1,12 @@
 //!
-//! casual_sf_exception.h
-//!
-//! Created on: Nov 17, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_SF_EXCEPTION_H_
 #define CASUAL_SF_EXCEPTION_H_
 
+
+#include "common/exception.h"
 
 #include <string>
 #include <stdexcept>
@@ -20,35 +19,13 @@ namespace casual
    {
       namespace exception
       {
-         class Base : public std::exception
+         class Base : public common::exception::base
          {
          public:
-
-            Base( std::string information) : m_information( std::move( information)) {}
-            Base( std::string information, const char* file, decltype( __LINE__) line) : Base( std::move( information))
-            {
-               m_information.push_back( '\0');
-               m_information.append( file);
-               m_information.append( ':' + std::to_string( line));
-
-            }
-
-            const char* what() const noexcept
-            {
-               return m_information.c_str();
-            }
-
-            friend std::ostream& operator << ( std::ostream& out, const Base& exception)
-            {
-               return out << exception.what();
-            }
+            using common::exception::base::base;
 
          protected:
             ~Base() = default;
-
-         private:
-            std::string m_information;
-
          };
 
          struct Validation : public Base
@@ -56,20 +33,22 @@ namespace casual
             using Base::Base;
          };
 
-         struct FileNotOpen : public Base
-         {
-            FileNotOpen( const std::string& file) : Base( "could not open " + file) {}
-         };
-
-
-
 
          struct NotReallySureWhatToCallThisExcepion : public Base
          {
             using Base::Base;
             NotReallySureWhatToCallThisExcepion() : Base( "NotRealllySureWhatToCallThisExcepion") {}
-
          };
+
+         namespace invalid
+         {
+            struct File : Base
+            {
+               using Base::Base;
+            };
+
+
+         } // invalid
 
          namespace memory
          {

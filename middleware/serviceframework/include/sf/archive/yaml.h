@@ -71,20 +71,9 @@ namespace casual
                   {
                      const bool result = start( name);
 
-                     if( result)
+                     if( result && m_stack.back()->Type() != YAML::NodeType::Null)
                      {
-                        if( m_stack.back()->Type() == YAML::NodeType::Null)
-                        {
-                           //
-                           // Act (somehow) relaxed
-                           //
-
-                           value = T{};
-                        }
-                        else
-                        {
-                           read( value);
-                        }
+                        read( value);
                      }
 
                      end( name);
