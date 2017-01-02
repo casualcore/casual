@@ -46,10 +46,10 @@ RUN wget --no-check-certificate https://github.com/jbeder/yaml-cpp/archive/relea
 
 RUN mkdir -p /opt/casual
 
-COPY casual/casual-middleware.tar /opt/casual/casual-middleware.tar
-COPY casual/casual-webserver.tar /opt/casual/casual-webserver.tar
-COPY casual/casual-webapp.zip /opt/casual/casual-webapp.zip
-COPY casual/start.sh /opt/casual/start.sh
+COPY casual-middleware.tar /opt/casual/casual-middleware.tar
+COPY casual-webserver.tar /opt/casual/casual-webserver.tar
+COPY casual-webapp.zip /opt/casual/casual-webapp.zip
+COPY start.sh /opt/casual/start.sh
 
 RUN cd /opt/casual && tar xf casual-middleware.tar && tar xf casual-webserver.tar && unzip casual-webapp.zip && chmod 755 /opt/casual/start.sh
 
