@@ -164,10 +164,13 @@ node {
 
    stage('Publishing to dockerhub') {
 
-       sh """
-       docker tag -f casual-test-ubuntu casual/middleware:latest
-       docker push casual/middleware
-       """
+       if ( "${env.BRANCH_NAME}" == "develop" )
+       {
+          sh """
+          docker tag -f casual-test-ubuntu casual/middleware:latest
+          docker push casual/middleware
+          """
+       }
    }
 
    stage('Deploy') {
