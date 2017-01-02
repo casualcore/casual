@@ -309,6 +309,11 @@ namespace casual
                      return local::socket::names( info, size);
                   }
 
+                  Address host( const Socket& socket)
+                  {
+                     return host( socket.descriptor());
+                  }
+
                   Address peer( const descriptor_type descriptor)
                   {
                      struct sockaddr info{ };
@@ -319,6 +324,11 @@ namespace casual
                            descriptor, &info, &size));
 
                      return local::socket::names( info, size);
+                  }
+
+                  Address peer( const Socket& socket)
+                  {
+                     return peer( socket.descriptor());
                   }
 
                } // address

@@ -25,6 +25,8 @@ namespace casual
       {
          namespace tcp
          {
+            class Socket;
+
 
             struct Address
             {
@@ -61,11 +63,13 @@ namespace casual
                   //! @return The address to which the socket is bound to on local host
                   //!
                   Address host( descriptor_type descriptor);
+                  Address host( const Socket& socket);
 
                   //!
                   //! @return The address of the peer connected to the socket
                   //!
                   Address peer( descriptor_type descriptor);
+                  Address peer( const Socket& socket);
 
                } // address
 
