@@ -66,7 +66,6 @@ RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
 RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
 RUN chown -R casual $CASUAL_DOMAIN_HOME
 RUN chown -R casual $CASUAL_HOME/nginx
-RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
 
 EXPOSE 8080 7771
 USER casual
