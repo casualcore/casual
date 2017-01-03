@@ -100,85 +100,113 @@ def build( name, image, content)
 
 node {
 
-   stage('Checkout')
+   bitbucketStatusNotify(
+      buildState: 'INPROGRESS',
+      buildKey: 'build',
+      buildName: 'Build'
+   )
+
+   try
    {
-      checkout scm
-   }
+      stage('Checkout')
+      {
+         checkout scm
+      }  
 
-   stage('Build backend - Unittest/CodeCoverage') {
+      stage('Build backend - Unittest/CodeCoverage')
+      {
+          build( 'ubuntucompile', 'casual/ubuntu', backend_builder_unittest)
 
-       build( 'ubuntucompile', 'casual/ubuntu', backend_builder_unittest)
+          step([$class: 'XUnitBuilder',
+             thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
+             tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
-       step([$class: 'XUnitBuilder',
-          thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
-          tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+      }
 
-   }
+      stage('Build backend - Release')
+      {
 
-   stage('Build backend - Release') {
+          build( 'ubuntucompile', 'casual/ubuntu', backend_builder)
 
-       build( 'ubuntucompile', 'casual/ubuntu', backend_builder)
+          archive includes: '**/casual.log'
+          archive includes: 'casual-middleware.tar'
+      }
 
-       archive includes: '**/casual.log'
-       archive includes: 'casual-middleware.tar'
-   }
-
-   stage('Build Nginx Ubuntu') {
+      stage('Build Nginx Ubuntu')
+      {
        
-       def current_dir = pwd()
+          def current_dir = pwd()
 
-       sh """
-       export CASUAL_HOME=$current_dir/usr/local/casual
-       export CASUAL_DOMAIN_HOME=$current_dir/test/casual
-       export CASUAL_BUILD_HOME=$current_dir
-       export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/middleware/common/bin
-       python $current_dir/thirdparty/setup/install_nginx.py
-       cd $current_dir/usr/local/casual
-       tar cvf $current_dir/casual-webserver.tar nginx
-       """
+          sh """
+          export CASUAL_HOME=$current_dir/usr/local/casual
+          export CASUAL_DOMAIN_HOME=$current_dir/test/casual
+          export CASUAL_BUILD_HOME=$current_dir
+          export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$current_dir/middleware/common/bin
+          python $current_dir/thirdparty/setup/install_nginx.py
+          cd $current_dir/usr/local/casual
+          tar cvf $current_dir/casual-webserver.tar nginx
+          """
 
-       archive includes: '**/casual-webserver.tar'
+          archive includes: '**/casual-webserver.tar'
+      }
+
+
+      stage('Build frontend')
+      {
+
+          build( 'casualfrontend', 'casual/frontend', frontend_builder)
+
+          archive includes: '**/casual-webapp.zip'
+      }
+
+      if ( "${env.BRANCH_NAME}" == "develop" )
+      {
+         stage('Create container')
+         {
+            // 
+            // Setup files
+            //
+            writeFile file: 'Dockerfile', text: dockerfile
+            writeFile file: 'start.sh', text: dockerstart
+
+            sh """
+            docker build -t casual-test-ubuntu -f Dockerfile .
+            """
+         }
+
+         stage('Publishing to dockerhub')
+         {
+            sh """
+            docker tag -f casual-test-ubuntu casual/middleware:latest
+            docker push casual/middleware
+            """
+         }
+
+         stage('Deploy')
+         {
+            sh """
+            cd /var/lib/jenkins/git/casual/docker
+            ./restart.sh
+            """
+         }
+
+      }
+
+      bitbucketStatusNotify(
+         buildState: 'SUCCESSFUL',
+         buildKey: 'build',
+         buildName: 'Build'
+      )
+
    }
-
-
-   stage('Build frontend') {
-
-       build( 'casualfrontend', 'casual/frontend', frontend_builder)
-
-       archive includes: '**/casual-webapp.zip'
-   }
-
-   if ( "${env.BRANCH_NAME}" == "develop" )
+   catch (Exception e)
    {
-      stage('Create container')
-      {
-          // 
-          // Setup files
-          //
-          writeFile file: 'Dockerfile', text: dockerfile
-          writeFile file: 'start.sh', text: dockerstart
-
-          sh """
-          docker build -t casual-test-ubuntu -f Dockerfile .
-          """
-      }
-
-      stage('Publishing to dockerhub')
-      {
-          sh """
-          docker tag -f casual-test-ubuntu casual/middleware:latest
-          docker push casual/middleware
-          """
-      }
-
-      stage('Deploy')
-      {
-          sh """
-          cd /var/lib/jenkins/git/casual/docker
-          ./restart.sh
-          """
-      }
-
+      bitbucketStatusNotify(
+          buildState: 'FAILED',
+          buildKey: 'build',
+          buildName: 'Build',
+          buildDescription: 'Something went wrong with build!'
+      )
    }
 
 }
