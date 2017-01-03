@@ -149,37 +149,37 @@ node {
        archive includes: '**/casual-webapp.zip'
    }
 
-   stage('Create container') {
+   if ( "${env.BRANCH_NAME}" == "develop" )
+   {
+      stage('Create container')
+      {
+          // 
+          // Setup files
+          //
+          writeFile file: 'Dockerfile', text: dockerfile
+          writeFile file: 'start.sh', text: dockerstart
 
-       // 
-       // Setup files
-       //
-       writeFile file: 'Dockerfile', text: dockerfile
-       writeFile file: 'start.sh', text: dockerstart
+          sh """
+          docker build -t casual-test-ubuntu -f Dockerfile .
+          """
+      }
 
-       sh """
-       docker build -t casual-test-ubuntu -f Dockerfile .
-       """
-   }
-
-   stage('Publishing to dockerhub') {
-
-       if ( "${env.BRANCH_NAME}" == "develop" )
-       {
+      stage('Publishing to dockerhub')
+      {
           sh """
           docker tag -f casual-test-ubuntu casual/middleware:latest
           docker push casual/middleware
           """
-       }
+      }
+
+      stage('Deploy')
+      {
+          sh """
+          cd /var/lib/jenkins/git/casual/docker
+          ./restart.sh
+          """
+      }
+
    }
-
-   stage('Deploy') {
-
-       sh """
-       cd /var/lib/jenkins/git/casual/docker
-       ./restart.sh
-       """
-   }
-
 
 }
