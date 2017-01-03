@@ -69,7 +69,6 @@ RUN chown -R casual $CASUAL_HOME/nginx
 
 EXPOSE 8080 7771
 USER casual
-RUN ln -s /dev/stdout $CASUAL_DOMAIN_HOME/casual.log
 WORKDIR $CASUAL_DOMAIN_HOME
 
 ENTRYPOINT ["/opt/casual/start.sh"]
