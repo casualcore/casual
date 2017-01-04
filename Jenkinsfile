@@ -93,8 +93,7 @@ def build( name, image, content)
 
    sh """
    chmod +x builder.sh
-   if docker ps -a | grep $name; then docker rm $name;fi
-   docker run --name $name -v $current_dir:/git/casual $image
+   docker run -v $current_dir:/git/casual $image
    """
 }
 
