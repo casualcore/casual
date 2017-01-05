@@ -49,12 +49,12 @@ namespace casual
                      {
                         if( ! manager::ipc::device().non_blocking_send( process.queue, message))
                         {
-                           state.pending.replies.emplace_back( message, process.queue);
+                           state.pending.replies.emplace_back( std::forward< M>( message), process.queue);
                         }
                      }
                      catch( const exception::communication::Unavailable&)
                      {
-                        // no-op
+                        log << "failed to send message - type: " << common::message::type( message) << " to: " << process << " - action: ignore\n";
                      }
                   }
 
@@ -150,7 +150,7 @@ namespace casual
                         state.executables.push_back( std::move( tm));
                      }
 
-                     if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
+                     //if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
                      {
                         state::Executable gateway;
                         gateway.alias = "casual-gateway-manager";
@@ -584,66 +584,29 @@ namespace casual
 
             namespace configuration
             {
-               namespace transaction
+
+               void Domain::operator () ( const casual::configuration::message::Request& message)
                {
-                  void Resource::operator () ( const message::domain::configuration::transaction::resource::Request& message)
-                  {
-                     Trace trace{ "domain::manager::handle::configuration::transaction::Resource"};
+                  Trace trace{ "domain::manager::handle::configuration::Domain"};
 
-                     auto reply = message::reverse::type( message);
-
-                     if( message.scope == message::domain::configuration::transaction::resource::Request::Scope::specific)
-                     {
-                        auto& executable = state().executable( message.process.pid);
-
-                        for( auto id : executable.memberships)
-                        {
-                           auto& group = state().group( id);
-                           range::transform( group.resources, reply.resources, transform::configuration::transaction::Resource{});
-                        }
-
-                     }
-                     else
-                     {
-                        for( auto& group : state().groups)
-                        {
-                           range::transform( group.resources, reply.resources, transform::configuration::transaction::Resource{});
-                        }
-                     }
-
-                     log << "reply: " << reply << '\n';
-
-                     manager::local::ipc::send( state(), message.process, reply);
-                  }
-
-               } // transaction
-
-
-               void Gateway::operator () ( const common::message::domain::configuration::gateway::Request& message)
-               {
-                  Trace trace{ "domain::manager::handle::configuration::Gateway"};
-
-                  auto reply = casual::configuration::gateway::transform::gateway( state().configuration.gateway);
-                  reply.correlation = message.correlation;
-
-                  log << "reply: " << reply << '\n';
-
-                  manager::local::ipc::send( state(), message.process, reply);
-
-               }
-
-               void Queue::operator () ( const common::message::domain::configuration::queue::Request& message)
-               {
-                  Trace trace{ "domain::manager::handle::configuration::Queue"};
-
-                  auto reply = casual::configuration::queue::transform::manager( state().configuration.queue);
-                  reply.correlation = message.correlation;
-
-                  log << "reply: " << reply << '\n';
+                  auto reply = common::message::reverse::type( message);
+                  reply.domain = state().configuration;
 
                   manager::local::ipc::send( state(), message.process, reply);
                }
 
+
+               void Server::operator () ( const common::message::domain::server::configuration::Request& message)
+               {
+                  Trace trace{ "domain::manager::handle::configuration::Server"};
+
+                  auto reply = common::message::reverse::type( message);
+
+                  reply.resources = state().resources( message.process.pid);
+
+                  manager::local::ipc::send( state(), message.process, reply);
+
+               }
             } // configuration
 
 
@@ -685,9 +648,8 @@ namespace casual
                manager::handle::process::termination::Registration{ state},
                manager::handle::process::Connect{ state},
                manager::handle::process::Lookup{ state},
-               manager::handle::configuration::transaction::Resource{ state},
-               manager::handle::configuration::Gateway{ state},
-               manager::handle::configuration::Queue{ state},
+               manager::handle::configuration::Domain{ state},
+               manager::handle::configuration::Server{ state},
                handle::local::server::Handle{
                   manager::admin::services( state),
                   ipc::device().error_handler()}

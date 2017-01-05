@@ -13,6 +13,8 @@
 #include "common/internal/trace.h"
 #include "common/server/handle.h"
 
+#include "configuration/message/domain.h"
+
 
 #include "sf/log.h"
 
@@ -34,10 +36,8 @@ namespace casual
 
                Trace trace( "configure");
 
-               message::domain::configuration::transaction::resource::Request request;
-               request.scope = message::domain::configuration::transaction::resource::Request::Scope::all;
+               configuration::message::Request request;
                request.process = process::handle();
-
 
                auto configuration = communication::ipc::call( communication::ipc::domain::manager::device(), request);
 
@@ -253,7 +253,7 @@ namespace casual
                   common::log::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
                   //
                   // ipc-queue has been removed...
-                  // TODO: deduce from message.message.type what we should do
+                  // TODO attention: deduce from message.message.type what we should do
                   //  We should rollback if we are in a prepare stage?
                   //
                }

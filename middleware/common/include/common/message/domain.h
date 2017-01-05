@@ -148,217 +148,33 @@ namespace casual
 
                } // lookup
 
-
             } // process
 
-            namespace configuration
+            namespace server
             {
-               namespace transaction
+               namespace configuration
                {
-
-                  struct Resource
+                  using base_request = message::basic_request< message::Type::domain_server_configuration_request>;
+                  struct Request : base_request
                   {
-                     Resource() = default;
-                     Resource( std::function<void(Resource&)> initializer)
-                     {
-                        initializer( *this);
-                     }
 
-                     std::size_t instances = 0;
-                     std::size_t id = 0;
-                     std::string key;
-                     std::string openinfo;
-                     std::string closeinfo;
+                  };
+
+                  using base_reply = message::basic_request< message::Type::domain_server_configuration_reply>;
+                  struct Reply : base_reply
+                  {
+                     std::vector< std::string> resources;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
-                        archive & instances;
-                        archive & id;
-                        archive & key;
-                        archive & openinfo;
-                        archive & closeinfo;
+                        base_reply::marshal( archive);
+                        archive & resources;
                      })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Resource& value);
-                  };
-                  static_assert( traits::is_movable< Resource>::value, "not movable");
-
-                  namespace resource
-                  {
-                     using base_request = server::basic_id< Type::domain_configuration_transaction_resource_request>;
-                     struct Request : base_request
-                     {
-                        enum class Scope : char
-                        {
-                           specific,
-                           all,
-                        };
-
-                        Scope scope = Scope::specific;
-
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-                           base_request::marshal( archive);
-                           archive & scope;
-                        })
-                     };
-                     static_assert( traits::is_movable< Request>::value, "not movable");
-
-                     using base_reply = server::basic_id< Type::domain_configuration_transaction_resource_reply>;
-                     struct Reply : base_reply
-                     {
-                        std::vector< Resource> resources;
-
-                        CASUAL_CONST_CORRECT_MARSHAL(
-                        {
-                           base_reply::marshal( archive);
-                           archive & resources;
-                        })
-
-                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-                     };
-                     static_assert( traits::is_movable< Reply>::value, "not movable");
-
-
-                  } // Resource
-
-               } // transaction
-
-
-               namespace gateway
-               {
-                  struct Listener
-                  {
-                     std::string address;
-
-                     CASUAL_CONST_CORRECT_MARSHAL
-                     (
-                        archive &  address;
-                     )
-
-                     friend std::ostream& operator << ( std::ostream& out, const Listener& value);
                   };
 
+               } // configuration
 
-
-                  struct Connection
-                  {
-                     enum class Type : char
-                     {
-                        tcp,
-                        ipc,
-                     };
-
-                     std::string name;
-                     std::string address;
-                     Type type = Type::tcp;
-                     bool restart = false;
-                     std::vector< std::string> services;
-                     std::vector< std::string> queues;
-
-                     CASUAL_CONST_CORRECT_MARSHAL
-                     (
-                        archive & name;
-                        archive & type;
-                        archive & address;
-                        archive & restart;
-                        archive & services;
-                        archive & queues;
-                     )
-
-                     friend std::ostream& operator << ( std::ostream& out, Type value);
-                     friend std::ostream& operator << ( std::ostream& out, const Connection& value);
-                  };
-                  static_assert( traits::is_movable< Connection>::value, "not movable");
-
-                  using base_request = server::basic_id< Type::domain_configuration_gateway_request>;
-                  struct Request : base_request
-                  {
-
-                  };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-
-                  using base_reply = server::basic_id< Type::domain_configuration_gateway_reply>;
-                  struct Reply : base_reply
-                  {
-                     std::vector< Listener> listeners;
-                     std::vector< Connection> connections;
-
-                     CASUAL_CONST_CORRECT_MARSHAL
-                     (
-                        base_reply::marshal( archive);
-                        archive & listeners;
-                        archive & connections;
-                     )
-
-                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-                  };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
-
-
-               } // gateway
-
-               namespace queue
-               {
-                  struct Queue
-                  {
-                     std::string name;
-                     std::size_t retries = 0;
-                     std::string note;
-
-                     CASUAL_CONST_CORRECT_MARSHAL
-                     (
-                        archive & name;
-                        archive & retries;
-                        archive & note;
-                     )
-
-                     friend std::ostream& operator << ( std::ostream& out, const Queue& value);
-                  };
-
-                  struct Group
-                  {
-                     std::string name;
-                     std::string queuebase;
-                     std::string note;
-                     std::vector< Queue> queues;
-
-                     CASUAL_CONST_CORRECT_MARSHAL
-                     (
-                        archive & name;
-                        archive & queuebase;
-                        archive & note;
-                        archive & queues;
-                     )
-
-                     friend std::ostream& operator << ( std::ostream& out, const Group& value);
-                  }; // Group
-
-
-                  using base_request = server::basic_id< Type::domain_configuration_queue_request>;
-                  struct Request : base_request
-                  {
-
-                  };
-
-                  using base_reply = server::basic_id< Type::domain_configuration_queue_reply>;
-                  struct Reply : base_reply
-                  {
-                     std::vector< Group> groups;
-
-                     CASUAL_CONST_CORRECT_MARSHAL
-                     (
-                        base_reply::marshal( archive);
-                        archive & groups;
-                     )
-
-                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-                  };
-                  static_assert( traits::is_movable< Reply>::value, "not movable");
-
-               } // queue
-
-            } // configuration
+            } // server
 
          } // domain
 
@@ -370,15 +186,9 @@ namespace casual
             template<>
             struct type_traits< domain::process::connect::Request> : detail::type< domain::process::connect::Reply> {};
 
-            template<>
-            struct type_traits< domain::configuration::transaction::resource::Request> : detail::type< domain::configuration::transaction::resource::Reply> {};
 
             template<>
-            struct type_traits< domain::configuration::gateway::Request> : detail::type< domain::configuration::gateway::Reply> {};
-
-            template<>
-            struct type_traits< domain::configuration::queue::Request> : detail::type< domain::configuration::queue::Reply> {};
-
+            struct type_traits< domain::server::configuration::Request> : detail::type< domain::server::configuration::Reply> {};
 
          } // reverse
 

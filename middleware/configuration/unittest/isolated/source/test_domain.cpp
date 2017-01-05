@@ -18,7 +18,7 @@ namespace casual
 
    INSTANTIATE_TEST_CASE_P( protocol,
          casual_configuration_domain,
-      ::testing::Values(".yaml", ".json", ".xml", ".ini"));
+      ::testing::Values(".yaml", ".json", ".xml"));//, ".ini"));
 
 
    namespace local
@@ -34,30 +34,45 @@ namespace casual
                domain.name = "domain1";
 
                {
-                  //domain.casual_default.server.instances = 3;
-                  domain.casual_default.server.restart = true;
+                  domain.domain_default.server.instances = 3;
+                  domain.domain_default.server.restart = true;
                }
 
                {
-                  domain.casual_default.service.timeout = "90";
+                  domain.domain_default.service.timeout.emplace( "90");
                }
 
+               {
+                  domain.transaction.manager_default.resource.instances.emplace( 42);
+                  domain.transaction.manager_default.resource.key.emplace( "rm-db2");
 
+                  domain.transaction.resources = {
+                        { []( configuration::transaction::Resource& r){
+                           r.name = "db1";
+                           r.openinfo = "usr=a,pwd=b";
+                        }},
+                        { []( configuration::transaction::Resource& r){
+                           r.name = "db2";
+                           r.openinfo = "usr=a,pwd=b";
+                        }},
+                  };
+
+               }
                domain.groups = {
-                       { []( configuration::domain::Group& g){
+                       { []( configuration::group::Group& g){
                           g.name = "group1";
                        }},
-                       { []( configuration::domain::Group& g){
+                       { []( configuration::group::Group& g){
                            g.name = "group2";
                        }},
                };
 
                domain.servers = {
-                       { []( configuration::domain::Server& s){
+                       { []( configuration::server::Server& s){
                           s.alias = "server1";
                           s.instances = 42;
                        }},
-                       { []( configuration::domain::Server& s){
+                       { []( configuration::server::Server& s){
                            s.alias = "server2";
                        }},
                };
@@ -110,8 +125,8 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.casual_default.server.instances == 3ul) << CASUAL_MAKE_NVP( domain.casual_default.server.instances);// << CASUAL_MAKE_NVP( path.release());
-      EXPECT_TRUE( domain.casual_default.server.restart == true);
+      EXPECT_TRUE( domain.domain_default.server.instances == 3ul) << CASUAL_MAKE_NVP( domain.domain_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
+      EXPECT_TRUE( domain.domain_default.server.restart == true);
 
 
    }
@@ -121,10 +136,41 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.casual_default.service.timeout == "90");
+      EXPECT_TRUE( domain.domain_default.service.timeout == std::string( "90"));
+   }
+
+   TEST_P( casual_configuration_domain, default_resource)
+   {
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
+
+      EXPECT_TRUE( domain.transaction.manager_default.resource.instances.value() == 42);
+      EXPECT_TRUE( domain.transaction.manager_default.resource.key.value() == "rm-db2");
    }
 
 
+   TEST_P( casual_configuration_domain, transaction)
+   {
+      auto path = local::serialize_domain( GetParam());
+      auto domain = configuration::domain::get( { path.path()});
+
+      ASSERT_TRUE( domain.transaction.resources.size() == 2) << "size: " << domain.transaction.resources.size();
+      {
+         auto& resource = domain.transaction.resources.at( 0);
+         EXPECT_TRUE( resource.instances.value() == 42);
+         EXPECT_TRUE( resource.key.value() == "rm-db2");
+         EXPECT_TRUE( resource.name == "db1");
+         EXPECT_TRUE( resource.openinfo == "usr=a,pwd=b");
+      }
+
+      {
+         auto& resource = domain.transaction.resources.at( 1);
+         EXPECT_TRUE( resource.instances.value() == 42);
+         EXPECT_TRUE( resource.key.value() == "rm-db2");
+         EXPECT_TRUE( resource.name == "db2");
+         EXPECT_TRUE( resource.openinfo == "usr=a,pwd=b");
+      }
+   }
 
    TEST_P( casual_configuration_domain, servers)
    {
@@ -141,7 +187,7 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.transaction.manager.database == local::domain::get().transaction.manager.database);
+      EXPECT_TRUE( domain.transaction.log == local::domain::get().transaction.log);
 
    }
 

@@ -34,6 +34,26 @@ namespace casual
 
          }
 
+         namespace
+         {
+            namespace optional
+            {
+               template< typename D, typename M>
+               void send( D&& device, M&& message)
+               {
+                  try
+                  {
+                     ipc::device().blocking_send( device, message);
+                  }
+                  catch( const common::exception::communication::Unavailable&)
+                  {
+                     log << "failed to send message to queue: " << device << '\n';
+                  }
+               }
+
+         } // optional
+
+         } //
       } // ipc
 
       namespace handle
@@ -843,6 +863,34 @@ namespace casual
 
          namespace resource
          {
+
+            void Lookup::operator () ( common::message::transaction::resource::lookup::Request& message)
+            {
+               Trace trace{ "transaction::handle::resource::Lookup"};
+
+               auto reply = common::message::reverse::type( message);
+
+
+               for( auto& proxy : m_state.resources)
+               {
+                  if( common::range::find( message.resources, proxy.name))
+                  {
+                     common::message::transaction::resource::Resource resource;
+
+                     resource.id = proxy.id;
+                     resource.key = proxy.key;
+                     resource.name = proxy.name;
+                     resource.openinfo = proxy.openinfo;
+                     resource.closeinfo = proxy.closeinfo;
+
+                     reply.resources.push_back( std::move( resource));
+                  }
+               }
+
+               ipc::optional::send( message.process.queue, reply);
+            }
+
+
             void Involved::operator () ( common::message::transaction::resource::Involved& message)
             {
                Trace trace{ "transaction::handle::resource::Involved"};

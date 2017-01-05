@@ -26,7 +26,7 @@ namespace casual
 
             struct Service
             {
-               state::Service operator () ( const casual::configuration::domain::Service& service) const;
+               state::Service operator () ( const casual::configuration::service::Service& service) const;
             };
 
 

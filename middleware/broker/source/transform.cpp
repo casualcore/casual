@@ -20,12 +20,12 @@ namespace casual
          {
 
 
-            state::Service Service::operator () ( const casual::configuration::domain::Service& service) const
+            state::Service Service::operator () ( const casual::configuration::service::Service& service) const
             {
                state::Service result;
 
                result.information.name = service.name;
-               result.information.timeout = common::chronology::from::string( service.timeout);
+               result.information.timeout = common::chronology::from::string( service.timeout.value_or( "0s"));
 
                return result;
             }

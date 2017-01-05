@@ -244,11 +244,32 @@ namespace casual
          EXPECT_TRUE( ! result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
       }
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_set)
+      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_has_value)
       {
-         auto result = TestFixture::template write_read< local::vo::Optional< int>>( local::vo::Optional< int>{ 42l});
+         auto result = TestFixture::template write_read< local::vo::Optional< std::size_t>>( local::vo::Optional< std::size_t>{ 42l});
 
-         EXPECT_TRUE( result.optional_value == 42) << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value == 42ul) << CASUAL_MAKE_NVP( result);
+      }
+
+
+      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_empty_vector)
+      {
+         using optional_type = local::vo::Optional< std::vector< int>>;
+
+         auto result = TestFixture::template write_read< optional_type>( optional_type{});
+
+         EXPECT_TRUE( ! result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
+      }
+
+      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_has_value_vector)
+      {
+         using optional_type = local::vo::Optional< std::vector< int>>;
+
+         std::vector< int> value{ 1, 2, 3, 4, 5, 6};
+
+         auto result = TestFixture::template write_read< optional_type>( optional_type{ value});
+
+         EXPECT_TRUE( result.optional_value == value) << CASUAL_MAKE_NVP( result);
       }
 
       TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_medium)

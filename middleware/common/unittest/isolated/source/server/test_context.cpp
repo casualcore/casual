@@ -11,6 +11,7 @@
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/domain.h"
+#include "common/mockup/rm.h"
 
 #include "common/buffer/pool.h"
 
@@ -183,67 +184,6 @@ namespace casual
 
       }
 
-      /*
-
-      TEST( common_server_context, call_service__gives_broker_ack)
-      {
-         common::unittest::Trace trace;
-
-         mockup::ipc::clear();
-         mockup::ipc::Instance caller{ 42};
-
-         //
-         // We only need the mockup-broker during initialization.
-         //
-         auto prepare_caller = [](){
-
-            mockup::domain::Broker broker;
-            return server::handle::Call{ local::arguments()};
-         };
-
-         {
-            auto callHandler = prepare_caller();
-            auto message = local::call_request( caller.id());
-            callHandler( message);
-         }
-
-         message::service::call::ACK message;
-         communication::ipc::blocking::receive( mockup::ipc::broker::queue().output(), message);
-
-         EXPECT_TRUE( message.service == "test_service");
-         EXPECT_TRUE( message.process.queue == communication::ipc::inbound::id());
-      }
-
-
-
-
-      TEST( common_server_context, call_service__gives_traffic_notify)
-      {
-         mockup::ipc::clear();
-
-         mockup::ipc::Instance caller{ 10};
-         mockup::ipc::Instance traffic{ 42};
-
-         mockup::domain::Broker broker;
-
-
-         {
-
-            server::handle::Call callHandler( local::arguments());
-
-            auto message = local::call_request( caller.id());
-            message.service.traffic_monitors = { traffic.id()};
-            callHandler( message);
-         }
-
-         message::traffic::Event message;
-         communication::ipc::blocking::receive( traffic.output(), message);
-
-         EXPECT_TRUE( message.service == "test_service");
-
-      }
-
-      */
 
 
       namespace local
@@ -253,9 +193,57 @@ namespace casual
 
             struct Domain
             {
+               Domain() : manager{ handle_server_configuration{}}, tm{ handle_resource_lookup{}}
+               {
+
+               }
+
                mockup::domain::Manager manager;
                mockup::domain::Broker broker;
                mockup::domain::transaction::Manager tm;
+
+
+            private:
+               struct handle_server_configuration
+               {
+                  void operator () ( message::domain::server::configuration::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
+                     reply.resources = { "rm1", "rm2"};
+
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
+
+               struct handle_resource_lookup
+               {
+                  void operator () ( message::transaction::resource::lookup::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
+                     reply.resources = {
+                           {
+                              [](  message::transaction::resource::Resource& r){
+                                 r.name = "rm1";
+                                 r.id = 1;
+                                 r.key = "rm-mockup";
+                                 r.openinfo = "openinfo1";
+                                 r.closeinfo = "closeinfo1";
+                              }
+                           },
+                           {
+                              [](  message::transaction::resource::Resource& r){
+                                 r.name = "rm2";
+                                 r.id = 2;
+                                 r.key = "rm-mockup";
+                                 r.openinfo = "openinfo2";
+                                 r.closeinfo = "closeinfo2";
+                              }
+                           }
+                     };
+
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
             };
 
             namespace call
@@ -314,6 +302,20 @@ namespace casual
 
          EXPECT_NO_THROW({
             local::Domain domain;
+         });
+      }
+
+      TEST( common_server_context, resource_configuration)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto arguments = local::arguments();
+         arguments.resources.emplace_back(  "rm-mockup", &casual_mockup_xa_switch_static);
+
+         EXPECT_NO_THROW({
+            server::handle::Call server( std::move( arguments));
          });
       }
 

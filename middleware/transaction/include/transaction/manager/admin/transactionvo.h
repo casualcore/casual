@@ -123,6 +123,7 @@ namespace casual
             struct Proxy
             {
                id_type id;
+               std::string name;
                std::string key;
                std::string openinfo;
                std::string closeinfo;
@@ -134,6 +135,7 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( name);
                   archive & CASUAL_MAKE_NVP( key);
                   archive & CASUAL_MAKE_NVP( openinfo);
                   archive & CASUAL_MAKE_NVP( closeinfo);

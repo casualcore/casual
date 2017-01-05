@@ -48,13 +48,13 @@ namespace casual
          {
             auto& queue = domain.queue.groups.at( 0).queues.at( 0);
             EXPECT_TRUE( queue.name == "queue1");
-            EXPECT_TRUE( queue.retries == "3");
+            EXPECT_TRUE( queue.retries.value() == 3);
          }
 
          {
             auto& queue = domain.queue.groups.at( 0).queues.at( 3);
             EXPECT_TRUE( queue.name == "queue4");
-            EXPECT_TRUE( queue.retries == "42");
+            EXPECT_TRUE( queue.retries.value() == 42);
          }
 
 
@@ -130,7 +130,7 @@ namespace casual
       TEST( casual_configuration_queue, default_values__retries)
       {
          queue::Manager manager;
-         manager.casual_default.queue.retries = "42";
+         manager.casual_default.queue.retries.emplace( 42);
          manager.groups.resize( 1);
          manager.groups.at( 0).name = "A";
          manager.groups.at( 0).queuebase = "X";
@@ -138,7 +138,8 @@ namespace casual
          manager.groups.at( 0).queues.at( 0).name = "a";
 
          queue::unittest::default_values( manager);
-         EXPECT_TRUE( manager.groups.at( 0).queues.at( 0).retries == "42") << manager.groups.at( 0).queues.at( 0).retries;
+         ASSERT_TRUE( manager.groups.at( 0).queues.at( 0).retries.has_value()) << CASUAL_MAKE_NVP( manager);
+         EXPECT_TRUE( manager.groups.at( 0).queues.at( 0).retries.value() == 42) << CASUAL_MAKE_NVP( manager);
       }
 
 

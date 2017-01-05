@@ -7,8 +7,7 @@
 
 
 #include "sf/namevaluepair.h"
-
-#include "common/message/domain.h"
+#include "sf/platform.h"
 
 #include <string>
 #include <vector>
@@ -20,20 +19,30 @@ namespace casual
    {
       namespace queue
       {
+         namespace queue
+         {
+            struct Default
+            {
+               sf::optional< std::size_t> retries;
 
-         struct Queue
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( retries);
+               )
+            };
+         } // queue
+
+         struct Queue : queue::Default
          {
             std::string name;
-            std::string retries;
             std::string note;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
+               queue::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( retries);
                archive & CASUAL_MAKE_NVP( note);
-            }
+            )
 
             friend bool operator < ( const Queue& lhs, const Queue& rhs);
             friend bool operator == ( const Queue& lhs, const Queue& rhs);
@@ -46,14 +55,13 @@ namespace casual
             std::string note;
             std::vector< Queue> queues;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( queuebase);
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( queues);
-            }
+            )
 
             friend bool operator < ( const Group& lhs, const Group& rhs);
             friend bool operator == ( const Group& lhs, const Group& rhs);
@@ -62,15 +70,12 @@ namespace casual
 
          struct Default
          {
-            Default();
+            queue::Default queue;
 
-            Queue queue;
-
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( queue);
-            }
+            )
          };
 
          struct Manager
@@ -78,12 +83,11 @@ namespace casual
             Default casual_default;
             std::vector< Group> groups;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & sf::name::value::pair::make( "default", casual_default);
                archive & CASUAL_MAKE_NVP( groups);
-            }
+            )
 
             //!
             //! Complement with defaults and validates
@@ -96,12 +100,6 @@ namespace casual
          };
 
 
-
-         namespace transform
-         {
-            common::message::domain::configuration::queue::Reply manager( const Manager& value);
-
-         } // transform
 
 
          namespace unittest

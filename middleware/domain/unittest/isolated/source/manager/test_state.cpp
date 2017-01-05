@@ -92,7 +92,7 @@ domain:
             {
                auto& batch = bootorder.at( 0);
                EXPECT_TRUE( batch.group.get().name == "global" ) << "bootorder: " << common::range::make( bootorder);
-               ASSERT_TRUE( batch.executables.size() == 1) << "bootorder: " << common::range::make( bootorder);
+               ASSERT_TRUE( batch.executables.size() == 1) << "state: " << state << "\nbootorder: " << common::range::make( bootorder);
                EXPECT_TRUE( batch.executables.at( 0).get().path == "exe2");
             }
             {

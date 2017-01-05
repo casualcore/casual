@@ -9,14 +9,18 @@
 #include "sf/namevaluepair.h"
 #include "sf/platform.h"
 
-#include <algorithm>
-#include <string>
-#include <vector>
+
+#include "configuration/server.h"
+#include "configuration/service.h"
+#include "configuration/group.h"
 #include "configuration/environment.h"
 #include "configuration/gateway.h"
 #include "configuration/queue.h"
 #include "configuration/transaction.h"
 
+#include <algorithm>
+#include <string>
+#include <vector>
 
 namespace casual
 {
@@ -24,143 +28,50 @@ namespace casual
    {
       namespace domain
       {
-         struct Executable
+         namespace domain
          {
-            Executable() = default;
-            Executable( std::function< void(Executable&)> foreign) { foreign( *this);}
-
-            std::string note;
-            std::string alias;
-            std::string path;
-            sf::optional< std::size_t> instances;
-            sf::optional< bool> restart;
-            std::vector< std::string> arguments;
-            std::vector< std::string> memberships;
-
-            Environment environment;
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( alias);
-               archive & CASUAL_MAKE_NVP( path);
-               archive & CASUAL_MAKE_NVP( instances);
-               archive & CASUAL_MAKE_NVP( restart);
-               archive & CASUAL_MAKE_NVP( arguments);
-               archive & CASUAL_MAKE_NVP( memberships);
-               archive & CASUAL_MAKE_NVP( environment);
-            )
-
-            friend bool operator == ( const Executable& lhs, const Executable& rhs);
-         };
-
-
-
-         struct Server : public Executable
-         {
-            Server() = default;
-            Server( std::function< void(Server&)> foreign) { foreign( *this);}
-
-            std::vector< std::string> restriction;
-
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               Executable::serialize( archive);
-               archive & CASUAL_MAKE_NVP( restriction);
-            )
-
-            friend bool operator == ( const Server& lhs, const Server& rhs);
-         };
-
-
-         struct Service
-         {
-            std::string name;
-            std::string timeout;
-            std::string note;
-            std::string transaction;
-
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( timeout);
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( transaction);
-            )
-
-            friend bool operator == ( const Service& lhs, const Service& rhs);
-         };
-
-
-         struct Group
-         {
-            Group() = default;
-            Group( std::function< void(Group&)> foreign) { foreign( *this);}
-
-            std::string name;
-            std::string note;
-
-            std::vector< std::string> resources;
-            std::vector< std::string> dependencies;
-
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( note);
-               archive & CASUAL_MAKE_NVP( resources);
-               archive & CASUAL_MAKE_NVP( dependencies);
-            )
-
-            friend bool operator == ( const Group& lhs, const Group& rhs);
-         };
-
-
-         struct Default
-         {
-            Default()
+            struct Default
             {
-               server.instances = 1;
-               service.timeout = "1h";
-            }
+               Default();
 
-            Environment environment;
-            Server server;
-            Executable executable;
-            Service service;
+               Environment environment;
+
+               server::executable::Default server;
+               server::executable::Default executable;
+               service::service::Default service;
 
 
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( environment);
-               archive & CASUAL_MAKE_NVP( server);
-               archive & CASUAL_MAKE_NVP( executable);
-               archive & CASUAL_MAKE_NVP( service);
-            )
-         };
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( environment);
+                  archive & CASUAL_MAKE_NVP( server);
+                  archive & CASUAL_MAKE_NVP( executable);
+                  archive & CASUAL_MAKE_NVP( service);
+               )
+            };
+         } // domain
+
 
          struct Domain
          {
 
             std::string name;
-            Default casual_default;
+            domain::Default domain_default;
 
-            transaction::Transaction transaction;
+            std::vector< group::Group> groups;
+            std::vector< server::Server> servers;
+            std::vector< server::Executable> executables;
+            std::vector< service::Service> services;
 
-            std::vector< Group> groups;
-            std::vector< Server> servers;
-            std::vector< Executable> executables;
-            std::vector< Service> services;
-
-            gateway::Gateway gateway;
-
+            transaction::Manager transaction;
+            gateway::Manager gateway;
             queue::Manager queue;
 
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                archive & CASUAL_MAKE_NVP( name);
-               archive & sf::name::value::pair::make( "default", casual_default);
+               archive & sf::name::value::pair::make( "default", domain_default);
                archive & CASUAL_MAKE_NVP( transaction);
                archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
@@ -200,36 +111,6 @@ namespace casual
          //! @param configuration domain configuration
          //!
          void finalize( Domain& configuration);
-
-
-         namespace filter
-         {
-            struct Membership
-            {
-               Membership( const std::string& group) : m_group( group) {}
-
-               bool operator () ( const Server& value) const
-               {
-                  return std::find(
-                        std::begin( value.memberships),
-                        std::end( value.memberships),
-                        m_group) != std::end( value.memberships);
-               }
-            private:
-               std::string m_group;
-            };
-
-            struct Excluded
-            {
-               bool operator () ( const Server& value) const
-               {
-                  return value.memberships.empty();
-               }
-            };
-
-
-
-         } // filter
 
       } // domain
 

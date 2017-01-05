@@ -290,7 +290,7 @@ namespace casual
             bool empty( T* value) { return value == nullptr;}
 
             template< typename T>
-            bool empty( common::optional< T>& value) { return ! value.has_value();}
+            bool empty( optional< T>& value) { return ! value.has_value();}
 
             template< typename R, typename T>
             R implementation( T&& value)
@@ -703,28 +703,35 @@ namespace casual
             return out.str();
          }
 
-
+         //!
+         //! Returns the first value in the range
+         //!
+         //! @param range
+         //! @return first value
+         //! @throws std::out_of_range if range is empty
+         //!
          template< typename R>
-         auto front( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto front( R&& range) -> decltype( make( std::forward< R>( range)).front())
          {
             auto result = make( std::forward< R>( range));
             if( result)
             {
-               result.last = result.front + 1;
+               return result.front();
             }
-            return result;
+            throw std::out_of_range{ "range::front - range is empty"};
          }
 
          template< typename R>
-         auto back( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto back( R&& range) -> decltype( make( std::forward< R>( range)).back())
          {
             auto result = make( std::forward< R>( range));
             if( result)
             {
-               result.first = result.last - 1;
+               return result.back();
             }
-            return result;
+            throw std::out_of_range{ "range::back - range is empty"};
          }
+
 
 
 

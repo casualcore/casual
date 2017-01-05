@@ -10,6 +10,7 @@
 #include "gateway/common.h"
 
 #include "configuration/domain.h"
+#include "configuration/message/transform.h"
 
 #include "common/trace.h"
 #include "common/environment.h"
@@ -49,21 +50,21 @@ namespace casual
                   if( ! settings.configuration.empty())
                   {
                      return gateway::transform::state(
-                           configuration::gateway::transform::gateway(
-                                 configuration::domain::get( { settings.configuration}).gateway));
+                           configuration::transform::configuration(
+                                 configuration::domain::get( { settings.configuration})));
                   }
 
 
                   //
                   // Ask domain manager for configuration
                   //
-                  common::message::domain::configuration::gateway::Request request;
+                  configuration::message::Request request;
                   request.process = process::handle();
 
                   return gateway::transform::state(
                         manager::ipc::device().call(
                               communication::ipc::domain::manager::device(),
-                              request));
+                              request).domain);
 
                }
 

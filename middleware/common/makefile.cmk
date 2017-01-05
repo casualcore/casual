@@ -145,13 +145,13 @@ install_libs.append( mockup)
 #
 # The mockup-rm, only for testing
 #
-target = LinkLibrary( 'bin/casual-mockup-rm', 
+lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
      [
        Compile( 'source/mockup/rm.cpp')
      ],
      [ common, mockup])
 
-install_libs.append( target)
+install_libs.append( lib_mockup_rm)
 
 mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
     [ 
@@ -233,7 +233,8 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
      common,
      mockup,
      mockup_unittest,
-    target_unittest,
+     target_unittest,
+     lib_mockup_rm
     ])		
 
 #

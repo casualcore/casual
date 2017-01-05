@@ -5,9 +5,9 @@
 #include "domain/transform.h"
 
 #include "configuration/domain.h"
+#include "configuration/message/transform.h"
 
 #include "common/domain.h"
-
 
 namespace casual
 {
@@ -21,7 +21,6 @@ namespace casual
          {
             namespace
             {
-
                namespace verify
                {
 
@@ -63,20 +62,6 @@ namespace casual
 
                } // verify
 
-               struct Resources
-               {
-                  manager::state::Group::Resource operator () ( const casual::configuration::transaction::Resource& value) const
-                  {
-                     manager::state::Group::Resource result;
-
-                     result.key = value.key;
-                     result.instances = coalesce( value.instances, 0);
-                     result.openinfo = value.openinfo;
-                     result.closeinfo = value.closeinfo;
-
-                     return result;
-                  }
-               };
 
                std::vector< manager::state::Group::id_type> membership( const std::vector< std::string>& members, const std::vector< manager::state::Group>& groups)
                {
@@ -104,19 +89,23 @@ namespace casual
 
                   Group( const manager::State& state) : m_state( state) {}
 
-                  manager::state::Group operator () ( const casual::configuration::domain::Group& group) const
+                  manager::state::Group operator () ( const casual::configuration::group::Group& group) const
                   {
                      manager::state::Group result;
 
                      result.name = group.name;
                      result.note = group.note;
-                     //range::transform( group.resources, result.resources, local::Resources{});
+
+                     if( group.resources.has_value()) result.resources = group.resources.value();
 
                      result.dependencies.push_back( id( "global"));
 
-                     for( auto& dependency : group.dependencies)
+                     if( group.dependencies)
                      {
-                        result.dependencies.push_back( id( dependency));
+                        for( auto& dependency : group.dependencies.value())
+                        {
+                           result.dependencies.push_back( id( dependency));
+                        }
                      }
 
                      return result;
@@ -162,15 +151,17 @@ namespace casual
                      manager::state::Executable result;
 
                      result.alias = value.alias;
-                     result.arguments = value.arguments;
-                     result.configured_instances = std::stoul( coalesce( value.instances, "0"));
+                     result.arguments = value.arguments.value_or( result.arguments);
+                     result.configured_instances = value.instances.value_or( 0);
                      result.note = value.note;
                      result.path = value.path;
-                     result.restart = value.restart == "true";
+                     result.restart = value.restart.value_or( false);
 
-                     result.environment.variables = local::environment( value.environment);
+                     if( value.environment)
+                        result.environment.variables = local::environment( value.environment.value());
 
-                     result.memberships = local::membership( value.memberships, groups);
+                     if( value.memberships)
+                        result.memberships = local::membership( value.memberships.value(), groups);
 
                      if( result.memberships.empty())
                      {
@@ -190,20 +181,6 @@ namespace casual
 
                namespace vo
                {
-                  struct Resource
-                  {
-                     manager::admin::vo::Group::Resource operator () ( const manager::state::Group::Resource& value)
-                     {
-                        manager::admin::vo::Group::Resource result;
-
-                        result.key = value.key;
-                        result.openinfo = value.openinfo;
-                        result.closeinfo = value.closeinfo;
-                        result.instances = value.instances;
-
-                        return result;
-                     }
-                  };
 
                   struct Group
                   {
@@ -216,7 +193,7 @@ namespace casual
                         result.note = value.note;
 
                         result.dependencies = value.dependencies;
-                        result.resources = range::transform( value.resources, vo::Resource{});
+                        result.resources = value.resources;
 
                         return result;
                      }
@@ -243,13 +220,8 @@ namespace casual
 
                         return result;
                      }
-
                   };
-
-
                } // vo
-
-
 
             } // <unnamed>
          } // local
@@ -275,7 +247,7 @@ namespace casual
 
             manager::State result;
 
-            result.configuration = domain;
+            result.configuration = configuration::transform::configuration( domain);
 
 
             //
@@ -321,7 +293,7 @@ namespace casual
                   manager::state::Executable manager;
                   result.global.manager = manager.id;
                   manager.alias = "casual-domain-manager";
-                  manager.path = "${CASUAL_HOME}/bin/casual-domain-manager";
+                  manager.path = "casual-domain-manager";
                   manager.configured_instances = 1;
                   manager.memberships.push_back( result.global.group);
                   manager.note = "responsible for all executables in this domain";
@@ -342,28 +314,6 @@ namespace casual
             return result;
          }
 
-         namespace configuration
-         {
-            namespace transaction
-            {
-               common::message::domain::configuration::transaction::Resource resource( const manager::state::Group::Resource& value)
-               {
-                  common::message::domain::configuration::transaction::Resource result;
-
-                  result.id = value.id;
-                  result.key = value.key;
-                  result.openinfo = value.openinfo;
-                  result.closeinfo = value.closeinfo;
-                  result.instances = value.instances;
-
-                  return result;
-               }
-            } // transaction
-
-
-
-
-         } // configuration
 
       } // transform
 

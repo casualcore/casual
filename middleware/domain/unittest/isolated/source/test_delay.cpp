@@ -94,13 +94,14 @@ namespace casual
 
             auto id = common::uuid::make();
 
-            auto start = common::platform::clock_type::now();
 
             {
                common::message::domain::process::lookup::Request message;
                message.identification = id;
                message::send( message, ipc.id(), std::chrono::milliseconds{ 0});
             }
+
+            auto start = common::platform::clock_type::now();
 
             {
                common::message::domain::process::lookup::Request message;

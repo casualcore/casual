@@ -80,8 +80,12 @@ namespace casual
          bool Reader::read (unsigned long& value, const char* name)
          {
             long temp;
-            return pod( temp, name);
-            value = temp;
+            if( pod( temp, name))
+            {
+               value = temp;
+               return true;
+            }
+            return false;
          }
 
          bool Reader::read( float& value, const char* name)

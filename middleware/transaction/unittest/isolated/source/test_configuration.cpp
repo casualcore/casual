@@ -17,6 +17,8 @@
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
 
+#include "configuration/message/domain.h"
+
 namespace casual
 {
 
@@ -24,25 +26,25 @@ namespace casual
    {
       namespace
       {
-         common::message::domain::configuration::transaction::resource::Reply configuration()
+         configuration::message::Reply configuration()
          {
-            common::message::domain::configuration::transaction::resource::Reply result;
+            configuration::message::Reply result;
 
 
-            common::message::domain::configuration::transaction::Resource resource;
-            resource.id = 1;
+            configuration::message::transaction::Resource resource;
+            resource.name = "rm1";
             resource.key = "rm-mockup";
             resource.instances = 3;
             resource.openinfo = "some open info 1";
             resource.closeinfo = "some close info 1";
-            result.resources.push_back( resource);
+            result.domain.transaction.resources.push_back( resource);
 
-            resource.id = 2;
+            resource.name = "rm2";
             resource.key = "rm-mockup";
             resource.instances = 3;
             resource.openinfo = "some open info 2";
             resource.closeinfo = "some close info 2";
-            result.resources.push_back( resource);
+            result.domain.transaction.resources.push_back( resource);
 
             return result;
          }
@@ -51,7 +53,7 @@ namespace casual
          {
 
             Domain() : manager{
-               []( common::message::domain::configuration::transaction::resource::Request& r){
+               []( configuration::message::Request& r){
 
                   common::Trace trace{ "mockup transaction::manager::connect::Request", common::log::internal::debug};
 
@@ -98,36 +100,15 @@ namespace casual
       transaction::action::configure( state, "../example/resources/resources.yaml");
 
       ASSERT_TRUE( state.resources.size() == 2);
-      EXPECT_TRUE( state.resources.at( 0).id == 1);
+      EXPECT_TRUE( state.resources.at( 0).id > 0) << "id: " << state.resources.at( 0).id;
       EXPECT_TRUE( state.resources.at( 0).openinfo == "some open info 1");
-      EXPECT_TRUE( state.resources.at( 1).id == 2);
+      EXPECT_TRUE( state.resources.at( 0).name == "rm1");
+      EXPECT_TRUE( state.resources.at( 1).id > 0) << "id: " << state.resources.at( 1).id;
       EXPECT_TRUE( state.resources.at( 1).closeinfo == "some close info 2");
+      EXPECT_TRUE( state.resources.at( 1).name == "rm2");
    }
 
-   /*
-   TEST( casual_transaction_configuration, connect_to_broker__expect_running_message_sent)
-   {
-      common::mockup::queue::clearAllQueues();
 
-      // prepare queues
-      local::prepareConfigurationResponse();
-
-
-      transaction::State state( "unittest_transaction.db");
-
-      common::mockup::queue::blocking::Writer brokerQueue{ local::id::broker()};
-      common::mockup::queue::blocking::Reader queueReader{ local::id::tm()};
-
-      transaction::action::configure( state, brokerQueue, queueReader);
-
-
-      common::mockup::queue::non_blocking::Reader brokerReplyQ{ local::id::broker()};
-      common::message::transaction::Connected connected;
-
-      ASSERT_TRUE( brokerReplyQ( connected));
-      EXPECT_TRUE( connected.success);
-   }
-   */
 
 } // casual
 

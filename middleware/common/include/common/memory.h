@@ -145,6 +145,7 @@ namespace casual
             return offset + copy( source, destination);
          }
 
+
       } // memory
 
 

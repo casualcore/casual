@@ -17,46 +17,78 @@ namespace casual
    {
       namespace transaction
       {
-         struct Manager
+         namespace resource
          {
-            std::string path = "casual-transaction-manager";
-            std::string database = "${CASUAL_DOMAIN_HOME}/transaction/log.db";
+            struct Default
+            {
+               sf::optional< std::string> key;
+               sf::optional< std::size_t> instances;
 
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( path);
-               archive & CASUAL_MAKE_NVP( database);
-            )
-         };
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( key);
+                  archive & CASUAL_MAKE_NVP( instances);
+               )
+            };
+         } // resource
 
-
-         struct Resource
+         struct Resource : resource::Default
          {
-            std::string key;
+            Resource();
+            Resource( std::function< void(Resource&)> foreign);
+
             std::string name;
-            sf::optional< std::size_t> instances;
+            std::string note;
 
             std::string openinfo;
             std::string closeinfo;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( key);
+               resource::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( instances);
+               archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( openinfo);
                archive & CASUAL_MAKE_NVP( closeinfo);
             )
+
+            friend bool operator == ( const Resource& lhs, const Resource& rhs);
+            friend Resource& operator += ( Resource& lhs, const resource::Default& rhs);
          };
 
-         struct Transaction
+         namespace manager
          {
-            Manager manager;
+            struct Default
+            {
+               resource::Default resource;
+
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( resource);
+               )
+            };
+
+         } // manager
+
+         struct Manager
+         {
+            Manager();
+
+            manager::Default manager_default;
+
+            std::string log;
             std::vector< Resource> resources;
+
+
+            //!
+            //! Complement with defaults and validates
+            //!
+            void finalize();
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & CASUAL_MAKE_NVP( manager);
+               archive & sf::name::value::pair::make( "default", manager_default);
+               archive & CASUAL_MAKE_NVP( log);
                archive & CASUAL_MAKE_NVP( resources);
             )
          };

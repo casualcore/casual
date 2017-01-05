@@ -105,6 +105,7 @@ namespace casual
                vo::resource::Proxy result;
 
                result.id = value.id;
+               result.name = value.name;
                result.key = value.key;
                result.openinfo = value.openinfo;
                result.closeinfo = value.closeinfo;

@@ -31,72 +31,18 @@ namespace casual
 
                namespace complement
                {
-                  template< typename T>
-                  inline void assign_if_empty( sf::optional< T>& value, const sf::optional< T>& def)
+
+                  template< typename R, typename V>
+                  void default_values( R& range, V&& value)
                   {
-                     if( ! value.has_value())
-                        value = def;
+                     for( auto& element : range) { element += value;}
                   }
 
-                  inline void assign_if_empty( std::string& value, const std::string& def)
+                  inline void default_values( Domain& domain)
                   {
-                     if( value.empty() || value == "~")
-                        value = def;
-                  }
-
-                  struct Default
-                  {
-                     Default( const domain::Default& casual_default)
-                           : m_casual_default( casual_default)
-                     {
-                     }
-
-                     void operator ()( domain::Server& server) const
-                     {
-                        assign_if_empty( server.instances, m_casual_default.server.instances);
-                        assign_if_empty( server.restart, m_casual_default.server.restart);
-                        assign_if_empty( server.alias, nextAlias( server.path));
-                     }
-
-                     void operator ()( domain::Service& service) const
-                     {
-                        assign_if_empty( service.timeout, m_casual_default.service.timeout);
-                        assign_if_empty( service.transaction, m_casual_default.service.transaction);
-                     }
-
-                     void operator ()( domain::Domain& configuration) const
-                     {
-                        std::for_each( std::begin( configuration.servers), std::end( configuration.servers), *this);
-                        std::for_each( std::begin( configuration.services), std::end( configuration.services), *this);
-
-                     }
-
-                  private:
-
-
-
-
-                     std::string nextAlias( const std::string& path) const
-                     {
-                        auto alias = common::file::name::base( path);
-
-                        auto count = m_alias[ alias]++;
-
-                        if( count > 1)
-                        {
-                           return alias + "_" + std::to_string( count);
-                        }
-
-                        return alias;
-                     }
-                     domain::Default m_casual_default;
-                     mutable std::map< std::string, std::size_t> m_alias;
-                  };
-
-                  inline void defaultValues( Domain& domain)
-                  {
-                     Default defaults( domain.casual_default);
-                     defaults( domain);
+                     default_values( domain.executables, domain.domain_default.executable);
+                     default_values( domain.servers, domain.domain_default.server);
+                     default_values( domain.services, domain.domain_default.service);
                   }
 
                } // complement
@@ -129,6 +75,7 @@ namespace casual
                {
                   if( lhs.name.empty()) { lhs.name = std::move( rhs.name);}
 
+                  local::replace_or_add( lhs.transaction.resources, rhs.transaction.resources);
                   local::replace_or_add( lhs.groups, rhs.groups);
                   local::replace_or_add( lhs.executables, rhs.executables);
                   local::replace_or_add( lhs.servers, rhs.servers);
@@ -158,26 +105,17 @@ namespace casual
             } // unnamed
          } // local
 
-         bool operator == ( const Executable& lhs, const Executable& rhs)
-         {
-            return coalesce( lhs.alias, lhs.path) == coalesce( rhs.alias, rhs.path);
-         }
 
-         bool operator == ( const Server& lhs, const Server& rhs)
+         namespace domain
          {
-            return lhs.restriction == rhs.restriction &&
-                  static_cast< const Executable&>( lhs) == static_cast< const Executable&>( rhs);
-         }
+            Default::Default()
+            {
+               server.instances.emplace( 1);
+            }
 
-         bool operator == ( const Group& lhs, const Group& rhs)
-         {
-            return lhs.name == rhs.name;
-         }
+         } // domain
 
-         bool operator == ( const Service& lhs, const Service& rhs)
-         {
-            return lhs.name == rhs.name;
-         }
+
 
          Domain& Domain::operator += ( const Domain& rhs)
          {
@@ -201,13 +139,14 @@ namespace casual
             //
             // Complement with default values
             //
-            local::complement::defaultValues( configuration);
+            local::complement::default_values( configuration);
 
             //
             // Make sure we've got valid configuration
             //
             local::validate( configuration);
 
+            configuration.transaction.finalize();
             configuration.gateway.finalize();
             configuration.queue.finalize();
 
@@ -221,7 +160,18 @@ namespace casual
                return persistent::get();
             }
 
-            return range::accumulate( files, Domain{}, &local::get);
+            auto domain = range::accumulate( files, Domain{}, &local::get);
+
+            {
+               std::map< std::string, std::size_t> used;
+               server::complement::Alias complement{ used};
+
+               range::for_each( domain.servers, complement);
+               range::for_each( domain.executables, complement);
+            }
+
+            return domain;
+
          }
 
 
@@ -234,7 +184,7 @@ namespace casual
 
                if( common::file::exists( configuration))
                {
-                  return domain::get( { configuration});
+                  return configuration::domain::get( { configuration});
                }
                else
                {

@@ -20,7 +20,7 @@ namespace casual
          namespace
          {
 
-            gateway::Gateway get( const std::string& file)
+            gateway::Manager get( const std::string& file)
             {
 
                //
@@ -28,7 +28,7 @@ namespace casual
                //
                auto reader = sf::archive::reader::from::file( file);
 
-               gateway::Gateway gateway;
+               gateway::Manager gateway;
                reader >> CASUAL_MAKE_NVP( gateway);
 
                gateway.finalize();
@@ -74,8 +74,6 @@ gateway:
 gateway:
 
   default:
-    listener: 
-       address: 127.0.0.1:7777
      
     connection:
        type: ipc
@@ -115,8 +113,8 @@ gateway:
          auto gateway = local::get( temp_file);
 
          ASSERT_TRUE( gateway.connections.size() == 2);
-         ASSERT_TRUE( gateway.connections.at( 0).type == "tcp");
-         ASSERT_TRUE( gateway.connections.at( 0).address == "dolittle.laz.se:3432");
+         ASSERT_TRUE( gateway.connections.at( 0).type.value() == "tcp");
+         ASSERT_TRUE( gateway.connections.at( 0).address.value() == "dolittle.laz.se:3432");
          ASSERT_TRUE( gateway.connections.at( 0).services.size() == 4);
       }
 
@@ -127,14 +125,14 @@ gateway:
 
          EXPECT_TRUE( gateway.listeners.at( 0).address == "127.0.0.1:7777") << CASUAL_MAKE_NVP( gateway.listeners.at( 0).address);
 
-         EXPECT_TRUE( gateway.connections.at( 0).address == "dolittle.laz.se:3432") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 0).restart == "true") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 0).type == "tcp") << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 0).address.value() == "dolittle.laz.se:3432") << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 0).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 0).services.empty()) << CASUAL_MAKE_NVP( gateway);
 
-         EXPECT_TRUE( gateway.connections.at( 1).address == "/some/path/to/domain") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 1).restart == "true") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 1).type == "ipc") << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 1).address.value() == "/some/path/to/domain") << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 1).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 1).type.value() == "ipc") << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 1).services.empty()) << CASUAL_MAKE_NVP( gateway);
 
 

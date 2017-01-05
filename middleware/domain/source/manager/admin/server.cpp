@@ -201,7 +201,7 @@ namespace casual
                      {
                         auto service_io = local::server->createService( service_info);
 
-                        service_io.call( &configuration::domain::persistent::save, state.configuration);
+                        //service_io.call( &configuration::domain::persistent::save, state.configuration);
 
                         reply = service_io.finalize();
 

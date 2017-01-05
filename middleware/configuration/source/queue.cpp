@@ -60,10 +60,7 @@ namespace casual
                   {
                      for( auto& queue : group.queues)
                      {
-                        if( queue.retries.empty())
-                        {
-                           queue.retries = manager.casual_default.queue.retries;
-                        }
+                        queue.retries = coalesce( queue.retries, manager.casual_default.queue.retries);
                      }
                   }
                }
@@ -75,11 +72,6 @@ namespace casual
                      if( queue.name.empty())
                      {
                         throw common::exception::invalid::Configuration{ "queue has to have a name"};
-                     }
-
-                     if( ! common::string::integer( queue.retries))
-                     {
-                        throw common::exception::invalid::Configuration{ "queue has to have numeric retry set", CASUAL_NIP( queue.retries)};
                      }
                   }
 
@@ -164,10 +156,6 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Default::Default()
-         {
-            queue.retries = "0";
-         }
 
          void Manager::finalize()
          {
@@ -203,44 +191,6 @@ namespace casual
             return result;
          }
 
-
-         namespace transform
-         {
-            common::message::domain::configuration::queue::Reply manager( const Manager& value)
-            {
-               message::domain::configuration::queue::Reply result;
-
-               auto transform_group = []( const configuration::queue::Group& g){
-
-                  message::domain::configuration::queue::Group result;
-
-                  result.name = g.name;
-                  result.queuebase = g.queuebase;
-                  result.note = g.note;
-
-                  auto transform_queue = []( const configuration::queue::Queue& q){
-                     message::domain::configuration::queue::Queue result;
-
-                     result.name = q.name;
-                     if( ! q.retries.empty()) { result.retries = std::stoul( q.retries );}
-
-                     result.note = q.note;
-
-                     return result;
-                  };
-
-                  range::transform( g.queues, result.queues, transform_queue);
-
-                  return result;
-               };
-
-               range::transform( value.groups, result.groups, transform_group);
-
-
-               return result;
-            }
-
-         } // transform
 
 
          namespace unittest

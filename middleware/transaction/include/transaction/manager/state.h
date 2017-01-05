@@ -14,6 +14,7 @@
 #include "transaction/manager/log.h"
 
 #include "configuration/xa_switch.h"
+#include "configuration/message/domain.h"
 
 
 #include <map>
@@ -106,8 +107,10 @@ namespace casual
 
                };
 
+               struct generate_id {};
+
                Proxy() = default;
-               Proxy( id::type id) : id( id) {}
+               inline Proxy( generate_id) : id( next_id()) {}
 
                id::type id = 0;
 
@@ -123,6 +126,9 @@ namespace casual
                Stats statistics;
 
                std::vector< Instance> instances;
+
+               std::string name;
+               std::string note;
 
                //!
                //! @return true if all instances is idle
@@ -141,6 +147,14 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Proxy& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value);
+
+            private:
+
+               inline static std::size_t next_id()
+               {
+                  static std::size_t id = 1;
+                  return id++;
+               }
 
             };
 
@@ -626,7 +640,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file);
+         void configure( State& state, const configuration::message::Reply& configuration, const std::string& resource_file);
 
 
 

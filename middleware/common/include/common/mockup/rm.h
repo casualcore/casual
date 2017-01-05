@@ -1,8 +1,5 @@
 //!
-//! rm.cpp
-//!
-//! Created on: May 29, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 

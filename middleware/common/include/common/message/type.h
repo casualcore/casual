@@ -47,12 +47,13 @@ namespace casual
             domain_process_termination_event,
             domain_process_lookup_request,
             domain_process_lookup_reply,
-            domain_configuration_transaction_resource_request = DOMAIN_BASE + 100,
-            domain_configuration_transaction_resource_reply,
-            domain_configuration_gateway_request,
-            domain_configuration_gateway_reply,
-            domain_configuration_queue_request,
-            domain_configuration_queue_reply,
+            domain_server_configuration_request,
+            domain_server_configuration_reply,
+
+
+            CONFIGURATION_BASE = 1600,
+            configuration_request,
+            configuration_reply,
 
             // Server
             SERVER_BASE = 2000,
@@ -102,6 +103,8 @@ namespace casual
             transaction_resource_rollback_request,
             transaction_resource_rollback_reply,
 
+            transaction_resource_lookup_request = TRANSACTION_BASE + 300,
+            transaction_resource_lookup_reply,
 
             transaction_resource_involved = TRANSACTION_BASE + 400,
             transaction_external_resource_involved,
@@ -290,20 +293,37 @@ namespace casual
          // Below, some basic message related types that is used by others
          //
 
+         template< message::Type type>
+         struct basic_request : basic_message< type>
+         {
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< type>::marshal( archive);
+               archive & process;
+            })
+         };
+
+         template< message::Type type>
+         struct basic_reply : basic_message< type>
+         {
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< type>::marshal( archive);
+               archive & process;
+            })
+         };
+
 
          namespace server
          {
 
             template< message::Type type>
-            struct basic_id : basic_message< type>
+            struct basic_id : basic_request< type>
             {
-               common::process::Handle process;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  basic_message< type>::marshal( archive);
-                  archive & process;
-               })
             };
 
             namespace connect

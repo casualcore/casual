@@ -186,7 +186,7 @@ namespace casual
                archive >> sf::name::value::pair::make( nullptr, element);
             }
             archive.container_end( name);
-            return true;
+            return ! container.empty();
          }
 
          namespace detail

@@ -13,7 +13,7 @@
 #include "common/platform.h"
 #include "common/process.h"
 
-#include "configuration/domain.h"
+#include "configuration/message/domain.h"
 
 #include  "sf/namevaluepair.h"
 
@@ -60,27 +60,11 @@ namespace casual
                Group() = default;
                Group( std::string name, std::string note = "") : name( std::move( name)), note( std::move( note)) {}
 
-               struct Resource : internal::Id< Resource>
-               {
-                  Resource() = default;
-                  Resource( std::size_t instances, const std::string& key, const std::string& openinfo, const std::string& closeinfo)
-                  : instances{ instances}, key{ key}, openinfo{ openinfo}, closeinfo{ closeinfo} {}
-
-
-                  std::size_t instances;
-                  std::string key;
-                  std::string openinfo;
-                  std::string closeinfo;
-
-                  friend std::ostream& operator << ( std::ostream& out, const Resource& value);
-               };
-
-
                std::string name;
                std::string note;
 
-               std::vector< Resource> resources;
                std::vector< id_type> dependencies;
+               std::vector< std::string> resources;
 
 
                friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
@@ -128,6 +112,11 @@ namespace casual
                //! Number of instances that has been restarted
                //!
                std::size_t restarts = 0;
+
+               //!
+               //! Resources bound explicitly to this executable (if it's a server)
+               //!
+               std::vector< std::string> resources;
 
 
                bool remove( pid_type instance);
@@ -220,6 +209,12 @@ namespace casual
 
             } global;
 
+
+            //!
+            //! this domain's original configuration.
+            //!
+            configuration::message::Domain configuration;
+
             //!
             //! Runlevel can only "go forward"
             //!
@@ -238,14 +233,17 @@ namespace casual
             state::Group& group( state::Group::id_type id);
 
 
-            friend std::ostream& operator << ( std::ostream& out, const State& state);
 
             //!
-            //! this domain's original configuration.
+            //! Extract all resources (names) configured to a specific process (server)
             //!
-            //! @todo How do we handle configuration?
+            //! @param pid process id
+            //! @return resource names
             //!
-            configuration::domain::Domain configuration;
+            std::vector< std::string> resources( common::platform::pid::type pid);
+
+
+            friend std::ostream& operator << ( std::ostream& out, const State& state);
 
          private:
             Runlevel m_runlevel = Runlevel::startup;

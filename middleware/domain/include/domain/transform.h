@@ -25,37 +25,8 @@ namespace casual
          manager::admin::vo::State state( const manager::State& state);
 
 
-
-
-
          manager::State state( const configuration::domain::Domain& domain);
 
-         namespace configuration
-         {
-            namespace transaction
-            {
-               common::message::domain::configuration::transaction::Resource resource( const manager::state::Group::Resource& value);
-
-               struct Resource
-               {
-                  auto operator() ( const manager::state::Group::Resource& value) const -> decltype( resource( value))
-                  {
-                     return resource( value);
-                  }
-               };
-
-            } // transaction
-
-
-         } // configuration
-
-
-
-         namespace task
-         {
-
-
-         } // task
 
       } // transform
 

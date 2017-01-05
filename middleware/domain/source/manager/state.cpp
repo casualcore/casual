@@ -36,14 +36,6 @@ namespace casual
          namespace state
          {
 
-            std::ostream& operator << ( std::ostream& out, const Group::Resource& value)
-            {
-               return out << "{ id: " << value.id
-                     << ", key: " << value.key
-                     << ", openinfo: " << value.openinfo
-                     << ", closeinfo: " << value.closeinfo
-                     << '}';
-            }
 
             std::ostream& operator << ( std::ostream& out, const Group& value)
             {
@@ -101,6 +93,7 @@ namespace casual
                      << ", memberships: " << range::make( value.memberships)
                      << ", configured-instances: " << value.configured_instances
                      << ", instances: " << range::make( value.instances)
+                     << ", resources: " << range::make( value.resources)
                      << '}';
             }
 
@@ -322,6 +315,23 @@ namespace casual
             {
                m_runlevel = runlevel;
             }
+         }
+
+
+         std::vector< std::string> State::resources( common::platform::pid::type pid)
+         {
+            auto& process = executable( pid);
+
+            auto resources = process.resources;
+
+            for( auto& id : process.memberships)
+            {
+               auto& group = State::group( id);
+
+               common::range::append( group.resources, resources);
+            }
+
+            return range::to_vector( range::unique( range::sort( resources)));
          }
 
          std::ostream& operator << ( std::ostream& out, const State& state)

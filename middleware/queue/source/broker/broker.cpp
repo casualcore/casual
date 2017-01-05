@@ -19,7 +19,8 @@
 #include "common/exception.h"
 #include "common/internal/log.h"
 
-#include "configuration/domain.h"
+#include "configuration/message/domain.h"
+#include "configuration/message/transform.h"
 #include "configuration/queue.h"
 
 #include <fstream>
@@ -59,7 +60,7 @@ namespace casual
 
                   struct Queue
                   {
-                     common::message::queue::Queue operator() ( const common::message::domain::configuration::queue::Queue& value) const
+                     common::message::queue::Queue operator() ( const configuration::message::queue::Queue& value) const
                      {
                         common::message::queue::Queue result;
 
@@ -76,7 +77,7 @@ namespace casual
                {
                   using broker::handle::Base::Base;
 
-                  State::Group operator () ( const common::message::domain::configuration::queue::Group& group)
+                  State::Group operator () ( const configuration::message::queue::Group& group)
                   {
                      State::Group result;
                      result.name = group.name;
@@ -103,9 +104,9 @@ namespace casual
 
                };
 
-               void startup( State& state, common::message::domain::configuration::queue::Reply&& config)
+               void startup( State& state, configuration::message::Domain&& config)
                {
-                  casual::common::range::transform( config.groups, state.groups, Startup( state));
+                  casual::common::range::transform( config.queue.groups, state.groups, Startup( state));
 
                   //
                   // Make sure all groups are up and running before we continue
@@ -232,7 +233,8 @@ namespace casual
             //
             // Only(?) for unittest
             //
-            broker::local::startup( m_state, configuration::queue::transform::manager( configuration::domain::get( { settings.configuration}).queue));
+            broker::local::startup( m_state,
+                  configuration::transform::configuration( configuration::domain::get( { settings.configuration})));
          }
          else
          {
@@ -240,12 +242,12 @@ namespace casual
             // We ask the domain manager for configuration
             //
 
-            common::message::domain::configuration::queue::Request request;
+            configuration::message::Request request;
             request.process = common::process::handle();
 
             broker::local::startup( m_state,
                   common::communication::ipc::call(
-                        common::communication::ipc::domain::manager::device(), request));
+                        common::communication::ipc::domain::manager::device(), request).domain);
          }
 
       }
