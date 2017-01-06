@@ -61,6 +61,7 @@ domain:
       queue:
         retries: 0
 
+      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
 
     groups:
       []

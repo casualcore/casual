@@ -200,8 +200,51 @@ domain:
       queue:
         retries: 0
 
+      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
 
     groups:
-      []
+      - name: groupA
+        note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+        queues:
+          - name: q_A1
+            note: ""
+
+          - retries: 10
+            name: q_A2
+            note: after 10 rollbacked dequeues, message is moved to q_A2.error
+
+          - name: q_A3
+            note: ""
+
+          - name: q_A4
+            note: ""
+
+
+
+      - name: groupB
+        queuebase: /some/fast/disk/queue/groupB.qb
+        note: ""
+        queues:
+          - name: q_B1
+            note: ""
+
+          - retries: 10
+            name: q_B2
+            note: after 10 rollbacked dequeues, message is moved to q_B2.error
+
+
+
+      - name: groupC
+        queuebase: ":memory:"
+        note: group is an in-memory queue, hence no persistence
+        queues:
+          - name: q_C1
+            note: ""
+
+          - name: q_C2
+            note: ""
+
+
+
 
 

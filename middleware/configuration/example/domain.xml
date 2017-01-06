@@ -215,7 +215,63 @@
    <queue>
     <retries>0</retries>
    </queue>
+   <directory>${CASUAL_DOMAIN_HOME}/queue/groups</directory>
   </default>
-  <groups />
+  <groups>
+   <element>
+    <name>groupA</name>
+    <note>will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb</note>
+    <queues>
+     <element>
+      <name>q_A1</name>
+      <note></note>
+     </element>
+     <element>
+      <retries>10</retries>
+      <name>q_A2</name>
+      <note>after 10 rollbacked dequeues, message is moved to q_A2.error</note>
+     </element>
+     <element>
+      <name>q_A3</name>
+      <note></note>
+     </element>
+     <element>
+      <name>q_A4</name>
+      <note></note>
+     </element>
+    </queues>
+   </element>
+   <element>
+    <name>groupB</name>
+    <queuebase>/some/fast/disk/queue/groupB.qb</queuebase>
+    <note></note>
+    <queues>
+     <element>
+      <name>q_B1</name>
+      <note></note>
+     </element>
+     <element>
+      <retries>10</retries>
+      <name>q_B2</name>
+      <note>after 10 rollbacked dequeues, message is moved to q_B2.error</note>
+     </element>
+    </queues>
+   </element>
+   <element>
+    <name>groupC</name>
+    <queuebase>:memory:</queuebase>
+    <note>group is an in-memory queue, hence no persistence</note>
+    <queues>
+     <element>
+      <name>q_C1</name>
+      <note></note>
+     </element>
+     <element>
+      <name>q_C2</name>
+      <note></note>
+     </element>
+    </queues>
+   </element>
+  </groups>
  </queue>
 </domain>
