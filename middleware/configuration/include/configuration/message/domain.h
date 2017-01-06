@@ -96,7 +96,6 @@ namespace casual
                   ipc,
                   tcp
                };
-               std::string name;
                Type type = Type::tcp;
                bool restart = true;
                std::string address;
@@ -106,7 +105,6 @@ namespace casual
 
                CASUAL_CONST_CORRECT_MARSHAL
                (
-                  archive & name;
                   archive & type;
                   archive & restart;
                   archive & address;

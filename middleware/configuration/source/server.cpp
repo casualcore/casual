@@ -25,11 +25,6 @@ namespace casual
                      value = optional;
                }
 
-               void assign_if_empty( std::string& value, const std::string& def)
-               {
-                  if( value.empty() || value == "~")
-                     value = def;
-               }
             } // <unnamed>
          } // local
 
@@ -41,7 +36,7 @@ namespace casual
 
          bool operator == ( const Executable& lhs, const Executable& rhs)
          {
-            return coalesce( lhs.alias, lhs.path) == coalesce( rhs.alias, rhs.path);
+            return lhs.alias.value_or( lhs.path) == rhs.alias.value_or( rhs.path);
          }
 
          Executable& operator += ( Executable& lhs, const executable::Default& rhs)
@@ -66,29 +61,6 @@ namespace casual
          }
 
 
-
-         namespace complement
-         {
-
-
-            Alias::Alias( std::map< std::string, std::size_t>& used) : m_used{ used}
-            {
-
-            }
-
-            void Alias::operator () ( Executable& value)
-            {
-               value.alias = coalesce( value.alias, common::file::name::base( value.path));
-
-               auto count = m_used.get()[ value.alias]++;
-
-               if( count > 1)
-               {
-                  value.alias +=  "_" + std::to_string( count);
-               }
-            }
-
-         } // complement
 
       } // server
 

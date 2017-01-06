@@ -80,6 +80,8 @@ namespace casual
 
          struct Manager
          {
+            Manager();
+
             Default casual_default;
             std::vector< Group> groups;
 

@@ -49,11 +49,12 @@ namespace casual
                   domain.transaction.resources = {
                         { []( configuration::transaction::Resource& r){
                            r.name = "db1";
-                           r.openinfo = "usr=a,pwd=b";
+                           r.openinfo.emplace( "usr=a,pwd=b");
                         }},
                         { []( configuration::transaction::Resource& r){
                            r.name = "db2";
-                           r.openinfo = "usr=a,pwd=b";
+                           r.openinfo.emplace( "usr=a,pwd=b");
+                           r.closeinfo.emplace( "close-info");
                         }},
                   };
 
@@ -69,11 +70,11 @@ namespace casual
 
                domain.servers = {
                        { []( configuration::server::Server& s){
-                          s.alias = "server1";
+                          s.alias.emplace( "server1");
                           s.instances = 42;
                        }},
                        { []( configuration::server::Server& s){
-                           s.alias = "server2";
+                           s.alias.emplace( "server2");
                        }},
                };
 
@@ -160,7 +161,7 @@ namespace casual
          EXPECT_TRUE( resource.instances.value() == 42);
          EXPECT_TRUE( resource.key.value() == "rm-db2");
          EXPECT_TRUE( resource.name == "db1");
-         EXPECT_TRUE( resource.openinfo == "usr=a,pwd=b");
+         EXPECT_TRUE( resource.openinfo.value() == "usr=a,pwd=b");
       }
 
       {
@@ -168,7 +169,7 @@ namespace casual
          EXPECT_TRUE( resource.instances.value() == 42);
          EXPECT_TRUE( resource.key.value() == "rm-db2");
          EXPECT_TRUE( resource.name == "db2");
-         EXPECT_TRUE( resource.openinfo == "usr=a,pwd=b");
+         EXPECT_TRUE( resource.openinfo.value() == "usr=a,pwd=b");
       }
    }
 

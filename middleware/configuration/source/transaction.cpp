@@ -55,7 +55,10 @@ namespace casual
             return lhs;
          }
 
-         Manager::Manager() : log{ "${CASUAL_DOMAIN_HOME}/transaction/log.db"} {}
+         Manager::Manager() : log{ "${CASUAL_DOMAIN_HOME}/transaction/log.db"}
+         {
+            manager_default.resource.instances.emplace( 1);
+         }
 
 
          void Manager::finalize()

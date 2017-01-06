@@ -21,11 +21,17 @@ namespace casual
 
          struct Listener
          {
+            Listener() = default;
+            Listener( std::function<void( Listener&)> foreign) { foreign( *this);}
+
             std::string address;
+            std::string note;
+
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                archive & CASUAL_MAKE_NVP( address);
+               archive & CASUAL_MAKE_NVP( note);
             )
 
             friend bool operator == ( const Listener& lhs, const Listener& rhs);
@@ -52,15 +58,16 @@ namespace casual
 
          struct Connection : connection::Default
          {
-            std::string name;
-            std::string note;
+            Connection() = default;
+            Connection( std::function<void( Connection&)> foreign) { foreign( *this);}
+
             std::vector< std::string> services;
             std::vector< std::string> queues;
+            std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                connection::Default::serialize( archive);
-               archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( note);
                archive & CASUAL_MAKE_NVP( services);
                archive & CASUAL_MAKE_NVP( queues);

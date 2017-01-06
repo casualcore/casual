@@ -1,0 +1,221 @@
+<?xml version="1.0"?>
+<domain>
+ <name>domain.A42</name>
+ <default>
+  <environment>
+   <files>
+    <element>/some/path/to/environment/file</element>
+    <element>/some/other/file</element>
+   </files>
+   <variables>
+    <element>
+     <key>SOME_VARIABLE</key>
+     <value>42</value>
+    </element>
+    <element>
+     <key>SOME_OTHER_VARIABLE</key>
+     <value>some value</value>
+    </element>
+   </variables>
+  </environment>
+  <server>
+   <instances>1</instances>
+  </server>
+  <executable>
+   <instances>1</instances>
+  </executable>
+  <service>
+   <timeout>0s</timeout>
+  </service>
+ </default>
+ <transaction>
+  <default>
+   <resource>
+    <key>db2_rm</key>
+    <instances>3</instances>
+   </resource>
+  </default>
+  <log>/some/fast/disk/domain.A42/transaction.log</log>
+  <resources>
+   <element>
+    <instances>5</instances>
+    <name>customer-db</name>
+    <note>this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5</note>
+    <openinfo>db=customer,uid=db2,pwd=db2</openinfo>
+   </element>
+   <element>
+    <name>sales-db</name>
+    <note>this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances</note>
+    <openinfo>db=sales,uid=db2,pwd=db2</openinfo>
+   </element>
+   <element>
+    <key>mq_rm</key>
+    <name>event-queue</name>
+    <note>this resource is named 'event-queue' - overrides rm-key - using default rm-instances</note>
+    <openinfo>some-mq-specific-stuff</openinfo>
+    <closeinfo>some-mq-specific-stuff</closeinfo>
+   </element>
+  </resources>
+ </transaction>
+ <groups>
+  <element>
+   <name>common-group</name>
+   <note>group that logically groups 'common' stuff</note>
+  </element>
+  <element>
+   <name>customer-group</name>
+   <note>group that logically groups 'customer' stuff</note>
+   <resources>
+    <element>customer-db</element>
+   </resources>
+   <dependencies>
+    <element>common-group</element>
+   </dependencies>
+  </element>
+  <element>
+   <name>sales-group</name>
+   <note>group that logically groups 'customer' stuff</note>
+   <resources>
+    <element>sales-db</element>
+    <element>event-queue</element>
+   </resources>
+   <dependencies>
+    <element>customer-group</element>
+   </dependencies>
+  </element>
+ </groups>
+ <servers>
+  <element>
+   <path>customer-server-1</path>
+   <memberships>
+    <element>customer-group</element>
+   </memberships>
+  </element>
+  <element>
+   <path>customer-server-2</path>
+   <memberships>
+    <element>customer-group</element>
+   </memberships>
+  </element>
+  <element>
+   <path>sales-server</path>
+   <alias>sales-pre</alias>
+   <instances>10</instances>
+   <memberships>
+    <element>sales-group</element>
+   </memberships>
+   <note>the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'</note>
+   <restriction>
+    <element>preSalesSaveService</element>
+    <element>preSalesGetService</element>
+   </restriction>
+  </element>
+  <element>
+   <path>sales-server</path>
+   <alias>sales-post</alias>
+   <memberships>
+    <element>sales-group</element>
+   </memberships>
+   <note>the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'</note>
+   <restriction>
+    <element>postSalesSaveService</element>
+    <element>postSalesGetService</element>
+   </restriction>
+  </element>
+  <element>
+   <path>sales-broker</path>
+   <memberships>
+    <element>sales-group</element>
+   </memberships>
+   <environment>
+    <files />
+    <variables>
+     <element>
+      <key>SALES_BROKER_VARIABLE</key>
+      <value>556</value>
+     </element>
+    </variables>
+   </environment>
+   <resources>
+    <element>event-queue</element>
+   </resources>
+  </element>
+ </servers>
+ <executables>
+  <element>
+   <path>mq-server</path>
+   <arguments>
+    <element>--configuration</element>
+    <element>/path/to/configuration</element>
+   </arguments>
+   <memberships>
+    <element>common-group</element>
+   </memberships>
+  </element>
+ </executables>
+ <services>
+  <element>
+   <timeout>2h</timeout>
+   <name>postSalesSaveService</name>
+  </element>
+  <element>
+   <timeout>130ms</timeout>
+   <name>postSalesGetService</name>
+  </element>
+ </services>
+ <gateway>
+  <default>
+   <connection>
+    <type>tcp</type>
+    <restart>true</restart>
+   </connection>
+  </default>
+  <listeners>
+   <element>
+    <address>localhost:7779</address>
+    <note>local host</note>
+   </element>
+   <element>
+    <address>some.host.org:7779</address>
+    <note>another listener that is bound to some 'external ip'</note>
+   </element>
+  </listeners>
+  <connections>
+   <element>
+    <address>a45.domain.host.org:7779</address>
+    <note>connection to domain 'a45' - we expect to find service 's1' and 's2' there.</note>
+    <services>
+     <element>s1</element>
+     <element>s2</element>
+    </services>
+    <queues />
+   </element>
+   <element>
+    <address>a46.domain.host.org:7779</address>
+    <note>connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)</note>
+    <services>
+     <element>s1</element>
+    </services>
+    <queues>
+     <element>q1</element>
+     <element>q2</element>
+    </queues>
+   </element>
+   <element>
+    <restart>false</restart>
+    <address>a99.domain.host.org:7780</address>
+    <note>connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection</note>
+    <services />
+    <queues />
+   </element>
+  </connections>
+ </gateway>
+ <queue>
+  <default>
+   <queue>
+    <retries>0</retries>
+   </queue>
+  </default>
+  <groups />
+ </queue>
+</domain>

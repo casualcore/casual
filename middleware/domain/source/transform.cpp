@@ -150,10 +150,10 @@ namespace casual
                   {
                      manager::state::Executable result;
 
-                     result.alias = value.alias;
+                     result.alias = value.alias.value_or( "");
                      result.arguments = value.arguments.value_or( result.arguments);
                      result.configured_instances = value.instances.value_or( 0);
-                     result.note = value.note;
+                     result.note = value.note.value_or( "");
                      result.path = value.path;
                      result.restart = value.restart.value_or( false);
 

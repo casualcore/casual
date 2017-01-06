@@ -34,8 +34,8 @@ namespace casual
                   result.key = r.key.value_or( "");
                   result.instances = r.instances.value_or( 0);
                   result.note = r.note;
-                  result.openinfo = r.openinfo;
-                  result.closeinfo = r.closeinfo;
+                  result.openinfo = r.openinfo.value_or( "");
+                  result.closeinfo = r.closeinfo.value_or( "");
 
                   return result;
 
@@ -57,7 +57,6 @@ namespace casual
                common::range::transform( domain.gateway.connections, result.gateway.connections, []( const gateway::Connection& c){
                   message::gateway::Connection result;
 
-                  result.name = c.name;
                   result.note = c.note;
                   result.restart = c.restart.value_or( true);
                   if( c.type.has_value())

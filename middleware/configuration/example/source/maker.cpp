@@ -1,0 +1,274 @@
+//!
+//! casual 
+//!
+
+#include "configuration/domain.h"
+
+
+#include "sf/namevaluepair.h"
+#include "sf/archive/maker.h"
+
+
+#include "common/arguments.h"
+
+namespace casual
+{
+   namespace configuration
+   {
+      namespace example
+      {
+
+         domain::Domain domain()
+         {
+            domain::Domain domain;
+
+            domain.name = "domain.A42";
+
+            {
+               domain.domain_default.environment.variables = {
+                     { []( environment::Variable& v){
+                        v.key = "SOME_VARIABLE";
+                        v.value = "42";
+                     }},
+                     { []( environment::Variable& v){
+                        v.key = "SOME_OTHER_VARIABLE";
+                        v.value = "some value";
+                     }}
+               };
+               domain.domain_default.environment.files = {
+                     { "/some/path/to/environment/file"},
+                     { "/some/other/file"}
+               };
+
+            }
+
+            {
+               domain.transaction.manager_default.resource.instances.emplace( 3);
+               domain.transaction.manager_default.resource.key.emplace( "db2_rm");
+
+               domain.transaction.log = "/some/fast/disk/domain.A42/transaction.log";
+
+               domain.transaction.resources = {
+                     {
+                           []( transaction::Resource& r){
+                              r.name = "customer-db";
+                              r.openinfo.emplace( "db=customer,uid=db2,pwd=db2");
+                              r.instances.emplace( 5);
+                              r.note = "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5";
+                           }
+                     },
+                     {
+                           []( transaction::Resource& r){
+                              r.name = "sales-db";
+                              r.openinfo.emplace( "db=sales,uid=db2,pwd=db2");
+                              r.note = "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances";
+                           }
+                     },
+                     {
+                           []( transaction::Resource& r){
+                              r.name = "event-queue";
+                              r.key.emplace( "mq_rm");
+                              r.openinfo.emplace( "some-mq-specific-stuff");
+                              r.closeinfo.emplace( "some-mq-specific-stuff");
+                              r.note = "this resource is named 'event-queue' - overrides rm-key - using default rm-instances";
+                           }
+                     }
+               };
+            }
+
+            {
+               domain.groups = {
+                     {
+                           []( group::Group& v){
+                              v.name = "common-group";
+                              v.note = "group that logically groups 'common' stuff";
+                           }
+                     },
+                     {
+                           []( group::Group& v){
+                              v.name = "customer-group";
+                              v.note = "group that logically groups 'customer' stuff";
+                              v.resources.emplace( { std::string{ "customer-db"}});
+                              v.dependencies.emplace( { std::string{ "common-group"}});
+                           }
+                     },
+                     {
+                            []( group::Group& v){
+                               v.name = "sales-group";
+                               v.note = "group that logically groups 'customer' stuff";
+                               v.resources.emplace( { std::string{ "sales-db"}, std::string{ "event-queue"}});
+                               v.dependencies.emplace( { std::string{ "customer-group"}});
+                            }
+                      },
+
+               };
+
+               domain.servers = {
+                     {
+                           []( server::Server& v){
+                              v.path = "customer-server-1";
+                              v.memberships.emplace( { std::string{ "customer-group"}});
+                           }
+                     },
+                     {
+                           []( server::Server& v){
+                              v.path = "customer-server-2";
+                              v.memberships.emplace( { std::string{ "customer-group"}});
+                           }
+                     },
+                     {
+                           []( server::Server& v){
+                              v.path = "sales-server";
+                              v.alias.emplace( "sales-pre");
+                              v.instances.emplace( 10);
+                              v.memberships.emplace( { std::string{ "sales-group"}});
+                              v.restriction.emplace( { std::string{ "preSalesSaveService"}, std::string{ "preSalesGetService"}});
+                              v.note.emplace( "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'");
+                           }
+                     },
+                     {
+                           []( server::Server& v){
+                              v.path = "sales-server";
+                              v.alias.emplace( "sales-post");
+                              v.memberships.emplace( { std::string{ "sales-group"}});
+                              v.restriction.emplace( { std::string{ "postSalesSaveService"}, std::string{ "postSalesGetService"}});
+                              v.note.emplace( "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'");
+                           }
+                     },
+                     {
+                           []( server::Server& v){
+                              v.path = "sales-broker";
+                              v.memberships.emplace( { std::string{ "sales-group"}});
+                              v.resources.emplace( { std::string{ "event-queue"}});
+                              v.environment.emplace( []( Environment& e){
+                                 e.variables.emplace_back( []( environment::Variable& v){
+                                    v.key = "SALES_BROKER_VARIABLE";
+                                    v.value = "556";
+                                 });
+                              });
+                           }
+                     },
+               };
+
+               domain.executables = {
+                     {
+                           []( server::Executable& v){
+                              v.path = "mq-server";
+                              v.memberships.emplace( { std::string{ "common-group"}});
+                              v.arguments.emplace( { std::string{ "--configuration"}, std::string{ "/path/to/configuration"}});
+                           }
+                     }
+               };
+
+
+               domain.services = {
+                     { []( service::Service& v){
+                        v.name = "postSalesSaveService";
+                        v.timeout.emplace( "2h");
+                     }},
+                     { []( service::Service& v){
+                        v.name = "postSalesGetService";
+                        v.timeout.emplace( "130ms");
+                     }},
+               };
+            }
+
+            {
+               domain.gateway.listeners = {
+                     {
+                           []( gateway::Listener& v){
+                              v.address = "localhost:7779";
+                              v.note = "local host";
+                           }
+                     },
+                     {
+                           []( gateway::Listener& v){
+                              v.address = "some.host.org:7779";
+                              v.note = "another listener that is bound to some 'external ip'";
+                           }
+                     },
+               };
+
+               domain.gateway.connections ={
+                     {
+                           []( gateway::Connection& v){
+                              v.address.emplace( "a45.domain.host.org:7779");
+                              v.note = "connection to domain 'a45' - we expect to find service 's1' and 's2' there.";
+                              v.services = { "s1", "s2"};
+
+                           }
+                     },
+                     {
+                           []( gateway::Connection& v){
+                              v.address.emplace( "a46.domain.host.org:7779");
+                              v.note = "connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)";
+                              v.queues = { "q1", "q2"};
+                              v.services = { "s1"};
+                           }
+                     },
+                     {
+                           []( gateway::Connection& v){
+                              v.address.emplace( "a99.domain.host.org:7780");
+                              v.note = "connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection";
+                              v.restart = false;
+
+                           }
+                     },
+               };
+
+
+            }
+
+            return domain;
+         }
+
+
+         void write( const domain::Domain& domain, const std::string& file)
+         {
+            auto archive = sf::archive::writer::from::file( file);
+            archive << CASUAL_MAKE_NVP( domain);
+         }
+
+         void create(  const std::string& file)
+         {
+            write( example::domain(), file);
+         }
+
+         void create_default( const std::string& file)
+         {
+            write( domain::Domain{}, file);
+         }
+
+
+         int main( int argc, char **argv)
+         {
+            try
+            {
+
+               common::Arguments argument{
+                  {
+                     common::argument::directive( { "-o", "--output"}, "output file - format will be deduced from extension", &create),
+                     common::argument::directive( { "-d", "--default"}, "output default configuration", &create_default)
+                  }
+               };
+
+               argument.parse( argc, argv);
+
+               return 0;
+            }
+            catch( ...)
+            {
+               return common::error::handler();
+            }
+         }
+
+      } // example
+
+   } // configuration
+
+} // casual
+
+int main( int argc, char **argv)
+{
+   return casual::configuration::example::main( argc, argv);
+}

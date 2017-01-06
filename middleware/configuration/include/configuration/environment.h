@@ -7,6 +7,7 @@
 
 
 #include "sf/namevaluepair.h"
+#include "sf/platform.h"
 
 #include <string>
 #include <vector>
@@ -16,13 +17,13 @@ namespace casual
 {
    namespace configuration
    {
-
-      struct Environment
+      namespace environment
       {
-         std::vector< std::string> files;
-
          struct Variable
          {
+            Variable();
+            Variable( std::function< void(Variable&)> foreign);
+
             std::string key;
             std::string value;
 
@@ -32,9 +33,20 @@ namespace casual
                archive & CASUAL_MAKE_NVP( key);
                archive & CASUAL_MAKE_NVP( value);
             }
+
+            friend bool operator == ( const Variable& lhs, const Variable& rhs);
+
          };
 
-         std::vector< Variable> variables;
+      } // environment
+
+      struct Environment
+      {
+         Environment();
+         Environment( std::function< void(Environment&)> foreign);
+
+         std::vector< std::string> files;
+         std::vector< environment::Variable> variables;
 
          template< typename A>
          void serialize( A& archive)
@@ -43,6 +55,7 @@ namespace casual
             archive & CASUAL_MAKE_NVP( variables);
          }
 
+         friend bool operator == ( const Environment& lhs, const Environment& rhs);
       };
 
       namespace environment
@@ -50,7 +63,7 @@ namespace casual
 
          configuration::Environment get( const std::string& file);
 
-         std::vector< Environment::Variable> fetch( configuration::Environment environment);
+         std::vector< Variable> fetch( configuration::Environment environment);
 
       } // environment
 

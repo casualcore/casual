@@ -40,8 +40,8 @@ namespace casual
             std::string name;
             std::string note;
 
-            std::string openinfo;
-            std::string closeinfo;
+            sf::optional< std::string> openinfo;
+            sf::optional< std::string> closeinfo;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (

@@ -156,6 +156,10 @@ namespace casual
             } // <unnamed>
          } // local
 
+         Manager::Manager()
+         {
+            casual_default.queue.retries.emplace( 0);
+         }
 
          void Manager::finalize()
          {

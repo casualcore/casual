@@ -111,6 +111,8 @@ namespace casual
             Default::Default()
             {
                server.instances.emplace( 1);
+               executable.instances.emplace( 1);
+               service.timeout.emplace( "0s");
             }
 
          } // domain
@@ -161,14 +163,6 @@ namespace casual
             }
 
             auto domain = range::accumulate( files, Domain{}, &local::get);
-
-            {
-               std::map< std::string, std::size_t> used;
-               server::complement::Alias complement{ used};
-
-               range::for_each( domain.servers, complement);
-               range::for_each( domain.executables, complement);
-            }
 
             return domain;
 

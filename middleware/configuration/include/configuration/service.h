@@ -38,13 +38,11 @@ namespace casual
             Service( std::function< void(Service&)> foreign);
 
             std::string name;
-            std::string note;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                service::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( name);
-               archive & CASUAL_MAKE_NVP( note);
             )
 
             friend bool operator == ( const Service& lhs, const Service& rhs);

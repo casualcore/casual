@@ -54,8 +54,21 @@ LinkUnittest( 'bin/test-casual-configuration',
         Compile( 'unittest/isolated/source/test_queue.cpp'),
         Compile( 'unittest/isolated/source/test_gateway.cpp'),
         Compile( 'unittest/isolated/source/test_message.cpp'),
+        Compile( 'unittest/isolated/source/test_environment.cpp'),
    ],
    [ lib_configuration, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-unittest'])  
+
+
+#
+# Example maker
+#
+LinkExecutable( 'bin/casual-configuration-example-maker', 
+    [ 
+        Compile( 'example/source/maker.cpp'),
+   ],          
+   [ lib_configuration, 'casual-sf', 'casual-common'])  
+
+
    
 #
 # Install
