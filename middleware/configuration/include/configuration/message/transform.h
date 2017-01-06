@@ -15,7 +15,7 @@ namespace casual
       namespace transform
       {
 
-         message::Domain configuration( const configuration::domain::Domain& domain);
+         message::Domain configuration( const configuration::domain::Manager& domain);
 
 
       } // transform

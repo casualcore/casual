@@ -34,6 +34,9 @@ namespace casual
 
          struct Queue : queue::Default
          {
+            Queue();
+            Queue( std::function<void( Queue&)> foreign);
+
             std::string name;
             std::string note;
 
@@ -50,8 +53,11 @@ namespace casual
 
          struct Group
          {
+            Group();
+            Group( std::function<void( Group&)> foreign);
+
             std::string name;
-            std::string queuebase;
+            sf::optional< std::string> queuebase;
             std::string note;
             std::vector< Queue> queues;
 
@@ -67,27 +73,33 @@ namespace casual
             friend bool operator == ( const Group& lhs, const Group& rhs);
 
          };
-
-         struct Default
+         namespace manager
          {
-            queue::Default queue;
+            struct Default
+            {
+               Default();
 
-            CASUAL_CONST_CORRECT_SERIALIZE
-            (
-               archive & CASUAL_MAKE_NVP( queue);
-            )
-         };
+               queue::Default queue;
+               std::string directory;
+
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( queue);
+                  archive & CASUAL_MAKE_NVP( directory);
+               )
+            };
+         } // manager
 
          struct Manager
          {
             Manager();
 
-            Default casual_default;
+            manager::Default manager_default;
             std::vector< Group> groups;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & sf::name::value::pair::make( "default", casual_default);
+               archive & sf::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( groups);
             )
 

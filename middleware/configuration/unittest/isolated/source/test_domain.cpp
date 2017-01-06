@@ -3,7 +3,12 @@
 //!
 
 #include <gtest/gtest.h>
+
 #include "configuration/domain.h"
+#include "configuration/example/domain.h"
+
+
+
 
 #include "sf/log.h"
 #include "sf/archive/maker.h"
@@ -27,19 +32,19 @@ namespace casual
       {
          namespace domain
          {
-            configuration::domain::Domain init()
+            configuration::domain::Manager init()
             {
-               configuration::domain::Domain domain;
+               configuration::domain::Manager domain;
 
                domain.name = "domain1";
 
                {
-                  domain.domain_default.server.instances = 3;
-                  domain.domain_default.server.restart = true;
+                  domain.manager_default.server.instances = 3;
+                  domain.manager_default.server.restart = true;
                }
 
                {
-                  domain.domain_default.service.timeout.emplace( "90");
+                  domain.manager_default.service.timeout.emplace( "90");
                }
 
                {
@@ -81,7 +86,7 @@ namespace casual
                return domain;
             }
 
-            const configuration::domain::Domain& get()
+            const configuration::domain::Manager& get()
             {
                static auto domain = init();
                return domain;
@@ -91,14 +96,7 @@ namespace casual
 
          common::file::scoped::Path serialize_domain( const std::string& extension)
          {
-            common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
-
-            auto& domain = domain::get();
-
-            auto archive = sf::archive::writer::from::file( file);
-            archive << CASUAL_MAKE_NVP( domain);
-
-            return file;
+            return configuration::example::temporary( domain::get(), extension);
          }
 
       } // <unnamed>
@@ -126,8 +124,8 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.domain_default.server.instances == 3ul) << CASUAL_MAKE_NVP( domain.domain_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
-      EXPECT_TRUE( domain.domain_default.server.restart == true);
+      EXPECT_TRUE( domain.manager_default.server.instances == 3ul) << CASUAL_MAKE_NVP( domain.manager_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
+      EXPECT_TRUE( domain.manager_default.server.restart == true);
 
 
    }
@@ -137,7 +135,7 @@ namespace casual
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
-      EXPECT_TRUE( domain.domain_default.service.timeout == std::string( "90"));
+      EXPECT_TRUE( domain.manager_default.service.timeout == std::string( "90"));
    }
 
    TEST_P( casual_configuration_domain, default_resource)

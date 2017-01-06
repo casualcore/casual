@@ -21,17 +21,14 @@
 #include <tx.h>
 
 
-using namespace casual::common;
 
 
-extern "C"
-{
-   extern void casual_listTransactions( TPSVCINFO *serviceInfo);
-}
 
 
 namespace casual
 {
+   using namespace common;
+
    namespace transaction
    {
       namespace environment
@@ -47,7 +44,7 @@ namespace casual
       } // environment
 
       Settings::Settings() :
-         log{ environment::log::file()}, configuration{ common::environment::file::installedConfiguration()}
+         log{ environment::log::file()}
       {
 
       }

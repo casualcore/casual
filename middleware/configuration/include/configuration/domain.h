@@ -28,7 +28,7 @@ namespace casual
    {
       namespace domain
       {
-         namespace domain
+         namespace manager
          {
             struct Default
             {
@@ -49,14 +49,15 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( service);
                )
             };
-         } // domain
+
+         } // manager
 
 
-         struct Domain
+         struct Manager
          {
 
             std::string name;
-            domain::Default domain_default;
+            manager::Default manager_default;
 
             std::vector< group::Group> groups;
             std::vector< server::Server> servers;
@@ -71,7 +72,7 @@ namespace casual
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                archive & CASUAL_MAKE_NVP( name);
-               archive & sf::name::value::pair::make( "default", domain_default);
+               archive & sf::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( transaction);
                archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
@@ -82,15 +83,14 @@ namespace casual
 
             )
 
-            Domain& operator += ( const Domain& rhs);
-            Domain& operator += ( Domain&& rhs);
+            Manager& operator += ( const Manager& rhs);
+            Manager& operator += ( Manager&& rhs);
 
-            friend Domain operator + ( const Domain& lhs, const Domain& rhs);
+            friend Manager operator + ( const Manager& lhs, const Manager& rhs);
          };
 
 
-         Domain get( const std::vector< std::string>& files);
-
+         Manager get( const std::vector< std::string>& files);
 
          namespace persistent
          {
@@ -99,9 +99,9 @@ namespace casual
             //!
             //! @return
             //!
-            Domain get();
+            Manager get();
 
-            void save( const Domain& domain);
+            void save( const Manager& domain);
 
          } // persistent
 
@@ -110,7 +110,7 @@ namespace casual
          //!
          //! @param configuration domain configuration
          //!
-         void finalize( Domain& configuration);
+         void finalize( Manager& configuration);
 
       } // domain
 

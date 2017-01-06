@@ -12,7 +12,7 @@ namespace casual
       namespace transform
       {
 
-         message::Domain configuration( const configuration::domain::Domain& domain)
+         message::Domain configuration( const configuration::domain::Manager& domain)
          {
             Trace trace{ "configuration::transform domain"};
 
@@ -79,7 +79,7 @@ namespace casual
 
                   result.name = g.name;
                   result.note = g.note;
-                  result.queuebase = g.queuebase;
+                  result.queuebase = g.queuebase.value_or( "");
 
                   common::range::transform( g.queues, result.queues, []( const queue::Queue& q){
                      message::queue::Queue result;

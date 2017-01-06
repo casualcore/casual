@@ -38,16 +38,16 @@ namespace casual
                      for( auto& element : range) { element += value;}
                   }
 
-                  inline void default_values( Domain& domain)
+                  inline void default_values( Manager& domain)
                   {
-                     default_values( domain.executables, domain.domain_default.executable);
-                     default_values( domain.servers, domain.domain_default.server);
-                     default_values( domain.services, domain.domain_default.service);
+                     default_values( domain.executables, domain.manager_default.executable);
+                     default_values( domain.servers, domain.manager_default.server);
+                     default_values( domain.services, domain.manager_default.service);
                   }
 
                } // complement
 
-               void validate( const Domain& settings)
+               void validate( const Manager& settings)
                {
 
                }
@@ -71,7 +71,7 @@ namespace casual
                }
 
                template< typename D>
-               Domain& append( Domain& lhs, D&& rhs)
+               Manager& append( Manager& lhs, D&& rhs)
                {
                   if( lhs.name.empty()) { lhs.name = std::move( rhs.name);}
 
@@ -87,7 +87,7 @@ namespace casual
                   return lhs;
                }
 
-               Domain get( Domain domain, const std::string& file)
+               Manager get( Manager domain, const std::string& file)
                {
                   //
                   // Create the reader and deserialize configuration
@@ -106,7 +106,7 @@ namespace casual
          } // local
 
 
-         namespace domain
+         namespace manager
          {
             Default::Default()
             {
@@ -119,24 +119,24 @@ namespace casual
 
 
 
-         Domain& Domain::operator += ( const Domain& rhs)
+         Manager& Manager::operator += ( const Manager& rhs)
          {
             return local::append( *this, rhs);
          }
 
-         Domain& Domain::operator += ( Domain&& rhs)
+         Manager& Manager::operator += ( Manager&& rhs)
          {
             return local::append( *this, std::move( rhs));
          }
 
-         Domain operator + ( const Domain& lhs, const Domain& rhs)
+         Manager operator + ( const Manager& lhs, const Manager& rhs)
          {
             auto result = lhs;
             result += rhs;
             return result;
          }
 
-         void finalize( Domain& configuration)
+         void finalize( Manager& configuration)
          {
             //
             // Complement with default values
@@ -155,14 +155,14 @@ namespace casual
          }
 
 
-         Domain get( const std::vector< std::string>& files)
+         Manager get( const std::vector< std::string>& files)
          {
             if( files.empty())
             {
                return persistent::get();
             }
 
-            auto domain = range::accumulate( files, Domain{}, &local::get);
+            auto domain = range::accumulate( files, Manager{}, &local::get);
 
             return domain;
 
@@ -172,7 +172,7 @@ namespace casual
 
          namespace persistent
          {
-            Domain get()
+            Manager get()
             {
                auto configuration = file::persistent::domain();
 
@@ -186,7 +186,7 @@ namespace casual
                }
             }
 
-            void save( const Domain& domain)
+            void save( const Manager& domain)
             {
                if( ! common::file::exists( directory::persistent()))
                {

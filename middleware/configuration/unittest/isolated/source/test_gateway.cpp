@@ -3,9 +3,9 @@
 //!
 
 #include <gtest/gtest.h>
-#include "configuration/gateway.h"
+#include "configuration/domain.h"
+#include "configuration/example/domain.h"
 
-#include "common/mockup/file.h"
 #include "sf/log.h"
 #include "sf/archive/maker.h"
 
@@ -15,128 +15,61 @@ namespace casual
 {
    namespace configuration
    {
-      namespace local
+
+      class configuration_gateway : public ::testing::TestWithParam< const char*>
       {
-         namespace
-         {
-
-            gateway::Manager get( const std::string& file)
-            {
-
-               //
-               // Create the reader and deserialize configuration
-               //
-               auto reader = sf::archive::reader::from::file( file);
-
-               gateway::Manager gateway;
-               reader >> CASUAL_MAKE_NVP( gateway);
-
-               gateway.finalize();
-
-               return gateway;
-            }
+      };
 
 
-
-            common::file::scoped::Path example_1()
-            {
-               return common::mockup::file::temporary( ".yaml", R"(
-gateway:
-  
-  listeners:
-    - address: 127.0.0.1:7777
-
-  connections:
-    
-    - name: some_name
-      # type: tcp  # tcp is default
-      address: dolittle.laz.se:3432
-      
-      #
-      # Services we "know" exists in the remote domain
-      #
-      services:
-        - service1
-        - service2
-        - service3
-        - service4
-      
-    - type: "ipc"
-      address: "/Users/Lazan/casual/domain2"
-)"
-               );
-            }
+      INSTANTIATE_TEST_CASE_P( protocol,
+            configuration_gateway,
+         ::testing::Values(".yaml", ".json", ".xml"));//, ".ini"));
 
 
-            common::file::scoped::Path example_2()
-            {
-               return common::mockup::file::temporary( ".yaml", R"(
-gateway:
+      //
+      // Look at configuration/example/domain.yaml for what to expect.
+      //
 
-  default:
-     
-    connection:
-       type: ipc
-       address: dolittle.laz.se:3432
-       restart: true
-
-
-  listeners:
-    - address: 127.0.0.1:7777
-
-  connections:
-    
-    - name: some_name
-      type: tcp
-      
-    - address: "/some/path/to/domain"
-)"
-               );
-            }
-
-         } // <unnamed>
-      } // local
-
-      TEST( casual_configuration_gateway, expect_two_connections)
+      TEST_P( configuration_gateway, expect_3_connections)
       {
-         auto temp_file = local::example_1();
-         auto gateway = local::get( temp_file);
+         // serialize and deserialize
+         auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
-         EXPECT_TRUE( gateway.listeners.at( 0).address == "127.0.0.1:7777") << CASUAL_MAKE_NVP( gateway.listeners.at( 0).address);
-         EXPECT_TRUE( gateway.connections.size() == 2) << CASUAL_MAKE_NVP( gateway);
+         ASSERT_TRUE( gateway.listeners.size() == 2);
+         EXPECT_TRUE( gateway.listeners.at( 0).address == "localhost:7779") << CASUAL_MAKE_NVP( gateway);
+         ASSERT_TRUE( gateway.connections.size() == 3) << CASUAL_MAKE_NVP( gateway);
 
       }
 
-      TEST( casual_configuration_gateway, expect_4_services_for_connection_1)
-      {
-         auto temp_file = local::example_1();
-         auto gateway = local::get( temp_file);
 
-         ASSERT_TRUE( gateway.connections.size() == 2);
+      TEST_P( configuration_gateway, expect_3_services_for_connection_1)
+      {
+         // serialize and deserialize
+         auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
+
+         ASSERT_TRUE( ! gateway.connections.empty());
          ASSERT_TRUE( gateway.connections.at( 0).type.value() == "tcp");
-         ASSERT_TRUE( gateway.connections.at( 0).address.value() == "dolittle.laz.se:3432");
-         ASSERT_TRUE( gateway.connections.at( 0).services.size() == 4);
+         ASSERT_TRUE( gateway.connections.at( 0).address.value() == "a45.domain.host.org:7779");
+         ASSERT_TRUE( gateway.connections.at( 0).services.size() == 2);
       }
 
-      TEST( casual_configuration_gateway, example_2__expect_default_to_be_set)
+
+      TEST_P( configuration_gateway, expect_default_to_be_set)
       {
-         auto temp_file = local::example_2();
-         auto gateway = local::get( temp_file);
+         // serialize and deserialize
+         auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
-         EXPECT_TRUE( gateway.listeners.at( 0).address == "127.0.0.1:7777") << CASUAL_MAKE_NVP( gateway.listeners.at( 0).address);
-
-         EXPECT_TRUE( gateway.connections.at( 0).address.value() == "dolittle.laz.se:3432") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 0).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 0).services.empty()) << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
 
-         EXPECT_TRUE( gateway.connections.at( 1).address.value() == "/some/path/to/domain") << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 1).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 1).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 1).type.value() == "ipc") << CASUAL_MAKE_NVP( gateway);
-         EXPECT_TRUE( gateway.connections.at( 1).services.empty()) << CASUAL_MAKE_NVP( gateway);
 
+         EXPECT_TRUE( gateway.connections.at( 2).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
+         EXPECT_TRUE( gateway.connections.at( 2).restart.value() == false) << CASUAL_MAKE_NVP( gateway);
 
       }
+
 
 
    } // gateway

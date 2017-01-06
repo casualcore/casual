@@ -9,23 +9,20 @@
 #include "sf/archive/maker.h"
 
 
-#include "common/arguments.h"
-
 namespace casual
 {
    namespace configuration
    {
       namespace example
       {
-
-         domain::Domain domain()
+         domain::Manager domain()
          {
-            domain::Domain domain;
+            domain::Manager domain;
 
             domain.name = "domain.A42";
 
             {
-               domain.domain_default.environment.variables = {
+               domain.manager_default.environment.variables = {
                      { []( environment::Variable& v){
                         v.key = "SOME_VARIABLE";
                         v.value = "42";
@@ -35,7 +32,7 @@ namespace casual
                         v.value = "some value";
                      }}
                };
-               domain.domain_default.environment.files = {
+               domain.manager_default.environment.files = {
                      { "/some/path/to/environment/file"},
                      { "/some/other/file"}
                };
@@ -215,60 +212,87 @@ namespace casual
                            }
                      },
                };
+            }
+
+
+            {
+
+               domain.queue.manager_default.queue.retries.emplace( 0);
+
+               domain.queue.groups = {
+                     { []( queue::Group& v){
+                        v.name = "groupA";
+                        v.note = "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb";
+                        v.queues = {
+                              { []( queue::Queue& v){
+                                 v.name = "q_A1";
+                              }},
+                              { []( queue::Queue& v){
+                                 v.name = "q_A2";
+                                 v.retries.emplace( 10);
+                                 v.note = "after 10 rollbacked dequeues, message is moved to q_A2.error";
+                              }},
+                              { []( queue::Queue& v){
+                                 v.name = "q_A3";
+                              }},
+                              { []( queue::Queue& v){
+                                 v.name = "q_A4";
+                              }},
+                        };
+                     }},
+                     { []( queue::Group& v){
+                        v.name = "groupB";
+                        v.queuebase.emplace( "/some/fast/disk/queue/groupB.qb");
+                        v.queues = {
+                              { []( queue::Queue& v){
+                                 v.name = "q_B1";
+                              }},
+                              { []( queue::Queue& v){
+                                 v.name = "q_B2";
+                                 v.retries.emplace( 10);
+                                 v.note = "after 10 rollbacked dequeues, message is moved to q_B2.error";
+                              }},
+                        };
+                     }},
+                     { []( queue::Group& v){
+                        v.name = "groupC";
+                        v.queuebase.emplace( ":memory:");
+                        v.note = "group is an in-memory queue, hence no persistence";
+                        v.queues = {
+                              { []( queue::Queue& v){
+                                 v.name = "q_C1";
+                              }},
+                              { []( queue::Queue& v){
+                                 v.name = "q_C2";
+                              }},
+                        };
+                     }},
+               };
 
 
             }
 
+
             return domain;
          }
 
-
-         void write( const domain::Domain& domain, const std::string& file)
+         void write( const domain::Manager& domain, const std::string& file)
          {
             auto archive = sf::archive::writer::from::file( file);
             archive << CASUAL_MAKE_NVP( domain);
          }
 
-         void create(  const std::string& file)
+         common::file::scoped::Path temporary( const configuration::domain::Manager& domain, const std::string& extension)
          {
-            write( example::domain(), file);
-         }
+            common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain_", extension)};
 
-         void create_default( const std::string& file)
-         {
-            write( domain::Domain{}, file);
-         }
+            auto archive = sf::archive::writer::from::file( file);
+            archive << CASUAL_MAKE_NVP( domain);
 
-
-         int main( int argc, char **argv)
-         {
-            try
-            {
-
-               common::Arguments argument{
-                  {
-                     common::argument::directive( { "-o", "--output"}, "output file - format will be deduced from extension", &create),
-                     common::argument::directive( { "-d", "--default"}, "output default configuration", &create_default)
-                  }
-               };
-
-               argument.parse( argc, argv);
-
-               return 0;
-            }
-            catch( ...)
-            {
-               return common::error::handler();
-            }
+            return file;
          }
 
       } // example
-
    } // configuration
-
 } // casual
 
-int main( int argc, char **argv)
-{
-   return casual::configuration::example::main( argc, argv);
-}

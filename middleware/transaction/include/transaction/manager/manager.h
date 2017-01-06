@@ -42,27 +42,20 @@ namespace casual
       };
 
 
-
-
-
       class Manager
       {
       public:
 
-
          Manager( const Settings& settings);
-
          ~Manager();
 
          void start();
-
 
          const State& state() const;
 
       private:
 
-
-         void handlePending();
+         void handle_pending();
 
          State m_state;
       };
@@ -72,9 +65,6 @@ namespace casual
          void pump( State& state);
 
       } // message
-
-
-
    } // transaction
 } // casual
 

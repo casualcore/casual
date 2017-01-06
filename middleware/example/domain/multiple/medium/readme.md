@@ -20,7 +20,7 @@ A simplified sequence diagram on what's going on (discovery and transaction rela
 
 ## pre requirements
 
-see [domain example]( ../../domain.md)
+see [domain example]( ../../readme.md)
 
 
 ## create domains

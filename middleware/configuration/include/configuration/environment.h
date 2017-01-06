@@ -19,6 +19,7 @@ namespace casual
    {
       namespace environment
       {
+
          struct Variable
          {
             Variable();

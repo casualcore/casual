@@ -43,6 +43,13 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
 
 intall_libs.append( lib_configuration)
 
+
+example_archive = LinkArchive( 'bin/casual-example', 
+     [
+         Compile( 'source/example/domain.cpp'),
+     ])
+
+
 #
 # Unittest
 #
@@ -56,7 +63,7 @@ LinkUnittest( 'bin/test-casual-configuration',
         Compile( 'unittest/isolated/source/test_message.cpp'),
         Compile( 'unittest/isolated/source/test_environment.cpp'),
    ],
-   [ lib_configuration, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-unittest'])  
+   [ example_archive, lib_configuration, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-unittest'])  
 
 
 #
@@ -64,9 +71,9 @@ LinkUnittest( 'bin/test-casual-configuration',
 #
 LinkExecutable( 'bin/casual-configuration-example-maker', 
     [ 
-        Compile( 'example/source/maker.cpp'),
+        Compile( 'source/example/main.cpp'),
    ],          
-   [ lib_configuration, 'casual-sf', 'casual-common'])  
+   [ example_archive, lib_configuration, 'casual-sf', 'casual-common'])  
 
 
    

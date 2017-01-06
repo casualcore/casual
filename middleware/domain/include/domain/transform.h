@@ -14,7 +14,7 @@ namespace casual
    {
       namespace domain
       {
-         struct Domain;
+         struct Manager;
       } // domain
    } // config
    namespace domain
@@ -25,7 +25,7 @@ namespace casual
          manager::admin::vo::State state( const manager::State& state);
 
 
-         manager::State state( const configuration::domain::Domain& domain);
+         manager::State state( const configuration::domain::Manager& domain);
 
 
       } // transform

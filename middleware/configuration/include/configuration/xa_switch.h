@@ -1,12 +1,9 @@
 //!
-//! xa_switch.h
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef XA_SWITCH_H_
-#define XA_SWITCH_H_
+#ifndef CONFIGURATION_XA_SWITCH_H_
+#define CONFIGURATION_XA_SWITCH_H_
 
 
 #include "sf/namevaluepair.h"
@@ -34,25 +31,23 @@ namespace casual
                std::vector< std::string> include;
                std::vector< std::string> library;
 
-               template< typename A>
-               void serialize( A& archive)
-               {
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
                   archive & CASUAL_MAKE_NVP( include);
                   archive & CASUAL_MAKE_NVP( library);
-               }
+               )
 
             } paths;
 
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( key);
                archive & CASUAL_MAKE_NVP( server);
                archive & CASUAL_MAKE_NVP( xa_struct_name);
                archive & CASUAL_MAKE_NVP( libraries);
                archive & CASUAL_MAKE_NVP( paths);
-            }
+            )
          };
 
          namespace switches

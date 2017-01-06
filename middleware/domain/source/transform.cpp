@@ -237,7 +237,7 @@ namespace casual
          }
 
 
-         manager::State state( const casual::configuration::domain::Domain& domain)
+         manager::State state( const casual::configuration::domain::Manager& domain)
          {
 
             //

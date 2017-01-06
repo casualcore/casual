@@ -171,7 +171,8 @@ namespace casual
             {
                Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
-               auto resources = configuration::xa::switches::get( resource_file);
+               auto resources = resource_file.empty() ?
+                     configuration::xa::switches::get() : configuration::xa::switches::get( resource_file);
 
                for( auto& resource : resources)
                {
