@@ -32,7 +32,7 @@ We're trying to show all configuration options that is possible in casual.
  [yaml](domain/domain.yaml)   | [yaml](domain/default/domain.yaml)
  [json](domain/domain.json)   | [json](domain/default/domain.json)
  [xml](domain/domain.xml)     | [xml](domain/default/domain.xml)
- [ini](domain/domain.yaml)    | [yaml](domain/default/domain.ini)
+ [ini](domain/domain.ini)     | [yaml](domain/default/domain.ini)
 
 
 ## resource properties
