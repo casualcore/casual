@@ -231,22 +231,22 @@ namespace casual
 
                result.services.emplace_back( ".casual.domain.state",
                      std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
                result.services.emplace_back( ".casual.domain.scale.instances",
                      std::bind( &service::scale_instances, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
                result.services.emplace_back( ".casual.domain.shutdown",
                      std::bind( &service::shutdown_domain, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
                result.services.emplace_back( ".casual/domain/configuration/persist",
                      std::bind( &service::persist_configuration, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
                return result;

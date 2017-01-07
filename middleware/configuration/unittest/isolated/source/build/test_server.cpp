@@ -45,8 +45,8 @@ namespace casual
             ASSERT_TRUE( model.server_default.service.transaction.has_value());
             EXPECT_TRUE( model.server_default.service.transaction.value() == "join");
 
-            ASSERT_TRUE( model.server_default.service.type.has_value());
-            EXPECT_TRUE( model.server_default.service.type.value() == 10);
+            ASSERT_TRUE( model.server_default.service.category.has_value());
+            EXPECT_TRUE( model.server_default.service.category.value() == "some.category");
          }
 
          TEST_P( configuration_build_server, service_s1__expect_default)
@@ -60,7 +60,7 @@ namespace casual
             EXPECT_TRUE( service.name == "s1");
             EXPECT_TRUE( service.transaction.value() == "join");
             EXPECT_TRUE( service.function.value() == "s1");
-            EXPECT_TRUE( service.type.value() == 10);
+            EXPECT_TRUE( service.category.value() == "some.category");
          }
 
          TEST_P( configuration_build_server, service_s2__expect__overridden_transaction)
@@ -85,6 +85,18 @@ namespace casual
 
             EXPECT_TRUE( service.name == "s3");
             EXPECT_TRUE( service.function.value() == "f3");
+         }
+
+         TEST_P( configuration_build_server, service_s3__expect__override_category)
+         {
+            // serialize and deserialize
+            auto model = build::server::get(
+                  example::build::server::temporary( example::build::server::example(), GetParam()));
+
+            auto& service = model.services.at( 3);
+
+            EXPECT_TRUE( service.name == "s4");
+            EXPECT_TRUE( service.category.value() == "some.other.category");
          }
 
 

@@ -41,7 +41,7 @@ struct Settings
       Service() = default;
       std::string name;
       std::string function;
-      std::uint64_t type = 0;
+      std::string category;
       common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
    };
 
@@ -62,7 +62,9 @@ struct Settings
                Service result;
                result.function = service.function.value_or( service.name);
                result.name = service.name;
-               result.type = service.type.value_or( 0);
+
+               if( service.category) { result.category = service.category.value();}
+
                result.transaction = common::service::transaction::mode( service.transaction.value_or( "auto"));
 
                return result;
@@ -237,7 +239,7 @@ int main( int argc, char** argv)
       for( auto& service : settings.services)
       {
          out << R"(
-      {&)" << service.function << R"(, ")" << service.name << R"(", )" << service.type << ", " << common::cast::underlying( service.transaction) << "},";
+      {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << common::cast::underlying( service.transaction) << "},";
       }
 
          out << R"(

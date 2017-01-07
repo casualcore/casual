@@ -28,7 +28,7 @@ namespace casual
                            if( ! service.function) service.function.emplace( service.name);
 
                            service.transaction = common::coalesce( service.transaction, server.server_default.service.transaction);
-                           service.type = common::coalesce( service.type, server.server_default.service.type);
+                           service.category = common::coalesce( service.category, server.server_default.service.category);
                         }
                      }
                   } // complement
@@ -46,7 +46,6 @@ namespace casual
                Default::Default()
                {
                   service.transaction.emplace( "auto");
-                  service.type.emplace( 0);
                }
             } // service
 

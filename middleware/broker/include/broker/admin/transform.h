@@ -131,7 +131,7 @@ namespace casual
                   //result.timeout = value.information.timeout.count();
                   result.timeout = value.information.timeout;
                   result.lookedup = value.lookedup;
-                  result.type = value.information.type;
+                  result.category = value.information.category;
                   result.mode = value.information.transaction;
 
                   common::range::transform( value.instances, result.instances, Pid{});

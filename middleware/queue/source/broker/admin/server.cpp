@@ -222,18 +222,18 @@ namespace casual
 
                result.services.emplace_back( local::service::name::state(),
                      std::bind( &service::state, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
                result.services.emplace_back( ".casual.queue.list.messages",
                      std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
 
                result.services.emplace_back( local::service::name::restore(),
                      std::bind( &service::restore, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
+                     common::service::category::admin,
                      common::service::transaction::Type::none);
 
                return result;

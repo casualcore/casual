@@ -62,7 +62,7 @@ namespace casual
          EXPECT_NO_THROW({
             server::Arguments arguments{ {}};
 
-            arguments.services.emplace_back( ".1", std::bind( &local::service3, std::placeholders::_1, 10), common::server::Service::Type::cCasualAdmin, common::service::transaction::Type::none);
+            arguments.services.emplace_back( ".1", std::bind( &local::service3, std::placeholders::_1, 10), common::service::category::admin, common::service::transaction::Type::none);
          });
       }
 
@@ -77,7 +77,7 @@ namespace casual
 
          EXPECT_NO_THROW({
             server::Arguments arguments{ {}};
-            arguments.services.emplace_back( ".1", std::bind( &local::service4, std::placeholders::_1, std::ref( value)), common::server::Service::Type::cCasualAdmin, common::service::transaction::Type::none);
+            arguments.services.emplace_back( ".1", std::bind( &local::service4, std::placeholders::_1, std::ref( value)), common::service::category::admin, common::service::transaction::Type::none);
             arguments.services.back().call( nullptr);
          });
 
@@ -92,7 +92,7 @@ namespace casual
             server::Arguments make_arguments( std::string& value)
             {
                server::Arguments arguments{ {}};
-               arguments.services.emplace_back( ".1", std::bind( &local::service4, std::placeholders::_1, std::ref( value)), common::server::Service::Type::cCasualAdmin, common::service::transaction::Type::none);
+               arguments.services.emplace_back( ".1", std::bind( &local::service4, std::placeholders::_1, std::ref( value)), common::service::category::admin, common::service::transaction::Type::none);
                arguments.services.back().call( nullptr);
 
                return arguments;

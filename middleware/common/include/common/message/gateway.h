@@ -35,10 +35,10 @@ namespace casual
                   {
                      Service() = default;
                      Service( std::string name,
-                           std::uint64_t type = 0,
+                           std::string category = {},
                            common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
                            std::size_t hops = 0)
-                      : message::Service{ std::move( name), type, transaction}, hops{ hops} {}
+                      : message::Service{ std::move( name), std::move( category), transaction}, hops{ hops} {}
 
                      std::size_t hops = 0;
 

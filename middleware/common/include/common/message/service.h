@@ -24,23 +24,23 @@ namespace casual
          {
             Service() = default;
 
-            explicit Service( std::string name, std::uint64_t type, common::service::transaction::Type transaction)
-               : name( std::move( name)), type( type), transaction( transaction)
+            explicit Service( std::string name, std::string category, common::service::transaction::Type transaction)
+               : name( std::move( name)), category( std::move( category)), transaction( transaction)
             {}
 
             Service( std::string name)
-               : Service( std::move( name), 0, common::service::transaction::Type::automatic)
+               : name( std::move( name))
             {}
 
             std::string name;
-            std::uint64_t type = common::service::Type::xatmi;
+            std::string category;
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
             common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
                archive & name;
-               archive & type;
+               archive & category;
                archive & timeout;
                archive & transaction;
             })

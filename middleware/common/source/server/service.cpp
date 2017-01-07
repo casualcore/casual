@@ -20,11 +20,11 @@ namespace casual
       {
 
 
-         Service::Service( std::string name, function_type function, std::uint64_t type, service::transaction::Type transaction)
-            : origin( std::move( name)), function( function), type( type), transaction( transaction) {}
+         Service::Service( std::string name, function_type function, std::string category, service::transaction::Type transaction)
+            : origin( std::move( name)), function( function), category( std::move( category)), transaction( transaction) {}
 
          Service::Service( std::string name, function_type function)
-            : Service( std::move( name), std::move( function), Type::cXATMI, service::transaction::Type::automatic) {}
+            : Service( std::move( name), std::move( function), "", service::transaction::Type::automatic) {}
 
 
          Service::Service( Service&&) = default;
@@ -45,7 +45,7 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
-            return out << "{ origin: " << service.origin << " type: " << service.type << " transaction: " << service.transaction
+            return out << "{ origin: " << service.origin << " type: " << service.category << " transaction: " << service.transaction
                   << " active: " << service.active << "};";
          }
 

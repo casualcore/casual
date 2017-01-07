@@ -128,11 +128,11 @@ namespace casual
                if( found)
                {
                   m_state.services.emplace( prospect.origin, *found);
-                  message.services.emplace_back( prospect.origin, found->type, found->transaction);
+                  message.services.emplace_back( prospect.origin, found->category, found->transaction);
                }
                else
                {
-                  message.services.emplace_back( prospect.origin, prospect.type, prospect.transaction);
+                  message.services.emplace_back( prospect.origin, prospect.category, prospect.transaction);
 
                   m_state.physical_services.push_back( std::move( prospect));
                   m_state.services.emplace( prospect.origin, m_state.physical_services.back());

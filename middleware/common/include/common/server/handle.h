@@ -94,7 +94,7 @@ namespace casual
                   for( auto& service : arguments.services)
                   {
                      auto name = service.origin;
-                     services.emplace_back( name, service.type, service.transaction);
+                     services.emplace_back( name, service.category, service.transaction);
 
                      state.physical_services.push_back( std::move( service));
                      state.services.emplace( name, state.physical_services.back());

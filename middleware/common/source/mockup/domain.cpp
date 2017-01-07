@@ -337,7 +337,7 @@ namespace casual
                      {
                         auto& lookup = m_state.services[ service.name];
                         lookup.service.name = service.name;
-                        lookup.service.type = service.type;
+                        lookup.service.category = service.category;
                         lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
@@ -354,7 +354,7 @@ namespace casual
                      {
                         auto& lookup = m_state.services[ service.name];
                         lookup.service.name = service.name;
-                        lookup.service.type = service.type;
+                        lookup.service.category = service.category;
                         lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
@@ -392,7 +392,7 @@ namespace casual
                            service.name = found->second.service.name;
                            service.timeout = found->second.service.timeout;
                            service.transaction = found->second.service.transaction;
-                           service.type = found->second.service.type;
+                           service.category = found->second.service.category;
 
                            reply.services.push_back( std::move( service));
                         }

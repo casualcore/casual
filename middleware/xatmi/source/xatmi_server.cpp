@@ -28,41 +28,37 @@ namespace local
    {
 	   namespace transform
 	   {
-
-         struct ServerArguments
+         common::server::Arguments arguments( struct casual_server_argument& value)
          {
-            common::server::Arguments operator ()( struct casual_server_argument& value) const
+            common::server::Arguments result( value.argc, value.argv);
+
+            auto service = value.services;
+
+            while( service->function_pointer != nullptr)
             {
-               common::server::Arguments result( value.argc, value.argv);
+               result.services.emplace_back(
+                     service->name,
+                     service->function_pointer,
+                     service->category,
+                     common::service::transaction::mode( service->transaction));
 
-               auto service = value.services;
-
-               while( service->functionPointer != nullptr)
-               {
-                  result.services.emplace_back(
-                        service->name,
-                        service->functionPointer,
-                        service->type,
-                        common::service::transaction::mode( service->transaction));
-
-                  ++service;
-               }
-
-               auto xaSwitch = value.xa_switches;
-
-               while( xaSwitch->xa_switch != nullptr)
-               {
-                  result.resources.emplace_back( xaSwitch->key, xaSwitch->xa_switch);
-                  ++xaSwitch;
-               }
-
-               result.server_init = value.serviceInit;
-               result.server_done = value.serviceDone;
-
-               return result;
-
+               ++service;
             }
-         };
+
+            auto xaSwitch = value.xa_switches;
+
+            while( xaSwitch->xa_switch != nullptr)
+            {
+               result.resources.emplace_back( xaSwitch->key, xaSwitch->xa_switch);
+               ++xaSwitch;
+            }
+
+            result.server_init = value.service_init;
+            result.server_done = value.service_done;
+
+            return result;
+
+         }
 	   } // transform
 	} // <unnamed>
 } // local
@@ -81,7 +77,7 @@ int casual_start_server( casual_server_argument* serverArgument)
       common::process::instance::connect();
 
       auto handler = common::communication::ipc::inbound::device().handler(
-         common::server::handle::Call( local::transform::ServerArguments{}( *serverArgument)),
+         common::server::handle::Call( local::transform::arguments( *serverArgument)),
          common::message::handle::Shutdown{},
          common::message::handle::ping()
       );

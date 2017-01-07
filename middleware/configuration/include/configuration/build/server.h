@@ -36,12 +36,17 @@ namespace casual
                   //!
                   sf::optional< std::string> transaction;
 
-                  sf::optional< std::size_t> type;
+                  //!
+                  //! Arbitrary category.
+                  //!
+                  //! @attention categories starting with '.' is reserved by casual
+                  //!
+                  sf::optional< std::string> category;
 
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
                      archive & CASUAL_MAKE_NVP( transaction);
-                     archive & CASUAL_MAKE_NVP( type);
+                     archive & CASUAL_MAKE_NVP( category);
                   )
                };
 

@@ -100,7 +100,7 @@ namespace broker
 
          result.services.emplace_back( ".casual.broker.state",
                std::bind( &service_broker_state, std::placeholders::_1, std::ref( state)),
-               common::server::Service::Type::cCasualAdmin,
+               common::service::category::admin,
                common::service::transaction::Type::none);
 
          return result;

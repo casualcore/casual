@@ -476,7 +476,7 @@ namespace casual
                                     common::message::service::advertise::Service result;
 
                                     result.name = s.origin;
-                                    result.type = s.type;
+                                    result.category = s.category;
                                     result.transaction = s.transaction;
 
                                     return result;

@@ -22,7 +22,7 @@ namespace casual
                   model_type result;
 
                   result.server_default.service.transaction.emplace( "join");
-                  result.server_default.service.type.emplace( 10);
+                  result.server_default.service.category.emplace( "some.category");
 
                   result.services = {
                         { []( configuration::build::server::Service& v){
@@ -39,7 +39,7 @@ namespace casual
                         { []( configuration::build::server::Service& v){
                            v.name = "s4";
                            v.function.emplace( "f4");
-                           v.type.emplace( 5);
+                           v.category.emplace( "some.other.category");
                         }}
                   };
 
