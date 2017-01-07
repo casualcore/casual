@@ -91,22 +91,12 @@ namespace casual
 
                Manager get( Manager domain, const std::string& file)
                {
-                  try
-                  {
-                     //
-                     // Create the reader and deserialize configuration
-                     //
-                     auto reader = sf::archive::reader::from::file( file);
-                     reader >> CASUAL_MAKE_NVP( domain);
-                  }
-                  catch( ...)
-                  {
-                     configuration::log << "failed to load file: " << file << std::endl;
-                     configuration::log << CASUAL_MAKE_NVP( domain);
-                     configuration::log.flush();
 
-                     throw;
-                  }
+                  //
+                  // Create the reader and deserialize configuration
+                  //
+                  auto reader = sf::archive::reader::from::file( file);
+                  reader >> CASUAL_MAKE_NVP( domain);
 
                   finalize( domain);
 

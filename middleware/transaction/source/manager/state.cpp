@@ -5,7 +5,7 @@
 #include "transaction/manager/state.h"
 
 #include "configuration/domain.h"
-#include "configuration/xa_switch.h"
+
 
 #include "common/exception.h"
 #include "common/algorithm.h"
@@ -172,11 +172,11 @@ namespace casual
                Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
                auto resources = resource_file.empty() ?
-                     configuration::xa::switches::get() : configuration::xa::switches::get( resource_file);
+                     configuration::resource::property::get() : configuration::resource::property::get( resource_file);
 
                for( auto& resource : resources)
                {
-                  if( ! state.xa_switch_configuration.emplace( resource.key, std::move( resource)).second)
+                  if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
                   {
                      throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }

@@ -1,4 +1,4 @@
-## configuration examples
+# configuration examples
 
 Since the configuration in casual is represented by an object model (data structures) we
 fill the object model with some representable example configuration and generate to all
@@ -9,24 +9,57 @@ These examples are generated during build, hence shows the true configuration re
 casual has.
 
 
-### all
+There are three configuration parts:
+
+ name                   | description
+------------------------|--------------------------
+**domain**              | _casual domain configuration_
+**resource propertes**  | _defines machine global configuration on resources_
+**build server**        | _defines user configuration when building a casual server_
+
+Every part has a generated default to help understand what can be set default and what 
+the default values are.
+
+
+## domain
+
+This is the runtime configuration for a casual domain 
 
 We're trying to show all configuration options that is possible in casual.
 
-* [domain.yaml](domain.yaml)
-* [domain.json](domain.json)
-* [domain.xml](domain.xml)
-
-### default
-
-Shows which options has default values and what these are.
-
-* [domain.yaml](default/domain.yaml)
-* [domain.json](default/domain.json)
-* [domain.xml](default/domain.xml)
+ example                      | default
+------------------------------|--------------------------
+ [yaml](domain/domain.yaml)   | [yaml](domain/default/domain.yaml)
+ [json](domain/domain.json)   | [json](domain/default/domain.json)
+ [xml](domain/domain.xml)     | [xml](domain/default/domain.xml)
+ [ini](domain/domain.yaml)    | [yaml](domain/default/domain.ini)
 
 
+## resource properties
+
+Defines machine global configuration of resources. It's used when building casual servers 
+and also by `casual-transaction-manager` to deduce which xa-resource-proxy-server it should start.
 
 
+ example                            | default
+------------------------------------|--------------------------
+ [yaml](resource/properties.yaml)   | _no default values_
+ [json](resource/properties.json)   | _no default values_
+ [xml](resource/properties.xml)     | _no default values_
+ [ini](resource/properties.ini)     | _no default values_
+
+
+## build server
+
+Defines user configuration when building a casual server
+
+ example                     | default
+-----------------------------|--------------------------
+ [yaml](build/server.yaml)   | [yaml](build/default/server.yaml)
+ [json](build/server.json)   | [yaml](build/default/server.json)
+ [xml](build/server.xml)     | [xml](build/default/server.xml)
+ [ini](build/server.ini)     | [ini](build/default/server.ini)
+ 
+  
 
 

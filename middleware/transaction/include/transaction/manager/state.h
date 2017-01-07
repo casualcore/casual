@@ -13,7 +13,7 @@
 
 #include "transaction/manager/log.h"
 
-#include "configuration/xa_switch.h"
+#include "configuration/resource/property.h"
 #include "configuration/message/domain.h"
 
 
@@ -532,7 +532,7 @@ namespace casual
          transaction::Log log;
 
 
-         std::map< std::string, configuration::xa::Switch> xa_switch_configuration;
+         std::map< std::string, configuration::resource::Property> resource_properties;
 
 
          //!

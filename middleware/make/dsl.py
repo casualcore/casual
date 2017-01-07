@@ -74,14 +74,14 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None, 
     directive = "";
  
     if resources:
-        directive += " -r " + ' '.join( resources)
+        directive += " --resource-keys " + ' '.join( resources)
         
     if configuration:
-        directive += " -xa " + configuration
+        directive += " --properties-file " + configuration
      
     if isinstance( serverdefinition, basestring):
         # We assume it is a path to a server-definition-file
-        directive += ' -p ' + serverdefinition
+        directive += ' --server-definition ' + serverdefinition
          
         print '# dependency to server definition file'
         print path + ': ' + serverdefinition

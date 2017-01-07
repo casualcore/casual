@@ -2,7 +2,7 @@
 //! casual
 //!
 
-#include "configuration/serverdefinition.h"
+#include "configuration/build/server.h"
 
 #include "sf/archive/maker.h"
 
@@ -21,24 +21,34 @@ namespace casual
                {
                   namespace complement
                   {
-                     void setIfEmpty( std::string& variable, const std::string& value)
-                     {
-                        if( variable.empty()) variable = value;
-                     }
-
-                     void defaultValues( Server& server)
+                     void default_values( Server& server)
                      {
                         for( auto&& service : server.services)
                         {
-                           setIfEmpty( service.function, service.name);
-                           setIfEmpty( service.transaction, server.transaction);
-                           setIfEmpty( service.type, server.type);
-                        }
+                           if( ! service.function) service.function.emplace( service.name);
 
+                           service.transaction = common::coalesce( service.transaction, server.server_default.service.transaction);
+                           service.type = common::coalesce( service.type, server.server_default.service.type);
+                        }
                      }
                   } // complement
                } // <unnamed>
             } // local
+
+
+
+            Service::Service() = default;
+            Service::Service( std::function< void(Service&)> foreign) { foreign( *this);}
+
+
+            namespace server
+            {
+               Default::Default()
+               {
+                  service.transaction.emplace( "auto");
+                  service.type.emplace( 0);
+               }
+            } // service
 
             Server get( const std::string& file)
             {
@@ -48,13 +58,12 @@ namespace casual
                // Create the reader and deserialize configuration
                //
                auto reader = sf::archive::reader::from::file( file);
-
                reader >> CASUAL_MAKE_NVP( server);
 
                //
                // Complement with default values
                //
-               local::complement::defaultValues( server);
+               local::complement::default_values( server);
 
 
                return server;

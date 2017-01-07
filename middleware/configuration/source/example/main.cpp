@@ -3,8 +3,10 @@
 //!
 
 #include "configuration/domain.h"
-
 #include "configuration/example/domain.h"
+
+#include "configuration/example/build/server.h"
+#include "configuration/example/resource/property.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/maker.h"
@@ -18,27 +20,71 @@ namespace casual
    {
       namespace example
       {
-
-         void create(  const std::string& file)
+         namespace create
          {
-            write( example::domain(), file);
-         }
 
-         void create_default( const std::string& file)
-         {
-            write( domain::Manager{}, file);
-         }
+            void domain( const std::string& file)
+            {
+               write( example::domain(), file);
+            }
 
+            void default_domain( const std::string& file)
+            {
+               write( domain::Manager{}, file);
+            }
+
+            namespace build
+            {
+               void server( const std::string& file)
+               {
+                  example::build::server::write( example::build::server::example(), file);
+               }
+
+               void default_server( const std::string& file)
+               {
+                  example::build::server::write( configuration::build::server::Server{}, file);
+               }
+            } // build
+
+            namespace resource
+            {
+               void property( const std::string& file)
+               {
+                  example::resource::property::write( example::resource::property::example(), file);
+               }
+
+               void default_server( const std::string& file)
+               {
+                  example::resource::property::write( {}, file);
+               }
+
+            } // resource
+
+         } // create
 
          int main( int argc, char **argv)
          {
             try
             {
+               using namespace common::argument;
 
                common::Arguments argument{
+                  R"(
+Produces configuration examples from object models
+
+the output format will be deduced from file extension
+
+)",
                   {
-                     common::argument::directive( { "-o", "--output"}, "output file - format will be deduced from extension", &create),
-                     common::argument::directive( { "-d", "--default"}, "output default configuration", &create_default)
+                     directive( { "-d", "--domain-file"}, "domain configuration example", &create::domain),
+                     directive( { "-dd", "--default-domain-file"}, "default domain configuration example", &create::default_domain),
+
+                     directive( { "-b", "--build-server-file"}, "build server configuration example", &create::build::server),
+                     directive( { "-db", "--default-build-server-file"}, "default build server configuration example", &create::build::default_server),
+
+                     directive( { "-r", "--resource-property-file"}, "resource property configuration example", &create::resource::property),
+                     directive( { "-dr", "--default-resource-property-file"}, "default resource property configuration example", &create::resource::default_server)
+
                   }
                };
 

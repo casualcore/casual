@@ -1,0 +1,11 @@
+{
+    "server": {
+        "default": {
+            "service": {
+                "transaction": "auto",
+                "type": 0
+            }
+        },
+        "services": []
+    }
+}

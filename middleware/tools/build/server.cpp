@@ -11,8 +11,8 @@
 #include "common/environment.h"
 #include "common/server/service.h"
 
-#include "configuration/serverdefinition.h"
-#include "configuration/xa_switch.h"
+#include "configuration/build/server.h"
+#include "configuration/resource/property.h"
 
 #include "sf/namevaluepair.h"
 #include <vector>
@@ -55,20 +55,15 @@ struct Settings
    {
       auto server = configuration::build::server::get( file);
 
-      using service_type = configuration::build::server::Server::Service;
+      using service_type = configuration::build::server::Service;
 
       common::range::transform( server.services, services, []( const service_type& service)
             {
-               static std::map< std::string, int> type{
-                  {"casual-sf", common::server::Service::Type::cCasualSF},
-                  {"casual-admin", common::server::Service::Type::cCasualAdmin},
-               };
-
                Service result;
-               result.function = service.function;
+               result.function = service.function.value_or( service.name);
                result.name = service.name;
-               result.type = type[ service.type];
-               result.transaction = common::service::transaction::mode( service.transaction);
+               result.type = service.type.value_or( 0);
+               result.transaction = common::service::transaction::mode( service.transaction.value_or( "auto"));
 
                return result;
             });
@@ -80,24 +75,28 @@ struct Settings
    bool keep = false;
 
 
-   std::string xa_resource_file;
+   std::string properties_file;
    std::vector< std::string> resources;
 
 
 
-   const std::vector< configuration::xa::Switch>& get_xa_swiches() const
+   const std::vector< configuration::resource::Property>& get_resurces() const
    {
       auto initialize = [&](){
-         std::vector< configuration::xa::Switch> result;
+
+         using property_type = configuration::resource::Property;
+
+         std::vector< property_type> result;
 
          if( ! resources.empty())
          {
-            auto switches = xa_resource_file.empty() ?
-                  configuration::xa::switches::get() : configuration::xa::switches::get( xa_resource_file);
+            auto properties = properties_file.empty() ?
+                  configuration::resource::property::get() : configuration::resource::property::get( properties_file);
+
 
             for( auto& resource : resources)
             {
-               auto found = common::range::find_if( switches, [&]( const configuration::xa::Switch& s){
+               auto found = common::range::find_if( properties, [&]( const property_type& s){
                   return s.key == resource;
                });
 
@@ -219,9 +218,9 @@ extern "C" {
    //
    // Declare the xa_struts
    //
-   for( auto& xa : settings.get_xa_swiches())
+   for( auto& resource : settings.get_resurces())
    {
-      out << "extern struct xa_switch_t " << xa.xa_struct_name << ";" << std::endl;
+      out << "extern struct xa_switch_t " << resource.xa_struct_name << ";" << std::endl;
    }
 
 
@@ -248,10 +247,10 @@ int main( int argc, char** argv)
 
    struct casual_xa_switch_mapping xa_mapping[] = {)";
 
-   for( auto& xa : settings.get_xa_swiches())
+   for( auto& resource : settings.get_resurces())
    {
       out << R"(
-      { ")" << xa.key << R"(", &)" << xa.xa_struct_name << "},";
+      { ")" << resource.key << R"(", &)" << resource.xa_struct_name << "},";
    }
 
    out << R"(
@@ -330,9 +329,9 @@ int build( const std::string& c_file, const Settings& settings)
 
    std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
-   for( auto& xa : settings.get_xa_swiches())
+   for( auto& resource : settings.get_resurces())
    {
-      for( auto& lib : xa.libraries)
+      for( auto& lib : resource.libraries)
       {
          arguments.emplace_back( "-l" + lib);
       }
@@ -382,11 +381,11 @@ int main( int argc, char **argv)
          Arguments handler{{
             argument::directive( {"-o", "--output"}, "name of server to be built", settings.output),
             argument::directive( {"-s", "--service"}, "service names", settings, &Settings::set_services),
-            argument::directive( {"-p", "--path"}, "service names", settings, &Settings::set_server_definition_path),
+            argument::directive( {"-d", "--server-definition"}, "path to server definition file", settings, &Settings::set_server_definition_path),
             argument::directive( {"-r", "--resource-keys"}, "key of the resource", settings, &Settings::set_resources),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
             argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", settings, &Settings::set_compile_link_directive),
-            argument::directive( {"-xa", "--xa-resource-file"}, "path to resource definition file", settings.xa_resource_file),
+            argument::directive( {"-p", "--properties-file"}, "path to resource properties file", settings.properties_file),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
             argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep)
          }};
@@ -401,7 +400,6 @@ int main( int argc, char **argv)
       //
 
       common::file::scoped::Path path( common::file::name::unique( "server_", ".c"));
-      //std::string path( "server_" + common::Uuid::make().string() + ".c");
 
       {
          trace::Exit log( "generate file:  " + path.path(), settings.verbose);

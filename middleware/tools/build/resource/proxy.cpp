@@ -11,7 +11,7 @@
 #include "common/string.h"
 #include "common/process.h"
 #include "common/exception.h"
-#include "configuration/xa_switch.h"
+#include "configuration/resource/property.h"
 
 #include "sf/log.h"
 
@@ -31,10 +31,7 @@ namespace casual
       namespace
       {
 
-
-
-
-         void generate( std::ostream& out, const configuration::xa::Switch& xa_switch)
+         void generate( std::ostream& out, const configuration::resource::Property& resource)
          {
             out << R"(   
 /*
@@ -55,7 +52,7 @@ extern "C" {
             // Declare the xa_strut
             //
          
-            out << "extern struct xa_switch_t " << xa_switch.xa_struct_name << ";";
+            out << "extern struct xa_switch_t " << resource.xa_struct_name << ";";
          
          
             out << R"(
@@ -67,7 +64,7 @@ int main( int argc, char** argv)
    struct casual_xa_switch_mapping xa_mapping[] = {
 )";
 
-   out << R"(      { ")" << xa_switch.key << R"(", &)" << xa_switch.xa_struct_name << "},";
+   out << R"(      { ")" << resource.key << R"(", &)" << resource.xa_struct_name << "},";
 
    out << R"(
       { 0, 0} /* null ending */
@@ -105,29 +102,39 @@ int main( int argc, char** argv)
          {
 
             std::string output;
-            std::string resourceKey;
+            std::string key;
 
-            std::string linkDirectives;
+            struct
+            {
+               std::string link;
+               std::string compile;
+
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( link);
+                  archive & CASUAL_MAKE_NVP( compile);
+               )
+
+            } directives;
 
             std::string compiler = "g++";
             bool verbose = false;
-            bool keepSource = false;
+            bool keep_source = false;
 
-            std::string xa_resource_file;
+            std::string properties_file;
 
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( output);
-               archive & CASUAL_MAKE_NVP( resourceKey);
-               archive & CASUAL_MAKE_NVP( linkDirectives);
+               archive & CASUAL_MAKE_NVP( key);
+               archive & CASUAL_MAKE_NVP( directives);
                archive & CASUAL_MAKE_NVP( compiler);
                archive & CASUAL_MAKE_NVP( verbose);
-               archive & CASUAL_MAKE_NVP( keepSource);
-               archive & CASUAL_MAKE_NVP( xa_resource_file);
+               archive & CASUAL_MAKE_NVP( keep_source);
+               archive & CASUAL_MAKE_NVP( properties_file);
 
-            }
+            )
          };
 
 
@@ -160,7 +167,7 @@ int main( int argc, char** argv)
          } // trace
 
 
-         int build( const std::string& c_file, const configuration::xa::Switch& xa_switch, const Settings& settings)
+         int build( const std::string& c_file, const configuration::resource::Property& resource, const Settings& settings)
          {
             trace::Exit log( "build resurce proxy", settings.verbose);
             //
@@ -169,17 +176,18 @@ int main( int argc, char** argv)
 
             std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
-            auto linkDirective = common::string::adjacent::split( settings.linkDirectives);
-            arguments.insert( std::end( arguments), std::begin( linkDirective), std::end( linkDirective));
+            common::range::append( common::string::adjacent::split( settings.directives.compile), arguments);
+            common::range::append( common::string::adjacent::split( settings.directives.link), arguments);
 
-            for( auto& include_path : xa_switch.paths.include)
+
+            for( auto& include_path : resource.paths.include)
             {
                arguments.emplace_back( "-I" + common::environment::string( include_path));
             }
             // Add casual-paths, that we know will be needed
             arguments.emplace_back( common::environment::string( "-I${CASUAL_HOME}/include"));
 
-            for( auto& lib_path : xa_switch.paths.library)
+            for( auto& lib_path : resource.paths.library)
             {
                arguments.emplace_back( "-L" + common::environment::string( lib_path));
             }
@@ -187,7 +195,7 @@ int main( int argc, char** argv)
             arguments.emplace_back( common::environment::string( "-L${CASUAL_HOME}/lib"));
 
 
-            for( auto& lib : xa_switch.libraries)
+            for( auto& lib : resource.libraries)
             {
                arguments.emplace_back( "-l" + lib);
             }
@@ -209,18 +217,19 @@ int main( int argc, char** argv)
          }
 
 
-         configuration::xa::Switch configuration( const Settings& settings)
+         configuration::resource::Property configuration( const Settings& settings)
          {
-            trace::Exit log( "read xa-switch configuration", settings.verbose);
+            trace::Exit log( "read resource properties configuration", settings.verbose);
 
-            auto swithces = settings.xa_resource_file.empty() ? configuration::xa::switches::get() : configuration::xa::switches::get( settings.xa_resource_file);
+            auto swithces = settings.properties_file.empty() ?
+                  configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
 
             auto found = common::range::find_if( swithces,
-               [&]( const configuration::xa::Switch& value){ return value.key == settings.resourceKey;});
+               [&]( const configuration::resource::Property& value){ return value.key == settings.key;});
 
             if( ! found)
             {
-               throw common::exception::invalid::Argument( "resource-key: " + settings.resourceKey + " not found");
+               throw common::exception::invalid::Argument( "resource-key: " + settings.key + " not found");
             }
             return *found;
          }
@@ -241,13 +250,16 @@ int main( int argc, char **argv)
          using namespace casual::common;
 
          Arguments handler{ {
-            argument::directive( {"-o", "--output"}, "name of the resulting proxy", settings.output),
-            argument::directive( {"-r", "--resource-key"}, "key of the resource", settings.resourceKey),
+            argument::directive( {"-o", "--output"}, "name of the resulting resource proxy", settings.output),
+            argument::directive( {"-k", "--resource-key"}, "key of the resource", settings.key),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
-            argument::directive( {"-l", "--link-directives"}, "additional link directives", settings.linkDirectives),
-            argument::directive( {"-xa", "--xa-resource-file"}, "path to resource definition file", settings.xa_resource_file),
+
+            argument::directive( {"-c", "--compile-directives"}, "additional compile directives", settings.directives.compile),
+            argument::directive( {"-l", "--link-directives"}, "additional link directives", settings.directives.link),
+
+            argument::directive( {"-p", "--resource-properties"}, "path to resource properties file", settings.properties_file),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
-            argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keepSource)
+            argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keep_source)
          }};
 
          handler.parse( argc, argv);
@@ -277,7 +289,7 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::scoped::Path path( common::file::name::unique( "xa_switch_", ".c"));
+      common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".c"));
 
       {
          local::trace::Exit log( "generate file:  " + path.path(), settings.verbose);
@@ -288,7 +300,7 @@ int main( int argc, char **argv)
          file.close();
       }
 
-      if( settings.keepSource)
+      if( settings.keep_source)
       {
          path.release();
       }

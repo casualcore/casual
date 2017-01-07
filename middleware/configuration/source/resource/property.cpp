@@ -1,29 +1,30 @@
 //!
-//! casual
+//! casual 
 //!
 
-#include "configuration/xa_switch.h"
-
-#include "common/exception.h"
-#include "common/environment.h"
+#include "configuration/resource/property.h"
 
 #include "sf/archive/maker.h"
 
+
+#include "common/environment.h"
 
 
 namespace casual
 {
    namespace configuration
    {
-      namespace xa
+      namespace resource
       {
+         Property::Property() = default;
+         Property::Property( std::function< void(Property&)> foreign) { foreign( *this);}
 
-         namespace switches
+         namespace property
          {
 
-            std::vector< Switch> get( const std::string& file)
+            std::vector< Property> get( const std::string& file)
             {
-               std::vector< Switch> resources;
+               std::vector< Property> resources;
 
                //
                // Create the reader and deserialize configuration
@@ -35,7 +36,7 @@ namespace casual
                //
                // Make sure we've got valid configuration
                //
-               configuration::xa::validate( resources);
+               validate( resources);
 
                return resources;
             }
@@ -58,7 +59,7 @@ namespace casual
                } // <unnamed>
             } // local
 
-            std::vector< Switch> get()
+            std::vector< Property> get()
             {
                //
                // Try to find configuration file
@@ -76,12 +77,17 @@ namespace casual
                         common::exception::make_nip( "name", "resources.(yaml|json|xml|..."));
                }
             }
-         } // switches
 
-         void validate( const std::vector< Switch>& switches)
+
+         } // property
+
+
+         void validate( const std::vector< Property>& properties)
          {
+
          }
 
-      } // xa
+      } // resource
    } // config
 } // casual
+

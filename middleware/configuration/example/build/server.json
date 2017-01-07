@@ -1,0 +1,28 @@
+{
+    "server": {
+        "default": {
+            "service": {
+                "transaction": "join",
+                "type": 10
+            }
+        },
+        "services": [
+            {
+                "name": "s1"
+            },
+            {
+                "name": "s2",
+                "transaction": "auto"
+            },
+            {
+                "name": "s3",
+                "function": "f3"
+            },
+            {
+                "name": "s4",
+                "function": "f4",
+                "type": 5
+            }
+        ]
+    }
+}

@@ -7,6 +7,7 @@
 
 
 #include "sf/namevaluepair.h"
+#include "sf/platform.h"
 
 #include <vector>
 #include <string>
@@ -16,17 +17,21 @@ namespace casual
 {
    namespace configuration
    {
-      namespace xa
+      namespace resource
       {
-         struct Switch
+
+         struct Property
          {
+            Property();
+            Property( std::function< void(Property&)> foreign);
+
             std::string key;
             std::string server;
             std::string xa_struct_name;
 
             std::vector< std::string> libraries;
 
-            struct paths_t
+            struct
             {
                std::vector< std::string> include;
                std::vector< std::string> library;
@@ -39,6 +44,8 @@ namespace casual
 
             } paths;
 
+            sf::optional< std::string> note;
+
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -47,22 +54,22 @@ namespace casual
                archive & CASUAL_MAKE_NVP( xa_struct_name);
                archive & CASUAL_MAKE_NVP( libraries);
                archive & CASUAL_MAKE_NVP( paths);
+               archive & CASUAL_MAKE_NVP( note);
             )
          };
 
-         namespace switches
+         namespace property
          {
+            std::vector< resource::Property> get( const std::string& file);
 
-            std::vector< Switch> get( const std::string& file);
+            std::vector< resource::Property> get();
 
-            std::vector< Switch> get();
-         } // switch
-
-
-         void validate( const std::vector< Switch>& switches);
+         } // property
 
 
-      } // xa
+         void validate( const std::vector< Property>& properties);
+
+      } // resource
    } // config
 } // casual
 

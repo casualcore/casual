@@ -73,7 +73,7 @@ namespace casual
                {
                   while( count-- > 0)
                   {
-                     auto& info = m_state.xa_switch_configuration.at( proxy.key);
+                     auto& info = m_state.resource_properties.at( proxy.key);
 
                      state::resource::Proxy::Instance instance;//( proxy.id);
                      instance.id = proxy.id;
