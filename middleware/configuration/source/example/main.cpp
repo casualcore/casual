@@ -46,6 +46,11 @@ namespace casual
 
                return 0;
             }
+            catch( const std::exception& exception)
+            {
+               std::cerr << "excption: " << exception.what() << '\n';
+               return 20;
+            }
             catch( ...)
             {
                return common::error::handler();

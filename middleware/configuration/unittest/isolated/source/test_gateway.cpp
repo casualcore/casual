@@ -3,6 +3,7 @@
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
 
@@ -23,7 +24,7 @@ namespace casual
 
       INSTANTIATE_TEST_CASE_P( protocol,
             configuration_gateway,
-         ::testing::Values(".yaml", ".json", ".xml"));//, ".ini"));
+         ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 
 
       //
@@ -32,6 +33,8 @@ namespace casual
 
       TEST_P( configuration_gateway, expect_3_connections)
       {
+         common::unittest::Trace trace;
+
          // serialize and deserialize
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
@@ -44,6 +47,8 @@ namespace casual
 
       TEST_P( configuration_gateway, expect_3_services_for_connection_1)
       {
+         common::unittest::Trace trace;
+
          // serialize and deserialize
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
@@ -56,6 +61,8 @@ namespace casual
 
       TEST_P( configuration_gateway, expect_default_to_be_set)
       {
+         common::unittest::Trace trace;
+
          // serialize and deserialize
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 

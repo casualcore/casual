@@ -125,8 +125,8 @@ namespace casual
 
 
       typedef ::testing::Types<
-            holder::json,
             holder::yaml,
+            holder::json,
             holder::xml
        > archive_types;
 

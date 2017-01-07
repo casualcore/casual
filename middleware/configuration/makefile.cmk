@@ -63,7 +63,14 @@ LinkUnittest( 'bin/test-casual-configuration',
         Compile( 'unittest/isolated/source/test_message.cpp'),
         Compile( 'unittest/isolated/source/test_environment.cpp'),
    ],
-   [ example_archive, lib_configuration, 'casual-sf', 'casual-common', 'casual-mockup', 'casual-unittest'])  
+   [ 
+       example_archive, 
+       lib_configuration, 
+       'casual-sf', 
+       'casual-common', 
+       'casual-mockup', 
+       'casual-unittest',
+   ])  
 
 
 #

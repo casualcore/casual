@@ -68,6 +68,8 @@ namespace casual
             //!
             friend Executable& operator += ( Executable& lhs, const executable::Default& rhs);
 
+            friend bool operator < ( const Executable& lhs, const Executable& rhs);
+
          };
 
          struct Server : public Executable

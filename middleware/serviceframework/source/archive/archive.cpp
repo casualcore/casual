@@ -10,34 +10,32 @@ namespace casual
       {
 
 
-         Base::Base() = default;
-         Base::~Base() = default;
+         Reader::Reader() = default;
+         Reader::~Reader() = default;
 
 
-         std::size_t Base::container_start( std::size_t size, const char* name)
+
+         std::tuple< std::size_t, bool> Reader::container_start( std::size_t size, const char* name)
          {
             return dispatch_container_start( size, name);
          }
 
-         void Base::container_end( const char* name)
+         void Reader::container_end( const char* name)
          {
             dispatch_container_end( name);
          }
 
-         bool Base::serialtype_start( const char* name)
+         bool Reader::serialtype_start( const char* name)
          {
             return dispatch_serialtype_start( name);
          }
 
-         void Base::serialtype_end( const char* name)
+         void Reader::serialtype_end( const char* name)
          {
             dispatch_serialtype_end( name);
          }
 
 
-
-         Reader::Reader() = default;
-         Reader::~Reader() = default;
 
          bool Reader::read( bool& value, const char* name)
          {
@@ -112,6 +110,27 @@ namespace casual
 
          Writer::Writer() = default;
          Writer::~Writer() = default;
+
+         void Writer::container_start( std::size_t size, const char* name)
+         {
+            return dispatch_container_start( size, name);
+         }
+
+         void Writer::container_end( const char* name)
+         {
+            dispatch_container_end( name);
+         }
+
+         void Writer::serialtype_start( const char* name)
+         {
+            dispatch_serialtype_start( name);
+         }
+
+         void Writer::serialtype_end( const char* name)
+         {
+            dispatch_serialtype_end( name);
+         }
+
 
          void Writer::write( const bool value, const char* name)
          {

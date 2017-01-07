@@ -21,7 +21,6 @@ namespace casual
          {
             struct Strict
             {
-               inline static constexpr bool check() { return true;}
                inline static bool apply( bool exist, const char* role)
                {
                   if( ! exist)
@@ -34,7 +33,6 @@ namespace casual
 
             struct Relaxed
             {
-               inline static constexpr bool check() { return false;}
                inline static constexpr bool apply( bool exist, const char* role) { return exist;}
             };
 
@@ -65,15 +63,13 @@ namespace casual
                return m_implementation;
             }
 
-
          private:
 
-
-            std::size_t dispatch_container_start( std::size_t size, const char* name) override
+            std::tuple< std::size_t, bool> dispatch_container_start( std::size_t size, const char* name) override
             {
                auto result = m_implementation.container_start( size, name);
                policy_type::apply( std::get< 1>( result), name);
-               return std::get< 0>( result);
+               return result;
             }
 
             void dispatch_container_end( const char* name) override
@@ -138,9 +134,9 @@ namespace casual
 
          private:
 
-            std::size_t dispatch_container_start( std::size_t size, const char* name) override
+            void dispatch_container_start( std::size_t size, const char* name) override
             {
-               return m_implementation.container_start( size, name);
+               m_implementation.container_start( size, name);
             }
 
             void dispatch_container_end( const char* name) override
@@ -148,10 +144,9 @@ namespace casual
                m_implementation.container_end( name);
             }
 
-            bool dispatch_serialtype_start( const char* name) override
+            void dispatch_serialtype_start( const char* name) override
             {
                m_implementation.serialtype_start( name);
-               return true;
             }
 
             void dispatch_serialtype_end( const char* name) override

@@ -4,6 +4,7 @@
 
 #include "configuration/domain.h"
 #include "configuration/file.h"
+#include "configuration/common.h"
 
 #include "common/exception.h"
 #include "common/file.h"
@@ -11,6 +12,7 @@
 #include "common/algorithm.h"
 
 #include "sf/archive/maker.h"
+#include "sf/log.h"
 
 #include <algorithm>
 
@@ -89,12 +91,22 @@ namespace casual
 
                Manager get( Manager domain, const std::string& file)
                {
-                  //
-                  // Create the reader and deserialize configuration
-                  //
-                  auto reader = sf::archive::reader::from::file( file);
+                  try
+                  {
+                     //
+                     // Create the reader and deserialize configuration
+                     //
+                     auto reader = sf::archive::reader::from::file( file);
+                     reader >> CASUAL_MAKE_NVP( domain);
+                  }
+                  catch( ...)
+                  {
+                     configuration::log << "failed to load file: " << file << std::endl;
+                     configuration::log << CASUAL_MAKE_NVP( domain);
+                     configuration::log.flush();
 
-                  reader >> CASUAL_MAKE_NVP( domain);
+                     throw;
+                  }
 
                   finalize( domain);
 

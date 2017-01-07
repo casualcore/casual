@@ -22,36 +22,11 @@ namespace casual
       namespace archive
       {
 
-         class Base
-         {
-
-         public:
-
-            Base();
-            virtual ~Base();
-
-            std::size_t container_start( std::size_t size, const char* name);
-            void container_end( const char* name);
-
-            bool serialtype_start( const char* name);
-            void serialtype_end( const char* name);
-
-         private:
-
-            virtual std::size_t dispatch_container_start( std::size_t size, const char* name) = 0;
-            virtual void dispatch_container_end( const char* name) = 0;
-
-            virtual bool dispatch_serialtype_start( const char* name) = 0;
-            virtual void dispatch_serialtype_end( const char* name) = 0;
-
-         };
-
-
 
          //!
          //! Read from archvie
          //!
-         class Reader: public Base
+         class Reader
          {
 
          public:
@@ -59,19 +34,12 @@ namespace casual
             Reader();
             virtual ~Reader();
 
-         private:
+            std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
+            void container_end( const char* name);
 
-            virtual bool pod( bool& value, const char* name) = 0;
-            virtual bool pod( char& value, const char* name) = 0;
-            virtual bool pod( short& value, const char* name) = 0;
-            virtual bool pod( long& value, const char* name) = 0;
-            virtual bool pod( long long& value, const char* name) = 0;
-            virtual bool pod( float& value, const char* name) = 0;
-            virtual bool pod( double& value, const char* name) = 0;
-            virtual bool pod( std::string& value, const char* name) = 0;
-            virtual bool pod( platform::binary_type& value, const char* name) = 0;
+            bool serialtype_start( const char* name);
+            void serialtype_end( const char* name);
 
-         public:
             bool read( bool& value, const char* name);
             bool read( char& value, const char* name);
             bool read( short& value, const char* name);
@@ -83,6 +51,24 @@ namespace casual
             bool read( double& value, const char* name);
             bool read( std::string& value, const char* name);
             bool read( platform::binary_type& value, const char* name);
+
+         private:
+
+            virtual std::tuple< std::size_t, bool> dispatch_container_start( std::size_t size, const char* name) = 0;
+            virtual void dispatch_container_end( const char* name) = 0;
+
+            virtual bool dispatch_serialtype_start( const char* name) = 0;
+            virtual void dispatch_serialtype_end( const char* name) = 0;
+
+            virtual bool pod( bool& value, const char* name) = 0;
+            virtual bool pod( char& value, const char* name) = 0;
+            virtual bool pod( short& value, const char* name) = 0;
+            virtual bool pod( long& value, const char* name) = 0;
+            virtual bool pod( long long& value, const char* name) = 0;
+            virtual bool pod( float& value, const char* name) = 0;
+            virtual bool pod( double& value, const char* name) = 0;
+            virtual bool pod( std::string& value, const char* name) = 0;
+            virtual bool pod( platform::binary_type& value, const char* name) = 0;
 
          };
 
@@ -108,7 +94,6 @@ namespace casual
                archive.serialtype_end( name);
                return true;
             }
-            archive.serialtype_end( name);
             return false;
          }
 
@@ -150,15 +135,20 @@ namespace casual
             void serialize_tuple( Reader& archive, T& value, const char* name)
             {
                const auto expected_size = std::tuple_size< T>::value;
-               const auto size = archive.container_start( expected_size, name);
-               if( expected_size != size)
+               const auto context = archive.container_start( expected_size, name);
+
+               if( std::get< 1>( context))
                {
-                  throw exception::archive::invalid::Node{ "got unexpected size", CASUAL_NIP( expected_size), CASUAL_NIP( size)};
+                  auto size = std::get< 0>( context);
+
+                  if( expected_size != size)
+                  {
+                     throw exception::archive::invalid::Node{ "got unexpected size", CASUAL_NIP( expected_size), CASUAL_NIP( size)};
+                  }
+                  tuple_read< std::tuple_size< T>::value>::serialize( archive, value);
+
+                  archive.container_end( name);
                }
-
-               tuple_read< std::tuple_size< T>::value>::serialize( archive, value);
-
-               archive.container_end( name);
             }
          } // detail
 
@@ -179,14 +169,21 @@ namespace casual
          traits::enable_if_t< traits::container::is_sequence< T>::value && ! std::is_same< platform::binary_type, T>::value, bool>
          serialize( Reader& archive, T& container, const char* name)
          {
-            container.resize( archive.container_start( 0, name));
+            auto properties = archive.container_start( 0, name);
 
-            for( auto& element : container)
+            if( std::get< 1>( properties))
             {
-               archive >> sf::name::value::pair::make( nullptr, element);
+               container.resize( std::get< 0>( properties));
+
+               for( auto& element : container)
+               {
+                  archive >> sf::name::value::pair::make( nullptr, element);
+               }
+               archive.container_end( name);
+
+               return true;
             }
-            archive.container_end( name);
-            return ! container.empty();
+            return false;
          }
 
          namespace detail
@@ -203,17 +200,24 @@ namespace casual
          traits::enable_if_t< traits::container::is_associative< T >::value, bool>
          serialize( Reader& archive, T& container, const char* name)
          {
-            auto count = archive.container_start( 0, name);
+            auto properties = archive.container_start( 0, name);
 
-            while( count-- > 0)
+            if( std::get< 1>( properties))
             {
-               typename detail::value< typename T::value_type>::type element;
-               archive >> sf::name::value::pair::make( nullptr, element);
+               auto count = std::get< 0>( properties);
 
-               container.insert( std::move( element));
+               while( count-- > 0)
+               {
+                  typename detail::value< typename T::value_type>::type element;
+                  archive >> sf::name::value::pair::make( nullptr, element);
+
+                  container.insert( std::move( element));
+               }
+
+               archive.container_end( name);
+               return true;
             }
-            archive.container_end( name);
-            return true;
+            return false;
          }
 
          template< typename T>
@@ -247,28 +251,20 @@ namespace casual
          //!
          //! Write to archive
          //!
-         class Writer: public Base
+         class Writer
          {
 
          public:
 
-
             Writer();
             virtual ~Writer();
 
-         private:
+            void container_start( std::size_t size, const char* name);
+            void container_end( const char* name);
 
-            virtual void pod( const bool value, const char* name) = 0;
-            virtual void pod( const char value, const char* name) = 0;
-            virtual void pod( const short value, const char* name) = 0;
-            virtual void pod( const long value, const char* name) = 0;
-            virtual void pod( const long long value, const char* name) = 0;
-            virtual void pod( const float value, const char* name) = 0;
-            virtual void pod( const double value, const char* name) = 0;
-            virtual void pod( const std::string& value, const char* name) = 0;
-            virtual void pod( const platform::binary_type& value, const char* name) = 0;
+            void serialtype_start( const char* name);
+            void serialtype_end( const char* name);
 
-         public:
             void write( const bool value, const char* name);
             void write( const char value, const char* name);
             void write( const short value, const char* name);
@@ -280,6 +276,24 @@ namespace casual
             void write( const double value, const char* name);
             void write( const std::string& value, const char* name);
             void write( const platform::binary_type& value, const char* name);
+
+         private:
+
+            virtual void dispatch_container_start( std::size_t size, const char* name) = 0;
+            virtual void dispatch_container_end( const char* name) = 0;
+
+            virtual void dispatch_serialtype_start( const char* name) = 0;
+            virtual void dispatch_serialtype_end( const char* name) = 0;
+
+            virtual void pod( const bool value, const char* name) = 0;
+            virtual void pod( const char value, const char* name) = 0;
+            virtual void pod( const short value, const char* name) = 0;
+            virtual void pod( const long value, const char* name) = 0;
+            virtual void pod( const long long value, const char* name) = 0;
+            virtual void pod( const float value, const char* name) = 0;
+            virtual void pod( const double value, const char* name) = 0;
+            virtual void pod( const std::string& value, const char* name) = 0;
+            virtual void pod( const platform::binary_type& value, const char* name) = 0;
 
          };
 

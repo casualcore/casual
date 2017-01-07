@@ -3,6 +3,7 @@
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
@@ -23,7 +24,7 @@ namespace casual
 
    INSTANTIATE_TEST_CASE_P( protocol,
          casual_configuration_domain,
-      ::testing::Values(".yaml", ".json", ".xml"));//, ".ini"));
+      ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 
 
    namespace local
@@ -105,6 +106,8 @@ namespace casual
 
 	TEST_P( casual_configuration_domain, domain)
 	{
+	   common::unittest::Trace trace;
+
 	   auto path = local::serialize_domain( GetParam());
 	   auto domain = configuration::domain::get( { path.path()});
 
@@ -121,6 +124,8 @@ namespace casual
 
 	TEST_P( casual_configuration_domain, default_server)
    {
+      common::unittest::Trace trace;
+
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
@@ -132,6 +137,8 @@ namespace casual
 
    TEST_P( casual_configuration_domain, default_service)
    {
+      common::unittest::Trace trace;
+
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
@@ -140,6 +147,8 @@ namespace casual
 
    TEST_P( casual_configuration_domain, default_resource)
    {
+      common::unittest::Trace trace;
+
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
@@ -150,6 +159,8 @@ namespace casual
 
    TEST_P( casual_configuration_domain, transaction)
    {
+      common::unittest::Trace trace;
+
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
@@ -173,16 +184,23 @@ namespace casual
 
    TEST_P( casual_configuration_domain, servers)
    {
+      common::unittest::Trace trace;
+
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 
       ASSERT_TRUE( domain.servers.size() == 2) << "size: " << domain.servers.size();
       EXPECT_TRUE( domain.servers.at( 0).instances == 42ul) << CASUAL_MAKE_NVP( domain.servers) << CASUAL_MAKE_NVP( local::domain::get().servers);
-      EXPECT_TRUE( domain.servers == local::domain::get().servers);
+
+
+      EXPECT_TRUE( domain.servers == local::domain::get().servers)
+         << CASUAL_MAKE_NVP( domain.servers) << CASUAL_MAKE_NVP( local::domain::get().servers);
    }
 
    TEST_P( casual_configuration_domain, transaction_manager)
    {
+      common::unittest::Trace trace;
+
       auto path = local::serialize_domain( GetParam());
       auto domain = configuration::domain::get( { path.path()});
 

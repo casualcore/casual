@@ -69,16 +69,18 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     const bool result = start( name);
-
-                     if( result && m_stack.back()->Type() != YAML::NodeType::Null)
+                     if( start( name))
                      {
-                        read( value);
+                        if( m_stack.back()->Type() != YAML::NodeType::Null)
+                        {
+                           read( value);
+                        }
+
+                        end( name);
+                        return true;
                      }
 
-                     end( name);
-
-                     return result;
+                     return false;
                   }
 
                private:

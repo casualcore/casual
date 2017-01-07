@@ -143,14 +143,18 @@ namespace casual
                {
                   if( name)
                   {
-                     m_stack.push_back( m_stack.back().child( name));
-                  }
-                  else
-                  {
-                     return true;
-                  }
+                     auto node =  m_stack.back().child( name);
 
-                  return m_stack.back();
+                     if( node)
+                     {
+                        m_stack.push_back( m_stack.back().child( name));
+                     }
+                     else
+                     {
+                        return false;
+                     }
+                  }
+                  return true;
                }
 
                void Implementation::end( const char* name)

@@ -44,11 +44,11 @@ namespace casual
          }
          void serialize( Writer& archive, const common::process::Handle& value, const char* name)
          {
-            if( archive.serialtype_start( name))
-            {
-               archive << name::value::pair::make( "pid", value.pid);
-               archive << name::value::pair::make( "queue", value.queue);
-            }
+            archive.serialtype_start( name);
+
+            archive << name::value::pair::make( "pid", value.pid);
+            archive << name::value::pair::make( "queue", value.queue);
+
             archive.serialtype_end( name);
          }
 
@@ -65,11 +65,11 @@ namespace casual
 
          void serialize( Writer& archive, const common::domain::Identity& value, const char* name)
          {
-            if( archive.serialtype_start( name))
-            {
-               archive << name::value::pair::make( "name", value.name);
-               archive << name::value::pair::make( "id", value.id);
-            }
+            archive.serialtype_start( name);
+
+            archive << name::value::pair::make( "name", value.name);
+            archive << name::value::pair::make( "id", value.id);
+
             archive.serialtype_end( name);
          }
 

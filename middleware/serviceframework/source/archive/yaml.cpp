@@ -122,7 +122,7 @@ namespace casual
                      }
 
                      //
-                     // We stack 'em in reverse order
+                     // We stack'em in reverse order
                      //
 
                      for( auto index = size; index > 0; --index)
@@ -164,20 +164,24 @@ namespace casual
                {
                   if( name)
                   {
-                     //
-                     // TODO: (Maybe) remove this check whenever archive is fixed
-                     //
-                     if( m_stack.back())
+                     auto node = m_stack.back()->FindValue( name);
+
+                     if( node)
                      {
-                        m_stack.push_back( m_stack.back()->FindValue( name));
+                        m_stack.push_back( node);
                      }
                      else
                      {
-                        m_stack.push_back( nullptr);
+                        return false;
                      }
                   }
 
-                  return m_stack.back() != nullptr;
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
+
+                  return true;
 
                }
 

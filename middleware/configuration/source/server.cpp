@@ -49,6 +49,11 @@ namespace casual
             return lhs;
          }
 
+         bool operator < ( const Executable& lhs, const Executable& rhs)
+         {
+            return std::tie( lhs.path, lhs.alias) < std::tie( rhs.path, rhs.alias);
+         }
+
 
          Server::Server() = default;
          Server::Server( std::function< void(Server&)> foreign) { foreign( *this);}
