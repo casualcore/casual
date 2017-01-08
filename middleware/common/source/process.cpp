@@ -582,6 +582,14 @@ namespace casual
                }
             }
 
+            //
+            // We try to minimize the glitch where the spawned process does not
+            // get signals for a short period of time. We need to block so we don't
+            // get child-terminate signals (or other signals for that matter...)
+            //
+            signal::thread::scope::Block block;
+
+            process::sleep( std::chrono::microseconds{ 200});
 
             log::internal::debug << "process::spawned pid: " << pid << '\n';
 
