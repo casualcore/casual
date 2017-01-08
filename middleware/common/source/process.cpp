@@ -483,6 +483,40 @@ namespace casual
                   return c_arguments;
                }
 
+               namespace spawn
+               {
+                  struct Attributes : traits::uncopyable
+                  {
+                     Attributes()
+                     {
+                        check_error( posix_spawnattr_init( &m_attributes), "posix_spawnattr_init");
+
+                        //
+                        // We try to eliminate signals to propagate to children by it self...
+                        // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
+                        //
+                        check_error( posix_spawnattr_setflags( &m_attributes, POSIX_SPAWN_SETPGROUP), "posix_spawnattr_setflags");
+                     }
+
+                     ~Attributes()
+                     {
+                        posix_spawnattr_destroy( &m_attributes);
+                     }
+
+                     posix_spawnattr_t* get() { return &m_attributes;}
+
+                  private:
+
+                     void check_error( int code, const char* message)
+                     {
+                        if( code != 0)
+                           throw exception::invalid::Argument{ message, CASUAL_NIP( error::string( code))};
+                     };
+
+                     posix_spawnattr_t m_attributes;
+                  };
+               } // spawn
+
             } // <unnamed>
          } // local
 
@@ -509,35 +543,13 @@ namespace casual
             }
 
 
-            auto initialize_spawn_attribute = []( posix_spawnattr_t& attributes)
-            {
-               auto check_error = []( int code, const char* message){
-                  if( code != 0)
-                     throw exception::invalid::Argument{ message, CASUAL_NIP( error::string( code))};
-               };
-
-               check_error( posix_spawnattr_init( &attributes), "posix_spawnattr_init");
-
-               //
-               // We try to eliminate signals to propagate to children by it self...
-               // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
-               //
-               check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETPGROUP), "posix_spawnattr_setflags");
-
-               return &attributes;
-            };
-
-            posix_spawnattr_t attributes;
-
-            auto guard = memory::guard( initialize_spawn_attribute( attributes), &posix_spawnattr_destroy);
-
-
-
             platform::pid::type pid = 0;
 
             log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
             {
+               local::spawn::Attributes attributes;
+
                //
                // Since we're reading environment variables we need to lock
                //
@@ -554,7 +566,7 @@ namespace casual
                      &pid,
                      path.c_str(),
                      nullptr,
-                     &attributes,
+                     attributes.get(),
                      const_cast< char* const*>( c_arguments.data()),
                      const_cast< char* const*>( c_environment.data())
                      );

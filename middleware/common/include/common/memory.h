@@ -145,11 +145,15 @@ namespace casual
             return offset + copy( source, destination);
          }
 
+         /*
+          * not needed for now...
+          *
          template< typename T, typename D>
          auto guard( T* memory, D&& deleter) -> decltype( std::unique_ptr< T, D>( memory, std::forward< D>( deleter)))
          {
             return std::unique_ptr< T, D>( memory, std::forward< D>( deleter));
          }
+         */
 
       } // memory
 
