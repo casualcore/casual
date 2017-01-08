@@ -147,7 +147,7 @@ namespace casual
                      // We make sure we don't include our self in the boot sequence.
                      //
                      range::copy_if( state.executables, std::back_inserter( excutable_wrappers), [&state]( const state::Executable& e){
-                        return e.id != state.global.manager;
+                        return e.id != state.manager_id;
                      });
 
                      auto executable = range::make( excutable_wrappers);

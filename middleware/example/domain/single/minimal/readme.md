@@ -23,7 +23,7 @@ source the env file:
 
 ## start domain
 
-    >$ casual-admin domain --boot 
+    >$ casual-admin domain --boot configuration/domain.yaml
 
 
 

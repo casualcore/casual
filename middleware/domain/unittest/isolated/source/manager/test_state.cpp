@@ -34,6 +34,13 @@ namespace casual
                }
 
 
+               const state::Batch& find_batch( const std::vector< state::Batch>& bootorder, const std::string& group)
+               {
+                  return common::range::front( common::range::find_if( bootorder, [&group]( const state::Batch& b){
+                     return b.group.get().name == group;
+                  }));
+               }
+
             } // <unnamed>
          } // local
 
@@ -62,9 +69,10 @@ domain:
 )" );
 
             auto bootorder = state.bootorder();
-            ASSERT_TRUE( bootorder.size() == 2) << "bootorder: " << common::range::make( bootorder);
-            EXPECT_TRUE( bootorder.at( 0).executables.size() == 1) << "bootorder: " << common::range::make( bootorder);
-            auto& executable = bootorder.at( 0).executables.at( 0);
+            auto& global = local::find_batch( bootorder, "global");
+
+            EXPECT_TRUE( global.executables.size() == 1) << "global: " << global;
+            auto& executable = global.executables.at( 0);
             EXPECT_TRUE( executable.get().path == "echo" );
          }
 
@@ -87,17 +95,16 @@ domain:
 
 )" );
 
+
             auto bootorder = state.bootorder();
-            ASSERT_TRUE( bootorder.size() == 3);
+
             {
-               auto& batch = bootorder.at( 0);
-               EXPECT_TRUE( batch.group.get().name == "global" ) << "bootorder: " << common::range::make( bootorder);
-               ASSERT_TRUE( batch.executables.size() == 1) << "state: " << state << "\nbootorder: " << common::range::make( bootorder);
+               auto& batch = local::find_batch( bootorder, "global");
+               ASSERT_TRUE( batch.executables.size() == 1) << "state: " << state << "\nbatch: " << batch;
                EXPECT_TRUE( batch.executables.at( 0).get().path == "exe2");
             }
             {
-               auto& batch = bootorder.at( 1);
-               EXPECT_TRUE( batch.group.get().name == "group_1" ) << "bootorder: " << common::range::make( bootorder) << " - state: " << state;
+               auto& batch = local::find_batch( bootorder, "group_1");
                ASSERT_TRUE( batch.executables.size() == 1);
                EXPECT_TRUE( batch.executables.at( 0).get().path == "exe1");
             }

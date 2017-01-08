@@ -91,14 +91,9 @@ namespace casual
 
                   manager::state::Group operator () ( const casual::configuration::group::Group& group) const
                   {
-                     manager::state::Group result;
-
-                     result.name = group.name;
-                     result.note = group.note;
+                     manager::state::Group result{ group.name, { m_state.group_id.global}, group.note};
 
                      if( group.resources.has_value()) result.resources = group.resources.value();
-
-                     result.dependencies.push_back( id( "global"));
 
                      if( group.dependencies)
                      {
@@ -163,10 +158,9 @@ namespace casual
                      if( value.memberships)
                         result.memberships = local::membership( value.memberships.value(), groups);
 
+                     // If empty, we make it member of 'global'
                      if( result.memberships.empty())
-                     {
-                        result.memberships.push_back( groups.at( 0).id);
-                     }
+                        result.memberships = local::membership( { "global"}, groups);
 
 
                      return result;
@@ -254,26 +248,45 @@ namespace casual
             // Handle groups
             //
             {
-               manager::state::Group first;
-               result.global.group = first.id;
-               first.name = "global";
-               first.note = "first global group - the group that everything has dependency to";
+               manager::state::Group master{ ".casual.master", {}, "the master and (implicit) parent of all groups"};
+               result.group_id.master = master.id;
+               result.groups.push_back( std::move( master));
 
-               result.groups.push_back( std::move( first));
+
+               manager::state::Group transaction{ ".casual.transaction", { result.group_id.master}};
+               result.group_id.transaction = transaction.id;
+               result.groups.push_back( std::move( transaction));
+
+               manager::state::Group queue{ ".casual.queue", { transaction.id}};
+               result.group_id.queue = queue.id;
+               result.groups.push_back( std::move( queue));
+
+               manager::state::Group global{ "global", { queue.id, transaction.id}, "user global group"};
+               result.group_id.global = global.id;
+               result.groups.push_back( std::move( global));
             }
 
             {
+               //
+               // We transform user defined groups
+               //
                range::transform( domain.groups, result.groups, local::Group{ result});
             }
 
             {
-               manager::state::Group last;
-               result.global.last = last.id;
-               last.dependencies.push_back( result.global.group);
-               last.name = "casual.last";
-               last.note = "last global group - will be booted last and shutdown first";
+               //
+               // We need to make sure the gateway have dependencies to all user groups. We could
+               // order the groups and pick the last one, but it's more semantic correct to make have dependencies
+               // to all, since that is exactly what we're trying to represent.
+               //
+               manager::state::Group gateway{ ".casual.gateway", {}};
+               result.group_id.gateway = gateway.id;
 
-               result.groups.push_back( std::move( last));
+               for( auto& group : result.groups)
+               {
+                  gateway.dependencies.push_back( group.id);
+               }
+               result.groups.push_back( std::move( gateway));
             }
 
 
@@ -291,11 +304,11 @@ namespace casual
                   result.processes[ common::process::handle().pid] = common::process::handle();
 
                   manager::state::Executable manager;
-                  result.global.manager = manager.id;
+                  result.manager_id = manager.id;
                   manager.alias = "casual-domain-manager";
                   manager.path = "casual-domain-manager";
                   manager.configured_instances = 1;
-                  manager.memberships.push_back( result.global.group);
+                  manager.memberships.push_back( result.group_id.master);
                   manager.note = "responsible for all executables in this domain";
 
                   manager.instances.push_back( common::process::id());

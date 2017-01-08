@@ -324,6 +324,8 @@ namespace casual
 			         Reset( Reset&&) = default;
 			         Reset& operator = ( Reset&&) = default;
 
+			         const signal::Set& previous() const;
+
                private:
 			         signal::Set m_mask;
                   move::Moved m_moved;

@@ -58,7 +58,10 @@ namespace casual
             struct Group : internal::Id< Group>
             {
                Group() = default;
-               Group( std::string name, std::string note = "") : name( std::move( name)), note( std::move( note)) {}
+
+               Group( std::string name, std::vector< id_type> dependencies, std::string note = "")
+                  : name( std::move( name)), note( std::move( note)), dependencies( std::move( dependencies)) {}
+
 
                std::string name;
                std::string note;
@@ -197,17 +200,27 @@ namespace casual
             bool execute();
             task::Queue tasks;
 
+
+            //!
+            //! executable id of this domain manager
+            //!
+            state::Executable::id_type manager_id = 0;
+
+            //!
+            //! Group id:s
+            //!
             struct
             {
-               state::Group::id_type group = 0;
-               state::Group::id_type last = 0;
+               using id_type = state::Group::id_type;
 
-               //!
-               //! executable id of this domain manager
-               //!
-               state::Executable::id_type manager = 0;
+               id_type master = 0;
+               id_type transaction = 0;
+               id_type queue = 0;
 
-            } global;
+               id_type global = 0;
+
+               id_type gateway = 0;
+            } group_id;
 
 
             //!

@@ -131,9 +131,8 @@ namespace casual
                         broker.alias = "casual-broker";
                         broker.path = "${CASUAL_HOME}/bin/casual-broker";
                         broker.configured_instances = 1;
-                        broker.memberships.push_back( state.global.group);
+                        broker.memberships.push_back( state.group_id.master);
                         broker.note = "service lookup and management";
-                        //broker.restart = true;
 
                         state.executables.push_back( std::move( broker));
                      }
@@ -143,11 +142,21 @@ namespace casual
                         tm.alias = "casual-transaction-manager";
                         tm.path = "${CASUAL_HOME}/bin/casual-transaction-manager";
                         tm.configured_instances = 1;
-                        tm.memberships.push_back( state.global.group);
+                        tm.memberships.push_back( state.group_id.transaction);
                         tm.note = "manage transaction in this domain";
-                        //tm.restart = true;
 
                         state.executables.push_back( std::move( tm));
+                     }
+
+                     {
+                        state::Executable queue;
+                        queue.alias = "casual-queue-broker";
+                        queue.path = "${CASUAL_HOME}/bin/casual-queue-broker";
+                        queue.configured_instances = 1;
+                        queue.memberships.push_back( state.group_id.queue);
+                        queue.note = "manage queues in this domain";
+
+                        state.executables.push_back( std::move( queue));
                      }
 
                      //if( ! state.configuration.gateway.listeners.empty() || ! state.configuration.gateway.connections.empty())
@@ -156,7 +165,7 @@ namespace casual
                         gateway.alias = "casual-gateway-manager";
                         gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
                         gateway.configured_instances = 1;
-                        gateway.memberships.push_back(  state.global.last);
+                        gateway.memberships.push_back( state.group_id.gateway);
                         gateway.note = "manage connections to and from other domains";
 
                         state.executables.push_back( std::move( gateway));
@@ -172,7 +181,7 @@ namespace casual
 
 
                range::for_each( state.bootorder(), [&]( state::Batch& batch){
-                     state.tasks.add( local::task::Boot{ batch});
+                     state.tasks.add( manager::local::task::Boot{ batch});
                   });
             }
 
@@ -195,7 +204,7 @@ namespace casual
                });
 
                range::for_each( state.shutdownorder(), [&]( state::Batch& batch){
-                     state.tasks.add( local::task::Shutdown{ batch});
+                     state.tasks.add( manager::local::task::Shutdown{ batch});
                   });
             }
 

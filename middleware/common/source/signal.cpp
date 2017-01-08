@@ -43,7 +43,7 @@ namespace casual
 
                   log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
 
-                  if( ::kill( pid, signal) == -1)
+                  if( ::kill( pid, signal) != 0)
                   {
                      switch( errno)
                      {
@@ -670,6 +670,13 @@ namespace casual
                      mask::set( m_mask);
                   }
                }
+
+               const signal::Set& Reset::previous() const
+               {
+                  return m_mask;
+               }
+
+
 
                Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
 

@@ -112,9 +112,6 @@ namespace casual
                                     ;
                               }
                            }
-
-                           //log << "state: " << state << '\n';
-
                         }
                         catch( const exception::Shutdown&)
                         {
