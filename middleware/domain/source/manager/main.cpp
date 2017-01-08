@@ -27,7 +27,7 @@ namespace casual
                {
                   common::Arguments parser{ {
                      common::argument::directive( common::argument::cardinality::Any{}, {"-c", "--configuration-files"}, "domain configuration files", settings.configurationfiles),
-                     common::argument::directive( {"-b", "--boot"}, "boots the domain based on the stored configuration", settings.boot),
+                     common::argument::directive( { "--no-auto-persist"}, "domain does not store current state persistent on shutdown", settings.no_auto_persist),
                      common::argument::directive( {"--bare"}, "do not boot mandatory (broker, TM), mostly for unittest", settings.bare)
                      }};
 

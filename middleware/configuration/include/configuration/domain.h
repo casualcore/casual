@@ -92,18 +92,6 @@ namespace casual
 
          Manager get( const std::vector< std::string>& files);
 
-         namespace persistent
-         {
-            //!
-            //! Get the persistent domain configuration
-            //!
-            //! @return
-            //!
-            Manager get();
-
-            void save( const Manager& domain);
-
-         } // persistent
 
          //!
          //! Complement with defaults and validates

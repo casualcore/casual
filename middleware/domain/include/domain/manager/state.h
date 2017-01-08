@@ -42,16 +42,23 @@ namespace casual
 
                   friend bool operator == ( const Id& lhs, id_type rhs) { return lhs.id == rhs;}
 
-               private:
+                  inline static void set_next_id( id_type id)
+                  {
+                     m_next_id = id;
+                  }
 
-                  //id_type m_id = nextId();
+               private:
 
                   inline static id_type nextId()
                   {
-                     static id_type id = 10;
-                     return id++;
+                     return m_next_id++;
                   }
+
+                  static id_type m_next_id;
                };
+
+               template< typename T>
+               std::size_t Id< T>::m_next_id = 10;
 
             } // internal
 
@@ -84,6 +91,18 @@ namespace casual
                      bool operator () ( const Group& lhs, const Group& rhs);
                   };
                };
+
+               //!
+               //! For persistent state
+               //!
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( name);
+                  archive & CASUAL_MAKE_NVP( note);
+                  archive & CASUAL_MAKE_NVP( dependencies);
+                  archive & CASUAL_MAKE_NVP( resources);
+               )
             };
 
 
@@ -132,6 +151,28 @@ namespace casual
                bool complete() const;
 
                friend std::ostream& operator << ( std::ostream& out, const Executable& value);
+
+
+
+               //!
+               //! For persistent state
+               //!
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( id);
+                  archive & CASUAL_MAKE_NVP( alias);
+                  archive & CASUAL_MAKE_NVP( path);
+                  archive & CASUAL_MAKE_NVP( arguments);
+                  archive & CASUAL_MAKE_NVP( note);
+
+                  archive & CASUAL_MAKE_NVP( memberships);
+                  archive & sf::name::value::pair::make(  "environment_variables", environment.variables);
+                  archive & CASUAL_MAKE_NVP( configured_instances);
+                  archive & CASUAL_MAKE_NVP( restart);
+                  archive & CASUAL_MAKE_NVP( restarts);
+                  archive & CASUAL_MAKE_NVP( resources);
+
+               )
 
             };
 
@@ -220,13 +261,26 @@ namespace casual
                id_type global = 0;
 
                id_type gateway = 0;
+
+               //!
+               //! For persistent state
+               //!
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( master);
+                  archive & CASUAL_MAKE_NVP( transaction);
+                  archive & CASUAL_MAKE_NVP( queue);
+                  archive & CASUAL_MAKE_NVP( global);
+                  archive & CASUAL_MAKE_NVP( gateway);
+               )
+
             } group_id;
 
 
             //!
             //! this domain's original configuration.
             //!
-            configuration::message::Domain configuration;
+            casual::configuration::message::Domain configuration;
 
             //!
             //! Runlevel can only "go forward"
@@ -244,6 +298,7 @@ namespace casual
 
             state::Executable& executable( common::platform::pid::type pid);
             state::Group& group( state::Group::id_type id);
+            const state::Group& group( state::Group::id_type id) const;
 
 
 
@@ -257,6 +312,22 @@ namespace casual
 
 
             friend std::ostream& operator << ( std::ostream& out, const State& state);
+
+
+            //!
+            //! For persistent state
+            //!
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
+               archive & CASUAL_MAKE_NVP( manager_id);
+               archive & CASUAL_MAKE_NVP( groups);
+               archive & CASUAL_MAKE_NVP( executables);
+               archive & CASUAL_MAKE_NVP( group_id);
+               archive & CASUAL_MAKE_NVP( configuration);
+            )
+
+            bool mandatory_prepare = true;
+            bool auto_persist = true;
 
          private:
             Runlevel m_runlevel = Runlevel::startup;

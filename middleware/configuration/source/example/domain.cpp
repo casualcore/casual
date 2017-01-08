@@ -37,6 +37,8 @@ namespace casual
                      { "/some/other/file"}
                };
 
+               domain.manager_default.service.timeout.emplace( "90s");
+               domain.manager_default.server.restart.emplace( true);
             }
 
             {

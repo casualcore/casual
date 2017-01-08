@@ -46,7 +46,7 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
 intall_libs.append( lib_configuration)
 
 
-example_archive = LinkArchive( 'bin/casual-example', 
+example_archive = LinkArchive( 'bin/casual-configuration-example', 
      [
          Compile( 'source/example/domain.cpp'),
          Compile( 'source/example/resource/property.cpp'),

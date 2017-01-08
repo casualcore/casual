@@ -158,9 +158,9 @@ namespace casual
                      if( value.memberships)
                         result.memberships = local::membership( value.memberships.value(), groups);
 
-                     // If empty, we make it member of 'global'
+                     // If empty, we make it member of '.global'
                      if( result.memberships.empty())
-                        result.memberships = local::membership( { "global"}, groups);
+                        result.memberships = local::membership( { ".global"}, groups);
 
 
                      return result;
@@ -231,7 +231,7 @@ namespace casual
          }
 
 
-         manager::State state( const casual::configuration::domain::Manager& domain)
+         manager::State state( casual::configuration::domain::Manager domain)
          {
 
             //
@@ -241,7 +241,8 @@ namespace casual
 
             manager::State result;
 
-            result.configuration = configuration::transform::configuration( domain);
+            result.configuration = casual::configuration::transform::configuration( domain);
+
 
 
             //
@@ -261,16 +262,29 @@ namespace casual
                result.group_id.queue = queue.id;
                result.groups.push_back( std::move( queue));
 
-               manager::state::Group global{ "global", { queue.id, transaction.id}, "user global group"};
+               manager::state::Group global{ ".global", { queue.id, transaction.id}, "user global group"};
                result.group_id.global = global.id;
                result.groups.push_back( std::move( global));
             }
 
             {
                //
+               // We need to remove any of the reserved groups (that we created above), either because
+               // the user has used one of the reserved names, or we're reading from a persistent stored
+               // configuration
+               //
+               const std::vector< std::string> reserved{
+                  ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
+
+               auto groups = common::range::remove_if( domain.groups, [&reserved]( const casual::configuration::group::Group& g){
+                  return common::range::find( reserved, g.name);
+               });
+
+
+               //
                // We transform user defined groups
                //
-               range::transform( domain.groups, result.groups, local::Group{ result});
+               range::transform( groups, result.groups, local::Group{ result});
             }
 
             {
@@ -327,10 +341,6 @@ namespace casual
             return result;
          }
 
-
       } // transform
-
    } // domain
-
-
 } // casual

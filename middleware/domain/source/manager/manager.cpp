@@ -29,8 +29,7 @@ namespace casual
          {
             Trace trace{ "domain::Manager ctor"};
 
-
-            if( ! settings.bare)
+            if( m_state.mandatory_prepare)
             {
                handle::mandatory::boot::prepare( m_state);
             }
@@ -44,7 +43,6 @@ namespace casual
 
             try
             {
-               //handle::shutdown( m_state);
 
 
             }

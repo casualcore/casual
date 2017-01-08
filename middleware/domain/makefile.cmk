@@ -35,6 +35,7 @@ manager_archive = LinkArchive( 'bin/casual-domain-manager',
     Compile( 'source/manager/state.cpp'),
     Compile( 'source/manager/task.cpp'),
     Compile( 'source/manager/configuration.cpp'),
+    Compile( 'source/manager/persistent.cpp'),
     Compile( 'source/common.cpp'),
     Compile( 'source/transform.cpp'),
 ])
@@ -86,6 +87,7 @@ LinkUnittest( 'bin/test-casual-domain',
      'casual-sf',
      'casual-xatmi',
      'casual-unittest',
+     'casual-configuration-example',
     ]) 
 
 

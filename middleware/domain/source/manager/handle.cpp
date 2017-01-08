@@ -4,6 +4,7 @@
 
 #include "domain/manager/handle.h"
 #include "domain/manager/admin/server.h"
+#include "domain/manager/persistent.h"
 #include "domain/common.h"
 #include "domain/transform.h"
 
@@ -144,6 +145,10 @@ namespace casual
                         tm.configured_instances = 1;
                         tm.memberships.push_back( state.group_id.transaction);
                         tm.note = "manage transaction in this domain";
+                        tm.arguments = {
+                              "--transaction-log",
+                              state.configuration.transaction.log
+                        };
 
                         state.executables.push_back( std::move( tm));
                      }
@@ -190,6 +195,15 @@ namespace casual
                Trace trace{ "domain::manager::handle::shutdown"};
 
                state.runlevel( State::Runlevel::shutdown);
+
+               //
+               // TODO: collect state from sub-managers...
+               //
+               if( state.auto_persist)
+               {
+                  persistent::state::save( state);
+               }
+
 
                //
                // Make sure we remove our self so we don't try to shutdown

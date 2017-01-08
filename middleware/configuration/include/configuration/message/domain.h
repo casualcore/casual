@@ -63,19 +63,21 @@ namespace casual
                )
             };
 
+            struct Manager
+            {
+               std::string log;
+               std::vector< Resource> resources;
+
+               CASUAL_CONST_CORRECT_MARSHAL
+               (
+                  archive & log;
+                  archive & resources;
+               )
+            };
+
          } // transaction
 
-         struct Transaction
-         {
-            std::string log;
-            std::vector< transaction::Resource> resources;
 
-            CASUAL_CONST_CORRECT_MARSHAL
-            (
-               archive & log;
-               archive & resources;
-            )
-         };
 
          namespace gateway
          {
@@ -91,7 +93,7 @@ namespace casual
 
             struct Connection
             {
-               enum class Type : char
+               enum class Type : short
                {
                   ipc,
                   tcp
@@ -113,19 +115,22 @@ namespace casual
                   archive & queues;
                )
             };
+
+            struct Manager
+            {
+               std::vector< Listener> listeners;
+               std::vector< Connection> connections;
+
+               CASUAL_CONST_CORRECT_MARSHAL
+               (
+                  archive & listeners;
+                  archive & connections;
+               )
+            };
+
          } // gateway
 
-         struct Gateway
-         {
-            std::vector< gateway::Listener> listeners;
-            std::vector< gateway::Connection> connections;
 
-            CASUAL_CONST_CORRECT_MARSHAL
-            (
-               archive & listeners;
-               archive & connections;
-            )
-         };
 
          namespace queue
          {
@@ -175,8 +180,8 @@ namespace casual
          {
             std::string name;
 
-            Transaction transaction;
-            Gateway gateway;
+            transaction::Manager transaction;
+            gateway::Manager gateway;
             queue::Manager queue;
 
 

@@ -278,6 +278,8 @@ namespace casual
             }
          }
 
+
+
          state::Executable& State::executable( common::platform::pid::type pid)
          {
             auto found = range::find_if( executables, [=]( const state::Executable& e){
@@ -292,14 +294,16 @@ namespace casual
 
          state::Group& State::group( state::Group::id_type id)
          {
-            auto found = range::find_if( groups, [=]( const state::Group& g){
+            return range::front( range::find_if( groups, [=]( const state::Group& g){
                return g.id == id;
-            });
-            if( found)
-            {
-               return *found;
-            }
-            throw exception::invalid::Argument{ "failed to locate group", CASUAL_NIP( id)};
+            }));
+         }
+
+         const state::Group& State::group( state::Group::id_type id) const
+         {
+            return range::front( range::find_if( groups, [=]( const state::Group& g){
+               return g.id == id;
+            }));
          }
 
          bool State::execute()

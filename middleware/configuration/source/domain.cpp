@@ -159,50 +159,11 @@ namespace casual
 
          Manager get( const std::vector< std::string>& files)
          {
-            if( files.empty())
-            {
-               return persistent::get();
-            }
-
             auto domain = range::accumulate( files, Manager{}, &local::get);
 
             return domain;
 
          }
-
-
-
-         namespace persistent
-         {
-            Manager get()
-            {
-               auto configuration = file::persistent::domain();
-
-               if( common::file::exists( configuration))
-               {
-                  return configuration::domain::get( { configuration});
-               }
-               else
-               {
-                  throw common::exception::invalid::File{ "failed to get persistent configuration file", CASUAL_NIP( configuration)};
-               }
-            }
-
-            void save( const Manager& domain)
-            {
-               if( ! common::file::exists( directory::persistent()))
-               {
-                  common::directory::create( directory::persistent());
-               }
-
-               auto configuration = file::persistent::domain();
-
-               auto archive = sf::archive::writer::from::file( configuration);
-               archive << CASUAL_MAKE_NVP( domain);
-            }
-
-         } // persistent
-
       } // domain
 
    } // config

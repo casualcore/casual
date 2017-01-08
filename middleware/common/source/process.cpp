@@ -434,13 +434,6 @@ namespace casual
 
                   std::vector< const char*> environment( std::vector< std::string>& environment)
                   {
-                     //
-                     // We need to expand environment
-                     //
-                     for( auto& variable : environment)
-                     {
-                        variable = environment::string( variable);
-                     }
 
                      auto result = internal::environment();
 
@@ -465,13 +458,6 @@ namespace casual
                   //
                   c_arguments.push_back( path.c_str());
 
-                  //
-                  // We need to expand environment
-                  //
-                  for( auto& argument : arguments)
-                  {
-                     argument = environment::string( argument);
-                  }
 
                   range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
 
@@ -541,6 +527,21 @@ namespace casual
                   exception::make_nip( "arguments", range::make( arguments)),
                   exception::make_nip( "environment", range::make( environment)));
             }
+
+            //
+            // We need to expand environment and arguments
+            //
+            {
+               for( auto& argument : arguments)
+               {
+                  argument = environment::string( argument);
+               }
+               for( auto& variable : environment)
+               {
+                  variable = environment::string( variable);
+               }
+            }
+
 
 
             platform::pid::type pid = 0;
