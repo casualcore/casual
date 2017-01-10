@@ -28,7 +28,7 @@ namespace casual
          using underlaying_type = typename std::underlying_type< enum_type>::type;
 
          Flags() = default;
-         Flags( enum_type e) : m_flags{ static_cast< underlaying_type>( e)} {}
+         Flags( enum_type e) : m_flags( static_cast< underlaying_type>( e)) {}
 
          Flags( std::initializer_list< enum_type> enums)
          {
