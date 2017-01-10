@@ -7,18 +7,14 @@ def backend_builder = '''#! /bin/sh
 umask 000
 cd /git/casual
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
-casual-make make && casual-make clean && casual-make compile && casual-make link 
-casual-make install
-cd /usr/local/casual
-tar cvf /git/casual/casual-middleware.tar .
+casual-make make && casual-make clean && casual-make compile && casual-make link && casual-make install && cd /usr/local/casual && tar cvf /git/casual/casual-middleware.tar .
 '''
 
 def backend_builder_unittest = '''#! /bin/sh
 umask 000
 cd /git/casual
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
-casual-make -d -a --use-valgrind make && casual-make clean && casual-make -d -a --use-valgrind compile && casual-make -d -a --use-valgrind link 
-ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
+casual-make -d -a --use-valgrind make && casual-make clean && casual-make -d -a --use-valgrind compile && casual-make -d -a --use-valgrind link && ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test
 '''
 //
 // Script for the frontend builder
