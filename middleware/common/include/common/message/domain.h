@@ -164,11 +164,13 @@ namespace casual
                   struct Reply : base_reply
                   {
                      std::vector< std::string> resources;
+                     std::vector< std::string> restrictions;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_reply::marshal( archive);
                         archive & resources;
+                        archive & restrictions;
                      })
                   };
 

@@ -17,12 +17,13 @@ domain:
 
     server:
       instances: 1
+      restart: true
 
     executable:
       instances: 1
 
     service:
-      timeout: 0s
+      timeout: 90s
 
 
   transaction:
@@ -93,7 +94,7 @@ domain:
         - sales-group
 
       note: the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
-      restriction:
+      restrictions:
         - preSalesSaveService
         - preSalesGetService
 
@@ -104,7 +105,7 @@ domain:
         - sales-group
 
       note: the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
-      restriction:
+      restrictions:
         - postSalesSaveService
         - postSalesGetService
 
@@ -142,6 +143,10 @@ domain:
   services:
     - timeout: 2h
       name: postSalesSaveService
+      alias:
+        - postSalesSaveService
+        - sales/post/save
+
 
     - timeout: 130ms
       name: postSalesGetService

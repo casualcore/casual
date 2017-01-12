@@ -50,7 +50,6 @@ namespace casual
             std::string category;
 
             service::transaction::Type transaction = service::transaction::Type::automatic;
-            bool active = true;
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
 

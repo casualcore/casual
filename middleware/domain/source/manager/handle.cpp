@@ -626,6 +626,7 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
 
                   reply.resources = state().resources( message.process.pid);
+                  reply.restrictions = state().executable( message.process.pid).restrictions;
 
                   manager::local::ipc::send( state(), message.process, reply);
 

@@ -121,7 +121,7 @@ namespace casual
                               v.alias.emplace( "sales-pre");
                               v.instances.emplace( 10);
                               v.memberships.emplace( { std::string{ "sales-group"}});
-                              v.restriction.emplace( { std::string{ "preSalesSaveService"}, std::string{ "preSalesGetService"}});
+                              v.restrictions.emplace( { std::string{ "preSalesSaveService"}, std::string{ "preSalesGetService"}});
                               v.note.emplace( "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'");
                            }
                      },
@@ -130,7 +130,7 @@ namespace casual
                               v.path = "sales-server";
                               v.alias.emplace( "sales-post");
                               v.memberships.emplace( { std::string{ "sales-group"}});
-                              v.restriction.emplace( { std::string{ "postSalesSaveService"}, std::string{ "postSalesGetService"}});
+                              v.restrictions.emplace( { std::string{ "postSalesSaveService"}, std::string{ "postSalesGetService"}});
                               v.note.emplace( "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'");
                            }
                      },
@@ -164,6 +164,7 @@ namespace casual
                      { []( service::Service& v){
                         v.name = "postSalesSaveService";
                         v.timeout.emplace( "2h");
+                        v.alias.emplace( { std::string( "postSalesSaveService"), std::string( "sales/post/save")});
                      }},
                      { []( service::Service& v){
                         v.name = "postSalesGetService";

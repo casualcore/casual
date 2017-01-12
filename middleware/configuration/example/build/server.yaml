@@ -2,7 +2,7 @@ server:
   default:
     service:
       transaction: join
-      type: 10
+      category: some.category
 
 
   services:
@@ -16,6 +16,6 @@ server:
 
     - name: s4
       function: f4
-      type: 5
+      category: some.other.category
 
 

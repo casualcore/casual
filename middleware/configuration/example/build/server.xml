@@ -3,7 +3,7 @@
  <default>
   <service>
    <transaction>join</transaction>
-   <type>10</type>
+   <category>some.category</category>
   </service>
  </default>
  <services>
@@ -21,7 +21,7 @@
   <element>
    <name>s4</name>
    <function>f4</function>
-   <type>5</type>
+   <category>some.other.category</category>
   </element>
  </services>
 </server>

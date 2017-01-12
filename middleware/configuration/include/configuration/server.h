@@ -77,13 +77,13 @@ namespace casual
             Server();
             Server( std::function< void(Server&)> foreign);
 
-            sf::optional< std::vector< std::string>> restriction;
+            sf::optional< std::vector< std::string>> restrictions;
             sf::optional< std::vector< std::string>> resources;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                Executable::serialize( archive);
-               archive & CASUAL_MAKE_NVP( restriction);
+               archive & CASUAL_MAKE_NVP( restrictions);
                archive & CASUAL_MAKE_NVP( resources);
             )
 

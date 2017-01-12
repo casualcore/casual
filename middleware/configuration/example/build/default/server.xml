@@ -3,7 +3,6 @@
  <default>
   <service>
    <transaction>auto</transaction>
-   <type>0</type>
   </service>
  </default>
  <services />

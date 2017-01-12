@@ -160,6 +160,14 @@ namespace casual
                            }));
 
                   },
+                  [&]( common::message::domain::server::configuration::Request& r)
+                  {
+                     Trace trace{ "mockup domain::server::configuration::Request"};
+
+                     auto reply = message::reverse::type( r);
+                     ipc::eventually::send( r.process.queue, reply);
+
+                  },
                   [&]( common::message::domain::process::lookup::Request& r)
                   {
                      Trace trace{ "mockup domain::process::lookup::Request"};

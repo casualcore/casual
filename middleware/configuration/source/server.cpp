@@ -61,7 +61,7 @@ namespace casual
 
          bool operator == ( const Server& lhs, const Server& rhs)
          {
-            return lhs.restriction == rhs.restriction &&
+            return lhs.restrictions == rhs.restrictions &&
                   static_cast< const Executable&>( lhs) == static_cast< const Executable&>( rhs);
          }
 

@@ -45,8 +45,10 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
-            return out << "{ origin: " << service.origin << " type: " << service.category << " transaction: " << service.transaction
-                  << " active: " << service.active << "};";
+            return out << "{ origin: " << service.origin
+                  << ", category: " << service.category
+                  << ", transaction: " << service.transaction
+                  << '}';
          }
 
          bool operator == ( const Service& lhs, const Service& rhs)

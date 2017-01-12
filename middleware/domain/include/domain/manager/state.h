@@ -140,6 +140,11 @@ namespace casual
                //!
                std::vector< std::string> resources;
 
+               //!
+               //! If it's a server, the service restrictions. What will, at most, be advertised.
+               //!
+               std::vector< std::string> restrictions;
+
 
                bool remove( pid_type instance);
                bool offline() const;
@@ -171,6 +176,7 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( restart);
                   archive & CASUAL_MAKE_NVP( restarts);
                   archive & CASUAL_MAKE_NVP( resources);
+                  archive & CASUAL_MAKE_NVP( restrictions);
 
                )
 

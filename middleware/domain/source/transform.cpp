@@ -140,8 +140,27 @@ namespace casual
 
                struct Executable
                {
-                  template< typename V>
-                  manager::state::Executable operator() ( V&& value, const std::vector< manager::state::Group>& groups)
+
+                  manager::state::Executable operator() ( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
+                  {
+                     return transform( value, groups);
+                  }
+
+                  manager::state::Executable operator() ( const configuration::server::Server& value, const std::vector< manager::state::Group>& groups)
+                  {
+                     auto result = transform( value, groups);
+
+                     if( value.resources)
+                        result.resources = value.resources.value();
+
+                     if( value.restrictions)
+                        result.restrictions = value.restrictions.value();
+
+                     return result;
+                  }
+
+               private:
+                  manager::state::Executable transform( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
                   {
                      manager::state::Executable result;
 

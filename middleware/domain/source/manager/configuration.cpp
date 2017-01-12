@@ -40,6 +40,9 @@ namespace casual
                         common::domain::identity( common::domain::Identity{ state.configuration.name});
 
 
+                        //
+                        // We need to adjust 'next-id' so runtime configuration works.
+                        //
                         {
                            auto max = range::max( state.executables, []( const state::Executable& l, const state::Executable& r){ return l.id < r.id;});
                            if( max)

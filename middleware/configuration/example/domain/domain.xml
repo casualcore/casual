@@ -20,12 +20,13 @@
   </environment>
   <server>
    <instances>1</instances>
+   <restart>true</restart>
   </server>
   <executable>
    <instances>1</instances>
   </executable>
   <service>
-   <timeout>0s</timeout>
+   <timeout>90s</timeout>
   </service>
  </default>
  <transaction>
@@ -105,10 +106,10 @@
     <element>sales-group</element>
    </memberships>
    <note>the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'</note>
-   <restriction>
+   <restrictions>
     <element>preSalesSaveService</element>
     <element>preSalesGetService</element>
-   </restriction>
+   </restrictions>
   </element>
   <element>
    <path>sales-server</path>
@@ -117,10 +118,10 @@
     <element>sales-group</element>
    </memberships>
    <note>the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'</note>
-   <restriction>
+   <restrictions>
     <element>postSalesSaveService</element>
     <element>postSalesGetService</element>
-   </restriction>
+   </restrictions>
   </element>
   <element>
    <path>sales-broker</path>
@@ -157,6 +158,10 @@
   <element>
    <timeout>2h</timeout>
    <name>postSalesSaveService</name>
+   <alias>
+    <element>postSalesSaveService</element>
+    <element>sales/post/save</element>
+   </alias>
   </element>
   <element>
    <timeout>130ms</timeout>
