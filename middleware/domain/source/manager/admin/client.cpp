@@ -214,7 +214,7 @@ namespace casual
                   common::argument::directive( {"-si", "--scale-instances"}, "<alias> <#> scale executable instances", &local::action::scale_instances),
                   common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &local::action::shutdown),
                   common::argument::directive( common::argument::cardinality::Any{}, {"-b", "--boot"}, "boot domain", &local::action::boot),
-                  common::argument::directive( {"-p", "--persist-configuration"}, "persist current configuration", &local::action::persist::configuration)
+                  common::argument::directive( {"-p", "--persist-state"}, "persist current state", &local::action::persist::configuration)
                 }
             };
 

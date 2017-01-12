@@ -200,7 +200,7 @@ namespace casual
                   Optional( T value) : optional_value( value) {}
 
                   // we need to have at least one value for yaml and json to work
-                  std::string dummy_value = "dummy";
+                  long dummy_value = 0;
                   sf::optional< T> optional_value;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(

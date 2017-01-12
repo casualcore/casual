@@ -6,6 +6,7 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/handle.h"
+#include "domain/manager/persistent.h"
 #include "domain/transform.h"
 
 
@@ -201,11 +202,13 @@ namespace casual
                      {
                         auto service_io = local::server->createService( service_info);
 
-                        //service_io.call( &configuration::domain::persistent::save, state.configuration);
+
+                        service_io.call(
+                              static_cast< void(*)( const manager::State&)>( persistent::state::save),
+                              state);
 
                         reply = service_io.finalize();
 
-                        casual::domain::log << "reply: " << reply << '\n';
 
                      }
                      catch( ...)
