@@ -254,7 +254,7 @@ namespace casual
 
                struct State
                {
-                  State( message::domain::configuration::Domain domain) : configuration{ std::move( domain)} {}
+                  State( message::domain::configuration::Domain domain) : configuration( std::move( domain)) {}
                   State() = default;
 
                   std::map< common::Uuid, common::process::Handle> singeltons;

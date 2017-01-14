@@ -214,12 +214,15 @@ namespace casual
                      archive & service;
                   )
                };
+               static_assert( traits::is_movable< Domain>::value, "not movable");
 
 
                struct Request : common::message::basic_request< common::message::Type::domain_configuration_request>
                {
 
                };
+
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                using base_reply = common::message::basic_reply< common::message::Type::domain_configuration_reply>;
                struct Reply : base_reply
@@ -232,6 +235,8 @@ namespace casual
                   )
 
                };
+
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
 
                namespace server
