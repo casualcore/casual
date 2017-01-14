@@ -2,15 +2,18 @@
 //! casual
 //!
 
-#include "config/queue.h"
-#include "config/file.h"
-#include "config/common.h"
+#include "configuration/queue.h"
+
+#include "configuration/common.h"
+#include "configuration/file.h"
 
 #include "common/internal/log.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/file.h"
 #include "common/exception.h"
+
+
 
 #include "sf/log.h"
 #include "sf/archive/maker.h"
@@ -20,10 +23,13 @@ namespace casual
 {
    using namespace common;
 
-   namespace config
+   namespace configuration
    {
       namespace queue
       {
+         Queue::Queue() = default;
+         Queue::Queue( std::function<void( Queue&)> foreign) { foreign( *this);}
+
 
          bool operator < ( const Queue& lhs, const Queue& rhs)
          {
@@ -35,17 +41,17 @@ namespace casual
             return lhs.name == rhs.name;
          }
 
+         Group::Group() = default;
+         Group::Group( std::function<void( Group&)> foreign) { foreign( *this);}
+
          bool operator < ( const Group& lhs, const Group& rhs)
          {
-            if( lhs.name == rhs.name)
-               return lhs.queuebase < rhs.queuebase;
-
             return lhs.name < rhs.name;
          }
 
          bool operator == ( const Group& lhs, const Group& rhs)
          {
-            return lhs.name == rhs.name || ( lhs.queuebase != ":memory:" && lhs.queuebase == rhs.queuebase);
+            return lhs.name == rhs.name; // || ( lhs.queuebase != ":memory:" && lhs.queuebase == rhs.queuebase);
          }
 
          namespace local
@@ -57,12 +63,14 @@ namespace casual
                {
                   for( auto& group : manager.groups)
                   {
+                     if( ! group.queuebase)
+                     {
+                        group.queuebase.emplace( manager.manager_default.directory + "/" + group.name + ".qb");
+                     }
+
                      for( auto& queue : group.queues)
                      {
-                        if( queue.retries.empty())
-                        {
-                           queue.retries = manager.casual_default.queue.retries;
-                        }
+                        queue.retries = coalesce( queue.retries, manager.manager_default.queue.retries);
                      }
                   }
                }
@@ -75,11 +83,6 @@ namespace casual
                      {
                         throw common::exception::invalid::Configuration{ "queue has to have a name"};
                      }
-
-                     if( ! common::string::integer( queue.retries))
-                     {
-                        throw common::exception::invalid::Configuration{ "queue has to have numeric retry set", CASUAL_NIP( queue.retries)};
-                     }
                   }
 
                   void operator ()( const Group& group) const
@@ -89,7 +92,7 @@ namespace casual
                         throw common::exception::invalid::Configuration{ "queue group has to have a name"};
                      }
 
-                     if( group.queuebase.empty())
+                     if( group.queuebase.value_or( "").empty())
                      {
                         throw common::exception::invalid::Configuration{ "queue group has to have a queuebase path"};
                      }
@@ -105,9 +108,25 @@ namespace casual
                   // Check unique groups
                   //
                   {
+                     using G = decltype( manager.groups.front());
+
+                     auto order_group_name = []( G lhs, G rhs){ return lhs.name < rhs.name; };
+                     auto equality_group_name = []( G lhs, G rhs){ return lhs.name == rhs.name; };
+
                      auto groups = common::range::to_reference( manager.groups);
 
-                     if( common::range::adjacent_find( common::range::sort( groups)))
+                     if( common::range::adjacent_find( common::range::sort( groups, order_group_name), equality_group_name))
+                     {
+                        throw common::exception::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
+                     }
+
+                     auto order_group_qb = []( G lhs, G rhs){ return lhs.queuebase < rhs.queuebase;};
+                     auto equality_group_gb = []( G lhs, G rhs){ return lhs.queuebase == rhs.queuebase;};
+
+                     // remote in-memory queues when we validate uniqueness
+                     auto persitent_groups = std::get< 0>( range::partition( groups, []( G g){ return g.queuebase.value_or( "") != ":memory:";}));
+
+                     if( common::range::adjacent_find( common::range::sort( persitent_groups, order_group_qb), equality_group_gb))
                      {
                         throw common::exception::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
                      }
@@ -163,9 +182,17 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Default::Default()
+         namespace manager
          {
-            queue.retries = "0";
+            Default::Default() : directory{ "${CASUAL_DOMAIN_HOME}/queue/groups"}
+            {
+               queue.retries.emplace( 0);
+            }
+         } // manager
+
+         Manager::Manager()
+         {
+
          }
 
          void Manager::finalize()
@@ -202,44 +229,6 @@ namespace casual
             return result;
          }
 
-
-         namespace transform
-         {
-            common::message::domain::configuration::queue::Reply manager( const Manager& value)
-            {
-               message::domain::configuration::queue::Reply result;
-
-               auto transform_group = []( const config::queue::Group& g){
-
-                  message::domain::configuration::queue::Group result;
-
-                  result.name = g.name;
-                  result.queuebase = g.queuebase;
-                  result.note = g.note;
-
-                  auto transform_queue = []( const config::queue::Queue& q){
-                     message::domain::configuration::queue::Queue result;
-
-                     result.name = q.name;
-                     if( ! q.retries.empty()) { result.retries = std::stoul( q.retries );}
-
-                     result.note = q.note;
-
-                     return result;
-                  };
-
-                  range::transform( g.queues, result.queues, transform_queue);
-
-                  return result;
-               };
-
-               range::transform( value.groups, result.groups, transform_group);
-
-
-               return result;
-            }
-
-         } // transform
 
 
          namespace unittest

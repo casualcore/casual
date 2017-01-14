@@ -12,6 +12,7 @@
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
 
+
 namespace casual
 {
    namespace domain
@@ -112,29 +113,20 @@ namespace casual
 
             namespace configuration
             {
-               namespace transaction
-               {
-                  struct Resource : public Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( const common::message::domain::configuration::transaction::resource::Request& message);
-                  };
-
-               } // transaction
-
-               struct Gateway : public Base
+               struct Domain : public Base
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::domain::configuration::gateway::Request& message);
+                  void operator () ( const common::message::domain::configuration::Request& message);
                };
 
-               struct Queue : public Base
+
+               struct Server : public Base
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::domain::configuration::queue::Request& message);
+                  void operator () ( const common::message::domain::configuration::server::Request& message);
+
                };
 
             } // configuration

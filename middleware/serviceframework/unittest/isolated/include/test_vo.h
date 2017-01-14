@@ -37,6 +37,8 @@ namespace casual
          long long m_longlong = std::numeric_limits< long long>::max();
          sf::platform::time_point m_time = sf::platform::time_point::max();
 
+         sf::optional< long> m_optional = 42;
+
          template< typename A>
          void serialize( A& archive)
          {
@@ -46,6 +48,7 @@ namespace casual
             archive & CASUAL_MAKE_NVP( m_short);
             archive & CASUAL_MAKE_NVP( m_longlong);
             archive & CASUAL_MAKE_NVP( m_time);
+            archive & CASUAL_MAKE_NVP( m_optional);
          }
 
          static std::string yaml()
@@ -58,6 +61,7 @@ value:
    m_short: 23
    m_longlong: 1234567890123456789
    m_time: 1234567890
+   m_optional: 666
 )";
          }
 

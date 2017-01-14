@@ -17,11 +17,11 @@ extern "C" {
 
 struct casual_service_name_mapping
 {
-	tpservice functionPointer;
+	tpservice function_pointer;
 	const char* name;
 
 	/* type of service */
-	uint64_t type;
+	const char* category;
 
 	/* transaction policy */
 	uint64_t transaction;
@@ -44,8 +44,8 @@ struct casual_server_argument
 {
    struct casual_service_name_mapping* services;
 
-   tpsvrinit_type serviceInit;
-   tpsvrdone_type serviceDone;
+   tpsvrinit_type service_init;
+   tpsvrdone_type service_done;
 
    int argc;
    char** argv;

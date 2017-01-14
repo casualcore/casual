@@ -2,14 +2,13 @@
 //! casual
 //!
 
-#include "config/file.h"
-
+#include "configuration/file.h"
 #include "common/file.h"
 #include "common/environment.h"
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
 
       namespace directory
@@ -18,6 +17,11 @@ namespace casual
          std::string domain()
          {
             return common::environment::directory::domain() + "/configuration";
+         }
+
+         std::string persistent()
+         {
+            return domain() + "/.persistent";
          }
 
       } // directory
@@ -36,18 +40,14 @@ namespace casual
             return common::file::find( path, std::regex( basename + ".(yaml|yml|json|jsn|xml|ini)" ));
          }
 
-         std::string domain()
+
+         namespace persistent
          {
-            return find( directory::domain(), "domain");
-         }
-
-
-         std::string gateway()
-         {
-            return find( directory::domain(), "gateway");
-         }
-
-
+            std::string domain()
+            {
+               return directory::persistent() + "/domain.yaml";
+            }
+         } // persistent
 
 
       } // file

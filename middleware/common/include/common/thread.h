@@ -24,7 +24,6 @@ namespace casual
 
          } // native
 
-
       } // thread
    } // common
 } // casual

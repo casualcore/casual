@@ -16,23 +16,6 @@ namespace casual
       namespace transform
       {
 
-         namespace configuration
-         {
-
-
-            state::Service Service::operator () ( const config::domain::Service& service) const
-            {
-               state::Service result;
-
-               result.information.name = service.name;
-               result.information.timeout = common::chronology::from::string( service.timeout);
-
-               return result;
-            }
-
-         } // configuration
-
-
 
          state::Service Service::operator () ( const common::message::Service& value) const
          {
@@ -41,7 +24,7 @@ namespace casual
             result.information.name = value.name;
             //result.information.timeout = value.timeout;
             result.information.transaction = value.transaction;
-            result.information.type = value.type;
+            result.information.category = value.category;
 
             // TODD: set against configuration
 
@@ -122,7 +105,7 @@ namespace casual
                      result.metrics = transform_metric( value.metric);
                      result.pending.count = value.pending.count();
                      result.pending.total = value.pending.total();
-                     result.type = value.information.type;
+                     result.category = value.information.category;
                      result.transaction = common::cast::underlying( value.information.transaction);
 
 

@@ -10,6 +10,7 @@
 #include "common/platform.h"
 #include "common/transaction/id.h"
 #include "common/algorithm.h"
+#include "common/optional.h"
 
 
 
@@ -35,6 +36,7 @@ namespace casual
    } // common
    namespace sf
    {
+      using common::optional;
 
       namespace platform
       {
@@ -105,6 +107,7 @@ namespace casual
          {
             serialize( archive, std::chrono::duration_cast<std::chrono::nanoseconds>( value), name);
          }
+
 
       } // archive
    } // sf

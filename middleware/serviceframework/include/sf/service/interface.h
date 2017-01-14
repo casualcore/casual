@@ -20,6 +20,7 @@
 //
 #include <memory>
 #include <map>
+#include <iosfwd>
 
 
 
@@ -38,7 +39,12 @@ namespace casual
                char* data = nullptr;
                long size = 0;
                long flags = 0;
+
+               friend std::ostream& operator << ( std::ostream& out, const State& state);
             };
+
+
+
          }
 
          class Interface
@@ -80,7 +86,7 @@ namespace casual
             virtual Input& do_input() = 0;
             virtual Output& do_output() = 0;
 
-            virtual void do_andle_exception() = 0;
+            virtual void do_handle_exception() = 0;
 
          };
 

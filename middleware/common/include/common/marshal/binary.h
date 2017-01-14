@@ -99,14 +99,15 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
                write( T& value)
                {
+                  using casual::casual_marshal_value;
                   casual_marshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   write_pod( value);
@@ -167,13 +168,13 @@ namespace casual
 
 
                template< typename T>
-               basic_input& operator & ( T& value)
+               basic_input& operator & ( T&& value)
                {
                   return *this >> value;
                }
 
                template< typename T>
-               basic_input& operator >> ( T& value)
+               basic_input& operator >> ( T&& value)
                {
                   read( value);
                   return *this;
@@ -198,14 +199,15 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
                read( T& value)
                {
+                  using casual::casual_unmarshal_value;
                   casual_unmarshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   read_pod( value);

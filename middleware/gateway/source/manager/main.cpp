@@ -23,9 +23,11 @@ namespace casual
             {
                Settings settings;
                {
-                  casual::common::Arguments parser{{
-                     casual::common::argument::directive( { "-c", "--configuration"}, "path to configuration file", settings.configuration),
-                  }};
+                  casual::common::Arguments parser{
+                     R"(
+Responsible for interdomain communications.
+)", {}
+                  };
                   parser.parse( argc, argv);
                }
 

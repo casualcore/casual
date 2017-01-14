@@ -258,7 +258,7 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
             return out << "{ name: " << service.information.name
-                  << ", type: " << service.information.type
+                  << ", type: " << service.information.category
                   << ", transaction: " << service.information.transaction
                   << ", timeout: " << service.information.timeout.count()
                   << "}";
@@ -357,7 +357,7 @@ namespace casual
                result.name = std::move( service.name);
                result.timeout = service.timeout;
                result.transaction = service.transaction;
-               result.type = service.type;
+               result.category = service.category;
 
                return result;
             }

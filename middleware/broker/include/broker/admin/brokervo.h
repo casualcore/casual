@@ -133,7 +133,7 @@ namespace casual
          {
             std::string name;
             std::chrono::microseconds timeout;
-            std::size_t type = 0;
+            std::string category;
             std::size_t transaction = 0;
 
             service::Metric metrics;
@@ -156,7 +156,7 @@ namespace casual
             {
                archive & CASUAL_MAKE_NVP( name);
                archive & CASUAL_MAKE_NVP( timeout);
-               archive & CASUAL_MAKE_NVP( type);
+               archive & CASUAL_MAKE_NVP( category);
                archive & CASUAL_MAKE_NVP( transaction);
                archive & CASUAL_MAKE_NVP( metrics);
                archive & CASUAL_MAKE_NVP( pending);

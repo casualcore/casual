@@ -6,6 +6,7 @@
 #include "common/mockup/log.h"
 
 #include "common/environment.h"
+#include "common/message/domain.h"
 #include "common/message/traffic.h"
 #include "common/message/gateway.h"
 
@@ -93,8 +94,181 @@ namespace casual
                         };
                      } // connect
                   } // handle
+
+
                } // <unnamed>
             } // local
+
+            struct Manager::Implementation
+            {
+               Implementation( message::domain::configuration::Domain domain, dispatch_type&& handler, const common::domain::Identity& identity)
+                   : m_state{ std::move( domain)},
+                     m_replier{ default_handler() + std::move( handler)},
+                     m_singlton{ common::domain::singleton::create( m_replier.process(), identity)}
+               {
+               }
+
+               Implementation( dispatch_type&& handler, const common::domain::Identity& identity)
+               : Implementation( {}, std::move( handler), identity)
+                 {
+
+                 }
+
+
+               dispatch_type default_handler()
+               {
+
+                  return dispatch_type{
+                     [&]( message::domain::process::connect::Request& r)
+                     {
+                        Trace trace{ "mockup domain::process::connect::Request"};
+
+                        m_state.executables.push_back( r.process);
+
+                        auto reply = message::reverse::type( r);
+                        reply.directive = decltype( reply)::Directive::start;
+
+                        if( r.identification)
+                        {
+                           auto found = range::find(  m_state.singeltons, r.identification);
+
+                           if( found && found->second != r.process)
+                           {
+                              log  << "mockup process: " << r.process << " is a singleton, and one is already running\n";
+                              reply.directive = decltype( reply)::Directive::singleton;
+
+                              ipc::eventually::send( r.process.queue, reply);
+
+                              return;
+                           }
+                           m_state.singeltons[ r.identification] = r.process;
+                        }
+
+                        ipc::eventually::send( r.process.queue, reply);
+
+                        //
+                        // Check pending
+                        //
+                        range::trim( m_state.pending, range::remove_if( m_state.pending, [&]( const common::message::domain::process::lookup::Request& p)
+                              {
+                                 if( ( p.identification && p.identification == r.identification)
+                                       || ( p.pid && p.pid == r.process.pid))
+                                 {
+                                    log << "mockup found pending: " << p << " for connected process: " << r.process << "\n";
+
+                                    auto reply = message::reverse::type( p);
+                                    reply.process = r.process;
+                                    ipc::eventually::send( p.process.queue, reply);
+                                    return true;
+                                 }
+                                 return false;
+                              }));
+
+                     },
+                     [&]( common::message::domain::configuration::Request& r)
+                     {
+                        Trace trace{ "mockup common::message::domain::configuration::Request"};
+
+                        auto reply = message::reverse::type( r);
+                        reply.domain = m_state.configuration;
+
+                        ipc::eventually::send( r.process.queue, reply);
+                     },
+                     [&]( common::message::domain::configuration::server::Request& r)
+                     {
+                        Trace trace{ "mockup common::message::domain::configuration::server::Request"};
+
+                        auto reply = message::reverse::type( r);
+                        ipc::eventually::send( r.process.queue, reply);
+                     },
+
+                     [&]( common::message::domain::process::lookup::Request& r)
+                     {
+                        Trace trace{ "mockup domain::process::lookup::Request"};
+
+                        auto reply = message::reverse::type( r);
+
+                        if( r.identification)
+                        {
+                           auto found = range::find(  m_state.singeltons, r.identification);
+
+                           if( found)
+                           {
+                              log << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
+
+                              reply.process = found->second;
+                              ipc::eventually::send( r.process.queue, reply);
+                              return;
+                           }
+                        }
+                        else if( r.pid)
+                        {
+                           auto found = range::find_if( m_state.executables, [=]( const process::Handle& h){
+                              return h.pid == r.pid;
+                           });
+
+                           if( found)
+                           {
+
+                              reply.process = *found;
+                              log << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
+                              ipc::eventually::send( r.process.queue, reply);
+                              return;
+                           }
+                        }
+
+                        // not found
+                        if( r.directive == common::message::domain::process::lookup::Request::Directive::wait)
+                        {
+                           log << "mockup - lockup wait with request: " << r << '\n';
+                           m_state.pending.push_back( std::move( r));
+                        }
+                        else
+                        {
+                           ipc::eventually::send( r.process.queue, reply);
+                        }
+                     },
+                     [&]( message::domain::process::termination::Registration& m)
+                     {
+                        Trace trace{ "mockup domain process::termination::Registration"};
+
+
+                        if( ! range::find( m_state.event_listeners, m.process))
+                        {
+                           m_state.event_listeners.push_back( m.process);
+                        }
+
+                     },
+                     [&](  message::domain::process::termination::Event& m)
+                     {
+                        Trace trace{ "mockup domain process::termination::Event"};
+
+                        for( auto& listener : m_state.event_listeners)
+                        {
+                           ipc::eventually::send( listener.queue, m);
+                        }
+                     },
+
+                  };
+               }
+
+               struct State
+               {
+                  State( message::domain::configuration::Domain domain) : configuration( std::move( domain)) {}
+                  State() = default;
+
+                  std::map< common::Uuid, common::process::Handle> singeltons;
+                  std::vector< common::message::domain::process::lookup::Request> pending;
+                  std::vector< common::process::Handle> executables;
+                  std::vector< common::process::Handle> event_listeners;
+
+                  message::domain::configuration::Domain configuration;
+               };
+
+               State m_state;
+               ipc::Replier m_replier;
+               common::file::scoped::Path m_singlton;
+            };
 
             Manager::Manager() : Manager( dispatch_type{})
             {
@@ -103,133 +277,22 @@ namespace casual
             }
 
             Manager::Manager( dispatch_type&& handler, const common::domain::Identity& identity)
-               : m_replier{ default_handler() + std::move( handler)}, m_singlton{ common::domain::singleton::create( m_replier.process(), identity)}
+               : m_implementation{ std::move( handler), identity}
+            {
+
+            }
+
+            Manager::Manager( message::domain::configuration::Domain domain)
+               : m_implementation{ std::move( domain), dispatch_type{}, common::domain::Identity{ "unittest-domain"}}
             {
 
             }
 
             Manager::~Manager() = default;
 
-            dispatch_type Manager::default_handler()
+            process::Handle Manager::process() const
             {
-
-               return dispatch_type{
-                  [&]( message::domain::process::connect::Request& r)
-                  {
-                     Trace trace{ "mockup domain::process::connect::Request"};
-
-                     m_state.executables.push_back( r.process);
-
-                     auto reply = message::reverse::type( r);
-                     reply.directive = decltype( reply)::Directive::start;
-
-                     if( r.identification)
-                     {
-                        auto found = range::find(  m_state.singeltons, r.identification);
-
-                        if( found && found->second != r.process)
-                        {
-                           log  << "mockup process: " << r.process << " is a singleton, and one is already running\n";
-                           reply.directive = decltype( reply)::Directive::singleton;
-
-                           ipc::eventually::send( r.process.queue, reply);
-
-                           return;
-                        }
-                        m_state.singeltons[ r.identification] = r.process;
-                     }
-
-                     ipc::eventually::send( r.process.queue, reply);
-
-                     //
-                     // Check pending
-                     //
-                     range::trim( m_state.pending, range::remove_if( m_state.pending, [&]( const common::message::domain::process::lookup::Request& p)
-                           {
-                              if( ( p.identification && p.identification == r.identification)
-                                    || ( p.pid && p.pid == r.process.pid))
-                              {
-                                 log << "mockup found pending: " << p << " for connected process: " << r.process << "\n";
-
-                                 auto reply = message::reverse::type( p);
-                                 reply.process = r.process;
-                                 ipc::eventually::send( p.process.queue, reply);
-                                 return true;
-                              }
-                              return false;
-                           }));
-
-                  },
-                  [&]( common::message::domain::process::lookup::Request& r)
-                  {
-                     Trace trace{ "mockup domain::process::lookup::Request"};
-
-                     auto reply = message::reverse::type( r);
-
-                     if( r.identification)
-                     {
-                        auto found = range::find(  m_state.singeltons, r.identification);
-
-                        if( found)
-                        {
-                           log << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
-
-                           reply.process = found->second;
-                           ipc::eventually::send( r.process.queue, reply);
-                           return;
-                        }
-                     }
-                     else if( r.pid)
-                     {
-                        auto found = range::find_if( m_state.executables, [=]( const process::Handle& h){
-                           return h.pid == r.pid;
-                        });
-
-                        if( found)
-                        {
-
-                           reply.process = *found;
-                           log << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
-                           ipc::eventually::send( r.process.queue, reply);
-                           return;
-                        }
-                     }
-
-                     // not found
-                     if( r.directive == common::message::domain::process::lookup::Request::Directive::wait)
-                     {
-                        log << "mockup - lockup wait with request: " << r << '\n';
-                        m_state.pending.push_back( std::move( r));
-                     }
-                     else
-                     {
-                        ipc::eventually::send( r.process.queue, reply);
-                     }
-                  },
-                  [&]( message::domain::process::termination::Registration& m)
-                  {
-                     Trace trace{ "mockup domain process::termination::Registration"};
-
-
-                     if( ! range::find( m_state.event_listeners, m.process))
-                     {
-                        m_state.event_listeners.push_back( m.process);
-                     }
-
-                  },
-                  [&](  message::domain::process::termination::Event& m)
-                  {
-                     Trace trace{ "mockup domain process::termination::Event"};
-
-                     for( auto& listener : m_state.event_listeners)
-                     {
-                        ipc::eventually::send( listener.queue, m);
-                     }
-                  },
-
-               };
-
-
+               return m_implementation->m_replier.process();
             }
 
 
@@ -337,7 +400,7 @@ namespace casual
                      {
                         auto& lookup = m_state.services[ service.name];
                         lookup.service.name = service.name;
-                        lookup.service.type = service.type;
+                        lookup.service.category = service.category;
                         lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
@@ -354,7 +417,7 @@ namespace casual
                      {
                         auto& lookup = m_state.services[ service.name];
                         lookup.service.name = service.name;
-                        lookup.service.type = service.type;
+                        lookup.service.category = service.category;
                         lookup.service.transaction = service.transaction;
                         lookup.process = m.process;
                      }
@@ -392,7 +455,7 @@ namespace casual
                            service.name = found->second.service.name;
                            service.timeout = found->second.service.timeout;
                            service.transaction = found->second.service.transaction;
-                           service.type = found->second.service.type;
+                           service.category = found->second.service.category;
 
                            reply.services.push_back( std::move( service));
                         }

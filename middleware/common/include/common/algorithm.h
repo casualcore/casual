@@ -11,6 +11,7 @@
 #include "common/platform.h"
 #include "common/move.h"
 #include "common/cast.h"
+#include "common/optional.h"
 
 #include <algorithm>
 #include <numeric>
@@ -288,6 +289,9 @@ namespace casual
             template< typename T>
             bool empty( T* value) { return value == nullptr;}
 
+            template< typename T>
+            bool empty( optional< T>& value) { return ! value.has_value();}
+
             template< typename R, typename T>
             R implementation( T&& value)
             {
@@ -321,9 +325,8 @@ namespace casual
                T, // only if T1 and T1 are exactly the same
                typename std::common_type< T, Args...>::type
             >::type
-
-
       {
+
          using return_type = typename std::conditional<
                traits::is_same< T, Args...>::value,
                T, // only if T1 and T1 are exactly the same
@@ -497,6 +500,12 @@ namespace casual
          std::unique_ptr< T> unique( Args&&... args)
          {
             return std::unique_ptr< T>( new T( std::forward< Args>( args)...));
+         }
+
+         template< typename P, typename D>
+         auto deleter( P* pointer, D&& deleter) -> std::unique_ptr< P, D>
+         {
+            return std::unique_ptr< P, D>( pointer, std::forward< D>( deleter));
          }
       } // make
 
@@ -694,28 +703,35 @@ namespace casual
             return out.str();
          }
 
-
+         //!
+         //! Returns the first value in the range
+         //!
+         //! @param range
+         //! @return first value
+         //! @throws std::out_of_range if range is empty
+         //!
          template< typename R>
-         auto front( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto front( R&& range) -> decltype( make( std::forward< R>( range)).front())
          {
             auto result = make( std::forward< R>( range));
             if( result)
             {
-               result.last = result.front + 1;
+               return result.front();
             }
-            return result;
+            throw std::out_of_range{ "range::front - range is empty"};
          }
 
          template< typename R>
-         auto back( R&& range) -> decltype( make( std::forward< R>( range)))
+         auto back( R&& range) -> decltype( make( std::forward< R>( range)).back())
          {
             auto result = make( std::forward< R>( range));
             if( result)
             {
-               result.first = result.last - 1;
+               return result.back();
             }
-            return result;
+            throw std::out_of_range{ "range::back - range is empty"};
          }
+
 
 
 

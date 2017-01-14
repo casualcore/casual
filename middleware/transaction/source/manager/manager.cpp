@@ -15,24 +15,20 @@
 #include "common/message/handle.h"
 #include "common/log.h"
 
-
-#include "config/domain.h"
-#include "config/file.h"
-
+#include "configuration/domain.h"
+#include "configuration/file.h"
 
 #include <tx.h>
 
-using namespace casual::common;
 
 
-extern "C"
-{
-   extern void casual_listTransactions( TPSVCINFO *serviceInfo);
-}
+
 
 
 namespace casual
 {
+   using namespace common;
+
    namespace transaction
    {
       namespace environment
@@ -41,14 +37,14 @@ namespace casual
          {
             std::string file()
             {
-               return config::directory::domain() + "/transaction/log.db";
+               return configuration::directory::domain() + "/transaction/log.db";
             }
          } // log
 
       } // environment
 
       Settings::Settings() :
-         log{ environment::log::file()}, configuration{ common::environment::file::installedConfiguration()}
+         log{ environment::log::file()}
       {
 
       }
@@ -69,7 +65,7 @@ namespace casual
          //
          // get configuration from domain manager
          //
-         action::configure( m_state, settings.configuration);
+         action::configure( m_state);
 
 
          //

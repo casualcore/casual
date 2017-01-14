@@ -40,12 +40,12 @@ namespace casual
             Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::trace << "TEST( " << test_info->test_case_name() << ", " << test_info->name() << ") - in\n";
+               log::trace << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - in\n";
             }
             ~Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::trace << "TEST( " << test_info->test_case_name() << ", " << test_info->name() << ") - out\n";
+               log::trace << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - out\n";
             }
          };
 

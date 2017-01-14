@@ -1,17 +1,13 @@
 //!
-//! transform.h
-//!
-//! Created on: Sep 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BROKERTRANSFORM_H_
 #define CASUAL_BROKERTRANSFORM_H_
 
+#include "configuration/domain.h"
 #include "broker/state.h"
 #include "broker/admin/brokervo.h"
-
-#include "config/domain.h"
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
@@ -25,17 +21,6 @@ namespace casual
    {
       namespace transform
       {
-         namespace configuration
-         {
-
-            struct Service
-            {
-               state::Service operator () ( const config::domain::Service& service) const;
-            };
-
-
-         } // configuration
-
 
 
          struct Service

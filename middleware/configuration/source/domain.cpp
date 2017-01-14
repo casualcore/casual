@@ -2,9 +2,9 @@
 //! casual
 //!
 
-#include "config/domain.h"
-#include "config/file.h"
-
+#include "configuration/domain.h"
+#include "configuration/file.h"
+#include "configuration/common.h"
 
 #include "common/exception.h"
 #include "common/file.h"
@@ -12,14 +12,16 @@
 #include "common/algorithm.h"
 
 #include "sf/archive/maker.h"
+#include "sf/log.h"
 
 #include <algorithm>
+
 
 namespace casual
 {
    using namespace common;
 
-   namespace config
+   namespace configuration
    {
       namespace domain
       {
@@ -31,67 +33,23 @@ namespace casual
 
                namespace complement
                {
-                  struct Default
+
+                  template< typename R, typename V>
+                  void default_values( R& range, V&& value)
                   {
-                     Default( const domain::Default& casual_default)
-                           : m_casual_default( casual_default)
-                     {
-                     }
+                     for( auto& element : range) { element += value;}
+                  }
 
-                     void operator ()( domain::Server& server) const
-                     {
-                        assign_if_empty( server.instances, m_casual_default.server.instances);
-                        assign_if_empty( server.restart, m_casual_default.server.restart);
-                        assign_if_empty( server.alias, nextAlias( server.path));
-                     }
-
-                     void operator ()( domain::Service& service) const
-                     {
-                        assign_if_empty( service.timeout, m_casual_default.service.timeout);
-                        assign_if_empty( service.transaction, m_casual_default.service.transaction);
-                     }
-
-                     void operator ()( domain::Domain& configuration) const
-                     {
-                        std::for_each( std::begin( configuration.servers), std::end( configuration.servers), *this);
-                        std::for_each( std::begin( configuration.services), std::end( configuration.services), *this);
-
-                     }
-
-                  private:
-
-                     inline void assign_if_empty( std::string& value, const std::string& def) const
-                     {
-                        if( value.empty() || value == "~")
-                           value = def;
-                     }
-
-                     std::string nextAlias( const std::string& path) const
-                     {
-                        auto alias = common::file::name::base( path);
-
-                        auto count = m_alias[ alias]++;
-
-                        if( count > 1)
-                        {
-                           return alias + "_" + std::to_string( count);
-                        }
-
-                        return alias;
-                     }
-                     domain::Default m_casual_default;
-                     mutable std::map< std::string, std::size_t> m_alias;
-                  };
-
-                  inline void defaultValues( Domain& domain)
+                  inline void default_values( Manager& domain)
                   {
-                     Default defaults( domain.casual_default);
-                     defaults( domain);
+                     default_values( domain.executables, domain.manager_default.executable);
+                     default_values( domain.servers, domain.manager_default.server);
+                     default_values( domain.services, domain.manager_default.service);
                   }
 
                } // complement
 
-               void validate( const Domain& settings)
+               void validate( const Manager& settings)
                {
 
                }
@@ -115,10 +73,11 @@ namespace casual
                }
 
                template< typename D>
-               Domain& append( Domain& lhs, D&& rhs)
+               Manager& append( Manager& lhs, D&& rhs)
                {
-                  if( ! rhs.name.empty()) { lhs.name = std::move( rhs.name);}
+                  if( lhs.name.empty()) { lhs.name = std::move( rhs.name);}
 
+                  local::replace_or_add( lhs.transaction.resources, rhs.transaction.resources);
                   local::replace_or_add( lhs.groups, rhs.groups);
                   local::replace_or_add( lhs.executables, rhs.executables);
                   local::replace_or_add( lhs.servers, rhs.servers);
@@ -130,13 +89,13 @@ namespace casual
                   return lhs;
                }
 
-               Domain get( Domain domain, const std::string& file)
+               Manager get( Manager domain, const std::string& file)
                {
+
                   //
                   // Create the reader and deserialize configuration
                   //
                   auto reader = sf::archive::reader::from::file( file);
-
                   reader >> CASUAL_MAKE_NVP( domain);
 
                   finalize( domain);
@@ -148,86 +107,63 @@ namespace casual
             } // unnamed
          } // local
 
-         bool operator == ( const Executable& lhs, const Executable& rhs)
-         {
-            return coalesce( lhs.alias, lhs.path) == coalesce( rhs.alias, rhs.path);
-         }
 
-         bool operator == ( const Group& lhs, const Group& rhs)
+         namespace manager
          {
-            return lhs.name == rhs.name;
-         }
+            Default::Default()
+            {
+               server.instances.emplace( 1);
+               executable.instances.emplace( 1);
+               service.timeout.emplace( "0s");
+            }
 
-         bool operator == ( const Service& lhs, const Service& rhs)
-         {
-            return lhs.name == rhs.name;
-         }
+         } // domain
 
-         Domain& Domain::operator += ( const Domain& rhs)
+
+
+         Manager& Manager::operator += ( const Manager& rhs)
          {
             return local::append( *this, rhs);
          }
 
-         Domain& Domain::operator += ( Domain&& rhs)
+         Manager& Manager::operator += ( Manager&& rhs)
          {
             return local::append( *this, std::move( rhs));
          }
 
-         Domain operator + ( const Domain& lhs, const Domain& rhs)
+         Manager operator + ( const Manager& lhs, const Manager& rhs)
          {
             auto result = lhs;
             result += rhs;
             return result;
          }
 
-         void finalize( Domain& configuration)
+         void finalize( Manager& configuration)
          {
             //
             // Complement with default values
             //
-            local::complement::defaultValues( configuration);
+            local::complement::default_values( configuration);
 
             //
             // Make sure we've got valid configuration
             //
             local::validate( configuration);
 
+            configuration.transaction.finalize();
             configuration.gateway.finalize();
             configuration.queue.finalize();
 
          }
 
 
-         Domain get( const std::string& file)
+         Manager get( const std::vector< std::string>& files)
          {
-            return local::get( Domain{}, file);
+            auto domain = range::accumulate( files, Manager{}, &local::get);
+
+            return domain;
+
          }
-
-         Domain get( const std::vector< std::string>& files)
-         {
-            if( files.empty())
-            {
-               return get();
-            }
-
-            return range::accumulate( files, Domain{}, &local::get);
-         }
-
-
-         Domain get()
-         {
-            auto configuration = config::file::domain();
-
-            if( ! configuration.empty())
-            {
-               return get( configuration);
-            }
-            else
-            {
-               throw common::exception::invalid::File{ "could not find domain configuration file",  CASUAL_NIP( configuration)};
-            }
-         }
-
       } // domain
 
    } // config

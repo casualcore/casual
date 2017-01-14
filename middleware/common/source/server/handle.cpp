@@ -6,6 +6,8 @@
 
 #include "common/service/lookup.h"
 
+#include "common/message/domain.h"
+
 namespace casual
 {
    namespace common
@@ -17,16 +19,35 @@ namespace casual
          {
             namespace
             {
-               void advertise( std::vector< message::service::advertise::Service> services)
+               void advertise( std::vector< message::service::advertise::Service> services, const std::vector< std::string>& restrictions)
                {
                   if( ! services.empty())
                   {
+
                      message::service::Advertise advertise;
                      advertise.process = process::handle();
-                     advertise.services = std::move( services);
+
+                     if( restrictions.empty())
+                     {
+                        advertise.services = std::move( services);
+                     }
+                     else
+                     {
+                        range::move_if( services, advertise.services, [&restrictions]( const message::service::advertise::Service& s){
+                           return range::find( restrictions, s.name);
+                        });
+                     }
 
                      communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
                   }
+               }
+
+               message::domain::configuration::server::Reply configuration()
+               {
+                  message::domain::configuration::server::Request request;
+                  request.process = process::handle();
+
+                  return communication::ipc::call( communication::ipc::domain::manager::device(), request);
                }
             } // <unnamed>
          } // local
@@ -44,16 +65,22 @@ namespace casual
                   // Connection to the domain has been done before...
                   //
 
+                  //
+                  // Ask domain-manager for our configuration
+                  //
+                  auto configuration = local::configuration();
+
+
 
                   //
                   // Let the broker know about our services...
                   //
-                  local::advertise( std::move( services));
+                  local::advertise( std::move( services), configuration.restrictions);
 
                   //
                   // configure resources, if any.
                   //
-                  transaction::Context::instance().set( resources);
+                  transaction::Context::instance().configure( resources, std::move( configuration.resources));
 
                }
 
@@ -223,7 +250,7 @@ namespace casual
                   //
                   // Let the broker know about our services...
                   //
-                  local::advertise( std::move( services));
+                  local::advertise( std::move( services), {});
                }
 
                void Admin::reply( platform::ipc::id::type id, message::service::call::Reply& message)

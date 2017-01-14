@@ -1,8 +1,5 @@
 //!
-//! casual_broker.h
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BROKER_H_

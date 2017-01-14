@@ -94,7 +94,7 @@ namespace casual
                   for( auto& service : arguments.services)
                   {
                      auto name = service.origin;
-                     services.emplace_back( name, service.type, service.transaction);
+                     services.emplace_back( name, service.category, service.transaction);
 
                      state.physical_services.push_back( std::move( service));
                      state.services.emplace( name, state.physical_services.back());
@@ -420,7 +420,7 @@ namespace casual
                   static void reply( message::service::call::Reply& reply, const server::State::jump_t& jump)
                   {
                      reply.code = jump.state.code;
-                     reply.error = 0;
+                     reply.error = jump.state.value == TPSUCCESS ? 0 : TPESVCFAIL;
 
                      if( jump.buffer.data != nullptr)
                      {

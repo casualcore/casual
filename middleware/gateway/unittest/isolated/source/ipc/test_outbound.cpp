@@ -49,7 +49,7 @@ namespace casual
             {
                Trace trace{ "create_domain_file"};
 
-               auto file = mockup::file::temporary( "", std::to_string( queue));
+               auto file = mockup::file::temporary::content( "", std::to_string( queue));
 
                log::internal::debug << "created domain file: " << file << " - qid: " << queue << '\n';
 

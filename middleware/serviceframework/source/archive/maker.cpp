@@ -1,8 +1,5 @@
 //!
-//! archive_maker.cpp
-//!
-//! Created on: Nov 24, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/archive/maker.h"
@@ -41,7 +38,7 @@ namespace casual
                   {
                      if( ! m_file.is_open())
                      {
-                        throw exception::FileNotOpen( name);
+                        throw exception::invalid::File( "failed to open file", CASUAL_NIP( name));
                      }
                   }
 
@@ -79,7 +76,7 @@ namespace casual
                         return found->second( name);
                      }
 
-                     throw exception::Validation{ "Could not deduce archive for file " + name};
+                     throw exception::invalid::File{ "Could not deduce archive for file", CASUAL_NIP( name)};
                   }
                } // from
 

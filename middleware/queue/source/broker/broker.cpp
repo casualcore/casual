@@ -19,10 +19,11 @@
 #include "common/exception.h"
 #include "common/internal/log.h"
 
-#include "config/queue.h"
-#include "config/domain.h"
+#include "configuration/message/transform.h"
+#include "configuration/queue.h"
 
 #include <fstream>
+
 
 namespace casual
 {
@@ -102,9 +103,9 @@ namespace casual
 
                };
 
-               void startup( State& state, common::message::domain::configuration::queue::Reply&& config)
+               void startup( State& state, common::message::domain::configuration::Domain&& config)
                {
-                  casual::common::range::transform( config.groups, state.groups, Startup( state));
+                  casual::common::range::transform( config.queue.groups, state.groups, Startup( state));
 
                   //
                   // Make sure all groups are up and running before we continue
@@ -225,23 +226,17 @@ namespace casual
          common::process::instance::termination::registration( common::process::handle());
 
 
-
-         if( ! settings.configuration.empty())
-         {
-            broker::local::startup( m_state, config::queue::transform::manager( config::domain::get( settings.configuration).queue));
-         }
-         else
          {
             //
             // We ask the domain manager for configuration
             //
 
-            common::message::domain::configuration::queue::Request request;
+            common::message::domain::configuration::Request request;
             request.process = common::process::handle();
 
             broker::local::startup( m_state,
                   common::communication::ipc::call(
-                        common::communication::ipc::domain::manager::device(), request));
+                        common::communication::ipc::domain::manager::device(), request).domain);
          }
 
       }

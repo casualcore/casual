@@ -73,9 +73,7 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* name)
                   {
-                     const bool result = start( name);
-
-                     if( result)
+                     if( start( name))
                      {
                         if( m_stack.back()->IsNull())
                         {
@@ -89,11 +87,12 @@ namespace casual
                         {
                            read( value);
                         }
+                        end( name);
+
+                        return true;
                      }
 
-                     end( name);
-
-                     return result;
+                     return false;
                   }
 
                private:

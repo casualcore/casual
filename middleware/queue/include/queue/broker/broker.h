@@ -24,7 +24,6 @@ namespace casual
       {
          struct Settings
          {
-            std::string configuration;
             std::string group_executable;
          };
 

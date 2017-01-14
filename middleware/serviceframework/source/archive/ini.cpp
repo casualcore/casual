@@ -336,10 +336,10 @@ namespace casual
 
 
                   //
-                  // Note that we return 'true' anyway
+                  // Note that we return 'true' anyway - Why?
                   //
 
-                  return std::make_tuple( 0, true);
+                  return std::make_tuple( 0, false);
 
                }
 
@@ -363,12 +363,11 @@ namespace casual
                         return false;
                      }
                   }
-                  else
-                  {
-                     //
-                     // It must have been a container-content and thus already found
-                     //
-                  }
+
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
 
                   return true;
 
@@ -394,12 +393,11 @@ namespace casual
                         return false;
                      }
                   }
-                  else
-                  {
-                     //
-                     // It must have been a container-content and thus already found
-                     //
-                  }
+
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
 
                   return true;
 

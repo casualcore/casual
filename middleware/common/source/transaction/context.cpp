@@ -106,14 +106,17 @@ namespace casual
                namespace resource
                {
 
-                  message::domain::configuration::transaction::resource::Reply configuration()
+                  message::transaction::resource::lookup::Reply configuration( std::vector< std::string> names)
                   {
                      common::trace::Scope trace{ "transaction::local::resource::configuration", common::log::internal::transaction};
 
-                     message::domain::configuration::transaction::resource::Request request;
-                     request.process = process::handle();
 
-                     return communication::ipc::call( communication::ipc::domain::manager::device(), request);
+                     message::transaction::resource::lookup::Request request;
+                     request.process = process::handle();
+                     request.resources = std::move( names);
+
+                     return communication::ipc::call( communication::ipc::transaction::manager::device(), request);
+
                   }
 
                } // resource
@@ -121,28 +124,29 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::set( const std::vector< Resource>& resources)
+         void Context::configure( const std::vector< Resource>& resources, std::vector< std::string> names)
          {
-            common::trace::Scope trace{ "transaction::Context::set", common::log::internal::transaction};
+            common::trace::Scope trace{ "transaction::Context::configure", common::log::internal::transaction};
 
             if( ! resources.empty())
             {
 
-               using RM = message::domain::configuration::transaction::Resource;
-
-
-               auto reply = local::resource::configuration();
+               auto reply = local::resource::configuration( std::move( names));
 
                auto configuration = range::make( reply.resources);
 
 
                for( auto& resource : resources)
                {
+
+
+                  using RM = decltype( range::front( configuration));
+
                   //
                   // It could be several RM-configuration for one linked RM.
                   //
 
-                  auto splitted = range::stable_partition( configuration, [&]( const RM& rm){ return resource.key == rm.key;});
+                  auto splitted = range::stable_partition( configuration, [&]( RM rm){ return resource.key == rm.key;});
 
                   auto partition = std::get< 0>( splitted);
 

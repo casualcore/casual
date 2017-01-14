@@ -35,32 +35,32 @@ namespace casual
 
          void domain( const std::vector< std::string>& arguments)
          {
-            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
             execute( "casual-domain-admin", arguments);
          }
 
          void broker( const std::vector< std::string>& arguments)
          {
-            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
             execute( "casual-broker-admin", arguments);
          }
 
          void queue( const std::vector< std::string>& arguments)
          {
-            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
             execute( "casual-queue-admin", arguments);
          }
 
 
          void transaction( const std::vector< std::string>& arguments)
          {
-            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
             execute( "casual-transaction-admin", arguments);
          }
 
          void gateway( const std::vector< std::string>& arguments)
          {
-            common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
+            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
             execute( "casual-gateway-admin", arguments);
          }
 

@@ -20,8 +20,8 @@ namespace casual
          {
 
             std::vector< std::string> configurationfiles;
-            bool boot = false;
             bool bare = false;
+            bool no_auto_persist = false;
 
          };
 

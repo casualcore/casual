@@ -1,11 +1,11 @@
 //!
-//! manager_state.cpp
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/state.h"
+
+#include "configuration/domain.h"
+
 
 #include "common/exception.h"
 #include "common/algorithm.h"
@@ -14,8 +14,6 @@
 #include "common/environment.h"
 
 
-#include "config/domain.h"
-#include "config/xa_switch.h"
 
 
 namespace casual
@@ -26,38 +24,7 @@ namespace casual
    {
       namespace state
       {
-         namespace local
-         {
-            namespace
-            {
-               namespace transform
-               {
-                  struct Resource
-                  {
-                     state::resource::Proxy operator () ( const message::domain::configuration::transaction::Resource& value) const
-                     {
 
-                        Trace trace{ "transform::Resource", log::internal::transaction};
-
-                        state::resource::Proxy result;
-
-                        result.id = value.id;
-                        result.key = value.key;
-                        result.openinfo = value.openinfo;
-                        result.closeinfo = value.closeinfo;
-                        result.concurency = value.instances;
-
-                        log::internal::debug << "resource.openinfo: " << result.openinfo << std::endl;
-                        log::internal::debug << "resource.concurency: " << result.concurency << std::endl;
-
-                        return result;
-                     }
-                  };
-
-               } // transform
-
-            }
-         } // local
 
 
          Statistics::Statistics() :  min{ std::chrono::microseconds::max()}, max{ 0}, total{ 0}, invoked{ 0}
@@ -198,17 +165,17 @@ namespace casual
 
          } // resource
 
-         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file)
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration)
          {
 
             {
                Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
-               auto resources = config::xa::switches::get( resource_file);
+               auto resources = configuration::resource::property::get();
 
                for( auto& resource : resources)
                {
-                  if( ! state.xa_switch_configuration.emplace( resource.key, std::move( resource)).second)
+                  if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
                   {
                      throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
@@ -221,11 +188,25 @@ namespace casual
             {
                Trace trace( "transaction manager resource configuration", log::internal::transaction);
 
-               std::transform(
-                     std::begin( configuration.resources),
-                     std::end( configuration.resources),
-                     std::back_inserter( state.resources),
-                     local::transform::Resource{});
+               auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
+
+                  state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
+
+                  proxy.name = r.name;
+                  proxy.concurency = r.instances;
+                  proxy.key = r.key;
+                  proxy.openinfo = r.openinfo;
+                  proxy.closeinfo = r.closeinfo;
+                  proxy.note = r.note;
+
+                  return proxy;
+               };
+
+               range::transform(
+                     configuration.domain.transaction.resources,
+                     state.resources,
+                     transform_resource);
+
             }
 
          }

@@ -13,7 +13,7 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const Service& value)
          {
             return out << "{ name: " << value.name
-                  << ", type: " << value.type
+                  << ", category: " << value.category
                   << ", timeout: " << value.timeout.count()
                   << ", mode: " << value.transaction
                   << '}';

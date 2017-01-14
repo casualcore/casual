@@ -1,9 +1,7 @@
-/*
- * archive_logger.h
- *
- *  Created on: 4 maj 2013
- *      Author: kristian
- */
+//!
+//! casual
+//!
+
 
 #ifndef CASUAL_SF_ARCHIVE_LOG_H_
 #define CASUAL_SF_ARCHIVE_LOG_H_

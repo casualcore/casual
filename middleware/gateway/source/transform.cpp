@@ -104,14 +104,14 @@ namespace casual
             } // <unnamed>
          } // local
 
-         manager::State state( const common::message::domain::configuration::gateway::Reply& configuration)
+         manager::State state( const common::message::domain::configuration::Domain& configuration)
          {
             Trace trace{ "gateway::transform::state"};
 
             manager::State state;
 
-            range::transform( configuration.listeners, state.listeners, local::Listener{});
-            range::transform( configuration.connections, state.connections.outbound, local::Connection{});
+            range::transform( configuration.gateway.listeners, state.listeners, local::Listener{});
+            range::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
 
             //
             // Define the order, hence the priority

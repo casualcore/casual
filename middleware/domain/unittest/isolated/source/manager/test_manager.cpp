@@ -41,7 +41,7 @@ namespace casual
                   std::vector< file::scoped::Path> files( const std::vector< std::string>& config)
                   {
                      return range::transform( config, []( const std::string& c){
-                        return file::scoped::Path{ mockup::file::temporary( ".yaml", c)};
+                        return file::scoped::Path{ mockup::file::temporary::content( ".yaml", c)};
                      });
                   }
 

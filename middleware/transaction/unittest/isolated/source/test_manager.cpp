@@ -48,11 +48,10 @@ namespace casual
             {
 
                Manager( const std::string& configuration)
-                  : m_filename{ common::mockup::file::temporary( ".yaml", configuration)},
-                    m_process{ "./bin/casual-transaction-manager",
-                     { "-c", m_filename,
-                       "-l", ":memory:",
-                     }}
+                  : m_filename{ common::mockup::file::temporary::content( ".yaml", configuration)},
+                    env{ m_filename},
+                    m_process{ "./bin/casual-transaction-manager", { "-l", ":memory:"}
+                  }
                {
                   //
                   // We wait until tm is up
@@ -64,6 +63,15 @@ namespace casual
 
             private:
                common::file::scoped::Path m_filename;
+
+               struct env_t
+               {
+                  env_t( const std::string& file)
+                  {
+                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", file);
+                  }
+               } env;
+
                common::mockup::Process m_process;
 
             };
@@ -71,13 +79,10 @@ namespace casual
             struct Domain
             {
                Domain( const std::string& configuration)
-                  : manager
-                    {
-                        handle_resource_configuration{}
-                     },
-                    tm{ configuration}
+                  : manager{ configure()},
+                     tm{ configuration}
                {
-
+                  configure();
                }
 
                common::mockup::domain::Manager manager;
@@ -86,33 +91,35 @@ namespace casual
 
             private:
 
-               struct handle_resource_configuration
+               static common::message::domain::configuration::Domain configure()
                {
+                  common::message::domain::configuration::Domain domain;
 
-                  void operator () ( common::message::domain::configuration::transaction::resource::Request& request) const
-                  {
-                     auto reply = common::message::reverse::type( request);
+                  using resource_type = common::message::domain::configuration::transaction::Resource;
 
-                     reply.resources.emplace_back(
-                           []( common::message::domain::configuration::transaction::Resource& m)
+                  domain.transaction.resources = {
+                        {
+                           []( resource_type& r)
                            {
-                              m.id = 10;
-                              m.key = "rm-mockup";
-                              m.instances = 2;
-                              m.openinfo = "rm-10";
-                           });
-                     reply.resources.emplace_back(
-                           []( common::message::domain::configuration::transaction::Resource& m)
+                              r.name = "rm1";
+                              r.key = "rm-mockup";
+                              r.instances = 2;
+                              r.openinfo = "openinfo1";
+                           }
+                        },
+                        {
+                           []( resource_type& r)
                            {
-                              m.id = 11;
-                              m.key = "rm-mockup";
-                              m.instances = 2;
-                              m.openinfo = "rm-11";
-                           });
+                              r.name = "rm2";
+                              r.key = "rm-mockup";
+                              r.instances = 2;
+                              r.openinfo = "openinfo2";
+                           }
+                        }
+                  };
 
-                     common::mockup::ipc::eventually::send( request.process.queue, reply);
-                  }
-               };
+                  return domain;
+               }
 
             };
 
@@ -255,7 +262,7 @@ namespace casual
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 10};
+            message.resources = { 1};
 
             local::send::tm( message);
          }
@@ -267,11 +274,12 @@ namespace casual
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);
-         auto& rm_10 = proxies.at( 0);
+         auto& rm1 = proxies.at( 0);
 
-         ASSERT_TRUE( rm_10.instances.size() == 2);
-         EXPECT_TRUE( rm_10.id == 10);
-         EXPECT_TRUE( rm_10.statistics.resource.invoked == 1);
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.name == "rm1");
+         EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
       }
 
       TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
@@ -293,7 +301,7 @@ namespace casual
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 10};
+            message.resources = { 1};
 
             local::send::tm( message);
          }
@@ -304,11 +312,11 @@ namespace casual
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);
-         auto& rm_10 = proxies.at( 0);
+         auto& rm1 = proxies.at( 0);
 
-         ASSERT_TRUE( rm_10.instances.size() == 2);
-         EXPECT_TRUE( rm_10.id == 10);
-         EXPECT_TRUE( rm_10.statistics.resource.invoked == 1);
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
       }
 
 
@@ -326,7 +334,7 @@ namespace casual
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 10, 11};
+            message.resources = { 1, 2};
 
             local::send::tm( message);
          }
@@ -337,16 +345,16 @@ namespace casual
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);
-         auto& rm_10 = proxies.at( 0);
-         auto& rm_11 = proxies.at( 1);
+         auto& rm1 = proxies.at( 0);
+         auto& rm2 = proxies.at( 1);
 
-         ASSERT_TRUE( rm_10.instances.size() == 2);
-         EXPECT_TRUE( rm_10.id == 10);
-         EXPECT_TRUE( rm_10.statistics.resource.invoked == 1);
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
 
-         ASSERT_TRUE( rm_11.instances.size() == 2);
-         EXPECT_TRUE( rm_11.id == 11);
-         EXPECT_TRUE( rm_11.statistics.resource.invoked == 1);
+         ASSERT_TRUE( rm2.instances.size() == 2);
+         EXPECT_TRUE( rm2.id == 2);
+         EXPECT_TRUE( rm2.statistics.resource.invoked == 1);
       }
 
 
@@ -370,7 +378,7 @@ namespace casual
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 10, 11};
+            message.resources = { 1, 2};
 
             local::send::tm( message);
          }
@@ -381,16 +389,16 @@ namespace casual
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_stats( state);
-         auto& rm_10 = proxies.at( 0);
-         auto& rm_11 = proxies.at( 1);
+         auto& rm1 = proxies.at( 0);
+         auto& rm2 = proxies.at( 1);
 
-         ASSERT_TRUE( rm_10.instances.size() == 2);
-         EXPECT_TRUE( rm_10.id == 10);
-         EXPECT_TRUE( rm_10.statistics.resource.invoked == 2); // 1 prepare, 1 commit
+         ASSERT_TRUE( rm1.instances.size() == 2);
+         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.statistics.resource.invoked == 2); // 1 prepare, 1 commit
 
-         ASSERT_TRUE( rm_11.instances.size() == 2);
-         EXPECT_TRUE( rm_11.id == 11);
-         EXPECT_TRUE( rm_11.statistics.resource.invoked == 2); // 1 prepare, 1 commit
+         ASSERT_TRUE( rm2.instances.size() == 2);
+         EXPECT_TRUE( rm2.id == 2);
+         EXPECT_TRUE( rm2.statistics.resource.invoked == 2); // 1 prepare, 1 commit
       }
 
 
@@ -409,7 +417,7 @@ namespace casual
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 10, 11};
+            message.resources = { 1, 2};
 
             local::send::tm( message);
          }

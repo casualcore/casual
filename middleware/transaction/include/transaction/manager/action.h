@@ -1,8 +1,5 @@
 //!
-//! manager_action.h
-//!
-//! Created on: Aug 14, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef MANAGER_ACTION_H_
@@ -22,7 +19,7 @@ namespace casual
       namespace action
       {
 
-         void configure( State& state, const std::string& resource_file);
+         void configure( State& state);
 
 
          namespace resource

@@ -18,23 +18,24 @@ namespace casual
 {
    namespace common
    {
+      namespace service
+      {
+         namespace category
+         {
+            constexpr const char* none = "";
+            constexpr const char* admin = ".admin";
+         } // category
+      } // service
+
       namespace server
       {
+
          struct Service
          {
-            enum Type : std::uint64_t
-            {
-               cXATMI = 0,
-               cCasualAdmin = 10,
-               cCasualSF = 11,
-            };
-
-
 
             using function_type = std::function< void( TPSVCINFO*)>;
 
-
-            Service( std::string name, function_type function, std::uint64_t type, service::transaction::Type transaction);
+            Service( std::string name, function_type function, std::string category, service::transaction::Type transaction);
             Service( std::string name, function_type function);
 
             Service( Service&&);
@@ -46,9 +47,9 @@ namespace casual
             std::string origin;
             function_type function;
 
-            std::uint64_t type = Type::cXATMI;
+            std::string category;
+
             service::transaction::Type transaction = service::transaction::Type::automatic;
-            bool active = true;
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
 

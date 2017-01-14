@@ -440,7 +440,7 @@ namespace casual
             return {
                { global::porcelain, ! global::no_colors, ! global::no_header},
                terminal::format::column( "name", std::mem_fn( &admin::ServiceVO::name), terminal::color::yellow, terminal::format::Align::left),
-               terminal::format::column( "type", std::mem_fn( &admin::ServiceVO::type), terminal::color::no_color, terminal::format::Align::right),
+               terminal::format::column( "category", std::mem_fn( &admin::ServiceVO::category), terminal::color::no_color, terminal::format::Align::left),
                terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "invoked", format_invoked, terminal::color::cyan, terminal::format::Align::right),
@@ -574,7 +574,7 @@ namespace casual
             if( ! broker::global::admin_services)
             {
                services = std::get< 0>( range::partition( services, []( const admin::ServiceVO& s){
-                  return s.type != common::service::Type::casual_admin;}));
+                  return s.category != common::service::category::admin;}));
             }
 
             range::sort( services, []( const admin::ServiceVO& l, const admin::ServiceVO& r){ return l.name < r.name;});

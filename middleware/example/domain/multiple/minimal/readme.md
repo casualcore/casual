@@ -33,7 +33,7 @@ In terminal 1
     
     >$ cd $HOME/casual/example/domain/multiple/minimal/domain1
     >$ source domain.env
-    >$ casual-admin domain --boot 
+    >$ casual-admin domain --boot configuration/domain.yaml
     
     
 ## start domain2
@@ -42,7 +42,7 @@ In terminal 2
 
     >$ cd $HOME/casual/example/domain/multiple/minimal/domain2
     >$ source domain.env
-    >$ casual-admin domain --boot 
+    >$ casual-admin domain --boot configuration/domain.yaml
 
 
 ## interact with the domain

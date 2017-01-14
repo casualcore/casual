@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<domain>
+ <name></name>
+ <default>
+  <environment>
+   <files />
+   <variables />
+  </environment>
+  <server>
+   <instances>1</instances>
+  </server>
+  <executable>
+   <instances>1</instances>
+  </executable>
+  <service>
+   <timeout>0s</timeout>
+  </service>
+ </default>
+ <transaction>
+  <default>
+   <resource>
+    <instances>1</instances>
+   </resource>
+  </default>
+  <log>${CASUAL_DOMAIN_HOME}/transaction/log.db</log>
+  <resources />
+ </transaction>
+ <groups />
+ <servers />
+ <executables />
+ <services />
+ <gateway>
+  <default>
+   <connection>
+    <type>tcp</type>
+    <restart>true</restart>
+   </connection>
+  </default>
+  <listeners />
+  <connections />
+ </gateway>
+ <queue>
+  <default>
+   <queue>
+    <retries>0</retries>
+   </queue>
+   <directory>${CASUAL_DOMAIN_HOME}/queue/groups</directory>
+  </default>
+  <groups />
+ </queue>
+</domain>

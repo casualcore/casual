@@ -144,11 +144,68 @@ namespace casual
 
             namespace resource
             {
+               namespace id
+               {
+                  using type = platform::resource::id::type;
+               } // id
+
+               struct Resource
+               {
+                  Resource() = default;
+                  Resource( std::function< void(Resource&)> foreign) { foreign( *this);}
+
+                  id::type id = 0;
+                  std::string name;
+                  std::string key;
+
+                  std::string openinfo;
+                  std::string closeinfo;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & id;
+                     archive & name;
+                     archive & key;
+                     archive & openinfo;
+                     archive & closeinfo;
+                  })
+               };
+
+               namespace lookup
+               {
+                  using base_request =  message::basic_request< Type::transaction_resource_lookup_request>;
+                  struct Request : base_request
+                  {
+                     std::vector< std::string> resources;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_request::marshal( archive);
+                        archive & resources;
+                     })
+                  };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
+
+                  using base_reply = message::basic_reply< Type::transaction_resource_lookup_reply>;
+                  struct Reply : base_reply
+                  {
+                     std::vector< Resource> resources;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_reply::marshal( archive);
+                        archive & resources;
+                     })
+                  };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
+
+               } // lookup
+
 
                template< message::Type type>
                struct basic_reply : transaction::basic_reply< type>
                {
-                  platform::resource::id::type resource = 0;
+                  id::type resource = 0;
                   Statistics statistics;
 
 
@@ -190,7 +247,7 @@ namespace casual
                {
                   using base_type = basic_request;
 
-                  platform::resource::id::type resource = 0;
+                  id::type resource = 0;
                   int flags = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -218,7 +275,7 @@ namespace casual
                   struct Reply : basic_message< Type::transaction_resurce_connect_reply>
                   {
                      common::process::Handle process;
-                     platform::resource::id::type resource = 0;
+                     id::type resource = 0;
                      int state = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -306,6 +363,9 @@ namespace casual
             struct type_traits< transaction::commit::Request> : detail::type< transaction::commit::Reply> {};
             template<>
             struct type_traits< transaction::rollback::Request> : detail::type< transaction::rollback::Reply> {};
+
+            template<>
+            struct type_traits< transaction::resource::lookup::Request> : detail::type< transaction::resource::lookup::Reply> {};
 
             template<>
             struct type_traits< transaction::resource::prepare::Request> : detail::type< transaction::resource::prepare::Reply> {};

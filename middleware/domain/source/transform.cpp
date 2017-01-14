@@ -4,11 +4,10 @@
 
 #include "domain/transform.h"
 
-
-#include "config/domain.h"
+#include "configuration/domain.h"
+#include "configuration/message/transform.h"
 
 #include "common/domain.h"
-
 
 namespace casual
 {
@@ -22,7 +21,6 @@ namespace casual
          {
             namespace
             {
-
                namespace verify
                {
 
@@ -64,20 +62,6 @@ namespace casual
 
                } // verify
 
-               struct Resources
-               {
-                  manager::state::Group::Resource operator () ( const config::domain::Resource& value) const
-                  {
-                     manager::state::Group::Resource result;
-
-                     result.key = value.key;
-                     result.instances = std::stoul( coalesce( value.instances, "0"));
-                     result.openinfo = value.openinfo;
-                     result.closeinfo = value.closeinfo;
-
-                     return result;
-                  }
-               };
 
                std::vector< manager::state::Group::id_type> membership( const std::vector< std::string>& members, const std::vector< manager::state::Group>& groups)
                {
@@ -105,19 +89,18 @@ namespace casual
 
                   Group( const manager::State& state) : m_state( state) {}
 
-                  manager::state::Group operator () ( const config::domain::Group& group) const
+                  manager::state::Group operator () ( const casual::configuration::group::Group& group) const
                   {
-                     manager::state::Group result;
+                     manager::state::Group result{ group.name, { m_state.group_id.global}, group.note};
 
-                     result.name = group.name;
-                     result.note = group.note;
-                     range::transform( group.resources, result.resources, local::Resources{});
+                     if( group.resources.has_value()) result.resources = group.resources.value();
 
-                     result.dependencies.push_back( id( "global"));
-
-                     for( auto& dependency : group.dependencies)
+                     if( group.dependencies)
                      {
-                        result.dependencies.push_back( id( dependency));
+                        for( auto& dependency : group.dependencies.value())
+                        {
+                           result.dependencies.push_back( id( dependency));
+                        }
                      }
 
                      return result;
@@ -144,10 +127,10 @@ namespace casual
 
 
 
-               std::vector< std::string> environment( const config::Environment& environment)
+               std::vector< std::string> environment( const casual::configuration::Environment& environment)
                {
                   std::vector< std::string> result;
-                  for( auto& variable : config::environment::fetch( environment))
+                  for( auto& variable : casual::configuration::environment::fetch( environment))
                   {
                      result.push_back( variable.key + "=" + variable.value);
                   }
@@ -157,26 +140,46 @@ namespace casual
 
                struct Executable
                {
-                  template< typename V>
-                  manager::state::Executable operator() ( V&& value, const std::vector< manager::state::Group>& groups)
+
+                  manager::state::Executable operator() ( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
+                  {
+                     return transform( value, groups);
+                  }
+
+                  manager::state::Executable operator() ( const configuration::server::Server& value, const std::vector< manager::state::Group>& groups)
+                  {
+                     auto result = transform( value, groups);
+
+                     if( value.resources)
+                        result.resources = value.resources.value();
+
+                     if( value.restrictions)
+                        result.restrictions = value.restrictions.value();
+
+                     return result;
+                  }
+
+               private:
+                  manager::state::Executable transform( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
                   {
                      manager::state::Executable result;
 
-                     result.alias = value.alias;
-                     result.arguments = value.arguments;
-                     result.configured_instances = std::stoul( coalesce( value.instances, "0"));
-                     result.note = value.note;
+                     result.alias = value.alias.value_or( "");
+                     result.arguments = value.arguments.value_or( result.arguments);
+                     result.configured_instances = value.instances.value_or( 0);
+                     result.note = value.note.value_or( "");
                      result.path = value.path;
-                     result.restart = value.restart == "true";
+                     result.restart = value.restart.value_or( false);
 
-                     result.environment.variables = local::environment( value.environment);
+                     if( value.environment)
+                        result.environment.variables = local::environment( value.environment.value());
 
-                     result.memberships = local::membership( value.memberships, groups);
+                     if( value.memberships)
+                        result.memberships = local::membership( value.memberships.value(), groups);
 
+                     // If empty, we make it member of '.global'
                      if( result.memberships.empty())
-                     {
-                        result.memberships.push_back( groups.at( 0).id);
-                     }
+                        result.memberships = local::membership( { ".global"}, groups);
 
 
                      return result;
@@ -191,20 +194,6 @@ namespace casual
 
                namespace vo
                {
-                  struct Resource
-                  {
-                     manager::admin::vo::Group::Resource operator () ( const manager::state::Group::Resource& value)
-                     {
-                        manager::admin::vo::Group::Resource result;
-
-                        result.key = value.key;
-                        result.openinfo = value.openinfo;
-                        result.closeinfo = value.closeinfo;
-                        result.instances = value.instances;
-
-                        return result;
-                     }
-                  };
 
                   struct Group
                   {
@@ -217,7 +206,7 @@ namespace casual
                         result.note = value.note;
 
                         result.dependencies = value.dependencies;
-                        result.resources = range::transform( value.resources, vo::Resource{});
+                        result.resources = value.resources;
 
                         return result;
                      }
@@ -244,13 +233,8 @@ namespace casual
 
                         return result;
                      }
-
                   };
-
-
                } // vo
-
-
 
             } // <unnamed>
          } // local
@@ -266,7 +250,7 @@ namespace casual
          }
 
 
-         manager::State state( const config::domain::Domain& domain)
+         manager::State state( casual::configuration::domain::Manager domain)
          {
 
             //
@@ -276,33 +260,66 @@ namespace casual
 
             manager::State result;
 
-            result.configuration = domain;
+            result.configuration = casual::configuration::transform::configuration( domain);
+
 
 
             //
             // Handle groups
             //
             {
-               manager::state::Group first;
-               result.global.group = first.id;
-               first.name = "global";
-               first.note = "first global group - the group that everything has dependency to";
+               manager::state::Group master{ ".casual.master", {}, "the master and (implicit) parent of all groups"};
+               result.group_id.master = master.id;
+               result.groups.push_back( std::move( master));
 
-               result.groups.push_back( std::move( first));
+
+               manager::state::Group transaction{ ".casual.transaction", { result.group_id.master}};
+               result.group_id.transaction = transaction.id;
+               result.groups.push_back( std::move( transaction));
+
+               manager::state::Group queue{ ".casual.queue", { transaction.id}};
+               result.group_id.queue = queue.id;
+               result.groups.push_back( std::move( queue));
+
+               manager::state::Group global{ ".global", { queue.id, transaction.id}, "user global group"};
+               result.group_id.global = global.id;
+               result.groups.push_back( std::move( global));
             }
 
             {
-               range::transform( domain.groups, result.groups, local::Group{ result});
+               //
+               // We need to remove any of the reserved groups (that we created above), either because
+               // the user has used one of the reserved names, or we're reading from a persistent stored
+               // configuration
+               //
+               const std::vector< std::string> reserved{
+                  ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
+
+               auto groups = common::range::remove_if( domain.groups, [&reserved]( const casual::configuration::group::Group& g){
+                  return common::range::find( reserved, g.name);
+               });
+
+
+               //
+               // We transform user defined groups
+               //
+               range::transform( groups, result.groups, local::Group{ result});
             }
 
             {
-               manager::state::Group last;
-               result.global.last = last.id;
-               last.dependencies.push_back( result.global.group);
-               last.name = "casual.last";
-               last.note = "last global group - will be booted last and shutdown first";
+               //
+               // We need to make sure the gateway have dependencies to all user groups. We could
+               // order the groups and pick the last one, but it's more semantic correct to make have dependencies
+               // to all, since that is exactly what we're trying to represent.
+               //
+               manager::state::Group gateway{ ".casual.gateway", {}};
+               result.group_id.gateway = gateway.id;
 
-               result.groups.push_back( std::move( last));
+               for( auto& group : result.groups)
+               {
+                  gateway.dependencies.push_back( group.id);
+               }
+               result.groups.push_back( std::move( gateway));
             }
 
 
@@ -320,11 +337,11 @@ namespace casual
                   result.processes[ common::process::handle().pid] = common::process::handle();
 
                   manager::state::Executable manager;
-                  result.global.manager = manager.id;
+                  result.manager_id = manager.id;
                   manager.alias = "casual-domain-manager";
-                  manager.path = "${CASUAL_HOME}/bin/casual-domain-manager";
+                  manager.path = "casual-domain-manager";
                   manager.configured_instances = 1;
-                  manager.memberships.push_back( result.global.group);
+                  manager.memberships.push_back( result.group_id.master);
                   manager.note = "responsible for all executables in this domain";
 
                   manager.instances.push_back( common::process::id());
@@ -343,32 +360,6 @@ namespace casual
             return result;
          }
 
-         namespace configuration
-         {
-            namespace transaction
-            {
-               common::message::domain::configuration::transaction::Resource resource( const manager::state::Group::Resource& value)
-               {
-                  common::message::domain::configuration::transaction::Resource result;
-
-                  result.id = value.id;
-                  result.key = value.key;
-                  result.openinfo = value.openinfo;
-                  result.closeinfo = value.closeinfo;
-                  result.instances = value.instances;
-
-                  return result;
-               }
-            } // transaction
-
-
-
-
-         } // configuration
-
       } // transform
-
    } // domain
-
-
 } // casual

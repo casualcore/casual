@@ -8,19 +8,19 @@
 #include "gateway/manager/state.h"
 
 #include "gateway/manager/admin/vo.h"
-
-
 #include "common/message/domain.h"
 
 
 namespace casual
 {
+
+
    namespace gateway
    {
       namespace transform
       {
 
-         manager::State state( const common::message::domain::configuration::gateway::Reply& configuration);
+         manager::State state( const common::message::domain::configuration::Domain& configuration);
 
          manager::admin::vo::State state( const manager::State& state);
 

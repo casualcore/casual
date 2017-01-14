@@ -16,15 +16,12 @@ with Scope():
     Build( 'traffic/makefile.cmk')
     Build( 'administration/makefile.cmk')
     Build( 'gateway/makefile.cmk')
+
+    Build( 'broker/makefile.cmk')
+    Build( 'transaction/makefile.cmk')
+    Build( 'queue/makefile.cmk')    
     
-    
-    with Scope():
-        Parallel( False)
-        
-        Build( 'broker/makefile.cmk')
-        Build( 'transaction/makefile.cmk')
-        # queue depends on libcasual-resource-proxy-server.so in transaction
-        Build( 'queue/makefile.cmk')
+
 
 
 # examples 

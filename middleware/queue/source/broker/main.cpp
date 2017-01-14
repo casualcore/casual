@@ -18,9 +18,12 @@ int main( int argc, char **argv)
 
       {
 
-         common::Arguments parser{ {
-               common::argument::directive( {"-c", "--configuration"}, "queue configuration file", settings.configuration),
-               common::argument::directive( {"-g", "--group-executable"}, "", settings.group_executable)
+         common::Arguments parser{
+            R"(
+Manages casual queue, the provided queue functionality.
+)",
+            {
+               common::argument::directive( {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest", settings.group_executable)
          }};
 
          parser.parse( argc, argv);
