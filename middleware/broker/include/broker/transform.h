@@ -21,17 +21,6 @@ namespace casual
    {
       namespace transform
       {
-         namespace configuration
-         {
-
-            struct Service
-            {
-               state::Service operator () ( const casual::configuration::service::Service& service) const;
-            };
-
-
-         } // configuration
-
 
 
          struct Service

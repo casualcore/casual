@@ -608,7 +608,7 @@ namespace casual
             namespace configuration
             {
 
-               void Domain::operator () ( const casual::configuration::message::Request& message)
+               void Domain::operator () ( const common::message::domain::configuration::Request& message)
                {
                   Trace trace{ "domain::manager::handle::configuration::Domain"};
 
@@ -619,7 +619,7 @@ namespace casual
                }
 
 
-               void Server::operator () ( const common::message::domain::server::configuration::Request& message)
+               void Server::operator () ( const common::message::domain::configuration::server::Request& message)
                {
                   Trace trace{ "domain::manager::handle::configuration::Server"};
 

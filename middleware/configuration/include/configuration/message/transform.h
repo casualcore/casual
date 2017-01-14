@@ -5,8 +5,10 @@
 #ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_TRANSFORM_H_
 #define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_TRANSFORM_H_
 
-#include "configuration/message/domain.h"
+
 #include "configuration/domain.h"
+
+#include "common/message/domain.h"
 
 namespace casual
 {
@@ -15,7 +17,7 @@ namespace casual
       namespace transform
       {
 
-         message::Domain configuration( const configuration::domain::Manager& domain);
+         common::message::domain::configuration::Domain configuration( const configuration::domain::Manager& domain);
 
 
       } // transform

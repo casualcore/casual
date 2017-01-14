@@ -19,7 +19,6 @@
 #include "common/exception.h"
 #include "common/internal/log.h"
 
-#include "configuration/message/domain.h"
 #include "configuration/message/transform.h"
 #include "configuration/queue.h"
 
@@ -60,7 +59,7 @@ namespace casual
 
                   struct Queue
                   {
-                     common::message::queue::Queue operator() ( const configuration::message::queue::Queue& value) const
+                     common::message::queue::Queue operator() ( const common::message::domain::configuration::queue::Queue& value) const
                      {
                         common::message::queue::Queue result;
 
@@ -77,7 +76,7 @@ namespace casual
                {
                   using broker::handle::Base::Base;
 
-                  State::Group operator () ( const configuration::message::queue::Group& group)
+                  State::Group operator () ( const common::message::domain::configuration::queue::Group& group)
                   {
                      State::Group result;
                      result.name = group.name;
@@ -104,7 +103,7 @@ namespace casual
 
                };
 
-               void startup( State& state, configuration::message::Domain&& config)
+               void startup( State& state, common::message::domain::configuration::Domain&& config)
                {
                   casual::common::range::transform( config.queue.groups, state.groups, Startup( state));
 
@@ -227,22 +226,12 @@ namespace casual
          common::process::instance::termination::registration( common::process::handle());
 
 
-
-         if( ! settings.configuration.empty())
-         {
-            //
-            // Only(?) for unittest
-            //
-            broker::local::startup( m_state,
-                  configuration::transform::configuration( configuration::domain::get( { settings.configuration})));
-         }
-         else
          {
             //
             // We ask the domain manager for configuration
             //
 
-            configuration::message::Request request;
+            common::message::domain::configuration::Request request;
             request.process = common::process::handle();
 
             broker::local::startup( m_state,

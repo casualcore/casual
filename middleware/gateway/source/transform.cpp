@@ -21,9 +21,9 @@ namespace casual
          {
             namespace
             {
-               manager::state::outbound::Connection::Type type( configuration::message::gateway::Connection::Type value)
+               manager::state::outbound::Connection::Type type( common::message::domain::configuration::gateway::Connection::Type value)
                {
-                  using connection_type = configuration::message::gateway::Connection::Type;
+                  using connection_type = common::message::domain::configuration::gateway::Connection::Type;
 
                   switch( value)
                   {
@@ -37,7 +37,7 @@ namespace casual
                struct Connection
                {
 
-                  manager::state::outbound::Connection operator () ( const configuration::message::gateway::Connection& connection) const
+                  manager::state::outbound::Connection operator () ( const common::message::domain::configuration::gateway::Connection& connection) const
                   {
                      manager::state::outbound::Connection result;
 
@@ -54,7 +54,7 @@ namespace casual
                struct Listener
                {
 
-                  communication::tcp::Address operator () ( const configuration::message::gateway::Listener& value) const
+                  communication::tcp::Address operator () ( const common::message::domain::configuration::gateway::Listener& value) const
                   {
                      return { value.address};
                   }
@@ -104,7 +104,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         manager::State state( const configuration::message::Domain& configuration)
+         manager::State state( const common::message::domain::configuration::Domain& configuration)
          {
             Trace trace{ "gateway::transform::state"};
 

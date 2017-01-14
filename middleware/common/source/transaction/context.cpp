@@ -106,38 +106,17 @@ namespace casual
                namespace resource
                {
 
-                  message::transaction::resource::lookup::Reply configuration()
+                  message::transaction::resource::lookup::Reply configuration( std::vector< std::string> names)
                   {
                      common::trace::Scope trace{ "transaction::local::resource::configuration", common::log::internal::transaction};
 
-                     //
-                     // This is a two phase lookup.
-                     //
-                     // First we need to ask the domain-manager for which resource names is configured
-                     // to this instance.
-                     //
-                     // Then ask transaction-manager for configuration about those resources
-                     //
 
-                     auto get_names = [](){
+                     message::transaction::resource::lookup::Request request;
+                     request.process = process::handle();
+                     request.resources = std::move( names);
 
-                        message::domain::server::configuration::Request request;
-                        request.process = process::handle();
+                     return communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
-                        return communication::ipc::call( communication::ipc::domain::manager::device(), request).resources;
-
-                     };
-
-                     auto get_resources = []( std::vector< std::string>&& names){
-
-                        message::transaction::resource::lookup::Request request;
-                        request.process = process::handle();
-                        request.resources = std::move( names);
-
-                        return communication::ipc::call( communication::ipc::transaction::manager::device(), request);
-                     };
-
-                     return get_resources( get_names());
                   }
 
                } // resource
@@ -145,14 +124,14 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::configure( const std::vector< Resource>& resources)
+         void Context::configure( const std::vector< Resource>& resources, std::vector< std::string> names)
          {
             common::trace::Scope trace{ "transaction::Context::configure", common::log::internal::transaction};
 
             if( ! resources.empty())
             {
 
-               auto reply = local::resource::configuration();
+               auto reply = local::resource::configuration( std::move( names));
 
                auto configuration = range::make( reply.resources);
 

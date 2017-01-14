@@ -12,6 +12,7 @@
 #include "queue/broker/admin/queuevo.h"
 
 #include "common/message/gateway.h"
+#include "common/message/domain.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/mockup/file.h"
@@ -36,31 +37,30 @@ namespace casual
          namespace
          {
 
+            using config_domain = common::message::domain::configuration::Domain;
+
+
             struct Broker
             {
 
-               Broker( const std::string& configuration)
-                  : m_filename{ common::mockup::file::temporary( ".yaml", configuration)},
-                    m_process{ "./bin/casual-queue-broker", {
-                        "-c", m_filename,
+               Broker()
+                    : m_process{ "./bin/casual-queue-broker", {
                         "-g", "./bin/casual-queue-group",
                       }}
                {
-
 
                }
 
                common::process::Handle process() const { return m_process.handle();}
 
             private:
-               common::file::scoped::Path m_filename;
                common::mockup::Process m_process;
             };
 
             struct Domain
             {
-               Domain( const std::string& configuration)
-               : queue_broker{ configuration}
+               Domain( config_domain configuration)
+               : manager{ std::move( configuration)}
                {
 
                   //
@@ -107,34 +107,57 @@ namespace casual
                }
             } // call
 
-            std::string configuration()
+            config_domain configuration()
             {
-               return R"(
+               config_domain domain;
 
-domain:
-  queue:
-  
-     default:  
-       queue:
-         retries: 3
-      
-     groups:
-       - name: group_A
-         queuebase: ":memory:"
-         
-         queues:
-           - name: queueA1
-           - name: queueA2
-           - name: queueA3
-       
-       - name: group_B
-         queuebase: ":memory:"
-         
-         queues:
-           - name: queueB1
-           - name: queueB2
-           - name: queueB3
-)";
+               domain.queue.groups.resize( 2);
+               {
+                  auto& group = domain.queue.groups.at( 0);
+                  group.name = "group_A";
+                  group.queuebase = ":memory:";
+
+                  using queue_t = common::message::domain::configuration::queue::Queue;
+
+                  group.queues = {
+                        { []( queue_t& q){
+                           q.name = "queueA1";
+                           q.retries = 3;
+                        }},
+                        { []( queue_t& q){
+                           q.name = "queueA2";
+                           q.retries = 3;
+                        }},
+                        { []( queue_t& q){
+                           q.name = "queueA3";
+                           q.retries = 3;
+                        }}
+                  };
+               }
+               {
+                  auto& group = domain.queue.groups.at( 1);
+                  group.name = "group_B";
+                  group.queuebase = ":memory:";
+
+                  using queue_t = common::message::domain::configuration::queue::Queue;
+
+                  group.queues = {
+                        { []( queue_t& q){
+                           q.name = "queueB1";
+                           q.retries = 3;
+                        }},
+                        { []( queue_t& q){
+                           q.name = "queueB2";
+                           q.retries = 3;
+                        }},
+                        { []( queue_t& q){
+                           q.name = "queueB3";
+                           q.retries = 3;
+                        }}
+                  };
+               }
+
+               return domain;
             }
 
          } // <unnamed>

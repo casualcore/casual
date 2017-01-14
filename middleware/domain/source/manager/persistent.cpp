@@ -30,86 +30,91 @@ void serialize( sf::archive::Reader& archive, type& value, const char* name)\
 
 namespace casual
 {
-   namespace configuration
+   namespace common
    {
       namespace message
       {
-         namespace gateway
+         namespace domain
          {
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Listener,
-               archive & sf::name::value::pair::make( "address", value.address);
-            )
+            namespace configuration
+            {
+               namespace gateway
+               {
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Listener,
+                     archive & sf::name::value::pair::make( "address", value.address);
+                  )
 
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Connection,
-               archive & sf::name::value::pair::make( "type", value.type);
-               archive & sf::name::value::pair::make( "restart", value.restart);
-               archive & sf::name::value::pair::make( "address", value.address);
-               archive & sf::name::value::pair::make( "note", value.note);
-               archive & sf::name::value::pair::make( "services", value.services);
-               archive & sf::name::value::pair::make( "queues", value.queues);
-            )
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Connection,
+                     archive & sf::name::value::pair::make( "type", value.type);
+                     archive & sf::name::value::pair::make( "restart", value.restart);
+                     archive & sf::name::value::pair::make( "address", value.address);
+                     archive & sf::name::value::pair::make( "note", value.note);
+                     archive & sf::name::value::pair::make( "services", value.services);
+                     archive & sf::name::value::pair::make( "queues", value.queues);
+                  )
 
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
-               archive & sf::name::value::pair::make( "listeners", value.listeners);
-               archive & sf::name::value::pair::make( "connections", value.connections);
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
+                     archive & sf::name::value::pair::make( "listeners", value.listeners);
+                     archive & sf::name::value::pair::make( "connections", value.connections);
 
-            )
+                  )
 
-         } // gateway
+               } // gateway
 
-         namespace transaction
-         {
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Resource,
-               archive & sf::name::value::pair::make( "name", value.name);
-               archive & sf::name::value::pair::make( "key", value.key);
-               archive & sf::name::value::pair::make( "instances", value.instances);
-               archive & sf::name::value::pair::make( "note", value.note);
-               archive & sf::name::value::pair::make( "openinfo", value.openinfo);
-               archive & sf::name::value::pair::make( "closeinfo", value.closeinfo);
-            )
+               namespace transaction
+               {
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Resource,
+                     archive & sf::name::value::pair::make( "name", value.name);
+                     archive & sf::name::value::pair::make( "key", value.key);
+                     archive & sf::name::value::pair::make( "instances", value.instances);
+                     archive & sf::name::value::pair::make( "note", value.note);
+                     archive & sf::name::value::pair::make( "openinfo", value.openinfo);
+                     archive & sf::name::value::pair::make( "closeinfo", value.closeinfo);
+                  )
 
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
-               archive & sf::name::value::pair::make( "log", value.log);
-               archive & sf::name::value::pair::make( "resources", value.resources);
-            )
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
+                     archive & sf::name::value::pair::make( "log", value.log);
+                     archive & sf::name::value::pair::make( "resources", value.resources);
+                  )
 
-         } // transaction
+               } // transaction
 
-         namespace queue
-         {
+               namespace queue
+               {
 
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Queue,
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Queue,
+                        archive & sf::name::value::pair::make( "name", value.name);
+                        archive & sf::name::value::pair::make( "note", value.note);
+                        archive & sf::name::value::pair::make( "retries", value.retries);
+                   )
+
+
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Group,
+                        archive & sf::name::value::pair::make( "name", value.name);
+                        archive & sf::name::value::pair::make( "note", value.note);
+                        archive & sf::name::value::pair::make( "queuebase", value.queuebase);
+                        archive & sf::name::value::pair::make( "queues", value.queues);
+                  )
+
+
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
+                        archive & sf::name::value::pair::make( "groups", value.groups);
+                  )
+
+               } // queue
+
+
+               CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Domain,
                   archive & sf::name::value::pair::make( "name", value.name);
-                  archive & sf::name::value::pair::make( "note", value.note);
-                  archive & sf::name::value::pair::make( "retries", value.retries);
-             )
+                  archive & sf::name::value::pair::make( "queue", value.queue);
+                  archive & sf::name::value::pair::make( "transaction", value.transaction);
+                  archive & sf::name::value::pair::make( "gateway", value.gateway);
+               )
 
-
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Group,
-                  archive & sf::name::value::pair::make( "name", value.name);
-                  archive & sf::name::value::pair::make( "note", value.note);
-                  archive & sf::name::value::pair::make( "queuebase", value.queuebase);
-                  archive & sf::name::value::pair::make( "queues", value.queues);
-            )
-
-
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
-                  archive & sf::name::value::pair::make( "groups", value.groups);
-            )
-
-         } // queue
-
-
-         CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Domain,
-            archive & sf::name::value::pair::make( "name", value.name);
-            archive & sf::name::value::pair::make( "queue", value.queue);
-            archive & sf::name::value::pair::make( "transaction", value.transaction);
-            archive & sf::name::value::pair::make( "gateway", value.gateway);
-         )
-
+            } //configuration
+         } // domain
       } // message
-   } // configuration
-
+   } // common
 
 
    namespace domain

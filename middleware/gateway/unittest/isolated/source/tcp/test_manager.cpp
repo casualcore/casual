@@ -15,6 +15,8 @@
 #include "common/trace.h"
 #include "common/service/lookup.h"
 
+#include "common/message/domain.h"
+
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 
@@ -26,15 +28,14 @@ namespace casual
 
       namespace local
       {
+         using config_domain = common::message::domain::configuration::Domain;
+
          namespace
          {
             struct Gateway
             {
-               Gateway( const std::string& configuration)
-                : file{ mockup::file::temporary( ".yaml", configuration)},
-                  process{ "./bin/casual-gateway-manager", {
-                     "--configuration", file,
-                  }}
+               Gateway()
+                : process{ "./bin/casual-gateway-manager"}
                {
 
                }
@@ -47,13 +48,12 @@ namespace casual
                   }
                } set_environment;
 
-               file::scoped::Path file;
                mockup::Process process;
             };
 
             struct Domain
             {
-               Domain( const std::string& configuration) : gateway{ configuration}
+               Domain( config_domain configuration) : manager{ std::move( configuration)}
                {
 
                }
@@ -72,8 +72,9 @@ namespace casual
                //!
                struct Service
                {
-                  Service( const std::string& configuration)
-                     : domain1{ mockup::domain::echo::create::service( "remote1")}, gateway{ configuration}  {}
+                  Service( config_domain configuration)
+                     : manager{ std::move( configuration)},
+                       domain1{ mockup::domain::echo::create::service( "remote1")} {}
 
                   mockup::domain::Manager manager;
                   mockup::domain::Broker broker;
@@ -89,36 +90,23 @@ namespace casual
 
 
 
-            std::string empty_configuration()
+            config_domain empty_configuration()
             {
-               return R"yaml(
-
-domain:
-  gateway:
-  
-    listeners:
-
-    connections:
-
-)yaml";
-
+               return {};
             }
 
 
-            std::string one_listener_configuration()
+            config_domain one_listener_configuration()
             {
-               return R"yaml(
-domain:
-  gateway:
-  
-    listeners:
-      - address: 127.0.0.1:6666
+               config_domain result;
 
-    connections:
-      - address: 127.0.0.1:6666
+               result.gateway.listeners.resize( 1);
+               result.gateway.listeners.front().address = "127.0.0.1:6666";
 
-)yaml";
+               result.gateway.connections.resize( 1);
+               result.gateway.connections.front().address = "127.0.0.1:6666";
 
+               return result;
             }
 
 
@@ -235,24 +223,14 @@ domain:
             namespace configuration
             {
 
-               std::string connect_to_our_self_services_service1()
+               config_domain connect_to_our_self_services_service1()
                {
-                  return R"yaml(
-domain:
-  gateway:
-  
-    listeners:
-      - address: 127.0.0.1:6666
+                  auto domain = local::one_listener_configuration();
 
-    connections:
-      - address: 127.0.0.1:6666
-        services: [ "remote1"]
+                  domain.gateway.connections.front().services.push_back( "remote1");
 
-)yaml";
-
+                  return domain;
                }
-
-
 
             } // configuration
          } // <unnamed>
@@ -300,7 +278,7 @@ domain:
             {
                struct Queue
                {
-                  Queue( const std::string& configuration) : gateway{ configuration}
+                  Queue( config_domain configuration) : manager{ std::move( configuration)}
                   {
 
                   }

@@ -16,23 +16,6 @@ namespace casual
       namespace transform
       {
 
-         namespace configuration
-         {
-
-
-            state::Service Service::operator () ( const casual::configuration::service::Service& service) const
-            {
-               state::Service result;
-
-               result.information.name = service.name;
-               result.information.timeout = common::chronology::from::string( service.timeout.value_or( "0s"));
-
-               return result;
-            }
-
-         } // configuration
-
-
 
          state::Service Service::operator () ( const common::message::Service& value) const
          {

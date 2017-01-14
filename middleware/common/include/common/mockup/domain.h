@@ -8,7 +8,6 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 
-#include "common/message/domain.h"
 #include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
@@ -24,6 +23,17 @@ namespace casual
 {
    namespace common
    {
+      namespace message
+      {
+         namespace domain
+         {
+            namespace configuration
+            {
+               struct Domain;
+            } // configuration
+         } // domain
+      } // message
+
       namespace mockup
       {
 
@@ -47,27 +57,18 @@ namespace casual
             {
                Manager();
                Manager( dispatch_type&& handler, const common::domain::Identity& identity = common::domain::Identity{ "unittest-domain"});
+               Manager( message::domain::configuration::Domain domain);
 
 
                ~Manager();
 
-               inline process::Handle process() const { return m_replier.process();}
+               process::Handle process() const;
+
 
             private:
-               struct State
-               {
 
-                  std::map< common::Uuid, common::process::Handle> singeltons;
-                  std::vector< common::message::domain::process::lookup::Request> pending;
-                  std::vector< common::process::Handle> executables;
-                  std::vector< common::process::Handle> event_listeners;
-               };
-
-               dispatch_type default_handler();
-
-               State m_state;
-               ipc::Replier m_replier;
-               common::file::scoped::Path m_singlton;
+               struct Implementation;
+               common::move::basic_pimpl< Implementation> m_implementation;
             };
 
 

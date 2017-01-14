@@ -42,9 +42,9 @@ namespace casual
                   }
                }
 
-               message::domain::server::configuration::Reply configuration()
+               message::domain::configuration::server::Reply configuration()
                {
-                  message::domain::server::configuration::Request request;
+                  message::domain::configuration::server::Request request;
                   request.process = process::handle();
 
                   return communication::ipc::call( communication::ipc::domain::manager::device(), request);
@@ -72,8 +72,6 @@ namespace casual
 
 
 
-
-
                   //
                   // Let the broker know about our services...
                   //
@@ -82,7 +80,7 @@ namespace casual
                   //
                   // configure resources, if any.
                   //
-                  transaction::Context::instance().configure( resources);
+                  transaction::Context::instance().configure( resources, std::move( configuration.resources));
 
                }
 

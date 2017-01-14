@@ -65,7 +65,7 @@ namespace casual
          //
          // get configuration from domain manager
          //
-         action::configure( m_state, settings.configuration);
+         action::configure( m_state);
 
 
          //

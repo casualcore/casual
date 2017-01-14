@@ -47,13 +47,13 @@ namespace casual
             domain_process_termination_event,
             domain_process_lookup_request,
             domain_process_lookup_reply,
+
+            domain_configuration_request = DOMAIN_BASE + 200,
+            domain_configuration_reply,
             domain_server_configuration_request,
             domain_server_configuration_reply,
 
 
-            CONFIGURATION_BASE = 1600,
-            configuration_request,
-            configuration_reply,
 
             // Server
             SERVER_BASE = 2000,

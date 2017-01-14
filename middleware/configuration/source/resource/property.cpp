@@ -51,7 +51,9 @@ namespace casual
 
                      if( file.empty())
                      {
-                        return common::environment::file::installedConfiguration();
+                        return common::file::find(
+                              common::environment::directory::casual() + "/configuration",
+                              std::regex( "resources.(yaml|xml|json|ini)" ));
                      }
 
                      return file;

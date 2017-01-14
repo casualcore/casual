@@ -5,6 +5,8 @@
 #include "configuration/message/transform.h"
 #include "configuration/common.h"
 
+#include "common/chronology.h"
+
 namespace casual
 {
    namespace configuration
@@ -12,13 +14,33 @@ namespace casual
       namespace transform
       {
 
-         message::Domain configuration( const configuration::domain::Manager& domain)
+         common::message::domain::configuration::Domain configuration( const configuration::domain::Manager& domain)
          {
             Trace trace{ "configuration::transform domain"};
 
-            message::Domain result;
+            common::message::domain::configuration::Domain result;
 
             result.name = domain.name;
+
+            //
+            // Service
+            //
+            {
+
+               common::range::transform( domain.services, result.service.services, []( const service::Service& s){
+
+                  common::message::domain::configuration::service::Service result;
+
+                  result.name = s.name;
+                  if( s.routes)
+                     result.routes = s.routes.value();
+
+                  if( s.timeout)
+                     result.timeout = common::chronology::from::string( s.timeout.value());
+
+                  return result;
+               });
+            }
 
             //
             // Transaction
@@ -28,7 +50,7 @@ namespace casual
 
                common::range::transform( domain.transaction.resources, result.transaction.resources, []( const transaction::Resource& r){
 
-                  message::transaction::Resource result;
+                  common::message::domain::configuration::transaction::Resource result;
 
                   result.name = r.name;
                   result.key = r.key.value_or( "");
@@ -47,7 +69,7 @@ namespace casual
             //
             {
                common::range::transform( domain.gateway.listeners, result.gateway.listeners, []( const gateway::Listener& l){
-                  message::gateway::Listener result;
+                  common::message::domain::configuration::gateway::Listener result;
 
                   result.address = l.address;
 
@@ -55,12 +77,14 @@ namespace casual
                });
 
                common::range::transform( domain.gateway.connections, result.gateway.connections, []( const gateway::Connection& c){
-                  message::gateway::Connection result;
+                  common::message::domain::configuration::gateway::Connection result;
 
                   result.note = c.note;
                   result.restart = c.restart.value_or( true);
                   if( c.type.has_value())
-                     { result.type = c.type.value() == "ipc" ? message::gateway::Connection::Type::ipc : message::gateway::Connection::Type::tcp;}
+                     { result.type = c.type.value() == "ipc" ?
+                           common::message::domain::configuration::gateway::Connection::Type::ipc :
+                           common::message::domain::configuration::gateway::Connection::Type::tcp;}
                   result.address = c.address.value_or( "");
                   result.services = c.services;
                   result.queues = c.queues;
@@ -75,14 +99,14 @@ namespace casual
             //
             {
                common::range::transform( domain.queue.groups, result.queue.groups, []( const queue::Group& g){
-                  message::queue::Group result;
+                  common::message::domain::configuration::queue::Group result;
 
                   result.name = g.name;
                   result.note = g.note;
                   result.queuebase = g.queuebase.value_or( "");
 
                   common::range::transform( g.queues, result.queues, []( const queue::Queue& q){
-                     message::queue::Queue result;
+                     common::message::domain::configuration::queue::Queue result;
 
                      result.name = q.name;
                      result.note = q.note;

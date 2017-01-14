@@ -28,7 +28,7 @@ namespace casual
             {
                State configure( const std::string configuration)
                {
-                  auto file = common::mockup::file::temporary( ".yaml", configuration);
+                  auto file = common::mockup::file::temporary::content( ".yaml", configuration);
 
                   Settings settings;
                   settings.configurationfiles.push_back( file);

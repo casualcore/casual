@@ -13,7 +13,6 @@
 #include "common/platform.h"
 #include "common/process.h"
 
-#include "configuration/message/domain.h"
 
 #include  "sf/namevaluepair.h"
 
@@ -286,7 +285,7 @@ namespace casual
             //!
             //! this domain's original configuration.
             //!
-            casual::configuration::message::Domain configuration;
+            common::message::domain::configuration::Domain configuration;
 
             //!
             //! Runlevel can only "go forward"

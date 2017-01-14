@@ -21,8 +21,6 @@
 #include "common/process.h"
 #include "common/domain.h"
 
-#include "configuration/domain.h"
-
 
 #include "sf/log.h"
 
@@ -49,59 +47,103 @@ namespace casual
       {
          namespace
          {
-            std::string forward( const Settings& settings)
+
+
+            namespace configure
             {
-               if( settings.forward.empty())
+               std::string forward( const Settings& settings)
                {
-                  return environment::directory::casual() + "/bin/casual-forward-cache";
-               }
-               return settings.forward;
-            }
-
-            void connect( State& state, const Settings& settings)
-            {
-               //
-               // Connect to domain
-               //
-               process::instance::connect( process::instance::identity::broker());
-
-               //
-               // Register for process termination
-               //
-               {
-                  Trace trace{ "broker::connect process::termination"};
-
-                  common::message::domain::process::termination::Registration message;
-                  message.process = common::process::handle();
-
-                  ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+                  if( settings.forward.empty())
+                  {
+                     return environment::directory::casual() + "/bin/casual-forward-cache";
+                  }
+                  return settings.forward;
                }
 
-               //
-               // Start forward
-               //
+               common::message::domain::configuration::service::Manager domain()
                {
-                  Trace trace{ "broker::connect spawn forward"};
+                  common::message::domain::configuration::Request request;
+                  request.process = process::handle();
 
-                  state.forward.pid = common::process::spawn( forward( settings), {});
+                  return communication::ipc::call( communication::ipc::domain::manager::device(), request).domain.service;
+               }
 
-                  state.forward = common::process::instance::fetch::handle(
-                        common::process::instance::identity::forward::cache());
+               void services( State& state, const common::message::domain::configuration::service::Manager& configuration)
+               {
+                  Trace trace{ "broker::local::configure::services"};
+
+                  for( auto& config : configuration.services)
+                  {
+                     common::message::service::call::Service service;
+
+                     service.timeout = config.timeout;
+                     service.name = config.name;
+
+                     state.services.emplace( std::make_pair( config.name, std::move( service)));
+
+                  }
 
                }
 
-            }
+               State state( const Settings& settings)
+               {
+                  State state;
+
+                  //
+                  // Connect to domain
+                  //
+                  process::instance::connect( process::instance::identity::broker());
+
+
+                  //
+                  // Get configuration from domain-manager
+                  //
+                  auto configuration = domain();
+
+
+                  configure::services( state, configuration);
+
+
+
+                  //
+                  // Register for process termination
+                  //
+                  {
+                     Trace trace{ "broker::configure process::termination"};
+
+                     common::message::domain::process::termination::Registration message;
+                     message.process = common::process::handle();
+
+                     ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+                  }
+
+                  //
+                  // Start forward
+                  //
+                  {
+                     Trace trace{ "broker::configure spawn forward"};
+
+                     state.forward.pid = common::process::spawn( forward( settings), {});
+
+                     state.forward = common::process::instance::fetch::handle(
+                           common::process::instance::identity::forward::cache());
+
+                  }
+
+                  return state;
+               }
+
+            } // configure
 
          } // <unnamed>
       } // local
 
 
 
-		Broker::Broker( Settings&& settings)
+		Broker::Broker( Settings&& settings) : m_state{ local::configure::state( std::move( settings))}
 		{
 		   Trace trace{ "Broker::Broker ctor"};
 
-		   local::connect( m_state, settings);
 		}
 
 

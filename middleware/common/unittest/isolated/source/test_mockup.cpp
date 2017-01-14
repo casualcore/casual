@@ -10,6 +10,7 @@
 
 
 #include "common/message/service.h"
+#include "common/message/domain.h"
 #include "common/service/lookup.h"
 
 #include "common/communication/ipc.h"

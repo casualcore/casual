@@ -165,14 +165,13 @@ namespace casual
 
          } // resource
 
-         void configure( State& state, const configuration::message::Reply& configuration, const std::string& resource_file)
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration)
          {
 
             {
                Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
-               auto resources = resource_file.empty() ?
-                     configuration::resource::property::get() : configuration::resource::property::get( resource_file);
+               auto resources = configuration::resource::property::get();
 
                for( auto& resource : resources)
                {
@@ -189,7 +188,7 @@ namespace casual
             {
                Trace trace( "transaction manager resource configuration", log::internal::transaction);
 
-               auto transform_resource = []( const configuration::message::transaction::Resource& r){
+               auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
 
                   state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
 

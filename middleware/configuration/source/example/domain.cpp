@@ -164,7 +164,7 @@ namespace casual
                      { []( service::Service& v){
                         v.name = "postSalesSaveService";
                         v.timeout.emplace( "2h");
-                        v.alias.emplace( { std::string( "postSalesSaveService"), std::string( "sales/post/save")});
+                        v.routes.emplace( { std::string( "postSalesSaveService"), std::string( "sales/post/save")});
                      }},
                      { []( service::Service& v){
                         v.name = "postSalesGetService";

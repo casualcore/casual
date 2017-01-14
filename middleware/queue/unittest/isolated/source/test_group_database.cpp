@@ -26,12 +26,6 @@ namespace casual
       {
          namespace
          {
-            /*
-            common::file::scoped::Path file()
-            {
-               return common::file::scoped::Path{ "unittest_queue_server_database.db"};
-            }
-            */
 
             std::string file()
             {

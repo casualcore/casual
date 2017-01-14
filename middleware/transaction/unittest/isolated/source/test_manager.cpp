@@ -22,8 +22,6 @@
 #include "common/environment.h"
 #include "common/transcode.h"
 
-#include "configuration/message/domain.h"
-
 #include "sf/xatmi_call.h"
 #include "sf/archive/log.h"
 
@@ -50,11 +48,10 @@ namespace casual
             {
 
                Manager( const std::string& configuration)
-                  : m_filename{ common::mockup::file::temporary( ".yaml", configuration)},
-                    m_process{ "./bin/casual-transaction-manager",
-                     { "-c", m_filename,
-                       "-l", ":memory:",
-                     }}
+                  : m_filename{ common::mockup::file::temporary::content( ".yaml", configuration)},
+                    env{ m_filename},
+                    m_process{ "./bin/casual-transaction-manager", { "-l", ":memory:"}
+                  }
                {
                   //
                   // We wait until tm is up
@@ -66,6 +63,15 @@ namespace casual
 
             private:
                common::file::scoped::Path m_filename;
+
+               struct env_t
+               {
+                  env_t( const std::string& file)
+                  {
+                     common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", file);
+                  }
+               } env;
+
                common::mockup::Process m_process;
 
             };
@@ -73,13 +79,10 @@ namespace casual
             struct Domain
             {
                Domain( const std::string& configuration)
-                  : manager
-                    {
-                        handle_resource_configuration{}
-                     },
-                    tm{ configuration}
+                  : manager{ configure()},
+                     tm{ configuration}
                {
-
+                  configure();
                }
 
                common::mockup::domain::Manager manager;
@@ -88,39 +91,35 @@ namespace casual
 
             private:
 
-               struct handle_resource_configuration
+               static common::message::domain::configuration::Domain configure()
                {
+                  common::message::domain::configuration::Domain domain;
 
-                  void operator () ( casual::configuration::message::Request& request) const
-                  {
-                     auto reply = common::message::reverse::type( request);
+                  using resource_type = common::message::domain::configuration::transaction::Resource;
 
-                     using resource_type = configuration::message::transaction::Resource;
-
-                     reply.domain.transaction.resources = {
+                  domain.transaction.resources = {
+                        {
+                           []( resource_type& r)
                            {
-                              []( resource_type& r)
-                              {
-                                 r.name = "rm1";
-                                 r.key = "rm-mockup";
-                                 r.instances = 2;
-                                 r.openinfo = "openinfo1";
-                              }
-                           },
-                           {
-                              []( resource_type& r)
-                              {
-                                 r.name = "rm2";
-                                 r.key = "rm-mockup";
-                                 r.instances = 2;
-                                 r.openinfo = "openinfo2";
-                              }
+                              r.name = "rm1";
+                              r.key = "rm-mockup";
+                              r.instances = 2;
+                              r.openinfo = "openinfo1";
                            }
-                     };
+                        },
+                        {
+                           []( resource_type& r)
+                           {
+                              r.name = "rm2";
+                              r.key = "rm-mockup";
+                              r.instances = 2;
+                              r.openinfo = "openinfo2";
+                           }
+                        }
+                  };
 
-                     common::mockup::ipc::eventually::send( request.process.queue, reply);
-                  }
-               };
+                  return domain;
+               }
 
             };
 

@@ -13,6 +13,8 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/rm.h"
 
+#include "common/message/domain.h"
+
 #include "common/buffer/pool.h"
 
 
@@ -206,7 +208,7 @@ namespace casual
             private:
                struct handle_server_configuration
                {
-                  void operator () ( message::domain::server::configuration::Request& request) const
+                  void operator () ( message::domain::configuration::server::Request& request) const
                   {
                      auto reply = common::message::reverse::type( request);
                      reply.resources = { "rm1", "rm2"};

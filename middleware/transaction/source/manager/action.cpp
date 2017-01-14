@@ -13,7 +13,6 @@
 #include "common/internal/trace.h"
 #include "common/server/handle.h"
 
-#include "configuration/message/domain.h"
 
 
 #include "sf/log.h"
@@ -29,14 +28,14 @@ namespace casual
    {
       namespace action
       {
-         void configure( State& state, const std::string& resource_file)
+         void configure( State& state)
          {
 
             {
 
                Trace trace( "configure");
 
-               configuration::message::Request request;
+               common::message::domain::configuration::Request request;
                request.process = process::handle();
 
                auto configuration = communication::ipc::call( communication::ipc::domain::manager::device(), request);
@@ -45,7 +44,7 @@ namespace casual
                //
                // configure state
                //
-               state::configure( state, configuration, resource_file);
+               state::configure( state, configuration);
             }
 
             {

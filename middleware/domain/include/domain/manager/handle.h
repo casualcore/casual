@@ -12,7 +12,6 @@
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
 
-#include "configuration/message/domain.h"
 
 namespace casual
 {
@@ -118,7 +117,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator () ( const casual::configuration::message::Request& message);
+                  void operator () ( const common::message::domain::configuration::Request& message);
                };
 
 
@@ -126,7 +125,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::domain::server::configuration::Request& message);
+                  void operator () ( const common::message::domain::configuration::server::Request& message);
 
                };
 

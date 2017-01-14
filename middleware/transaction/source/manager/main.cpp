@@ -28,7 +28,6 @@ int main( int argc, char** argv)
          casual::common::Arguments parser{ {
                casual::common::argument::directive( { "-db", "--database"}, "(depreciated) path to transaction database log", settings.log),
                casual::common::argument::directive( { "-l", "--transaction-log"}, "path to transaction database log", settings.log),
-               casual::common::argument::directive( { "-c", "--resource-configuration"}, "path to resource configuration\n\tdefault: " + casual::common::environment::file::installedConfiguration(), settings.configuration)
          }};
 
          parser.parse( argc, argv);

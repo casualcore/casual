@@ -16,6 +16,253 @@ namespace casual
       {
          namespace domain
          {
+            namespace configuration
+            {
+               namespace transaction
+               {
+                  struct Resource
+                  {
+                     Resource() = default;
+                     inline Resource( std::function< void(Resource&)> foreign) { foreign( *this);}
+
+                     std::string name;
+                     std::string key;
+                     std::size_t instances = 0;
+                     std::string note;
+
+                     std::string openinfo;
+                     std::string closeinfo;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                        archive & name;
+                        archive & key;
+                        archive & instances;
+                        archive & note;
+                        archive & openinfo;
+                        archive & closeinfo;
+                     )
+                  };
+
+                  struct Manager
+                  {
+                     std::string log;
+                     std::vector< Resource> resources;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & log;
+                        archive & resources;
+                     )
+                  };
+
+               } // transaction
+
+
+
+               namespace gateway
+               {
+                  struct Listener
+                  {
+                     std::string address;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & address;
+                     )
+                  };
+
+                  struct Connection
+                  {
+                     enum class Type : short
+                     {
+                        ipc,
+                        tcp
+                     };
+                     Type type = Type::tcp;
+                     bool restart = true;
+                     std::string address;
+                     std::string note;
+                     std::vector< std::string> services;
+                     std::vector< std::string> queues;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & type;
+                        archive & restart;
+                        archive & address;
+                        archive & note;
+                        archive & services;
+                        archive & queues;
+                     )
+                  };
+
+                  struct Manager
+                  {
+                     std::vector< Listener> listeners;
+                     std::vector< Connection> connections;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & listeners;
+                        archive & connections;
+                     )
+                  };
+
+               } // gateway
+
+
+
+               namespace queue
+               {
+                  struct Queue
+                  {
+                     Queue() = default;
+                     inline Queue( std::function< void(Queue&)> foreign) { foreign( *this);}
+
+                     std::string name;
+                     std::size_t retries = 0;
+                     std::string note;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & name;
+                        archive & retries;
+                        archive & note;
+                     )
+                  };
+
+                  struct Group
+                  {
+                     std::string name;
+                     std::string queuebase;
+                     std::string note;
+                     std::vector< Queue> queues;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & name;
+                        archive & queuebase;
+                        archive & note;
+                        archive & queues;
+                     )
+                  };
+
+                  struct Manager
+                  {
+                     std::vector< Group> groups;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & groups;
+                     )
+                  };
+
+               } // queue
+
+               namespace service
+               {
+                  struct Service
+                  {
+                     std::string name;
+                     std::chrono::microseconds timeout = std::chrono::microseconds::zero();
+                     std::vector< std::string> routes;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & name;
+                        archive & timeout;
+                        archive & routes;
+                     )
+                  };
+
+                  //!
+                  //! Trying a new name for 'broker'. If it feels good
+                  //! we change the real broker to service::Manager
+                  //!
+                  //! otherwise, we change this type.
+                  //!
+                  struct Manager
+                  {
+
+                     std::vector< Service> services;
+
+                     CASUAL_CONST_CORRECT_MARSHAL
+                     (
+                        archive & services;
+                     )
+                  };
+
+
+               } // service
+
+               struct Domain
+               {
+                  std::string name;
+
+                  transaction::Manager transaction;
+                  gateway::Manager gateway;
+                  queue::Manager queue;
+                  service::Manager service;
+
+
+                  CASUAL_CONST_CORRECT_MARSHAL
+                  (
+                     archive & name;
+                     archive & transaction;
+                     archive & gateway;
+                     archive & queue;
+                     archive & service;
+                  )
+               };
+
+
+               struct Request : common::message::basic_request< common::message::Type::domain_configuration_request>
+               {
+
+               };
+
+               using base_reply = common::message::basic_reply< common::message::Type::domain_configuration_reply>;
+               struct Reply : base_reply
+               {
+                  Domain domain;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                     base_reply::marshal( archive);
+                     archive & domain;
+                  )
+
+               };
+
+
+               namespace server
+               {
+
+                  using base_request = message::basic_request< message::Type::domain_server_configuration_request>;
+                  struct Request : base_request
+                  {
+
+                  };
+
+                  using base_reply = message::basic_request< message::Type::domain_server_configuration_reply>;
+                  struct Reply : base_reply
+                  {
+                     std::vector< std::string> resources;
+                     std::vector< std::string> restrictions;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_reply::marshal( archive);
+                        archive & resources;
+                        archive & restrictions;
+                     })
+                  };
+
+               } // server
+
+            } // configuration
+
+
+
             namespace scale
             {
                struct Executable : common::message::basic_message< common::message::Type::domain_scale_executable>
@@ -81,7 +328,7 @@ namespace casual
 
                namespace termination
                {
-                  using Registration = server::basic_id< Type::domain_process_termination_registration>;
+                  using Registration = basic_request< Type::domain_process_termination_registration>;
 
                   using base_event = basic_message< Type::domain_process_termination_event>;
 
@@ -106,7 +353,7 @@ namespace casual
 
                namespace lookup
                {
-                  using base_reqeust = server::basic_id< Type::domain_process_lookup_request>;
+                  using base_reqeust = message::basic_request< Type::domain_process_lookup_request>;
                   struct Request : base_reqeust
                   {
                      enum class Directive : char
@@ -132,7 +379,7 @@ namespace casual
                   };
                   static_assert( traits::is_movable< Request>::value, "not movable");
 
-                  using base_reply = server::basic_id< Type::domain_process_lookup_reply>;
+                  using base_reply = basic_reply< Type::domain_process_lookup_reply>;
 
                   struct Reply : base_reply
                   {
@@ -150,47 +397,22 @@ namespace casual
 
             } // process
 
-            namespace server
-            {
-               namespace configuration
-               {
-                  using base_request = message::basic_request< message::Type::domain_server_configuration_request>;
-                  struct Request : base_request
-                  {
-
-                  };
-
-                  using base_reply = message::basic_request< message::Type::domain_server_configuration_reply>;
-                  struct Reply : base_reply
-                  {
-                     std::vector< std::string> resources;
-                     std::vector< std::string> restrictions;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        base_reply::marshal( archive);
-                        archive & resources;
-                        archive & restrictions;
-                     })
-                  };
-
-               } // configuration
-
-            } // server
-
          } // domain
 
          namespace reverse
          {
+            template<>
+            struct type_traits< domain::configuration::Request> : detail::type< domain::configuration::Reply> {};
+
+            template<>
+            struct type_traits< domain::configuration::server::Request> : detail::type< domain::configuration::server::Reply> {};
+
             template<>
             struct type_traits< domain::process::lookup::Request> : detail::type< domain::process::lookup::Reply> {};
 
             template<>
             struct type_traits< domain::process::connect::Request> : detail::type< domain::process::connect::Reply> {};
 
-
-            template<>
-            struct type_traits< domain::server::configuration::Request> : detail::type< domain::server::configuration::Reply> {};
 
          } // reverse
 

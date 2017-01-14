@@ -14,6 +14,8 @@
 #include "common/environment.h"
 #include "common/trace.h"
 
+#include "common/message/domain.h"
+
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 
@@ -25,27 +27,24 @@ namespace casual
 
       namespace local
       {
+         using config_domain = common::message::domain::configuration::Domain;
+
          namespace
          {
             struct Gateway
             {
-               Gateway( const std::string& configuration)
-                : file{ mockup::file::temporary( ".yaml", configuration)},
-                  process{ "./bin/casual-gateway-manager", {
-                     "--configuration", file,
-                  }}
+               Gateway()
+                  : process{ "./bin/casual-gateway-manager"}
                {
 
                }
 
-
-               file::scoped::Path file;
                mockup::Process process;
             };
 
             struct Domain
             {
-               Domain( const std::string& configuration) : gateway{ configuration}
+               Domain( config_domain configuration) : manager{ std::move( configuration)}
                {
 
                }
@@ -67,36 +66,21 @@ namespace casual
 
 
 
-            std::string empty_configuration()
+            config_domain empty_configuration()
             {
-               return R"yaml(
-
-domain:
-  gateway:
-  
-    listeners:
-
-    connections:
-
-)yaml";
-
+               return {};
             }
 
 
-            std::string one_connector_configuration()
+            config_domain one_connector_configuration()
             {
-               return R"yaml(
-domain:
-  gateway:
-  
-    listeners:
+               config_domain result;
 
-    connections:
-      - type: "ipc"
-        address: "${CASUAL_UNITTEST_IPC_PATH}"
+               result.gateway.connections.resize( 1);
+               result.gateway.connections.front().address = "${CASUAL_UNITTEST_IPC_PATH}";
+               result.gateway.connections.front().type = decltype( result.gateway.connections.front().type)::ipc;
 
-)yaml";
-
+               return result;
             }
 
 

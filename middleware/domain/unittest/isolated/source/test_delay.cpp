@@ -7,6 +7,8 @@
 
 #include "domain/delay/message.h"
 
+#include "common/message/domain.h"
+
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"
 

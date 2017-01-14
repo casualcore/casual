@@ -19,7 +19,7 @@ namespace casual
       namespace action
       {
 
-         void configure( State& state, const std::string& resource_file);
+         void configure( State& state);
 
 
          namespace resource

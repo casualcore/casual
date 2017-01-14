@@ -14,7 +14,7 @@
 #include "transaction/manager/log.h"
 
 #include "configuration/resource/property.h"
-#include "configuration/message/domain.h"
+
 
 
 #include <map>
@@ -640,7 +640,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const configuration::message::Reply& configuration, const std::string& resource_file);
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration);
 
 
 

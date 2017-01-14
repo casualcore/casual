@@ -152,6 +152,7 @@ namespace casual
 			}
 
 
+			/*
 			namespace file
 			{
 
@@ -162,9 +163,8 @@ namespace casual
 			   //! TODO: some of these should be in casual::domain
 			   std::string configuration();
 
-			   // TODO: change name
-			   std::string installedConfiguration();
 			}
+			*/
 
 
 

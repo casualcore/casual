@@ -16,8 +16,8 @@
 #include "common/mockup/domain.h"
 #include "common/internal/trace.h"
 #include "common/internal/log.h"
+#include "common/environment.h"
 
-#include "configuration/message/domain.h"
 
 namespace casual
 {
@@ -26,45 +26,34 @@ namespace casual
    {
       namespace
       {
-         configuration::message::Reply configuration()
+         common::message::domain::configuration::Domain configuration()
          {
-            configuration::message::Reply result;
+            common::message::domain::configuration::Domain domain;
 
 
-            configuration::message::transaction::Resource resource;
+            common::message::domain::configuration::transaction::Resource resource;
             resource.name = "rm1";
             resource.key = "rm-mockup";
             resource.instances = 3;
             resource.openinfo = "some open info 1";
             resource.closeinfo = "some close info 1";
-            result.domain.transaction.resources.push_back( resource);
+            domain.transaction.resources.push_back( resource);
 
             resource.name = "rm2";
             resource.key = "rm-mockup";
             resource.instances = 3;
             resource.openinfo = "some open info 2";
             resource.closeinfo = "some close info 2";
-            result.domain.transaction.resources.push_back( resource);
+            domain.transaction.resources.push_back( resource);
 
-            return result;
+            return domain;
          }
 
          struct Domain
          {
 
-            Domain() : manager{
-               []( configuration::message::Request& r){
-
-                  common::Trace trace{ "mockup transaction::manager::connect::Request", common::log::internal::debug};
-
-                  auto reply = configuration();
-                  reply.correlation = r.correlation;
-
-                  common::mockup::ipc::eventually::send( r.process.queue, reply);
-               }
-            }
+            Domain() : manager{ configuration()}
             {
-
             }
 
             common::mockup::domain::Manager manager;
@@ -78,11 +67,13 @@ namespace casual
    {
       common::unittest::Trace trace;
 
+      common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", "../example/resources/resources.yaml");
+
       local::Domain domain;
 
       transaction::State state( ":memory:");
 
-      transaction::action::configure( state, "../example/resources/resources.yaml");
+      transaction::action::configure( state);
 
       ASSERT_TRUE( state.resource_properties.size() >= 2) << "state.xaConfig.size(): " << state.resource_properties.size();
       EXPECT_TRUE( state.resource_properties.at( "db2").xa_struct_name == "db2xa_switch_static_std");
@@ -93,13 +84,15 @@ namespace casual
    {
       common::unittest::Trace trace;
 
+      common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", "../example/resources/resources.yaml");
+
       local::Domain domain;
 
       transaction::State state( ":memory:");
 
-      transaction::action::configure( state, "../example/resources/resources.yaml");
+      transaction::action::configure( state);
 
-      ASSERT_TRUE( state.resources.size() == 2);
+      ASSERT_TRUE( state.resources.size() == 2) << "state.resources: " << state.resources.size();
       EXPECT_TRUE( state.resources.at( 0).id > 0) << "id: " << state.resources.at( 0).id;
       EXPECT_TRUE( state.resources.at( 0).openinfo == "some open info 1");
       EXPECT_TRUE( state.resources.at( 0).name == "rm1");

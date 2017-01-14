@@ -58,7 +58,7 @@ namespace casual
                   //
                   // Ask domain manager for configuration
                   //
-                  configuration::message::Request request;
+                  common::message::domain::configuration::Request request;
                   request.process = process::handle();
 
                   return gateway::transform::state(
