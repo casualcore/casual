@@ -75,11 +75,7 @@ ENTRYPOINT ["/opt/casual/start.sh"]
 //
 def dockerstart = '''#! /bin/bash
 
-casual-admin domain --boot
-
-sleep 5
-
-while $( pgrep ^casual-broker$ > 0); do sleep 5; done
+casual-domain-manager -c configuration/domain.yaml
 '''
 
 def build( name, image, content)
