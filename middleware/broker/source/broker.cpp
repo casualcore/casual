@@ -72,6 +72,8 @@ namespace casual
                {
                   Trace trace{ "broker::local::configure::services"};
 
+                  state.default_timeout = configuration.default_timeout;
+
                   for( auto& config : configuration.services)
                   {
                      common::message::service::call::Service service;

@@ -904,15 +904,6 @@ namespace casual
             return result;
          }
 
-         template< typename InputIter1, typename InputIter2, typename outputIter, typename T>
-         outputIter transform( Range< InputIter1> range1, Range< InputIter2> range2, outputIter output, T transform)
-         {
-            assert( range1.size() == range2.size());
-            return std::transform(
-               std::begin( range1), std::end( range1),
-               std::begin( range2),
-               output, transform);
-         }
 
          //!
          //! Transform @p range, using @p transform
@@ -921,22 +912,28 @@ namespace casual
          //!
          //! @return std::vector with the transformed values
          //!
-         /*
-         template< typename R, typename P, typename T>
-         auto transform_if( R&& range, P predicate, T transformer) -> std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type>
+         //!
+         template< typename R, typename C, typename T, typename P>
+         auto transform_if( R&& range, C& container, T transformer, P predicate) -> decltype( container)
          {
-            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
-
             for( auto&& value : range)
             {
                if( predicate( value))
                {
-                  result.push_back( transformer( value));
+                  container.push_back( transformer( value));
                }
             }
+            return container;
+         }
+
+         template< typename R, typename T, typename P>
+         auto transform_if( R&& range, T transformer, P predicate) -> std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type>
+         {
+            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
+            transform_if( range, result, transformer, predicate);
             return result;
          }
-         */
+
 
          //!
          //! Applies std::unique on [std::begin( range), std::end( range) )

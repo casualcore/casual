@@ -1,8 +1,5 @@
 //!
-//! casual_server_context.h
-//!
-//! Created on: Apr 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_SERVER_CONTEXT_H_
@@ -34,6 +31,8 @@ namespace casual
    {
       namespace server
       {
+         struct Arguments;
+
 
          struct State
          {
@@ -77,9 +76,9 @@ namespace casual
 
             std::deque< Service> physical_services;
 
-            typedef std::unordered_map< std::string, std::reference_wrapper< Service>> service_mapping_type;
-
+            using service_mapping_type = std::unordered_map< std::string, std::reference_wrapper< Service>>;
             service_mapping_type services;
+
             common::platform::long_jump_buffer_type long_jump_buffer;
 
             message::traffic::Event traffic;
@@ -119,6 +118,29 @@ namespace casual
             //! Being called from tpunadvertise
             //!
             void unadvertise( const std::string& service);
+
+            //!
+            //! Basic configuration for a server
+            //!
+            //! @param services
+            void configure( const server::Arguments& arguments);
+
+
+            //!
+            //! Tries to find the physical service from it's original name
+            //!
+            //! @param name
+            //! @return a pointer to the service if found, nullptr otherwise.
+            server::Service* physical( const std::string& name);
+
+
+            //!
+            //! Tries to find the physical service from the associated callback function
+            //!
+            //! @param name
+            //! @return a pointer to the service if found, nullptr otherwise.
+            server::Service* physical( const server::Service::function_type& function);
+
 
             //!
             //! Share state with callee::handle::basic_call for now...

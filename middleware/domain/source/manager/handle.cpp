@@ -628,6 +628,24 @@ namespace casual
                   reply.resources = state().resources( message.process.pid);
                   reply.restrictions = state().executable( message.process.pid).restrictions;
 
+                  using service_type = message::domain::configuration::service::Service;
+                  range::transform_if(
+                        state().configuration.service.services,
+                        reply.routes,
+                        []( const service_type& s){ // transform
+
+                           message::domain::configuration::server::Reply::Service result;
+
+                           result.name = s.name;
+                           result.routes = s.routes;
+
+                           return result;
+                        },
+                        []( const service_type& s){ // predicate
+                           return s.routes.size() != 1 || s.routes[ 0] != s.name;
+                        });
+
+
                   manager::local::ipc::send( state(), message.process, reply);
 
                }
@@ -644,7 +662,7 @@ namespace casual
                      {
                         using common::server::handle::policy::Admin::Admin;
 
-                        void connect( std::vector< message::service::advertise::Service> services, const std::vector< transaction::Resource>& resources)
+                        void configure( common::server::Arguments& arguments)
                         {
                            // no-op, we'll advertise our services when the broker comes online.
                         }

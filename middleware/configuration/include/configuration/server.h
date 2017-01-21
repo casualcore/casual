@@ -74,6 +74,7 @@ namespace casual
 
          struct Server : public Executable
          {
+
             Server();
             Server( std::function< void(Server&)> foreign);
 

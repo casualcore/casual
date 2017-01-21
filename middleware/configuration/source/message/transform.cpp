@@ -26,6 +26,8 @@ namespace casual
             // Service
             //
             {
+               if( domain.manager_default.service.timeout)
+                  result.service.default_timeout = common::chronology::from::string( domain.manager_default.service.timeout.value());
 
                common::range::transform( domain.services, result.service.services, []( const service::Service& s){
 

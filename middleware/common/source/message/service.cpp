@@ -10,13 +10,37 @@ namespace casual
    {
       namespace message
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace output
+               {
+                  void base_service( std::ostream& out, const service::Base& value)
+                  {
+                     out << "name: " << value.name
+                           << ", category: " << value.category
+                           << ", mode: " << value.transaction;
+                  }
+               } // output
+            } // <unnamed>
+         } // local
+
+         namespace service
+         {
+            std::ostream& operator << ( std::ostream& out, const Base& value)
+            {
+               out << "{ ";
+               local::output::base_service( out, value);
+               return out << '}';
+            }
+         } // service
          std::ostream& operator << ( std::ostream& out, const Service& value)
          {
-            return out << "{ name: " << value.name
-                  << ", category: " << value.category
-                  << ", timeout: " << value.timeout.count()
-                  << ", mode: " << value.transaction
-                  << '}';
+            out << "{ ";
+            local::output::base_service( out, value);
+            return out << ", timeout: " << value.timeout.count() << '}';
+;
          }
 
          namespace service

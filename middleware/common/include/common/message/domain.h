@@ -161,6 +161,7 @@ namespace casual
 
                namespace service
                {
+
                   struct Service
                   {
                      std::string name;
@@ -183,11 +184,13 @@ namespace casual
                   //!
                   struct Manager
                   {
+                     std::chrono::microseconds default_timeout = std::chrono::microseconds::zero();
 
                      std::vector< Service> services;
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
+                        archive & default_timeout;
                         archive & services;
                      )
                   };
@@ -251,14 +254,28 @@ namespace casual
                   using base_reply = message::basic_request< message::Type::domain_server_configuration_reply>;
                   struct Reply : base_reply
                   {
+                     struct Service
+                     {
+                        std::string name;
+                        std::vector< std::string> routes;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           archive & name;
+                           archive & routes;
+                        })
+                     };
+
                      std::vector< std::string> resources;
                      std::vector< std::string> restrictions;
+                     std::vector< Service> routes;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_reply::marshal( archive);
                         archive & resources;
                         archive & restrictions;
+                        archive & routes;
                      })
                   };
 

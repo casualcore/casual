@@ -631,14 +631,11 @@ namespace casual
             {
                namespace create
                {
-                  message::service::advertise::Service service(
-                        std::string name,
-                        std::chrono::microseconds timeout)
+                  message::service::advertise::Service service( std::string name)
                   {
                      message::service::advertise::Service result;
 
                      result.name = std::move( name);
-                     result.timeout = timeout;
 
                      return result;
                   }
@@ -709,8 +706,7 @@ namespace casual
                Domain::Domain()
                   : server{ {
                      echo::create::service( "service1"),
-                     echo::create::service( "service2"),
-                     echo::create::service( "service3_2ms_timout", std::chrono::milliseconds{ 2})}}
+                     echo::create::service( "service2")}}
                {
                   //
                   // Advertise "removed" ipc queue

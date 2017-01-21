@@ -429,9 +429,9 @@ namespace casual
          }
 
 
-         void Policy::connect( std::vector< common::message::service::advertise::Service> services, const std::vector< common::transaction::Resource>& resources)
+         void Policy::configure( common::server::Arguments& arguments)
          {
-            m_state.connect_broker( std::move( services));
+            m_state.connect_broker( arguments.services);
          }
 
 

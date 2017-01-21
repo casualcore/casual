@@ -3,6 +3,7 @@
 //!
 
 #include "common/server/context.h"
+#include "common/server/argument.h"
 
 
 #include "common/message/server.h"
@@ -134,7 +135,7 @@ namespace casual
                {
                   message.services.emplace_back( prospect.origin, prospect.category, prospect.transaction);
 
-                  m_state.physical_services.push_back( std::move( prospect));
+                  m_state.physical_services.push_back( prospect);
                   m_state.services.emplace( prospect.origin, m_state.physical_services.back());
                }
                communication::ipc::blocking::send( communication::ipc::broker::device(), message);
@@ -158,6 +159,55 @@ namespace casual
             communication::ipc::blocking::send( communication::ipc::broker::device(), message);
          }
 
+
+
+         void Context::configure( const server::Arguments& arguments)
+         {
+            trace::internal::Scope log{ "server::Context::configure"};
+
+            m_state.server_done = arguments.server_done;
+
+            for( auto& service : arguments.services)
+            {
+               m_state.physical_services.push_back( service);
+               m_state.services.emplace(
+                     service.origin,
+                     m_state.physical_services.back());
+            }
+         }
+
+         namespace local
+         {
+            namespace
+            {
+               template< typename S, typename P>
+               server::Service* find_physical( S& services, P&& predicate)
+               {
+                  auto found = range::find_if( services, predicate);
+
+                  if( found)
+                  {
+                     return &( *found);
+                  }
+                  return nullptr;
+               }
+            } // <unnamed>
+         } // local
+
+         server::Service* Context::physical( const std::string& name)
+         {
+            return local::find_physical(  m_state.physical_services, [&]( const server::Service& s){
+               return s.origin == name;
+            });
+         }
+
+         server::Service* Context::physical( const server::Service::function_type& function)
+         {
+            return local::find_physical(  m_state.physical_services, [&]( const server::Service& s){
+               return s == function;
+            });
+
+         }
 
          State& Context::state()
          {

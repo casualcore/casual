@@ -143,7 +143,7 @@ domain:
   services:
     - timeout: 2h
       name: postSalesSaveService
-      alias:
+      routes:
         - postSalesSaveService
         - sales/post/save
 

@@ -158,10 +158,10 @@
   <element>
    <timeout>2h</timeout>
    <name>postSalesSaveService</name>
-   <alias>
+   <routes>
     <element>postSalesSaveService</element>
     <element>sales/post/save</element>
-   </alias>
+   </routes>
   </element>
   <element>
    <timeout>130ms</timeout>

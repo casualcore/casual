@@ -1,6 +1,4 @@
 //!
-//! test_forward_cache.cpp
-//!
 //! casual
 //!
 
@@ -49,7 +47,7 @@ namespace casual
          {
             request.process.pid = 1;
             request.process.queue = caller.id();
-            request.service.name = "service3_2ms_timout";
+            request.service.name = "service2";
             request.trid = transaction::ID::create( process::handle());
             request.flags = TPNOTRAN;
          }

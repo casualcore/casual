@@ -139,9 +139,7 @@ namespace casual
 
                namespace create
                {
-                  message::service::advertise::Service service(
-                        std::string name,
-                        std::chrono::microseconds timeout = std::chrono::microseconds::zero());
+                  message::service::advertise::Service service( std::string name);
                } // create
 
                struct Server
@@ -170,7 +168,6 @@ namespace casual
                //!
                //! - service1
                //! - service2
-               //! - service3_2ms_timout
                //! - removed_ipc_queue <- corresponds to an ipc-queue that does not exists
                //!
                struct Domain

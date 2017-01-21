@@ -20,29 +20,45 @@ namespace casual
    {
       namespace message
       {
-         struct Service
+         namespace service
          {
-            Service() = default;
+            struct Base
+            {
+               Base() = default;
 
-            explicit Service( std::string name, std::string category, common::service::transaction::Type transaction)
-               : name( std::move( name)), category( std::move( category)), transaction( transaction)
-            {}
+               explicit Base( std::string name, std::string category, common::service::transaction::Type transaction)
+                  : name( std::move( name)), category( std::move( category)), transaction( transaction)
+               {}
 
-            Service( std::string name)
-               : name( std::move( name))
-            {}
+               Base( std::string name)
+                  : name( std::move( name))
+               {}
 
-            std::string name;
-            std::string category;
+               std::string name;
+               std::string category;
+               common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & name;
+                  archive & category;
+                  archive & transaction;
+               })
+            };
+            static_assert( traits::is_movable< Base>::value, "not movable");
+
+         } // service
+
+         struct Service : service::Base
+         {
+            using service::Base::Base;
+
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
-               archive & name;
-               archive & category;
+               service::Base::marshal( archive);
                archive & timeout;
-               archive & transaction;
             })
 
             friend std::ostream& operator << ( std::ostream& out, const Service& value);
@@ -92,7 +108,7 @@ namespace casual
                //!
                //! Represent service information in a 'advertise context'
                //!
-               using Service = message::Service;
+               using Service = message::service::Base;
 
                static_assert( traits::is_movable< Service>::value, "not movable");
 

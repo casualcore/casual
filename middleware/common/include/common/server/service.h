@@ -38,10 +38,6 @@ namespace casual
             Service( std::string name, function_type function, std::string category, service::transaction::Type transaction);
             Service( std::string name, function_type function);
 
-            Service( Service&&);
-            Service& operator = ( Service&&);
-
-
             void call( TPSVCINFO* serviceInformation);
 
             std::string origin;
@@ -54,13 +50,8 @@ namespace casual
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
             friend bool operator == ( const Service& lhs, const Service& rhs);
+            friend bool operator == ( const Service& lhs, const function_type& rhs);
             friend bool operator != ( const Service& lhs, const Service& rhs);
-
-
-         private:
-            typedef void(*const* target_type)(TPSVCINFO*);
-            target_type adress() const;
-
 
          };
 

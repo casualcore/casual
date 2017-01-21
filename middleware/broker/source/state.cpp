@@ -349,6 +349,20 @@ namespace casual
             }
 
 
+
+            template< typename Service>
+            common::message::service::call::Service transform( Service&& service, std::chrono::microseconds timeout)
+            {
+               common::message::service::call::Service result;
+
+               result.name = std::move( service.name);
+               result.timeout = timeout;
+               result.transaction = service.transaction;
+               result.category = service.category;
+
+               return result;
+            }
+
             template< typename Service>
             common::message::service::call::Service transform( Service&& service)
             {
@@ -415,7 +429,7 @@ namespace casual
 
                for( auto& s : message.services)
                {
-                  auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
+                  auto& service = local::find_or_add_service( services, local::transform( std::move( s), default_timeout));
                   service.add( instance);
                }
 
@@ -434,6 +448,7 @@ namespace casual
             default:
             {
                log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+               break;
             }
          }
       }
@@ -492,12 +507,22 @@ namespace casual
 
 
 
-      void State::connect_broker( std::vector< common::message::service::advertise::Service> services)
+      void State::connect_broker( std::vector< common::server::Service> services)
       {
          common::message::service::Advertise message;
 
          message.directive = common::message::service::Advertise::Directive::add;
-         message.services = std::move( services);
+
+         range::transform( services, message.services, []( common::server::Service& s){
+            common::message::service::advertise::Service result;
+
+            result.category = s.category;
+            result.name = s.origin;
+            result.transaction = s.transaction;
+
+            return result;
+         });
+
          message.process = process::handle();
 
          update( message);
