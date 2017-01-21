@@ -21,11 +21,15 @@ namespace casual
             {
                void advertise( std::vector< message::service::advertise::Service> services)
                {
+                  trace::internal::Scope trace{ "common::server::local::advertise"};
+
                   if( ! services.empty())
                   {
                      message::service::Advertise advertise;
                      advertise.process = process::handle();
                      advertise.services = std::move( services);
+
+                     log::internal::debug << "advertise: " << advertise << '\n';
 
                      communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
                   }

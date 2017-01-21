@@ -103,12 +103,27 @@ namespace casual
 
                } // queue
 
+               namespace service
+               {
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Service,
+                     archive & sf::name::value::pair::make( "name", value.name);
+                     archive & sf::name::value::pair::make( "timeout", value.timeout);
+                     archive & sf::name::value::pair::make( "routes", value.routes);
+                  )
+
+                  CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Manager,
+                     archive & sf::name::value::pair::make( "default_timeout", value.default_timeout);
+                     archive & sf::name::value::pair::make( "services", value.services);
+                  )
+
+               } // service
 
                CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Domain,
                   archive & sf::name::value::pair::make( "name", value.name);
                   archive & sf::name::value::pair::make( "queue", value.queue);
                   archive & sf::name::value::pair::make( "transaction", value.transaction);
                   archive & sf::name::value::pair::make( "gateway", value.gateway);
+                  archive & sf::name::value::pair::make( "service", value.service);
                )
 
             } //configuration

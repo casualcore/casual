@@ -338,24 +338,34 @@ namespace casual
             {
                Trace trace{ "broker::local::find_or_add service"};
 
+               log << "service: " << service << '\n';
+
                auto found = range::find( services, service.name);
 
                if( found)
                {
+                  if( found->second.information.category != service.category)
+                     found->second.information.category = service.category;
+
+                  if( found->second.information.transaction != service.transaction)
+                     found->second.information.transaction = service.transaction;
+
+                  log << "found: " << found->second << '\n';
+
                   return found->second;
                }
 
-               return services.emplace( service.name, std::move( service)).first->second;
+               return services.emplace( service.name, service).first->second;
             }
 
 
 
             template< typename Service>
-            common::message::service::call::Service transform( Service&& service, std::chrono::microseconds timeout)
+            common::message::service::call::Service transform( const Service& service, std::chrono::microseconds timeout)
             {
                common::message::service::call::Service result;
 
-               result.name = std::move( service.name);
+               result.name = service.name;
                result.timeout = timeout;
                result.transaction = service.transaction;
                result.category = service.category;
@@ -364,11 +374,11 @@ namespace casual
             }
 
             template< typename Service>
-            common::message::service::call::Service transform( Service&& service)
+            common::message::service::call::Service transform( const Service& service)
             {
                common::message::service::call::Service result;
 
-               result.name = std::move( service.name);
+               result.name = service.name;
                result.timeout = service.timeout;
                result.transaction = service.transaction;
                result.category = service.category;
@@ -429,7 +439,7 @@ namespace casual
 
                for( auto& s : message.services)
                {
-                  auto& service = local::find_or_add_service( services, local::transform( std::move( s), default_timeout));
+                  auto& service = local::find_or_add_service( services, local::transform( s, default_timeout));
                   service.add( instance);
                }
 
@@ -469,7 +479,7 @@ namespace casual
                for( auto& s : message.services)
                {
                   auto hops = s.hops;
-                  auto& service = local::find_or_add_service( services, local::transform( std::move( s)));
+                  auto& service = local::find_or_add_service( services, local::transform( s));
                   service.add( instance, hops);
                }
 
