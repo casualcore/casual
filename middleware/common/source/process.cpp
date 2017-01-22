@@ -370,39 +370,49 @@ namespace casual
 
          namespace pattern
          {
+            namespace local
+            {
+               namespace
+               {
+                  std::size_t check_infinity( std::size_t quantity)
+                  {
+                     return quantity ==  0 ? std::numeric_limits< std::size_t>::max() : quantity;
+                  }
+               } // <unnamed>
+            } // local
+
+
             Sleep::Pattern::Pattern( std::chrono::microseconds time, std::size_t quantity)
-               : time{ time}, quantity{ quantity}
+               : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
-            Sleep::Pattern::Pattern() = default;
-
-
-            Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)) {}
-
-            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern{ std::move( pattern)} {}
-
-            void Sleep::operator () ()
+            bool Sleep::Pattern::done()
             {
-               if( m_offset < m_pattern.size())
-               {
-                  if( m_offset + 1 == m_pattern.size())
-                  {
-                     //
-                     // We're at the last pattern, we keep sleeping
-                     //
-                     sleep( m_pattern[ m_offset].time);
-                  }
-                  else
-                  {
-                     auto& pattern = m_pattern[ m_offset];
-                     sleep( pattern.time);
+               sleep( m_time);
 
-                     if( pattern.quantity == 0 || --pattern.quantity == 0)
-                     {
-                        ++m_offset;
-                     }
-                  }
+               if( m_quantity == std::numeric_limits< std::size_t>::max())
+               {
+                  return false;
                }
+               return --m_quantity == 0;
+            }
+
+
+            Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)), m_range{ range::make( m_pattern)} {}
+
+            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern{ std::move( pattern)}, m_range{ range::make( m_pattern)} {}
+
+            bool Sleep::operator () ()
+            {
+               if( m_range)
+               {
+                  if( m_range->done())
+                  {
+                     ++m_range;
+                  }
+                  return true;
+               }
+               return false;
             }
          } // pattern
 

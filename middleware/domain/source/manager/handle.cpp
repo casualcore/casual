@@ -434,6 +434,8 @@ namespace casual
 
                         bool operator () ( const common::message::domain::process::lookup::Request& message)
                         {
+                           using Directive = common::message::domain::process::lookup::Request::Directive;
+
                            auto reply = common::message::reverse::type( message);
                            reply.identification = message.identification;
 
@@ -446,8 +448,7 @@ namespace casual
                                  reply.process = found->second;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
-                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct
-                                    || state().runlevel() == State::Runlevel::shutdown)
+                              else if( message.directive == Directive::direct)
                               {
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
@@ -465,8 +466,7 @@ namespace casual
                                  reply.process = found->second;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
-                              else if( message.directive == common::message::domain::process::lookup::Request::Directive::direct
-                                    || state().runlevel() == State::Runlevel::shutdown)
+                              else if( message.directive == Directive::direct)
                               {
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
@@ -551,6 +551,8 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::process::Connect"};
 
+                  log << "message: " << message << '\n';
+
                   auto reply = common::message::reverse::type( message);
 
                   if( message.identification)
@@ -582,6 +584,8 @@ namespace casual
 
 
                   state().processes[ message.process.pid] = message.process;
+
+                  log << "added process: " << message.process << '\n';
 
                   auto& pending = state().pending.lookup;
 

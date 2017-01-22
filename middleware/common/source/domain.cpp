@@ -136,29 +136,39 @@ namespace casual
             {
                trace::internal::Scope trace{ "common::domain::singleton::read"};
 
-               std::ifstream file{ common::environment::domain::singleton::file()};
+               process::pattern::Sleep retries{
+                  { std::chrono::milliseconds{ 10}, 10},
+                  { std::chrono::milliseconds{ 100}, 10},
+                  { std::chrono::seconds{ 1}, 60}
+               };
 
-               if( file)
+               do
                {
-                  Result result;
+                  std::ifstream file{ common::environment::domain::singleton::file()};
+
+                  if( file)
                   {
-                     file >> result.process.queue;
-                     file >> result.process.pid;
-                     file >> result.identity.name;
-                     std::string uuid;
-                     file >> uuid;
-                     result.identity.id = Uuid{ uuid};
+                     Result result;
+                     {
+                        file >> result.process.queue;
+                        file >> result.process.pid;
+                        file >> result.identity.name;
+                        std::string uuid;
+                        file >> uuid;
+                        result.identity.id = Uuid{ uuid};
+                     }
+
+                     environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
+                     common::domain::identity( result.identity);
+
+                     log::internal::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
+
+                     return result;
                   }
-
-                  environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
-                  common::domain::identity( result.identity);
-
-                  log::internal::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
-
-                  return result;
                }
-               return {};
+               while( retries());
 
+               return {};
             }
 
          } // singleton
