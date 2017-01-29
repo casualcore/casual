@@ -137,7 +137,7 @@ node {
              thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
              tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
-          archive includes: '**/casual-middleware*.rpm''
+          archive includes: '**/casual-middleware*.rpm'
       }
 
 //      if ( "${env.BRANCH_NAME}" == "develop" )
