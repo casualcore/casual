@@ -9,6 +9,7 @@ CASUAL_RELEASE="1"
 
 umask 000
 cd /git/casual
+find . -name "*.gcda"| xargs rm
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make -d -a --use-valgrind make && \
    casual-make clean && \
