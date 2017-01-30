@@ -70,7 +70,7 @@ namespace casual
             });
          }
 
-         TEST( casual_common_communication_tcp, connect_to_listener_on_localhost__expect_correct_info)
+         TEST( casual_common_communication_tcp, DISABLED_connect_to_listener_on_localhost__expect_correct_info)
          {
             common::unittest::Trace trace;
 
