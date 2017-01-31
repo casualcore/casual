@@ -126,6 +126,8 @@ target_unittest = LinkLibrary( 'bin/casual-unittest',
      ],
      [ common, "gtest"])
 
+install_libs.append( target_unittest)
+
 #
 # Mockup stuff, only for unittest
 #
