@@ -109,16 +109,10 @@ common = LinkLibrary( 'bin/casual-common',
 
 install_libs.append( common)
 
-# lib_terminal = LinkLibrary( 
-#    'bin/casual-common-terminal', 
-#    [ Compile( 'source/terminal.cpp'),], 
-#    [ common])
-# 
-# install_libs.append( lib_terminal)
 
 
 #
-# The mockup-rm, only for testing
+# Some help for unittest tracing
 #
 target_unittest = LinkLibrary( 'bin/casual-unittest', 
      [
@@ -126,11 +120,12 @@ target_unittest = LinkLibrary( 'bin/casual-unittest',
      ],
      [ common, "gtest"])
 
-install_libs.append( target_unittest)
-
 #
 # Mockup stuff, only for unittest
 #
+
+mockup_log = Compile( 'source/mockup/log.cpp')
+
 mockup = LinkLibrary( 'bin/casual-mockup', 
      [
        Compile( 'source/mockup/ipc.cpp'),
@@ -138,30 +133,31 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/process.cpp'),
        Compile( 'source/mockup/file.cpp'),
        Compile( 'source/mockup/thread.cpp'),
-       Compile( 'source/mockup/log.cpp'),
+       mockup_log
      ],
      [ common, target_unittest])
 
-install_libs.append( mockup)
-
 #
-# The mockup-rm, only for testing
+# The mockup-rm, only for testing.
 #
 lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
      [
-       Compile( 'source/mockup/rm.cpp')
+       Compile( 'source/mockup/rm.cpp'),
+       mockup_log
      ],
-     [ common, mockup])
+     [ common])
 
+#
+# Since we use this in our example-servers we "install it"
+#
 install_libs.append( lib_mockup_rm)
+
 
 mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
     [ 
       Compile( 'source/mockup/unittest/envrionment.cpp'),  
     ],
     [ common, mockup, 'gtest'])
-
-install_libs.append( mockup_unittest)
 
 
 target_simple_process = LinkExecutable( 'bin/simple_process',

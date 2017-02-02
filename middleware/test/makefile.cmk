@@ -14,7 +14,7 @@ LibraryPaths( [ 'bin',
 	'../queue/bin',
 	'../buffer/bin',
 	'../serviceframework/bin',
-        '../configuration/bin',
+    '../configuration/bin',
 	'$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
 	])
 
@@ -44,19 +44,11 @@ target = LinkServer( 'bin/test',
 
 install_bin.append( target)
 
-#Compile( 'source/template_server_dispatcher.c', 'obj/template_server_dispatcher.o')
-
-#LinkExecutable('test',
-#    ['obj/template_server_dispatcher.o',
-#    'obj/template_server.o'],
-#    ['casual-xatmi', 'casual-common', 'casual-mockup'])	
-    	
 
 
 #
 # Compile and link VO:n
 #
-
 
 archive_vo = LinkArchive( 'bin/sf-test-vo',
     [
