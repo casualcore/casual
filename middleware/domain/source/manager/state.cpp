@@ -324,6 +324,7 @@ namespace casual
 
          std::vector< std::string> State::resources( common::platform::pid::type pid)
          {
+
             auto& process = executable( pid);
 
             auto resources = process.resources;

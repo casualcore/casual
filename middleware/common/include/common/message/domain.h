@@ -164,6 +164,9 @@ namespace casual
 
                   struct Service
                   {
+                     Service() = default;
+                     Service( std::function< void(Service&)> foreign) { foreign( *this);}
+
                      std::string name;
                      std::chrono::microseconds timeout = std::chrono::microseconds::zero();
                      std::vector< std::string> routes;
@@ -322,6 +325,8 @@ namespace casual
                         archive & process;
                         archive & identification;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
                   static_assert( traits::is_movable< Request>::value, "not movable");
 

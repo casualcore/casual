@@ -130,6 +130,8 @@ namespace casual
                      state.forward = common::process::instance::fetch::handle(
                            common::process::instance::identity::forward::cache());
 
+                     log << "forward: " << state.forward << '\n';
+
                   }
 
                   return state;
@@ -154,6 +156,8 @@ namespace casual
 		{
 		   try
 		   {
+		      Trace trace{ "Broker::Broker dtor"};
+
             //
             // Terminate
             //

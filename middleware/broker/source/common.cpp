@@ -9,7 +9,7 @@ namespace casual
 {
    namespace broker
    {
-      common::log::Stream log{ "casaul.broker"};
+      common::log::Stream log{ "casual.broker"};
 
 
    } // broker

@@ -112,9 +112,16 @@ install_bin.append( target)
 
 LinkUnittest( 'unittest/bin/test-casual-generation-isolated',
     [
-	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp')
+	   Compile( 'unittest/isolated/source/domain/test_basic.cpp'),
+	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp'),
 	],
-    ['casual-sf', 'casual-xatmi', 'yaml-cpp'])
+    [ 
+		'casual-common', 
+		'casual-sf', 
+		'casual-xatmi', 
+		'yaml-cpp', 
+		'casual-mockup',
+	])
 	
 	
 #
