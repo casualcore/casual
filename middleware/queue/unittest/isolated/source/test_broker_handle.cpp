@@ -10,6 +10,7 @@
 
 
 #include "common/mockup/ipc.h"
+#include "common/mockup/domain.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/trace.h"
@@ -41,6 +42,8 @@ namespace casual
                         { "queueB3", { { group20.process(), 3}}},
                   };
                }
+
+               common::mockup::domain::Manager manager;
 
                common::mockup::ipc::Collector group10;
                common::mockup::ipc::Collector group20;
@@ -123,6 +126,8 @@ namespace casual
       TEST( casual_queue_broker_handle, lookup_request_absent_queue__expect_0_as_queue)
       {
          common::unittest::Trace trace;
+
+
 
          local::State state;
 

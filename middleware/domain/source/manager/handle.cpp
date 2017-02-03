@@ -630,7 +630,13 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
 
                   reply.resources = state().resources( message.process.pid);
-                  reply.restrictions = state().executable( message.process.pid).restrictions;
+
+                  auto executable = state().find_executable( message.process.pid);
+
+                  if( executable)
+                  {
+                     reply.restrictions = executable->restrictions;
+                  }
 
                   using service_type = message::domain::configuration::service::Service;
                   range::transform_if(
