@@ -24,6 +24,15 @@ namespace casual
             } // scale
             namespace process
             {
+               namespace connect
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ identification: " << value.identification
+                           << ", process: " << value.process
+                           << '}';
+                  }
+               } // connect
                namespace termination
                {
                   std::ostream& operator << ( std::ostream& out, const Event& value)

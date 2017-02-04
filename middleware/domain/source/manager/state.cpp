@@ -282,14 +282,20 @@ namespace casual
 
          state::Executable& State::executable( common::platform::pid::type pid)
          {
-            auto found = range::find_if( executables, [=]( const state::Executable& e){
-               return range::find( e.instances, pid) == true;
-            });
+            auto found = find_executable( pid);
+
             if( found)
             {
                return *found;
             }
             throw exception::invalid::Argument{ "failed to locate executable", CASUAL_NIP( pid)};
+         }
+
+         state::Executable* State::find_executable( common::platform::pid::type pid)
+         {
+            return range::find_if( executables, [=]( const state::Executable& e){
+               return range::find( e.instances, pid) == true;
+            }).data();
          }
 
          state::Group& State::group( state::Group::id_type id)
@@ -324,11 +330,16 @@ namespace casual
 
          std::vector< std::string> State::resources( common::platform::pid::type pid)
          {
-            auto& process = executable( pid);
+            auto executable = find_executable( pid);
 
-            auto resources = process.resources;
+            if( ! executable)
+            {
+               return {};
+            }
 
-            for( auto& id : process.memberships)
+            auto resources = executable->resources;
+
+            for( auto& id : executable->memberships)
             {
                auto& group = State::group( id);
 

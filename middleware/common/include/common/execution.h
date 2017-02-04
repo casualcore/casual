@@ -1,8 +1,5 @@
 //!
-//! execution.h
-//!
-//! Created on: Jun 7, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_EXECUTION_H_

@@ -13,6 +13,7 @@
 #include "common/message/transaction.h"
 #include "common/message/queue.h"
 
+
 #include "common/file.h"
 #include "common/domain.h"
 
@@ -133,6 +134,7 @@ namespace casual
 
 
             } // queue
+
 
             namespace echo
             {

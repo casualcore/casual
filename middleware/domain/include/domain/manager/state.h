@@ -302,6 +302,13 @@ namespace casual
 
 
             state::Executable& executable( common::platform::pid::type pid);
+
+            //!
+            //! @return pointer to executable if found, nullptr otherwise.
+            //!
+            state::Executable* find_executable( common::platform::pid::type pid);
+
+
             state::Group& group( state::Group::id_type id);
             const state::Group& group( state::Group::id_type id) const;
 

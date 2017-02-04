@@ -46,9 +46,10 @@ namespace casual
 
             };
 
-            struct Domain
+            struct Domain : mockup::domain::Manager
             {
-               mockup::domain::Manager manager;
+               using mockup::domain::Manager::Manager;
+
                local::Broker broker;
                mockup::domain::transaction::Manager tm;
             };
@@ -188,6 +189,7 @@ namespace casual
             EXPECT_TRUE( service.state == decltype( service)::State::idle);
          }
       }
+
 
 
       /*
