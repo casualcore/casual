@@ -43,7 +43,7 @@ namespace casual
                {
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
-                     process{ "./bin/casual-domain-manager", {
+                     process{ "./home/bin/casual-domain-manager", {
                         "--configuration-files", configuration::names( files),
                         "--no-auto-persist"
                      }}
