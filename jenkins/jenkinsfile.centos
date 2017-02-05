@@ -51,21 +51,17 @@ chmod a+w -R .
 //
 // Dockerfile for creating testcontainer
 //
-def dockerfile = '''FROM ubuntu:trusty
+def dockerfile = '''FROM centos:latest
 MAINTAINER flurig <flurig@localhost>
 
-RUN apt-get update && apt-get -y upgrade && apt-get -y install uuid-dev libyaml-cpp0.3-dev libjson-c-dev libpugixml-dev libsqlite3-dev wget cmake g++-4.8 python rsync unzip && ln -s /usr/bin/g++-4.8 /usr/bin/g++
+RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
+RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
+RUN rpm -Uvh epel-release*rpm
+RUN yum -y install pugixml yaml-cpp03
 
-RUN wget --no-check-certificate https://github.com/jbeder/yaml-cpp/archive/release-0.3.0.tar.gz && tar xf release-0.3.0.tar.gz && cd yaml-cpp-release-0.3.0 && mkdir build && cd build && cmake -DBUILD_SHARED_LIBS=ON .. && make && make install && rm -rf /release-0.3.0.tar.gz /yaml-cpp-release-0.3.0
-
-RUN mkdir -p /opt/casual
-
-COPY casual-middleware.tar /opt/casual/casual-middleware.tar
-COPY casual-webserver.tar /opt/casual/casual-webserver.tar
-COPY casual-webapp.zip /opt/casual/casual-webapp.zip
+COPY casual-middleware-0.42-1.x86_64.rpm /tmp/casual-middleware-0.42-1.x86_64.rpm
+RUN rpm -i -p /tmp/casual-middleware-0.42-1.x86_64.rpm
 COPY start.sh /opt/casual/start.sh
-
-RUN cd /opt/casual && tar xf casual-middleware.tar && tar xf casual-webserver.tar && unzip casual-webapp.zip && chmod 755 /opt/casual/start.sh
 
 RUN useradd -ms /bin/bash casual
 
@@ -141,21 +137,21 @@ node {
           archive includes: '**/casual-middleware*.rpm'
       }
 
-//      if ( "${env.BRANCH_NAME}" == "develop" )
-//      {
-//         stage('Create container')
-//         {
-//            // 
-//            // Setup files
-//            //
-//            writeFile file: 'Dockerfile', text: dockerfile
-//            writeFile file: 'start.sh', text: dockerstart
-//
-//            sh """
-//            docker build -t casual-test-ubuntu -f Dockerfile .
-//            """
-//         }
-//
+      if ( "${env.BRANCH_NAME}" == "develop" )
+      {
+         stage('Create container')
+         {
+            // 
+            // Setup files
+            //
+            writeFile file: 'Dockerfile', text: dockerfile
+            writeFile file: 'start.sh', text: dockerstart
+
+            sh """
+            docker build -t casual/middleware-centos -f Dockerfile .
+            """
+         }
+
 //         stage('Publishing to dockerhub')
 //         {
 //            sh """
@@ -164,15 +160,15 @@ node {
 //            """
 //         }
 //
-//         stage('Deploy')
-//         {
-//            sh """
-//            cd /var/lib/jenkins/git/casual/docker
-//            ./restart.sh
-//            """
-//         }
-//
-//      }
+         stage('Deploy')
+         {
+            sh """
+            cd /var/lib/jenkins/git/casual/docker
+            ./restart.sh
+            """
+         }
+
+      }
 //
 //      bitbucketStatusNotify(
 //         buildState: 'SUCCESSFUL',
