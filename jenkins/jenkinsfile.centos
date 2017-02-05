@@ -62,6 +62,7 @@ RUN yum -y install pugixml yaml-cpp03
 COPY casual-middleware-0.42-1.x86_64.rpm /tmp/casual-middleware-0.42-1.x86_64.rpm
 RUN rpm -i -p /tmp/casual-middleware-0.42-1.x86_64.rpm
 COPY start.sh /opt/casual/start.sh
+RUN chmod 755 /opt/casual/start.sh
 
 RUN useradd -ms /bin/bash casual
 
