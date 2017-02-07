@@ -113,7 +113,18 @@ void run( Settings settings)
 
          for( auto& recive : receivers)
          {
-            auto result = recive();
+            try
+            {
+               auto result = recive();
+            }
+            catch( const casual::sf::exception::Base& exception)
+            {
+               std::cerr << exception << std::endl;
+            }
+            catch( ...)
+            {
+               casual::common::error::handler();
+            }
          }
 
          timepoints.emplace_back( casual::common::platform::clock_type::now(), "receive");
@@ -157,7 +168,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( { "-t", "--transaction"}, "call within a transaction", settings.transaction),
          casual::common::argument::directive( { "-r", "--rollback"}, "call within a transaction", settings.rollback),
          casual::common::argument::directive( { "-i", "--iterations"}, "number of iterations of batch-calls", settings.iterations),
-         casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
+         //casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
    }};
 
 

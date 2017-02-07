@@ -5,67 +5,35 @@ experience how this stuff works*
 
 ## products
 
-casual has a few 'products' that could be split into separated repos in the future, but for now
+casual has a few 'products' that could be split into separate repos in the future, but for now
 we keep them all in this repository.
 
 ### middleware
 casual main purpose is [casual-middelware](/middleware/readme.md), which is an XATMI implementation
 
 ### make
-[casual-make](/tools/casual/make/readme.md) is a 'build system' that is easy to use.
+[casual-make](/make/readme.md) is the 'build system' that is used to build casual
 
-Users declare their intent (in pure python) and casual-make take care of the rest.
+## Getting started
 
-Easy to implement DSL stuff to fit most needs.
+### build casual
 
-Can of course be used stand alone without the rest of casual.
+Follow the [build instructions](build.md)
 
-### How do I get set up? ###
+### Use casual-middleware
 
-#### Prerequisites
-The following needs to be installed using rpm or yum packages:
+See [examples](/middleware/example/domain/readme.md)
 
- * git
- * python
- * gcc-c++ (at least 4.8.3)
- * puppet
-
-*Note: casual will not build on a 32-bit system*
-
-#### Set up the environment
-Use templatefile to setup environment
-
-    cp middleware/example/env/casual.env casual.env
-
-Edit file, set correct paths and source file
-
-    source casual.env
-
-#### Install dependencies with puppet
-    sudo puppet apply thirdparty/setup/casual.pp
-
-#### Build casual
-     cd $CASUAL_BUILD_HOME
-     casual-make compile && casual-make install && casual-make link
-
-#### Test casual
-
-casual-make test
-
-
-*tested om OS X and Ubuntu so far. More unix flavors needed* 
-     
-
-### use casual-middleware
-TODO: this documentation should be separated from this repo? At least conceptually
 
 ### Status
 
 #### Whats left to do?
-* gateway
 * JCA implementation
 * COBOL bindings
 * some redesign of internal parts (for maintainability)
+
+
+### field tests
 
 We've done some field tests
 
@@ -81,13 +49,14 @@ We've done some field tests
 * We have to get this whole project documented and organized before we define these guidelines.
 * But if you made improvements, please keep the same look and feel of the code.
 
-### Who do I talk to? ###
+### Contact ###
 
-* Fredrik Eriksson (laz@laz.se)
+* casual@laz.se
 
 
-### license
+### License
 Our intention is that everything in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT),
 with the exception of stuff under [thirdparty](/thirdparty/readme.md), which has their own licenses.
 
 We (think we) show this by the file [licence.md](/license.md). If this is not enough legally, please enlighten us!
+

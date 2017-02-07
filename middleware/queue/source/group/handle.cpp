@@ -8,12 +8,9 @@
 #include "queue/common/environment.h"
 
 #include "common/internal/log.h"
+#include "common/message/handle.h"
 #include "common/trace.h"
 #include "common/error.h"
-
-
-// todo: temp
-#include <iostream>
 
 namespace casual
 {
@@ -30,21 +27,36 @@ namespace casual
             {
                namespace
                {
-                  template< typename M>
-                  void involved( State& state, M& message)
+                  namespace transaction
                   {
-                     common::message::queue::group::Involved involved;
-                     involved.process = common::process::handle();
-                     involved.trid = message.trid;
+                     template< typename M>
+                     void involved( State& state, M& message)
+                     {
+                        if( ! common::range::find( state.involved, message.trid))
+                        {
+                           auto involved = common::message::transaction::resource::external::involved::create( message);
 
-                     common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), involved);
-                  }
+                           common::communication::ipc::blocking::send(
+                                 common::communication::ipc::transaction::manager::device(),
+                                 involved);
+                        }
+                     }
+
+                     template< typename M>
+                     void done( State& state, M& message)
+                     {
+                        common::range::trim( state.involved, common::range::remove( state.involved, message.trid));
+                     }
+
+
+                  } // transaction
+
 
                   namespace pending
                   {
                      void replies( State& state, const common::transaction::ID& trid)
                      {
-                        Trace trace{ "queue::handle::pending"};
+                        Trace trace{ "queue::handle::local::pending::replies"};
 
 
                         auto pending = state.pending.commit( trid);
@@ -177,10 +189,15 @@ namespace casual
             {
                void Request::operator () ( message_type& message)
                {
-                  Trace trace{ "queue::handle::enqueue::request"};
+                  Trace trace{ "queue::handle::enqueue::Request"};
 
                   try
                   {
+                     //
+                     // Make sure we've got the quid.
+                     //
+                     message.queue =  m_state.queuebase.quid( message);
+
                      auto reply = m_state.queuebase.enqueue( message);
                      reply.correlation = message.correlation;
 
@@ -188,7 +205,7 @@ namespace casual
 
                      if( message.trid)
                      {
-                        local::involved( m_state, message);
+                        local::transaction::involved( m_state, message);
 
                         common::communication::ipc::blocking::send( message.process.queue, reply);
                      }
@@ -243,7 +260,7 @@ namespace casual
                         //
                         if( ! reply.message.empty() && message.trid)
                         {
-                           local::involved( state, message);
+                           local::transaction::involved( state, message);
                         }
 
                         common::communication::ipc::blocking::send( message.process.queue, reply);
@@ -261,6 +278,13 @@ namespace casual
 
                void Request::operator () ( message_type& message)
                {
+                  Trace trace{ "queue::handle::dequeue::Request"};
+
+                  //
+                  // Make sure we've got the quid.
+                  //
+                  message.queue =  m_state.queuebase.quid( message);
+
                   request( m_state, message);
                }
 
@@ -287,6 +311,32 @@ namespace casual
 
             } // dequeue
 
+            namespace peek
+            {
+               namespace information
+               {
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "queue::handle::peek::information::Request"};
+
+                     local::ipc::blocking::send( message.process.queue, m_state.queuebase.peek( message));
+
+                  }
+
+               } // information
+
+               namespace messages
+               {
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "queue::handle::peek::information::Request"};
+
+                     local::ipc::blocking::send( message.process.queue, m_state.queuebase.peek( message));
+                  }
+               } // messages
+
+            } // peek
+
             namespace transaction
             {
                namespace commit
@@ -295,9 +345,11 @@ namespace casual
                   {
                      Trace trace{ "queue::handle::transaction::commit::Request"};
 
-                     common::message::transaction::resource::commit::Reply reply;
-                     reply.correlation = message.correlation;
+                     local::transaction::done( m_state, message);
+
+                     auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
+                     reply.resource = message.resource;
                      reply.trid = message.trid;
                      reply.state = XA_OK;
 
@@ -321,15 +373,34 @@ namespace casual
                   }
                }
 
+               namespace prepare
+               {
+
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "queue::handle::transaction::prepare::Request"};
+
+                     auto reply = common::message::reverse::type( message);
+                     reply.process = common::process::handle();
+                     reply.resource = message.resource;
+                     reply.trid = message.trid;
+                     reply.state = XA_OK;
+
+                     local::ipc::blocking::send( common::communication::ipc::transaction::manager::device(), reply);
+                  }
+               }
+
                namespace rollback
                {
                   void Request::operator () ( message_type& message)
                   {
                      Trace trace{ "queue::handle::transaction::rollback::Request"};
 
-                     common::message::transaction::resource::rollback::Reply reply;
-                     reply.correlation = message.correlation;
+                     local::transaction::done( m_state, message);
+
+                     auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
+                     reply.resource = message.resource;
                      reply.trid = message.trid;
                      reply.state = XA_OK;
 
@@ -352,11 +423,57 @@ namespace casual
                      m_state.persist( std::move( reply), { message.process.queue});
                   }
                }
-            }
+            } // transaction
 
+            namespace restore
+            {
+               void Request::operator () ( message_type& message)
+               {
+                  Trace trace{ "queue::handle::restore::Request"};
 
+                  auto reply = common::message::reverse::type( message);
+
+                  auto send_reply = common::scope::execute( [&](){
+                     local::ipc::blocking::send( message.process.queue, reply);
+                  });
+
+                  reply.affected = common::range::transform( message.queues, [&]( Queue::id_type queue){
+                     common::message::queue::restore::Reply::Affected result;
+
+                     result.queue = queue;
+                     result.restored = m_state.queuebase.restore( queue);
+                     return result;
+                  });
+
+                  //
+                  // Make sure pending get a crack at the restored messages.
+                  //
+                  local::pending::replies( m_state, common::transaction::ID{});
+               }
+
+            } // restore
 
          } // handle
+
+         handle::dispatch_type handler( State& state)
+         {
+            return {
+               handle::dead::Process{ state},
+               handle::enqueue::Request{ state},
+               handle::dequeue::Request{ state},
+               handle::dequeue::forget::Request{ state},
+               handle::transaction::commit::Request{ state},
+               handle::transaction::prepare::Request{ state},
+               handle::transaction::rollback::Request{ state},
+               handle::information::queues::Request{ state},
+               handle::information::messages::Request{ state},
+               handle::peek::information::Request{ state},
+               handle::peek::messages::Request{ state},
+               handle::restore::Request{ state},
+               common::message::handle::Shutdown{},
+            };
+         }
+
       } // server
    } // queue
 } // casual

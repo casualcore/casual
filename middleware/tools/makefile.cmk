@@ -69,26 +69,23 @@ target = LinkExecutable( 'bin/casual-service-describe',
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-service-example',
-   [ Compile( 'source/service/example/main.cpp')],
-   [ 
-    common_a,
-    'casual-common', 
-    'casual-sf',
-    'casual-xatmi',
-    ])
 
-install_bin.append( target)
+#
+# TODO: if we keep the python implementation we need to package python "correct"?
+#
+install_bin.append( 'log/casual-log')
+install_bin.append( 'log/casual-log-format')
+install_bin.append( 'log/color.py')
 
-
-
-target = LinkExecutable( 'bin/casual-log-format',
-   [ Compile( 'log/source/format.cpp')],
-   [ 'casual-common'])
-
-install_bin.append( target)
+#target = LinkExecutable( 'bin/casual-log-format',
+#   [ Compile( 'log/source/format.cpp')],
+#   [ 'casual-common'])
+#
+# install_bin.append( target)
 
 
 Install( install_bin, '$(CASUAL_HOME)/bin')
+
+
 
 

@@ -10,6 +10,8 @@
 
 #include "common/platform.h"
 #include "common/uuid.h"
+#include "common/process.h"
+
 
 namespace casual
 {
@@ -17,12 +19,29 @@ namespace casual
 	{
 		namespace environment
 		{
+
 			namespace variable
 			{
+
+			   //!
+			   //! Exposes the mutex that is used to get read and writes to environment variables
+			   //! thread safe.
+			   //!
+			   //! There are a few other places that uses and manipulates environment variables, and
+			   //! we need those to lock and use the same mutex.
+			   //!
+			   //! Known places:
+			   //!
+			   //! - chronology::internal::format  localtime_r uses TZ
+			   //! - process::spawn "forwards" the current environment variables to the child process
+			   //!
+			   //! @return
+			   std::mutex& mutex();
+
 				bool exists( const std::string& name);
 
 				//!
-				//! @return value of invironment variable with @p name
+				//! @return value of environment variable with @p name
 				//! @throws exception::EnvironmentVariableNotFound if not found
 				//!
 				std::string get( const std::string& name);
@@ -53,6 +72,13 @@ namespace casual
 				   const std::string& string = converter.str();
 				   set( name, string);
 				}
+
+				namespace process
+            {
+				   common::process::Handle get( const std::string& name);
+				   void set( const std::string& name, const common::process::Handle& process);
+
+            } // process
 
 				namespace name
             {
@@ -126,6 +152,7 @@ namespace casual
 			}
 
 
+			/*
 			namespace file
 			{
 
@@ -136,9 +163,8 @@ namespace casual
 			   //! TODO: some of these should be in casual::domain
 			   std::string configuration();
 
-			   // TODO: change name
-			   std::string installedConfiguration();
 			}
+			*/
 
 
 

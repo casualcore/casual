@@ -23,6 +23,10 @@ namespace casual
 
          void State::Pending::dequeue( const common::message::queue::dequeue::Request& request)
          {
+            Trace trace{ "queue::group::State::Pending::dequeue"};
+
+            log << "request: " << request << '\n';
+
             if( request.block)
             {
                requests.push_back( request);
@@ -117,18 +121,7 @@ namespace casual
          {
             void pump( group::State& state)
             {
-               common::message::dispatch::Handler handler{
-                  handle::dead::Process{ state},
-                  handle::enqueue::Request{ state},
-                  handle::dequeue::Request{ state},
-                  handle::dequeue::forget::Request{ state},
-                  handle::transaction::commit::Request{ state},
-                  handle::transaction::rollback::Request{ state},
-                  handle::information::queues::Request{ state},
-                  handle::information::messages::Request{ state},
-                  common::message::handle::Shutdown{},
-               };
-
+               auto handler = group::handler( state);
 
                common::communication::ipc::Helper ipc;
 
@@ -152,7 +145,7 @@ namespace casual
                      //
 
                      while( handler( ipc.non_blocking_next()) &&
-                           state.persistent.size() < common::platform::batch::transaction)
+                           state.persistent.size() < common::platform::batch::transaction())
                      {
                         ;
                      }
@@ -228,14 +221,18 @@ namespace casual
                //auto removed = common::range::difference( existing, added);
 
 
+
+
                //
                // Send all our queues to queue-broker
                //
-               common::message::queue::Information information;
-               information.process = common::process::handle();
-               information.queues = m_state.queuebase.queues();
+               {
+                  common::message::queue::Information information;
+                  information.process = common::process::handle();
+                  information.queues = m_state.queuebase.queues();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+                  common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+               }
             }
          }
 

@@ -1,10 +1,6 @@
-/*
- * server.cpp
- *
- *  Created on: 22 apr 2015
- *      Author: 40043280
- */
-
+//!
+//! casual
+//!
 
 #include "common/message/service.h"
 
@@ -14,6 +10,39 @@ namespace casual
    {
       namespace message
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace output
+               {
+                  void base_service( std::ostream& out, const service::Base& value)
+                  {
+                     out << "name: " << value.name
+                           << ", category: " << value.category
+                           << ", mode: " << value.transaction;
+                  }
+               } // output
+            } // <unnamed>
+         } // local
+
+         namespace service
+         {
+            std::ostream& operator << ( std::ostream& out, const Base& value)
+            {
+               out << "{ ";
+               local::output::base_service( out, value);
+               return out << '}';
+            }
+         } // service
+         std::ostream& operator << ( std::ostream& out, const Service& value)
+         {
+            out << "{ ";
+            local::output::base_service( out, value);
+            return out << ", timeout: " << value.timeout.count() << '}';
+;
+         }
+
          namespace service
          {
 
@@ -24,16 +53,48 @@ namespace casual
                      << '}';
             }
 
+
+            std::ostream& operator << ( std::ostream& out, Advertise::Directive value)
+            {
+               switch( value)
+               {
+                  case Advertise::Directive::add: return out << "add";
+                  case Advertise::Directive::remove: return out << "remove";
+                  case Advertise::Directive::replace: return out << "replace";
+               }
+               return out << "unknown";
+            }
+
             std::ostream& operator << ( std::ostream& out, const Advertise& message)
             {
                return out << "{ process: " << message.process
+                     << ", directive: " << message.directive
                      << ", services: " << range::make( message.services)
                      << '}';
             }
 
-
             namespace lookup
             {
+               std::ostream& operator << ( std::ostream& out, const Request::Context& value)
+               {
+                  switch( value)
+                  {
+                     case Request::Context::forward: return out << "forward";
+                     case Request::Context::gateway: return out << "gateway";
+                     case Request::Context::no_reply: return out << "no_reply";
+                     case Request::Context::regular: return out << "regular";
+                  }
+                  return out << "unknown";
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Request& value)
+               {
+                  return out << "{ process: " << value.process
+                        << ", requested: " << value.requested
+                        << ", context: " << value.context
+                        << '}';
+
+               }
 
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {

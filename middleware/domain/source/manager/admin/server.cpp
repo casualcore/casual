@@ -6,6 +6,7 @@
 #include "domain/manager/admin/server.h"
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/handle.h"
+#include "domain/manager/persistent.h"
 #include "domain/transform.h"
 
 
@@ -193,6 +194,36 @@ namespace casual
                         reply.flags);
                   }
 
+                  void persist_configuration( TPSVCINFO *service_info, manager::State& state)
+                  {
+                     casual::sf::service::reply::State reply;
+
+                     try
+                     {
+                        auto service_io = local::server->createService( service_info);
+
+
+                        service_io.call(
+                              static_cast< void(*)( const manager::State&)>( persistent::state::save),
+                              state);
+
+                        reply = service_io.finalize();
+
+
+                     }
+                     catch( ...)
+                     {
+                        local::server->handleException( service_info, reply);
+                     }
+
+                     tpreturn(
+                        reply.value,
+                        reply.code,
+                        reply.data,
+                        reply.size,
+                        reply.flags);
+                  }
+
                }
             } // service
 
@@ -203,18 +234,23 @@ namespace casual
 
                result.services.emplace_back( ".casual.domain.state",
                      std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
-                     common::server::Service::Transaction::none);
+                     common::service::category::admin,
+                     common::service::transaction::Type::none);
 
                result.services.emplace_back( ".casual.domain.scale.instances",
                      std::bind( &service::scale_instances, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
-                     common::server::Service::Transaction::none);
+                     common::service::category::admin,
+                     common::service::transaction::Type::none);
 
                result.services.emplace_back( ".casual.domain.shutdown",
                      std::bind( &service::shutdown_domain, std::placeholders::_1, std::ref( state)),
-                     common::server::Service::Type::cCasualAdmin,
-                     common::server::Service::Transaction::none);
+                     common::service::category::admin,
+                     common::service::transaction::Type::none);
+
+               result.services.emplace_back( ".casual/domain/configuration/persist",
+                     std::bind( &service::persist_configuration, std::placeholders::_1, std::ref( state)),
+                     common::service::category::admin,
+                     common::service::transaction::Type::none);
 
                return result;
             }

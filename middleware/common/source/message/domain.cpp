@@ -24,6 +24,22 @@ namespace casual
             } // scale
             namespace process
             {
+               namespace connect
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ identification: " << value.identification
+                           << ", process: " << value.process
+                           << '}';
+                  }
+               } // connect
+               namespace termination
+               {
+                  std::ostream& operator << ( std::ostream& out, const Event& value)
+                  {
+                     return out << "{ death: " << value.death << '}';
+                  }
+               } // termination
 
                namespace lookup
                {
@@ -45,74 +61,6 @@ namespace casual
                } // lookup
 
             } // process
-
-            namespace configuration
-            {
-               namespace transaction
-               {
-                  std::ostream& operator << ( std::ostream& out, const Resource& value)
-                  {
-                     return out << "{ id: " << value.id
-                           << ", key: " << value.key
-                           << ", openinfo: " << value.openinfo
-                           << ", closeinfo: " << value.closeinfo
-                           << ", instances: " << value.instances
-                           << '}';
-                  }
-
-                  namespace resource
-                  {
-
-                     std::ostream& operator << ( std::ostream& out, const Reply& value)
-                     {
-                        return out << "{ process: " << value.process
-                              << ", resources: " << range::make( value.resources)
-                              << '}';
-                     }
-                  } // resource
-
-               } // transaction
-
-               namespace gateway
-               {
-
-                  std::ostream& operator << ( std::ostream& out, const Listener& value)
-                  {
-                     return out << "{ adress: " << value.address
-                           << '}';
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, Connection::Type value)
-                  {
-                     switch( value)
-                     {
-                        case Connection::Type::ipc: return out << "ipc";
-                        case Connection::Type::tcp: return out << "tcp";
-                        default: return out << "unknown";
-                     }
-
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, const Connection& value)
-                  {
-                     return out << "{ name: " << value.name
-                           << ", address: " << value.address
-                           << ", type: " << value.type
-                           << ", restart: " << value.restart
-                           << ", services: " << range::make( value.services)
-                           << '}';
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, const Reply& value)
-                  {
-                     return out << "{ listeners: " << range::make( value.listeners)
-                           << ", connections: " << range::make( value.connections)
-                           << '}';
-                  }
-               } // gateway
-
-            } // configuration
-
 
          } // domain
 

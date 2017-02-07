@@ -4,11 +4,13 @@
 
 #include "queue/broker/handle.h"
 #include "queue/common/log.h"
+#include "queue/broker/admin/server.h"
 
 #include "common/error.h"
 #include "common/exception.h"
 #include "common/process.h"
 #include "common/server/lifetime.h"
+#include "common/server/handle.h"
 
 
 
@@ -22,7 +24,7 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper device()
+            const common::communication::ipc::Helper& device()
             {
                static common::communication::ipc::Helper ipc{
                   common::communication::error::handler::callback::on::Terminate
@@ -39,6 +41,7 @@ namespace casual
                };
                return ipc;
             }
+
          } // ipc
 
          namespace handle
@@ -73,13 +76,39 @@ namespace casual
 
                   }
 
+                  namespace optional
+                  {
+                     template< typename D, typename M>
+                     bool send( D&& device, M&& message)
+                     {
+                        try
+                        {
+                           ipc::device().blocking_send( device, std::forward< M>( message));
+                           return true;
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           return false;
+                        }
+                     }
+                  } // optional
+
+                  template< typename D, typename M>
+                  void reply( D&& device, M&& message)
+                  {
+                     if( ! optional::send( std::forward< D>( device), std::forward< M>( message)))
+                     {
+                        common::log::error << "device [" << device << "] unavailable for reply - action: ignore\n";
+                     }
+                  }
+
+
+
                } // <unnamed>
             } // local
 
             namespace process
             {
-
-
                void Exit::operator () ( message_type& message)
                {
                   apply( message.death);
@@ -89,61 +118,9 @@ namespace casual
                {
                   Trace trace{ "handle::process::Exit"};
 
-                  {
-                     auto found = common::range::find_if( m_state.groups, [=]( const State::Group& g){
-                        return g.process.pid == exit.pid;
-                     });
+                  m_state.remove( exit.pid);
 
-                     if( found)
-                     {
-                        m_state.groups.erase( std::begin( found));
-                     }
-                     else
-                     {
-                        // error?
-                     }
-                  }
-
-                  //
-                  // Remove all queues for the group
-                  //
-                  {
-
-                     auto predicate = [=]( decltype( *m_state.queues.begin())& value){
-                        return value.second.process.pid == exit.pid;
-                     };
-
-                     auto range = common::range::make( m_state.queues);
-
-                     while( range)
-                     {
-                        range = common::range::find_if( range, predicate);
-
-                        if( range)
-                        {
-                           m_state.queues.erase( std::begin( range));
-                           range = common::range::make( m_state.queues);
-                        }
-                     }
-                  }
-                  //
-                  // Invalidate xa-requests
-                  //
-                  {
-                     for( auto& corr : m_state.correlation)
-                     {
-                        for( auto& reqeust : corr.second.requests)
-                        {
-                           if( reqeust.group.pid == exit.pid && reqeust.stage <= State::Correlation::Stage::pending)
-                           {
-                              reqeust.stage = State::Correlation::Stage::error;
-                           }
-                        }
-                     }
-                  }
                }
-
-
             } // process
 
             namespace shutdown
@@ -169,16 +146,53 @@ namespace casual
                {
                   Trace trace{ "handle::lookup::Request"};
 
+                  auto reply = common::message::reverse::type( message);
+
+
+                  auto send_reply = common::scope::execute( [&](){
+                     local::reply( message.process.queue, reply);
+                  });
+
                   auto found =  common::range::find( m_state.queues, message.name);
 
-                  if( found)
+                  if( found && ! found->second.empty())
                   {
-                     ipc::device().blocking_send( message.process.queue, found->second);
+                     log << "queue found: " << common::range::make( found->second) << '\n';
+
+                     auto& queue = found->second.front();
+                     reply.queue = queue.queue;
+                     reply.process = queue.process;
+                     reply.order = queue.order;
                   }
                   else
                   {
-                     static common::message::queue::lookup::Reply reply;
-                     ipc::device().blocking_send( message.process.queue, reply);
+                     //
+                     // TODO: Check if we have already have pending request for this queue.
+                     // If so, we don't need to ask again.
+                     // not sure if the semantics holds, so I don't implement it until we know.
+                     //
+
+                     //
+                     // We didn't find the queue, let's ask our neighbors.
+                     //
+
+                     common::message::gateway::domain::discover::Request request;
+                     request.correlation = message.correlation;
+                     request.domain = common::domain::identity();
+                     request.process = common::process::handle();
+                     request.queues.push_back(  message.name);
+
+                     if( local::optional::send( common::communication::ipc::gateway::manager::optional::device(), std::move( request)))
+                     {
+                        m_state.pending.push_back( std::move( message));
+
+                        log << "pending request added to pending: " << common::range::make( m_state.pending) << '\n';
+
+                        //
+                        // We don't send reply, we'll do it when we get the reply from the gateway.
+                        //
+                        send_reply.release();
+                     }
                   }
                }
 
@@ -191,10 +205,11 @@ namespace casual
 
                   for( auto&& queue : message.queues)
                   {
-                     if( ! m_state.queues.emplace( queue.name, common::message::queue::lookup::Reply{ message.process, queue.id}).second)
-                     {
-                        common::log::error << "multiple instances of queue: " << queue.name << " - action: keeping the first one" << std::endl;
-                     }
+                     auto& instances = m_state.queues[ queue.name];
+
+                     instances.emplace_back( message.process, queue.id);
+
+                     common::range::stable_sort( instances);
                   }
 
                   auto found = common::range::find( m_state.groups, message.process);
@@ -214,157 +229,127 @@ namespace casual
                }
             } // connect
 
-            namespace group
+
+            namespace domain
             {
-               void Involved::operator () ( message_type& message)
+               void Advertise::operator () ( message_type& message)
                {
-                  auto& involved = m_state.involved[ message.trid];
+                  Trace trace{ "handle::domain::Advertise"};
 
-                  //
-                  // Check if we got the involvement of the group already.
-                  //
-                  auto found = common::range::find( involved, message.process);
+                  log << "message: " << message << '\n';
 
-                  if( ! found)
+                  m_state.update( message);
+
+                  using directive_type = decltype( message.directive);
+
+                  if( common::compare::any( message.directive, { directive_type::add, directive_type::replace}))
                   {
-                     involved.emplace_back( message.process);
+                     //
+                     // Queues has been added, we check if there are any pending
+                     //
+
+                     auto split = common::range::stable_partition( m_state.pending,[&]( decltype( m_state.pending.front()) p){
+
+                        return ! common::range::any_of( message.queues, [&]( decltype( message.queues.front()) q){
+                           return q.name == p.name;});
+                     });
+
+                     common::traits::concrete::type_t< decltype( m_state.pending)> pending;
+
+                     common::range::move( std::get< 1>( split), pending);
+                     common::range::trim( m_state.pending, std::get< 0>( split));
+
+                     log << "pending to lookup: " << common::range::make( pending) << '\n';
+
+                     common::range::for_each( pending, [&]( decltype( pending.front()) pending){
+                        lookup::Request{ m_state}( pending);
+                     });
                   }
                }
-            } // group
 
 
-            namespace transaction
-            {
-
-               template< typename message_type>
-               void request( State& state, message_type& message)
+               namespace discover
                {
-                  auto found = common::range::find( state.involved, message.trid);
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "handle::domain::discover::Request"};
 
-                  auto sendError = [&]( int error_state){
                      auto reply = common::message::reverse::type( message);
-                     reply.state = error_state;
-                     reply.trid = message.trid;
-                     reply.resource = message.resource;
+
                      reply.process = common::process::handle();
+                     reply.domain = common::domain::identity();
+
+                     for( auto& queue : message.queues)
+                     {
+                        if( common::range::find( m_state.queues, queue))
+                        {
+                           reply.queues.emplace_back( queue);
+                        }
+                     }
 
                      ipc::device().blocking_send( message.process.queue, reply);
-                  };
-
-                  if( found)
-                  {
-                     try
-                     {
-                        //
-                        // There are involved groups, send commit request to them...
-                        //
-                        auto request = message;
-                        request.process = common::process::handle();
-                        local::send( state, found->second, request);
-
-
-                        //
-                        // Make sure we correlate the coming replies.
-                        //
-                        log << "forward request to groups - correlate response to: " << message.process << "\n";
-
-                        state.correlation.emplace(
-                              std::piecewise_construct,
-                              std::forward_as_tuple( std::move( found->first)),
-                              std::forward_as_tuple( message.process, message.correlation, std::move( found->second)));
-
-                        state.involved.erase( std::begin( found));
-
-                     }
-                     catch( ...)
-                     {
-                        common::error::handler();
-                        sendError( XAER_RMFAIL);
-                     }
-                  }
-                  else
-                  {
-                     log << "XAER_NOTA - trid: " << message.trid << " could not be found\n";
-                     sendError( XAER_NOTA);
-                  }
-
-               }
-
-               template< typename message_type>
-               void reply( State& state, message_type&& message)
-               {
-                  auto found = common::range::find( state.correlation, message.trid);
-
-                  if( ! found)
-                  {
-                     common::log::error << "failed to correlate reply - trid: " << message.trid << " process: " << message.process << " - action: discard\n";
-                     return;
-                  }
-
-                  if( message.state == XA_OK)
-                  {
-                     found->second.stage( message.process, State::Correlation::Stage::replied);
-                  }
-                  else
-                  {
-                     found->second.stage( message.process, State::Correlation::Stage::error);
-                  }
-
-                  if( found->second.replied())
-                  {
-                     //
-                     // All groups has responded, reply to RM-proxy
-                     //
-                     message_type reply( message);
-                     reply.process = common::process::handle();
-                     reply.correlation = found->second.reply_correlation;
-                     reply.state = found->second.stage() == State::Correlation::Stage::replied ? XA_OK : XAER_RMFAIL;
-
-                     log << "all groups has responded - send reply to RM: " << found->second.caller << std::endl;
-
-                     ipc::device().blocking_send( found->second.caller.queue, reply);
-
-                     //
-                     // We're done with the correlation.
-                     //
-                     state.correlation.erase( std::begin( found));
-                  }
-
-               }
-
-               namespace commit
-               {
-                  void Request::operator () ( message_type& message)
-                  {
-
-                     request( m_state, message);
-
                   }
 
                   void Reply::operator () ( message_type& message)
                   {
-                     reply( m_state, message);
+                     Trace trace{ "handle::domain::discover::Reply"};
+
+                     //
+                     // outbound has already advertised the queues (if any), so we have that handled
+                     // check if there are any pending lookups for this reply
+                     //
+
+                     auto found = common::range::find_if( m_state.pending, [&]( const common::message::queue::lookup::Request& r){
+                        return r.correlation == message.correlation;
+                     });
+
+                     if( found)
+                     {
+                        auto request = std::move( *found);
+                        m_state.pending.erase( std::begin( found));
+
+                        auto reply = common::message::reverse::type( *found);
+
+                        auto found_queue = common::range::find( m_state.queues, request.name);
+
+                        if( found_queue && ! found_queue->second.empty())
+                        {
+                           auto& queue = found_queue->second.front();
+                           reply.process = queue.process;
+                           reply.queue = queue.queue;
+                        }
+
+                        local::reply( request.process.queue, reply);
+                     }
+                     else
+                     {
+                        log << "no pending was found for discovery reply: " << message << '\n';
+                     }
                   }
-
-               } // commit
-
-               namespace rollback
-               {
-                  void Request::operator () ( message_type& message)
-                  {
-                     request( m_state, message);
-
-                  }
-
-                  void Reply::operator () ( message_type& message)
-                  {
-                     reply( m_state, message);
-                  }
-
-               } // commit
-            } // transaction
-
+               } // discover
+            } // domain
          } // handle
+
+         handle::dispatch_type handlers( State& state)
+         {
+            return {
+               broker::handle::process::Exit{ state},
+               broker::handle::connect::Request{ state},
+               broker::handle::shutdown::Request{ state},
+               broker::handle::lookup::Request{ state},
+               //broker::handle::peek::queue::Request{ m_state},
+               broker::handle::domain::Advertise{ state},
+               broker::handle::domain::discover::Request{ state},
+               broker::handle::domain::discover::Reply{ state},
+
+               common::server::handle::basic_admin_call{
+                  broker::admin::services( state),
+                  ipc::device().error_handler()},
+               common::message::handle::ping(),
+            };
+         }
+
       } // broker
    } // queue
 } // casual
+

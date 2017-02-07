@@ -1,8 +1,5 @@
 //!
-//! database.h
-//!
-//! Created on: Jul 24, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SQL_DATABASE_H_
@@ -127,6 +124,14 @@ namespace sql
          return parameter_bind( statement, index, time);
       }
 
+      template< typename T>
+      inline typename std::enable_if< std::is_enum< T>::value, bool>::type
+      parameter_bind( sqlite3_stmt* statement, int column, T value)
+      {
+         return parameter_bind( statement, column, static_cast< casual::common::traits::underlying_type_t< T>>( value));
+      }
+
+
 
 
       inline void column_get( sqlite3_stmt* statement, int column, long& value)
@@ -172,7 +177,7 @@ namespace sql
          const auto value_size = sizeof( T) * array_size;
 
          auto blob = sqlite3_column_blob( statement, column);
-         auto blob_size = sqlite3_column_bytes( statement, column);
+         std::size_t blob_size = sqlite3_column_bytes( statement, column);
 
          memcpy( value, blob, value_size > blob_size ? blob_size : value_size);
       }
@@ -187,6 +192,17 @@ namespace sql
             std::chrono::microseconds us{ sqlite3_column_int64( statement, column)};
             value = time_point( us);
          }
+      }
+
+      template< typename T>
+      inline typename std::enable_if< std::is_enum< T>::value, void>::type
+      column_get( sqlite3_stmt* statement, int column, T& value)
+      {
+         casual::common::traits::underlying_type_t< T> enum_value;
+         column_get( statement, column, enum_value);
+         value = static_cast< T>( enum_value);
+
+         // column_get( statement, column, static_cast< enum_type&>( value));
       }
 
       struct Row

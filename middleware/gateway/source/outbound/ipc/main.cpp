@@ -104,6 +104,7 @@ namespace casual
             {
                std::string domain_path;
                std::string domain_file;
+               std::size_t order = 0;
             };
 
 
@@ -112,7 +113,6 @@ namespace casual
 
                using outbound_device_type = communication::ipc::outbound::Device;
                using inbound_device_type = communication::ipc::inbound::Device;
-
 
                struct configuration_type
                {
@@ -132,6 +132,11 @@ namespace casual
                   }
 
                   outbound_device_type outbound() { return { m_outbound};}
+
+                  static std::vector< std::string> address( const outbound_device_type& device)
+                  {
+                     return { std::to_string( device.connector().id())};
+                  }
 
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
                   {
@@ -182,9 +187,6 @@ namespace casual
 
                   inbound_device_type& inbound() { return m_inbound;}
 
-                  std::vector< std::string> address() const { return {};}
-
-
                   configuration_type configuration() const
                   {
                      return { m_process.queue};
@@ -225,6 +227,7 @@ int main( int argc, char **argv)
       {
          casual::common::Arguments parser{{
             casual::common::argument::directive( { "-a", "--address"}, "path to remote domain home", settings.domain_path),
+            casual::common::argument::directive( { "-o", "--order"}, "order of the outbound connector", settings.order),
             casual::common::argument::directive( { "--domain-file"}, "only to make unittest simple", settings.domain_file)
          }};
          parser.parse( argc, argv);

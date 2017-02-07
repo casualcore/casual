@@ -97,7 +97,7 @@ namespace casual
             template< typename T>
             static std::unique_ptr< base_task> make( T&& task)
             {
-               return common::make::unique< basic_task< T>>( std::forward< T>( task));
+               return std::make_unique< basic_task< T>>( std::forward< T>( task));
             }
 
             std::unique_ptr< base_task> m_holder;

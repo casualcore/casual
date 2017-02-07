@@ -84,27 +84,12 @@ namespace casual
                {
                   trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
 
-                  auto& state = server::Context::instance().state();
-
-                  state.server_done = arguments.server_done;
-
-
-                  std::vector< message::Service> services;
-
-                  for( auto& service : arguments.services)
-                  {
-                     auto name = service.origin;
-                     services.emplace_back( name, service.type, service::transaction::mode( service.transaction));
-
-                     state.physical_services.push_back( std::move( service));
-                     state.services.emplace( name, state.physical_services.back());
-                  }
-
+                  server::Context::instance().configure( arguments);
 
                   //
                   // Connect to casual
                   //
-                  m_policy.connect( std::move( services), arguments.resources);
+                  m_policy.configure( arguments);
 
                   //
                   // Call tpsrvinit
@@ -420,7 +405,7 @@ namespace casual
                   static void reply( message::service::call::Reply& reply, const server::State::jump_t& jump)
                   {
                      reply.code = jump.state.code;
-                     reply.error = 0;
+                     reply.error = jump.state.value == TPSUCCESS ? 0 : TPESVCFAIL;
 
                      if( jump.buffer.data != nullptr)
                      {
@@ -444,6 +429,8 @@ namespace casual
                   {
                      static TPSVCINFO information( message::service::call::callee::Request& message)
                      {
+                        trace::internal::Scope trace{ "server::handle::basic_call::service::information"};
+
                         TPSVCINFO result;
 
                         //
@@ -480,7 +467,7 @@ namespace casual
                //!
                struct Default
                {
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void configure( server::Arguments& arguments);
 
                   void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 
@@ -500,7 +487,7 @@ namespace casual
                   Admin( communication::error::type handler);
 
 
-                  void connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources);
+                  void configure( server::Arguments& arguments);
 
                   void reply( platform::ipc::id::type id, message::service::call::Reply& message);
 

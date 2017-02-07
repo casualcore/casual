@@ -16,7 +16,7 @@ namespace casual
 
          TEST( common_service_header, clear)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             header::clear();
 
@@ -25,7 +25,7 @@ namespace casual
 
          TEST( common_service_header, empty__replace_add__expect_exists)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             header::clear();
 
@@ -36,7 +36,7 @@ namespace casual
 
          TEST( common_service_header, empty__replace_add__get_value)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             header::clear();
 
@@ -47,7 +47,7 @@ namespace casual
 
          TEST( common_service_header, empty__replace_add__get_int_value)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             header::clear();
 
@@ -58,7 +58,7 @@ namespace casual
 
          TEST( common_service_header, empty__replace_add__get_value_with_default__expect_actual_value)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             header::clear();
 
@@ -69,7 +69,7 @@ namespace casual
 
          TEST( common_service_header, empty__replace_add__get_value_with_default__expect_default_value)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             header::clear();
 

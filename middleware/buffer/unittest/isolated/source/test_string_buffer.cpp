@@ -1,8 +1,5 @@
 //
-// test_casual_string_buffer.cpp
-//
-//  Created on: 3 nov 2013
-//      Author: Kristone
+// casual
 //
 
 #include <gtest/gtest.h>

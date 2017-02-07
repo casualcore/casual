@@ -19,9 +19,11 @@
 #include "common/exception.h"
 #include "common/internal/log.h"
 
-#include "config/queue.h"
+#include "configuration/message/transform.h"
+#include "configuration/queue.h"
 
 #include <fstream>
+
 
 namespace casual
 {
@@ -57,15 +59,13 @@ namespace casual
 
                   struct Queue
                   {
-                     common::message::queue::Queue operator() ( const config::queue::Queue& value) const
+                     common::message::queue::Queue operator() ( const common::message::domain::configuration::queue::Queue& value) const
                      {
                         common::message::queue::Queue result;
 
                         result.name = value.name;
-                        if( ! value.retries.empty())
-                        {
-                           result.retries = std::stoul( value.retries);
-                        }
+                        result.retries = value.retries;
+
                         return result;
                      }
                   };
@@ -76,20 +76,20 @@ namespace casual
                {
                   using broker::handle::Base::Base;
 
-                  State::Group operator () ( const config::queue::Group& group)
+                  State::Group operator () ( const common::message::domain::configuration::queue::Group& group)
                   {
-                     State::Group queueGroup;
-                     queueGroup.name = group.name;
-                     queueGroup.queuebase = group.queuebase;
+                     State::Group result;
+                     result.name = group.name;
+                     result.queuebase = group.queuebase;
 
-                     queueGroup.process.pid = casual::common::process::spawn(
+                     result.process.pid = casual::common::process::spawn(
                         m_state.group_executable,
                         { "--queuebase", group.queuebase, "--name", group.name});
 
                      common::message::queue::connect::Request request;
                      ipc::device().blocking_receive( request);
 
-                     queueGroup.process.queue = request.process.queue;
+                     result.process.queue = request.process.queue;
 
                      common::message::queue::connect::Reply reply;
                      reply.name = group.name;
@@ -98,23 +98,23 @@ namespace casual
 
                      ipc::device().blocking_send( request.process.queue, reply);
 
-                     return queueGroup;
+                     return result;
                   }
 
                };
 
-               void startup( State& state, config::queue::Domain config)
+               void startup( State& state, common::message::domain::configuration::Domain&& config)
                {
-                  casual::common::range::transform( config.groups, state.groups, Startup( state));
+                  casual::common::range::transform( config.queue.groups, state.groups, Startup( state));
 
                   //
                   // Make sure all groups are up and running before we continue
                   //
                   {
-                     casual::common::message::dispatch::Handler handler{
-                        broker::handle::connect::Request{ state}};
+                     auto handler = ipc::device().handler(
+                        broker::handle::connect::Request{ state});
 
-                     auto filter = handler.types();
+                     const auto filter = handler.types();
 
                      while( ! common::range::all_of( state.groups, std::mem_fn(&State::Group::connected)))
                      {
@@ -136,22 +136,7 @@ namespace casual
             {
                log << "qeueue broker start" << std::endl;
 
-               casual::common::message::dispatch::Handler handler{
-                  broker::handle::process::Exit{ state},
-                  broker::handle::connect::Request{ state},
-                  broker::handle::shutdown::Request{ state},
-                  broker::handle::lookup::Request{ state},
-                  broker::handle::group::Involved{ state},
-                  broker::handle::transaction::commit::Request{ state},
-                  broker::handle::transaction::commit::Reply{ state},
-                  broker::handle::transaction::rollback::Request{ state},
-                  broker::handle::transaction::rollback::Reply{ state},
-                  //broker::handle::peek::queue::Request{ m_state},
-                  common::server::handle::basic_admin_call{
-                     broker::admin::services( state),
-                     ipc::device().error_handler()},
-                  common::message::handle::ping(),
-               };
+               auto handler = broker::handlers( state);
 
                common::log::information << "casual-queue-broker is on-line" << std::endl;
 
@@ -201,15 +186,15 @@ namespace casual
 
             auto found = common::range::find( state.queues, queue);
 
-            if( found)
+            if( found && ! found->second.empty())
             {
                common::message::queue::information::messages::Request request;
                request.process = common::process::handle();
-               request.qid = found->second.queue;
+               request.qid = found->second.front().queue;
 
                ipc::device().blocking_receive(
                      result,
-                     ipc::device().blocking_send( found->second.process.queue, request));
+                     ipc::device().blocking_send( found->second.front().process.queue, request));
             }
 
             return result;
@@ -230,14 +215,28 @@ namespace casual
          //
          common::process::instance::connect( common::process::instance::identity::queue::broker());
 
+         common::environment::variable::process::set(
+               common::environment::variable::name::ipc::queue::broker(),
+               common::process::handle());
 
-         if( ! settings.configuration.empty())
+
+         //
+         // Register for process termination events
+         //
+         common::process::instance::termination::registration( common::process::handle());
+
+
          {
-            broker::local::startup( m_state, config::queue::get( settings.configuration));
-         }
-         else
-         {
-            broker::local::startup( m_state, config::queue::get());
+            //
+            // We ask the domain manager for configuration
+            //
+
+            common::message::domain::configuration::Request request;
+            request.process = common::process::handle();
+
+            broker::local::startup( m_state,
+                  common::communication::ipc::call(
+                        common::communication::ipc::domain::manager::device(), request).domain);
          }
 
       }

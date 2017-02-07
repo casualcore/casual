@@ -7,6 +7,7 @@
 
 #include "common/platform.h"
 #include "common/transaction/id.h"
+#include "common/service/type.h"
 
 #include "common/marshal/marshal.h"
 
@@ -29,10 +30,8 @@ namespace casual
             UTILITY_BASE = 500,
             flush_ipc, // dummy message used to flush queue (into cache)
             poke,
-            shutdownd_request,
-            shutdownd_reply,
-            forward_connect_request,
-            forward_connect_reply,
+            shutdown_request,
+            shutdown_reply,
             delay_message,
             inbound_ipc_connect,
 
@@ -41,8 +40,6 @@ namespace casual
             process_lookup_reply,
 
             DOMAIN_BASE = 1000,
-            domain_discover_request,
-            domain_discover_reply,
             domain_scale_executable,
             domain_process_connect_request,
             domain_process_connect_reply,
@@ -50,10 +47,13 @@ namespace casual
             domain_process_termination_event,
             domain_process_lookup_request,
             domain_process_lookup_reply,
-            domain_configuration_transaction_resource_request = DOMAIN_BASE + 100,
-            domain_configuration_transaction_resource_reply,
-            domain_configuration_gateway_request,
-            domain_configuration_gateway_reply,
+
+            domain_configuration_request = DOMAIN_BASE + 200,
+            domain_configuration_reply,
+            domain_server_configuration_request,
+            domain_server_configuration_reply,
+
+
 
             // Server
             SERVER_BASE = 2000,
@@ -66,7 +66,6 @@ namespace casual
             // Service
             SERVICE_BASE = 3000,
             service_advertise,
-            service_unadvertise,
             service_name_lookup_request,
             service_name_lookup_reply,
             service_call = SERVICE_BASE + 100,
@@ -104,9 +103,11 @@ namespace casual
             transaction_resource_rollback_request,
             transaction_resource_rollback_reply,
 
+            transaction_resource_lookup_request = TRANSACTION_BASE + 300,
+            transaction_resource_lookup_reply,
 
             transaction_resource_involved = TRANSACTION_BASE + 400,
-            transaction_domain_resource_involved,
+            transaction_external_resource_involved,
 
             transaction_resource_id_request = TRANSACTION_BASE + 500,
             transaction_resource_id_reply,
@@ -121,35 +122,63 @@ namespace casual
             queue_dequeue_reply,
             queue_dequeue_forget_request,
             queue_dequeue_forget_reply,
-            queue_information = QUEUE_BASE + 300,
+
+            queue_peek_information_request =  QUEUE_BASE + 300,
+            queue_peek_information_reply,
+            queue_peek_messages_request,
+            queue_peek_messages_reply,
+
+            queue_information = QUEUE_BASE + 400,
             queue_queues_information_request,
             queue_queues_information_reply,
             queue_queue_information_request,
             queue_queue_information_reply,
-            queue_lookup_request = QUEUE_BASE + 400,
-            queue_lookup_reply,
-            queue_group_involved = QUEUE_BASE + 500,
 
+            queue_lookup_request = QUEUE_BASE + 500,
+            queue_lookup_reply,
+
+            queue_restore_request = QUEUE_BASE + 600,
+            queue_restore_reply,
 
             GATEWAY_BASE = 7000,
             gateway_manager_listener_event,
             gateway_manager_tcp_connect,
+            gateway_outbound_configuration_request,
+            gateway_outbound_configuration_reply,
             gateway_outbound_connect,
             gateway_inbound_connect,
             gateway_worker_connect,
             gateway_worker_disconnect,
             gateway_ipc_connect_request,
             gateway_ipc_connect_reply,
-            gateway_connection_information_request,
-            gateway_connection_information_reply,
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
+            gateway_domain_discover_accumulated_reply,
+            gateway_domain_discover_internal_coordination,
+            gateway_domain_advertise,
             gateway_domain_id,
 
+            // Innterdomain messages, part of gateway
+            INTERDOMAIN_BASE = 8000,
+            interdomain_domain_discover_request,
+            interdomain_domain_discover_reply,
+            interdomain_service_call = INTERDOMAIN_BASE + 100,
+            interdomain_service_reply,
+            interdomain_transaction_resource_prepare_request = INTERDOMAIN_BASE + 300,
+            interdomain_transaction_resource_prepare_reply,
+            interdomain_transaction_resource_commit_request,
+            interdomain_transaction_resource_commit_reply,
+            interdomain_transaction_resource_rollback_request,
+            interdomain_transaction_resource_rollback_reply,
+            interdomain_queue_enqueue_request = INTERDOMAIN_BASE + 400,
+            interdomain_queue_enqueue_reply,
+            interdomain_queue_dequeue_request,
+            interdomain_queue_dequeue_reply,
 
 
 
-            MOCKUP_BASE = 1000000, // avoid conflict with real messages
+
+            MOCKUP_BASE = 10000000, // avoid conflict with real messages
             mockup_disconnect,
             mockup_clear,
          };
@@ -162,6 +191,7 @@ namespace casual
          {
             return message.type();
          }
+
 
          namespace convert
          {
@@ -201,31 +231,6 @@ namespace casual
             })
          };
 
-         template< typename M, message::Type message_type>
-         struct type_wrapper : public M
-         {
-            using M::M;
-
-            constexpr static Type type() { return message_type;}
-
-            Uuid correlation;
-
-            //!
-            //! The execution-id
-            //!
-            mutable Uuid execution;
-
-            CASUAL_CONST_CORRECT_MARSHAL(
-            {
-               //
-               // correlation is part of ipc::message::Complete, and is
-               // handled by the ipc-abstraction (marshaled 'on the side')
-               //
-
-               archive & execution;
-               M::marshal( archive);
-            })
-         };
 
          namespace flush
          {
@@ -264,7 +269,7 @@ namespace casual
          //!
          namespace shutdown
          {
-            struct Request : basic_message< Type::shutdownd_request>
+            struct Request : basic_message< Type::shutdown_request>
             {
                inline Request() = default;
                inline Request( common::process::Handle process) : process{ std::move( process)} {}
@@ -279,89 +284,46 @@ namespace casual
                   archive & reply;
                })
             };
-
-            struct Reply : basic_message< Type::shutdownd_reply>
-            {
-               template< typename ID>
-               struct holder_t
-               {
-                  std::vector< ID> online;
-                  std::vector< ID> offline;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     archive & online;
-                     archive & offline;
-                  })
-               };
-
-               holder_t< platform::pid::type> executables;
-               holder_t< common::process::Handle> servers;
-
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  base_type::marshal( archive);
-                  archive & executables;
-                  archive & servers;
-               })
-            };
+            static_assert( traits::is_movable< Request>::value, "not movable");
 
          } // shutdown
-
 
 
          //
          // Below, some basic message related types that is used by others
          //
 
-         struct Service
+         template< message::Type type>
+         struct basic_request : basic_message< type>
          {
-
-            Service() = default;
-            Service& operator = (const Service& rhs) = default;
-
-
-
-            explicit Service( std::string name, std::uint64_t type, std::uint64_t transaction)
-               : name( std::move( name)), type( type), transaction( transaction)
-            {}
-
-            Service( std::string name)
-               : Service( std::move( name), 0, 0)
-            {}
-
-            std::string name;
-            std::uint64_t type = 0;
-            std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            std::vector< platform::ipc::id::type> traffic_monitors;
-            std::uint64_t transaction = 0;
+            common::process::Handle process;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
-               archive & name;
-               archive & type;
-               archive & timeout;
-               archive & traffic_monitors;
-               archive & transaction;
+               basic_message< type>::marshal( archive);
+               archive & process;
             })
-
-            friend std::ostream& operator << ( std::ostream& out, const Service& value);
          };
+
+         template< message::Type type>
+         struct basic_reply : basic_message< type>
+         {
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< type>::marshal( archive);
+               archive & process;
+            })
+         };
+
 
          namespace server
          {
 
             template< message::Type type>
-            struct basic_id : basic_message< type>
+            struct basic_id : basic_request< type>
             {
-               common::process::Handle process;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  basic_message< type>::marshal( archive);
-                  archive & process;
-               })
             };
 
             namespace connect
@@ -429,29 +391,11 @@ namespace casual
                      archive & arguments;
                      archive & environment;
                   })
-
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
             } // spawn
-
-
-
-
-
-
          } // process
-
-
-
-         namespace forward
-         {
-            namespace connect
-            {
-               using Request = server::connect::basic_request< Type::forward_connect_request>;
-               using Reply = server::connect::basic_reply< Type::forward_connect_reply>;
-            } // connect
-
-         } // forward
 
          namespace reverse
          {
@@ -475,12 +419,6 @@ namespace casual
                };
             } // detail
 
-            template<>
-            struct type_traits< shutdown::Request> : detail::type< shutdown::Reply> {};
-
-            template<>
-            struct type_traits< forward::connect::Request> : detail::type< forward::connect::Reply> {};
-
 
 
             template< typename T>
@@ -494,11 +432,7 @@ namespace casual
                return result;
             }
 
-
-
-
          } // reverse
-
       } // message
    } // common
 } // casual

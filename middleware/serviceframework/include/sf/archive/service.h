@@ -111,52 +111,6 @@ namespace casual
 
             } // describe
 
-
-            namespace example
-            {
-               namespace implementation
-               {
-                  //!
-                  //! "prepares" the object model with "random" values
-                  //!
-                  struct Prepare
-                  {
-
-                     bool serialtype_start( const char*);
-
-                     std::tuple< std::size_t, bool> container_start( std::size_t size, const char*);
-
-                     //! @{
-                     //! No op
-                     void container_end( const char*);
-                     void serialtype_end( const char*);
-                     //! @}
-
-
-                     template< typename T>
-                     bool read( T& value, const char*)
-                     {
-                        pod( value);
-                        return true;
-                     }
-
-                     void pod( bool& value);
-                     void pod( char& value);
-                     void pod( short& value);
-                     void pod( long& value);
-                     void pod( long long& value);
-                     void pod( float& value);
-                     void pod( double& value);
-                     void pod( std::string& value);
-                     void pod( platform::binary_type& value);
-                  };
-
-               } // implementation
-
-               using Prepare = basic_reader< implementation::Prepare, policy::Relaxed>;
-
-            } // example
-
          } // service
       } // archive
    } // sf

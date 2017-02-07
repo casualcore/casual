@@ -1,8 +1,5 @@
 //!
-//! transform.h
-//!
-//! Created on: Jun 14, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_TRANSACTION_MANAGER_ADMIN_TRANSFORM_H_

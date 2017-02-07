@@ -1,14 +1,13 @@
 
 # casaul middleware domain
 
-Not implemented yet...
-
-## Proposal:
+## domain-manager:
 * responsible to handle all configuration
-* store configuration persistent - not sure about the samantics though
 * handle the lifecycle of every process in the domain (not counting grand-children)
 
-Then we can change broker to handle service-lookup, only. The responsibilities becomes more clear and intuitive.
+### TODO
+* store configuration persistent - not sure about the samantics though
+
 
 
 ## domain-delay

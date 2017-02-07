@@ -1,93 +1,110 @@
 //!
-//! test_domain.cpp
-//!
-//! Created on: Aug 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
+#include "common/unittest.h"
 
-#include "config/domain.h"
+#include "configuration/domain.h"
+#include "configuration/example/domain.h"
+
+
+
+
 #include "sf/log.h"
+#include "sf/archive/maker.h"
 
 
 namespace casual
 {
-   class casual_configuration_domain : public ::testing::TestWithParam< const char*>
+   namespace configuration
    {
-   };
-
-
-   INSTANTIATE_TEST_CASE_P( protocol,
-         casual_configuration_domain,
-      ::testing::Values("domain.yaml", "domain.json"));
-
-
-   namespace local
-   {
-      namespace
+      class configuration_domain : public ::testing::TestWithParam< const char*>
       {
-         std::string get_testfile_path( const std::string& name)
-         {
-            return common::directory::name::base( __FILE__) + "/../" + name;
-         }
-      } // <unnamed>
-   } // local
+      };
 
 
-	TEST_P( casual_configuration_domain, load_config)
-	{
+      INSTANTIATE_TEST_CASE_P( protocol,
+            configuration_domain,
+         ::testing::Values(".yaml", ".json", ".xml", ".ini"));
 
-	   auto domain = config::domain::get( local::get_testfile_path( GetParam()));
+      TEST_P( configuration_domain, domain)
+      {
+         common::unittest::Trace trace;
 
-	   EXPECT_TRUE( domain.name == "domain1") << "nane: " << domain.name;
-	   EXPECT_TRUE( domain.groups.size() == 5) << "size: " << domain.groups.size();
-	   EXPECT_TRUE( domain.groups.at( 2).resources.size() == 2);
-	}
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-	TEST_P( casual_configuration_domain, read_defaul)
-   {
-	   auto domain = config::domain::get( local::get_testfile_path( GetParam()));
+         EXPECT_TRUE( domain.name == "domain.A42") << "name: " << domain.name;
+      }
 
-      ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
-      EXPECT_TRUE( domain.casual_default.server.instances == "2");
-      EXPECT_TRUE( domain.casual_default.service.timeout == "90");
+      TEST_P( configuration_domain, groups)
+      {
+         common::unittest::Trace trace;
 
-   }
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+
+         EXPECT_TRUE( domain.groups.size() == 3) << CASUAL_MAKE_NVP( domain.groups);
+      }
+
+      TEST_P( configuration_domain, default_server)
+      {
+         common::unittest::Trace trace;
+
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+
+         EXPECT_TRUE( domain.manager_default.server.instances.value() == 1) << CASUAL_MAKE_NVP( domain.manager_default.server.instances); //<< CASUAL_MAKE_NVP( path.release());
+         EXPECT_TRUE( domain.manager_default.server.restart == true);
 
 
-   TEST_P( casual_configuration_domain, read_servers)
-   {
-      auto domain = config::domain::get( local::get_testfile_path( GetParam()));
+      }
 
-      ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
-      EXPECT_TRUE( domain.servers.at( 0).instances == "1");
+      TEST_P( configuration_domain, default_service)
+      {
+         common::unittest::Trace trace;
 
-      EXPECT_TRUE( domain.servers.at( 3).instances == "10");
-      EXPECT_TRUE( domain.servers.at( 3).memberships.size() == 2);
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-   }
+         EXPECT_TRUE( domain.manager_default.service.timeout == std::string( "90s"));
+      }
 
-   TEST_P( casual_configuration_domain, read_transactionmanager)
-   {
-      auto domain = config::domain::get( local::get_testfile_path( GetParam()));
+      TEST_P( configuration_domain, default_resource)
+      {
+         common::unittest::Trace trace;
 
-      EXPECT_TRUE( domain.transactionmanager.database == "transaction-manager.db");
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-   }
+         EXPECT_TRUE( domain.transaction.manager_default.resource.instances.value() == 3);
+         EXPECT_TRUE( domain.transaction.manager_default.resource.key.value() == "db2_rm");
+      }
 
-   TEST_P( casual_configuration_domain, read_complement)
-   {
-      auto domain = config::domain::get( local::get_testfile_path( GetParam()));
 
-      //sf::archive::logger::Writer debug;
-      //debug << CASUAL_MAKE_NVP( domain);
+      TEST_P( configuration_domain, servers)
+      {
+         common::unittest::Trace trace;
 
-      ASSERT_TRUE( domain.servers.size() == 4) << "size: " << domain.servers.size();
-      EXPECT_TRUE( domain.casual_default.server.instances == "2");
-      EXPECT_TRUE( domain.casual_default.service.timeout == "90");
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
 
-   }
+         ASSERT_TRUE( domain.servers.size() == 5) << "size: " << domain.servers.size();
+         EXPECT_TRUE( domain.servers.at( 2).instances.value() == 10) << CASUAL_MAKE_NVP( domain.servers);
 
+      }
+
+      TEST_P( configuration_domain, transaction_manager)
+      {
+         common::unittest::Trace trace;
+
+         // serialize and deserialize
+         auto domain = domain::get( { example::temporary( example::domain(), GetParam())});
+
+         EXPECT_TRUE( domain.transaction.log == "/some/fast/disk/domain.A42/transaction.log");
+
+      }
+   } // configuration
 
 } // casual

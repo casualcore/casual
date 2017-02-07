@@ -15,24 +15,20 @@
 #include "common/message/handle.h"
 #include "common/log.h"
 
-
-#include "config/domain.h"
-#include "config/file.h"
-
+#include "configuration/domain.h"
+#include "configuration/file.h"
 
 #include <tx.h>
 
-using namespace casual::common;
 
 
-extern "C"
-{
-   extern void casual_listTransactions( TPSVCINFO *serviceInfo);
-}
+
 
 
 namespace casual
 {
+   using namespace common;
+
    namespace transaction
    {
       namespace environment
@@ -41,14 +37,14 @@ namespace casual
          {
             std::string file()
             {
-               return config::directory::domain() + "/transaction/log.db";
+               return configuration::directory::domain() + "/transaction/log.db";
             }
          } // log
 
       } // environment
 
       Settings::Settings() :
-         log{ environment::log::file()}, configuration{ common::environment::file::installedConfiguration()}
+         log{ environment::log::file()}
       {
 
       }
@@ -69,7 +65,7 @@ namespace casual
          //
          // get configuration from domain manager
          //
-         action::configure( m_state, settings.configuration);
+         action::configure( m_state);
 
 
          //
@@ -85,9 +81,9 @@ namespace casual
             //
             // Make sure we wait for the resources to get ready
             //
-            common::message::dispatch::Handler handler{
+            auto handler = ipc::device().handler(
                common::message::handle::Shutdown{},
-               handle::resource::reply::Connect{ m_state}};
+               handle::resource::reply::Connect{ m_state});
 
 
 
@@ -183,7 +179,7 @@ namespace casual
                // prepare message dispatch handlers...
                //
 
-               common::message::dispatch::Handler handler{
+               auto handler = ipc::device().handler(
                   common::message::handle::Shutdown{},
                   handle::process::Exit{ state},
                   handle::Commit{ state},
@@ -193,15 +189,15 @@ namespace casual
                   handle::resource::reply::Prepare{ state},
                   handle::resource::reply::Commit{ state},
                   handle::resource::reply::Rollback{ state},
-                  handle::domain::Involved{ state},
+                  handle::external::Involved{ state},
                   handle::domain::Prepare{ state},
                   handle::domain::Commit{ state},
                   handle::domain::Rollback{ state},
                   common::server::handle::basic_admin_call{
                      admin::services( state),
                      ipc::device().error_handler()},
-                  common::message::handle::ping(),
-               };
+                  common::message::handle::ping()
+               );
 
 
                common::log::internal::transaction << "start message pump\n";
@@ -237,10 +233,10 @@ namespace casual
                      // We also do a "busy wait" to try to get more done between each write.
                      //
 
-                     auto count = common::platform::batch::transaction;
+                     auto count = common::platform::batch::transaction();
 
                      while( ( handler( ipc::device().non_blocking_next()) || --count > 0 ) &&
-                           state.persistent.replies.size() < common::platform::batch::transaction)
+                           state.persistent.replies.size() < common::platform::batch::transaction())
                      {
                         ;
                      }

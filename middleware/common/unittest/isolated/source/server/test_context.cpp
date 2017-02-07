@@ -11,6 +11,9 @@
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/domain.h"
+#include "common/mockup/rm.h"
+
+#include "common/message/domain.h"
 
 #include "common/buffer/pool.h"
 
@@ -81,17 +84,17 @@ namespace casual
             {
                server::Arguments arguments{ { "/test/path"}};
 
-               arguments.services.emplace_back( "test_service", &test_service, 0, server::Service::Transaction::none);
+               arguments.services.emplace_back( "test_service", &test_service, service::category::none, service::transaction::Type::none);
 
-               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::none);
-               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::atomic);
-               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::join);
-               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, 0, server::Service::Transaction::automatic);
+               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::none);
+               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::atomic);
+               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::join);
+               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::automatic);
 
-               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::none);
-               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::atomic);
-               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::join);
-               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, 0, server::Service::Transaction::automatic);
+               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::none);
+               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::atomic);
+               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::join);
+               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::automatic);
 
                return arguments;
             }
@@ -116,7 +119,7 @@ namespace casual
 
       TEST( common_server_context, arguments)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          server::Arguments arguments{ { "arg1", "arg2"}};
 
@@ -130,7 +133,7 @@ namespace casual
 
       TEST( common_server_context, arguments_move)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          server::Arguments origin{ { "arg1", "arg2"}};
 
@@ -149,7 +152,7 @@ namespace casual
 
       TEST( common_server_context, connect)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::Manager manager;
          mockup::domain::Broker broker;
@@ -163,9 +166,8 @@ namespace casual
 
       TEST( common_server_context, call_service__gives_reply)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         mockup::domain::Manager manager;
          mockup::domain::minimal::Domain domain;
          mockup::ipc::Collector caller;
 
@@ -184,67 +186,6 @@ namespace casual
 
       }
 
-      /*
-
-      TEST( common_server_context, call_service__gives_broker_ack)
-      {
-         CASUAL_UNITTEST_TRACE();
-
-         mockup::ipc::clear();
-         mockup::ipc::Instance caller{ 42};
-
-         //
-         // We only need the mockup-broker during initialization.
-         //
-         auto prepare_caller = [](){
-
-            mockup::domain::Broker broker;
-            return server::handle::Call{ local::arguments()};
-         };
-
-         {
-            auto callHandler = prepare_caller();
-            auto message = local::call_request( caller.id());
-            callHandler( message);
-         }
-
-         message::service::call::ACK message;
-         communication::ipc::blocking::receive( mockup::ipc::broker::queue().output(), message);
-
-         EXPECT_TRUE( message.service == "test_service");
-         EXPECT_TRUE( message.process.queue == communication::ipc::inbound::id());
-      }
-
-
-
-
-      TEST( common_server_context, call_service__gives_traffic_notify)
-      {
-         mockup::ipc::clear();
-
-         mockup::ipc::Instance caller{ 10};
-         mockup::ipc::Instance traffic{ 42};
-
-         mockup::domain::Broker broker;
-
-
-         {
-
-            server::handle::Call callHandler( local::arguments());
-
-            auto message = local::call_request( caller.id());
-            message.service.traffic_monitors = { traffic.id()};
-            callHandler( message);
-         }
-
-         message::traffic::Event message;
-         communication::ipc::blocking::receive( traffic.output(), message);
-
-         EXPECT_TRUE( message.service == "test_service");
-
-      }
-
-      */
 
 
       namespace local
@@ -254,9 +195,57 @@ namespace casual
 
             struct Domain
             {
+               Domain() : manager{ handle_server_configuration{}}, tm{ handle_resource_lookup{}}
+               {
+
+               }
+
                mockup::domain::Manager manager;
                mockup::domain::Broker broker;
                mockup::domain::transaction::Manager tm;
+
+
+            private:
+               struct handle_server_configuration
+               {
+                  void operator () ( message::domain::configuration::server::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
+                     reply.resources = { "rm1", "rm2"};
+
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
+
+               struct handle_resource_lookup
+               {
+                  void operator () ( message::transaction::resource::lookup::Request& request) const
+                  {
+                     auto reply = common::message::reverse::type( request);
+                     reply.resources = {
+                           {
+                              [](  message::transaction::resource::Resource& r){
+                                 r.name = "rm1";
+                                 r.id = 1;
+                                 r.key = "rm-mockup";
+                                 r.openinfo = "openinfo1";
+                                 r.closeinfo = "closeinfo1";
+                              }
+                           },
+                           {
+                              [](  message::transaction::resource::Resource& r){
+                                 r.name = "rm2";
+                                 r.id = 2;
+                                 r.key = "rm-mockup";
+                                 r.openinfo = "openinfo2";
+                                 r.closeinfo = "closeinfo2";
+                              }
+                           }
+                     };
+
+                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                  }
+               };
             };
 
             namespace call
@@ -311,15 +300,31 @@ namespace casual
 
       TEST( common_server_context, mockup_domain_startup)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain domain;
          });
       }
 
+      TEST( common_server_context, resource_configuration)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto arguments = local::arguments();
+         arguments.resources.emplace_back(  "rm-mockup", &casual_mockup_xa_switch_static);
+
+         EXPECT_NO_THROW({
+            server::handle::Call server( std::move( arguments));
+         });
+      }
+
       TEST( common_server_context, call_server__non_existing__gives_TPESVCERR)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -339,6 +344,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_none_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -355,6 +362,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_atomic_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -373,6 +382,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_join_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -390,6 +401,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_auto_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -410,6 +423,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_none_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -427,6 +442,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_atomic_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -446,6 +463,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_join_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -465,6 +484,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_auto_TPSUCCESS)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -485,6 +506,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_none_TPFAIL)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -500,6 +523,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_atomic_TPFAIL)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -517,6 +542,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_join_TPFAIL)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -534,6 +561,8 @@ namespace casual
 
       TEST( common_server_context, call_server__test_service_auto_TPFAIL)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -552,6 +581,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_none_TPFAIL)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -569,6 +600,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_atomic_TPFAIL)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -588,6 +621,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_join_TPFAIL__expect_rollback)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -605,6 +640,8 @@ namespace casual
 
       TEST( common_server_context, call_server_in_transaction__test_service_auto_TPFAIL__expect_rollback)
       {
+         common::unittest::Trace trace;
+
          local::Domain domain;
 
          mockup::ipc::Collector caller;
@@ -625,6 +662,8 @@ namespace casual
 
       TEST( common_server_context, state_call_descriptor_reserver)
       {
+         common::unittest::Trace trace;
+
          service::call::State state;
 
          auto first = state.pending.reserve( uuid::make());

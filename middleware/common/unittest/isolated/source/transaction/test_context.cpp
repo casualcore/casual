@@ -1,11 +1,8 @@
 //!
-//! test_transaction.cpp
-//!
-//! Created on: Mar 7, 2015
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 #include "common/mockup/domain.h"
 
@@ -38,6 +35,8 @@ namespace casual
 
          TEST( casual_common_transaction, context_current__expect_null_transaction)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             EXPECT_TRUE( Context::instance().current().trid.null());
@@ -46,6 +45,8 @@ namespace casual
 
          TEST( casual_common_transaction, context_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             XID xid;
@@ -55,7 +56,7 @@ namespace casual
 
          TEST( casual_common_transaction, context_begin__expect_transaction)
          {
-            Trace trace{ "casual_common_transaction.context_begin__expect_transaction", log::internal::debug};
+            common::unittest::Trace trace;
 
             local::Domain domain;
 
@@ -67,6 +68,8 @@ namespace casual
 
          TEST( casual_common_transaction, context__two_begin__expect_TX_PROTOCOLL_ERROR)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             ASSERT_TRUE( Context::instance().begin() == TX_OK);
@@ -76,6 +79,8 @@ namespace casual
 
          TEST( casual_common_transaction, context__begin_suspend_resume__rollback__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             XID xid;
@@ -89,6 +94,8 @@ namespace casual
 
          TEST( casual_common_transaction, context__begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             // global...

@@ -1,8 +1,5 @@
 //!
-//! context.h
-//!
-//! Created on: Jul 14, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_TRANSACTION_CONTEXT_H_
@@ -110,12 +107,12 @@ namespace casual
 
 
             //!
-            //! @return true if @p descriptor is associated with an active transaction
+            //! @return true if @p correlation is associated with an active transaction
             //!
-            bool associated( platform::descriptor_type descriptor);
+            bool associated( const Uuid& correlation);
 
 
-            void set( const std::vector< Resource>& resources);
+            void configure( const std::vector< Resource>& resources, std::vector< std::string> names);
 
 
             //!
@@ -187,6 +184,7 @@ namespace casual
 
          };
 
+         inline Context& context() { return Context::instance();}
       } // transaction
    } // common
 } // casual

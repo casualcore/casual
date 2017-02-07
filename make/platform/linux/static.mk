@@ -12,14 +12,22 @@ DEFAULT_LIBS :=
 ######################################################################
 
 
+ifndef CXX
+CXX = g++
+endif
 
-COMPILER = g++
+
+COMPILER = $(CXX)
 CROSSCOMPILER = clang++
+
+WARNING_DIRECTIVE = -Wall -pedantic -Wsign-compare -Werror=return-type -Wextra -Winit-self -Woverloaded-virtual -Wno-unused-parameter -Wno-missing-field-initializers
+
+STD_DIRECTIVE = -std=c++14
 
 #
 # Linkers
 #
-LIBRARY_LINKER = g++
+LIBRARY_LINKER = $(CXX)
 ARCHIVE_LINKER = ar rcs
 
 
@@ -37,7 +45,9 @@ endif
 # Compile and link directives
 #
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -g -pthread -c  -fpic -Wall -pedantic -Wno-long-long -Wno-variadic-macros -std=c++14
+
+   COMPILE_DIRECTIVES = -g -pthread -c  -fpic $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
+
    LINK_DIRECTIVES_LIB = -g -pthread -shared  -fpic
    LINK_DIRECTIVES_EXE = -g -pthread  -fpic
    LINK_DIRECTIVES_ARCHIVE = -g  
@@ -49,9 +59,9 @@ ifdef DEBUG
    endif
 
 else
-   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic -std=c++14 -Wall -pedantic
-   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic -Wall -pedantic
-   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic -Wall -pedantic
+   COMPILE_DIRECTIVES = -pthread -c -O3 -fpic $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
+   LINK_DIRECTIVES_LIB = -pthread -shared -O3 -fpic $(WARNING_DIRECTIVE)
+   LINK_DIRECTIVES_EXE = -pthread -O3 -fpic $(WARNING_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE = 
 endif
 
@@ -84,7 +94,7 @@ DEFAULT_LIBRARY_PATHS_DIRECTIVE := $(addprefix -L, $(DEFAULT_LIBRARY_PATHS) ) $(
 #
 # Header dependency stuff
 #
-HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM -std=c++14
+HEADER_DEPENDENCY_COMMAND = -g++ -MP -MM $(STD_DIRECTIVE)
 
 
 #

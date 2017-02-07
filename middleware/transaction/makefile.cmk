@@ -66,9 +66,7 @@ target = LinkExecutable( 'bin/casual-transaction-admin',
     [ 
       manager_archive, 
      'casual-sf', 
-     'casual-common', 
-     #'casual-configuration', 
-     #'casual-xatmi',
+     'casual-common',
      ])
 
 
@@ -122,7 +120,8 @@ LinkUnittest( 'bin/test-casual-transaction',
      'casual-mockup',
      'casual-mockup-rm',
      'casual-xatmi',
-     'casual-mockup-unittest-environment'
+     'casual-mockup-unittest-environment',
+     'casual-unittest',
      ])
 
 

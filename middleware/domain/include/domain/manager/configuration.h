@@ -20,9 +20,6 @@ namespace casual
             State state( const Settings& settings);
 
 
-
-
-
          } // configuration
       } // manager
 

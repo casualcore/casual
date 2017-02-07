@@ -92,6 +92,22 @@ namespace casual
 
 
 
+         //!
+         //! Removes cv and references
+         //!
+         template< typename T>
+         struct basic_type
+         {
+            using type = typename std::remove_reference< typename std::remove_cv< T>::type>::type;
+         };
+
+
+         //!
+         //! Removes cv and references
+         //!
+         template< typename T>
+         using basic_type_t = typename basic_type< T>::type;
+
 
 
          namespace container
@@ -106,6 +122,8 @@ namespace casual
 
                struct sequence : traversable {};
                struct continuous : sequence {};
+
+               struct array : continuous {};
 
                struct adaptor : container{};
             } // category
@@ -130,8 +148,13 @@ namespace casual
             template< typename T>
             struct traits { using category = void; using iterator = void; using tag = void;};
 
+
+
             template< typename T, std::size_t size>
-            struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::continuous>{};
+            struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::array>{};
+
+
+
             template< typename T>
             struct traits< std::vector< T>> : detail::traits< std::vector< T>, container::category::continuous>{};
             template< typename T>
@@ -169,10 +192,13 @@ namespace casual
             template< typename T, typename Container>
             struct traits< std::priority_queue< T, Container>> : detail::category_traits< container::category::adaptor>{};
 
+            template< typename T>
+            using category_t = typename traits< T>::category;
+
 
             template< typename Container, typename Category>
             struct is_category : std::integral_constant< bool,
-               std::is_base_of< Category, typename traits< Container>::category>::value> {};
+               std::is_base_of< Category, category_t< basic_type_t< Container>>>::value> {};
 
             template< typename Container>
             struct is_container : is_category< Container, category::container> {};
@@ -188,6 +214,9 @@ namespace casual
 
             template< typename Container>
             struct is_adaptor : is_category< Container, category::adaptor> {};
+
+            template< typename Container>
+            struct is_array : is_category< Container, category::array> {};
 
          } // container
 
@@ -243,6 +272,90 @@ namespace casual
          template< typename T>
          using underlying_type_t = typename underlying_type< T>::type;
          //! @}
+
+         namespace concrete
+         {
+            template< typename T>
+            using type_t = typename std::remove_cv< typename std::remove_reference< T>::type>::type;
+
+            template< typename E>
+            constexpr auto type( E&& expression) -> type_t< decltype( std::forward< E>( expression))>
+            {
+               return {};
+            }
+
+         } // expression
+
+         template< typename T>
+         using decay_t = typename std::decay< T>::type;
+
+         template< class T >
+         using remove_reference_t = typename std::remove_reference< T>::type;
+
+
+
+#if __GNUC__ > 4 || __clang_major__ > 4
+         template< typename T>
+         struct is_movable : std::integral_constant< bool,
+            std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
+#else
+         //!
+         //!  containers and std::string is not noexcept movable with gcc 4.9.x
+         //!
+         template< typename T>
+         struct is_movable : std::integral_constant< bool,
+            std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
+#endif
+
+
+
+
+
+         //!
+         //! Arbitrary number of types to compare if same
+         //!
+         //! @{
+         template< typename T1, typename T2, typename... Args>
+         struct is_same : std::integral_constant< bool, is_same< T1, T2>::value && is_same< T2, Args...>::value>
+         {
+
+         };
+
+         template< typename T1, typename T2>
+         struct is_same< T1, T2> : std::is_same< T1, T2>
+         {
+         };
+         //! @}
+
+         template< bool Predicate, typename V = void>
+         using enable_if_t = typename std::enable_if< Predicate, V>::type;
+
+
+         struct unmovable
+         {
+            unmovable() = default;
+            unmovable( unmovable&&) = delete;
+            unmovable& operator = ( unmovable&&) = delete;
+         };
+
+         struct uncopyable
+         {
+            uncopyable() = default;
+            uncopyable( const uncopyable&) = delete;
+            uncopyable& operator = ( const uncopyable&) = delete;
+         };
+
+
+         namespace value
+         {
+            template< typename T>
+            constexpr bool is_lvalue_reference( T&& value)
+            {
+               return std::is_lvalue_reference< decltype( value)>::value;
+            }
+
+
+         }  // namespace value
 
       } // traits
    } // common

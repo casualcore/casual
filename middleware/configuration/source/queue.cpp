@@ -2,9 +2,10 @@
 //! casual
 //!
 
-#include "config/queue.h"
-#include "config/file.h"
-#include "config/common.h"
+#include "configuration/queue.h"
+
+#include "configuration/common.h"
+#include "configuration/file.h"
 
 #include "common/internal/log.h"
 #include "common/environment.h"
@@ -12,16 +13,23 @@
 #include "common/file.h"
 #include "common/exception.h"
 
+
+
 #include "sf/log.h"
 #include "sf/archive/maker.h"
 
 
 namespace casual
 {
-   namespace config
+   using namespace common;
+
+   namespace configuration
    {
       namespace queue
       {
+         Queue::Queue() = default;
+         Queue::Queue( std::function<void( Queue&)> foreign) { foreign( *this);}
+
 
          bool operator < ( const Queue& lhs, const Queue& rhs)
          {
@@ -33,17 +41,17 @@ namespace casual
             return lhs.name == rhs.name;
          }
 
+         Group::Group() = default;
+         Group::Group( std::function<void( Group&)> foreign) { foreign( *this);}
+
          bool operator < ( const Group& lhs, const Group& rhs)
          {
-            if( lhs.name == rhs.name)
-               return lhs.queuebase < rhs.queuebase;
-
             return lhs.name < rhs.name;
          }
 
          bool operator == ( const Group& lhs, const Group& rhs)
          {
-            return lhs.name == rhs.name || ( lhs.queuebase != ":memory:" && lhs.queuebase == rhs.queuebase);
+            return lhs.name == rhs.name; // || ( lhs.queuebase != ":memory:" && lhs.queuebase == rhs.queuebase);
          }
 
          namespace local
@@ -51,16 +59,18 @@ namespace casual
             namespace
             {
 
-               void default_values( Domain& domain)
+               void default_values( Manager& manager)
                {
-                  for( auto& group : domain.groups)
+                  for( auto& group : manager.groups)
                   {
+                     if( ! group.queuebase)
+                     {
+                        group.queuebase.emplace( manager.manager_default.directory + "/" + group.name + ".qb");
+                     }
+
                      for( auto& queue : group.queues)
                      {
-                        if( queue.retries.empty())
-                        {
-                           queue.retries = domain.casual_default.queue.retries;
-                        }
+                        queue.retries = coalesce( queue.retries, manager.manager_default.queue.retries);
                      }
                   }
                }
@@ -73,11 +83,6 @@ namespace casual
                      {
                         throw common::exception::invalid::Configuration{ "queue has to have a name"};
                      }
-
-                     if( ! common::string::integer( queue.retries))
-                     {
-                        throw common::exception::invalid::Configuration{ "queue has to have numeric retry set", CASUAL_NIP( queue.retries)};
-                     }
                   }
 
                   void operator ()( const Group& group) const
@@ -87,7 +92,7 @@ namespace casual
                         throw common::exception::invalid::Configuration{ "queue group has to have a name"};
                      }
 
-                     if( group.queuebase.empty())
+                     if( group.queuebase.value_or( "").empty())
                      {
                         throw common::exception::invalid::Configuration{ "queue group has to have a queuebase path"};
                      }
@@ -95,19 +100,33 @@ namespace casual
                   }
                };
 
-               void validate( const Domain& domain)
+               void validate( const Manager& manager)
                {
-                  common::range::for_each( domain.groups, Validate{});
-
-                  auto groups = domain.groups;
+                  common::range::for_each( manager.groups, Validate{});
 
                   //
                   // Check unique groups
                   //
                   {
-                     auto unique = common::range::unique( common::range::sort( groups));
+                     using G = decltype( manager.groups.front());
 
-                     if( groups.size() != unique.size())
+                     auto order_group_name = []( G lhs, G rhs){ return lhs.name < rhs.name; };
+                     auto equality_group_name = []( G lhs, G rhs){ return lhs.name == rhs.name; };
+
+                     auto groups = common::range::to_reference( manager.groups);
+
+                     if( common::range::adjacent_find( common::range::sort( groups, order_group_name), equality_group_name))
+                     {
+                        throw common::exception::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
+                     }
+
+                     auto order_group_qb = []( G lhs, G rhs){ return lhs.queuebase < rhs.queuebase;};
+                     auto equality_group_gb = []( G lhs, G rhs){ return lhs.queuebase == rhs.queuebase;};
+
+                     // remote in-memory queues when we validate uniqueness
+                     auto persitent_groups = std::get< 0>( range::partition( groups, []( G g){ return g.queuebase.value_or( "") != ":memory:";}));
+
+                     if( common::range::adjacent_find( common::range::sort( persitent_groups, order_group_qb), equality_group_gb))
                      {
                         throw common::exception::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
                      }
@@ -117,16 +136,15 @@ namespace casual
                   // Check unique queues
                   //
                   {
-                     decltype( groups.front().queues) queues;
+                     using queue_type = common::traits::remove_reference_t< decltype( manager.groups.front().queues.front())>;
+                     std::vector< std::reference_wrapper< queue_type>> queues;
 
-                     for( auto& group : groups)
+                     for( auto& group : manager.groups)
                      {
-                        queues.insert( std::end( queues), std::begin( group.queues), std::end( group.queues));
+                        common::range::copy( group.queues, std::back_inserter( queues));
                      }
 
-                     auto unique = common::range::unique( common::range::sort( queues));
-
-                     if( queues.size() != unique.size())
+                     if( common::range::adjacent_find( common::range::sort( queues)))
                      {
                         throw common::exception::invalid::Configuration{ "queues has to be unique"};
                      }
@@ -134,57 +152,95 @@ namespace casual
                   }
                }
 
+               template< typename LHS, typename RHS>
+               void replace_or_add( LHS& lhs, RHS&& rhs)
+               {
+                  for( auto& value : rhs)
+                  {
+                     auto found = common::range::find( lhs, value);
+
+                     if( found)
+                     {
+                        *found = std::move( value);
+                     }
+                     else
+                     {
+                        lhs.push_back( std::move( value));
+                     }
+                  }
+               }
+
+
+               template< typename G>
+               Manager& append( Manager& lhs, G&& rhs)
+               {
+                  local::replace_or_add( lhs.groups, std::move( rhs.groups));
+
+                  return lhs;
+               }
+
             } // <unnamed>
          } // local
 
-         Domain get( const std::string& file)
+         namespace manager
          {
-            Trace trace{ "config::queue::get"};
+            Default::Default() : directory{ "${CASUAL_DOMAIN_HOME}/queue/groups"}
+            {
+               queue.retries.emplace( 0);
+            }
+         } // manager
 
-            queue::Domain domain;
+         Manager::Manager()
+         {
 
-            //
-            // Create the reader and deserialize configuration
-            //
-            auto reader = sf::archive::reader::from::file( file);
+         }
 
-            reader >> CASUAL_MAKE_NVP( domain);
-
+         void Manager::finalize()
+         {
+            Trace trace{ "config::queue::Manager::finalize"};
 
             //
             // Complement with default values
             //
-            local::default_values( domain);
+            local::default_values( *this);
 
             //
             // Make sure we've got valid configuration
             //
-            local::validate( domain);
-
-
-            log << CASUAL_MAKE_NVP( domain);
-
-            return domain;
-
+            local::validate( *this);
          }
 
-         Domain get()
+         Manager& Manager::operator += ( const Manager& rhs)
          {
-            return get( config::file::queue());
-
+            local::append( *this, rhs);
+            return *this;
          }
+
+         Manager& Manager::operator += ( Manager&& rhs)
+         {
+            local::append( *this, std::move( rhs));
+            return *this;
+         }
+
+         Manager operator + ( const Manager& lhs, const Manager& rhs)
+         {
+            auto result = lhs;
+            result += rhs;
+            return result;
+         }
+
 
 
          namespace unittest
          {
-            void validate( const Domain& domain)
+            void validate( const Manager& manager)
             {
-               local::validate( domain);
+               local::validate( manager);
             }
 
-            void default_values( Domain& domain)
+            void default_values( Manager& manager)
             {
-               local::default_values( domain);
+               local::default_values( manager);
             }
          } // unittest
 

@@ -35,7 +35,7 @@ namespace casual
 
                      namespace check
                      {
-                        void error( decltype( common::error::last()) last_error)
+                        void error( const decltype( common::error::last()) last_error)
                         {
                            switch( last_error)
                            {
@@ -49,11 +49,11 @@ namespace casual
 #if EAGAIN != EWOULDBLOCK
                               case EWOULDBLOCK:
 #endif
-                                 throw common::exception::communication::no::Message{ common::error::string()};
+                                 throw common::exception::communication::no::Message{ common::error::string( last_error)};
                               case EINVAL:
-                                 throw common::exception::invalid::Argument{ "invalid arguments"};
+                                 throw common::exception::invalid::Argument{ common::error::string( last_error)};
                               case ENOTSOCK:
-                                 throw common::exception::invalid::Argument{ "bad socket"};
+                                 throw common::exception::invalid::Argument{ common::error::string( last_error)};
                               case EINTR:
                               {
                                  common::signal::handle();
@@ -93,15 +93,20 @@ namespace casual
 
                      namespace address
                      {
+                        const char* null_if_empty( const std::string& content)
+                        {
+                           if( content.empty()) { return nullptr;}
+                           return content.c_str();
+                        }
+
                         const char* host( const Address& address)
                         {
-                           if( address.host.empty()) { return nullptr;}
-                           return address.host.c_str();
+                           return null_if_empty( address.host);
                         }
+
                         const char* port( const Address& address)
                         {
-                           if( address.port.empty()) { return nullptr;}
-                           return address.port.c_str();
+                           return null_if_empty( address.port);
                         }
                      }
 
@@ -133,13 +138,6 @@ namespace casual
                         }
 
                         std::unique_ptr< struct addrinfo, std::function< void( struct addrinfo*)>> deleter( information, &freeaddrinfo);
-
-                        //
-                        // Add (at least) one (fake) error-code
-                        //
-                        //std::vector < std::decay< decltype( errno)>::type > errors{ ENETUNREACH};
-                        //
-                        // why?
 
                         for( const struct addrinfo* info = information; info; info = info->ai_next)
                         {
@@ -215,7 +213,7 @@ namespace casual
                      }
 
 
-                     tcp::socket::descriptor_type duplicate( tcp::socket::descriptor_type descriptor)
+                     tcp::socket::descriptor_type duplicate( const tcp::socket::descriptor_type descriptor)
                      {
                         Trace trace( "common::communication::tcp::local::socket::duplicate");
 
@@ -224,16 +222,35 @@ namespace casual
                         //
                         //common::signal::thread::scope::Block block;
 
-                        auto copy = check::result( ::dup( descriptor));
+                        const auto copy = check::result( ::dup( descriptor));
 
                         log << "descriptors - original: "<< descriptor << " , copy:" << copy <<'\n';
 
                         return copy;
                      }
 
+                     Address names( const struct sockaddr& info, const socklen_t size)
+                     {
+                        char host[ NI_MAXHOST];
+                        char serv[ NI_MAXSERV];
+                        //const int flags{ NI_NUMERICHOST | NI_NUMERICSERV};
+                        const int flags{ };
+
+                        check::result(
+                           getnameinfo(
+                              &info, size,
+                              host, NI_MAXHOST,
+                              serv, NI_MAXSERV,
+                              flags));
+
+                        return { Address::Host{ host}, Address::Port{ serv}};
+                     }
+
+
                   } // socket
 
                } // <unnamed>
+
             } // local
 
             Address::Address( const std::string& address)
@@ -275,16 +292,61 @@ namespace casual
                return out << "{ host: " << value.host << ", port: " << value.port << '}';
             }
 
+            namespace socket
+            {
+
+               namespace address
+               {
+                  Address host( const descriptor_type descriptor)
+                  {
+                     struct sockaddr info{ };
+                     socklen_t size = sizeof( info);
+
+                     local::socket::check::result(
+                        getsockname(
+                           descriptor, &info, &size));
+
+                     return local::socket::names( info, size);
+                  }
+
+                  Address host( const Socket& socket)
+                  {
+                     return host( socket.descriptor());
+                  }
+
+                  Address peer( const descriptor_type descriptor)
+                  {
+                     struct sockaddr info{ };
+                     socklen_t size = sizeof( info);
+
+                     local::socket::check::result(
+                        getpeername(
+                           descriptor, &info, &size));
+
+                     return local::socket::names( info, size);
+                  }
+
+                  Address peer( const Socket& socket)
+                  {
+                     return peer( socket.descriptor());
+                  }
+
+               } // address
+
+            } // socket
+
+
             Socket::Socket() noexcept = default;
 
-            Socket::Socket( Socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
+            Socket::Socket( const Socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
 
             Socket::~Socket() noexcept
             {
                if( *this)
                {
                   try
-                  {
+                  {  
+                     //local::socket::check::result( ::shutdown( m_descriptor, SHUT_RDWR));
                      local::socket::check::result( ::close( m_descriptor));
                      log << "Socket::close - descriptor: " << m_descriptor << '\n';
                   }
@@ -323,18 +385,18 @@ namespace casual
             {
                log << "Socket::release - descriptor: " << m_descriptor << '\n';
 
-               auto descriptor = m_descriptor;
+               const auto descriptor = m_descriptor;
                m_descriptor = -1;
                return descriptor;
             }
 
 
-            Socket adopt( socket::descriptor_type descriptor)
+            Socket adopt( const socket::descriptor_type descriptor)
             {
                return { descriptor};
             }
 
-            Socket duplicate( socket::descriptor_type descriptor)
+            Socket duplicate( const socket::descriptor_type descriptor)
             {
                return adopt( local::socket::duplicate( descriptor));
             }
@@ -407,7 +469,7 @@ namespace casual
                   namespace
                   {
 
-                     ssize_t send( socket::descriptor_type descriptor, const void* const data, std::size_t const size, common::Flags< Flag> flags)
+                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, std::size_t const size, common::Flags< Flag> flags)
                      {
                         common::signal::handle();
 
@@ -416,28 +478,34 @@ namespace casual
 
                      }
 
-
-
-                     ssize_t receive( socket::descriptor_type descriptor, void* const data, const std::size_t size, common::Flags< Flag> flags)
+                     char* receive(
+                           const socket::descriptor_type descriptor,
+                           char* first,
+                           char* const last,
+                           common::Flags< Flag> flags)
                      {
-                       log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( data) << ", size: " << size << ", flags: " << flags << '\n';
+                        log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( first) << ", size: " << last - first << ", flags: " << flags << '\n';
 
-                        common::signal::handle();
 
-                        const auto bytes = tcp::local::socket::check::result(
-                              ::recv( descriptor, data, size, flags.underlaying()));
-
-                        if( bytes == 0)
+                        while( first != last)
                         {
-                           //
-                           // Fake an error-description
-                           //
-                           throw common::exception::communication::Unavailable( common::error::string( EPIPE));
+                           common::signal::handle();
+
+                           const auto bytes = tcp::local::socket::check::result(
+                                 ::recv( descriptor, first, last - first, flags.underlaying()));
+
+                           if( bytes == 0)
+                           {
+                              //
+                              // Fake an error-description
+                              //
+                              throw common::exception::communication::Unavailable( common::error::string( EPIPE));
+                           }
+
+                           first += bytes;
                         }
-                        return bytes;
+                        return first;
                      }
-
-
                   } // <unnamed>
                } // local
 
@@ -445,10 +513,8 @@ namespace casual
                {
                   Trace trace{ "tcp::native::send"};
 
-                  const auto size = message::Transport::header_size + message::Transport::message_type_size + transport.size();
-
                   auto first = &transport.message;
-                  const auto last = first + size;
+                  const auto last = first + transport.size();
 
                   try
                   {
@@ -476,42 +542,27 @@ namespace casual
                {
                   Trace trace{ "tcp::native::receive"};
 
-                  const auto first = reinterpret_cast< char*>( &transport.message);
-                  auto current = first;
-                  const auto header_end = first + message::Transport::header_size + message::Transport::message_type_size;
+                  auto current = reinterpret_cast< char*>( &transport.message);
 
                   try
                   {
+
                      //
-                     // First we make sure we got the header
+                     // First we get the header
                      //
-                     while( current != header_end)
                      {
-                        const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, header_end), flags);
+                        const auto header_end = current + transport.header_size();
 
-                        if( bytes > std::distance( current, header_end))
-                        {
-                           throw exception::Casual( "somehow more bytes was received over the socket than requested");
-                        }
-
-                        current += bytes;
+                        current = local::receive( socket.descriptor(), current, header_end, flags);
                      }
 
-                     auto last = current + transport.message.header.count;
-
                      //
-                     // Keep going until we've read the whole message
+                     // Now we can get the payload
                      //
-                     while( current != last)
                      {
-                        const auto bytes = local::receive( socket.descriptor(), current, std::distance( current, last), flags);
+                        const auto payload_end = current + transport.pyaload_size();
 
-                        if( bytes > std::distance( current, last))
-                        {
-                           throw exception::Casual( "somehow more bytes was received over the socket than requested");
-                        }
-
-                        current += bytes;
+                        local::receive( socket.descriptor(), current, payload_end, flags);
                      }
 
                      log << "tcp receive <---- socket: " << socket << " , transport: " << transport << '\n';
@@ -528,24 +579,24 @@ namespace casual
 
             namespace policy
             {
-               bool basic_blocking::operator() ( const inbound::Connector& tcp, message::Transport& transport)
+               bool basic_blocking::receive( const inbound::Connector& tcp, message::Transport& transport)
                {
                   return native::receive( tcp.socket(), transport, {});
                }
 
-               bool basic_blocking::operator() ( const outbound::Connector& tcp, const message::Transport& transport)
+               bool basic_blocking::send( const outbound::Connector& tcp, const message::Transport& transport)
                {
                   return native::send( tcp.socket(), transport, {});
                }
 
                namespace non
                {
-                  bool basic_blocking::operator() ( const inbound::Connector& tcp, message::Transport& transport)
+                  bool basic_blocking::receive( const inbound::Connector& tcp, message::Transport& transport)
                   {
                      return native::receive( tcp.socket(), transport, native::Flag::non_blocking);
                   }
 
-                  bool basic_blocking::operator() ( const outbound::Connector& tcp, const message::Transport& transport)
+                  bool basic_blocking::send( const outbound::Connector& tcp, const message::Transport& transport)
                   {
                      return native::send( tcp.socket(), transport, native::Flag::non_blocking);
                   }

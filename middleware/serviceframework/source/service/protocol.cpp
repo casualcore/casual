@@ -36,9 +36,11 @@ namespace casual
                return m_state;
             }
 
-            void Base::do_andle_exception()
+            void Base::do_handle_exception()
             {
+               m_state.value = TPFAIL;
 
+               common::error::handler();
             }
 
             Interface::Input& Base::do_input()
@@ -61,7 +63,7 @@ namespace casual
 
             }
 
-            common::buffer::Type Binary::type()
+            const std::string& Binary::type()
             {
                return buffer::type::binary();
             }
@@ -73,6 +75,8 @@ namespace casual
                auto raw = m_writerBuffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
+
+               sf::log::sf << "state: " << m_state << '\n';
 
                return m_state;
             }
@@ -94,7 +98,7 @@ namespace casual
 
             }
 
-            common::buffer::Type Yaml::type()
+            const std::string& Yaml::type()
             {
                return buffer::type::yaml();
             }
@@ -118,6 +122,8 @@ namespace casual
                m_state.data = raw.buffer;
                m_state.size = raw.size;
 
+               sf::log::sf << "state: " << m_state << '\n';
+
                return m_state;
             }
 
@@ -137,7 +143,7 @@ namespace casual
 
             }
 
-            common::buffer::Type Json::type()
+            const std::string& Json::type()
             {
                return buffer::type::json();
             }
@@ -160,6 +166,8 @@ namespace casual
                m_state.data = raw.buffer;
                m_state.size = raw.size;
 
+               sf::log::sf << "state: " << m_state << '\n';
+
                return m_state;
             }
 
@@ -181,7 +189,7 @@ namespace casual
             }
 
 
-            common::buffer::Type Xml::type()
+            const std::string& Xml::type()
             {
                return common::buffer::type::xml();
             }
@@ -203,6 +211,8 @@ namespace casual
                auto raw = buffer.release();
                m_state.data = raw.buffer;
                m_state.size = raw.size;
+
+               sf::log::sf << "state: " << m_state << '\n';
 
                return m_state;
             }
@@ -238,7 +248,7 @@ namespace casual
                return m_state;
             }
 
-            common::buffer::Type Ini::type()
+            const std::string& Ini::type()
             {
                return common::buffer::type::ini();
             }
@@ -272,70 +282,13 @@ namespace casual
 
                service::IO service_io{ std::move( m_protocol)};
 
-               service_io << makeNameValuePair( "model", m_model);
+               service_io << name::value::pair::make( "model", m_model);
 
                return service_io.finalize();
             }
 
-
-            Example::Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol)
-                  : Base( information), m_protocol( std::move( protocol))
-            {
-               sf::Trace trace{ "protocol::Example::Example"};
-
-
-               m_input.readers.push_back( &m_prepare);
-               m_input.writers = m_protocol->output().writers;
-
-               for( auto& writer : m_input.writers)
-               {
-                  writer->serialtype_start( "input");
-               }
-
-
-               m_output.readers.push_back( &m_prepare);
-               m_output.writers = m_protocol->output().writers;
-
-
-
-            }
-
-
-            bool Example::do_call()
-            {
-               //
-               // Input is by definition deserialized, and after this
-               // we take care of the output
-               //
-
-               for( auto& writer : m_input.writers)
-               {
-                  writer->serialtype_end( "input");
-               }
-
-               for( auto& writer : m_output.writers)
-               {
-                  writer->serialtype_start( "output");
-               }
-
-               return false;
-            }
-
-            reply::State Example::do_finalize()
-            {
-               sf::Trace trace{ "protocol::Example::do_finalize"};
-
-
-               for( auto& writer : m_output.writers)
-               {
-                  writer->serialtype_end( "output");
-               }
-
-               return m_protocol->finalize();
-            }
-
-         }
-      } // protocol
+         } // protocol
+      } // service
    } // sf
 } // casual
 

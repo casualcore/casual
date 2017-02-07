@@ -6,6 +6,8 @@
 
 #include "common/service/lookup.h"
 
+#include "common/message/domain.h"
+
 namespace casual
 {
    namespace common
@@ -17,17 +19,76 @@ namespace casual
          {
             namespace
             {
-               void advertise( std::vector< message::Service> services)
+               void advertise( std::vector< message::service::advertise::Service> services)
                {
+                  trace::internal::Scope trace{ "common::server::local::advertise"};
+
                   if( ! services.empty())
                   {
                      message::service::Advertise advertise;
                      advertise.process = process::handle();
                      advertise.services = std::move( services);
 
+                     log::internal::debug << "advertise: " << advertise << '\n';
+
                      communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
                   }
                }
+
+               namespace configure
+               {
+                  void services(
+                        const std::vector< server::Service>& services,
+                        const message::domain::configuration::server::Reply& configuration)
+                  {
+                     trace::internal::Scope trace{ "common::server::local::configure::services"};
+
+                     std::vector< message::service::advertise::Service> advertise;
+
+
+                     for( auto& service : services)
+                     {
+
+                        auto physical = server::Context::instance().physical( service.origin);
+
+
+                        if( physical && ( configuration.restrictions.empty() || range::find( configuration.restrictions, service.origin)))
+                        {
+                           auto found = range::find_if( configuration.routes, [&service]( const message::domain::configuration::server::Reply::Service& s){
+                              return s.name == service.origin;
+                           });
+
+                           if( found)
+                           {
+                              range::for_each( found->routes, [physical,&advertise,&service]( const std::string& name){
+
+                                 advertise.emplace_back( name, service.category, service.transaction);
+
+                                 server::Context::instance().state().services.emplace( name, *physical);
+
+                              });
+
+                           }
+                           else
+                           {
+                              advertise.emplace_back( service.origin, service.category, service.transaction);
+                           }
+                        }
+                     }
+
+                     local::advertise( std::move( advertise));
+                  }
+
+               } // configure
+
+               message::domain::configuration::server::Reply configuration()
+               {
+                  message::domain::configuration::server::Request request;
+                  request.process = process::handle();
+
+                  return communication::ipc::call( communication::ipc::domain::manager::device(), request);
+               }
+
             } // <unnamed>
          } // local
 
@@ -36,32 +97,42 @@ namespace casual
 
             namespace policy
             {
-               void Default::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Default::configure( server::Arguments& arguments)
                {
+                  trace::internal::Scope trace{ "server::handle::policy::Default::configure"};
+
                   //
                   // Connection to the domain has been done before...
                   //
 
+                  //
+                  // Ask domain-manager for our configuration
+                  //
+                  auto configuration = local::configuration();
 
                   //
                   // Let the broker know about our services...
                   //
-                  local::advertise( std::move( services));
+                  local::configure::services( arguments.services, configuration);
 
                   //
                   // configure resources, if any.
                   //
-                  transaction::Context::instance().set( resources);
+                  transaction::Context::instance().configure( arguments.resources, std::move( configuration.resources));
 
                }
 
                void Default::reply( platform::ipc::id::type id, message::service::call::Reply& message)
                {
+                  trace::internal::Scope trace{ "server::handle::policy::Default::reply"};
+
                   communication::ipc::blocking::send( id, message);
                }
 
                void Default::ack( const message::service::call::callee::Request& message)
                {
+                  trace::internal::Scope trace{ "server::handle::policy::Default::ack"};
+
                   message::service::call::ACK ack;
                   ack.process = process::handle();
                   ack.service = message.service.name;
@@ -72,7 +143,9 @@ namespace casual
 
                void Default::statistics( platform::ipc::id::type id,  message::traffic::Event& event)
                {
-                  log::internal::debug << "policy::Default::statistics - event:" << event << std::endl;
+                  trace::internal::Scope trace{ "server::handle::policy::Default::statistics"};
+
+                  log::internal::debug << "event:" << event << '\n';
 
                   try
                   {
@@ -86,7 +159,9 @@ namespace casual
 
                void Default::transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now)
                {
-                  log::internal::debug << "service: " << service << std::endl;
+                  trace::internal::Scope trace{ "server::handle::policy::Default::transaction"};
+
+                  log::internal::debug << "message: " << message << ", service: " << service << '\n';
 
                   //
                   // We keep track of callers transaction (can be null-trid).
@@ -95,7 +170,7 @@ namespace casual
 
                   switch( service.transaction)
                   {
-                     case server::Service::Transaction::automatic:
+                     case service::transaction::Type::automatic:
                      {
                         if( message.trid)
                         {
@@ -107,17 +182,17 @@ namespace casual
                         }
                         break;
                      }
-                     case server::Service::Transaction::join:
+                     case service::transaction::Type::join:
                      {
                         transaction::Context::instance().join( message.trid);
                         break;
                      }
-                     case server::Service::Transaction::atomic:
+                     case service::transaction::Type::atomic:
                      {
                         transaction::Context::instance().start( now);
                         break;
                      }
-                     case server::Service::Transaction::none:
+                     case service::transaction::Type::none:
                      default:
                      {
                         //
@@ -144,6 +219,7 @@ namespace casual
 
                void Default::forward( const message::service::call::callee::Request& message, const State::jump_t& jump)
                {
+                  trace::internal::Scope trace{ "server::handle::policy::Default::forward"};
 
                   if( transaction::Context::instance().pending())
                   {
@@ -197,22 +273,20 @@ namespace casual
                {}
 
 
-               void Admin::connect( std::vector< message::Service> services, const std::vector< transaction::Resource>& resources)
+               void Admin::configure( server::Arguments& arguments)
                {
                   //
                   // Connection to the domain has been done before...
                   //
 
 
-                  if( ! resources.empty())
+                  if( ! arguments.resources.empty())
                   {
                      throw common::exception::invalid::Semantic{ "can't build and link an administration server with resources"};
                   }
 
-                  //
-                  // Let the broker know about our services...
-                  //
-                  local::advertise( std::move( services));
+                  local::configure::services( arguments.services, {});
+
                }
 
                void Admin::reply( platform::ipc::id::type id, message::service::call::Reply& message)

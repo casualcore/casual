@@ -1,8 +1,5 @@
 //!
-//! template-server.cpp
-//!
-//! Created on: Mar 28, 2012
-//!     Author: Lazan
+//! casual
 //!
 //!
 //! Only to get a feel for the abstractions needed.
@@ -24,7 +21,7 @@
 #include "sf/buffer.h"
 
 
-#include "queue/api/rm/queue.h"
+#include "queue/api/queue.h"
 
 
 
@@ -148,18 +145,16 @@ void casual_test3( TPSVCINFO *serviceContext)
          casual::queue::Message message;
 
          message.attributes.reply = task.enqueue;
-         auto type = casual::sf::buffer::type::get( serviceContext->data);
-         message.payload.type.type = type.name;
-         message.payload.type.subtype = type.subname;
+         message.payload.type = casual::sf::buffer::type::get( serviceContext->data);
          casual::common::range::copy( task.message, std::back_inserter( message.payload.data));
 
-         auto id = casual::queue::rm::enqueue( task.enqueue, message);
+         auto id = casual::queue::enqueue( task.enqueue, message);
 
          casual::sf::log::debug << CASUAL_MAKE_NVP( id);
       }
       else if( ! task.dequeue.empty())
       {
-         auto dequeued = casual::queue::rm::dequeue( task.dequeue);
+         auto dequeued = casual::queue::dequeue( task.dequeue);
 
          if( ! dequeued.empty())
          {

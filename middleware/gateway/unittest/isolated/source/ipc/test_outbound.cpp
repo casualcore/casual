@@ -49,13 +49,17 @@ namespace casual
             {
                Trace trace{ "create_domain_file"};
 
-               auto file = mockup::file::temporary( "", std::to_string( queue));
+               auto file = mockup::file::temporary::content( "", std::to_string( queue));
 
                log::internal::debug << "created domain file: " << file << " - qid: " << queue << '\n';
 
                return file;
             }
 
+            //!
+            //! Act as both the local and the remote gateway. Which might be a little tricky to
+            //! reason about, but, as for now, it's still easier then mocking up two gateways (I think...)
+            //!
             struct Domain
             {
 
@@ -66,14 +70,17 @@ namespace casual
                   try
                   {
 
+
                      //
                      // Wait for the outbound to connect (which it think we are it's remote gateway)
                      //
                      {
-                        Trace trace{ "wait for connect from outbound"};
+                        Trace trace{ "remote - wait for connect from outbound"};
 
                         message::ipc::connect::Request request;
                         communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
+
+                        log::debug << "request: " << request << '\n';
 
                         //
                         // save the external entry point
@@ -86,6 +93,44 @@ namespace casual
                         //
                         reply.process = remote.process();
                         communication::ipc::blocking::send( external.queue, reply);
+                     }
+
+                     //
+                     // Act as the local gateway
+                     //
+                     {
+                        Trace trace{ "local - wait for connect from outbound to local domain"};
+
+                        message::outbound::configuration::Request request;
+                        communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
+
+                        log::debug << "request: " << request << '\n';
+
+                        auto reply = common::message::reverse::type( request);
+                        reply.services.push_back( "service1");
+                        communication::ipc::blocking::send( request.process.queue, reply);
+
+                     }
+
+                     //
+                     // Act as the reomte domain
+                     //
+                     {
+                        Trace trace{ "remote - wait for discovery from outbound to 'local' inbound"};
+
+                        message::interdomain::domain::discovery::receive::Request request;
+                        communication::ipc::blocking::receive( remote.output(), request);
+
+                        log::debug << "request: " << request << '\n';
+
+                        message::interdomain::domain::discovery::receive::Reply reply;
+                        reply.correlation = request.correlation;
+                        reply.execution = request.execution;
+                        reply.process = remote.process();
+                        reply.services.emplace_back( "service1");
+
+                        communication::ipc::blocking::send(
+                              external.queue, reply);
                      }
 
                   }
@@ -129,7 +174,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, shutdown_before_connection__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          //
          // We need to have a domain manager to 'connect the process'
@@ -146,7 +191,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, connection_then_force_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
             local::Domain doman;
@@ -155,7 +200,7 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, connection_then_shutdown__expect_gracefull_shutdown)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          EXPECT_THROW({
             local::Domain domain;
@@ -171,11 +216,12 @@ namespace casual
 
       TEST( casual_gateway_outbound_ipc, service_call__expect_echo)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain;
 
          platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+
 
          common::message::service::call::callee::Request request;
          {
@@ -190,7 +236,8 @@ namespace casual
          // handle the message, as we're the other domain
          //
          {
-            common::message::service::call::callee::Request message;
+
+            message::interdomain::service::call::receive::Request message;
             communication::ipc::blocking::receive( domain.remote.output(), message);
 
             EXPECT_TRUE( message.correlation == correlation);

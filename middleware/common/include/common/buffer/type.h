@@ -1,8 +1,5 @@
 //!
-//! type.h
-//!
-//! Created on: Sep 17, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_BUFFER_TYPE_H_
@@ -11,7 +8,7 @@
 #include "common/platform.h"
 
 #include "common/marshal/marshal.h"
-
+#include "common/algorithm.h"
 
 
 #include <string>
@@ -27,44 +24,33 @@ namespace casual
       namespace buffer
       {
 
-         struct Type
-         {
-            Type();
-            Type( std::string name, std::string subname);
-            Type( const char* name, const char* subname);
-
-            std::string name;
-            std::string subname;
-
-            CASUAL_CONST_CORRECT_MARSHAL(
-            {
-               archive & name;
-               archive & subname;
-            })
-
-            friend bool operator < ( const Type& lhs, const Type& rhs);
-            friend bool operator == ( const Type& lhs, const Type& rhs);
-            friend bool operator != ( const Type& lhs, const Type& rhs);
-
-            friend std::ostream& operator << ( std::ostream& out, const Type& value);
-         };
 
          namespace type
          {
-            Type x_octet();
-            Type binary();
-            Type json();
-            Type yaml();
-            Type xml();
-            Type ini();
+            const std::string& x_octet();
+            const std::string& binary();
+            const std::string& json();
+            const std::string& yaml();
+            const std::string& xml();
+            const std::string& ini();
+
+            std::string combine( const char* type, const char* subtype = nullptr);
+
+            inline auto dismantle( const std::string& type) -> decltype( range::split( type, '/'))
+            {
+               return range::split( type, '/');
+            }
+
          } // type
+
+
 
          struct Payload
          {
             Payload();
             Payload( std::nullptr_t);
-            Payload( Type type, platform::binary_type buffer);
-            Payload( Type type, platform::binary_type::size_type size);
+            Payload( std::string type, platform::binary_type buffer);
+            Payload( std::string type, platform::binary_type::size_type size);
 
             //!
             //! g++ does not generate noexecpt move ctor/assignment
@@ -79,7 +65,7 @@ namespace casual
 
             bool null() const;
 
-            Type type;
+            std::string type;
             platform::binary_type memory;
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -96,25 +82,32 @@ namespace casual
             struct Send
             {
                Send( const Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
-                  : payload( payload), transport( transport), reserved( reserved) {}
+                  :  transport( transport), reserved( reserved), m_payload( &payload) {}
 
                Send( const Payload& payload)
-                  : payload( payload) {}
+                  : m_payload( &payload) {}
 
-               const Payload& payload;
+
+               inline const Payload& payload() const { return *m_payload;};
                platform::binary_size_type transport = 0;
                platform::binary_size_type reserved = 0;
+
+
 
                template< typename A>
                void marshal( A& archive) const
                {
-                  archive << payload.type;
+                  archive << payload().type;
                   archive << transport;
-                  archive.append( std::begin( payload.memory), std::begin( payload.memory) + transport);
+                  archive.append( std::begin( payload().memory), std::begin( payload().memory) + transport);
                }
 
                friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
+            private:
+               // gcc 4.9.4 requires Payload to be defined, switch to pointer untill we can use a better compiler
+               //std::reference_wrapper< const Payload> m_payload;
+               const Payload* m_payload;
             };
 
          } // payload
@@ -122,7 +115,7 @@ namespace casual
          struct Buffer
          {
             Buffer( Payload payload);
-            Buffer( Type type, platform::binary_type::size_type size);
+            Buffer( std::string type, platform::binary_type::size_type size);
 
             Buffer( Buffer&&) noexcept;
             Buffer& operator = ( Buffer&&) noexcept;

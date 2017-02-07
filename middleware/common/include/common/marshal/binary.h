@@ -33,6 +33,7 @@ namespace casual
                using is_native_marshable = std::integral_constant<bool,
                      std::is_arithmetic<T>::value ||
                      ( std::is_array<T>::value && sizeof( typename std::remove_all_extents<T>::type) == 1 ) ||
+                     traits::container::is_array< T>::value ||
                      std::is_enum< T>::value>;
 
             } // detail
@@ -98,14 +99,15 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
                write( T& value)
                {
+                  using casual::casual_marshal_value;
                   casual_marshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   write_pod( value);
@@ -166,13 +168,13 @@ namespace casual
 
 
                template< typename T>
-               basic_input& operator & ( T& value)
+               basic_input& operator & ( T&& value)
                {
                   return *this >> value;
                }
 
                template< typename T>
-               basic_input& operator >> ( T& value)
+               basic_input& operator >> ( T&& value)
                {
                   read( value);
                   return *this;
@@ -197,14 +199,15 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
                read( T& value)
                {
+                  using casual::casual_unmarshal_value;
                   casual_unmarshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   read_pod( value);

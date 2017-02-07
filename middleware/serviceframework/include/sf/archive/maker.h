@@ -1,8 +1,5 @@
 //!
-//! casual_sf_archivebuffer.h
-//!
-//! Created on: Nov 19, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_SF_ARCHIVE_MAKER_H_

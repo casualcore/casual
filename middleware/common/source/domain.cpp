@@ -5,8 +5,9 @@
 #include "common/domain.h"
 
 #include "common/environment.h"
+#include "common/internal/trace.h"
 
-#include <ostream>
+#include <fstream>
 
 namespace casual
 {
@@ -33,6 +34,17 @@ namespace casual
          {
             return out << "{ id: " << value.id << ", name: " << value.name << "}";
          }
+
+         bool operator == ( const Identity& lhs, const Identity& rhs)
+         {
+            return lhs.id == rhs.id;
+         }
+
+         bool operator < ( const Identity& lhs, const Identity& rhs)
+         {
+            return lhs.id < rhs.id;
+         }
+
 
 
          namespace local
@@ -67,6 +79,99 @@ namespace casual
             environment::variable::set( environment::variable::name::domain::id(), uuid::string( local::identity().id));
 
          }
+
+         namespace singleton
+         {
+            file::scoped::Path create( const process::Handle& process, const Identity& identity)
+            {
+               trace::internal::Scope trace{ "common::domain::singleton::create"};
+
+
+               auto path = environment::domain::singleton::file();
+
+               auto temp_file = file::scoped::Path{ file::name::unique( path, ".tmp")};
+
+               std::ofstream output( temp_file);
+
+               if( output)
+               {
+                  output << process.queue << '\n';
+                  output << process.pid << '\n';
+                  output << identity.name << '\n';
+                  output << identity.id << std::endl;
+
+                  log::internal::debug << "domain information - id: " << identity << " - process: " << process << '\n';
+               }
+               else
+               {
+                  throw common::exception::invalid::File( "failed to write temporary domain singleton file: " + temp_file.path());
+               }
+
+
+               if( common::file::exists( path))
+               {
+                  //
+                  // There is potentially a running casual-domain already - abort
+                  //
+                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain");
+               }
+
+               //
+               // Set domain-process so children easy can send messages to us.
+               //
+               environment::variable::process::set(
+                     environment::variable::name::ipc::domain::manager(),
+                     process);
+
+               domain::identity( identity);
+
+               common::file::move( temp_file, path);
+
+               temp_file.release();
+
+               return { std::move( path)};
+            }
+
+            Result read()
+            {
+               trace::internal::Scope trace{ "common::domain::singleton::read"};
+
+               process::pattern::Sleep retries{
+                  { std::chrono::milliseconds{ 10}, 10},
+                  { std::chrono::milliseconds{ 100}, 10},
+                  { std::chrono::seconds{ 1}, 60}
+               };
+
+               do
+               {
+                  std::ifstream file{ common::environment::domain::singleton::file()};
+
+                  if( file)
+                  {
+                     Result result;
+                     {
+                        file >> result.process.queue;
+                        file >> result.process.pid;
+                        file >> result.identity.name;
+                        std::string uuid;
+                        file >> uuid;
+                        result.identity.id = Uuid{ uuid};
+                     }
+
+                     environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
+                     common::domain::identity( result.identity);
+
+                     log::internal::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
+
+                     return result;
+                  }
+               }
+               while( retries());
+
+               return {};
+            }
+
+         } // singleton
 
       } // domain
    } // common

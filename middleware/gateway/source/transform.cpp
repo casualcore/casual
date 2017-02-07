@@ -23,12 +23,12 @@ namespace casual
             {
                manager::state::outbound::Connection::Type type( common::message::domain::configuration::gateway::Connection::Type value)
                {
-                  using connectino_type = common::message::domain::configuration::gateway::Connection::Type;
+                  using connection_type = common::message::domain::configuration::gateway::Connection::Type;
 
                   switch( value)
                   {
-                     case connectino_type::ipc: return manager::state::outbound::Connection::Type::ipc;
-                     case connectino_type::tcp: return manager::state::outbound::Connection::Type::tcp;
+                     case connection_type::ipc: return manager::state::outbound::Connection::Type::ipc;
+                     case connection_type::tcp: return manager::state::outbound::Connection::Type::tcp;
                   }
 
                   return manager::state::outbound::Connection::Type::unknown;
@@ -44,7 +44,8 @@ namespace casual
                      result.type = local::type( connection.type);
                      result.address.push_back( common::environment::string( connection.address));
                      result.restart = connection.restart;
-                     result.services = connection.services;
+                     result.services = std::move( connection.services);
+                     result.queues = std::move( connection.queues);
 
                      return result;
                   }
@@ -64,31 +65,33 @@ namespace casual
                {
                   struct Connection
                   {
-                     manager::admin::vo::inbound::Connection operator() ( const manager::state::inbound::Connection& value) const
+                     manager::admin::vo::Connection operator() ( const manager::state::inbound::Connection& value) const
                      {
-                        auto result = transform< manager::admin::vo::inbound::Connection>( value);
+                        auto result = transform( value);
+                        result.bound = manager::admin::vo::Connection::Bound::in;
 
                         return result;
                      }
 
-                     manager::admin::vo::outbound::Connection operator() ( const manager::state::outbound::Connection& value) const
+                     manager::admin::vo::Connection operator() ( const manager::state::outbound::Connection& value) const
                      {
-                        auto result = transform< manager::admin::vo::outbound::Connection>( value);
+                        auto result = transform( value);
+                        result.bound = manager::admin::vo::Connection::Bound::out;
 
                         return result;
                      }
 
                   private:
 
-                     template< typename R, typename T>
-                     R transform( const T& value) const
+                     template< typename T>
+                     manager::admin::vo::Connection transform( const T& value) const
                      {
-                        R result;
+                        manager::admin::vo::Connection result;
 
                         result.process = value.process;
                         result.remote = value.remote;
-                        result.runlevel = static_cast< typename R::Runlevel>( value.runlevel);
-                        result.type = static_cast< typename R::Type>( value.type);
+                        result.runlevel = static_cast< manager::admin::vo::Connection::Runlevel>( value.runlevel);
+                        result.type = static_cast< manager::admin::vo::Connection::Type>( value.type);
                         result.address = value.address;
 
                         return result;
@@ -101,14 +104,26 @@ namespace casual
             } // <unnamed>
          } // local
 
-         manager::State state( const common::message::domain::configuration::gateway::Reply& configuration)
+         manager::State state( const common::message::domain::configuration::Domain& configuration)
          {
             Trace trace{ "gateway::transform::state"};
 
             manager::State state;
 
-            range::transform( configuration.listeners, state.listeners, local::Listener{});
-            range::transform( configuration.connections, state.connections.outbound, local::Connection{});
+            range::transform( configuration.gateway.listeners, state.listeners, local::Listener{});
+            range::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
+
+            //
+            // Define the order, hence the priority
+            //
+            {
+               std::size_t order = 0;
+               for( auto& connection : state.connections.outbound)
+               {
+                  connection.order = ++order;
+               }
+            }
+
 
             return state;
          }
@@ -120,8 +135,8 @@ namespace casual
             manager::admin::vo::State result;
 
 
-            range::transform( state.connections.inbound, result.connections.inbound, local::vo::Connection{});
-            range::transform( state.connections.outbound, result.connections.outbound, local::vo::Connection{});
+            range::transform( state.connections.outbound, result.connections, local::vo::Connection{});
+            range::transform( state.connections.inbound, result.connections, local::vo::Connection{});
 
 
             return result;

@@ -37,15 +37,11 @@ namespace casual
    {
       namespace buffer
       {
-         using Type = common::buffer::Type;
-
          namespace type
          {
             using namespace common::buffer::type;
 
-            Type api();
-
-            Type get( platform::raw_buffer_type buffer);
+            const std::string& get( platform::raw_buffer_type buffer);
          } // type
 
 
@@ -84,13 +80,13 @@ namespace casual
             //!
             //! Allocates a buffer of @p type with @size size
             //!
-            Buffer( const Type& type, size_type size);
+            Buffer( const std::string& type, size_type size);
 
 
             //!
             //! Crates a 'null-buffer' with @p type type
             //!
-            Buffer( const Type& type);
+            Buffer( const std::string& type);
 
 
             //!
@@ -103,7 +99,7 @@ namespace casual
             ~Buffer();
 
             buffer_type data() noexcept;
-            const buffer_type data() const noexcept;
+            buffer_type data() const noexcept;
 
             size_type size() const noexcept;
 
@@ -166,7 +162,7 @@ namespace casual
 
          namespace type
          {
-            Type get( const Buffer& source);
+            const std::string& get( const Buffer& source);
 
          } // type
 

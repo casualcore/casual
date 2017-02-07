@@ -1,8 +1,5 @@
 //!
-//! queue.h
-//!
-//! Created on: Jul 9, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_QUEUE_H_
@@ -18,11 +15,27 @@ namespace casual
 {
    namespace queue
    {
+      inline namespace v1  {
 
       sf::platform::Uuid enqueue( const std::string& queue, const Message& message);
 
       std::vector< Message> dequeue( const std::string& queue);
       std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
+
+      namespace blocking
+      {
+         Message dequeue( const std::string& queue);
+         Message dequeue( const std::string& queue, const Selector& selector);
+      } // blocking
+
+      namespace peek
+      {
+         std::vector< message::Information> information( const std::string& queue);
+         std::vector< message::Information> information( const std::string& queue, const Selector& selector);
+
+         std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids);
+
+      } // peek
 
       namespace xatmi
       {
@@ -34,13 +47,20 @@ namespace casual
 
       } // xatmi
 
-
-      namespace peek
+      namespace restore
       {
-         std::vector< Message> queue( const std::string& queue);
+         struct Affected
+         {
+            std::string queue;
+            std::size_t restored = 0;
+         };
 
-      } // peek
+         std::vector< Affected> queue( const std::vector< std::string>& queues);
 
+
+      } // restore
+
+      } // v1
    } // queue
 } // casual
 

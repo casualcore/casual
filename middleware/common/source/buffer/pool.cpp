@@ -5,6 +5,7 @@
 #include "common/buffer/pool.h"
 #include "common/algorithm.h"
 #include "common/exception.h"
+#include "common/internal/trace.h"
 
 #include <functional>
 
@@ -19,7 +20,7 @@ namespace casual
          namespace pool
          {
 
-            Holder::Base& Holder::find( const Type& type)
+            Holder::Base& Holder::find( const std::string& type)
             {
                auto pool = range::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
                   return b->manage( type);
@@ -52,8 +53,7 @@ namespace casual
             }
 
 
-
-            platform::raw_buffer_type Holder::allocate( const Type& type, platform::binary_size_type size)
+            platform::raw_buffer_type Holder::allocate( const std::string& type, platform::binary_size_type size)
             {
                auto buffer = find( type).allocate( type, size);
 
@@ -82,9 +82,9 @@ namespace casual
                return buffer;
             }
 
-            const Type& Holder::type( platform::const_raw_buffer_type handle)
+            const std::string& Holder::type( platform::const_raw_buffer_type handle)
             {
-               return get( handle).payload.type;
+               return get( handle).payload().type;
             }
 
             void Holder::deallocate( platform::const_raw_buffer_type handle)
@@ -102,6 +102,7 @@ namespace casual
 
             platform::raw_buffer_type Holder::adopt( Payload&& payload)
             {
+               common::trace::internal::Scope trace{ "buffer::pool::adopt"};
 
                //
                // This is the only place where a buffer is consumed by the pool, hence can only happen

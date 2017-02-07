@@ -1,8 +1,5 @@
 //!
-//! casual_utility_string.h
-//!
-//! Created on: Apr 29, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_STRING_H_
@@ -22,15 +19,6 @@ namespace casual
 	{
 		namespace string
 		{
-			inline std::string fromCString( char* string)
-			{
-				return string == 0 ? "" : string;
-			}
-
-			inline std::string fromCString( const char* string)
-			{
-				return string == 0 ? "" : string;
-			}
 
 			//!
 			//! splits a range

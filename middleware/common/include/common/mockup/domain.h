@@ -8,10 +8,14 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 
-#include "common/message/domain.h"
 #include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+#include "common/message/queue.h"
+
+
+#include "common/file.h"
+#include "common/domain.h"
 
 
 #include <vector>
@@ -20,6 +24,17 @@ namespace casual
 {
    namespace common
    {
+      namespace message
+      {
+         namespace domain
+         {
+            namespace configuration
+            {
+               struct Domain;
+            } // configuration
+         } // domain
+      } // message
+
       namespace mockup
       {
 
@@ -27,6 +42,8 @@ namespace casual
 
          namespace domain
          {
+
+            using dispatch_type = communication::ipc::dispatch::Handler;
 
             namespace service
             {
@@ -40,36 +57,19 @@ namespace casual
             struct Manager
             {
                Manager();
-               Manager( message::dispatch::Handler&& handler);
+               Manager( dispatch_type&& handler, const common::domain::Identity& identity = common::domain::Identity{ "unittest-domain"});
+               Manager( message::domain::configuration::Domain domain);
 
-               template< typename... Args>
-               Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
 
                ~Manager();
 
-               inline process::Handle process() const { return m_replier.process();}
+               process::Handle process() const;
+
 
             private:
-               struct State
-               {
 
-                  std::map< common::Uuid, common::process::Handle> singeltons;
-                  std::vector< common::message::domain::process::lookup::Request> pending;
-                  std::vector< common::process::Handle> executables;
-               };
-
-               message::dispatch::Handler default_handler();
-
-               template< typename... Args>
-               message::dispatch::Handler default_handler( Args&& ...args)
-               {
-                  auto result = default_handler();
-                  result.insert( std::forward< Args>( args)...);
-                  return result;
-               }
-
-               State m_state;
-               ipc::Replier m_replier;
+               struct Implementation;
+               common::move::basic_pimpl< Implementation> m_implementation;
             };
 
 
@@ -79,11 +79,7 @@ namespace casual
             struct Broker
             {
                Broker();
-
-               template< typename... Args>
-               Broker( Args&& ...args) : Broker( default_handler( std::forward< Args>( args)...)) {}
-
-               Broker( message::dispatch::Handler&& handler);
+               Broker( dispatch_type&& handler);
 
                ~Broker();
 
@@ -96,15 +92,7 @@ namespace casual
                };
 
 
-               message::dispatch::Handler default_handler();
-
-               template< typename... Args>
-               message::dispatch::Handler default_handler( Args&& ...args)
-               {
-                  auto result = default_handler();
-                  result.insert( std::forward< Args>( args)...);
-                  return result;
-               }
+               dispatch_type default_handler();
 
                State m_state;
                ipc::Replier m_replier;
@@ -112,51 +100,57 @@ namespace casual
 
             namespace transaction
             {
-
-
                struct Manager
                {
                   Manager();
-
-                  template< typename... Args>
-                  Manager( Args&& ...args) : Manager( default_handler( std::forward< Args>( args)...)) {}
+                  Manager( dispatch_type&& handler);
 
                private:
 
-                  message::dispatch::Handler default_handler();
-
-                  template< typename... Args>
-                  message::dispatch::Handler default_handler( Args&& ...args)
-                  {
-                     auto result = default_handler();
-                     result.insert( std::forward< Args>( args)...);
-                     return result;
-                  }
-
-                  Manager( message::dispatch::Handler handler);
+                  dispatch_type default_handler();
 
                   ipc::Replier m_replier;
                };
 
             } // transaction
 
+
+            namespace queue
+            {
+               struct Broker
+               {
+                  Broker();
+                  Broker( dispatch_type&& handler);
+
+               private:
+                  dispatch_type default_handler();
+
+                  using Message = message::queue::dequeue::Reply::Message;
+
+                  std::unordered_map< std::string, std::queue< Message>> m_queues;
+
+                  ipc::Replier m_replier;
+               };
+
+
+            } // queue
+
+
             namespace echo
             {
 
                namespace create
                {
-                  message::Service service(
-                        std::string name,
-                        std::chrono::microseconds timeout = std::chrono::microseconds::zero());
+                  message::service::advertise::Service service( std::string name);
                } // create
 
                struct Server
                {
-                  Server( std::vector< message::Service> services);
-                  Server( message::Service service);
+                  Server( std::vector< message::service::advertise::Service> services);
+                  Server( message::service::advertise::Service service);
 
-                  void advertise( std::vector< message::Service> services) const;
-                  void undadvertise( std::vector< message::Service> services) const;
+                  void advertise( std::vector< message::service::advertise::Service> services) const;
+                  void undadvertise( std::vector< std::string> services) const;
 
 
                   void send_ack( std::string service) const;
@@ -176,7 +170,6 @@ namespace casual
                //!
                //! - service1
                //! - service2
-               //! - service3_2ms_timout
                //! - removed_ipc_queue <- corresponds to an ipc-queue that does not exists
                //!
                struct Domain
@@ -192,7 +185,6 @@ namespace casual
 
 
             } // minimal
-
 
 
          } // domain

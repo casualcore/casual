@@ -44,12 +44,14 @@ namespace casual
             }
          }
 
-         void move( const std::string& old_path, const std::string& new_path)
+         void move( const std::string& source, const std::string& destination)
          {
-            if( ::rename( old_path.c_str(), new_path.c_str()) == -1)
+            if( ::rename( source.c_str(), destination.c_str()) == -1)
             {
-               throw exception::NotReallySureWhatToNameThisException{ "should be a system exception from errno"};
+               throw exception::invalid::File{ "failed to move file", CASUAL_NIP( source), CASUAL_NIP( destination), CASUAL_NIP( error::string())};
             }
+
+            log::internal::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
          }
 
 
@@ -112,12 +114,12 @@ namespace casual
          {
             std::string result;
 
-            DIR* directory = opendir( path.c_str());
+            auto directory = make::deleter( opendir( path.c_str()), &closedir);
 
             if( directory)
             {
                struct dirent* element = nullptr;
-               while( ( element = readdir( directory)) != nullptr)
+               while( ( element = readdir( directory.get())) != nullptr)
                {
 
                   if( std::regex_match( element->d_name, search))
@@ -131,11 +133,19 @@ namespace casual
                      break;
                   }
                }
-
-               closedir( directory);
             }
-
             return result;
+         }
+
+         std::string absolute( const std::string& path)
+         {
+            auto absolut = make::deleter( realpath( path.c_str(), nullptr), &free);
+
+            if( absolut)
+            {
+               return absolut.get();
+            }
+            throw exception::invalid::File{ "invalid path", error::string(), CASUAL_NIP( path)};
          }
 
          namespace name

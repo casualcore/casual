@@ -1,0 +1,191 @@
+#!groovy
+
+//
+// Script for the backend builder
+//
+def backend_builder = '''#! /bin/sh
+CASUAL_VERSION="0.42"
+CASUAL_RELEASE="1"
+
+umask 000
+cd /git/casual
+find . -name "*.gcda"| xargs rm
+rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
+casual-make -d -a --use-valgrind make && \
+   casual-make clean && \
+   casual-make -d -a --use-valgrind compile && \
+   casual-make -d -a --use-valgrind link && \
+   ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test && \
+   casual-make make && \
+   casual-make clean && \
+   casual-make compile && \
+   casual-make link && \
+   casual-make install && \
+   cd /opt/casual && \
+   tar cvf /git/casual/casual-middleware.tar . && \
+   cd /git/casual && python thirdparty/setup/install_nginx.py && \
+   cd /opt/casual && \
+   unzip /git/casual/casual-webapp.zip && \
+   cd .. && \
+   tar cvf casual-middleware.tar casual && \
+   cp casual-middleware.tar /git/casual/. && \
+   cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
+   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  &&
+   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/.
+'''
+
+//
+// Script for the frontend builder
+//
+def frontend_builder = '''#! /bin/sh
+umask 000
+cd /git/casual/webapp
+bower update --allow-root
+touch bower_components/app-route/app-location.html
+polymer build
+cd ..
+zip -r casual-webapp.zip webapp
+chmod a+w -R .
+'''
+
+//
+// Dockerfile for creating testcontainer
+//
+def dockerfile = '''FROM centos:latest
+MAINTAINER flurig <flurig@localhost>
+
+RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
+RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
+RUN rpm -Uvh epel-release*rpm
+RUN yum -y install pugixml yaml-cpp03
+
+COPY casual-middleware-0.42-1.x86_64.rpm /tmp/casual-middleware-0.42-1.x86_64.rpm
+RUN rpm -i -p /tmp/casual-middleware-0.42-1.x86_64.rpm
+COPY start.sh /opt/casual/start.sh
+RUN chmod 755 /opt/casual/start.sh
+
+RUN useradd -ms /bin/bash casual
+
+ENV CASUAL_HOME /opt/casual
+ENV PATH $CASUAL_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
+ENV CASUAL_DOMAIN_HOME /test/casual
+ENV CASUAL_LOG ".*"
+
+RUN mkdir -p $CASUAL_DOMAIN_HOME
+RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
+RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
+RUN chown -R casual $CASUAL_DOMAIN_HOME
+RUN chown -R casual $CASUAL_HOME/nginx
+
+EXPOSE 8080 7771
+USER casual
+WORKDIR $CASUAL_DOMAIN_HOME
+
+ENTRYPOINT ["/opt/casual/start.sh"]
+'''
+
+//
+// Startscript for dockercontainer
+//
+def dockerstart = '''#! /bin/bash
+
+casual-domain-manager -c configuration/domain.yaml
+'''
+
+def build( name, image, content)
+{
+   def current_dir = pwd()
+   writeFile file: 'builder.sh', text: content
+
+   sh """
+   chmod +x builder.sh
+   docker run -v $current_dir:/git/casual $image
+   """
+}
+
+node {
+
+//   bitbucketStatusNotify(
+//      buildState: 'INPROGRESS',
+//      buildKey: 'build',
+//      buildName: 'Build'
+//   )
+
+//  try
+//  {
+      stage('Checkout')
+      {
+         checkout scm
+      }  
+
+      stage('Build frontend')
+      {
+
+          build( 'casualfrontend', 'casual/frontend', frontend_builder)
+
+          archive includes: '**/casual-webapp.zip'
+      }
+
+      stage('Build backend - Unittest/CodeCoverage')
+      {
+          build( 'centoscompile', 'casual/centos', backend_builder)
+
+          step([$class: 'XUnitBuilder',
+             thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
+             tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+
+          archive includes: '**/casual-middleware*.rpm'
+      }
+
+      if ( "${env.BRANCH_NAME}" == "develop" )
+      {
+         stage('Create container')
+         {
+            // 
+            // Setup files
+            //
+            writeFile file: 'Dockerfile', text: dockerfile
+            writeFile file: 'start.sh', text: dockerstart
+
+            sh """
+            docker build -t casual/middleware-centos -f Dockerfile .
+            """
+         }
+
+//         stage('Publishing to dockerhub')
+//         {
+//            sh """
+//            docker tag -f casual-test-ubuntu casual/middleware:latest
+//            docker push casual/middleware
+//            """
+//         }
+//
+         stage('Deploy')
+         {
+            sh """
+            cd /var/lib/jenkins/git/casual/docker
+            ./restart.sh
+            """
+         }
+
+      }
+//
+//      bitbucketStatusNotify(
+//         buildState: 'SUCCESSFUL',
+//         buildKey: 'build',
+//         buildName: 'Build'
+//      )
+//
+//   }
+//   catch (Exception e)
+//   {
+//      bitbucketStatusNotify(
+//          buildState: 'FAILED',
+//          buildKey: 'build',
+//          buildName: 'Build',
+//          buildDescription: 'Something went wrong with build!'
+//      )
+//   }
+
+}

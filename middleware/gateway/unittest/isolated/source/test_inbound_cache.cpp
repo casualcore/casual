@@ -2,7 +2,7 @@
 //! casual 
 //!
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 #include "gateway/inbound/cache.h"
 #include "common/trace.h"
@@ -26,6 +26,8 @@ namespace casual
 
       TEST( casual_gateway_inbound_cache, instantiation)
       {
+         common::unittest::Trace trace;
+
          EXPECT_NO_THROW({
             inbound::Cache cache;
          });
@@ -33,6 +35,8 @@ namespace casual
 
       TEST( casual_gateway_inbound_cache, add_get__expect_same)
       {
+         common::unittest::Trace trace;
+
          inbound::Cache cache;
 
          auto correlation = uuid::make();
@@ -73,6 +77,8 @@ namespace casual
 
       TEST( casual_gateway_inbound_cache, add_get__from_other_thread__10_times__expect_same)
       {
+         common::unittest::Trace trace;
+
          inbound::Cache cache;
 
          auto correlation = uuid::make();
@@ -99,7 +105,7 @@ namespace casual
 
       TEST( casual_gateway_inbound_cache, add_get__limit_10_messages__from_other_thread__100_times__expect_at_most_10_messages_in_cache)
       {
-         Trace trace{ "add_get__limit_10_messages__from_other_thread__100_times__expect_at_most_10_messages_in_cache"};
+         common::unittest::Trace trace;
 
          inbound::Cache cache{ inbound::Cache::Limit{ 0, 10}};
 

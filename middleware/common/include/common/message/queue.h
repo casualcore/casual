@@ -22,8 +22,7 @@ namespace casual
       {
          namespace queue
          {
-
-            struct base_message
+            struct base_message_information
             {
                common::Uuid id;
 
@@ -31,9 +30,7 @@ namespace casual
                std::string reply;
 
                common::platform::time_point avalible;
-
-               common::buffer::Type type;
-               common::platform::binary_type payload;
+               std::string type;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -42,11 +39,23 @@ namespace casual
                   archive & reply;
                   archive & avalible;
                   archive & type;
+               })
+
+            };
+
+            struct base_message : base_message_information
+            {
+               common::platform::binary_type payload;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  base_message_information::marshal( archive);
                   archive & payload;
                })
 
                friend std::ostream& operator << ( std::ostream& out, const base_message& value);
             };
+            static_assert( traits::is_movable< base_message>::value, "not movable");
 
             namespace lookup
             {
@@ -61,27 +70,32 @@ namespace casual
                      archive & process;
                      archive & name;
                   })
-               };
 
-               struct base_reply
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
+               };
+               static_assert( traits::is_movable< Request>::value, "not movable");
+
+               struct Reply : basic_message< Type::queue_lookup_reply>
                {
-                  base_reply() = default;
-                  base_reply( common::process::Handle process, std::size_t queue) : process( std::move( process)), queue( queue) {}
+                  Reply() = default;
+                  Reply( common::process::Handle process) : process( std::move( process)) {}
 
                   common::process::Handle process;
                   std::size_t queue = 0;
+                  std::size_t order = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
                      archive & process;
                      archive & queue;
+                     archive & order;
                   })
+
+                  bool local() const;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
-
-               using Reply = message::type_wrapper< base_reply, Type::queue_lookup_reply>;
-
+               static_assert( traits::is_movable< Reply>::value, "not movable");
             } // lookup
-
-
 
             namespace enqueue
             {
@@ -91,7 +105,8 @@ namespace casual
 
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  std::size_t queue;
+                  std::size_t queue = 0;
+                  std::string name;
 
                   Message message;
 
@@ -101,11 +116,13 @@ namespace casual
                      archive & process;
                      archive & trid;
                      archive & queue;
+                     archive & name;
                      archive & message;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_enqueue_reply>
                {
@@ -116,7 +133,10 @@ namespace casual
                      base_type::marshal( archive);
                      archive & id;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
             } // enqueue
 
@@ -139,7 +159,8 @@ namespace casual
                {
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  std::size_t queue;
+                  std::size_t queue = 0;
+                  std::string name;
                   Selector selector;
                   bool block = false;
 
@@ -149,17 +170,26 @@ namespace casual
                      archive & process;
                      archive & trid;
                      archive & queue;
+                     archive & name;
                      archive & selector;
                      archive & block;
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_dequeue_reply>
                {
                   struct Message : base_message
                   {
+                     Message( const base_message& m) : base_message( m) {}
+                     Message() = default;
+
+                     //Message( Message&&) = default;
+                     //Message& operator = ( Message&&) = default;
+
+
                      std::size_t redelivered = 0;
                      common::platform::time_point timestamp;
 
@@ -179,24 +209,30 @@ namespace casual
                      base_type::marshal( archive);
                      archive & message;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
                namespace forget
                {
                   struct Request : basic_message< Type::queue_dequeue_forget_request>
                   {
                      common::process::Handle process;
-                     std::size_t queue;
+                     std::size_t queue = 0;
+                     std::string name;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
                         base_type::marshal( archive);
                         archive & process;
                         archive & queue;
+                        archive & name;
                      })
 
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   struct Reply : basic_message< Type::queue_dequeue_forget_reply>
                   {
@@ -210,19 +246,21 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // forget
 
 
             } // dequeue
 
+
             struct Queue
             {
-               enum Type
+               enum class Type : int
                {
-                  cGroupErrorQueue = 1,
-                  cErrorQueue,
-                  cQueue,
+                  group_error_queue = 1,
+                  error_queue = 2,
+                  queue = 3,
                };
 
                using id_type = std::size_t;
@@ -235,7 +273,7 @@ namespace casual
                std::string name;
                std::size_t retries = 0;
                id_type error = 0;
-               int type;
+               Type type = Type::queue;
 
 
 
@@ -248,10 +286,10 @@ namespace casual
                   archive & type;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, const Type& value);
                friend std::ostream& operator << ( std::ostream& out, const Queue& value);
             };
-
-
+            static_assert( traits::is_movable< Queue>::value, "not movable");
 
 
 
@@ -276,6 +314,7 @@ namespace casual
                      archive & timestamp;
                   })
                };
+               static_assert( traits::is_movable< Queue>::value, "not movable");
 
                template< message::Type type>
                struct basic_information : basic_message< type>
@@ -293,19 +332,13 @@ namespace casual
 
                };
 
-               struct Message
+               struct Message : queue::base_message_information
                {
-                  common::Uuid id;
                   std::size_t queue;
                   std::size_t origin;
                   platform::binary_type trid;
                   std::size_t state;
-                  std::string reply;
                   std::size_t redelivered;
-
-                  buffer::Type type;
-
-                  platform::time_point avalible;
                   platform::time_point timestamp;
 
                   std::size_t size;
@@ -313,19 +346,18 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & id;
+                     queue::base_message_information::marshal( archive);
                      archive & queue;
                      archive & origin;
                      archive & trid;
                      archive & state;
-                     archive & reply;
-                     archive & redelivered;
-                     archive & type;
-                     archive & avalible;
                      archive & timestamp;
                      archive & size;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const Message& value);
                };
+               static_assert( traits::is_movable< Message>::value, "not movable");
 
 
                namespace queues
@@ -352,6 +384,7 @@ namespace casual
                      })
 
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                   struct Reply : common::message::server::basic_id< Type::queue_queue_information_reply>
                   {
@@ -366,12 +399,88 @@ namespace casual
                      })
 
                   };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
 
                } // messages
 
             } // information
 
             using Information = information::basic_information< Type::queue_information>;
+
+
+            namespace peek
+            {
+               namespace information
+               {
+                  struct Request : basic_message< Type::queue_peek_information_request>
+                  {
+                     common::process::Handle process;
+                     std::size_t queue = 0;
+                     std::string name;
+                     dequeue::Selector selector;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & process;
+                        archive & queue;
+                        archive & name;
+                        archive & selector;
+                     })
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+
+                  struct Reply : basic_message< Type::queue_peek_information_reply>
+                  {
+                     std::vector< queue::information::Message> messages;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & messages;
+                     })
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+
+               } // information
+
+               namespace messages
+               {
+                  struct Request : basic_message< Type::queue_peek_messages_request>
+                  {
+                     common::process::Handle process;
+                     std::vector< Uuid> ids;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & process;
+                        archive & ids;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
+
+
+                  struct Reply : basic_message< Type::queue_peek_messages_reply>
+                  {
+                     std::vector< dequeue::Reply::Message> messages;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & messages;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+                  static_assert( traits::is_movable< Reply>::value, "not movable");
+
+
+               } // messages
+
+            } // peek
 
 
 
@@ -388,6 +497,7 @@ namespace casual
                      archive & process;
                   })
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
                struct Reply : basic_message< Type::queue_connect_reply>
                {
@@ -401,28 +511,81 @@ namespace casual
                      archive & queues;
                   })
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
             } // connect
 
-            namespace group
+
+            namespace restore
             {
-               struct Involved : basic_message< Type::queue_group_involved>
+
+               struct Request : basic_message< Type::queue_restore_request>
                {
                   common::process::Handle process;
-                  common::transaction::ID trid;
+                  std::vector< Queue::id_type> queues;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
                      archive & process;
-                     archive & trid;
+                     archive & queues;
                   })
-
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
 
-            } // group
+               struct Reply : basic_message< Type::queue_restore_request>
+               {
+                  struct Affected
+                  {
+                     Queue::id_type queue;
+                     std::size_t restored = 0;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & queue;
+                        archive & restored;
+                     })
+                  };
+
+                  std::vector< Affected> affected;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & affected;
+                  })
+               };
+            } // restore
+
 
 
          } // queue
+
+         namespace reverse
+         {
+
+
+
+            template<>
+            struct type_traits< queue::enqueue::Request> : detail::type< queue::enqueue::Reply> {};
+            template<>
+            struct type_traits< queue::dequeue::Request> : detail::type< queue::dequeue::Reply> {};
+
+            template<>
+            struct type_traits< queue::lookup::Request> : detail::type< queue::lookup::Reply> {};
+
+
+            template<>
+            struct type_traits< queue::peek::information::Request> : detail::type< queue::peek::information::Reply> {};
+
+            template<>
+            struct type_traits< queue::peek::messages::Request> : detail::type< queue::peek::messages::Reply> {};
+
+            template<>
+            struct type_traits< queue::restore::Request> : detail::type< queue::restore::Reply> {};
+
+         } // reverse
+
+
       } // message
    } // common
 

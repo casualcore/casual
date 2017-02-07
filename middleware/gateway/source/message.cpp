@@ -38,7 +38,25 @@ namespace casual
 
          namespace outbound
          {
+            namespace configuration
+            {
 
+
+               std::ostream& operator << ( std::ostream& out, const Request& value)
+               {
+                  return out << "{ process: " << value.process
+                        << '}';
+               }
+
+
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ process: " << value.process
+                        << ", services: " << common::range::make( value.services)
+                        << ", queues: " << common::range::make( value.queues)
+                        << '}';
+               }
+            } // configuration
          } // outbound
 
          namespace ipc

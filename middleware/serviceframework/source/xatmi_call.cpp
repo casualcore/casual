@@ -1,8 +1,5 @@
 //!
-//! xatmi_call.cpp
-//!
-//! Created on: May 25, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/xatmi_call.h"

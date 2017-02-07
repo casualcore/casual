@@ -2,11 +2,11 @@
 //! casual 
 //!
 
-#include "config/common.h"
+#include "configuration/common.h"
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
       common::log::Stream log{ "casual.config"};
 

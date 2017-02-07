@@ -37,13 +37,13 @@ namespace casual
                {
                   virtual ~Base() = default;
 
-                  virtual platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size) = 0;
+                  virtual platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size) = 0;
                   virtual platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size) = 0;
 
 
                   virtual bool manage( platform::const_raw_buffer_type handle) = 0;
 
-                  virtual bool manage( const Type& type) = 0;
+                  virtual bool manage( const std::string& type) = 0;
 
                   virtual void deallocate( platform::const_raw_buffer_type handle) = 0;
 
@@ -78,7 +78,7 @@ namespace casual
 
                private:
 
-                  platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size) override
+                  platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size) override
                   {
                      return m_pool.allocate( type, size);
                   }
@@ -93,7 +93,7 @@ namespace casual
                      return m_pool.manage( handle);
                   }
 
-                  bool manage( const Type& type) override
+                  bool manage( const std::string& type) override
                   {
                      for( auto& check : pool_type::types())
                      {
@@ -190,7 +190,7 @@ namespace casual
 
                   }
 
-                  auto subtype = make::unique< Concrete< P>>( std::forward< P>( pool));
+                  auto subtype = std::make_unique< Concrete< P>>( std::forward< P>( pool));
 
                   auto& result = subtype->pool();
 
@@ -200,7 +200,7 @@ namespace casual
                }
 
 
-               Base& find( const Type& type);
+               Base& find( const std::string& type);
                Base& find( platform::const_raw_buffer_type handle);
 
                const Payload& null_payload() const;
@@ -214,11 +214,15 @@ namespace casual
                }
 
 
-               platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size);
+               inline platform::raw_buffer_type allocate( const char* type, const char* subtype, platform::binary_size_type size)
+               {
+                  return allocate( type::combine( type, subtype), size);
+               }
+               platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size);
 
                platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size);
 
-               const Type& type( platform::const_raw_buffer_type handle);
+               const std::string& type( platform::const_raw_buffer_type handle);
 
                void deallocate( platform::const_raw_buffer_type handle);
 
@@ -251,9 +255,9 @@ namespace casual
                using range_type = range::type_t< pool_type>;
 
 
-               using types_type = std::vector< Type>;
+               using types_type = std::vector< std::string>;
 
-               platform::raw_buffer_type allocate( const Type& type, platform::binary_size_type size)
+               platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, size);
 

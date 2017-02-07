@@ -23,16 +23,22 @@ namespace casual
 
             Complete::Complete( message_type_type type, const Uuid& correlation) : type{ type}, correlation{ correlation} {}
 
+
             Complete::Complete( Complete&& rhs) noexcept
             {
                swap( *this, rhs);
             }
+
             Complete& Complete::operator = ( Complete&& rhs) noexcept
             {
                Complete temp{ std::move( rhs)};
                swap( *this, temp);
                return *this;
             }
+
+
+            //Complete::Complete( Complete&& rhs) noexcept = default;
+            //Complete& Complete::operator = ( Complete&& rhs) noexcept = default;
 
             Complete::operator bool() const
             {

@@ -1,4 +1,6 @@
-
+//!
+//! casual
+//!
 
 
 #include "transaction/manager/admin/server.h"
@@ -121,11 +123,11 @@ namespace casual
 
             result.services.emplace_back( ".casual.transaction.state",
                   std::bind( &transaction_state, std::placeholders::_1, std::ref( state)),
-                  common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+                  common::service::category::admin, common::service::transaction::Type::none);
 
             result.services.emplace_back( ".casual.transaction.update.instances",
                   std::bind( &update_instances, std::placeholders::_1, std::ref( state)),
-                  common::server::Service::Type::cCasualAdmin, common::server::Service::Transaction::none);
+                  common::service::category::admin, common::service::transaction::Type::none);
 
             return result;
          }

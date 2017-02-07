@@ -1,9 +1,6 @@
-//
-// casual_order_buffer.cpp
-//
-//  Created on: 20 okt 2013
-//      Author: Kristone
-//
+//!
+//! casual
+//!
 
 #include "buffer/order.h"
 
@@ -123,11 +120,11 @@ namespace casual
                static const types_type& types()
                {
                   // The types this pool can manage
-                  static const types_type result{{ CASUAL_ORDER, "" }};
+                  static const types_type result{ common::buffer::type::combine( CASUAL_ORDER)};
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const common::buffer::Type& type, const common::platform::binary_size_type size)
+               common::platform::raw_buffer_type allocate( const std::string& type, const common::platform::binary_size_type size)
                {
                   m_pool.emplace_back( type, 0);
 

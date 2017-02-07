@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+#include "common/unittest.h"
+
 #include "buffer/field.h"
 #include "common/environment.h"
 #include "common/buffer/type.h"
@@ -60,14 +62,14 @@ namespace casual
 
       TEST( casual_field_buffer, pool)
       {
-         auto handle = buffer::pool::Holder::instance().allocate( common::buffer::Type{ CASUAL_FIELD, nullptr}, 666);
+         auto type = common::buffer::type::combine( CASUAL_FIELD);
+         auto handle = buffer::pool::Holder::instance().allocate( type, 666);
 
          auto buffer = buffer::pool::Holder::instance().get( handle, 0);
 
          EXPECT_TRUE( buffer.transport == 0) << "transport: " <<  buffer.transport;
          EXPECT_TRUE( buffer.reserved == 666) << "reserved: " <<  buffer.reserved;
-         EXPECT_TRUE( buffer.payload.type.name == CASUAL_FIELD) << "buffer.type.name: " << buffer.payload.type.name;
-         EXPECT_TRUE( buffer.payload.type.subname.empty());
+         EXPECT_TRUE( buffer.payload().type == type) << "buffer.type: " << buffer.payload().type;
 
          buffer::pool::Holder::instance().deallocate( handle);
       }
@@ -75,7 +77,9 @@ namespace casual
 
       TEST( casual_field_buffer, tptypes)
       {
-         char* buffer = tpalloc( CASUAL_FIELD, "", 666);
+         common::unittest::Trace trace;
+
+         char* buffer = tpalloc( CASUAL_FIELD, nullptr, 666);
          ASSERT_TRUE( buffer != 0);
 
          std::array< char, 8> type;
@@ -139,8 +143,7 @@ namespace casual
 
       TEST( casual_field_buffer, use_with_wrong_buffer__expecting_invalid_buffer)
       {
-         auto binary_type = common::buffer::type::binary();
-         auto buffer = tpalloc( binary_type.name.c_str(), binary_type.subname.c_str(), 128);
+         auto buffer = tpalloc( CASUAL_BUFFER_BINARY_TYPE, CASUAL_BUFFER_BINARY_SUBTYPE, 128);
          ASSERT_TRUE( buffer != nullptr);
 
          EXPECT_TRUE( casual_field_add_char( &buffer, FLD_CHAR1, 'a') == CASUAL_FIELD_INVALID_HANDLE);

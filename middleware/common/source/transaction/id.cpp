@@ -173,7 +173,7 @@ namespace casual
 
          xid_range_type ID::range() const
          {
-            return { xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
+            return data( xid);
          }
 
 
@@ -225,6 +225,11 @@ namespace casual
                   xid.data + xid.gtrid_length + xid.bqual_length};
          }
 
+         xid_range_type data( const xid_type& xid)
+         {
+            return { xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
+         }
+
          bool null( const ID& id)
          {
             return null( id.xid);
@@ -234,6 +239,12 @@ namespace casual
          {
             return id.formatID == ID::Format::cNull;
          }
+
+         xid_range_type data( const ID& id)
+         {
+            return data( id.xid);
+         }
+
 
          xid_range_type global( const ID& id)
          {

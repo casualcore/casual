@@ -1,11 +1,8 @@
 //!
-//! test_memory.cpp
-//!
-//! Created on: Dec 29, 2015
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 
 #include "common/memory.h"
@@ -27,8 +24,9 @@ namespace casual
             };
 
 
-            struct empty_struct
+            struct char_struct
             {
+               char char_property = '0';
             };
 
             struct pod_struct
@@ -61,7 +59,7 @@ namespace casual
             local::Holder< char[ 10][ 5], sizeof( char) * 10 * 5>,
             local::Holder< long[ 10][ 5], sizeof( long) * 10 * 5>,
             local::Holder< long[ 10][ 5][ 2], sizeof( long) * 10 * 5 * 2>,
-            local::Holder< local::empty_struct, sizeof( local::empty_struct)>,
+            local::Holder< local::char_struct, sizeof( local::char_struct)>,
             local::Holder< local::pod_struct, sizeof( local::pod_struct)>,
             // tuple is not trivially copyable
             //local::Holder< std::tuple< long, double, char, short, int>, sizeof( std::tuple< long, double, char, short, int>)>,
@@ -72,6 +70,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, size)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          EXPECT_TRUE( memory::size( current_type) == TestFixture::expected())
@@ -81,6 +81,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, set)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          memory::set( current_type);
@@ -94,6 +96,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, set_6)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          memory::set( current_type, 6);
@@ -107,6 +111,8 @@ namespace casual
 
       TYPED_TEST( casual_common_memory, copy)
       {
+         common::unittest::Trace trace;
+
          typename TestFixture::type current_type;
 
          platform::binary_type original;
@@ -129,7 +135,7 @@ namespace casual
 
          EXPECT_TRUE( original.size() == memory::size( current_type));
          EXPECT_TRUE( copied.size() == memory::size( current_type));
-         EXPECT_TRUE( original == copied);
+         EXPECT_TRUE( original == copied) << "original: " << range::make( original) << " - copied: " << range::make( copied);
       }
    } // common
 

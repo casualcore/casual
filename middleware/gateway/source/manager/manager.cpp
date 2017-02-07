@@ -3,15 +3,17 @@
 //!
 
 #include "gateway/manager/manager.h"
+
 #include "gateway/manager/handle.h"
 #include "gateway/environment.h"
 #include "gateway/transform.h"
 #include "gateway/common.h"
 
-#include "config/domain.h"
-
+#include "configuration/domain.h"
+#include "configuration/message/transform.h"
 
 #include "common/trace.h"
+#include "common/environment.h"
 
 
 namespace casual
@@ -36,25 +38,33 @@ namespace casual
                   //
                   process::instance::connect( process::instance::identity::gateway::manager());
 
+                  //
+                  // Set environment variable to make it easier for connections to get in
+                  // touch with us
+                  //
+                  common::environment::variable::process::set(
+                        common::environment::variable::name::ipc::gateway::manager(),
+                        process::handle());
+
 
                   if( ! settings.configuration.empty())
                   {
                      return gateway::transform::state(
-                           config::gateway::transform::gateway(
-                                 config::domain::get( settings.configuration).gateway));
+                           configuration::transform::configuration(
+                                 configuration::domain::get( { settings.configuration})));
                   }
 
 
                   //
                   // Ask domain manager for configuration
                   //
-                  common::message::domain::configuration::gateway::Request request;
+                  common::message::domain::configuration::Request request;
                   request.process = process::handle();
 
                   return gateway::transform::state(
                         manager::ipc::device().call(
                               communication::ipc::domain::manager::device(),
-                              request));
+                              request).domain);
 
                }
 
@@ -102,9 +112,9 @@ namespace casual
          // boot outbounds
          //
          {
+
             manager::handle::boot( m_state);
-
-
+            m_state.runlevel = manager::State::Runlevel::online;
          }
 
 
@@ -116,9 +126,9 @@ namespace casual
             auto handler = manager::handler( m_state);
 
 
-            while( handler( manager::ipc::device().blocking_next()))
+            while( true)
             {
-               ;
+               handler( manager::ipc::device().blocking_next());
             }
          }
       }

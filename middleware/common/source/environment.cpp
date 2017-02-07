@@ -1,8 +1,5 @@
 //!
-//! casual_utility_environment.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -17,8 +14,8 @@
 #include <memory>
 
 #include <cstdlib>
-#include <ctime>
-//#include <wordexp.h>
+
+
 
 
 namespace casual
@@ -76,8 +73,14 @@ namespace casual
                            throw std::system_error{ error::last(), std::system_category()};
                         }
                      }
+
+                     std::mutex& mutex() const
+                     {
+                        return m_mutex;
+                     }
+
                   private:
-                     Variable() = default;
+
                      mutable std::mutex m_mutex;
                   };
 
@@ -86,8 +89,13 @@ namespace casual
             } // <unnamed>
          } // local
 
+
 			namespace variable
 			{
+			   std::mutex& mutex()
+			   {
+			      return local::native::Variable::instance().mutex();
+			   }
 
 				bool exists( const std::string& name)
 				{
@@ -118,6 +126,43 @@ namespace casual
 
 				   //log::internal::debug << "environment variable: " << name << " set to: " << value << std::endl;
 				}
+
+            namespace process
+            {
+               common::process::Handle get( const std::string& variable)
+               {
+
+                  auto value = common::environment::variable::get( variable);
+
+                  common::process::Handle result;
+                  {
+                     auto split = range::divide( value, '|');
+
+                     auto& pid = std::get< 0>( split);
+                     if( ! pid.empty())
+                     {
+                        result.pid = std::stoi( std::string( std::begin( pid), std::end( pid)));
+                     }
+
+                     auto& queue = std::get< 1>( split);
+                     if( ! queue.empty())
+                     {
+                        ++queue;
+                        result.queue = std::stol( std::string( std::begin( queue), std::end( queue)));
+                     }
+                  }
+
+                  return result;
+               }
+
+               void set( const std::string& variable, const common::process::Handle& process)
+               {
+                  variable::set(
+                        variable,
+                        std::to_string( process.pid) + '|' + std::to_string( process.queue));
+               }
+
+            } // process
 
             namespace name
             {
@@ -160,14 +205,14 @@ namespace casual
                   {
                      const std::string& manager()
                      {
-                        static std::string name{ "CASUAL_DOMAIN_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_DOMAIN_PROCESS"};
                         return name;
                      }
                   } // domain
 
                   const std::string& broker()
                   {
-                     static std::string name{ "CASUAL_BROKER_IPC_QUEUE"};
+                     static std::string name{ "CASUAL_BROKER_PROCESS"};
                      return name;
                   }
 
@@ -175,7 +220,7 @@ namespace casual
                   {
                      const std::string& manager()
                      {
-                        static std::string name{ "CASUAL_TM_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_TM_PROCESS"};
                         return name;
                      }
                   } // transaction
@@ -184,7 +229,7 @@ namespace casual
                   {
                      const std::string& broker()
                      {
-                        static std::string name{ "CASUAL_QUEUE_BROKER_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_QUEUE_BROKER_PROCESS"};
                         return name;
                      }
                   } // queue
@@ -193,7 +238,7 @@ namespace casual
                   {
                      const std::string& manager()
                      {
-                        static std::string name{ "CASUAL_GATEWAY_IPC_QUEUE"};
+                        static std::string name{ "CASUAL_GATEWAY_PROCESS"};
                         return name;
                      }
                   } // gateway
@@ -228,18 +273,10 @@ namespace casual
 
 			namespace file
          {
-
-
             std::string configuration()
             {
                return common::file::find( directory::domain() + "/configuration", std::regex( "domain.(yaml|xml)" ));
             }
-
-            std::string installedConfiguration()
-            {
-               return common::file::find( directory::casual() + "/configuration", std::regex( "resources.(yaml|xml)" ));
-            }
-
          }
 
 

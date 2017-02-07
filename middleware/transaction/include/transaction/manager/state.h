@@ -11,15 +11,16 @@
 #include "common/algorithm.h"
 #include "common/marshal/complete.h"
 
-#include "config/xa_switch.h"
-
 #include "transaction/manager/log.h"
+
+#include "configuration/resource/property.h"
 
 
 
 #include <map>
 #include <deque>
 #include <vector>
+
 
 namespace casual
 {
@@ -81,8 +82,6 @@ namespace casual
 
             struct Proxy
             {
-
-
                struct Instance
                {
                   enum class State
@@ -108,8 +107,10 @@ namespace casual
 
                };
 
+               struct generate_id {};
+
                Proxy() = default;
-               Proxy( id::type id) : id( id) {}
+               inline Proxy( generate_id) : id( next_id()) {}
 
                id::type id = 0;
 
@@ -125,6 +126,9 @@ namespace casual
                Stats statistics;
 
                std::vector< Instance> instances;
+
+               std::string name;
+               std::string note;
 
                //!
                //! @return true if all instances is idle
@@ -144,9 +148,15 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value);
 
+            private:
+
+               inline static std::size_t next_id()
+               {
+                  static std::size_t id = 1;
+                  return id++;
+               }
+
             };
-
-
 
 
             namespace update
@@ -162,38 +172,29 @@ namespace casual
             } // update
 
 
-
-
-
-
-            struct Domain
+            namespace external
             {
-
-               Domain( const common::process::Handle& process, const common::Uuid& remote, id::type id);
-
-
-               common::process::Handle process;
-
-               //!
-               //! id of the remote domain
-               //!
-               common::Uuid remote;
-
-               //!
-               //! RM id
-               //!
-               id::type id;
-
-               friend bool operator == ( const Domain& lhs, const common::process::Handle& rhs);
-
-            };
+               struct Proxy
+               {
+                  Proxy( const common::process::Handle& process, id::type id);
 
 
-            namespace domain
-            {
-               id::type id( State& state, const common::process::Handle& process, const common::Uuid& remote);
+                  common::process::Handle process;
 
-            } // domain
+                  //!
+                  //! RM id
+                  //!
+                  id::type id;
+
+                  friend bool operator == ( const Proxy& lhs, const common::process::Handle& rhs);
+               };
+
+               namespace proxy
+               {
+                  id::type id( State& state, const common::process::Handle& process);
+               } // proxy
+
+            } // external
 
          } // resource
 
@@ -488,7 +489,7 @@ namespace casual
 
          std::vector< state::resource::Proxy> resources;
 
-         std::vector< state::resource::Domain> domains;
+         std::vector< state::resource::external::Proxy> externals;
 
 
          struct
@@ -501,7 +502,7 @@ namespace casual
             //!
             //! Resource request, that will be processed after an atomic
             //! write to the log. If corresponding resources is busy, for some
-            //! requests, these will be moved to pendingRequests
+            //! requests, these will be moved to pending.requests
             //!
             std::vector< state::pending::Request> requests;
 
@@ -531,7 +532,7 @@ namespace casual
          transaction::Log log;
 
 
-         std::map< std::string, config::xa::Switch> xa_switch_configuration;
+         std::map< std::string, configuration::resource::Property> resource_properties;
 
 
          //!
@@ -563,7 +564,7 @@ namespace casual
          using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;
          instance_range idle_instance( state::resource::id::type rm);
 
-         const state::resource::Domain& get_domain( state::resource::id::type rm) const;
+         const state::resource::external::Proxy& get_external( state::resource::id::type rm) const;
 
 
 
@@ -639,7 +640,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file);
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration);
 
 
 

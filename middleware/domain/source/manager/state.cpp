@@ -36,14 +36,6 @@ namespace casual
          namespace state
          {
 
-            std::ostream& operator << ( std::ostream& out, const Group::Resource& value)
-            {
-               return out << "{ id: " << value.id
-                     << ", key: " << value.key
-                     << ", openinfo: " << value.openinfo
-                     << ", closeinfo: " << value.closeinfo
-                     << '}';
-            }
 
             std::ostream& operator << ( std::ostream& out, const Group& value)
             {
@@ -60,11 +52,7 @@ namespace casual
                auto rhs_depend = range::find( rhs.dependencies, lhs.id);
                auto lhs_depend = range::find( lhs.dependencies, rhs.id);
 
-               if( rhs_depend)
-               {
-                  return ! lhs_depend;
-               }
-               return ! lhs_depend;
+               return rhs_depend && ! lhs_depend;
             }
 
 
@@ -105,6 +93,7 @@ namespace casual
                      << ", memberships: " << range::make( value.memberships)
                      << ", configured-instances: " << value.configured_instances
                      << ", instances: " << range::make( value.instances)
+                     << ", resources: " << range::make( value.resources)
                      << '}';
             }
 
@@ -153,7 +142,13 @@ namespace casual
                      range::stable_sort( groups, state::Group::boot::Order{});
 
                      std::vector< std::reference_wrapper< state::Executable>> excutable_wrappers;
-                     range::copy( state.executables, std::back_inserter( excutable_wrappers));
+
+                     //
+                     // We make sure we don't include our self in the boot sequence.
+                     //
+                     range::copy_if( state.executables, std::back_inserter( excutable_wrappers), [&state]( const state::Executable& e){
+                        return e.id != state.manager_id;
+                     });
 
                      auto executable = range::make( excutable_wrappers);
 
@@ -168,7 +163,7 @@ namespace casual
                         //
                         // Partition executables so we get the ones that has current group as a dependency
                         //
-                        auto slice = range::stable_partition( executable, [&]( state::Executable& e){
+                        auto slice = range::stable_partition( executable, [&]( const state::Executable& e){
                            return static_cast< bool>( range::find( e.memberships, group.get().id));
                         });
 
@@ -244,6 +239,22 @@ namespace casual
             }
 
             //
+            // Remove from instances
+            //
+            {
+               using value_type = decltype( *std::begin( singeltons));
+               auto found = range::find_if( singeltons, [&]( value_type& v){
+                  return v.second.pid == pid;
+               });
+
+               if( found)
+               {
+                  singeltons.erase( std::begin( found));
+               }
+
+            }
+
+            //
             // Find and remove from executable
             //
             {
@@ -262,16 +273,17 @@ namespace casual
                }
                else
                {
-                  log::error << "failed to find executable with pid: " << pid << " - this should not happen! - action: ignore\n";
+                  log << "failed to find executable with pid: " << pid << " - assume it's a grand child";
                }
             }
          }
 
+
+
          state::Executable& State::executable( common::platform::pid::type pid)
          {
-            auto found = range::find_if( executables, [=]( const state::Executable& e){
-               return range::find( e.instances, pid) == true;
-            });
+            auto found = find_executable( pid);
+
             if( found)
             {
                return *found;
@@ -279,16 +291,25 @@ namespace casual
             throw exception::invalid::Argument{ "failed to locate executable", CASUAL_NIP( pid)};
          }
 
+         state::Executable* State::find_executable( common::platform::pid::type pid)
+         {
+            return range::find_if( executables, [=]( const auto& e){
+               return range::find( e.instances, pid) == true;
+            }).data();
+         }
+
          state::Group& State::group( state::Group::id_type id)
          {
-            auto found = range::find_if( groups, [=]( const state::Group& g){
+            return range::front( range::find_if( groups, [=]( const auto& g){
                return g.id == id;
-            });
-            if( found)
-            {
-               return *found;
-            }
-            throw exception::invalid::Argument{ "failed to locate group", CASUAL_NIP( id)};
+            }));
+         }
+
+         const state::Group& State::group( state::Group::id_type id) const
+         {
+            return range::front( range::find_if( groups, [=]( const auto& g){
+               return g.id == id;
+            }));
          }
 
          bool State::execute()
@@ -304,6 +325,28 @@ namespace casual
             {
                m_runlevel = runlevel;
             }
+         }
+
+
+         std::vector< std::string> State::resources( common::platform::pid::type pid)
+         {
+            auto executable = find_executable( pid);
+
+            if( ! executable)
+            {
+               return {};
+            }
+
+            auto resources = executable->resources;
+
+            for( auto& id : executable->memberships)
+            {
+               auto& group = State::group( id);
+
+               common::range::append( group.resources, resources);
+            }
+
+            return range::to_vector( range::unique( range::sort( resources)));
          }
 
          std::ostream& operator << ( std::ostream& out, const State& state)

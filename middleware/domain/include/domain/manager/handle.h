@@ -12,6 +12,7 @@
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
 
+
 namespace casual
 {
    namespace domain
@@ -27,16 +28,16 @@ namespace casual
          namespace handle
          {
 
+            using dispatch_type = decltype( ipc::device().handler());
+
 
             namespace mandatory
             {
+               namespace boot
+               {
+                  void prepare( State& state);
+               } // boot
 
-               //!
-               //! Boots the mandatory parts
-               //!
-               //! @param state
-               //!
-               void boot( State& state);
             } // mandatory
 
 
@@ -112,22 +113,20 @@ namespace casual
 
             namespace configuration
             {
-               namespace transaction
-               {
-                  struct Resource : public Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( const common::message::domain::configuration::transaction::resource::Request& message);
-                  };
-
-               } // transaction
-
-               struct Gateway : public Base
+               struct Domain : public Base
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::domain::configuration::gateway::Request& message);
+                  void operator () ( const common::message::domain::configuration::Request& message);
+               };
+
+
+               struct Server : public Base
+               {
+                  using Base::Base;
+
+                  void operator () ( const common::message::domain::configuration::server::Request& message);
+
                };
 
             } // configuration
@@ -135,7 +134,7 @@ namespace casual
          } // handle
 
 
-         common::message::dispatch::Handler handler( State& state);
+         handle::dispatch_type handler( State& state);
 
       } // manager
    } // domain

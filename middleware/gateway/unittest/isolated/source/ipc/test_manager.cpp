@@ -1,8 +1,5 @@
 //!
-//! test_manager.cpp
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -17,6 +14,8 @@
 #include "common/environment.h"
 #include "common/trace.h"
 
+#include "common/message/domain.h"
+
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 
@@ -28,27 +27,24 @@ namespace casual
 
       namespace local
       {
+         using config_domain = common::message::domain::configuration::Domain;
+
          namespace
          {
             struct Gateway
             {
-               Gateway( const std::string& configuration)
-                : file{ mockup::file::temporary( ".yaml", configuration)},
-                  process{ "./bin/casual-gateway-manager", {
-                     "--configuration", file,
-                  }}
+               Gateway()
+                  : process{ "./bin/casual-gateway-manager"}
                {
 
                }
 
-
-               file::scoped::Path file;
                mockup::Process process;
             };
 
             struct Domain
             {
-               Domain( const std::string& configuration) : gateway{ configuration}
+               Domain( config_domain configuration) : manager{ std::move( configuration)}
                {
 
                }
@@ -70,36 +66,21 @@ namespace casual
 
 
 
-            std::string empty_configuration()
+            config_domain empty_configuration()
             {
-               return R"yaml(
-
-domain:
-  gateway:
-  
-    listeners:
-
-    connections:
-
-)yaml";
-
+               return {};
             }
 
 
-            std::string one_connector_configuration()
+            config_domain one_connector_configuration()
             {
-               return R"yaml(
-domain:
-  gateway:
-  
-    listeners:
+               config_domain result;
 
-    connections:
-      - type: "ipc"
-        address: "${CASUAL_UNITTEST_IPC_PATH}"
+               result.gateway.connections.resize( 1);
+               result.gateway.connections.front().address = "${CASUAL_UNITTEST_IPC_PATH}";
+               result.gateway.connections.front().type = decltype( result.gateway.connections.front().type)::ipc;
 
-)yaml";
-
+               return result;
             }
 
 
@@ -127,12 +108,13 @@ domain:
 
                      bool manager_ready( const manager::admin::vo::State& state)
                      {
-                        if( state.connections.outbound.empty())
+                        Trace trace{ "unittest::gateway::local::call::wait::ready::manager_ready"};
+
+                        if( state.connections.empty())
                            return false;
 
-
-                        return range::any_of( state.connections.outbound, []( const manager::admin::vo::outbound::Connection& c){
-                           return c.runlevel >= manager::admin::vo::outbound::Connection::Runlevel::online;
+                        return range::all_of( state.connections, []( const manager::admin::vo::Connection& c){
+                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online;
                         });
                      }
 
@@ -164,9 +146,9 @@ domain:
 
 
 
-      TEST( casual_gateway_manager, empty_configuration)
+      TEST( casual_gateway_manager_ipc, empty_configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::empty_configuration()};
 
@@ -175,9 +157,9 @@ domain:
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
-      TEST( casual_gateway_manager, ipc_non_existent_path__configuration)
+      TEST( casual_gateway_manager_ipc, non_existent_path__configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", "/non/existent/path");
 
@@ -189,9 +171,9 @@ domain:
       }
 
 
-      TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__configuration___expect_connection)
+      TEST( casual_gateway_manager_ipc, same_path_as_unittest_domain__configuration___expect_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", environment::domain::singleton::path());
 
@@ -206,67 +188,80 @@ domain:
       {
          namespace
          {
-            namespace inbound
+
+            namespace condition
             {
-               auto online() -> decltype( local::call::wait::ready::state())
+               template< typename P>
+               auto call( P&& predicate) -> decltype( local::call::wait::ready::state())
                {
-                  auto state = local::call::wait::ready::state();
-
-                  auto check_state = [&]()
+                  while( true)
                   {
-                     if( state.connections.inbound.empty()) { return false;}
+                     auto state = local::call::wait::ready::state();
 
-                     using inbound_type = manager::admin::vo::inbound::Connection;
-
-                     return range::all_of( state.connections.inbound, []( const inbound_type& inbound){
-                        return inbound.runlevel == manager::admin::vo::inbound::Connection::Runlevel::online;
-                     });
-                  };
-
-                  while( ! check_state())
-                  {
+                     if( predicate( state))
+                     {
+                        return state;
+                     }
                      process::sleep( std::chrono::milliseconds{ 5});
-                     state = local::call::state();
                   }
-
-                  return state;
                }
-            } // inbound
+            } // condition
+
+            auto online() -> decltype( local::call::wait::ready::state())
+            {
+               using state_type = decltype( local::call::wait::ready::state());
+
+               return condition::call( []( const state_type& state){
+
+                  if( state.connections.empty()) { return false;}
+
+                  using vo_type = manager::admin::vo::Connection;
+
+                  return range::all_of( state.connections, []( const vo_type& vo){
+                     return vo.runlevel == vo_type::Runlevel::online;
+                  });
+
+               });
+            }
+
          } // <unnamed>
       } // local
 
-      TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
+      TEST( casual_gateway_manager_ipc, same_path_as_unittest_domain__call_state___expect_1_outbound_and_1_inbound_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", environment::domain::singleton::path());
 
          local::Domain domain{ local::one_connector_configuration()};
 
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
          //
          // We ping it so we know the gateway is up'n running
          //
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
-         auto state = local::inbound::online();
+         auto state = local::online();
 
 
 
-         ASSERT_TRUE( state.connections.outbound.size() == 1) << CASUAL_MAKE_NVP( state);
-         auto& outbound = state.connections.outbound.at( 0);
-         EXPECT_TRUE( outbound.runlevel == manager::admin::vo::outbound::Connection::Runlevel::online) << CASUAL_MAKE_NVP( state);
-         EXPECT_TRUE( outbound.type == manager::admin::vo::outbound::Connection::Type::ipc);
-         ASSERT_TRUE( state.connections.inbound.size() == 1);
-         auto& inbound = state.connections.inbound.at( 0);
-         EXPECT_TRUE( inbound.runlevel == manager::admin::vo::inbound::Connection::Runlevel::online) << CASUAL_MAKE_NVP( state);
-         EXPECT_TRUE( inbound.type == manager::admin::vo::inbound::Connection::Type::ipc);
+         ASSERT_TRUE( state.connections.size() == 2) << CASUAL_MAKE_NVP( state);
+         range::sort( state.connections);
+
+         using vo_type = manager::admin::vo::Connection;
+
+         auto& outbound = state.connections.at( 0);
+         EXPECT_TRUE( outbound.runlevel == vo_type::Runlevel::online) << CASUAL_MAKE_NVP( state);
+         EXPECT_TRUE( outbound.type == vo_type::Type::ipc);
+         auto& inbound = state.connections.at( 1);
+         EXPECT_TRUE( inbound.runlevel == vo_type::Runlevel::online) << CASUAL_MAKE_NVP( state);
+         EXPECT_TRUE( inbound.type == vo_type::Type::ipc);
       }
 
-      TEST( casual_gateway_manager, ipc_same_path_as_unittest_domain__call_outbound____expect_call_to_service)
+      TEST( casual_gateway_manager_ipc, same_path_as_unittest_domain__call_outbound____expect_call_to_service)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          environment::variable::set( "CASUAL_UNITTEST_IPC_PATH", environment::domain::singleton::path());
 
@@ -282,8 +277,9 @@ domain:
                   EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
                   auto state = local::call::wait::ready::state();
+                  range::sort( state.connections);
 
-                  return state.connections.outbound.at( 0).process.queue;
+                  return state.connections.at( 0).process.queue;
                };
 
 

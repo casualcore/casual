@@ -1,13 +1,8 @@
-/*
- * environment.cpp
- *
- *  Created on: 23 apr 2015
- *      Author: 40043280
- */
+//!
+//! casual
+//!
 
-
-#include "config/environment.h"
-
+#include "configuration/environment.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 
@@ -15,15 +10,34 @@
 
 namespace casual
 {
-   namespace config
+   namespace configuration
    {
+      Environment::Environment() = default;
+      Environment::Environment( std::function< void(Environment&)> foreign) { foreign( *this);}
+
+      bool operator == ( const Environment& lhs, const Environment& rhs)
+      {
+         return lhs.files == rhs.files && rhs.variables == rhs.variables;
+      }
+
+
+
 
       namespace environment
       {
+         Variable::Variable() = default;
+         Variable::Variable( std::function< void(Variable&)> foreign) { foreign( *this);}
 
-         config::Environment get( const std::string& file)
+
+         bool operator == ( const Variable& lhs, const Variable& rhs)
          {
-            config::Environment environment;
+            return lhs.key == rhs.key && lhs.value == rhs.value;
+         }
+
+
+         configuration::Environment get( const std::string& file)
+         {
+            configuration::Environment environment;
 
             //
             // Create the reader and deserialize configuration
@@ -40,9 +54,9 @@ namespace casual
             namespace
             {
 
-               std::vector< Environment::Variable> fetch( config::Environment environment, std::vector< std::string>& paths)
+               std::vector< Variable> fetch( configuration::Environment environment, std::vector< std::string>& paths)
                {
-                  std::vector< Environment::Variable> result; // = std::move( environment.variables);
+                  std::vector< Variable> result;
 
                   for( auto& file : environment.files)
                   {
@@ -56,18 +70,18 @@ namespace casual
 
                         auto variables = fetch( std::move( nested), paths);
 
-                        std::move( std::begin( variables), std::end( variables), std::back_inserter( result));
+                        common::range::move( variables, result);
                      }
                   }
 
-                  std::move( std::begin( environment.variables), std::end( environment.variables), std::back_inserter( result));
+                  common::range::move( environment.variables, result);
 
                   return result;
                }
             } // <unnamed>
          } // local
 
-         std::vector< Environment::Variable> fetch( config::Environment environment)
+         std::vector< Variable> fetch( configuration::Environment environment)
          {
             //
             // So we only fetch one file one time. If there are circular dependencies.

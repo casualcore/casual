@@ -12,6 +12,7 @@
 #include "sf/archive/xml.h"
 #include "sf/archive/ini.h"
 #include "sf/archive/binary.h"
+#include "sf/log.h"
 
 #include "common/log.h"
 
@@ -334,7 +335,8 @@ namespace casual
       TYPED_TEST( casual_sf_archive_write_read, type_tuple)
       {
          std::tuple< int, std::string, char, long, float> value{ 23, "charlie", 'Q', 343534323434, 1.42};
-         EXPECT_TRUE( TestFixture::write_read( value) == value);
+         auto result = TestFixture::write_read( value);
+         EXPECT_TRUE( result == value) << CASUAL_MAKE_NVP( value) << CASUAL_MAKE_NVP( result);
       }
 
       TYPED_TEST( casual_sf_archive_write_read, type_vector_tuple)

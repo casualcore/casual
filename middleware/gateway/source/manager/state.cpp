@@ -5,6 +5,7 @@
 #include "gateway/manager/state.h"
 
 #include "gateway/message.h"
+#include "gateway/manager/handle.h"
 #include "gateway/common.h"
 
 
@@ -42,7 +43,7 @@ namespace casual
                switch( value)
                {
                   case base_connection::Runlevel::absent: { return out << "absent";}
-                  case base_connection::Runlevel::booting: { return out << "booting";}
+                  case base_connection::Runlevel::connecting: { return out << "connecting";}
                   case base_connection::Runlevel::online: { return out << "online";}
                   case base_connection::Runlevel::offline: { return out << "offline";}
                   case base_connection::Runlevel::error: { return out << "error";}
@@ -54,7 +55,7 @@ namespace casual
             {
                switch( runlevel)
                {
-                  case Runlevel::booting:
+                  case Runlevel::connecting:
                   case Runlevel::online:
                   {
                      return true;
@@ -73,18 +74,49 @@ namespace casual
 
             namespace outbound
             {
+               void Connection::reset()
+               {
+                  process = common::process::Handle{};
+                  runlevel = state::outbound::Connection::Runlevel::absent;
+                  remote = common::domain::Identity{};
+
+                  log << "manager::state::outbound::reset: " << *this << '\n';
+               }
+
                std::ostream& operator << ( std::ostream& out, const Connection& value)
                {
                   return out << "{ type: " << value.type
                         << ", runlevel: " << value.runlevel
                         << ", process: " << value.process
                         << ", remote: " << value.remote
+                        << ", restart: " << value.restart
+                        << ", order: " << value.order
                         << ", services: " << range::make( value.services)
                         << '}';
                }
             }
 
+            namespace coordinate
+            {
+               namespace outbound
+               {
+                  void Policy::accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply)
+                  {
+                     Trace trace{ "manager::state::coordinate::outbound::Policy accumulate"};
 
+                     message.replies.push_back( std::move( reply));
+                  }
+
+                  void Policy::send( common::platform::ipc::id::type queue, message_type& message)
+                  {
+                     Trace trace{ "manager::state::coordinate::outbound::Policy send"};
+
+                     manager::ipc::device().blocking_send( queue, message);
+
+                  }
+               } // outbound
+
+            } // coordinate
          } // state
 
 
@@ -111,6 +143,11 @@ namespace casual
             {
                throw exception::invalid::Argument{ "failed to correlate listener to event", CASUAL_NIP( event)};
             }
+         }
+
+         void State::Discover::remove( common::platform::pid::type pid)
+         {
+            outbound.remove( pid);
          }
 
          std::ostream& operator << ( std::ostream& out, const State::Runlevel& value)

@@ -1,8 +1,5 @@
 //!
-//! timeout.h
-//!
-//! Created on: Jul 12, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMON_TIMEOUT_H_

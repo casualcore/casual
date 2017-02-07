@@ -7,6 +7,8 @@
 
 #include "domain/delay/message.h"
 
+#include "common/message/domain.h"
+
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"
 
@@ -44,7 +46,7 @@ namespace casual
 
          TEST( casual_domain_delay, spawn_terminate)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             EXPECT_NO_THROW( {
                local::Domain domain;
@@ -55,7 +57,7 @@ namespace casual
 
          TEST( casual_domain_delay, send_delayed_message__10ms__expect_to_receive_after_at_least_10ms)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Domain domain;
             local::process::Delay delay;
@@ -85,7 +87,7 @@ namespace casual
 
          TEST( casual_domain_delay, send_delayed_message__0ms__expect_to_receive_within_10ms)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             local::Domain domain;
             local::process::Delay delay;
@@ -94,13 +96,14 @@ namespace casual
 
             auto id = common::uuid::make();
 
-            auto start = common::platform::clock_type::now();
 
             {
                common::message::domain::process::lookup::Request message;
                message.identification = id;
                message::send( message, ipc.id(), std::chrono::milliseconds{ 0});
             }
+
+            auto start = common::platform::clock_type::now();
 
             {
                common::message::domain::process::lookup::Request message;

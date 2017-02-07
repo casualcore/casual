@@ -1,8 +1,5 @@
 //!
-//! arguments.h
-//!
-//! Created on: Oct 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_SERVER_ARGUMENTS_H_

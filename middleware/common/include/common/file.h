@@ -1,8 +1,5 @@
 //!
-//! casual_utility_file.h
-//!
-//! Created on: May 5, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_FILE_H_
@@ -69,6 +66,13 @@ namespace casual
          //!
          std::string find( const std::string& path, const std::regex& search);
 
+         //!
+         //! Return the absolute path of the provided path
+         //!
+         //! @param path
+         //! @return absolute path
+         //!
+         std::string absolute( const std::string& path);
 
 
          namespace name
@@ -176,7 +180,7 @@ namespace casual
 
          bool remove( const std::string& path);
 
-      }
+      } // directory
 
    } // common
 } // casual

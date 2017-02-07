@@ -1,11 +1,9 @@
 //!
-//! queue.cpp
-//!
-//! Created on: May 2, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/message/queue.h"
+#include "common/transcode.h"
 
 #include "common/chronology.h"
 
@@ -31,6 +29,30 @@ namespace casual
                      << '}';
             }
 
+            namespace lookup
+            {
+               std::ostream& operator << ( std::ostream& out, const Request& value)
+               {
+                  return out << "{ name: " << value.name
+                        << '}';
+
+               }
+
+               bool Reply::local() const
+               {
+                  return order == 0;
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ process: " << value.process
+                        << ", queue: " << value.queue
+                        << '}';
+               }
+
+
+            } // lookup
+
             namespace enqueue
             {
                std::ostream& operator << ( std::ostream& out, const Request& value)
@@ -39,7 +61,14 @@ namespace casual
                         << ", process: " << value.process
                         << ", trid: " << value.trid
                         << ", queue: " << value.queue
+                        << ", name: " << value.name
                         << ", message: " << value.message
+                        << '}';
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ id: " << value.id
                         << '}';
                }
 
@@ -56,13 +85,19 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const Request& value)
                {
-                  return out << "{ qid: " << value.queue
-                     << ", block: " << std::boolalpha << value.block
-                     << ", selector: " << value.selector
-                     << ", process: " << value.process
-                     << ", trid: " << value.trid << '}';
+                  return out << "{ name: " << value.name
+                        << ", queue: " << value.queue
+                        << ", block: " << std::boolalpha << value.block
+                        << ", selector: " << value.selector
+                        << ", process: " << value.process
+                        << ", trid: " << value.trid << '}';
                }
 
+               std::ostream& operator << ( std::ostream& out, const Reply& value)
+               {
+                  return out << "{ message: " << range::make( value.message)
+                        << '}';
+               }
 
                namespace forget
                {
@@ -71,7 +106,8 @@ namespace casual
                   {
                      return out << "{ correlation: " << value.correlation
                         << ", process: " << value.process
-                        << ", queue: " << value.queue << '}';
+                        << ", queue: " << value.queue
+                        << ", name: " << value.name << '}';
                   }
 
 
@@ -84,9 +120,60 @@ namespace casual
                } // forget
             } // dequeue
 
+            namespace peek
+            {
+               std::ostream& operator << ( std::ostream& out, const Information& value)
+               {
+                  return out << "{"
+                        << '}';
+               }
+
+               namespace information
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ messages: " << range::make( value.messages)
+                           << '}';
+                  }
+               } // information
+
+               namespace messages
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{"
+                           << '}';
+                  }
+               } // messages
+
+            } // peek
+
+            std::ostream& operator << ( std::ostream& out, const Queue::Type& value)
+            {
+               switch( value)
+               {
+                  case Queue::Type::group_error_queue: { return out << "group-error-queue";}
+                  case Queue::Type::error_queue: { return out << "error-queue";}
+                  case Queue::Type::queue: { return out << "queue";}
+               }
+               return out << "unknown";
+            }
+
             std::ostream& operator << ( std::ostream& out, const Queue& value)
             {
-               return out << "{ id: " << value.id
+               return out << "{ queue: " << value.id
                      << ", name: " << value.name
                      << ", type: " << value.type
                      << ", retries: " << value.retries
@@ -94,6 +181,25 @@ namespace casual
                      << '}';
 
             }
+
+            namespace information
+            {
+               std::ostream& operator << ( std::ostream& out, const Message& value)
+               {
+                  return out << "{ id: " << value.id
+                        << ", queue: " << value.queue
+                        << ", origin: " << value.origin
+                        << ", state: " << value.state
+                        << ", properties: " << value.properties
+                        << ", reply: " << value.reply
+                        << ", redelivered: " << value.redelivered
+                        << ", trid: " << transcode::hex::encode( value.trid)
+                        << ", type: " << value.type
+                        << ", size: " << value.size
+                        << '}';
+
+               }
+            } // information
 
          } // queue
       } // message

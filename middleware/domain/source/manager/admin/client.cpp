@@ -45,22 +45,42 @@ namespace casual
                   }
 
 
-                  admin::vo::State scale_instances()
+                  std::vector< admin::vo::scale::Instances> scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     sf::xatmi::service::binary::Sync service( "..casual.domain.scale.instances");
+                     sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
+
+                     service << CASUAL_MAKE_NVP( instances);
                      auto reply = service();
 
-                     admin::vo::State serviceReply;
+                     std::vector< admin::vo::scale::Instances> serviceReply;
 
                      reply >> CASUAL_MAKE_NVP( serviceReply);
 
                      return serviceReply;
                   }
 
-                  void boot()
+                  void boot( const std::vector< std::string>& files)
                   {
+                     using file_range = decltype( range::make( files));
+
+                     auto get_arguments = []( file_range files){
+                        std::vector< std::string> arguments;
+
+                        if( ! files.empty())
+                        {
+                           if( ! range::all_of( files, &common::file::exists))
+                           {
+                              throw exception::invalid::File{ "at least one file does not exist", CASUAL_NIP( files)};
+                           }
+                           arguments.emplace_back( "--configuration-files");
+                           range::copy( files, std::back_inserter( arguments));
+                        }
+                        return arguments;
+                     };
+
                      common::process::spawn(
-                           common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager", {});
+                           common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager",
+                           get_arguments( range::make( files)));
                   }
 
                   void shutdown()
@@ -136,19 +156,44 @@ namespace casual
 
                   void scale_instances( const std::vector< std::string>& values)
                   {
+                     if( values.size() % 2 != 0)
+                     {
+                        throw exception::invalid::Argument{ "<alias> <# of instances>"};
+                     }
 
+                     std::vector< admin::vo::scale::Instances> instances;
 
+                     auto current = std::begin( values);
+
+                     for( ; current != std::end( values); current += 2)
+                     {
+                        admin::vo::scale::Instances instance;
+                        instance.alias = *current;
+                        instance.instances = std::stoul(*( current + 1));
+                        instances.push_back( std::move( instance));
+                     }
+
+                     call::scale_instances( instances);
                   }
 
-                  void boot()
+                  void boot( const std::vector< std::string>& files)
                   {
-                     call::boot();
+                     call::boot( files);
                   }
 
                   void shutdown()
                   {
                      call::shutdown();
                   }
+
+                  namespace persist
+                  {
+                     void configuration()
+                     {
+                        sf::xatmi::service::binary::Sync{ ".casual/domain/configuration/persist"}();
+                     }
+                  } // persist
+
 
                } // action
 
@@ -159,16 +204,17 @@ namespace casual
 
          int main( int argc, char** argv)
          {
-            casual::common::Arguments parser{ {
-                  casual::common::argument::directive( {"--porcelain"}, "easy to parse format", local::global::porcelain),
-                  casual::common::argument::directive( {"--no-color"}, "no color will be used", local::global::no_color),
-                  casual::common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", local::global::no_header),
+            common::Arguments parser{ {
+                  common::argument::directive( {"--porcelain"}, "easy to parse format", local::global::porcelain),
+                  common::argument::directive( {"--no-color"}, "no color will be used", local::global::no_color),
+                  common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", local::global::no_header),
 
-                  casual::common::argument::directive( {"-le", "--list-executables"}, "list all executables", &local::action::list_executable),
-                  casual::common::argument::directive( {"-li", "--list-instances"}, "list all instances", &local::action::list_instances),
-                  casual::common::argument::directive( {"-si", "--scale-instances"}, "<alias> <#> scale executable instances", &local::action::scale_instances),
-                  casual::common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &local::action::shutdown),
-                  casual::common::argument::directive( {"-b", "--boot"}, "boot domain", &local::action::boot)
+                  common::argument::directive( {"-le", "--list-executables"}, "list all executables", &local::action::list_executable),
+                  common::argument::directive( {"-li", "--list-instances"}, "list all instances", &local::action::list_instances),
+                  common::argument::directive( {"-si", "--scale-instances"}, "<alias> <#> scale executable instances", &local::action::scale_instances),
+                  common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &local::action::shutdown),
+                  common::argument::directive( common::argument::cardinality::Any{}, {"-b", "--boot"}, "boot domain", &local::action::boot),
+                  common::argument::directive( {"-p", "--persist-state"}, "persist current state", &local::action::persist::configuration)
                 }
             };
 

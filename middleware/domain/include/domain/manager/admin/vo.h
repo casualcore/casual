@@ -27,28 +27,12 @@ namespace casual
 
                   struct Group
                   {
-
-                     struct Resource
-                     {
-                        std::size_t instances;
-                        std::string key;
-                        std::string openinfo;
-                        std::string closeinfo;
-
-                        CASUAL_CONST_CORRECT_SERIALIZE({
-                           archive & CASUAL_MAKE_NVP( instances);
-                           archive & CASUAL_MAKE_NVP( key);
-                           archive & CASUAL_MAKE_NVP( openinfo);
-                           archive & CASUAL_MAKE_NVP( closeinfo);
-                        })
-                     };
-
                      id_type id;
                      std::string name;
                      std::string note;
 
-                     std::vector< Resource> resources;
                      std::vector< id_type> dependencies;
+                     std::vector< std::string> resources;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         archive & CASUAL_MAKE_NVP( id);

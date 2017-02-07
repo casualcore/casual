@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef QUEUE_SERVER_HANDLE_H_
@@ -11,6 +8,7 @@
 #include "queue/group/group.h"
 
 #include "common/message/queue.h"
+#include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/message/domain.h"
 
@@ -36,6 +34,7 @@ namespace casual
 
          namespace handle
          {
+            using dispatch_type = common::communication::ipc::dispatch::Handler;
 
             void shutdown( State& state);
 
@@ -126,13 +125,41 @@ namespace casual
 
             } // dequeue
 
+            namespace peek
+            {
+               namespace information
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::peek::information::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+               } // information
+
+               namespace messages
+               {
+                  struct Request : Base
+                  {
+                     using message_type = common::message::queue::peek::messages::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+                  };
+               } // messages
+
+            } // peek
+
 
             namespace transaction
             {
                namespace commit
                {
                   //!
-                  //! Invoked from the casual-queue-broker
+                  //! Invoked from the TM
                   //!
                   struct Request : Base
                   {
@@ -145,10 +172,28 @@ namespace casual
                   };
                }
 
+               namespace prepare
+               {
+                  //!
+                  //! Invoked from the TM
+                  //!
+                  //! This will always reply ok.
+                  //!
+                  struct Request : Base
+                  {
+                     using message_type = common::message::transaction::resource::prepare::Request;
+
+                     using Base::Base;
+
+                     void operator () ( message_type& message);
+
+                  };
+               }
+
                namespace rollback
                {
                   //!
-                  //! Invoked from the casual-queue-broker
+                  //! Invoked from the TM
                   //!
                   struct Request : Base
                   {
@@ -160,9 +205,25 @@ namespace casual
 
                   };
                }
-            }
+            } // transaction
+
+            namespace restore
+            {
+               struct Request : Base
+               {
+                  using message_type = common::message::queue::restore::Request;
+
+                  using Base::Base;
+
+                  void operator () ( message_type& message);
+               };
+
+            } // restore
 
          } // handle
+
+         handle::dispatch_type handler( State& state);
+
       } // group
    } // queue
 

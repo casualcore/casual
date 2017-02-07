@@ -58,19 +58,20 @@ namespace casual
 
                   void log( const std::string& category, const char* message)
                   {
-                     const std::string basename{ file::name::base( process::path())};
+                     static const std::string basename{ file::name::base( process::path())};
 
-                     m_output << chronology::local()
+                     m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::clock_type::now().time_since_epoch()).count()
                         << '|' << common::domain::identity().name
                         << '|' << execution::id()
-                        << '|' << transaction::Context::instance().current().trid
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
                         << '|' << basename
+                        << '|' << transaction::Context::instance().current().trid
                         << '|' << execution::service::parent::name()
                         << '|' << execution::service::name()
                         << '|' << category
-                        << '|' << message << std::endl;
+                        << '|' << message
+                        << std::endl;
                   }
 
                   void log( const std::string& category, const std::string& message)

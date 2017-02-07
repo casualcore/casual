@@ -1,11 +1,9 @@
 //!
-//! state.cpp
-//!
-//! Created on: Aug 16, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/broker/state.h"
+#include "queue/common/log.h"
 
 #include "common/algorithm.h"
 
@@ -16,8 +14,7 @@ namespace casual
       namespace broker
       {
 
-         State::State( common::communication::ipc::inbound::Device& receive) : receive( receive) {}
-         State::State() : State( common::communication::ipc::inbound::device()) {}
+         State::State() = default;
 
 
          State::Group::Group() = default;
@@ -26,6 +23,33 @@ namespace casual
 
          bool operator == ( const State::Group& lhs, State::Group::id_type process) { return lhs.process == process;}
 
+         static_assert( common::traits::is_movable< State::Group>::value, "not movable");
+
+         State::Gateway::Gateway() = default;
+         State::Gateway::Gateway( common::domain::Identity id, common::process::Handle process)
+            : id{ std::move( id)}, process{ std::move( process)} {}
+
+
+         bool operator == ( const State::Gateway& lhs, const common::domain::Identity& rhs)
+         {
+            return lhs.id == rhs;
+         }
+
+         static_assert( common::traits::is_movable< State::Gateway>::value, "not movable");
+
+
+         bool operator < ( const State::Queue& lhs, const State::Queue& rhs)
+         {
+            return lhs.order < rhs.order;
+         }
+
+         std::ostream& operator << ( std::ostream& out, const State::Queue& value)
+         {
+            return out << "{ process:" << value.process
+                  << ", qid: " << value.queue
+                  << ", order: " << value.order
+                  << '}';
+         }
 
          std::vector< common::platform::pid::type> State::processes() const
          {
@@ -40,47 +64,112 @@ namespace casual
          }
 
 
-         State::Correlation::Correlation( id_type caller, const common::Uuid& reply_correlation, std::vector< Group::id_type> groups)
-            : caller( std::move( caller)), reply_correlation{ reply_correlation}
+         void State::remove_queues( common::platform::pid::type pid)
          {
-            common::range::move( groups, requests);
+            Trace trace{ "queue::broker::State::remove_queues"};
+
+            common::range::erase_if( queues, [pid]( std::vector< Queue>& instances){
+               return common::range::trim( instances, common::range::remove_if( instances, [pid]( const Queue& q){
+                  return pid == q.process.pid;
+               })).empty();
+            });
+
+            if( log)
+            {
+               log << "queues: [";
+               for( auto& value : queues)
+               {
+                  log << "{ name: " << value.first
+                        << ", instancse: " << common::range::make( value.second) << ", ";
+               }
+               log << "]\n";
+            }
+
          }
 
-         State::Correlation::Request::Request() = default;
-         State::Correlation::Request::Request( Group::id_type group) : group( std::move( group)) {}
-
-
-
-         bool State::Correlation::replied() const
+         void State::remove( common::platform::pid::type pid)
          {
-            return common::range::all_of( requests, []( const Request& r){ return r.stage >= Stage::error;});
+            Trace trace{ "queue::broker::State::remove"};
+
+            remove_queues( pid);
+
+            common::range::trim( groups, common::range::remove_if( groups, [pid]( const Group& g){
+               return pid == g.process.pid;
+            }));
+
+
+            common::range::trim( gateways, common::range::remove_if( gateways, [pid]( const Gateway& g){
+               return pid == g.process.pid;
+            }));
+
          }
 
-         State::Correlation::Stage State::Correlation::stage() const
+         void State::update( common::message::gateway::domain::Advertise& message)
          {
-            auto max = common::range::min( requests, []( const Request& lhs, const Request& rhs)
+            Trace trace{ "queue::broker::State::update"};
+
+            switch( message.directive)
+            {
+               case decltype(message.directive)::replace:
+               {
+                  remove_queues( message.process.pid);
+
+                  //
+                  // We fall through and add the queues, if any.
+                  //
+               }
+               // no break
+               case decltype(message.directive)::add:
+               {
+                  if( ! message.queues.empty())
                   {
-                     return lhs.stage < rhs.stage;
-                  });
+                     //
+                     // We only add gateway and queues if there are any.
+                     //
 
-            if( max)
-            {
-               return max->stage;
+                     if( ! common::range::find( gateways, message.domain))
+                     {
+                        gateways.emplace_back( message.domain, message.process);
+                     }
+
+                     for( const auto& queue : message.queues)
+                     {
+                        auto& instances = queues[ queue.name];
+
+                        //
+                        // outbound order is zero-based, we add 1 to distinguish local from remote
+                        //
+                        instances.emplace_back( message.process, 0, message.order + 1);
+
+                        //
+                        // Make sure we prioritize local queue
+                        //
+                        common::range::stable_sort( instances);
+                     }
+                  }
+
+                  break;
+               }
+               case decltype(message.directive)::remove:
+               {
+                  for( const auto& queue : message.queues)
+                  {
+                     auto& instances = queues[ queue.name];
+
+                     common::range::trim( instances, common::range::remove_if( instances, [&]( const Queue& q){
+                           return message.process.pid == q.process.pid;
+                        }));
+
+                     if( instances.empty())
+                     {
+                        queues.erase( queue.name);
+                     }
+                  }
+                  break;
+               }
+
             }
-            return Stage::empty;
          }
-
-
-         void State::Correlation::stage( const id_type& id, Stage stage)
-         {
-            auto found = common::range::find_if( requests, [&]( const Request& r){ return r.group.pid == id.pid;});
-
-            if( found)
-            {
-               found->stage = stage;
-            }
-         }
-
       } // broker
    } // queue
 } // casual

@@ -26,13 +26,6 @@ namespace casual
    {
       namespace manager
       {
-         namespace local
-         {
-            namespace
-            {
-
-            } // <unnamed>
-         } // local
 
          namespace ipc
          {
@@ -41,6 +34,8 @@ namespace casual
                static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process::exit}};
                return singleton;
             }
+
+
          } // ipc
 
          namespace handle
@@ -50,6 +45,23 @@ namespace casual
             {
                namespace
                {
+                  namespace optional
+                  {
+                     template< typename D, typename M>
+                     bool send( D&& device, M&& message)
+                     {
+                        try
+                        {
+                           ipc::device().blocking_send( device, message);
+                           return true;
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           return false;
+                        }
+                     }
+
+                  } // optional
 
                   namespace shutdown
                   {
@@ -126,15 +138,17 @@ namespace casual
                      {
                         Trace trace{ "gateway::manager::handle::local::Boot"};
 
+
                         if( connection.runlevel == manager::state::outbound::Connection::Runlevel::absent)
                         {
                            try
                            {
                               connection.process.pid = common::process::spawn(
                                     local::executable( connection),
-                                    { "--address", common::string::join( connection.address, " ")});
+                                    { "--address", common::string::join( connection.address, " "),
+                                      "--order", std::to_string( connection.order)});
 
-                              connection.runlevel = manager::state::outbound::Connection::Runlevel::booting;
+                              connection.runlevel = manager::state::outbound::Connection::Runlevel::connecting;
                            }
                            catch( ...)
                            {
@@ -231,6 +245,10 @@ namespace casual
                {
                   Trace trace{ "gateway::manager::handle::process::Exit"};
 
+                  //
+                  // Send the exit notification to domain.
+                  //
+                  ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
 
                   auto inbound_found = range::find( state().connections.inbound, message.death.pid);
                   auto outbound_found = range::find( state().connections.outbound, message.death.pid);
@@ -245,7 +263,20 @@ namespace casual
                   {
                      log::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
 
-                     state().connections.outbound.erase( std::begin( outbound_found));
+                     if( outbound_found->restart && state().runlevel == State::Runlevel::online)
+                     {
+                        outbound_found->reset();
+                        local::Boot{}( *outbound_found);
+                     }
+                     else
+                     {
+                        state().connections.outbound.erase( std::begin( outbound_found));
+                     }
+
+                     //
+                     // remove discover coordination, if any.
+                     //
+                     state().discover.remove( message.death.pid);
 
                   }
                   else
@@ -257,106 +288,100 @@ namespace casual
             } // process
 
 
-
-
-            namespace local
-            {
-               namespace
-               {
-                  void advertise( const common::process::Handle& process, std::vector< std::string> services)
-                  {
-                     common::message::service::Advertise message;
-                     message.process = process;
-                     message.location = common::message::service::Location::remote;
-
-                     range::transform( services, message.services, []( std::string& s){
-                        return common::message::Service{
-                           std::move( s),
-                           common::server::Service::Type::cXATMI,
-                           cast::underlying( common::server::Service::Transaction::join)
-                        };
-
-                     });
-
-                     manager::ipc::device().blocking_send( communication::ipc::broker::device(), message);
-                  }
-
-                  namespace discover
-                  {
-                     void send( const common::process::Handle& process, std::vector< std::string> services)
-                     {
-                        Trace trace{ "gateway::manager::handle::local::discover send"};
-
-                        common::message::gateway::domain::discover::Request request;
-                        request.process = common::process::handle();
-                        request.services = std::move( services);
-
-                        manager::ipc::device().blocking_send( process.queue, request);
-                     }
-
-                     template< typename C>
-                     void reply( C& connection, const common::message::gateway::domain::discover::Reply& message)
-                     {
-                        if( connection.runlevel == state::outbound::Connection::Runlevel::booting)
-                        {
-                           connection.process = message.process;
-                           connection.runlevel = state::outbound::Connection::Runlevel::online;
-                           connection.remote = message.remote;
-                           connection.address = message.address;
-                        }
-                        else
-                        {
-                           log::error << "connection is in wrong state: " << connection << " - action: discard\n";
-                        }
-                     }
-
-                  } // discover
-
-
-               } // <unnamed>
-            } // local
-
             namespace domain
             {
                namespace discover
                {
+
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::domain::discover::Request"};
+
+                     log << "message: " << message << '\n';
+
+                     std::vector< platform::pid::type> requested;
+
+                     auto destination = message.process.queue;
+
+                     //
+                     // Make sure we get the response
+                     //
+                     message.process = common::process::handle();
+
+                     //
+                     // Forward the request to all outbound connections
+                     //
+
+                     auto send_request = [&]( const state::outbound::Connection& outbound)
+                           {
+
+                              //
+                              // We don't send to the same domain that is the requester.
+                              //
+                              if( outbound.remote != message.domain)
+                              {
+                                 if( local::optional::send( outbound.process.queue, message))
+                                 {
+                                    requested.push_back( outbound.process.pid);
+                                 }
+                              }
+                           };
+
+                     range::for_each( state().connections.outbound, send_request);
+
+                     state().discover.outbound.add( message.correlation, destination, std::move( requested));
+                  }
+
                   void Reply::operator () ( message_type& message)
                   {
                      Trace trace{ "gateway::manager::handle::domain::discover::Reply"};
 
                      log << "message: " << message << '\n';
 
-                     {
-                        auto found = range::find( state().connections.outbound, message.process.pid);
-
-                        if( found)
-                        {
-                           local::discover::reply( *found, message);
-                           local::advertise( message.process, found->services);
-
-                           return;
-                        }
-                     }
-
-                     {
-                        auto found = range::find( state().connections.inbound, message.process.pid);
-
-                        if( found)
-                        {
-                           local::discover::reply( *found, message);
-
-                           return;
-                        }
-                     }
-                     log::error << "discovery reply from unknown connection " << message << " - action: discard\n";
+                     //
+                     // Accumulate the reply, might trigger a accumulated reply to the requester
+                     //
+                     state().discover.outbound.accumulate( message);
                   }
-
 
                } // discovery
             } // domain
 
             namespace outbound
             {
+               namespace configuration
+               {
+
+                  void Request::operator () ( message_type& message)
+                  {
+                     Trace trace{ "gateway::manager::handle::outbound::configuration::Request"};
+
+                     log << "message: " << message << '\n';
+
+                     auto reply = common::message::reverse::type( message);
+
+                     auto send_reply = common::scope::execute( [&](){
+                        local::optional::send( message.process.queue, reply);
+                     });
+
+
+                     auto found = range::find( state().connections.outbound, message.process.pid);
+
+                     if( found)
+                     {
+                        reply.process = common::process::handle();
+                        reply.services = found->services;
+                        reply.queues = found->queues;
+                     }
+                     else
+                     {
+                        common::log::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
+                     }
+                  }
+
+
+               } // configuration
+
                void Connect::operator () ( message_type& message)
                {
                   Trace trace{ "gateway::manager::handle::outbound::Connect"};
@@ -367,10 +392,13 @@ namespace casual
 
                   if( found)
                   {
-                     if( found->runlevel == state::outbound::Connection::Runlevel::booting)
+                     found->process = message.process;
+                     found->remote = message.domain;
+                     found->address = std::move( message.address);
+
+                     if( found->runlevel == state::outbound::Connection::Runlevel::connecting)
                      {
-                        found->process = message.process;
-                        local::discover::send( message.process, found->services);
+                        found->runlevel = state::outbound::Connection::Runlevel::online;
                      }
                      else
                      {
@@ -397,8 +425,13 @@ namespace casual
                   if( found)
                   {
                      found->process = message.process;
+                     found->remote = message.domain;
+                     found->address = std::move( message.address);
+                     found->runlevel = state::inbound::Connection::Runlevel::online;
 
-                     local::discover::send( message.process, {});
+                     //
+                     // It will soon arrive a discovery message, where we can pick up domain-id and such.
+                     //
                   }
                   else
                   {
@@ -420,7 +453,7 @@ namespace casual
                      {
 
                         state::inbound::Connection connection;
-                        connection.runlevel = state::inbound::Connection::Runlevel::booting;
+                        connection.runlevel = state::inbound::Connection::Runlevel::connecting;
                         connection.type = state::inbound::Connection::Type::ipc;
 
                         connection.process.pid = common::process::spawn(
@@ -448,15 +481,16 @@ namespace casual
                      log << "message: " << message << '\n';
 
                      //
-                     // We take ownership of the socket until we've spawned the inbound connection
+                     // The socket (file-handler) is duplicated to the child process, so we can close
+                     // the socket that belongs to this process
                      //
                      auto socket = communication::tcp::adopt( message.descriptor);
 
 
-                     if( state().runlevel != State::Runlevel::shutdown )
+                     if( state().runlevel != State::Runlevel::shutdown)
                      {
                         state::inbound::Connection connection;
-                        connection.runlevel = state::inbound::Connection::Runlevel::booting;
+                        connection.runlevel = state::inbound::Connection::Runlevel::connecting;
                         connection.type = state::inbound::Connection::Type::tcp;
 
                         connection.process.pid = common::process::spawn(
@@ -465,10 +499,7 @@ namespace casual
                                     "--descriptor", std::to_string( socket.descriptor()),
                               });
 
-
                         state().connections.inbound.push_back( std::move( connection));
-
-                        socket.release();
                      }
                   }
 
@@ -478,7 +509,7 @@ namespace casual
 
          } // handle
 
-         common::message::dispatch::Handler handler( State& state)
+         common::communication::ipc::dispatch::Handler handler( State& state)
          {
             static common::server::handle::basic_admin_call admin{
                manager::admin::services( state),
@@ -489,10 +520,12 @@ namespace casual
                common::message::handle::Shutdown{},
                manager::handle::process::Exit{ state},
                manager::handle::listener::Event{ state},
+               manager::handle::outbound::configuration::Request{ state},
                manager::handle::inbound::Connect{ state},
                manager::handle::outbound::Connect{ state},
                manager::handle::inbound::ipc::Connect{ state},
                manager::handle::inbound::tcp::Connect{ state},
+               handle::domain::discover::Request{ state},
                handle::domain::discover::Reply{ state},
                std::ref( admin),
 

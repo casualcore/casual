@@ -69,7 +69,7 @@ namespace casual
                      {
                         Trace trace( "call::validate::input", log::internal::transaction);
 
-                        if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && transaction::Context::instance().current())
+                        if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && common::transaction::Context::instance().current())
                         {
                            throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
                         }
@@ -105,7 +105,7 @@ namespace casual
                            char* idata,
                            long ilen,
                            long flags,
-                           const message::Service& service)
+                           const message::service::call::Service& service)
                      {
                         message::service::call::caller::Request message( buffer::pool::Holder::instance().get( idata, ilen));
 
@@ -133,12 +133,12 @@ namespace casual
 
                            message.descriptor = descriptor.descriptor;
 
-                           auto& transaction = transaction::Context::instance().current();
+                           auto& transaction = common::transaction::Context::instance().current();
 
                            if( ! flag< TPNOTRAN>( flags) && transaction)
                            {
                               message.trid = transaction.trid;
-                              transaction.associate( message.descriptor);
+                              transaction.associate( message.correlation);
 
                               //
                               // We use the transaction deadline if it's earlier
@@ -287,6 +287,8 @@ namespace casual
                   throw common::exception::xatmi::no::Message();
                }
 
+               log::internal::debug << "reply: " << reply << '\n';
+
                descriptor = reply.descriptor;
 
                user_code( reply.code);
@@ -300,7 +302,17 @@ namespace casual
                //
                // Update transaction state
                //
-               transaction::Context::instance().update( reply);
+               common::transaction::Context::instance().update( reply);
+
+
+               //
+               // Check any errors
+               //
+               if( reply.error != 0 && reply.error != TPESVCFAIL)
+               {
+                  exception::xatmi::propagate( reply.error);
+               }
+
 
                //
                // Check buffer types
@@ -309,7 +321,7 @@ namespace casual
                {
                   auto output = buffer::pool::Holder::instance().get( *odata);
 
-                  if( output.payload.type != reply.buffer.type)
+                  if( output.payload().type != reply.buffer.type)
                   {
                      throw exception::xatmi::buffer::type::Output{};
                   }
@@ -344,6 +356,11 @@ namespace casual
                }
 
                log::internal::debug << "descriptor: " << reply.descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+
+               if( reply.error == TPESVCFAIL)
+               {
+                  throw exception::xatmi::service::Fail{};
+               }
 
             }
 

@@ -20,6 +20,7 @@
 #include "common/message/gateway.h"
 #include "common/message/transaction.h"
 #include "common/message/dispatch.h"
+#include "common/message/coordinate.h"
 #include "common/message/handle.h"
 
 #include "common/trace.h"
@@ -39,14 +40,26 @@ namespace casual
                common::communication::ipc::blocking::send( std::forward< D>( device), std::forward< M>( message));
             }
 
+            namespace optional
+            {
+               template< typename D, typename M>
+               bool send( D&& device, M&& message)
+               {
+                  try
+                  {
+                     blocking::send( std::forward< D>( device), std::forward< M>( message));
+                     return true;
+                  }
+                  catch( const common::exception::communication::Unavailable&)
+                  {
+                     return false;
+                  }
+               }
+            } // optional
          } // blocking
 
          namespace handle
          {
-
-
-
-
             template< typename M>
             struct basic_transaction_request
             {
@@ -55,16 +68,14 @@ namespace casual
                void operator() ( message_type& message)
                {
                   //
-                  // Change 'sender' so we (our main thread) get the reply
+                  // Set 'sender' so we (our main thread) get the reply
                   //
                   message.process = common::process::handle();
-                  blocking::send( common::communication::ipc::transaction::manager::device(), message);
+                  blocking::send( common::communication::ipc::transaction::manager::device(), message.get());
                }
             };
 
-
-
-            namespace call
+            namespace cache
             {
                struct Base
                {
@@ -74,11 +85,15 @@ namespace casual
                   const Cache& m_cache;
                };
 
-               struct Request : Base
-               {
-                  using message_type = common::message::service::call::callee::Request;
+            } // cache
 
-                  using Base::Base;
+            namespace call
+            {
+               struct Request : cache::Base
+               {
+                  using message_type = message::interdomain::service::call::receive::Request;
+
+                  using cache::Base::Base;
 
 
                   void operator() ( message_type& message)
@@ -104,7 +119,7 @@ namespace casual
                      //
                      // Add message to cache, this could block
                      //
-                     m_cache.add( common::marshal::complete( std::move( message)));
+                     m_cache.add( common::marshal::complete( std::move( message.get())));
 
                      //
                      // Send lookup
@@ -115,11 +130,11 @@ namespace casual
 
                namespace lookup
                {
-                  struct Reply : Base
+                  struct Reply : cache::Base
                   {
                      using message_type = common::message::service::lookup::Reply;
 
-                     using Base::Base;
+                     using cache::Base::Base;
 
                      void operator() ( message_type& message)
                      {
@@ -168,8 +183,187 @@ namespace casual
                   };
 
                } // lookup
-
             } // call
+
+            namespace queue
+            {
+               namespace lookup
+               {
+                  template< typename M>
+                  void send( const Cache& cache, M&& message)
+                  {
+                     Trace trace{ "gateway::inbound::handle::queue::lookup::send"};
+
+                     //
+                     // Change 'sender' so we (our main thread) get the reply
+                     //
+                     message.process = common::process::handle();
+
+                     //
+                     // Prepare queue lookup
+                     //
+                     common::message::queue::lookup::Request request;
+                     {
+                        request.correlation = message.correlation;
+                        request.name = message.name;
+                        request.process = common::process::handle();
+                     }
+
+                     //
+                     // Add message to cache, this could block
+                     //
+                     cache.add( common::marshal::complete( std::move( message.get())));
+
+                     auto remove = common::scope::execute( [&](){
+                        cache.get( request.correlation);
+                     });
+
+                     //
+                     // Send lookup
+                     //
+
+                     blocking::send( common::communication::ipc::queue::broker::optional::device(), request);
+
+                     //
+                     // We could send the lookup, so we won't remove the message from the cache
+                     //
+                     remove.release();
+                  }
+
+                  struct Reply : cache::Base
+                  {
+                     using message_type = common::message::queue::lookup::Reply;
+                     using cache::Base::Base;
+
+
+                     void operator() ( message_type& message) const
+                     {
+                        Trace trace{ "gateway::inbound::handle::queue::lookup::Reply"};
+
+                        auto request = m_cache.get( message.correlation);
+
+                        if( message.process)
+                        {
+                           common::communication::ipc::outbound::Device ipc{ message.process.queue};
+                           ipc.put( request, common::communication::ipc::policy::Blocking{});
+                        }
+                        else
+                        {
+                           send_error_reply( message, request.type);
+                        }
+
+                     }
+
+                  private:
+
+                     template< typename R>
+                     void send_error_reply( message_type& message) const
+                     {
+                        R reply;
+                        reply.correlation = message.correlation;
+                        common::communication::ipc::inbound::device().push( reply);
+                     }
+
+                     void send_error_reply( message_type& message, common::message::Type type) const
+                     {
+                        switch( type)
+                        {
+                           case common::message::Type::queue_dequeue_request:
+                           {
+                              send_error_reply< common::message::queue::dequeue::Reply>( message);
+                              break;
+                           }
+                           case common::message::Type::queue_enqueue_request:
+                           {
+                              send_error_reply< common::message::queue::enqueue::Reply>( message);
+                              break;
+                           }
+                           default:
+                           {
+                              common::log::error << "unexpected message type for queue request: " << message << " - action: drop message\n";
+                           }
+                        }
+                     }
+
+                  };
+
+               } // lookup
+
+               namespace enqueue
+               {
+                  struct Request : cache::Base
+                  {
+                     using message_type = message::interdomain::queue::enqueue::receive::Request;
+
+                     using cache::Base::Base;
+
+                     void operator() ( message_type& message) const
+                     {
+                        Trace trace{ "gateway::inbound::handle::queue::enqueue::Request::operator()"};
+
+                        //
+                        // Send lookup
+                        //
+                        try
+                        {
+                           queue::lookup::send( m_cache, message);
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           common::log::error << "failed to lookup queue - action: send error reply\n";
+
+                           common::message::queue::enqueue::Reply reply;
+                           reply.correlation = message.correlation;
+                           reply.execution = message.execution;
+
+                           // empty uuid represent error. TODO: is this enough?
+                           reply.id = common::uuid::empty();
+
+                           blocking::send( common::communication::ipc::inbound::id(), reply);
+                        }
+                     }
+
+                  };
+
+               } // enqueue
+
+               namespace dequeue
+               {
+                  struct Request : cache::Base
+                  {
+                     using message_type = message::interdomain::queue::dequeue::receive::Request;
+
+                     using cache::Base::Base;
+
+                     void operator() ( message_type& message) const
+                     {
+                        Trace trace{ "gateway::inbound::handle::queue::dequeue::Request::operator()"};
+
+                        //
+                        // Send lookup
+                        //
+                        try
+                        {
+                           queue::lookup::send( m_cache, message);
+                        }
+                        catch( const common::exception::communication::Unavailable&)
+                        {
+                           common::log::error << "failed to lookup queue - action: send error reply\n";
+
+                           common::message::queue::enqueue::Reply reply;
+                           reply.correlation = message.correlation;
+                           reply.execution = message.execution;
+
+                           // empty uuid represent error. TODO: is this enough?
+                           reply.id = common::uuid::empty();
+
+                           blocking::send( common::communication::ipc::inbound::id(), reply);
+                        }
+                     }
+
+                  };
+               } // dequeue
+            } // queue
 
 
             template< typename M, typename D>
@@ -182,9 +376,13 @@ namespace casual
 
                void operator() ( message_type& message)
                {
-                  Trace trace{ "gateway::inbound::handle::basic_reply::operator()"};
+                  Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
 
-                  m_device.blocking_send( message);
+                  auto&& wrapper = message::interdomain::send::wrap( message);
+
+                  log << "forward message: " << message << '\n';
+
+                  m_device.blocking_send( wrapper);
                }
 
             private:
@@ -206,52 +404,181 @@ namespace casual
             {
                namespace discover
                {
+
+                  namespace coordinate
+                  {
+                     //!
+                     //! Policy to coordinate discover request from another domain
+                     //!
+                     template< typename D>
+                     struct Policy
+                     {
+                        using device_type = D;
+
+                        using message_type = common::message::gateway::domain::discover::Reply;
+
+                        Policy( device_type& device) : m_device( device) {}
+
+                        inline void accumulate( message_type& message, message_type& reply)
+                        {
+                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::accumulate"};
+
+
+                           common::range::copy( reply.services, std::back_inserter( message.services));
+                           common::range::copy( reply.queues, std::back_inserter( message.queues));
+
+                           log << "reply: " << reply << '\n';
+                           log << "message: " << message << '\n';
+
+                        }
+
+                        inline void send( common::platform::ipc::id::type queue, message_type& message)
+                        {
+                           Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
+
+                           //
+                           // Set our domain-id to the reply so the outbound can deduce stuff
+                           //
+                           message.domain = common::domain::identity();
+                           message.process = common::process::handle();
+
+                           auto&& wrapper = gateway::message::interdomain::send::wrap( message);
+
+                           log << "forward message: " << message << '\n';
+
+                           m_device.blocking_send( wrapper);
+                        }
+                     private:
+                        device_type& m_device;
+                     };
+
+                     template< typename D>
+                     using Discover = common::message::Coordinate< Policy< D>>;
+
+
+                     namespace internal
+                     {
+                        struct Message : common::message::basic_message< common::message::Type::gateway_domain_discover_internal_coordination>
+                        {
+                           common::domain::Identity remote;
+                           std::vector< common::platform::pid::type> pids;
+
+                           CASUAL_CONST_CORRECT_MARSHAL(
+                           {
+                              archive & remote;
+                              archive & pids;
+                           })
+                        };
+
+                     } // internal
+
+                  } // coordinate
+
                   struct Request
                   {
-                     Request( std::vector< std::string> address) : address( std::move( address)) {}
-
-                     void operator () ( common::message::gateway::domain::discover::Request& request) const
+                     void operator () ( message::interdomain::domain::discovery::receive::Request& message) const
                      {
-                        Trace trace{ "gateway::inbound::handle::connection::information::Request"};
+                        Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
 
-                        auto reply = common::message::reverse::type( request);
-
-                        reply.process = common::process::handle();
-                        reply.remote = common::domain::identity();
-                        reply.address = address;
+                        log << "message: " << message << '\n';
 
                         //
-                        // Send to main thread, for forward to remote domain
+                        // Request from remote domain about this domain
                         //
-                        common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), reply);
 
+                        //
+                        // Make sure the main thread gets the reply
+                        //
+                        message.process = common::process::handle();
+
+                        coordinate::internal::Message coordinate;
+
+                        auto send_coordinate = common::scope::execute( [&](){
+
+                           coordinate.remote = message.domain;
+                           coordinate.correlation = message.correlation;
+
+                           blocking::send( common::communication::ipc::inbound::id(), coordinate);
+                        });
+
+
+                        //
+                        // Forward to broker and possible casual-queue
+                        //
+                        {
+                           if( ! message.services.empty())
+                           {
+                              blocking::send( common::communication::ipc::broker::device(), message.get());
+                              coordinate.pids.push_back( common::communication::ipc::broker::device().connector().process().pid);
+                           }
+
+                           if( ! message.queues.empty() &&
+                                 blocking::optional::send( common::communication::ipc::queue::broker::optional::device(), message.get()))
+                           {
+                              coordinate.pids.push_back( common::communication::ipc::queue::broker::optional::device().connector().process().pid);
+                           }
+                        }
                      }
-
-                     std::vector< std::string> address;
                   };
 
-                  //!
-                  //! Assumes it's the gateway-manager that has sent the request
-                  //!
-                  //! @todo: make this more generic?
-                  //!
+
+                  template< typename D>
                   struct Reply
                   {
-                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
-                     {
-                        Trace trace{ "gateway::inbound::handle::connection::information::Reply"};
+                     using discover_type = coordinate::Discover< D>;
+                     using message_type = common::message::gateway::domain::discover::Reply;
 
-                        reply.process = common::process::handle();
-                        common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), reply);
+                     Reply( discover_type& device) : m_discover( device) {}
+
+                     void operator() ( message_type& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle::domain::discover::Reply::operator()"};
+
+                        log << "message: " << message << '\n';
+
+                        //
+                        // Might send the accumulated message if all requested has replied.
+                        // (via the Policy)
+                        //
+                        m_discover.accumulate( message);
                      }
+
+                  private:
+                     discover_type& m_discover;
+
                   };
+
+
+                  template< typename D>
+                  struct Coordinate
+                  {
+                     using discover_type = D;
+
+                     Coordinate( discover_type& device) : m_discover( device) {}
+
+                     void operator() ( coordinate::internal::Message& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle::domain::discover::Coordinate::operator()"};
+
+                        m_discover.add( message.correlation, 0, message.pids);
+                     }
+
+                  private:
+                     discover_type& m_discover;
+                  };
+
+                  namespace coordinate
+                  {
+                     template< typename C>
+                     auto make( C&& cooordintate) -> Coordinate< common::traits::remove_reference_t< C>>
+                     {
+                        return { std::forward< C>( cooordintate)};
+                     }
+                  } // coordinate
 
 
                } // discover
-
             } // domain
-
-
          } // handle
 
          template< typename Policy>
@@ -266,7 +593,6 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
-              : m_request_thread{ request_thread< S>, std::ref( m_cache), std::forward< S>( settings)}
             {
                //
                // 'connect' to our local domain
@@ -274,15 +600,9 @@ namespace casual
                common::process::instance::connect();
 
                //
-               // We need to make sure that we got the broker queue.
-               // the worker thread is the one that sends request to broker, hence
-               // is the first one to initialize broker queue lookup, and
-               // it's possible that the main thread consumes the process-lookup-reply
+               // Start worker thread
                //
-               // TOOD: Can we do something about this?
-               //
-               common::communication::ipc::broker::device();
-
+               m_request_thread = std::thread{ request_thread< S>, std::ref( m_cache), std::forward< S>( settings)};
             }
 
             ~Gateway()
@@ -339,38 +659,54 @@ namespace casual
 
                auto&& outbound_device = policy.outbound();
 
+
+
+               using outbound_type = common::traits::concrete::type_t< decltype( outbound_device)>;
+
                //
-               // Send connect to gateway so it knows we're up'n running
+               // Coordinates discover replies
                //
-               {
-                  Trace trace{ "gateway::inbound::Gateway::operator() gateway connect"};
-
-                  message::inbound::Connect connect;
-                  connect.process = common::process::handle();
-                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
-               }
+               handle::domain::discover::coordinate::Discover< outbound_type> discover{ outbound_device};
 
 
-               common::message::dispatch::Handler handler{
+               //
+               // Initialize and connect to gateway
+               //
+               initialize( discover, policy.address( outbound_device));
+
+
+
+               auto handler = common::communication::ipc::inbound::device().handler(
+                  //
+                  // Internal messages
+                  //
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
                   handle::call::lookup::Reply{ m_cache},
+                  handle::queue::lookup::Reply{ m_cache},
+
+                  //
+                  // External messages that will be forward to the other domain
+                  //
                   handle::create::forward< common::message::service::call::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::prepare::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::commit::Reply>( outbound_device),
                   handle::create::forward< common::message::transaction::resource::rollback::Reply>( outbound_device),
 
                   //
-                  // Sent from this domain to get information about the other
+                  // accumulates discover replies, and forward the accumulated message when all has
+                  // replied
                   //
-                  handle::create::forward< common::message::gateway::domain::discover::Request>( outbound_device),
+                  handle::domain::discover::Reply< outbound_type>{ discover},
+                  handle::domain::discover::coordinate::make( discover),
 
                   //
-                  // Sent from worker thread to reply to a connection information request
+                  // Queue replies
                   //
-                  handle::create::forward< common::message::gateway::domain::discover::Reply>( outbound_device),
-               };
+                  handle::create::forward< common::message::queue::dequeue::Reply>( outbound_device),
+                  handle::create::forward< common::message::queue::enqueue::Reply>( outbound_device)
+               );
 
                log << "start internal message pump\n";
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device(), ipc_policy{});
@@ -385,23 +721,72 @@ namespace casual
 
                message::worker::Connect message;
 
-               common::message::dispatch::Handler handler{
+               auto handler = common::communication::ipc::inbound::device().handler(
                   common::message::handle::Shutdown{},
                   common::message::handle::ping(),
                   gateway::handle::Disconnect{ m_request_thread},
-                  common::message::handle::assign( message),
-               };
+                  common::message::handle::assign( message)
+               );
 
-               while( ! message.execution)
+               while( ! message.correlation)
                {
                   handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                }
 
                configuration_type configuration;
+
                common::marshal::binary::Input marshal{ message.information};
                marshal >> configuration;
 
                return configuration;
+            }
+
+            template< typename D, typename A>
+            void initialize( D&& discover, A&& address)
+            {
+               Trace trace{ "gateway::inbound::Gateway::initialize"};
+
+               //
+               // We wait for the remote outbound domain to send discover, and for our inbound thread to
+               // send coordinate::internal::Message.
+               // This is part of the outbound initialization dance, and we use it to initialize the inbound
+               // part as well.
+               // The objective is to get the remote-id
+               //
+
+               handle::domain::discover::coordinate::internal::Message message;
+
+               auto handler = common::communication::ipc::inbound::device().handler(
+                  common::message::handle::Shutdown{},
+                  common::message::handle::ping(),
+                  gateway::handle::Disconnect{ m_request_thread},
+                  common::message::handle::assign( message)
+               );
+
+               while( ! message.correlation)
+               {
+                  handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
+               }
+
+               //
+               // Send connect to gateway
+               //
+               {
+                  Trace trace{ "gateway::inbound::Gateway::operator() gateway connect"};
+
+                  message::inbound::Connect connect;
+                  connect.domain = message.remote;
+                  connect.process = common::process::handle();
+                  connect.address = std::forward< A>( address);
+                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
+               }
+
+               //
+               // Handle the message, so the remote oubound gets what it wants.
+               //
+               {
+                  handle::domain::discover::coordinate::make( discover)( message);
+               }
             }
 
             template< typename S>
@@ -452,7 +837,6 @@ namespace casual
                      Trace trace{ "gateway::inbound::Gateway::request_thread main thread connect"};
 
                      message::worker::Connect message;
-
                      {
                         auto configuration = policy.configuration();
                         common::marshal::binary::Output marshal{ message.information};
@@ -464,23 +848,20 @@ namespace casual
 
                   common::log::information << "connection established - policy: " << policy << "\n";
 
+
                   //
                   // we start our request-message-pump
                   //
-                  common::message::dispatch::Handler handler{
+                  auto handler = device.handler(
                      handle::call::Request{ cache},
-                     handle::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
-                     handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
-                     handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
+                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::prepare::Request>{},
+                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::commit::Request>{},
+                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::rollback::Request>{},
+                     handle::domain::discover::Request{},
 
-                     handle::domain::discover::Request{ policy.address()},
-
-                     //
-                     // Assumes that the reply should be sent to domain-manager
-                     //
-                     handle::domain::discover::Reply{},
-
-                  };
+                     handle::queue::dequeue::Request{ cache},
+                     handle::queue::enqueue::Request{ cache}
+                  );
              
                   log << "start external message pump\n";
                   common::message::dispatch::blocking::pump( handler, device);

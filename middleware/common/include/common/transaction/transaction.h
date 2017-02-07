@@ -1,8 +1,5 @@
 //!
-//! transaction.h
-//!
-//! Created on: Oct 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_TRANSACTION_TRANSACTION_H_
@@ -53,8 +50,6 @@ namespace casual
             std::vector< platform::resource::id::type> resources;
 
 
-
-
             State state = State::active;
 
 
@@ -62,38 +57,45 @@ namespace casual
 
 
             //!
-            //! associate a descriptor to this transaction
+            //! associate a pending message reply
             //!
-            void associate( platform::descriptor_type descriptor);
+            void associate( const Uuid& correlation);
 
 
             //!
-            //! discards a descriptor from this transaction
+            //! discards a pending reply from this transaction
             //!
-            void discard( platform::descriptor_type descriptor);
+            void replied( const Uuid& correlation);
 
 
             //!
             //! @return true if this transaction has any pending replies
             //! associated
             //!
-            bool associated() const;
+            bool pending() const;
 
             //!
-            //! @return true if this transaction has @p descriptor associated
+            //! @return true if this transaction has @p correlation associated
             //!
-            bool associated( platform::descriptor_type descriptor) const;
+            bool associated( const Uuid& correlation) const;
 
 
             //!
             //! associated descriptors to this transaction
             //!
-            const std::vector< platform::descriptor_type>& descriptors() const;
+            const std::vector< Uuid>& correlations() const;
 
             //!
-            //! @return true if the transaction never had any associated descriptors
+            //! @return true if the transaction is only local
             //!
             bool local() const;
+
+
+            //!
+            //! Associate this transaction with 'external' resources. That is,
+            //! make it "not local" so it will trigger a commit request to the TM
+            //!
+            void external();
 
 
             friend bool operator == ( const Transaction& lhs, const ID& rhs);
@@ -102,11 +104,8 @@ namespace casual
 
          private:
 
-
-            std::vector< platform::descriptor_type> m_descriptors;
-
+            std::vector< Uuid> m_pending;
             bool m_local = true;
-
 
          };
 

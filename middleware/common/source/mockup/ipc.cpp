@@ -227,11 +227,8 @@ namespace casual
 
                   namespace eventually
                   {
-
-
                      struct Sender
                      {
-
                         struct Message
                         {
                            id_type destination;
@@ -275,28 +272,22 @@ namespace casual
 
                               Trace trace{ "mockup ipc::eventually::Sender::worker_thread"};
 
-                              std::vector< Message> cache;
-
                               while( true)
                               {
-                                 if( cache.empty() || ! queue.empty())
+                                 auto message = queue.get();
+
+                                 communication::ipc::outbound::Device ipc{ message.destination};
+
+                                 try
                                  {
-                                    cache.push_back( queue.get());
+                                    log::internal::debug << "mockup ipc::eventually::Sender::worker_thread ipc.put\n";
+
+                                    ipc.put( message.message, communication::ipc::policy::Blocking{});
                                  }
-
-                                 range::trim( cache, range::remove_if( cache, []( Message& message){
-                                    try
-                                    {
-                                       communication::ipc::outbound::Device ipc{ message.destination};
-
-                                       return static_cast< bool>(
-                                             ipc.put( message.message, communication::ipc::policy::non::Blocking{}));
-                                    }
-                                    catch( const exception::queue::Unavailable&)
-                                    {
-                                       return true;
-                                    }
-                                 }));
+                                 catch( const exception::queue::Unavailable&)
+                                 {
+                                    // no-op we just ignore it
+                                 }
                               }
                            }
                            catch( ...)
@@ -318,11 +309,15 @@ namespace casual
             {
 
 
-               void send( id_type destination, communication::message::Complete&& complete)
+               Uuid send( id_type destination, communication::message::Complete&& complete)
                {
                   Trace trace{ "mockup ipc::eventually::send"};
 
+                  auto correlation = complete.correlation;
+
                   local::eventually::Sender::instance().send( destination, std::move( complete));
+
+                  return correlation;
                }
 
 
@@ -447,7 +442,9 @@ namespace casual
 
             Link::Link( id_type input, id_type output)
                : m_implementation( input, output)
-            {}
+            {
+               log << "link: " << *this << '\n';
+            }
 
             Link::~Link() = default;
 
@@ -463,10 +460,21 @@ namespace casual
                ipc.send( message::mockup::Clear{}, communication::ipc::policy::Blocking{});
             }
 
+            std::ostream& operator << ( std::ostream& out, const Link& value)
+            {
+               return out << "{ input:" << value.m_implementation->input
+                     << ", output: " << value.m_implementation->output
+                     << '}';
+            }
+
 
             struct Collector::Implementation
             {
-               Implementation() : m_link{ m_input.connector().id(), m_output.connector().id()}, m_pid( mockup::pid::next()) {}
+               Implementation() : m_link{ m_input.connector().id(), m_output.connector().id()}, m_pid( mockup::pid::next())
+               {
+                  Trace trace{ "Collector::Implementation()"};
+
+               }
 
                void clear()
                {
@@ -485,7 +493,7 @@ namespace casual
 
             Collector::Collector()
             {
-
+               log << "collector: " << *this << '\n';
             }
             Collector::~Collector() = default;
 
@@ -503,10 +511,19 @@ namespace casual
                m_implementation->clear();
             }
 
+            std::ostream& operator << ( std::ostream& out, const Collector& value)
+            {
+               return out << "{ process: " << value.process()
+                     << ", input:" << value.m_implementation->m_input
+                     << ", output: " << value.m_implementation->m_output
+                     << ", link: " << value.m_implementation->m_link
+                     << '}';
+            }
+
 
             struct Replier::Implementation
             {
-               Implementation( message::dispatch::Handler&& replier) : process{ mockup::pid::next()}
+               Implementation( communication::ipc::dispatch::Handler&& replier) : process{ mockup::pid::next()}
                {
                   communication::ipc::inbound::Device ipc;
                   process.queue = ipc.connector().id();
@@ -521,7 +538,7 @@ namespace casual
                   local::shutdown_thread( m_thread, process.queue);
                }
 
-               static void worker_thread( communication::ipc::inbound::Device&& ipc, message::dispatch::Handler&& replier)
+               static void worker_thread( communication::ipc::inbound::Device&& ipc, communication::ipc::dispatch::Handler&& replier)
                {
                   Trace trace{ "Replier::worker_thread"};
 
@@ -547,7 +564,10 @@ namespace casual
 
             };
 
-            Replier::Replier( message::dispatch::Handler&& replier) : m_implementation{ std::move( replier)} {}
+            Replier::Replier( communication::ipc::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
+            {
+               log << "replier: " << *this << '\n';
+            }
 
             Replier::~Replier() = default;
 
@@ -557,6 +577,12 @@ namespace casual
 
             process::Handle Replier::process() const { return m_implementation->process;}
             id_type Replier::input() const { return m_implementation->process.queue;}
+
+            std::ostream& operator << ( std::ostream& out, const Replier& value)
+            {
+               return out << "{ process:" << value.m_implementation->process << '}';
+            }
+
 
 
          } // ipc

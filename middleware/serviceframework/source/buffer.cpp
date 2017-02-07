@@ -23,25 +23,12 @@ namespace casual
 
          namespace type
          {
-            Type get( platform::raw_buffer_type buffer)
+            const std::string& get( platform::raw_buffer_type buffer)
             {
-               std::array< char, 8 + 1> type;
-               std::array< char, 16 + 1> subtype;
-
-               type.back() = '\0';
-               subtype.back() = '\0';
-
-               tptypes( buffer, type.data(), subtype.data());
-
-               Type result;
-
-               result.name = type.data();
-               result.subname = subtype.data();
-
-               return result;
+               return common::buffer::pool::Holder::instance().get( buffer).payload().type;
             }
 
-            Type get( const Buffer& source)
+            const std::string& get( const Buffer& source)
             {
                return get( source.data());
             }
@@ -51,8 +38,8 @@ namespace casual
 
 
 
-         Buffer::Buffer( const Type& type, std::size_t size)
-            : m_buffer{ tpalloc( type.name.c_str(), type.subname.c_str(), size), deleter_type{}}, m_size( size)
+         Buffer::Buffer( const std::string& type, std::size_t size)
+            : m_buffer{ common::buffer::pool::Holder::instance().allocate( type, size), deleter_type{}}, m_size( size)
          {
             if( size && ! m_buffer)
             {
@@ -61,7 +48,7 @@ namespace casual
             }
          }
 
-         Buffer::Buffer( const Type& type) : Buffer{ type, 0}
+         Buffer::Buffer( const std::string& type) : Buffer{ type, 0}
          {
 
          }
@@ -82,7 +69,7 @@ namespace casual
             return m_buffer.get();
          }
 
-         const Buffer::buffer_type Buffer::data() const noexcept
+         Buffer::buffer_type Buffer::data() const noexcept
          {
             return m_buffer.get();
          }

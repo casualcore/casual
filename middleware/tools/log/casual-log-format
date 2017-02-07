@@ -12,6 +12,7 @@ import subprocess
 import optparse
 import re
 import signal
+import datetime
 
 from functools import partial
 
@@ -20,16 +21,12 @@ from color import color
 
 
 def time( time):
-    return time[0: 11] + color.white( time[11:]);
-
+    #return time[0: 11] + color.white( time[11:]);
+    return datetime.datetime.fromtimestamp( int( time) / 1000000.0).isoformat()
+    
 def domain( name):
+    return name
     
-    if( len( name) > domain.size):
-        domain.size = len( name);
-    
-    return name.ljust( domain.size);
-    
-domain.size = 0;
 
 
 def normalizePID( id):
@@ -105,8 +102,8 @@ def format( input, output):
         
         if( len( rows) == 11):
             
-            pid = rows[ 4];
-            thread = truncateThread( pid, rows[ 5]);
+            pid = rows[ 3];
+            thread = truncateThread( pid, rows[ 4]);
             
             output.write( time( rows[ 0]));
             output.write( '|');
@@ -114,14 +111,14 @@ def format( input, output):
             output.write( '|');
             output.write( color.yellow( truncateUUID( rows[ 2])));
             output.write( '|');
-            output.write( color.yellow( truncateXID( rows[ 3])));
-            output.write( '|');
             output.write( color.white( normalizePID( pid)));
             output.write( '|');
             output.write( thread);
             output.write( '|');
             #output.write( color.white( rows[ 6]));
-            output.write( rows[ 6]);
+            output.write( rows[ 5]);
+            output.write( '|');
+            output.write( color.yellow( truncateXID( rows[ 6])));
             output.write( '|');
             output.write( color.grey( rows[ 7]));
             output.write( '|');

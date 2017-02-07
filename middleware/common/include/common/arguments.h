@@ -1,8 +1,5 @@
 //!
-//! arguments.h
-//!
-//! Created on: Jan 5, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_ARGUMENTS_H_
@@ -22,6 +19,7 @@
 
 #include "common/process.h"
 #include "common/algorithm.h"
+#include "common/functional.h"
 #include "common/terminal.h"
 #include "common/string.h"
 
@@ -346,13 +344,13 @@ namespace casual
                template< typename O, typename T>
                auto static make( O& object, void (O::*member)( T)) -> std::function<void( T)>
                {
-                  return std::bind( member, &object, _1);
+                  return [=,&object]( const T& value){ common::invoke( member, object, value);};
                }
 
                template< typename T>
                auto static make( void (*function)( T)) -> std::function<void( T)>
                {
-                  return std::function<void( T)>{ function};
+                  return [=]( const T& value){ common::invoke( function, value);};
                }
 
                //
@@ -364,7 +362,7 @@ namespace casual
                   //
                   // We bind directly to the variable
                   //
-                  return [&]( const T& values){ value::assign( variable, values);};
+                  return [&variable]( const T& values){ value::assign( variable, values);};
                }
             };
 
@@ -375,19 +373,19 @@ namespace casual
                using zero_result_type = std::function<void()>;
 
                template< typename O>
-               static zero_result_type make( O& object, void (O::*member)(void))
+               static zero_result_type make( O& object, void (O::*function)(void))
                {
-                  return zero_result_type( std::bind( member, &object));
+                  return [=,&object](){ common::invoke( function, object);};
                }
 
                static zero_result_type make( void (*function)(void))
                {
-                  return zero_result_type( function);
+                  return { function};
                }
 
                static zero_result_type make( std::function<void()> function)
                {
-                  return zero_result_type( std::move( function));
+                  return function;
                }
 
                //
@@ -395,7 +393,7 @@ namespace casual
                //
                static zero_result_type make( bool& value)
                {
-                  return zero_result_type( [&](){ value = true;});
+                  return [&value](){ value = true;};
                }
             };
 

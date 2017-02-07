@@ -39,7 +39,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               void do_andle_exception() override;
+               void do_handle_exception() override;
 
                Interface::Input& do_input() override;
 
@@ -61,7 +61,7 @@ namespace casual
             public:
                Binary( TPSVCINFO* serviceInfo);
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
                reply::State do_finalize() override;
 
@@ -83,7 +83,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
             private:
 
@@ -101,7 +101,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
 
             private:
@@ -120,7 +120,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
             private:
 
@@ -137,7 +137,7 @@ namespace casual
 
                reply::State do_finalize() override;
 
-               static common::buffer::Type type();
+               static const std::string& type();
 
             private:
 
@@ -193,27 +193,6 @@ namespace casual
                   archive::service::describe::Writer input;
                   archive::service::describe::Writer output;
                } m_writer;
-
-               std::unique_ptr< Interface> m_protocol;
-            };
-
-            //!
-            //! Fills the object model with "random" values and produce an
-            //! example of the API in the requested protocol (json, yaml, ...),
-            //! which could help getting an understanding of an API.
-            //!
-            class Example : public Base
-            {
-            public:
-
-               Example( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
-
-            private:
-
-               bool do_call() override;
-               reply::State do_finalize() override;
-
-               archive::service::example::Prepare m_prepare;
 
                std::unique_ptr< Interface> m_protocol;
             };

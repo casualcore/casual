@@ -1,8 +1,5 @@
 //!
-//! transform.cpp
-//!
-//! Created on: Sep 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -19,23 +16,6 @@ namespace casual
       namespace transform
       {
 
-         namespace configuration
-         {
-
-
-            state::Service Service::operator () ( const config::domain::Service& service) const
-            {
-               state::Service result;
-
-               result.information.name = service.name;
-               result.information.timeout = common::chronology::from::string( service.timeout);
-
-               return result;
-            }
-
-         } // configuration
-
-
 
          state::Service Service::operator () ( const common::message::Service& value) const
          {
@@ -44,7 +24,7 @@ namespace casual
             result.information.name = value.name;
             //result.information.timeout = value.timeout;
             result.information.transaction = value.transaction;
-            result.information.type = value.type;
+            result.information.category = value.category;
 
             // TODD: set against configuration
 
@@ -53,7 +33,7 @@ namespace casual
          }
 
 
-         common::process::Handle Instance::operator () ( const state::Instance& value) const
+         common::process::Handle Instance::operator () ( const state::instance::Local& value) const
          {
             return value.process;
          }
@@ -65,14 +45,25 @@ namespace casual
             {
                struct Instance
                {
-                  admin::InstanceVO operator() ( const state::Instance& instance) const
+                  admin::instance::LocalVO operator() ( const state::instance::Local& instance) const
                   {
-                     admin::InstanceVO result;
+                     admin::instance::LocalVO result;
 
                      result.process = instance.process;
                      result.invoked = instance.invoked;
                      result.last = instance.last();
-                     result.state = static_cast< admin::InstanceVO::State>( instance.state());
+                     result.state = static_cast< admin::instance::LocalVO::State>( instance.state());
+
+                     return result;
+                  }
+
+                  admin::instance::RemoteVO operator() ( const state::instance::Remote& instance) const
+                  {
+                     admin::instance::RemoteVO result;
+
+                     result.process = instance.process;
+                     result.invoked = instance.invoked;
+                     result.last = instance.last();
 
                      return result;
                   }
@@ -83,12 +74,12 @@ namespace casual
 
                struct Pending
                {
-                  admin::PendingVO operator() ( const common::message::service::lookup::Request& value) const
+                  admin::PendingVO operator() ( const state::service::Pending& value) const
                   {
                      admin::PendingVO result;
 
-                     result.process = value.process;
-                     result.requested = value.requested;
+                     result.process = value.request.process;
+                     result.requested = value.request.requested;
 
                      return result;
                   }
@@ -98,18 +89,48 @@ namespace casual
                {
                   admin::ServiceVO operator() ( const state::Service& value) const
                   {
+                     auto transform_metric = []( const state::service::Metric& value)
+                           {
+                              admin::service::Metric result;
+                              result.invoked = value.invoked();
+                              result.last = value.used();
+                              result.total = value.total();
+                              return result;
+                           };
+
                      admin::ServiceVO result;
 
                      result.name = value.information.name;
                      result.timeout = value.information.timeout;
-                     result.lookedup = value.lookedup;
-                     result.type = value.information.type;
-                     result.transaction = value.information.transaction;
+                     result.metrics = transform_metric( value.metric);
+                     result.pending.count = value.pending.count();
+                     result.pending.total = value.pending.total();
+                     result.category = value.information.category;
+                     result.transaction = common::cast::underlying( value.information.transaction);
 
-                     auto transform_pid = []( const state::service::Instance& value){ return value.instance.get().process.pid;};
 
-                     common::range::transform( value.instances.local, result.instances, transform_pid);
-                     common::range::transform( value.instances.remote, result.instances, transform_pid);
+
+                     auto transform_remote = []( const state::service::instance::Remote& value)
+                           {
+                              return admin::service::instance::Remote{
+                                 value.process().pid,
+                                 value.invoked,
+                                 value.hops(),
+                                 value.get().last()
+                              };
+                           };
+
+
+                     auto transform_local = [&]( const state::service::instance::Local& value)
+                           {
+                              return admin::service::instance::Local{
+                                 value.process().pid,
+                                 transform_metric( value.metric)
+                              };
+                           };
+
+                     common::range::transform( value.instances.local, result.instances.local, transform_local);
+                     common::range::transform( value.instances.remote, result.instances.remote, transform_remote);
 
                      return result;
                   }
@@ -122,7 +143,10 @@ namespace casual
          {
             admin::StateVO result;
 
-            common::range::transform( state.instances, result.instances,
+            common::range::transform( state.instances.local, result.instances.local,
+                  common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
+
+            common::range::transform( state.instances.remote, result.instances.remote,
                   common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
 
             common::range::transform( state.pending.requests, result.pending, local::Pending{});

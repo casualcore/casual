@@ -1,12 +1,10 @@
 //!
-//! state.cpp
-//!
-//! Created on: Sep 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "broker/state.h"
 #include "broker/transform.h"
+#include "broker/common.h"
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
@@ -34,15 +32,29 @@ namespace casual
          namespace
          {
             template< typename M, typename ID>
-            auto get( M& map, ID&& id) -> decltype( map.at( id))
+            auto get( M& map, ID&& id) ->
+             common::traits::enable_if_t< common::traits::container::is_associative< M>::value, decltype( map.at( id))>
             {
                auto found = common::range::find( map, id);
 
-               if( ! found)
+               if( found)
                {
-                  throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
+                  return found->second;
                }
-               return found->second;
+               throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
+            }
+
+            template< typename C, typename ID>
+            auto get( C& container, ID&& id) ->
+             common::traits::enable_if_t< common::traits::container::is_sequence< C>::value, decltype( *std::begin( container))>
+            {
+               auto found = common::range::find( container, id);
+
+               if( found)
+               {
+                  return *found;
+               }
+               throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
             }
 
          } // <unnamed>
@@ -52,75 +64,183 @@ namespace casual
       namespace state
       {
 
-         void Instance::lock( const common::platform::time_point& when)
+         namespace instance
          {
-            assert( m_state != State::busy);
-
-            if( m_state == State::idle)
+            void Local::lock( const common::platform::time_point& when)
             {
-               m_state = State::busy;
+               assert( m_state != State::busy);
+
+               if( m_state == State::idle)
+               {
+                  m_state = State::busy;
+               }
+
+               ++invoked;
+               m_last = when;
             }
 
-            m_last = when;
-         }
-
-         void Instance::unlock( const common::platform::time_point& when)
-         {
-            assert( m_state != State::idle);
-
-            if( m_state == State::busy)
+            void Local::unlock( const common::platform::time_point& when)
             {
-               m_state = State::idle;
+               assert( m_state != State::idle);
+
+               if( m_state == State::busy)
+               {
+                  m_state = State::idle;
+               }
+
+               m_last = when;
             }
 
-            m_last = when;
-         }
+            void Remote::requested( const common::platform::time_point& when)
+            {
+               ++invoked;
+               m_last = when;
+            }
+
+            bool operator < ( const Remote& lhs, const Remote& rhs)
+            {
+               return lhs.order < rhs.order;
+            }
+
+         } // instance
 
          namespace service
          {
-            void Instance::lock( const common::platform::time_point& when)
+            namespace pending
             {
-               instance.get().lock( when);
+
+               void Metric::add( const common::platform::time_point::duration& duration)
+               {
+                  ++m_count;
+                  m_total += std::chrono::duration_cast< std::chrono::microseconds>( duration);
+               }
+
+               void Metric::reset()
+               {
+                  m_count = 0;
+                  m_total = std::chrono::microseconds::zero();
+               }
+
+            } // pending
+
+            void Metric::begin( const common::platform::time_point& time)
+            {
+               m_begin = time;
+            }
+            void Metric::end( const common::platform::time_point& time)
+            {
+               ++m_invoked;
+               m_total += std::chrono::duration_cast< std::chrono::microseconds>( time - m_begin);
             }
 
-            void Instance::unlock( const common::platform::time_point& when)
+
+            void Metric::reset()
             {
-               instance.get().unlock( when);
+               m_invoked = 0;
+               m_total = std::chrono::microseconds::zero();
             }
+
+            Metric& Metric::operator += ( const Metric& rhs)
+            {
+               m_invoked += rhs.m_invoked;
+               m_total += rhs.m_total;
+
+               if( rhs.m_begin > m_begin)
+               {
+                  m_begin = rhs.m_begin;
+               }
+
+               return *this;
+            }
+
+            namespace instance
+            {
+               void Local::lock( const common::platform::time_point& when)
+               {
+                  get().lock( when);
+                  metric.begin( when);
+               }
+
+               void Local::unlock( const common::platform::time_point& when)
+               {
+                  get().unlock( when);
+                  metric.end( when);
+               }
+
+               void Remote::lock( const common::platform::time_point& when)
+               {
+                  get().requested( when);
+                  ++invoked;
+               }
+
+
+               bool operator < ( const Remote& lhs, const Remote& rhs)
+               {
+                  return std::make_tuple( lhs.get(), lhs.hops()) < std::make_tuple( rhs.get(), rhs.hops());
+               }
+
+            } // instance
 
          } // service
 
          void Service::remove( common::platform::pid::type instance)
          {
-            range::trim( m_instances, range::remove( m_instances, instance));
-            partition_instances();
+            {
+               auto found = range::find( instances.local, instance);
+
+               if( found)
+               {
+                  metric += found->metric;
+                  instances.local.erase( std::begin( found));
+               }
+
+            }
+
+            {
+               auto found = range::find( instances.remote, instance);
+
+               if( found)
+               {
+                  instances.remote.erase( std::begin( found));
+                  partition_remote_instances();
+               }
+            }
          }
 
-         bool Service::has( common::platform::pid::type instance)
+         service::instance::Local& Service::local( common::platform::pid::type instance)
          {
-            return range::find( m_instances, instance);
+            return local::get( instances.local, instance);
          }
 
-         void Service::add( state::Instance& instance)
-         {
-            m_instances.emplace_back( instance);
 
-            partition_instances();
+
+         void Service::add( state::instance::Local& instance)
+         {
+            instances.local.emplace_back( instance);
          }
 
-         void Service::partition_instances()
+         void Service::add( state::instance::Remote& instance, std::size_t hops)
          {
-            auto partition = range::stable_partition( m_instances, []( const service::Instance& i){
-               return i.state() != state::Instance::State::remote;
-            });
-
-            instances.local = std::get< 0>( partition);
-            instances.remote = std::get< 1>( partition);
+            instances.remote.emplace_back( instance, hops);
+            partition_remote_instances();
          }
 
-         service::Instance* Service::idle()
+
+         void Service::partition_remote_instances()
          {
-            auto found = range::find_if( instances.local, std::mem_fn( &service::Instance::idle));
+            range::stable_sort( instances.remote);
+         }
+
+         void Service::metric_reset()
+         {
+            metric.reset();
+            range::for_each( instances.local, []( service::instance::Local& i){ i.metric.reset();});
+            range::for_each( instances.remote, []( service::instance::Remote& i){ i.invoked = 0;});
+         }
+
+         service::instance::base_instance* Service::idle()
+         {
+            auto found = range::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
 
             if( found)
             {
@@ -129,7 +249,7 @@ namespace casual
 
             if( instances.local.empty() && ! instances.remote.empty())
             {
-               return &(*instances.remote);
+               return &instances.remote.front();
             }
 
             return nullptr;
@@ -138,7 +258,7 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const Service& service)
          {
             return out << "{ name: " << service.information.name
-                  << ", type: " << service.information.type
+                  << ", type: " << service.information.category
                   << ", transaction: " << service.information.transaction
                   << ", timeout: " << service.information.timeout.count()
                   << "}";
@@ -168,10 +288,6 @@ namespace casual
          return local::get( services, name);
       }
 
-      state::Instance& State::instance( common::platform::pid::type pid)
-      {
-         return local::get( instances, pid);
-      }
 
 
       namespace local
@@ -181,13 +297,13 @@ namespace casual
             template< typename I, typename S>
             void remove_process( I& instances, S& services, common::platform::pid::type pid)
             {
-               Trace trace{ "broker::local::remove_process", log::internal::debug};
+               Trace trace{ "broker::local::remove_process"};
 
                auto found = common::range::find( instances, pid);
 
                if( found)
                {
-                  log::internal::debug << "remove process pid: " << pid << std::endl;
+                  log << "remove process pid: " << pid << std::endl;
 
                   for( auto& s : services)
                   {
@@ -202,59 +318,81 @@ namespace casual
 
 
             template< typename I>
-            auto find_or_add( I& instances, common::process::Handle process, state::Instance::State execution) -> decltype( instances.at( process.pid))
+            auto find_or_add( I& instances, common::process::Handle process) -> decltype( instances.at( process.pid))
             {
-               Trace trace{ "broker::local::find_or_add", log::internal::debug};
+               Trace trace{ "broker::local::find_or_add"};
 
                auto found = range::find( instances, process.pid);
 
                if( found)
                {
-                  log::internal::debug << "process found\n";
+                  log << "process found\n";
                   return found->second;
                }
 
-               return instances.emplace(
-                     std::piecewise_construct,
-                     std::forward_as_tuple( process.pid),
-                     std::forward_as_tuple( process, execution)).first->second;
+               return instances.emplace( process.pid, process).first->second;
             }
 
-            template< typename S>
-            auto find_or_add( S& services, common::message::Service&& service) -> decltype( services.at( service.name))
+            template< typename Services, typename Service>
+            auto find_or_add_service( Services& services, Service&& service) -> decltype( services.at( service.name))
             {
-               Trace trace{ "broker::local::find_or_add service", log::internal::debug};
+               Trace trace{ "broker::local::find_or_add service"};
+
+               log << "service: " << service << '\n';
 
                auto found = range::find( services, service.name);
 
                if( found)
                {
+                  if( found->second.information.category != service.category)
+                     found->second.information.category = service.category;
+
+                  if( found->second.information.transaction != service.transaction)
+                     found->second.information.transaction = service.transaction;
+
+                  log << "found: " << found->second << '\n';
+
                   return found->second;
                }
 
-               return services.emplace( service.name, std::move( service)).first->second;
+               return services.emplace( service.name, service).first->second;
             }
 
-            template< typename I, typename S>
-            void add_services( State& state, I& instances, S&& services, common::process::Handle process, state::Instance::State execution)
+
+
+            template< typename Service>
+            common::message::service::call::Service transform( const Service& service, std::chrono::microseconds timeout)
             {
-               Trace trace{ "broker::local::add_services", log::internal::debug};
+               common::message::service::call::Service result;
 
-               auto& instance = local::find_or_add( instances, process, execution);
+               result.name = service.name;
+               result.timeout = timeout;
+               result.transaction = service.transaction;
+               result.category = service.category;
 
-               for( auto& s : services)
-               {
-                  auto& service = find_or_add( state.services, std::move( s));
-                  service.add( instance);
-               }
+               return result;
             }
 
-            template< typename I, typename S>
-            void remove_services( State& state, I& instances, S& services, common::process::Handle process, state::Instance::State execution)
+            template< typename Service>
+            common::message::service::call::Service transform( const Service& service)
             {
-               Trace trace{ "broker::local::remove_services", log::internal::debug};
+               common::message::service::call::Service result;
 
-               auto& instance = find_or_add( instances, process, execution);
+               result.name = service.name;
+               result.timeout = service.timeout;
+               result.transaction = service.transaction;
+               result.category = service.category;
+
+               return result;
+            }
+
+
+            template< typename I, typename S>
+            void remove_services( State& state, I& instances, S& services, common::process::Handle process)
+            {
+               Trace trace{ "broker::local::remove_services"};
+
+               auto& instance = find_or_add( instances, process);
 
                for( auto& s : services)
                {
@@ -272,34 +410,101 @@ namespace casual
 
       void State::remove_process( common::platform::pid::type pid)
       {
-         Trace trace{ "broker::State::remove_process", log::internal::debug};
+         Trace trace{ "broker::State::remove_process"};
 
-         local::remove_process( instances, services, pid);
+         if( forward.pid == pid)
+         {
+            forward = common::process::Handle{};
+         }
+
+         local::remove_process( instances.local, services, pid);
+         local::remove_process( instances.remote, services, pid);
       }
 
 
-      void State::add( common::message::service::Advertise& message)
+      void State::update( common::message::service::Advertise& message)
       {
-         Trace trace{ "broker::State::add", log::internal::debug};
+         Trace trace{ "broker::State::update local"};
 
-         auto execution = message.location == common::message::service::Location::remote ?
-               state::Instance::State::remote : state::Instance::State::idle;
+         switch( message.directive)
+         {
+            case common::message::service::Advertise::Directive::add:
+            {
 
-         local::add_services( *this, instances, std::move( message.services), message.process, execution);
+               //
+               // Local instance
+               //
+
+               auto& instance = local::find_or_add( instances.local, message.process);
+
+               for( auto& s : message.services)
+               {
+                  auto& service = local::find_or_add_service( services, local::transform( s, default_timeout));
+                  service.add( instance);
+               }
+
+               break;
+            }
+            case common::message::service::Advertise::Directive::remove:
+            {
+               local::remove_services( *this, instances.local, message.services, message.process);
+               break;
+            }
+            case common::message::service::Advertise::Directive::replace:
+            {
+
+               break;
+            }
+            default:
+            {
+               log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+               break;
+            }
+         }
       }
 
-      void State::remove( const common::message::service::Unadvertise& message)
+
+      void State::update( common::message::gateway::domain::Advertise& message)
       {
-         Trace trace{ "broker::State::remove", log::internal::debug};
+         Trace trace{ "broker::State::update remote"};
 
-         auto execution = message.location == common::message::service::Location::remote ?
-               state::Instance::State::remote : state::Instance::State::idle;
+         switch( message.directive)
+         {
+            case common::message::gateway::domain::Advertise::Directive::add:
+            {
 
-         local::remove_services( *this, instances, message.services, message.process, execution);
+               auto& instance = local::find_or_add( instances.remote, message.process);
+               instance.order = message.order;
+
+               for( auto& s : message.services)
+               {
+                  auto hops = s.hops;
+                  auto& service = local::find_or_add_service( services, local::transform( s));
+                  service.add( instance, hops);
+               }
+
+               break;
+            }
+            case common::message::gateway::domain::Advertise::Directive::remove:
+            {
+               local::remove_services( *this, instances.remote, message.services, message.process);
+               break;
+            }
+            case common::message::gateway::domain::Advertise::Directive::replace:
+            {
+
+               break;
+            }
+            default:
+            {
+               log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+            }
+         }
+
       }
 
 
-      state::Service* State::find_service(  const std::string& name)
+      state::Service* State::find_service( const std::string& name)
       {
          auto found = range::find( services, name);
 
@@ -312,24 +517,25 @@ namespace casual
 
 
 
-      /*
-      state::Service& State::find_or_add( common::message::Service message)
+      void State::connect_broker( std::vector< common::server::Service> services)
       {
-         auto found = range::find( services, message.name);
+         common::message::service::Advertise message;
 
-         if( found)
-         {
-            return found->second;
-         }
-         state::Service service{ message};
-         return services.emplace( message.name, std::move( service)).first->second;
-      }
-      */
+         message.directive = common::message::service::Advertise::Directive::add;
 
+         range::transform( services, message.services, []( common::server::Service& s){
+            common::message::service::advertise::Service result;
 
-      void State::connect_broker( std::vector< common::message::Service> services)
-      {
-         local::add_services( *this, instances, std::move( services), common::process::handle(), state::Instance::State::idle);
+            result.category = s.category;
+            result.name = s.origin;
+            result.transaction = s.transaction;
+
+            return result;
+         });
+
+         message.process = process::handle();
+
+         update( message);
       }
 
 

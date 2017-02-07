@@ -1,12 +1,9 @@
 //!
-//! log.h
-//!
-//! Created on: Nov 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef LOG_H_
-#define LOG_H_
+#ifndef CASUAL_TRANSACTION_MANAGER_LOG_H_
+#define CASUAL_TRANSACTION_MANAGER_LOG_H_
 
 #include "sql/database.h"
 
@@ -29,11 +26,11 @@ namespace casual
       public:
 
          // TOOD: should be at a "higher" level
-         enum State
+         enum class State : int
          {
-            cPrepared = 10,
-            cPrepareRollback,
-            cTimeout
+            prepared = 10,
+            prepare_rollback,
+            timeout
          };
 
 
@@ -74,7 +71,7 @@ namespace casual
             common::platform::pid::type pid = 0;
             common::platform::time_point started;
             common::platform::time_point updated;
-            State state = cPrepared;
+            State state = State::prepared;
          };
 
          std::vector< Row> logged();

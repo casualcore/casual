@@ -394,6 +394,9 @@ namespace casual
               // #define TPEEVENT 22  <-- not supported right now
 
             }
+
+            void propagate( int error);
+
          } // xatmi
 
          namespace tx

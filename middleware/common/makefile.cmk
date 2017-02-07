@@ -1,14 +1,26 @@
 import sys
+import os
 from casual.middleware.make.dsl import *
 
+
+platform_specific_lib_paths = []
+platform_specific_include_paths = []
+    
 if sys.platform.startswith('darwin'):
+    
+    #(sysname, nodename, release, version, machine) = os.uname()
+    
+    release = os.uname()[ 2]
+    print( '# release: ' + str( release))
+    
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
-    platform_specific_lib_paths = [ '/opt/local/lib' ]
-    platform_specific_include_paths = [ '/opt/local/include' ]
+    
+    if release < '16.3.0':
+        platform_specific_lib_paths = [ '/opt/local/lib' ]
+        platform_specific_include_paths = [ '/opt/local/include' ]
+        
 else:
     platform_specific_libs = ['uuid', 'resolv']
-    platform_specific_lib_paths = []
-    platform_specific_include_paths = []
 
 
 IncludePaths( [ 
@@ -38,6 +50,7 @@ casual_common_objectfiles = [
     Compile( 'source/service/call/state.cpp'),
     Compile( 'source/service/lookup.cpp'),
     Compile( 'source/service/header.cpp'),
+    Compile( 'source/service/type.cpp'),
     
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),
@@ -57,7 +70,6 @@ casual_common_objectfiles = [
     
     Compile( 'source/message/type.cpp'),
     Compile( 'source/message/handle.cpp'),
-    Compile( 'source/message/dispatch.cpp'),
     Compile( 'source/message/service.cpp'),
     Compile( 'source/message/server.cpp'),
     Compile( 'source/message/traffic.cpp'),
@@ -86,6 +98,8 @@ casual_common_objectfiles = [
     
     Compile( 'source/arguments.cpp'),
     Compile( 'source/terminal.cpp'),
+
+    
 ]
 
 
@@ -95,16 +109,23 @@ common = LinkLibrary( 'bin/casual-common',
 
 install_libs.append( common)
 
-# lib_terminal = LinkLibrary( 
-#    'bin/casual-common-terminal', 
-#    [ Compile( 'source/terminal.cpp'),], 
-#    [ common])
-# 
-# install_libs.append( lib_terminal)
+
+
+#
+# Some help for unittest tracing
+#
+target_unittest = LinkLibrary( 'bin/casual-unittest', 
+     [
+       Compile( 'source/unittest.cpp'),
+     ],
+     [ common, "gtest"])
 
 #
 # Mockup stuff, only for unittest
 #
+
+mockup_log = Compile( 'source/mockup/log.cpp')
+
 mockup = LinkLibrary( 'bin/casual-mockup', 
      [
        Compile( 'source/mockup/ipc.cpp'),
@@ -112,30 +133,31 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/process.cpp'),
        Compile( 'source/mockup/file.cpp'),
        Compile( 'source/mockup/thread.cpp'),
-       Compile( 'source/mockup/log.cpp'),
+       mockup_log
+     ],
+     [ common, target_unittest])
+
+#
+# The mockup-rm, only for testing.
+#
+lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
+     [
+       Compile( 'source/mockup/rm.cpp'),
+       mockup_log
      ],
      [ common])
 
-install_libs.append( mockup)
-
 #
-# The mockup-rm, only for testing
+# Since we use this in our example-servers we "install it"
 #
-target = LinkLibrary( 'bin/casual-mockup-rm', 
-     [
-       Compile( 'source/mockup/rm.cpp')
-     ],
-     [ common, mockup])
+install_libs.append( lib_mockup_rm)
 
-install_libs.append( target)
 
 mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
     [ 
       Compile( 'source/mockup/unittest/envrionment.cpp'),  
     ],
     [ common, mockup, 'gtest'])
-
-install_libs.append( mockup_unittest)
 
 
 target_simple_process = LinkExecutable( 'bin/simple_process',
@@ -181,10 +203,10 @@ unittest_objectfiles = [
     Compile( 'unittest/isolated/source/communication/test_tcp.cpp'),
     Compile( 'unittest/isolated/source/communication/test_ipc.cpp'),
     
-    
-       
+
     
     Compile( 'unittest/isolated/source/message/test_dispatch.cpp'),
+    Compile( 'unittest/isolated/source/message/test_coordinate.cpp'),
     
     
     Compile( 'unittest/isolated/source/server/test_context.cpp'),
@@ -209,6 +231,8 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
      common,
      mockup,
      mockup_unittest,
+     target_unittest,
+     lib_mockup_rm
     ])		
 
 #

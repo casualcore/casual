@@ -131,13 +131,14 @@ namespace casual
       {
          try
          {
-            common::message::dispatch::Handler handler{
+            communication::ipc::Helper receiver;
+
+            auto handler = receiver.handler(
                local::handle_traffic{ log},
                common::message::handle::Shutdown{},
-               common::message::handle::ping(),
-            };
+               common::message::handle::ping()
+            );
 
-            communication::ipc::Helper receiver;
 
             while( true)
             {
@@ -162,7 +163,7 @@ namespace casual
                // Consume until the queue is empty or we've got pending events equal to statistics_batch
                //
                {
-                  for( auto count = common::platform::batch::statistics;
+                  for( auto count = common::platform::batch::statistics();
                      handler( receiver.non_blocking_next()) && count > 0; --count)
                   {
                      ;

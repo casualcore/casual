@@ -67,7 +67,7 @@ LinkUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/archive/test_ini.cpp'),
         Compile( 'unittest/isolated/source/archive/test_service.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'yaml-cpp', 'pugixml'])
+	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'yaml-cpp', 'pugixml'])
 
 #
 # Install

@@ -85,16 +85,13 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     const bool result = start( name);
+                     if( ! start( name))
+                        return false;
 
-                     if( result)
-                     {
-                        read( value);
-                     }
-
+                     read( value);
                      end( name);
 
-                     return result;
+                     return true;
                   }
 
                private:

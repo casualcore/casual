@@ -1,8 +1,5 @@
 //!
-//! process.h
-//!
-//! Created on: May 12, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_PROCESS_H_
@@ -115,6 +112,18 @@ namespace casual
 
          namespace instance
          {
+            namespace termination
+            {
+               //!
+               //! Register interest to get notified when a process
+               //! terminates
+               //!
+               //! @param process handle to send the notification to
+               //!
+               void registration( const Handle& process);
+
+            } // termination
+
             namespace identity
             {
                const Uuid& broker();
@@ -232,24 +241,26 @@ namespace casual
                   template< typename R, typename P>
                   Pattern( std::chrono::duration< R, P> time, std::size_t quantity)
                    : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
-                   {}
+                  {}
 
-                   Pattern();
 
-                  std::chrono::microseconds time;
-                  std::size_t quantity = 0;
+                  bool done();
+
+               private:
+                  std::chrono::microseconds m_time;
+                  std::size_t m_quantity = 0;
                };
 
                Sleep( std::vector< Pattern> pattern);
                Sleep( std::initializer_list< Pattern> pattern);
 
-               void operator () ();
+               bool operator () ();
 
 
             private:
 
                std::vector< Pattern> m_pattern;
-               std::size_t m_offset = 0;
+               range::type_t< std::vector< Pattern>> m_range;
             };
 
          } // pattern
@@ -303,6 +314,14 @@ namespace casual
          //! Tries to terminate pid
          //!
          bool terminate( platform::pid::type pid);
+
+
+         //!
+         //! Tries to shutdown the process, if it fails terminate signal will be signaled
+         //!
+         //! @param process to terminate
+         //!
+         void terminate( const Handle& process);
 
 
 
@@ -363,8 +382,8 @@ namespace casual
             //!
             //!
             //!
-            std::vector< Exit> wait( const std::vector< platform::pid::type> pids);
-            std::vector< Exit> wait( const std::vector< platform::pid::type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids);
+            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout);
 
 
             //!
@@ -373,8 +392,8 @@ namespace casual
             //! @return the terminated l
             //!
             //
-            std::vector< Exit> terminate( std::vector< platform::pid::type> pids);
-            std::vector< Exit> terminate( std::vector< platform::pid::type> pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids);
+            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout);
 
          } // lifetime
 

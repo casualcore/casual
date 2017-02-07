@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Nov 8, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_HANDLE_H_
@@ -14,6 +11,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/domain.h"
 #include "common/message/gateway.h"
+#include "common/message/coordinate.h"
 
 #include "common/communication/ipc.h"
 
@@ -79,6 +77,14 @@ namespace casual
             {
                namespace discover
                {
+                  struct Request : Base
+                  {
+                     using Base::Base;
+                     using message_type = common::message::gateway::domain::discover::Request;
+
+                     void operator () ( message_type& message);
+                  };
+
                   struct Reply : Base
                   {
                      using Base::Base;
@@ -88,10 +94,25 @@ namespace casual
                   };
 
                } // discovery
+
+
+
             } // domain
 
             namespace outbound
             {
+               namespace configuration
+               {
+                  struct Request : Base
+                  {
+                     using Base::Base;
+                     using message_type = message::outbound::configuration::Request;
+
+                     void operator () ( message_type& message);
+                  };
+
+               } // configuration
+
                struct Connect : Base
                {
                   using Base::Base;
@@ -143,7 +164,7 @@ namespace casual
 
          } // handle
 
-         common::message::dispatch::Handler handler( State& state);
+         common::communication::ipc::dispatch::Handler handler( State& state);
 
       } // manager
 

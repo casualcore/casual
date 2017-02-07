@@ -164,29 +164,24 @@ namespace casual
                {
                   if( name)
                   {
-                     //
-                     // TODO: Remove this check whenever archive is fixed
-                     //
-                     if( m_stack.back())
-                     {
-                        const auto result = m_stack.back()->FindMember( name);
+                     const auto result = m_stack.back()->FindMember( name);
 
-                        if( result != m_stack.back()->MemberEnd())
-                        {
-                           m_stack.push_back( &result->value);
-                        }
-                        else
-                        {
-                           m_stack.push_back( nullptr);
-                        }
+                     if( result != m_stack.back()->MemberEnd())
+                     {
+                        m_stack.push_back( &result->value);
                      }
                      else
                      {
-                        m_stack.push_back( nullptr);
+                        return false;
                      }
                   }
 
-                  return m_stack.back() != nullptr;
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
+
+                  return true;
                }
 
                void Implementation::end( const char* const name)

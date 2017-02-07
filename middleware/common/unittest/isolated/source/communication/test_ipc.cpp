@@ -7,6 +7,8 @@
 
 #include "common/communication/ipc.h"
 #include "common/message/domain.h"
+#include "common/message/service.h"
+#include "common/mockup/ipc.h"
 
 #include <random>
 
@@ -84,7 +86,7 @@ namespace casual
 
          TEST( casual_common_communication_message, complete_add__ordered)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::traffic_event));
 
@@ -103,7 +105,7 @@ namespace casual
 
          TEST( casual_common_communication_message, complete_add__reverse_ordered)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             auto parts = local::payload::parts( 100, common::message::Type::traffic_event);
             range::reverse( parts);
@@ -124,14 +126,14 @@ namespace casual
 
          TEST( casual_common_communication_ipc, instanciate)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device device;
          }
 
          TEST( casual_common_communication_ipc, exists)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device device;
             EXPECT_TRUE( ipc::exists( device.connector().id()));
@@ -140,7 +142,7 @@ namespace casual
 
          TEST( casual_common_communication_ipc, non_blocking_receive__expect_no_messages)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device device;
 
@@ -151,7 +153,7 @@ namespace casual
 
          TEST( casual_common_communication_ipc, send_receivce__small_message)
          {
-            CASUAL_UNITTEST_TRACE();
+            common::unittest::Trace trace;
 
             ipc::inbound::Device destination;
 
@@ -167,11 +169,193 @@ namespace casual
 
             common::message::domain::process::lookup::Reply message;
             EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
+         }
+
+         namespace local
+         {
+            namespace
+            {
+
+               using exactly_transport_size = unittest::message::basic_message< ipc::message::Transport::max_payload_size()>;
+
+            } // <unnamed>
+         } // local
+
+         TEST( casual_common_communication_ipc, send_receivce__1_exactly_transport_size__expect_exactly_1_transport_message)
+         {
+            common::unittest::Trace trace;
+
+
+            local::exactly_transport_size send_message;
+            memory::set( send_message.payload, 6);
+
+            mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
+
+
+            local::exactly_transport_size receive_message;
+            {
+
+               ipc::message::Transport transport;
+               EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
+               EXPECT_TRUE( transport.message.header.offset == 0);
+               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
+
+               // we expect no more transports
+               {
+                  ipc::message::Transport dummy;
+                  EXPECT_FALSE( ipc::native::receive( ipc::inbound::id(), dummy, { ipc::native::Flag::non_blocking}));
+               }
+
+               message::Complete complete{ transport};
+               marshal::complete( complete, receive_message);
+            }
+
+            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+         }
+
+
+         TEST( casual_common_communication_ipc, send_receivce__1__2x_transport_size__expect_exactly_2_transport_message)
+         {
+            common::unittest::Trace trace;
+
+            using message_type = unittest::message::basic_message< 2 * ipc::message::Transport::max_payload_size()>;
+
+
+            message_type send_message;
+            memory::set( send_message.payload, 6);
+
+            mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
+
+
+            message_type receive_message;
+            {
+
+               ipc::message::Transport transport;
+               EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
+               EXPECT_TRUE( transport.message.header.offset == 0);
+               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
+
+               message::Complete complete{ transport};
+
+               EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
+               EXPECT_TRUE( transport.message.header.offset == transport.message.header.count);
+               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
+
+               // we expect no more transports
+               {
+                  ipc::message::Transport dummy;
+                  EXPECT_FALSE( ipc::native::receive( ipc::inbound::id(), dummy, { ipc::native::Flag::non_blocking}));
+               }
+               complete.add( transport);
+
+               marshal::complete( complete, receive_message);
+            }
+
+            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+         }
+
+
+         TEST( casual_common_communication_ipc, send_receivce__1__10x_transport_size__expect_correct_assembly)
+         {
+            common::unittest::Trace trace;
+
+            using message_type = unittest::message::basic_message< 10 * ipc::message::Transport::max_payload_size()>;
+
+
+            message_type send_message;
+            memory::set( send_message.payload, 6);
+
+            mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
+
+
+            message_type receive_message;
+            ipc::blocking::receive( ipc::inbound::device(), receive_message);
+            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
 
          }
 
+         TEST( casual_common_communication_ipc, send_receivce__1__message_size_1103__expect_correct_assembly)
+         {
+            common::unittest::Trace trace;
+
+            using message_type = unittest::message::basic_message< 1103>;
+
+
+            message_type send_message;
+            memory::set( send_message.payload, 6);
+
+            mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
+
+
+            message_type receive_message;
+            ipc::blocking::receive( ipc::inbound::device(), receive_message);
+            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+
+         }
+
+
+
+         TEST( casual_common_communication_ipc, send_receivce__10__3x_transport_size__expect_correct_assembly)
+         {
+            common::unittest::Trace trace;
+
+            using message_type = unittest::message::basic_message< 3 * ipc::message::Transport::max_payload_size()>;
+
+            std::vector< common::Uuid> correlations;
+
+            message_type send_message;
+            memory::set( send_message.payload, 6);
+
+            for( int count = 10; count > 0; --count)
+            {
+               correlations.push_back( mockup::ipc::eventually::send( ipc::inbound::id(), send_message));
+            }
+
+
+            // We reverse the order we fetch the messages
+            for( auto& correlation : common::range::reverse( correlations))
+            {
+               message_type receive_message;
+
+               ipc::blocking::receive( ipc::inbound::device(), receive_message, correlation);
+
+               EXPECT_TRUE( receive_message.correlation == correlation);
+               EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+            }
+         }
+
+         TEST( casual_common_communication_ipc, send_receive__service_call_reply)
+         {
+            common::unittest::Trace trace;
+
+            common::message::service::call::Reply message;
+            {
+               message.correlation = uuid::make();
+               message.execution = uuid::make();
+               message.descriptor = 42;
+               message.transaction.trid = transaction::ID::create( process::handle());
+               message.transaction.state = 666;
+               message.buffer.type = ".binary";
+               message.error = 0;
+               message.code = 0;
+               message.buffer.memory = unittest::random::binary( 1200);
+            }
+
+            const auto correlation = mockup::ipc::eventually::send( ipc::inbound::id(), message);
+
+            common::message::service::call::Reply receive_message;
+            ipc::blocking::receive( ipc::inbound::device(), receive_message, correlation);
+
+
+            EXPECT_TRUE( receive_message.correlation == correlation);
+            EXPECT_TRUE( receive_message.execution == message.execution);
+            EXPECT_TRUE( receive_message.descriptor == message.descriptor);
+            EXPECT_TRUE( receive_message.transaction.trid == message.transaction.trid);
+            EXPECT_TRUE( receive_message.transaction.state == message.transaction.state);
+            EXPECT_TRUE( receive_message.buffer.memory == message.buffer.memory);
+         }
+
+
       } // communication
-
    } // common
-
 } // casual

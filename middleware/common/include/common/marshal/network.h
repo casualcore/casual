@@ -28,8 +28,9 @@ namespace casual
                   //
                   template< typename T>
                   using is_network_array = std::integral_constant< bool,
-                        std::is_array< typename std::remove_reference< T>::type>::value
-                        && sizeof( typename std::remove_all_extents< typename std::remove_reference< T>::type>::type) == 1>;
+                        ( std::is_array< typename std::remove_reference< T>::type>::value
+                          && sizeof( typename std::remove_all_extents< typename std::remove_reference< T>::type>::type) == 1)
+                          || traits::container::is_array< T>::value>;
 
 
 

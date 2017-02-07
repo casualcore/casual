@@ -1,12 +1,9 @@
 //!
-//! test_message_dispatch.cpp
-//!
-//! Created on: Dec 2, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 
 
@@ -15,6 +12,7 @@
 #include "common/message/server.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
+#include "common/communication/ipc.h"
 
 #include "common/marshal/complete.h"
 
@@ -31,6 +29,8 @@ namespace casual
       {
          namespace
          {
+            using dispatch_type = communication::ipc::dispatch::Handler;
+
             struct TestHandler
             {
                TestHandler() = default;
@@ -61,7 +61,7 @@ namespace casual
 
       TEST( casual_common_message_dispatch, construct)
       {
-         message::dispatch::Handler handler{ local::TestHandler()};
+         local::dispatch_type handler{ local::TestHandler()};
 
          EXPECT_TRUE( handler.size() == 1);
 
@@ -78,7 +78,7 @@ namespace casual
       {
          local::TestMember holder;
 
-         message::dispatch::Handler handler{ std::bind( &local::TestMember::handle, &holder, std::placeholders::_1)};
+         local::dispatch_type handler{ std::bind( &local::TestMember::handle, &holder, std::placeholders::_1)};
 
          EXPECT_TRUE( handler.size() == 1);
 
@@ -100,7 +100,9 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_correct_dispatch)
             {
-               message::dispatch::Handler handler{ local::TestHandler()};
+               common::unittest::Trace trace;
+
+               local::dispatch_type handler{ local::TestHandler()};
 
                local::TestHandler::message_type message;
                auto complete = marshal::complete( message);
@@ -110,7 +112,9 @@ namespace casual
 
             TEST( casual_common_message_dispatch, dispatch__gives_no_found_handler)
             {
-               message::dispatch::Handler handler{ local::TestHandler()};
+               common::unittest::Trace trace;
+
+               local::dispatch_type handler{ local::TestHandler()};
 
                message::service::call::ACK message;
                auto complete = marshal::complete( message);
@@ -131,6 +135,8 @@ namespace casual
 
          TEST( casual_common_message_reverse, transaction_resource_rollback_Request__gives__transaction_resource_rollback_Reply)
          {
+            common::unittest::Trace trace;
+
             message::transaction::resource::rollback::Request request;
             request.correlation = uuid::make();
             request.execution = uuid::make();

@@ -122,121 +122,62 @@ namespace casual
 
                }
 
-               template< typename Iter>
-               void calculate_width( Iter first, Iter last)
+
+               template< typename R>
+               void calculate_width( R&& range, const std::ostream& out)
                {
                   for( auto& column : m_columns)
                   {
-                     column.calculate_width( first, last);
+                     column.calculate_width( range, out);
                   }
-               }
-
-               template< typename R>
-               void calculate_width( R&& range)
-               {
-                  calculate_width( std::begin( range), std::end( range));
                }
 
                void print_headers( std::ostream& out)
                {
                   if( m_directives.headers)
                   {
+                     out << std::setfill( ' ');
                      {
-                        out << std::setfill( ' ');
-
-                        auto current = std::begin( m_columns);
-
-                        for( ; current != std::end( m_columns); ++current)
-                        {
-                           out << std::left << std::setw( current->width()) << current->name();
-                           if( current + 1 != std::end( m_columns))
-                           {
-                              out << m_directives.delimiter;
-                           }
-                        }
-
-                        out << std::endl;
+                        range::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
+                           out << std::left << std::setw( c.width()) << c.name();
+                        });
+                        out << '\n';
                      }
 
                      {
-                        out << std::setfill( ' ');
-
-                        auto current = std::begin( m_columns);
-
-                        for( ; current != std::end( m_columns); ++current)
-                        {
-                           out << std::string( current->width(), '-');
-                           if( current + 1 != std::end( m_columns))
-                           {
-                              out <<  m_directives.delimiter;
-                           }
-                        }
-
-                        out << std::endl;
+                        range::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
+                           out << std::string( c.width(), '-');
+                        });
+                        out << '\n';
                      }
                   }
                }
 
-               template< typename Iter>
-               std::ostream& print_rows( std::ostream& out, Iter first, Iter last)
-               {
 
+
+               template< typename R>
+               std::ostream& print_rows( std::ostream& out, R&& rows)
+               {
                   if( m_directives.porcelain)
                   {
-                     for( ; first != last; ++first)
+                     for( auto& row : rows)
                      {
-                        auto current = std::begin( m_columns);
-
-                        for( ; current != std::end( m_columns); ++current)
-                        {
-                           current->print( out, *first, false, false);
-                           if( current + 1 != std::end( m_columns))
-                           {
-                              out << '|';
-                           }
-                        }
-                        out << std::endl;
+                        range::print( out,  m_columns, '|', [&]( std::ostream& out, const column_holder& c){
+                           c.print( out, row, false, false);
+                        });
+                        out << '\n';
                      }
                   }
                   else
                   {
-                     for( ; first != last; ++first)
+                     for( auto& row : rows)
                      {
-                        auto current = std::begin( m_columns);
-
-                        for( ; current != std::end( m_columns); ++current)
-                        {
-                           current->print( out, *first, m_directives.colors);
-                           if( current + 1 != std::end( m_columns))
-                           {
-                              out <<  m_directives.delimiter;
-                           }
-                        }
-                        out << std::endl;
+                        range::print( out,  m_columns, m_directives.delimiter, [&]( std::ostream& out, const column_holder& c){
+                           c.print( out, row, m_directives.colors);
+                        });
+                        out << '\n';
                      }
                   }
-                  return out;
-               }
-
-               template< typename R>
-               std::ostream& print_rows( std::ostream& out, R&& range)
-               {
-                  return print_rows( out, std::begin( range), std::end( range));
-               }
-
-
-               template< typename Iter>
-               std::ostream& print( std::ostream& out, Iter first, Iter last)
-               {
-
-                  if( ! m_directives.porcelain)
-                  {
-                     calculate_width( first, last);
-                     print_headers( out);
-                  }
-
-                  print_rows( out, first, last);
-
                   return out;
                }
 
@@ -244,7 +185,21 @@ namespace casual
                template< typename R>
                std::ostream& print( std::ostream& out, R&& range)
                {
-                  return print( out, std::begin( range), std::end( range));
+                  if( ! m_directives.porcelain)
+                  {
+                     calculate_width( range, out);
+                     print_headers( out);
+                  }
+
+                  print_rows( out, range);
+
+                  return out;
+               }
+
+               template< typename Iter>
+               std::ostream& print( std::ostream& out, Iter first, Iter last)
+               {
+                  return print( out, range::make( first, last));
                }
 
 
@@ -252,7 +207,7 @@ namespace casual
                {
                   virtual ~base_column() = default;
                   virtual std::string name() const = 0;
-                  virtual std::size_t width( const value_type& value) const = 0;
+                  virtual std::size_t width( const value_type& value, const std::ostream& out) const = 0;
                   virtual void print( std::ostream& out, const value_type& value, std::size_t size, bool color) const = 0;
                };
 
@@ -262,12 +217,12 @@ namespace casual
                   column_holder( std::unique_ptr< base_column> column)
                      : m_column( std::move( column)), m_width( m_column->name().size()) {}
 
-                  template< typename Iter>
-                  void calculate_width( Iter first, Iter last)
+                  template< typename Range>
+                  void calculate_width( Range&& range, const std::ostream& out)
                   {
-                     for( ; first != last; ++first)
+                     for( auto& row : range)
                      {
-                        m_width = std::max( m_width, m_column->width( *first));
+                        m_width = std::max( m_width, m_column->width( row, out));
                      }
                   }
 
@@ -304,7 +259,7 @@ namespace casual
                   }
 
 
-                  std::size_t width( const value_type& value) const override { return m_implementation.width( value);}
+                  std::size_t width( const value_type& value, const std::ostream& out) const override { return m_implementation.width( value, out);}
 
                   I m_implementation;
                };
@@ -324,7 +279,7 @@ namespace casual
                {
                   auto result = initialize( std::forward< Columns>( columns)...);
 
-                  auto basic = make::unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
+                  auto basic = std::make_unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
 
                   result.emplace( std::begin( result), std::move( basic));
                   return result;
@@ -360,9 +315,11 @@ namespace casual
 
 
                template< typename VT>
-               std::size_t width(  VT&& value) const
+               std::size_t width( VT&& value, const std::ostream& out) const
                {
                   std::ostringstream repsentation;
+                  repsentation.flags( out.flags());
+                  repsentation.precision( out.precision());
                   repsentation << binder( value);
                   return repsentation.str().size();
                }

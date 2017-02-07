@@ -1,8 +1,5 @@
 //!
-//! log.cpp
-//!
-//! Created on: Nov 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/log.h"
@@ -55,7 +52,7 @@ namespace casual
             common::transaction::branch( transaction.trid),
             transaction.trid.xid.formatID,
             transaction.trid.owner().pid,
-            State::cPrepared,
+            State::prepared,
             transaction.started,
             transaction.deadline
          );

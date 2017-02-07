@@ -12,9 +12,9 @@ namespace casual
       namespace outbound
       {
 
-         Routing::Point::Point() = default;
-         Routing::Point::Point( const common::Uuid& correlation, common::process::Handle destination)
-         : correlation{ correlation}, destination{ destination} {}
+         //Routing::Point::Point() = default;
+         Routing::Point::Point( const common::Uuid& correlation, common::process::Handle destination, common::message::Type type)
+         : correlation{ correlation}, destination{ destination}, type{ type} {}
 
 
          Routing::Routing() = default;
@@ -37,10 +37,10 @@ namespace casual
          }
 
 
-         void Routing::add( const common::Uuid& correlation, common::process::Handle destination) const
+         void Routing::add( const common::Uuid& correlation, common::process::Handle destination, common::message::Type type) const
          {
             lock_type lock{ m_mutex};
-            m_points.emplace_back( correlation, destination);
+            m_points.emplace_back( correlation, destination, type);
          }
 
          Routing::Point Routing::get( const common::Uuid& correlation) const
@@ -60,11 +60,23 @@ namespace casual
             return result;
          }
 
+         std::vector< Routing::Point> Routing::extract() const
+         {
+            std::vector< Routing::Point> result;
+
+            lock_type lock{ m_mutex};
+
+            std::swap( result, m_points);
+
+            return result;
+         }
 
          std::ostream& operator << ( std::ostream& out, const Routing::Point& value)
          {
-            return out << "{ correlation: " << value.correlation << ", destination: " << value.destination << "}\n";
+            return out << "{ correlation: " << value.correlation << ", destination: " << value.destination << ", type: "<< value.type << '}';
          }
+
+
 
       } // outbound
 

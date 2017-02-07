@@ -14,6 +14,7 @@
 #include "common/server/handle.h"
 
 
+
 #include "sf/log.h"
 
 #include <string>
@@ -27,17 +28,15 @@ namespace casual
    {
       namespace action
       {
-         void configure( State& state, const std::string& resource_file)
+         void configure( State& state)
          {
 
             {
 
                Trace trace( "configure");
 
-               message::domain::configuration::transaction::resource::Request request;
-               request.scope = message::domain::configuration::transaction::resource::Request::Scope::all;
+               common::message::domain::configuration::Request request;
                request.process = process::handle();
-
 
                auto configuration = communication::ipc::call( communication::ipc::domain::manager::device(), request);
 
@@ -45,16 +44,13 @@ namespace casual
                //
                // configure state
                //
-               state::configure( state, configuration, resource_file);
+               state::configure( state, configuration);
             }
 
             {
                Trace trace( "event registration");
 
-               message::domain::process::termination::Registration message;
-               message.process = common::process::handle();
-
-               ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+               common::process::instance::termination::registration( common::process::handle());
             }
 
          }
@@ -76,7 +72,7 @@ namespace casual
                {
                   while( count-- > 0)
                   {
-                     auto& info = m_state.xa_switch_configuration.at( proxy.key);
+                     auto& info = m_state.resource_properties.at( proxy.key);
 
                      state::resource::Proxy::Instance instance;//( proxy.id);
                      instance.id = proxy.id;
@@ -228,7 +224,7 @@ namespace casual
                }
                else
                {
-                  auto& domain = state.get_domain( message.resource);
+                  auto& domain = state.get_external( message.resource);
 
                   ipc::device().blocking_push( domain.process.queue, message.message);
                }
@@ -256,7 +252,7 @@ namespace casual
                   common::log::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
                   //
                   // ipc-queue has been removed...
-                  // TODO: deduce from message.message.type what we should do
+                  // TODO attention: deduce from message.message.type what we should do
                   //  We should rollback if we are in a prepare stage?
                   //
                }

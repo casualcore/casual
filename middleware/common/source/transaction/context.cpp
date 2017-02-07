@@ -63,15 +63,6 @@ namespace casual
          }
 
 
-
-         /*
-         void handleXAresponse( std::vector< int>& result)
-         {
-
-         }
-         */
-
-
          Context& Context::instance()
          {
             static Context singleton;
@@ -96,11 +87,11 @@ namespace casual
          }
 
 
-         bool Context::associated( platform::descriptor_type descriptor)
+         bool Context::associated( const Uuid& correlation)
          {
             for( auto& transaction : m_transactions)
             {
-               if( transaction.state == Transaction::State::active && transaction.associated( descriptor))
+               if( transaction.state == Transaction::State::active && transaction.associated( correlation))
                {
                   return true;
                }
@@ -115,14 +106,17 @@ namespace casual
                namespace resource
                {
 
-                  message::domain::configuration::transaction::resource::Reply configuration()
+                  message::transaction::resource::lookup::Reply configuration( std::vector< std::string> names)
                   {
                      common::trace::Scope trace{ "transaction::local::resource::configuration", common::log::internal::transaction};
 
-                     message::domain::configuration::transaction::resource::Request request;
-                     request.process = process::handle();
 
-                     return communication::ipc::call( communication::ipc::domain::manager::device(), request);
+                     message::transaction::resource::lookup::Request request;
+                     request.process = process::handle();
+                     request.resources = std::move( names);
+
+                     return communication::ipc::call( communication::ipc::transaction::manager::device(), request);
+
                   }
 
                } // resource
@@ -130,28 +124,29 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::set( const std::vector< Resource>& resources)
+         void Context::configure( const std::vector< Resource>& resources, std::vector< std::string> names)
          {
-            common::trace::Scope trace{ "transaction::Context::set", common::log::internal::transaction};
+            common::trace::Scope trace{ "transaction::Context::configure", common::log::internal::transaction};
 
             if( ! resources.empty())
             {
 
-               using RM = message::domain::configuration::transaction::Resource;
-
-
-               auto reply = local::resource::configuration();
+               auto reply = local::resource::configuration( std::move( names));
 
                auto configuration = range::make( reply.resources);
 
 
                for( auto& resource : resources)
                {
+
+
+                  using RM = decltype( range::front( configuration));
+
                   //
                   // It could be several RM-configuration for one linked RM.
                   //
 
-                  auto splitted = range::stable_partition( configuration, [&]( const RM& rm){ return resource.key == rm.key;});
+                  auto splitted = range::stable_partition( configuration, [&]( RM rm){ return resource.key == rm.key;});
 
                   auto partition = std::get< 0>( splitted);
 
@@ -316,7 +311,7 @@ namespace casual
                //
                // this descriptor is done, and we can remove the association to the transaction
                //
-               transaction.discard( reply.descriptor);
+               transaction.replied( reply.correlation);
 
                log::internal::transaction << "updated state: " << transaction << std::endl;
             }
@@ -331,7 +326,7 @@ namespace casual
                //
                for( auto& transaction : m_transactions)
                {
-                  transaction.discard( reply.descriptor);
+                  transaction.replied( reply.correlation);
                }
             }
          }
@@ -352,7 +347,7 @@ namespace casual
 
             auto pending_check = [&]( Transaction& transaction)
             {
-               if( transaction.associated())
+               if( transaction.pending())
                {
                   if( transaction.trid)
                   {
@@ -366,10 +361,12 @@ namespace casual
                   //
                   // Discard pending
                   //
-                  for( auto& descriptor : transaction.descriptors())
+                  /*
+                  for( const auto& correlation : transaction.correlations())
                   {
                      service::call::Context::instance().cancel( descriptor);
                   }
+                  */
                }
             };
 
@@ -654,7 +651,7 @@ namespace casual
                throw exception::tx::Protocol{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
             }
 
-            if( transaction.associated())
+            if( transaction.pending())
             {
                throw exception::tx::Protocol{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
             }

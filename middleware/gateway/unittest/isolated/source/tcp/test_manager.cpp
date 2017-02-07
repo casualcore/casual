@@ -15,6 +15,8 @@
 #include "common/trace.h"
 #include "common/service/lookup.h"
 
+#include "common/message/domain.h"
+
 #include "sf/xatmi_call.h"
 #include "sf/log.h"
 
@@ -26,15 +28,14 @@ namespace casual
 
       namespace local
       {
+         using config_domain = common::message::domain::configuration::Domain;
+
          namespace
          {
             struct Gateway
             {
-               Gateway( const std::string& configuration)
-                : file{ mockup::file::temporary( ".yaml", configuration)},
-                  process{ "./bin/casual-gateway-manager", {
-                     "--configuration", file,
-                  }}
+               Gateway()
+                : process{ "./bin/casual-gateway-manager"}
                {
 
                }
@@ -47,13 +48,12 @@ namespace casual
                   }
                } set_environment;
 
-               file::scoped::Path file;
                mockup::Process process;
             };
 
             struct Domain
             {
-               Domain( const std::string& configuration) : gateway{ configuration}
+               Domain( config_domain configuration) : manager{ std::move( configuration)}
                {
 
                }
@@ -65,38 +65,48 @@ namespace casual
                Gateway gateway;
             };
 
-
-
-            std::string empty_configuration()
+            namespace domain
             {
-               return R"yaml(
+               //!
+               //! exposes service domain1
+               //!
+               struct Service
+               {
+                  Service( config_domain configuration)
+                     : manager{ std::move( configuration)},
+                       domain1{ mockup::domain::echo::create::service( "remote1")} {}
 
-domain:
-  gateway:
-  
-    listeners:
+                  mockup::domain::Manager manager;
+                  mockup::domain::Broker broker;
+                  mockup::domain::transaction::Manager tm;
 
-    connections:
+                  mockup::domain::echo::Server domain1;
 
-)yaml";
+                  Gateway gateway;
 
+               };
+
+            } // domain
+
+
+
+            config_domain empty_configuration()
+            {
+               return {};
             }
 
 
-            std::string one_listener_configuration()
+            config_domain one_listener_configuration()
             {
-               return R"yaml(
-domain:
-  gateway:
-  
-    listeners:
-      - address: 127.0.0.1:6666
+               config_domain result;
 
-    connections:
-      - address: 127.0.0.1:6666
+               result.gateway.listeners.resize( 1);
+               result.gateway.listeners.front().address = "127.0.0.1:6666";
 
-)yaml";
+               result.gateway.connections.resize( 1);
+               result.gateway.connections.front().address = "127.0.0.1:6666";
 
+               return result;
             }
 
 
@@ -124,13 +134,16 @@ domain:
 
                      bool manager_ready( const manager::admin::vo::State& state)
                      {
-                        if( state.connections.outbound.empty())
+                        if( state.connections.empty())
                            return false;
 
-                        return range::any_of( state.connections.outbound, []( const manager::admin::vo::outbound::Connection& c){
-                           return c.runlevel >= manager::admin::vo::outbound::Connection::Runlevel::online;
-                        }) && range::any_of( state.connections.inbound, []( const manager::admin::vo::inbound::Connection& c){
-                           return c.runlevel >= manager::admin::vo::inbound::Connection::Runlevel::online;
+                        return range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
+                                 c.bound == manager::admin::vo::Connection::Bound::out;
+                        })
+                        && range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
+                                 c.bound == manager::admin::vo::Connection::Bound::in;
                         });
                      }
 
@@ -163,7 +176,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, empty_configuration)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::empty_configuration()};
 
@@ -175,7 +188,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::one_listener_configuration()};
 
@@ -186,7 +199,7 @@ domain:
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          local::Domain domain{ local::one_listener_configuration()};
 
@@ -197,8 +210,10 @@ domain:
 
          auto state = local::call::wait::ready::state();
 
-         EXPECT_TRUE( ! state.connections.outbound.empty());
-         EXPECT_TRUE( ! state.connections.inbound.empty());
+         EXPECT_TRUE( state.connections.size() == 2);
+         EXPECT_TRUE( range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+            return c.bound == manager::admin::vo::Connection::Bound::out;
+         }));
       }
 
       namespace local
@@ -208,24 +223,14 @@ domain:
             namespace configuration
             {
 
-               std::string connect_to_our_self_services_service1()
+               config_domain connect_to_our_self_services_service1()
                {
-                  return R"yaml(
-domain:
-  gateway:
-  
-    listeners:
-      - address: 127.0.0.1:6666
+                  auto domain = local::one_listener_configuration();
 
-    connections:
-      - address: 127.0.0.1:6666
-        services: [ "remote1"]
+                  domain.gateway.connections.front().services.push_back( "remote1");
 
-)yaml";
-
+                  return domain;
                }
-
-
 
             } // configuration
          } // <unnamed>
@@ -234,28 +239,112 @@ domain:
 
       TEST( casual_gateway_manager_tcp,  connect_to_our_self__remote1_advertise__expect_service_remote1)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
-         local::Domain domain{ local::configuration::connect_to_our_self_services_service1()};
+         // exposes service "remote1"
+         local::domain::Service domain{ local::configuration::connect_to_our_self_services_service1()};
 
-         common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
 
          EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
          auto state = local::call::wait::ready::state();
 
-         ASSERT_TRUE( ! state.connections.outbound.empty());
-         EXPECT_TRUE( ! state.connections.inbound.empty());
+         ASSERT_TRUE( state.connections.size() == 2);
+
+         range::sort( state.connections);
+
 
          //
-         // Expect service remote1 to be available from the outbound connection
+         // Expect service domain1 to be available from the outbound connection
          //
          {
             auto reply = common::service::Lookup{ "remote1"}();
 
             EXPECT_TRUE( reply.service.name == "remote1");
-            EXPECT_TRUE( reply.process == state.connections.outbound.at( 0).process);
+            EXPECT_TRUE( reply.process == state.connections.at( 0).process) << "reply.process: "
+                  << reply.process << " - state.connections.at( 0).process: " << state.connections.at( 0).process;
+         }
+
+      }
+
+      namespace local
+      {
+         namespace
+         {
+
+            namespace domain
+            {
+               struct Queue
+               {
+                  Queue( config_domain configuration) : manager{ std::move( configuration)}
+                  {
+
+                  }
+
+                  mockup::domain::Manager manager;
+                  mockup::domain::Broker broker;
+                  mockup::domain::transaction::Manager tm;
+                  mockup::domain::queue::Broker queue;
+
+                  Gateway gateway;
+
+               };
+
+            } // domain
+
+         } // <unnamed>
+      } // local
+
+      TEST( casual_gateway_manager_tcp,  connect_to_our_self__enqueue_dequeue___expect_message)
+      {
+         common::unittest::Trace trace;
+
+         local::domain::Queue domain{ local::one_listener_configuration()};
+
+         common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
+
+         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+
+
+         auto state = local::call::wait::ready::state();
+         ASSERT_TRUE( state.connections.size() == 2);
+         range::sort( state.connections);
+
+         //
+         // Gateway is connected to it self. Hence we can send a request to the outbound, and it
+         // will send it to the corresponding inbound, and back in the current (mockup) domain
+         //
+
+         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::vo::Connection::Bound::out);
+         auto outbound =  state.connections.at( 0).process;
+
+         const auto payload = unittest::random::binary( 1000);
+
+         // enqueue
+         {
+            message::queue::enqueue::Request request;
+            request.process = process::handle();
+            request.name = "queue1";
+            request.message.type = "json";
+            request.message.payload = payload;
+
+
+            auto reply = communication::ipc::call( outbound.queue, request);
+            EXPECT_TRUE( ! reply.id.empty());
+         }
+
+         // dequeue
+         {
+            message::queue::dequeue::Request request;
+            request.process = process::handle();
+            request.name = "queue1";
+
+            auto reply = communication::ipc::call( outbound.queue, request);
+            ASSERT_TRUE( ! reply.message.empty());
+            EXPECT_TRUE( reply.message.front().payload == payload);
+            EXPECT_TRUE( reply.message.front().type == "json");
          }
 
       }

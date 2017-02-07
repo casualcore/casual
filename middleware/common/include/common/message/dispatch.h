@@ -5,10 +5,10 @@
 #ifndef MESSAGE_DISPATCH_H_
 #define MESSAGE_DISPATCH_H_
 
-#include "common/marshal/binary.h"
 #include "common/execution.h"
 #include "common/communication/message.h"
 #include "common/traits.h"
+#include "common/marshal/complete.h"
 
 
 #include <map>
@@ -23,19 +23,21 @@ namespace casual
          namespace dispatch
          {
 
-            class Handler
+            template< typename Unmarshal>
+            class basic_handler
             {
             public:
 
+               using unmarshal_type = Unmarshal;
                using message_type = message::Type;
 
-               Handler()  = default;
+               basic_handler()  = default;
 
-               Handler( Handler&&) = default;
-               Handler& operator = ( Handler&&) = default;
+               basic_handler( basic_handler&&) = default;
+               basic_handler& operator = ( basic_handler&&) = default;
 
                template< typename... Args>
-               Handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
+               basic_handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
                {
 
                }
@@ -51,12 +53,22 @@ namespace casual
                   return dispatch( complete);
                }
 
-               std::size_t size() const;
+               std::size_t size() const { return m_handlers.size();}
 
                //!
                //! @return all message-types that this instance handles
                //!
-               std::vector< message_type> types() const;
+               std::vector< message_type> types() const
+               {
+                  std::vector< message_type> result;
+
+                  for( auto& entry : m_handlers)
+                  {
+                     result.push_back( entry.first);
+                  }
+
+                  return result;
+               }
 
 
                //!
@@ -69,9 +81,41 @@ namespace casual
                   assign( m_handlers, std::forward< Args>( handlers)...);
                }
 
+               basic_handler& operator += ( basic_handler&& other)
+               {
+                  for( auto&& handler : other.m_handlers)
+                  {
+                     m_handlers.insert( std::move( handler));
+                  }
+                  return *this;
+               }
+
+               friend basic_handler operator + ( basic_handler&& lhs, basic_handler&& rhs)
+               {
+                  lhs += std::move( rhs);
+                  return std::move( lhs);
+               }
+
             private:
 
-               bool dispatch( communication::message::Complete& complete) const;
+               bool dispatch( communication::message::Complete& complete) const
+               {
+                  if( complete)
+                  {
+                     auto findIter = m_handlers.find( complete.type);
+
+                     if( findIter != std::end( m_handlers))
+                     {
+                        findIter->second->dispatch( complete);
+                        return true;
+                     }
+                     else
+                     {
+                        common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
+                     }
+                  }
+                  return false;
+               }
 
                class base_handler
                {
@@ -108,8 +152,8 @@ namespace casual
                   void dispatch( communication::message::Complete& complete) override
                   {
                      message_type message;
-                     complete >> message;
 
+                     marshal::complete( complete, message, unmarshal_type{});
                      execution::id( message.execution);
 
                      m_handler( message);
@@ -126,6 +170,7 @@ namespace casual
 
                static void assign( handlers_type& result)
                {
+
                }
 
                template< typename H, typename... Args>
@@ -138,7 +183,7 @@ namespace casual
                   //
                   // assert( result.count( handle_type::message_type::type()) == 0);
 
-                  auto holder = make::unique< handle_type>( std::forward< H>( handler));
+                  auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
 
                   result.emplace(
                         handle_type::message_type::type(),
@@ -161,8 +206,8 @@ namespace casual
                handlers_type m_handlers;
             };
 
-            template< typename D, typename Policy>
-            void pump( Handler& handler, D& device, Policy&& policy)
+            template< typename Unmarshal, typename D, typename Policy>
+            void pump( basic_handler< Unmarshal>& handler, D& device, Policy&& policy)
             {
                while( handler( device.next( policy)))
                {
@@ -172,8 +217,8 @@ namespace casual
 
             namespace blocking
             {
-               template< typename D>
-               void pump( Handler& handler, D& device)
+               template< typename Unmarshal, typename D>
+               void pump( basic_handler< Unmarshal>& handler, D& device)
                {
                   using device_type = typename std::decay< decltype( device)>::type;
 

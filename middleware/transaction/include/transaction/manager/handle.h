@@ -1,8 +1,5 @@
 //!
-//! manager_handle.h
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef MANAGER_HANDLE_H_
@@ -52,9 +49,9 @@ namespace casual
          {
             struct Interface
             {
-               virtual bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
-               virtual bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
-               virtual bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
+               virtual bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const = 0;
+               virtual bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const = 0;
+               virtual bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const = 0;
             };
          } // implementation
 
@@ -78,6 +75,15 @@ namespace casual
 
          namespace resource
          {
+            //!
+            //! Sent by servers that using resources
+            //!
+            struct Lookup : public state::Base
+            {
+               using Base::Base;
+
+               void operator () ( common::message::transaction::resource::lookup::Request& message);
+            };
 
             //!
             //! Sent by a server when resource(s) is involved
@@ -194,18 +200,24 @@ namespace casual
          using Rollback = user_reply_wrapper< basic_rollback>;
 
 
+         namespace external
+         {
+            struct Involved : public state::Base
+            {
+               using Base::Base;
+
+               void operator () ( common::message::transaction::resource::external::Involved& message);
+            };
+         }
+
+
          //!
          //! This is used when this TM act as an resource to
          //! other TM:s, as in other domains.
          //!
          namespace domain
          {
-            struct Involved : public state::Base
-            {
-               using Base::Base;
 
-               void operator () ( common::message::transaction::resource::domain::Involved& message);
-            };
 
             struct Prepare : public state::Base
             {

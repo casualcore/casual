@@ -20,8 +20,8 @@ namespace casual
          {
 
             std::vector< std::string> configurationfiles;
-            bool boot = false;
             bool bare = false;
+            bool no_auto_persist = false;
 
          };
 
@@ -36,8 +36,8 @@ namespace casual
 
          private:
 
-            common::file::scoped::Path m_singelton;
             State m_state;
+            common::file::scoped::Path m_singelton;
 
          };
 

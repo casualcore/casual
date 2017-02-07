@@ -26,16 +26,32 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
         Compile( 'source/file.cpp'),
         Compile( 'source/environment.cpp'),
         Compile( 'source/domain.cpp'),
-        Compile( 'source/xa_switch.cpp'),
-        Compile( 'source/serverdefinition.cpp'),
         Compile( 'source/queue.cpp'),
         Compile( 'source/gateway.cpp'),
+        Compile( 'source/server.cpp'),
+        Compile( 'source/service.cpp'),
+        Compile( 'source/group.cpp'),
+        Compile( 'source/transaction.cpp'),
+        
+        Compile( 'source/build/server.cpp'),
+        
+        Compile( 'source/resource/property.cpp'),
+        
+        Compile( 'source/message/transform.cpp'),
     ],
     ['casual-common',
     'casual-sf'])
 
 
 intall_libs.append( lib_configuration)
+
+
+example_archive = LinkArchive( 'bin/casual-configuration-example', 
+     [
+         Compile( 'source/example/domain.cpp'),
+         Compile( 'source/example/resource/property.cpp'),
+         Compile( 'source/example/build/server.cpp'),
+     ])
 
 #
 # Unittest
@@ -44,11 +60,34 @@ intall_libs.append( lib_configuration)
 LinkUnittest( 'bin/test-casual-configuration',
    [
         Compile( 'unittest/isolated/source/test_domain.cpp'),
-        Compile( 'unittest/isolated/source/test_xa_switch.cpp'),
         Compile( 'unittest/isolated/source/test_queue.cpp'),
         Compile( 'unittest/isolated/source/test_gateway.cpp'),
+        Compile( 'unittest/isolated/source/test_message.cpp'),
+        Compile( 'unittest/isolated/source/test_environment.cpp'),
+        
+        Compile( 'unittest/isolated/source/resource/test_property.cpp'),
+        Compile( 'unittest/isolated/source/build/test_server.cpp'),
    ],
-   [ lib_configuration, 'casual-sf', 'casual-common', 'casual-mockup'])  
+   [ 
+       example_archive, 
+       lib_configuration, 
+       'casual-sf', 
+       'casual-common', 
+       'casual-mockup', 
+       'casual-unittest',
+   ])  
+
+
+#
+# Example maker
+#
+LinkExecutable( 'bin/casual-configuration-example-maker', 
+    [ 
+        Compile( 'source/example/main.cpp'),
+   ],          
+   [ example_archive, lib_configuration, 'casual-sf', 'casual-common'])  
+
+
    
 #
 # Install

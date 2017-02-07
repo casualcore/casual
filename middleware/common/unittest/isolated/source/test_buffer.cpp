@@ -1,12 +1,9 @@
 //!
-//! casual_isolatedunittest_buffer.cpp
-//!
-//! Created on: Apr 29, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
-#include <gtest/gtest.h>
+#include <common/unittest.h>
 
 #include "common/buffer/pool.h"
 
@@ -52,6 +49,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_allocate)
          {
+            common::unittest::Trace trace;
+
             auto buffer = pool::Holder::instance().allocate( buffer::type::binary(), 1024);
 
             ASSERT_TRUE( buffer != nullptr);
@@ -62,6 +61,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_adopt)
          {
+            common::unittest::Trace trace;
+
             auto buffer = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
 
             ASSERT_TRUE( buffer != nullptr);
@@ -71,6 +72,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_adopt__deallocate__expect__inbound_still_valid)
          {
+            common::unittest::Trace trace;
+
             auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
 
             pool::Holder::instance().deallocate( inbound);
@@ -85,6 +88,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_adopt__clear__expect__inbound_deallocated)
          {
+            common::unittest::Trace trace;
+
             auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary(), 1024});
 
             pool::Holder::instance().clear();
@@ -97,6 +102,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_allocate_non_existing__throws)
          {
+            common::unittest::Trace trace;
+
             EXPECT_THROW({
                pool::Holder::instance().allocate( { "non-existing", "non-existing"}, 1024);
             }, exception::xatmi::buffer::type::Input);
@@ -105,6 +112,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_reallocate)
          {
+            common::unittest::Trace trace;
+
             auto small = pool::Holder::instance().allocate( buffer::type::binary(), 64);
 
             auto big = pool::Holder::instance().reallocate( small, 2048);
@@ -119,6 +128,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_reallocate__reallocate_again_with_old__throws)
          {
+            common::unittest::Trace trace;
+
             auto small = pool::Holder::instance().allocate( buffer::type::binary(), 64);
             auto big = pool::Holder::instance().reallocate( small, 2048);
 
@@ -132,6 +143,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_type)
          {
+            common::unittest::Trace trace;
+
             const auto type = buffer::type::binary();
             auto buffer = pool::Holder::instance().allocate( type, 64);
 
@@ -146,6 +159,8 @@ namespace casual
 
          TEST( casual_common_buffer, pool_get_user_size)
          {
+            common::unittest::Trace trace;
+
             const auto type = buffer::type::binary();
             const std::string info( "test string");
 
@@ -155,14 +170,15 @@ namespace casual
             auto holder = buffer::pool::Holder::instance().get( handle, 100);
 
             EXPECT_TRUE( holder.transport == 100);
-            EXPECT_TRUE( holder.payload.memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload.memory.size();
-            EXPECT_TRUE( holder.payload.memory.data() == info);
+            EXPECT_TRUE( holder.payload().memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload().memory.size();
+            EXPECT_TRUE( holder.payload().memory.data() == info);
 
             buffer::pool::Holder::instance().deallocate( handle);
          }
 
          TEST( casual_common_buffer, message_call)
          {
+            common::unittest::Trace trace;
 
             platform::binary_type marshal_buffer;
 
@@ -177,8 +193,8 @@ namespace casual
                message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
 
                EXPECT_TRUE( message.buffer.transport == 100);
-               EXPECT_TRUE( message.buffer.payload.memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload.memory.size();
-               EXPECT_TRUE( message.buffer.payload.memory.data() == info);
+               EXPECT_TRUE( message.buffer.payload().memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().memory.size();
+               EXPECT_TRUE( message.buffer.payload().memory.data() == info);
 
                marshal::binary::Output output( marshal_buffer);
                output << message;

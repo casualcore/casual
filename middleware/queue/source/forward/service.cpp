@@ -4,7 +4,8 @@
 
 #include "queue/forward/common.h"
 #include "queue/common/log.h"
-#include "queue/api/rm/queue.h"
+#include "queue/api/queue.h"
+#include "queue/common/transform.h"
 
 #include "common/arguments.h"
 #include "common/exception.h"
@@ -60,11 +61,8 @@ namespace casual
                // Prepare the xatmi-buffer
                //
                common::buffer::Payload payload{
-                  {
-                     std::move( message.payload.type.type),
-                     std::move( message.payload.type.subtype)
-
-                  }, std::move( message.payload.data)};
+                  std::move( message.payload.type),
+                  std::move( message.payload.data)};
 
                log << "payload: " << payload << std::endl;
 
@@ -82,10 +80,9 @@ namespace casual
 
                   queue::Message reply;
                   reply.payload.data = std::move( data.memory);
-                  reply.payload.type.type = std::move( data.type.name);
-                  reply.payload.type.subtype = std::move( data.type.subname);
+                  reply.payload.type = std::move( data.type);
 
-                  queue::rm::enqueue( replyqueue, reply);
+                  queue::enqueue( replyqueue, reply);
 
                }
             }
@@ -125,7 +122,7 @@ namespace casual
 
                {
                   common::Arguments parser{ {
-                     common::argument::directive( {"-f", "--forward"}, "forward  <queue> <service> [<reply>]", settings, &Settings::setForward)
+                     common::argument::directive( {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]", settings, &Settings::setForward)
                   }};
 
                   parser.parse( argc, argv);

@@ -8,6 +8,7 @@
 
 #include "common/communication/message.h"
 #include "common/communication/device.h"
+#include "common/marshal/network.h"
 
 #include "common/platform.h"
 #include "common/flag.h"
@@ -24,12 +25,14 @@ namespace casual
       {
          namespace tcp
          {
+            class Socket;
+
 
             struct Address
             {
                struct Host : std::string
                {
-                  using std::string::string;
+                  Host( std::string s) : std::string{ std::move( s)} {}
                };
 
                struct Port : public std::string
@@ -53,9 +56,24 @@ namespace casual
             {
                using descriptor_type = platform::tcp::descriptor::type;
 
+               namespace address
+               {
+
+                  //!
+                  //! @return The address to which the socket is bound to on local host
+                  //!
+                  Address host( descriptor_type descriptor);
+                  Address host( const Socket& socket);
+
+                  //!
+                  //! @return The address of the peer connected to the socket
+                  //!
+                  Address peer( descriptor_type descriptor);
+                  Address peer( const Socket& socket);
+
+               } // address
+
             } // socket
-
-
 
             class Socket
             {
@@ -66,8 +84,8 @@ namespace casual
                Socket() noexcept;
                ~Socket() noexcept;
 
-               Socket( const Socket& other);
-               Socket& operator = ( const Socket& other);
+               Socket( const Socket&);
+               Socket& operator = ( const Socket&);
 
                Socket( Socket&&) noexcept;
                Socket& operator = ( Socket&&) noexcept;
@@ -150,7 +168,13 @@ namespace casual
 
             namespace message
             {
-               using Transport = communication::message::basic_transport< platform::tcp::message::size>;
+               struct Policy
+               {
+                  static constexpr std::size_t message_size() { return platform::tcp::message::size;}
+                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size + type_size;}
+               };
+
+               using Transport = communication::message::basic_transport< Policy>;
 
             } // message
 
@@ -172,8 +196,8 @@ namespace casual
             {
                struct basic_blocking
                {
-                  bool operator() ( const inbound::Connector& ipc, message::Transport& transport);
-                  bool operator() ( const outbound::Connector& tcp, const message::Transport& transport);
+                  bool receive( const inbound::Connector& ipc, message::Transport& transport);
+                  bool send( const outbound::Connector& tcp, const message::Transport& transport);
                };
 
                using Blocking = basic_blocking;
@@ -182,8 +206,8 @@ namespace casual
                {
                   struct basic_blocking
                   {
-                     bool operator() ( const inbound::Connector& ipc, message::Transport& transport);
-                     bool operator() ( const outbound::Connector& tcp, const message::Transport& transport);
+                     bool receive( const inbound::Connector& ipc, message::Transport& transport);
+                     bool send( const outbound::Connector& tcp, const message::Transport& transport);
                   };
 
                   using Blocking = basic_blocking;
@@ -220,7 +244,7 @@ namespace casual
                   using base_connector::base_connector;
                };
 
-               using Device = communication::inbound::Device< Connector>;
+               using Device = communication::inbound::Device< Connector, marshal::binary::network::create::Input>;
 
             } // inbound
 
@@ -233,9 +257,14 @@ namespace casual
                   inline void reconnect() const { throw; }
                };
 
-               using Device = communication::outbound::Device< Connector>;
+               using Device = communication::outbound::Device< Connector,  marshal::binary::network::create::Output>;
             } // outbound
 
+
+            namespace dispatch
+            {
+               using Handler =  typename inbound::Device::handler_type;
+            } // dispatch
 
          } // tcp
       } // communication

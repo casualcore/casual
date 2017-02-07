@@ -28,15 +28,14 @@ namespace casual
             {
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
                {
-
-                  auto size = message::Transport::header_size + transport.size();
-
                   //
                   // before we might block we check signals.
                   //
                   common::signal::handle();
 
-                  auto result = msgsnd( id, &const_cast< message::Transport&>( transport).message, size, flags.underlaying());
+                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+
+                  auto result = ::msgsnd( id, &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
                   if( result == -1)
                   {
@@ -69,7 +68,8 @@ namespace casual
                         }
                         case EINVAL:
                         {
-                           if( /* message.size() < MSGMAX  && */ transport.message.type > 0)
+                           //if( /* message.size() < MSGMAX  && */ transport.message.header.type != common::message::Type::absent_message)
+                           if( cast::underlying( transport.type()) > 0)
                            {
                               //
                               // The problem is with queue-id. We guess that it has been removed.
@@ -87,7 +87,7 @@ namespace casual
                      }
                   }
 
-                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+                  //log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
                   return true;
                }
@@ -98,7 +98,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, message::Transport::message_max_size, 0, flags.underlaying());
+                  auto result = msgrcv( id, &transport.message, transport.max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -203,7 +203,7 @@ namespace casual
 
             namespace outbound
             {
-               Connector::Connector( handle_type id) : m_id( id)
+               Connector::Connector( handle_type id) : m_id{ id}
                {}
 
                Connector::operator handle_type() const { return m_id;}
@@ -222,44 +222,78 @@ namespace casual
                   {
                      namespace
                      {
-                        platform::ipc::id::type fetch( const Uuid& identity, const std::string& environment)
-                        {
-                           if( environment::variable::exists( environment))
-                           {
-                              auto result = environment::variable::get< platform::ipc::id::type>( environment);
 
-                              if( communication::ipc::exists( result))
+                        process::Handle fetch(
+                              const Uuid& identity,
+                              const std::string& environment,
+                              process::instance::fetch::Directive directive)
+                        {
+                           Trace trace{ "ipc::outbound::instance::local::fetch"};
+
+                           if( common::environment::variable::exists( environment))
+                           {
+                              auto process = environment::variable::process::get( environment);
+
+                              if( communication::ipc::exists( process.queue))
                               {
-                                 return result;
+                                 return process;
                               }
                            }
 
-                           auto result = process::instance::fetch::handle( identity).queue;
-
-                           if( ! environment.empty())
+                           try
                            {
-                              environment::variable::set( environment, result);
+                              auto process = process::instance::fetch::handle( identity, directive);
+
+                              if( ! environment.empty())
+                              {
+                                 environment::variable::process::set( environment, process);
+                              }
+                              return process;
                            }
-                           return result;
+                           catch( const exception::communication::Unavailable&)
+                           {
+                              log << "failed to fetch instance with identity: " << identity << '\n';
+                              return {};
+                           }
                         }
 
                      } // <unnamed>
                   } // local
 
 
-                  Connector::Connector( const Uuid& identity, std::string environment)
-                     : outbound::Connector( local::fetch( identity, environment)),
+                  template< process::instance::fetch::Directive directive>
+                  Connector< directive>::Connector( const Uuid& identity, std::string environment)
+                     : m_process( local::fetch( identity, environment, directive)),
                        m_identity{ identity}, m_environment{ std::move( environment)}
                   {
 
                   }
 
-                  void Connector::reconnect()
+
+                  template< process::instance::fetch::Directive directive>
+                  void Connector< directive>::reconnect()
                   {
                      Trace trace{ "ipc::outbound::instance::Connector::reconnect"};
 
-                     m_id = local::fetch( m_identity, m_environment);
+                     m_process = local::fetch( m_identity, m_environment, directive);
+
+                     if( ! communication::ipc::exists( m_process.queue))
+                     {
+                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue for instance", CASUAL_NIP( m_identity), CASUAL_NIP( m_environment), CASUAL_NIP( m_process)};
+                     }
                   }
+
+                  template< process::instance::fetch::Directive directive>
+                  std::ostream& operator << ( std::ostream& out, const Connector< directive>& rhs)
+                  {
+                     return out << "{ process: " << rhs.m_process
+                           << ", identity:" << rhs.m_identity
+                           << ", environment:" << rhs.m_environment
+                           << '}';
+                  }
+
+                  template struct Connector< process::instance::fetch::Directive::direct>;
+                  template struct Connector< process::instance::fetch::Directive::wait>;
 
                } // instance
 
@@ -272,62 +306,35 @@ namespace casual
 
                         platform::ipc::id::type reconnect()
                         {
+                           Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
+
                            auto from_environment = []()
                                  {
                                     if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
                                     {
-                                       return environment::variable::get< platform::ipc::id::type>( environment::variable::name::ipc::domain::manager());
+                                       return environment::variable::process::get( environment::variable::name::ipc::domain::manager());
                                     }
-                                    return platform::ipc::id::type( 0);
+                                    return process::Handle{};
                                  };
 
-                           auto queue = from_environment();
+                           auto process = from_environment();
 
 
-                           if( ipc::exists( queue))
+                           if( ipc::exists( process.queue))
                            {
-                              return queue;
+                              return process.queue;
                            }
 
                            log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
 
-                           auto from_singleton_file = []()
-                                 {
-                                    std::ifstream file{ common::environment::domain::singleton::file()};
+                           process = common::domain::singleton::read().process;
 
-                                    platform::ipc::id::type ipc = 0;
-
-                                    if( file)
-                                    {
-                                       file >> ipc;
-                                       environment::variable::set( environment::variable::name::ipc::domain::manager(), ipc);
-
-                                       {
-                                          std::string domain_name;
-                                          file >> domain_name;
-                                          std::string domain_id;
-                                          file >> domain_id;
-
-                                          common::domain::identity( { domain_id, domain_name});
-
-                                          log << "domain identity: " << common::domain::identity() << '\n';
-                                       }
-
-
-
-
-                                    }
-                                    return ipc;
-                                 };
-
-                           queue = from_singleton_file();
-
-                           if( ! ipc::exists( queue))
+                           if( ! ipc::exists( process.queue))
                            {
-                              throw exception::invalid::Semantic{ "failed to locate domain manager"};
+                              throw exception::communication::Unavailable{ "failed to locate domain manager"};
                            }
 
-                           return queue;
+                           return process.queue;
                         }
 
                      } // <unnamed>
@@ -350,35 +357,6 @@ namespace casual
 
 
 
-            namespace policy
-            {
-
-               bool Blocking::operator() ( inbound::Connector& ipc, message::Transport& transport)
-               {
-                  return native::receive( ipc.id(), transport, {});
-               }
-
-               bool Blocking::operator() ( const outbound::Connector& ipc, const message::Transport& transport)
-               {
-                  return native::send( ipc, transport, {});
-               }
-
-
-               namespace non
-               {
-                  bool Blocking::operator() ( inbound::Connector& ipc, message::Transport& transport)
-                  {
-                     return native::receive( ipc.id(), transport, native::Flag::non_blocking);
-                  }
-
-                  bool Blocking::operator() ( const outbound::Connector& ipc, const message::Transport& transport)
-                  {
-                     return native::send( ipc, transport, native::Flag::non_blocking);
-                  }
-
-               } // non
-            } // policy
-
 
             namespace broker
             {
@@ -386,7 +364,7 @@ namespace casual
                {
                   static outbound::instance::Device singelton{
                      process::instance::identity::broker(),
-                     environment::variable::name::ipc::broker()};
+                     common::environment::variable::name::ipc::broker()};
 
                   return singelton;
                }
@@ -401,7 +379,7 @@ namespace casual
                   {
                      static outbound::instance::Device singelton{
                         process::instance::identity::transaction::manager(),
-                        environment::variable::name::ipc::transaction::manager()};
+                        common::environment::variable::name::ipc::transaction::manager()};
                      return singelton;
                   }
 
@@ -420,6 +398,19 @@ namespace casual
 
                      return singelton;
                   }
+
+                  namespace optional
+                  {
+                     outbound::instance::optional::Device& device()
+                     {
+                        static outbound::instance::optional::Device singelton{
+                           process::instance::identity::gateway::manager(),
+                           environment::variable::name::ipc::gateway::manager()};
+
+                        return singelton;
+                     }
+                  } // optional
+
                } // manager
             } // gateway
 
@@ -435,6 +426,18 @@ namespace casual
 
                      return singelton;
                   }
+
+                  namespace optional
+                  {
+                     outbound::instance::optional::Device& device()
+                     {
+                        static outbound::instance::optional::Device singelton{
+                           process::instance::identity::queue::broker(),
+                           environment::variable::name::ipc::queue::broker()};
+
+                        return singelton;
+                     }
+                  } // optional
                } // broker
             } // queue
 

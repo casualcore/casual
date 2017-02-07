@@ -30,10 +30,14 @@ namespace casual
             std::string name;
          };
 
+
          struct State
          {
             State( std::string filename, std::string name)
                : queuebase( std::move( filename), std::move( name)) {}
+
+
+            std::unordered_map< std::string, queue_id_type> queue_id;
 
             Database queuebase;
 
@@ -45,6 +49,12 @@ namespace casual
             }
 
             std::vector< common::message::pending::Message> persistent;
+
+            //!
+            //! A log to know if we already have notified TM about
+            //! a given transaction.
+            //!
+            std::vector< common::transaction::ID> involved;
 
 
             //!

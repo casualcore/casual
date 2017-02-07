@@ -1,8 +1,5 @@
 //!
-//! server.h
-//!
-//! Created on: Sep 30, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_QUEUE_BROKER_ADMIN_SERVER_H_
@@ -26,9 +23,11 @@ namespace casual
 
          namespace admin
          {
-            admin::State list_queues( broker::State& state);
+            admin::State state( broker::State& state);
 
             std::vector< Message> list_messages( broker::State& state, const std::string& queue);
+
+            std::vector< Affected> restore( broker::State& state, const std::string& queue);
 
             common::server::Arguments services( broker::State& state);
 

@@ -25,38 +25,45 @@ namespace casual
          Transaction::operator bool() const { return static_cast< bool>( trid);}
 
 
-         void Transaction::associate( platform::descriptor_type descriptor)
+         void Transaction::associate( const Uuid& correlation)
          {
-            m_descriptors.push_back( descriptor);
+            m_pending.push_back( correlation);
             m_local = false;
          }
 
-         void Transaction::discard( platform::descriptor_type descriptor)
+         void Transaction::replied( const Uuid& correlation)
          {
-            m_descriptors.erase(
-                  std::remove( std::begin( m_descriptors), std::end( m_descriptors), descriptor),
-                  std::end( m_descriptors)
+            m_pending.erase(
+                  std::remove( std::begin( m_pending), std::end( m_pending), correlation),
+                  std::end( m_pending)
             );
          }
 
-         bool Transaction::associated() const
+         bool Transaction::pending() const
          {
-            return ! m_descriptors.empty();
+            return ! m_pending.empty();
          }
 
-         bool Transaction::associated( platform::descriptor_type descriptor) const
+
+
+         bool Transaction::associated( const Uuid& correlation) const
          {
-            return static_cast< bool>( range::find( m_descriptors, descriptor));
+            return range::find( m_pending, correlation);
          }
 
-         const std::vector< platform::descriptor_type>& Transaction::descriptors() const
+         const std::vector< Uuid>& Transaction::correlations() const
          {
-            return m_descriptors;
+            return m_pending;
          }
 
          bool Transaction::local() const
          {
             return m_local;
+         }
+
+         void Transaction::external()
+         {
+            m_local = false;
          }
 
          bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
@@ -68,7 +75,7 @@ namespace casual
             return out << "{trid: " << rhs.trid << ", state: " << rhs.state <<
                   ", timeout: " << rhs.timout <<
                   ", resources: " << range::make( rhs.resources) <<
-                  ", descriptors: " << range::make( rhs.m_descriptors) << "}";
+                  ", pending: " << range::make( rhs.m_pending) << "}";
          }
 
       } // transaction

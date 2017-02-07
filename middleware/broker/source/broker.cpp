@@ -5,10 +5,9 @@
 #include "broker/broker.h"
 #include "broker/handle.h"
 #include "broker/transform.h"
+#include "broker/common.h"
 
 #include "broker/admin/server.h"
-
-#include "config/domain.h"
 
 #include "common/environment.h"
 #include "common/domain.h"
@@ -17,6 +16,7 @@
 #include "common/internal/log.h"
 
 #include "common/message/dispatch.h"
+#include "common/message/domain.h"
 #include "common/message/handle.h"
 #include "common/process.h"
 #include "common/domain.h"
@@ -34,6 +34,7 @@
 
 
 
+
 namespace casual
 {
    using namespace common;
@@ -42,14 +43,111 @@ namespace casual
 	{
 
 
-		Broker::Broker( Settings&& arguments)
-		{
-		   Trace trace{ "Broker::Broker ctor", log::internal::debug};
+	   namespace local
+      {
+         namespace
+         {
 
-		   //
-		   // Connect to domain
-		   //
-		   process::instance::connect( process::instance::identity::broker());
+
+            namespace configure
+            {
+               std::string forward( const Settings& settings)
+               {
+                  if( settings.forward.empty())
+                  {
+                     return environment::directory::casual() + "/bin/casual-forward-cache";
+                  }
+                  return settings.forward;
+               }
+
+               common::message::domain::configuration::service::Manager domain()
+               {
+                  common::message::domain::configuration::Request request;
+                  request.process = process::handle();
+
+                  return communication::ipc::call( communication::ipc::domain::manager::device(), request).domain.service;
+               }
+
+               void services( State& state, const common::message::domain::configuration::service::Manager& configuration)
+               {
+                  Trace trace{ "broker::local::configure::services"};
+
+                  state.default_timeout = configuration.default_timeout;
+
+                  for( auto& config : configuration.services)
+                  {
+                     common::message::service::call::Service service;
+
+                     service.timeout = config.timeout;
+                     service.name = config.name;
+
+                     state.services.emplace( std::make_pair( config.name, std::move( service)));
+
+                  }
+
+               }
+
+               State state( const Settings& settings)
+               {
+                  State state;
+
+                  //
+                  // Connect to domain
+                  //
+                  process::instance::connect( process::instance::identity::broker());
+
+
+                  //
+                  // Get configuration from domain-manager
+                  //
+                  auto configuration = domain();
+
+
+                  configure::services( state, configuration);
+
+
+
+                  //
+                  // Register for process termination
+                  //
+                  {
+                     Trace trace{ "broker::configure process::termination"};
+
+                     common::message::domain::process::termination::Registration message;
+                     message.process = common::process::handle();
+
+                     ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+                  }
+
+                  //
+                  // Start forward
+                  //
+                  {
+                     Trace trace{ "broker::configure spawn forward"};
+
+                     state.forward.pid = common::process::spawn( forward( settings), {});
+
+                     state.forward = common::process::instance::fetch::handle(
+                           common::process::instance::identity::forward::cache());
+
+                     log << "forward: " << state.forward << '\n';
+
+                  }
+
+                  return state;
+               }
+
+            } // configure
+
+         } // <unnamed>
+      } // local
+
+
+
+		Broker::Broker( Settings&& settings) : m_state{ local::configure::state( std::move( settings))}
+		{
+		   Trace trace{ "Broker::Broker ctor"};
+
 		}
 
 
@@ -58,9 +156,12 @@ namespace casual
 		{
 		   try
 		   {
+		      Trace trace{ "Broker::Broker dtor"};
+
             //
             // Terminate
             //
+		      process::terminate( m_state.forward);
 		   }
          catch( ...)
          {
@@ -78,7 +179,7 @@ namespace casual
          catch( const common::exception::signal::Terminate&)
          {
             // we do nothing, and let the dtor take care of business
-            common::log::internal::debug << "broker has been terminated\n";
+            log << "broker has been terminated\n";
          }
          catch( ...)
          {
@@ -98,12 +199,12 @@ namespace casual
                // Prepare message-pump handlers
                //
 
-               common::log::internal::debug << "prepare message-pump handlers\n";
+               log << "prepare message-pump handlers\n";
 
 
                auto handler = broker::handler( state);
 
-               common::log::internal::debug << "start message pump\n";
+               log << "start message pump\n";
 
 
                while( true)
@@ -122,7 +223,7 @@ namespace casual
                      //
                      {
 
-                        common::log::internal::debug << "pending replies: " << range::make( state.pending.replies) << '\n';
+                        log << "pending replies: " << range::make( state.pending.replies) << '\n';
 
                         decltype( state.pending.replies) replies;
                         std::swap( replies, state.pending.replies);
@@ -147,7 +248,7 @@ namespace casual
                         //
                         // TODO: Should we have some sort of TTL for the pending?
                         //
-                        auto count = common::platform::batch::transaction;
+                        auto count = common::platform::batch::transaction();
 
                         while( handler( ipc::device().non_blocking_next()) && count-- > 0)
                            ;
@@ -161,7 +262,7 @@ namespace casual
             catch( const common::exception::signal::Terminate&)
             {
                // we do nothing, and let the dtor take care of business
-               common::log::internal::debug << "broker has been terminated\n";
+               log << "broker has been terminated\n";
             }
             catch( ...)
             {

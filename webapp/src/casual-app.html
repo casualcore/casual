@@ -1,0 +1,169 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../bower_components/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="../bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../bower_components/iron-selector/iron-selector.html">
+
+<dom-module id="casual-app">
+
+	<template>
+		<style>
+
+		:root{
+			--casual-list-header-bgcolor: var(--app-primary-color);
+			--casual-list-header-color: white;
+		}
+
+		:host {
+			display: block;
+		}
+
+		app-header {
+			background-color: var(--app-primary-color);
+			color: #fff;
+		}
+		app-header paper-icon-button {
+			--paper-icon-button-ink-color: white;
+		}
+
+		.drawer-list {
+			margin: 0 20px;
+		}
+		.drawer-list a {
+			display: block;
+			padding: 0 16px;
+			line-height: 40px;
+			text-decoration: none;
+			color: var(--app-secondary-color);
+		}
+		.drawer-list a.iron-selected {
+			color: white;
+			font-weight: bold;
+			background-color: var(--app-primary-color);
+		}
+		.drawer-list a.subroute {
+			padding-left: 32px;
+		}
+		.drawer-list a:hover {
+			background-color: var(--app-primary-hover-color);
+			color: white;
+		}
+
+		</style>
+
+		<style is="custom-style">
+			paper-icon-button.pink {
+				color: white;
+				--paper-icon-button-ink-color: white;
+			}
+		</style>
+
+		<app-location  use-hash-as-path route="{{route}}"></app-location>
+		<app-route
+			route="{{route}}"
+			pattern="/:page"
+			data="{{routeData}}"
+			tail="{{subroute}}">
+		</app-route>
+
+		<app-drawer-layout fullbleed>
+
+		<!-- Drawer content -->
+		<app-drawer>
+			<iron-selector selected="[[page]]" attr-for-selected="name" class="drawer-list" role="navigation">
+				<a name="casual-server-view" href="#/server" id="server">Servers</a>
+				<a name="casual-group-view" href="#/group" id="group">Groups</a>
+				<a name="casual-instance-view" href="#/instance" id="instance">Instances</a>
+				<a name="casual-service-view" href="#/service" id="service">Services</a>
+			</iron-selector>
+		</app-drawer>
+
+		<!-- Main content -->
+			<app-header-layout has-scrolling-region>
+
+				<app-header condenses reveals fixed effects="waterfall">
+					<app-toolbar>
+						<paper-icon-button id="menu-button" icon="menu" drawer-toggle></paper-icon-button>
+						<div main-title>Casual</div>
+					</app-toolbar>
+				</app-header>
+
+				<iron-pages role="main" selected="[[page]]" attr-for-selected="name">
+					<casual-server-view name="server"></casual-server-view>
+					<casual-group-view name="group"></casual-group-view>
+					<casual-instance-view name="instance"></casual-instance-view>
+					<casual-service-view name="service"></casual-service-view>
+				</iron-pages>
+
+			</app-header-layout>
+		</app-drawer-layout>
+
+	</template>
+
+	<script>
+
+	Polymer({
+
+	is: 'casual-app',
+
+	properties: {
+
+		page: {
+			type: String,
+			reflectToAttribute: true,
+			observer: '_pageChanged'
+		},
+
+		_lastSelected: {
+			type: String
+		}
+
+	},
+
+	observers: [
+		'_routePageChanged(routeData.page)'
+	],
+
+	_routePageChanged: function(page) {
+		this.page = page || 'server';
+	},
+
+	_pageChanged: function(page) {
+		if(this._lastSelected)
+		{
+			var lastSelected = Polymer.dom(this.root).querySelector('#' + this._lastSelected);
+			Polymer.dom(lastSelected).removeAttribute('class');
+		}
+
+		var selected = Polymer.dom(this.root).querySelector('#' + page);
+		selected.setAttribute('class', "iron-selected")
+		this._lastSelected = page;
+
+		// load page import on demand.
+		this.importHref(
+		this.resolveUrl('casual-' + page + '-view.html'), null, null, true);
+	}
+
+	});
+
+	</script>
+
+</dom-module>

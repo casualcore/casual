@@ -1,6 +1,4 @@
 //!
-//! test_forward_cache.cpp
-//!
 //! casual
 //!
 
@@ -23,7 +21,7 @@ namespace casual
 
       TEST( casual_broker_forward_cache, construction_destruction)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          //
          // Take care of the connect
@@ -38,7 +36,7 @@ namespace casual
 
       TEST( casual_broker_forward_cache, forward_call_TPNOTRAN)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::minimal::Domain domain;
 
@@ -49,7 +47,7 @@ namespace casual
          {
             request.process.pid = 1;
             request.process.queue = caller.id();
-            request.service.name = "service3_2ms_timout";
+            request.service.name = "service2";
             request.trid = transaction::ID::create( process::handle());
             request.flags = TPNOTRAN;
          }
@@ -88,7 +86,7 @@ namespace casual
 
       TEST( casual_broker_forward_cache, forward_call__missing_ipc_queue__expect_error_reply)
       {
-         CASUAL_UNITTEST_TRACE();
+         common::unittest::Trace trace;
 
          mockup::domain::minimal::Domain domain;
 

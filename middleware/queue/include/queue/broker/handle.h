@@ -1,8 +1,5 @@
 //!
-//! handle.h
-//!
-//! Created on: Jun 20, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef QUEUE_BROKER_HANDLE_H_
@@ -12,7 +9,9 @@
 
 #include "common/message/queue.h"
 #include "common/message/transaction.h"
+#include "common/message/gateway.h"
 #include "common/message/domain.h"
+#include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -36,7 +35,7 @@ namespace casual
 
          namespace ipc
          {
-            const common::communication::ipc::Helper device();
+            const common::communication::ipc::Helper& device();
          } // ipc
 
 
@@ -44,6 +43,9 @@ namespace casual
 
          namespace handle
          {
+
+            using dispatch_type = common::communication::ipc::dispatch::Handler;
+
             namespace process
             {
 
@@ -100,86 +102,47 @@ namespace casual
 
             } // connect
 
-            namespace group
-            {
-               struct Involved : Base
-               {
-                  using message_type = common::message::queue::group::Involved;
 
+            namespace domain
+            {
+               //!
+               //! Handles remote advertise
+               //!  - add  0..* queues
+               //!  - remove 0..* queues
+               //!  - replace == remove all queues for instance and then add 0..* queues
+               //!
+               struct Advertise : Base
+               {
+                  using message_type = common::message::gateway::domain::Advertise;
                   using Base::Base;
 
                   void operator () ( message_type& message);
                };
 
-
-            }
-
-            namespace transaction
-            {
-               namespace commit
+               namespace discover
                {
-                  //!
-                  //! Invoked from the casual-queue-rm
-                  //!
                   struct Request : Base
                   {
-                     using message_type = common::message::transaction::resource::commit::Request;
-
+                     using message_type = common::message::gateway::domain::discover::Request;
                      using Base::Base;
 
                      void operator () ( message_type& message);
-
                   };
 
-                  //!
-                  //! Invoked from 1..* groups
-                  //!
                   struct Reply : Base
                   {
-                     using message_type = common::message::transaction::resource::commit::Reply;
-
+                     using message_type = common::message::gateway::domain::discover::accumulated::Reply;
                      using Base::Base;
 
                      void operator () ( message_type& message);
-
                   };
 
-               } // commit
-
-               namespace rollback
-               {
-                  //!
-                  //! Invoked from the casual-queue-rm
-                  //!
-                  struct Request : Base
-                  {
-                     using message_type = common::message::transaction::resource::rollback::Request;
-
-                     using Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-                  //!
-                  //! Invoked from 1..* groups
-                  //!
-                  struct Reply : Base
-                  {
-                     using message_type = common::message::transaction::resource::rollback::Reply;
-
-                     using Base::Base;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-               } // rollback
-
-
-            } // transaction
-
+               } // discover
+            } // domain
          } // handle
+
+         handle::dispatch_type handlers( State& state);
+
       } // broker
    } // queue
 

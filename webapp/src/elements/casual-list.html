@@ -1,0 +1,245 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+
+<dom-module id="casual-list">
+    <template>
+        <style>
+        
+        .casual-list-header {
+            width: 100%;
+            border: 1px solid #d0d0d0;
+            overflow: hidden;
+            border-radius: 10px 10px 0 0;
+
+            background-color: var(--casual-list-header-bgcolor, #FFFFFF);
+            color: var(--casual-list-header-color, #000000);
+            font-family: var(--casual-list-font-family, 'Roboto', 'Noto', sans-serif);
+
+            /* Display divs in a row */
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: space-between; 
+        }
+
+        .casual-list-name,.casual-list-sort {
+            padding: 10px;
+
+        }
+
+        .casual-list-sort {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .casual-list-content {
+            width: 100%;
+            border-top: 0;
+            border-right: 1px;
+            border-bottom: 1px;
+            border-left: 1px;
+            border-style: solid;
+            border-color: #d0d0d0;
+            background-color: #FFFFFF;
+        }
+
+        paper-dropdown-menu.custom {
+
+            cursor: pointer;
+
+            --paper-input-container: {
+                padding: 0px;
+            }
+
+            --paper-input-container-input: {
+                color: inherit;
+                /*text-align: right;*/
+            }
+
+            --paper-input-container-underline-focus: {
+                display: none;
+            }
+
+            --paper-input-container-underline: {
+                /*display: none;*/
+            };
+
+            --paper-dropdown-menu-focus-color: {
+                color: inherit;
+            }
+        }
+
+        paper-item.custom:hover {
+            cursor: pointer;
+            background-color: var(--casual-list-hover-color, #e5e5e5);
+            color: var(--casual-list-hover-font-color, #000000);
+        }
+
+        </style>
+
+        <div class="casual-list-header">
+            <div class="casual-list-name">{{listname}}</div>
+            <template is="dom-if" if="{{sortable}}">
+                <div class="casual-list-sort">
+                    <paper-dropdown-menu class="custom" vertical-align="top" horizontal-align="right" noink no-animations no-label-float>
+                        <paper-listbox class="dropdown-content" selected="{{sort}}">
+                            <template is="dom-repeat" items="{{_sortableElements}}" as="{{item}}">
+                                <paper-item class="custom">{{item}}</paper-item>
+                            </template>
+                        </paper-listbox>
+                    </paper-dropdown-menu>
+                </div>
+            </template>
+        </div>
+
+        <content id="content" select="*"></content>
+
+        <div class="casual-list-content" id="list"></div>
+
+    </template>
+
+    <script>
+        (function() {
+            'use strict';
+
+            Polymer({
+                is: 'casual-list',
+
+                properties: {
+                    listname: {
+                        type: String
+                    },
+
+                    listdata: {
+                        type: Array,
+                        notify: true,
+                        value: [],
+                        observer: "listdataChanged"
+                    },
+
+                    listattribute: {
+                        type: String,
+                        value: function() {
+                            return "data";
+                        }
+                    },
+
+                    listelementname: {
+                        type: String
+                    },
+
+                    listelementattributes: {
+                        type: Object,
+                        vaule: function() {
+                            return {};
+                        }
+                    },
+
+                    sortable: {
+                        type: Boolean,
+                        value: false
+                    },
+
+                    _sortableElements: {
+                        type: Array,
+                        notify: true,
+                        value: []
+                    },
+
+                    sort: {
+                        type: String,
+                        value: "0",
+                        reflectToAttribute: true,
+                        observer: "_sortChanged"
+                    },
+                },
+
+                _sortChanged: function(item) {
+                    var attribute = this._sortableElements[item];
+                    if(attribute && this.listdata.length) {
+                        var temp = this.listdata.sort(function(a, b) {
+                            if(a[attribute] < b[attribute]) {
+                                return -1;    
+                            } else if(b[attribute] < a[attribute]) {
+                                return 1;
+                            } else {
+                                return 0;
+                            }
+                        });
+                        this.listdata = [];
+                        this.listdata = temp;
+                    }
+                },
+
+                attached: function() {
+                    this.createList();
+                    this.removeEffectiveElements();
+                },
+
+                createList: function() {
+                    var elements = this.queryAllEffectiveChildren("*");
+                    if(elements.length > 0) {
+                        var element = elements[0];
+                        this.listelementname = (element.tagName).toLowerCase();
+                        for(var attribute in element.attributes) {
+                            if(attribute == "length")
+                                break;
+                            this.listelementattributes[element.attributes[attribute].name] = element.attributes[attribute].value;
+                        }
+                    }
+                },
+
+                _createSort: function() {
+                    if(this.sortable && this.listdata && this.listdata.length) {
+                        var list = [];
+                        var element = this.listdata[0];
+                        for(var attribute in element) {
+                            list.push(attribute);
+                        }
+                        this._sortableElements = list;
+                    }
+                },
+
+                removeEffectiveElements: function() {
+                    var elements = this.queryAllEffectiveChildren("*");
+                    if(elements.length > 0) {
+                        for(var element in elements) {
+                            this.removeChild(elements[element]);
+                        }
+                    }
+                    
+                },
+
+                removeElements: function(element) {
+                    var elements = Polymer.dom(element).childNodes;
+                    if(elements.length > 0) {
+                        for(var e in elements) {
+                            element.removeChild(elements[e]);
+                        }
+                    }
+                },
+
+                listdataChanged: function() {
+                    
+                    var list = (this.$.list);
+                    this.removeElements(list);
+
+                    this._createSort();
+
+                    for(var item in this.listdata) {
+                        var listItem = document.createElement(this.listelementname);
+                        for(var attribute in this.listelementattributes) {
+                            listItem.setAttribute(attribute, '');
+                            listItem[attribute] = this.listelementattributes[attribute];
+                        }
+                        listItem.setAttribute(this.listattribute, '');
+                        listItem[this.listattribute] = this.listdata[item];
+                        list.appendChild(listItem);
+                    }
+                }
+            });
+        })();
+    </script>
+</dom-module>

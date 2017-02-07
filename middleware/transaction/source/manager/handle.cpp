@@ -34,6 +34,26 @@ namespace casual
 
          }
 
+         namespace
+         {
+            namespace optional
+            {
+               template< typename D, typename M>
+               void send( D&& device, M&& message)
+               {
+                  try
+                  {
+                     ipc::device().blocking_send( device, message);
+                  }
+                  catch( const common::exception::communication::Unavailable&)
+                  {
+                     log << "failed to send message to queue: " << device << '\n';
+                  }
+               }
+
+         } // optional
+
+         } //
       } // ipc
 
       namespace handle
@@ -334,7 +354,7 @@ namespace casual
                         return &singleton;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                     bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
                      {
                         Trace trace{ "transaction::handle::resource::prepare local reply"};
 
@@ -437,7 +457,7 @@ namespace casual
                         return false;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
+                     bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
                      {
                         Trace trace{ "transaction::handle::resource::commit local reply"};
 
@@ -508,7 +528,7 @@ namespace casual
                         return false;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                     bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
                      {
                         Trace trace{ "transaction::handle::resource::rollback local reply"};
 
@@ -584,9 +604,9 @@ namespace casual
                         return &singleton;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                     bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
                      {
-                        Trace trace{ "transaction::handle::implementation::Remote::handle prepare reply"};
+                        Trace trace{ "transaction::handle::implementation::Remote::prepare reply"};
 
                         //
                         // Transaction is owned by another domain, so we just act as a resource.
@@ -599,6 +619,7 @@ namespace casual
                         {
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
                            local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -607,9 +628,9 @@ namespace casual
                         return false;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
+                     bool commit( State& state, common::message::transaction::resource::commit::Reply& message, Transaction& transaction) const override
                      {
-                        Trace trace{ "transaction::handle::implementation::Remote::handle commit reply"};
+                        Trace trace{ "transaction::handle::implementation::Remote::commit reply"};
 
                         //
                         // Transaction is owned by another domain, so we just act as a resource.
@@ -622,6 +643,7 @@ namespace casual
                         {
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
                            local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -630,9 +652,9 @@ namespace casual
                         return true;
                      }
 
-                     bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                     bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
                      {
-                        Trace trace{ "transaction::handle::implementation::Remote::handle rollback reply"};
+                        Trace trace{ "transaction::handle::implementation::Remote::rollback reply"};
 
                         //
                         // Transaction is owned by another domain, so we just act as a resource.
@@ -645,6 +667,7 @@ namespace casual
                         {
                            auto reply = local::transform::message< reply_type>( message);
                            reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
                            local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -673,9 +696,9 @@ namespace casual
                                  return &singleton;
                               }
 
-                              bool handle( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
+                              bool prepare( State& state, common::message::transaction::resource::prepare::Reply& message, Transaction& transaction) const override
                               {
-                                 Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::handle prepare reply"};
+                                 Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::prepare reply"};
                                  //
                                  // We're done with the prepare phase, start with commit or rollback
                                  //
@@ -764,7 +787,7 @@ namespace casual
                                  return false;
                               }
 
-                              bool handle( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
+                              bool rollback( State& state, common::message::transaction::resource::rollback::Reply& message, Transaction& transaction) const override
                               {
                                  Trace trace{ "transaction::handle::implementation::one::phase::commit::Remote::handle rollback reply"};
 
@@ -840,6 +863,34 @@ namespace casual
 
          namespace resource
          {
+
+            void Lookup::operator () ( common::message::transaction::resource::lookup::Request& message)
+            {
+               Trace trace{ "transaction::handle::resource::Lookup"};
+
+               auto reply = common::message::reverse::type( message);
+
+
+               for( auto& proxy : m_state.resources)
+               {
+                  if( common::range::find( message.resources, proxy.name))
+                  {
+                     common::message::transaction::resource::Resource resource;
+
+                     resource.id = proxy.id;
+                     resource.key = proxy.key;
+                     resource.name = proxy.name;
+                     resource.openinfo = proxy.openinfo;
+                     resource.closeinfo = proxy.closeinfo;
+
+                     reply.resources.push_back( std::move( resource));
+                  }
+               }
+
+               ipc::optional::send( message.process.queue, reply);
+            }
+
+
             void Involved::operator () ( common::message::transaction::resource::Involved& message)
             {
                Trace trace{ "transaction::handle::resource::Involved"};
@@ -1004,7 +1055,7 @@ namespace casual
                      return false;
                   }
 
-                  return transaction.implementation->handle( m_state, message, transaction);
+                  return transaction.implementation->prepare( m_state, message, transaction);
 
                }
 
@@ -1030,7 +1081,7 @@ namespace casual
                      return false;
                   }
 
-                  return transaction.implementation->handle( m_state, message, transaction);
+                  return transaction.implementation->commit( m_state, message, transaction);
                }
 
 
@@ -1052,7 +1103,7 @@ namespace casual
                      return false;
                   }
 
-                  return transaction.implementation->handle( m_state, message, transaction);
+                  return transaction.implementation->rollback( m_state, message, transaction);
                }
             } // reply
          } // resource
@@ -1262,17 +1313,17 @@ namespace casual
          template struct user_reply_wrapper< basic_rollback>;
 
 
-         namespace domain
+         namespace external
          {
-            void Involved::operator () (common::message::transaction::resource::domain::Involved& message)
+            void Involved::operator () ( common::message::transaction::resource::external::Involved& message)
             {
-               Trace trace{ "transaction::handle::domain::Involved"};
+               Trace trace{ "transaction::handle::external::Involved"};
 
                log << "involved message: " << message << '\n';
 
                auto& transaction = *local::transaction::find_or_add( m_state, message);
 
-               auto id = state::resource::domain::id( m_state, message.process, message.domain);
+               auto id = state::resource::external::proxy::id( m_state, message.process);
 
                if( ! common::range::find( transaction.resources, id))
                {
@@ -1281,6 +1332,11 @@ namespace casual
 
                log << "transaction: " << transaction << '\n';
             }
+         } // external
+
+         namespace domain
+         {
+
 
             void Prepare::operator () ( message_type& message)
             {
@@ -1368,9 +1424,8 @@ namespace casual
                         // sent the request, so we know where to send the accumulated reply.
                         //
                         transaction.trid.owner( message.process);
-
-                        // TODO: set correlation?
-
+                        transaction.correlation = message.correlation;
+                        transaction.resource = message.resource;
 
                         local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                            m_state,
@@ -1390,6 +1445,11 @@ namespace casual
                         // We remove the transaction
                         //
                         return true;
+                     }
+                     default:
+                     {
+                        common::log::error << "unexpected transaction stage: " << transaction << '\n';
+                        break;
                      }
                   }
                }
@@ -1433,10 +1493,16 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::Commit::handle"};
 
+               transaction.correlation = message.correlation;
+
                log << "transaction: " << transaction << '\n';
 
                if( transaction.implementation)
                {
+                  //
+                  // We've completed the prepare stage, now it's time for the commit stage
+                  //
+
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
                      m_state,
                      transaction,
@@ -1457,9 +1523,18 @@ namespace casual
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
+                     return;
                   }
 
                   transaction.implementation = local::implementation::one::phase::commit::Remote::instance();
+
+                  //
+                  // Make sure we can send enough stuff so remote domain can correlate,
+                  // when we actually send the accumulated reply
+                  //
+                  transaction.trid.owner( message.process);
+                  transaction.correlation = message.correlation;
+                  transaction.resource = message.resource;
 
                   if( transaction.resources.size() > 1)
                   {

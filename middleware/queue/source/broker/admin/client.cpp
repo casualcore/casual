@@ -1,13 +1,11 @@
 //!
-//! client.cpp
-//!
-//! Created on: Oct 4, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/broker/admin/queuevo.h"
 
 #include "queue/api/queue.h"
+#include "queue/common/transform.h"
 
 #include "common/arguments.h"
 #include "common/message/queue.h"
@@ -50,7 +48,7 @@ namespace casual
 
          broker::admin::State state()
          {
-            sf::xatmi::service::binary::Sync service( ".casual.queue.list.queues");
+            sf::xatmi::service::binary::Sync service( ".casual/queue/state");
 
             auto reply = service();
 
@@ -74,7 +72,6 @@ namespace casual
 
             return serviceReply;
          }
-
 
       } // call
 
@@ -108,7 +105,7 @@ namespace casual
                };
 
             auto format_trid = []( const broker::admin::Message& v) { return transcode::hex::encode( v.trid);};
-            auto format_type = []( const broker::admin::Message& v) { return v.type.main + ':' + v.type.sub;};
+            auto format_type = []( const broker::admin::Message& v) { return v.type;};
             auto format_timestamp = []( const broker::admin::Message& v) { return normalize::timestamp( v.timestamp);};
             auto format_avalible = []( const broker::admin::Message& v) { return normalize::timestamp( v.avalible);};
 
@@ -129,8 +126,8 @@ namespace casual
 
          terminal::format::formatter< broker::admin::Group> groups()
          {
-            auto format_pid = []( const broker::admin::Group& g) { return g.id.pid;};
-            auto format_ipc = []( const broker::admin::Group& g) { return g.id.queue;};
+            auto format_pid = []( const broker::admin::Group& g) { return g.process.pid;};
+            auto format_ipc = []( const broker::admin::Group& g) { return g.process.queue;};
 
             return {
                { global::porcelain, global::color, global::header},
@@ -142,6 +139,18 @@ namespace casual
             };
          }
 
+         terminal::format::formatter< queue::restore::Affected> restored()
+         {
+            auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
+
+            return {
+               { global::porcelain, global::color, global::header},
+               terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
+               terminal::format::column( "restored", std::mem_fn( &queue::restore::Affected::restored), terminal::color::green),
+            };
+         }
+
+
          terminal::format::formatter< broker::admin::Queue> queues( const broker::admin::State& state)
          {
             using q_type = broker::admin::Queue;
@@ -152,7 +161,7 @@ namespace casual
             };
 
             auto format_group = [&]( const q_type& q){
-               return range::find_if( state.groups, [&]( const broker::admin::Group& g){ return q.group == g.id.pid;}).at( 0).name;
+               return range::find_if( state.groups, [&]( const broker::admin::Group& g){ return q.group == g.process.pid;}).at( 0).name;
             };
 
 
@@ -174,7 +183,7 @@ namespace casual
       } // format
 
 
-      void listQueues()
+      void list_queues()
       {
 
          auto state = call::state();
@@ -190,7 +199,7 @@ namespace casual
          }));
       }
 
-      void listGroups()
+      void list_groups()
       {
          auto state = call::state();
 
@@ -199,7 +208,7 @@ namespace casual
          formatter.print( std::cout, state.groups);
       }
 
-      void listMessages( const std::string& queue)
+      void list_messages( const std::string& queue)
       {
          auto messages = call::messages( queue);
 
@@ -210,12 +219,16 @@ namespace casual
 
       void enqueue_( const std::string& queue)
       {
+         tx_begin();
+
+         auto rollback = scope::execute( [](){
+            tx_rollback();
+         });
 
          queue::Message message;
 
          message.attributes.reply = queue;
-         message.payload.type.type = common::buffer::type::binary().name;
-         message.payload.type.subtype = common::buffer::type::binary().subname;
+         message.payload.type = common::buffer::type::binary();
 
          while( std::cin)
          {
@@ -223,6 +236,9 @@ namespace casual
          }
 
          auto id = queue::enqueue( queue, message);
+
+         tx_commit();
+         rollback.release();
 
          std::cout << id << std::endl;
       }
@@ -234,10 +250,16 @@ namespace casual
 
       void dequeue_( const std::string& queue)
       {
+         tx_begin();
+
+         auto rollback = scope::execute( [](){
+            tx_rollback();
+         });
 
          const auto message = queue::dequeue( queue);
 
-         //std::cout << CASUAL_MAKE_NVP( message);
+         tx_commit();
+         rollback.release();
 
          if( message.empty())
          {
@@ -245,14 +267,27 @@ namespace casual
          }
          else
          {
-            for( auto c : message.front().payload.data)
-            {
-               std::cout.put( c);
-            }
+            std::cout.write(
+                  message.front().payload.data.data(),
+                  message.front().payload.data.size());
          }
          std::cout << std::endl;
       }
 
+      namespace local
+      {
+         namespace
+         {
+            void restore( const std::vector< std::string>& queueus)
+            {
+               auto affected = queue::restore::queue( queueus);
+
+               auto formatter = format::restored();
+               formatter.print( std::cout, affected);
+            }
+
+         } // <unnamed>
+      } // local
 
    } // queue
 
@@ -263,11 +298,12 @@ namespace casual
             common::argument::directive( {"--no-header"}, "do not print headers", &queue::global::no_header),
             common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
             common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
-            common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::listQueues),
-            common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::listGroups),
-            common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::listMessages),
+            common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::list_queues),
+            common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
+            common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
+            common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual-admin queue --restore <queue-name>", &queue::local::restore),
             common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual-admin queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
-            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_)
+            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_),
       }};
 
       return parser;

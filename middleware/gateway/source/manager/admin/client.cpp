@@ -80,36 +80,49 @@ namespace casual
 
          } // connection
 
-         template< typename C>
-         terminal::format::formatter< C> connections()
+         terminal::format::formatter<  manager::admin::vo::Connection> connections()
          {
-            auto format_domain_name = []( const manager::admin::vo::base_connection& c) { return c.remote.name; };
-            auto format_domain_id = []( const manager::admin::vo::base_connection& c) { return transcode::hex::encode( c.remote.id.get());};
+            using vo = manager::admin::vo::Connection;
 
-            auto format_pid = []( const manager::admin::vo::base_connection& c){ return c.process.pid;};
-            auto format_type = []( const manager::admin::vo::base_connection& c)
+            auto format_domain_name = []( const vo& c) { return c.remote.name; };
+            auto format_domain_id = []( const vo& c) { return transcode::hex::encode( c.remote.id.get());};
+
+            auto format_pid = []( const vo& c){ return c.process.pid;};
+            auto format_queue = []( const vo& c){ return c.process.queue;};
+
+            auto format_bound = []( const vo& c)
             {
-               switch( c.type)
+               switch( c.bound)
                {
-                  case manager::admin::vo::base_connection::Type::tcp: return "tcp";
-                  case manager::admin::vo::base_connection::Type::ipc: return "ipc";
+                  case vo::Bound::in: return "in";
+                  case vo::Bound::out: return "out";
                   default: return "unknown";
                }
             };
 
-            auto format_runlevel = []( const manager::admin::vo::base_connection& c)
+            auto format_type = []( const vo& c)
+            {
+               switch( c.type)
+               {
+                  case vo::Type::tcp: return "tcp";
+                  case vo::Type::ipc: return "ipc";
+                  default: return "unknown";
+               }
+            };
+
+            auto format_runlevel = []( const vo& c)
             {
                switch( c.runlevel)
                {
-                  case manager::admin::vo::base_connection::Runlevel::booting: return "booting";
-                  case manager::admin::vo::base_connection::Runlevel::online: return "online";
-                  case manager::admin::vo::base_connection::Runlevel::shutdown: return "shutdown";
-                  case manager::admin::vo::base_connection::Runlevel::error: return "error";
+                  case vo::Runlevel::connecting: return "connecting";
+                  case vo::Runlevel::online: return "online";
+                  case vo::Runlevel::shutdown: return "shutdown";
+                  case vo::Runlevel::error: return "error";
                   default: return "absent";
                }
             };
 
-            auto format_address = []( const manager::admin::vo::base_connection& c)
+            auto format_address = []( const vo& c)
             {
                return string::join( c.address, " ");
             };
@@ -118,7 +131,9 @@ namespace casual
                { global::porcelain, global::color, global::header},
                terminal::format::column( "name", format_domain_name, terminal::color::yellow),
                terminal::format::column( "id", format_domain_id, terminal::color::blue),
-               terminal::format::column( "pid", format_pid, terminal::color::white),
+               terminal::format::column( "bound", format_bound, terminal::color::magenta),
+               terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "queue", format_queue, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "type", format_type, terminal::color::cyan),
                terminal::format::column( "runlevel", format_runlevel, terminal::color::no_color),
                terminal::format::column( "address", format_address, terminal::color::blue),
@@ -129,23 +144,13 @@ namespace casual
       } // format
 
 
-      void list_inbound()
-      {
-
-         auto state = call::state();
-
-         auto formatter = format::connections< manager::admin::vo::inbound::Connection>();
-
-         formatter.print( std::cout, state.connections.inbound);
-      }
-
-      void list_outbound()
+      void list_connections()
       {
          auto state = call::state();
 
-         auto formatter = format::connections< manager::admin::vo::outbound::Connection>();
+         auto formatter = format::connections();
 
-         formatter.print( std::cout, state.connections.outbound);
+         formatter.print( std::cout, state.connections);
       }
 
       void print_state()
@@ -166,8 +171,7 @@ namespace casual
             common::argument::directive( {"--no-header"}, "do not print headers", &gateway::global::no_header),
             common::argument::directive( {"--no-color"}, "do not use color", &gateway::global::no_color),
             common::argument::directive( {"--porcelain"}, "Easy to parse format", gateway::global::porcelain),
-            common::argument::directive( {"-i", "--list-inbound"}, "list inbound connections", &gateway::list_inbound),
-            common::argument::directive( {"-o", "--list-outbound"}, "list outbound connections", &gateway::list_outbound),
+            common::argument::directive( {"-c", "--list-connections"}, "list all connections", &gateway::list_connections),
             common::argument::directive( { "--state"}, "print state", &gateway::print_state),
       }};
 

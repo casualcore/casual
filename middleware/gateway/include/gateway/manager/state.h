@@ -10,6 +10,9 @@
 
 #include "common/communication/tcp.h"
 
+#include "common/message/coordinate.h"
+
+
 namespace casual
 {
    namespace gateway
@@ -30,7 +33,7 @@ namespace casual
                enum class Runlevel
                {
                   absent,
-                  booting,
+                  connecting,
                   online,
                   offline,
                   error
@@ -77,7 +80,16 @@ namespace casual
                   //! configured services
                   //!
                   std::vector< std::string> services;
+
+                  //!
+                  //! configured queues
+                  //!
+                  std::vector< std::string> queues;
+
+                  std::size_t order = 0;
                   bool restart = false;
+
+                  void reset();
 
                   friend std::ostream& operator << ( std::ostream& out, const Connection& value);
                };
@@ -91,7 +103,26 @@ namespace casual
                std::vector< inbound::Connection> inbound;
             };
 
+            namespace coordinate
+            {
+               namespace outbound
+               {
 
+                  struct Policy
+                  {
+                     using message_type = common::message::gateway::domain::discover::accumulated::Reply;
+
+                     void accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply);
+
+                     void send( common::platform::ipc::id::type queue, message_type& message);
+                  };
+
+                  using Discover = common::message::Coordinate< Policy>;
+
+               } // outbound
+
+
+            } // coordinate
 
          } // state
 
@@ -114,6 +145,14 @@ namespace casual
 
             state::Connections connections;
             std::vector< Listener> listeners;
+
+            struct Discover
+            {
+               state::coordinate::outbound::Discover outbound;
+               void remove( common::platform::pid::type pid);
+
+            } discover;
+
             Runlevel runlevel = Runlevel::startup;
 
             friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);

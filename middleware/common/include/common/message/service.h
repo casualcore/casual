@@ -8,6 +8,7 @@
 #include "common/message/type.h"
 
 #include "common/transaction/id.h"
+#include "common/service/type.h"
 #include "common/buffer/type.h"
 #include "common/uuid.h"
 
@@ -19,9 +20,74 @@ namespace casual
    {
       namespace message
       {
+         namespace service
+         {
+            struct Base
+            {
+               Base() = default;
+
+               explicit Base( std::string name, std::string category, common::service::transaction::Type transaction)
+                  : name( std::move( name)), category( std::move( category)), transaction( transaction)
+               {}
+
+               Base( std::string name)
+                  : name( std::move( name))
+               {}
+
+               std::string name;
+               std::string category;
+               common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & name;
+                  archive & category;
+                  archive & transaction;
+               })
+            };
+            static_assert( traits::is_movable< Base>::value, "not movable");
+
+         } // service
+
+         struct Service : service::Base
+         {
+            using service::Base::Base;
+
+            std::chrono::microseconds timeout = std::chrono::microseconds::zero();
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               service::Base::marshal( archive);
+               archive & timeout;
+            })
+
+            friend std::ostream& operator << ( std::ostream& out, const Service& value);
+         };
+         static_assert( traits::is_movable< Service>::value, "not movable");
+
 
          namespace service
          {
+            namespace call
+            {
+               //!
+               //! Represent service information in a 'call context'
+               //!
+               struct Service : message::Service
+               {
+                  using message::Service::Service;
+
+                  std::vector< platform::ipc::id::type> traffic_monitors;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     message::Service::marshal( archive);
+                     archive & traffic_monitors;
+                  })
+               };
+               static_assert( traits::is_movable< Service>::value, "not movable");
+            } // call
+
             struct Transaction
             {
                common::transaction::ID trid;
@@ -35,45 +101,47 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
+            static_assert( traits::is_movable< Transaction>::value, "not movable");
 
-            enum class Location : char
+            namespace advertise
             {
-               local,
-               remote
-            };
+               //!
+               //! Represent service information in a 'advertise context'
+               //!
+               using Service = message::service::Base;
+
+               static_assert( traits::is_movable< Service>::value, "not movable");
+
+            } // advertise
+
 
             struct Advertise : basic_message< Type::service_advertise>
             {
+               enum class Directive : char
+               {
+                  add,
+                  remove,
+                  replace
+               };
+
+               Directive directive = Directive::add;
+
                common::process::Handle process;
-               std::vector< Service> services;
-               Location location = Location::local;
+               std::vector< advertise::Service> services;
+
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
                   base_type::marshal( archive);
+                  archive & directive;
                   archive & process;
                   archive & services;
-                  archive & location;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, Directive value);
                friend std::ostream& operator << ( std::ostream& out, const Advertise& message);
             };
-
-            struct Unadvertise : basic_message< Type::service_unadvertise>
-            {
-               common::process::Handle process;
-               std::vector< Service> services;
-               Location location = Location::local;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  base_type::marshal( archive);
-                  archive & process;
-                  archive & services;
-                  archive & location;
-               })
-            };
-
+            static_assert( traits::is_movable< Advertise>::value, "not movable");
 
 
             namespace lookup
@@ -90,9 +158,6 @@ namespace casual
                      forward,
                      gateway,
                   };
-                  Request() = default;
-                  Request( Request&&) = default;
-                  Request& operator = ( Request&&) = default;
 
                   std::string requested;
                   common::process::Handle process;
@@ -105,14 +170,21 @@ namespace casual
                      archive & process;
                      archive & context;
                   })
+
+
+                  friend std::ostream& operator << ( std::ostream& out, const Context& value);
+                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
                };
+               static_assert( traits::is_movable< Request>::value, "not movable");
+
+
 
                //!
                //! Represent "service-name-lookup" response.
                //!
                struct Reply : basic_message< Type::service_name_lookup_reply>
                {
-                  Service service;
+                  call::Service service;
                   common::process::Handle process;
 
                   enum class State : char
@@ -134,8 +206,8 @@ namespace casual
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
             } // lookup
 
 
@@ -144,14 +216,6 @@ namespace casual
 
                struct base_call : basic_message< Type::service_call>
                {
-
-                  base_call() = default;
-
-                  base_call( base_call&&) = default;
-                  base_call& operator = ( base_call&&) = default;
-
-                  base_call( const base_call&) = delete;
-                  base_call& operator = ( const base_call&) = delete;
 
                   platform::descriptor_type descriptor = 0;
                   common::process::Handle process;
@@ -179,6 +243,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const base_call& value);
                };
+               static_assert( traits::is_movable< base_call>::value, "not movable");
 
                namespace callee
                {
@@ -189,16 +254,7 @@ namespace casual
                   struct Request : public base_call
                   {
 
-                     Request() = default;
-
-                     Request( Request&&) = default;
-                     Request& operator = ( Request&&) = default;
-
-                     Request( const Request&) = delete;
-                     Request& operator = ( const Request&) = delete;
-
                      buffer::Payload buffer;
-
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -208,6 +264,7 @@ namespace casual
 
                      friend std::ostream& operator << ( std::ostream& out, const Request& value);
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                } // callee
 
@@ -224,11 +281,6 @@ namespace casual
                      {
                      }
 
-                     Request( Request&&) = default;
-                     Request& operator = ( Request&&) = default;
-
-                     Request( const Request&) = delete;
-                     Request& operator = ( const Request&) = delete;
 
                      buffer::payload::Send buffer;
 
@@ -242,6 +294,7 @@ namespace casual
                         archive << buffer;
                      }
                   };
+                  static_assert( traits::is_movable< Request>::value, "not movable");
 
                }
 
@@ -250,12 +303,6 @@ namespace casual
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-
-                  Reply() = default;
-                  Reply( Reply&&) noexcept = default;
-                  Reply& operator = ( Reply&&) noexcept = default;
-                  Reply( const Reply&) = default;
-                  Reply& operator = ( const Reply&) = default;
 
                   int descriptor = 0;
                   int error = 0;
@@ -274,8 +321,8 @@ namespace casual
                   })
 
                   friend std::ostream& operator << ( std::ostream& out, const Reply& message);
-
                };
+               static_assert( traits::is_movable< Reply>::value, "not movable");
 
                //!
                //! Represent the reply to the broker when a server is done handling
@@ -294,6 +341,7 @@ namespace casual
                      archive & process;
                   })
                };
+               static_assert( traits::is_movable< ACK>::value, "not movable");
 
             } // call
 

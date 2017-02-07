@@ -1,11 +1,11 @@
 //!
-//! manager_state.cpp
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/state.h"
+
+#include "configuration/domain.h"
+
 
 #include "common/exception.h"
 #include "common/algorithm.h"
@@ -14,8 +14,6 @@
 #include "common/environment.h"
 
 
-#include "config/domain.h"
-#include "config/xa_switch.h"
 
 
 namespace casual
@@ -26,38 +24,7 @@ namespace casual
    {
       namespace state
       {
-         namespace local
-         {
-            namespace
-            {
-               namespace transform
-               {
-                  struct Resource
-                  {
-                     state::resource::Proxy operator () ( const message::domain::configuration::transaction::Resource& value) const
-                     {
 
-                        Trace trace{ "transform::Resource", log::internal::transaction};
-
-                        state::resource::Proxy result;
-
-                        result.id = value.id;
-                        result.key = value.key;
-                        result.openinfo = value.openinfo;
-                        result.closeinfo = value.closeinfo;
-                        result.concurency = value.instances;
-
-                        log::internal::debug << "resource.openinfo: " << result.openinfo << std::endl;
-                        log::internal::debug << "resource.concurency: " << result.concurency << std::endl;
-
-                        return result;
-                     }
-                  };
-
-               } // transform
-
-            }
-         } // local
 
 
          Statistics::Statistics() :  min{ std::chrono::microseconds::max()}, max{ 0}, total{ 0}, invoked{ 0}
@@ -163,50 +130,52 @@ namespace casual
             }
 
 
-            Domain::Domain( const common::process::Handle& process, const common::Uuid& remote, id::type id)
-              : process{ process}, remote{ remote}, id{ id}
+            namespace external
             {
-
-            }
-
-            bool operator == ( const Domain& lhs, const common::process::Handle& rhs)
-            {
-               return lhs.process == rhs;
-            }
-
-            namespace domain
-            {
-               id::type id( State& state, const common::process::Handle& process, const common::Uuid& remote)
+               Proxy::Proxy( const common::process::Handle& process, id::type id)
+                  : process{ process}, id{ id}
                {
-                  auto found = range::find( state.domains, process);
-
-                  if( found)
-                  {
-                     return found->id;
-                  }
-
-                  static id::type base_id = 0;
-
-                  state.domains.emplace_back( process, remote, --base_id);
-                  return state.domains.back().id;
                }
 
-            } // domain
+               bool operator == ( const Proxy& lhs, const common::process::Handle& rhs)
+               {
+                  return lhs.process == rhs;
+               }
 
+               namespace proxy
+               {
+                  id::type id( State& state, const common::process::Handle& process)
+                  {
+                     auto found = range::find( state.externals, process);
+
+                     if( found)
+                     {
+                        return found->id;
+                     }
+
+                     static id::type base_id = 0;
+
+                     state.externals.emplace_back( process, --base_id);
+                     return state.externals.back().id;
+                  }
+
+               } // proxy
+
+            } // external
 
          } // resource
 
-         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file)
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration)
          {
 
             {
                Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
 
-               auto resources = config::xa::switches::get( resource_file);
+               auto resources = configuration::resource::property::get();
 
                for( auto& resource : resources)
                {
-                  if( ! state.xa_switch_configuration.emplace( resource.key, std::move( resource)).second)
+                  if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
                   {
                      throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
@@ -219,11 +188,25 @@ namespace casual
             {
                Trace trace( "transaction manager resource configuration", log::internal::transaction);
 
-               std::transform(
-                     std::begin( configuration.resources),
-                     std::end( configuration.resources),
-                     std::back_inserter( state.resources),
-                     local::transform::Resource{});
+               auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
+
+                  state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
+
+                  proxy.name = r.name;
+                  proxy.concurency = r.instances;
+                  proxy.key = r.key;
+                  proxy.openinfo = r.openinfo;
+                  proxy.closeinfo = r.closeinfo;
+                  proxy.note = r.note;
+
+                  return proxy;
+               };
+
+               range::transform(
+                     configuration.domain.transaction.resources,
+                     state.resources,
+                     transform_resource);
+
             }
 
          }
@@ -344,6 +327,7 @@ namespace casual
          return out << "{ trid: " << value.trid
             << ", resources: " << common::range::make( value.resources)
             << ", correlation: " << value.correlation
+            << ", remote-resource: " << value.resource
             << '}';
       }
 
@@ -445,17 +429,18 @@ namespace casual
          return common::range::find_if( resource.instances, state::filter::Idle{});
       }
 
-      const state::resource::Domain& State::get_domain( state::resource::id::type rm) const
+      const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
       {
-         auto found = range::find_if( domains, [=]( const state::resource::Domain& d){
-            return d.id == rm;
+         auto found = range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
+            return p.id == rm;
          });
 
-         if( ! found)
+         if( found)
          {
-            throw common::exception::invalid::Argument{ "failed to find domain", CASUAL_NIP( rm)};
+            return *found;
          }
-         return *found;
+
+         throw common::exception::invalid::Argument{ "failed to find external resource proxy", CASUAL_NIP( rm)};
       }
 
    } // transaction

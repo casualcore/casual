@@ -66,7 +66,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
       //
       // TODO: Shall we report size less than zero ?
       //
-      return casual::common::buffer::pool::Holder::instance().allocate( { type, subtype}, size < 0 ? 0 : size);
+      return casual::common::buffer::pool::Holder::instance().allocate( type, subtype, size < 0 ? 0 : size);
    }
    catch( ...)
    {
@@ -103,6 +103,8 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
    {
       auto buffer = casual::common::buffer::pool::Holder::instance().get( ptr);
 
+      auto combined = casual::common::buffer::type::dismantle( buffer.payload().type);
+
       //
       // type is optional
       //
@@ -110,7 +112,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          auto destination = casual::common::range::make( type, 8);
          casual::common::memory::set( destination, '\0');
-         casual::common::memory::copy( casual::common::range::make( buffer.payload.type.name), destination);
+         casual::common::memory::copy( std::get< 0>( combined), destination);
       }
 
       //
@@ -120,7 +122,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
       {
          auto destination = casual::common::range::make( subtype, 16);
          casual::common::memory::set( destination, '\0');
-         casual::common::memory::copy( casual::common::range::make( buffer.payload.type.subname), destination);
+         casual::common::memory::copy( std::get< 1>( combined), destination);
       }
 
       return buffer.reserved;

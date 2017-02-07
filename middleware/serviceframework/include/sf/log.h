@@ -7,6 +7,7 @@
 
 #include "common/log.h"
 #include "common/trace.h"
+#include "common/traits.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/log.h"
@@ -58,34 +59,24 @@ namespace casual
             : trace::detail::Scope( information, log) {}
       };
 
-
-      template <typename T, typename R>
-      std::ostream& operator << ( std::ostream& out, const NameValuePair< T, R>& value)
+      namespace name
       {
-         if( out.good())
+         namespace value
          {
-            sf::archive::log::Writer writer( out);
-            writer << value;
-         }
-         return out;
-      }
+            template <typename NVP>
+            auto operator << ( std::ostream& out, NVP&& value) -> common::traits::enable_if_t< sf::traits::is_nvp< NVP>::value, std::ostream&>
+            {
+               if( out.good())
+               {
+                  sf::archive::log::Writer writer( out);
+                  writer << value;
+               }
+               return out;
+            }
 
-      template <typename T, typename R>
-      std::ostream& operator << ( std::ostream& out, NameValuePair< T, R>&& value)
-      {
-         if( out.good())
-         {
-            sf::archive::log::Writer writer( out);
-            writer << value;
-         }
-         return out;
-      }
-
-
-
+         } // value
+      } // name
    } // sf
-
-
 } // casual
 
 #endif // SF_LOG_H_
