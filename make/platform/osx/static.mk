@@ -17,7 +17,7 @@ DEFAULT_LIBS =
 
 COMPILER = g++ -fcolor-diagnostics
 CROSSCOMPILER = clang++
-WARNING_DIRECTIVE = -Werror -Wall -Wextra -pedantic -Wsign-compare -Wuninitialized -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter 
+WARNING_DIRECTIVE =  -Wall -Wextra -pedantic -Wsign-compare -Wuninitialized -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter 
 
 #
 # Linkers

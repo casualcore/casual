@@ -21,7 +21,7 @@ namespace casual
 
       } // local
 
-      TEST( casual_common_algorithm_range, default_constructor__expoect_empty)
+      TEST( casual_common_algorithm_range, default_constructor__expect_empty)
       {
          common::unittest::Trace trace;
 
@@ -30,6 +30,56 @@ namespace casual
 
          EXPECT_TRUE( empty.empty());
          EXPECT_TRUE( empty.size() == 0);
+      }
+
+      TEST( casual_common_algorithm_range, default_constructor_int_pointer__expect_empty)
+      {
+         common::unittest::Trace trace;
+
+         Range< int*> empty;
+
+         EXPECT_TRUE( empty.empty());
+         EXPECT_TRUE( empty.size() == 0);
+      }
+
+      TEST( casual_common_algorithm_range, list_container)
+      {
+         common::unittest::Trace trace;
+
+         std::list< int> container{ 1, 2, 3, 4, 5};
+
+         auto range = range::make( container);
+         EXPECT_TRUE( range == container);
+      }
+
+      TEST( casual_common_algorithm_range, deque_container)
+      {
+         common::unittest::Trace trace;
+
+         std::deque< int> container{ 1, 2, 3, 4, 5};
+
+         auto range = range::make( container);
+         EXPECT_TRUE( range == container);
+      }
+
+      TEST( casual_common_algorithm_range, array_container)
+      {
+         common::unittest::Trace trace;
+
+         std::array< int, 5> container = {{ 1, 2, 3, 4, 5}};
+
+         auto range = range::make( container);
+         EXPECT_TRUE( range == container);
+      }
+
+      TEST( casual_common_algorithm_range, c_array_container)
+      {
+         common::unittest::Trace trace;
+
+         int container[] = { 1, 2, 3, 4, 5};
+
+         auto range = range::make( container);
+         EXPECT_TRUE( range == container);
       }
 
       TEST( casual_common_algorithm_position, overlap)

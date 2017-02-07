@@ -292,16 +292,20 @@ namespace casual
             template< typename T>
             bool empty( optional< T>& value) { return ! value.has_value();}
 
-            template< typename R, typename T>
-            R implementation( T&& value)
+            template< typename T>
+            decltype( auto) implementation( T&& value)
             {
                return std::forward< T>( value);
             }
 
-            template< typename R, typename T, typename... Args>
-            R implementation( T&& value, Args&&... args)
+            template< typename T, typename... Args>
+            auto implementation( T&& value, Args&&... args) ->
+               std::conditional_t<
+                  traits::is_same< T, Args...>::value,
+                  T, // only if T and Args are exactly the same, we use T, otherwise we convert to common type
+                  std::common_type_t< T, Args...>>
             {
-               if( empty( value)) { return implementation< R>( std::forward< Args>( args)...);}
+               if( empty( value)) { return implementation( std::forward< Args>( args)...);}
                return std::forward< T>( value);
             }
 
@@ -318,11 +322,9 @@ namespace casual
       //! @return the first argument that is not 'empty'
       //!
       template< typename T, typename... Args>
-      auto coalesce( T&& value,  Args&&... args)
+      decltype( auto) coalesce( T&& value,  Args&&... args)
       {
-         using return_type = std::common_type_t< T, Args...>;
-
-         return detail::coalesce::implementation< return_type>( std::forward< T>( value), std::forward< Args>( args)...);
+         return detail::coalesce::implementation( std::forward< T>( value), std::forward< Args>( args)...);
       }
 
 
@@ -335,25 +337,16 @@ namespace casual
          using reference = typename std::iterator_traits< iterator>::reference;
          using difference_type = typename std::iterator_traits< iterator>::difference_type;
 
-         Range() : m_size{ 0} {}
-         Range( iterator first, std::size_t size) : m_first( first), m_size( size) {}
-         Range( iterator first, iterator last) : Range( first, std::distance( first, last)) {}
+         Range() = default;
+         Range( iterator first, iterator last) :  m_first( first), m_last( last) {}
+         Range( iterator first, std::size_t size) : m_first( first), m_last( first + size) {}
 
 
-         std::size_t size() const
-         {
-            return m_size;
-         }
+         std::size_t size() const { return std::distance( m_first, m_last);}
+         bool empty() const { return m_first == m_last;}
 
-         bool empty() const
-         {
-            return m_size == 0;
-         }
 
-         operator bool () const
-         {
-            return ! empty();
-         }
+         operator bool () const { return ! empty();}
 
          template<typename T>
          operator T() const = delete;
@@ -362,69 +355,54 @@ namespace casual
          reference operator * () const { return *m_first;}
          iterator operator -> () const { return m_first;}
 
-
-         Range operator ++ ()
+         Range& operator ++ ()
          {
-            Range other{ *this};
-            advance( 1);
-            return other;
-         }
-
-         Range& operator ++ ( int)
-         {
-            advance( 1);
+            ++m_first;
             return *this;
          }
 
+         Range operator ++ ( int)
+         {
+            Range other{ *this};
+            ++m_first;
+            return other;
+         }
+
          iterator begin() const { return m_first;}
-         iterator end() const { return std::next( m_first,  m_size);}
+         iterator end() const { return m_last;}
 
-         void advance( std::size_t size)
-         {
-            //assert( size <= m_size);
-            m_first += size;
-            m_size -= size;
-         }
+         void advance( difference_type value) { std::advance( m_first, value);}
 
-
-         pointer data()
-         {
-            if( ! empty())
-            {
-               return &( *m_first);
-            }
-            return nullptr;
-         }
-
-         const pointer data() const
-         {
-            if( ! empty())
-            {
-               return &( *m_first);
-            }
-            return nullptr;
-         }
+         pointer data() const { return data( m_first, m_last);}
 
          reference front() { return *m_first;}
+         const reference front() const { return *m_first;}
 
-         reference at( const difference_type index)
-         {
-            if( m_size <= static_cast< decltype( m_size)>( index)) { throw std::out_of_range{ std::to_string( index)};}
-
-            return *( m_first + index);
-         }
-
-         const reference at( const difference_type index) const
-         {
-            if( m_size <= static_cast< decltype( m_size)>( index)){ throw std::out_of_range{ std::to_string( index)};}
-
-            return *( m_first + index);
-         }
+         reference at( const difference_type index) { return at( m_first, m_last, index);}
+         const reference at( const difference_type index) const { return at( m_first, m_last, index);}
 
 
       private:
-         iterator m_first;
-         std::size_t m_size;
+
+         static pointer data( iterator first, iterator last)
+         {
+            if( first != last)
+            {
+               return &( *first);
+            }
+            return nullptr;
+         }
+
+         static reference at( iterator first, iterator last, const difference_type index)
+         {
+            if( std::distance( first, last) < index) { throw std::out_of_range{ std::to_string( index)};}
+
+            return *( first + index);
+         }
+
+
+         iterator m_first = iterator{};
+         iterator m_last = iterator{};
       };
 
 
@@ -551,7 +529,7 @@ namespace casual
          using const_type_t = typename type_traits< const C>::type;
 
          template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dymmy = nullptr>
-         constexpr auto size( R&& range) { return sizeof( R);}
+         constexpr auto size( R&& range) { return sizeof( R) / sizeof( *range);}
 
          template< typename R, std::enable_if_t< ! std::is_array< std::remove_reference_t< R>>::value>* dymmy = nullptr>
          constexpr auto size( R&& range) { return range.size();}
@@ -1496,13 +1474,15 @@ namespace casual
          return range::equal( lhs, rhs);
       }
 
-      template< typename Iter, typename C>
+      template< typename Iter, typename C,
+         std::enable_if_t< common::traits::container::is_container< common::traits::remove_reference_t< C>>::value>* dummy = nullptr>
       bool operator == ( const Range< Iter>& lhs, const C& rhs)
       {
          return range::equal( lhs, rhs);
       }
 
-      template< typename C, typename Iter>
+      template< typename C, typename Iter,
+         std::enable_if_t< common::traits::container::is_container< common::traits::remove_reference_t< C>>::value>* dummy = nullptr>
       bool operator == ( C& lhs, const Range< Iter>& rhs)
       {
          return range::equal( lhs, rhs);

@@ -344,6 +344,8 @@ namespace casual
             auto argument = *argumentRange;
             ++argumentRange;
 
+            log::debug << "arguments after prefix increment: " << argumentRange << '\n';
+
             //
             // Find the end of values associated with this option
             //
@@ -360,6 +362,8 @@ namespace casual
             }
 
             argumentRange = std::get< 1>( slice);
+
+            log::debug << "arguments after slice: " << argumentRange << '\n';
          }
 
          dispatch();

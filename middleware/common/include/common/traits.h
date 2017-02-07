@@ -153,6 +153,10 @@ namespace casual
             template< typename T, std::size_t size>
             struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::array>{};
 
+            template< typename T, std::size_t size>
+            struct traits< T[ size]> : detail::traits< std::array< T, size>, container::category::array>{};
+
+
 
 
             template< typename T>
@@ -161,9 +165,6 @@ namespace casual
             struct traits< std::deque< T>> : detail::traits< std::deque< T>, container::category::sequence>{};
             template< typename T>
             struct traits< std::list< T>> : detail::traits< std::list< T>, container::category::sequence>{};
-
-            //template< typename T>
-            //struct traits< std::forward_list< T>> : detail::traits< std::forward_list< T>, container::category::sequence>{};
 
 
             template< typename T>
@@ -344,18 +345,6 @@ namespace casual
             uncopyable( const uncopyable&) = delete;
             uncopyable& operator = ( const uncopyable&) = delete;
          };
-
-
-         namespace value
-         {
-            template< typename T>
-            constexpr bool is_lvalue_reference( T&& value)
-            {
-               return std::is_lvalue_reference< decltype( value)>::value;
-            }
-
-
-         }  // namespace value
 
       } // traits
    } // common
