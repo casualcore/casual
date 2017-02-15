@@ -106,7 +106,7 @@ def build( name, image, content)
 
 node {
 
-    slackSend color: 'good', message: 'start building casual'
+    slackSend "started ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
 
 //   bitbucketStatusNotify(
 //      buildState: 'INPROGRESS',
