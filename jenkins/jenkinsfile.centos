@@ -106,7 +106,7 @@ def build( name, image, content)
 
 node {
 
-     slackSend color: "good", message: "Build Started: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+     slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
 //   bitbucketStatusNotify(
 //      buildState: 'INPROGRESS',
@@ -172,7 +172,7 @@ node {
          }
 
       }
-     slackSend color: "good", message: "Build finished: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+     slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 ///
 //      bitbucketStatusNotify(
 //         buildState: 'SUCCESSFUL',
@@ -183,7 +183,7 @@ node {
    }
    catch (Exception e)
    {
-       slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} ${env.BUILD_NUMBER}"
+       slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
 //      bitbucketStatusNotify(
 //          buildState: 'FAILED',
