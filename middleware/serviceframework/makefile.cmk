@@ -10,6 +10,7 @@ IncludePaths([
     ])
 	
 LibraryPaths([
+    'bin',
     '../common/bin',
     '../xatmi/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',

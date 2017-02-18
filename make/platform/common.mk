@@ -14,11 +14,4 @@ BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER)
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
 
 
-#
-# Default include/library-paths
-#
-DEFAULT_INCLUDE_PATHS = ./include
-DEFAULT_LIBRARY_PATHS = ./bin
-
-
 

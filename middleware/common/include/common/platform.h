@@ -299,6 +299,10 @@ namespace casual
 
 } // casual
 
-
+#if __GNUC__ > 4 || __clang_major__ > 4
+#define CASUAL_OPTION_UNUSED __attribute__((unused))
+#else
+#define CASUAL_OPTION_UNUSED
+#endif
 
 #endif /* CASUAL_UTILITY_PLATFORM_H_ */

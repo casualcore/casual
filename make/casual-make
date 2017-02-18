@@ -117,12 +117,12 @@ reformat.ingore_filters = [
 ]
 
 reformat.filters = [ 
-    [ re.compile(r'^(CC|g\+\+|clang\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*'),  
-     lambda match: color.green( 'compile ') + '(' +  match.group(1) + '): ' + color.white( match.group(3)) + '\n' ],
+    [ re.compile(r'(^(g|c)\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*'),
+     lambda match: color.green( 'compile: ') + color.white( match.group(4)) + '\n' ],
     [ re.compile(r'(^ar) \S+ (\S+\.a).*'),  
-     lambda match: color.blue( 'archive ') + '(' + match.group(1) + '): ' + color.white( match.group(2)) + '\n' ],
-    [ re.compile(r'(^(CC)|(g\+\+)) -o (\S+) (?:(\S+\.o) ).*'),
-     lambda match: color.blue( 'link ') + '(' + match.group(1) + '): ' + color.white( match.group(4)) + '\n' ],
+     lambda match: color.blue( 'archive: ') + color.white( match.group(2)) + '\n' ],
+    [ re.compile(r'(^(g|c)\+\+).* -o (\S+) (?:(\S+\.o) ).*'),
+     lambda match: color.blue( 'link: ') + color.white( match.group(3)) + '\n' ],
     [ re.compile(r'^(.*[.]cmk )(.*)'),  
      lambda match: color.cyan( 'makefile: ') + color.blue( match.group(2) ) + ' ' + match.group(1) + '\n'],
     [ re.compile(r'(^make.*:)(.*)'),  
@@ -132,7 +132,7 @@ reformat.filters = [
     [ re.compile(r'^mkdir( [-].+)*[ ](.*)'),  
      lambda match: color.header( 'create: ' ) + match.group( 2) + '\n' ],
     [ re.compile(r'.*casual-build-server[\S\s]+-c (\S+)[\s]+-o (\S+) .*'),  
-     lambda match: color.blue( 'buildserver (' + match.group(1) + '): ' ) + color.white( match.group(2)) + '\n' ],
+     lambda match: color.blue( 'buildserver: ' ) + color.white( match.group(2)) + '\n' ],
     [ re.compile(r'^[\S\s]*rsync --checksum -i[\s]+(\S+) (.*)'),  
      lambda match: color.blue( 'prepare install: ') + color.white( match.group(1)) +  ' --> ' +  match.group(2) + '\n' ],
     [ re.compile(r'^(>[a-zA-Z+.]+)[\s]+(.*)'),  

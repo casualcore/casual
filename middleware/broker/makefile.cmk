@@ -11,6 +11,7 @@ IncludePaths( [
 	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)'])
 
 LibraryPaths( [
+    'bin',
     '../common/bin',
     '../serviceframework/bin',
 	'../xatmi/bin',

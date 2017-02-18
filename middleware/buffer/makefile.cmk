@@ -1,6 +1,7 @@
 from casual.middleware.make.dsl import *
 
 IncludePaths( [
+   'include',
    '../serviceframework/include',
    '../common/include',
    '../xatmi/include',
@@ -9,6 +10,7 @@ IncludePaths( [
 
 
 LibraryPaths([
+    'bin',
     '../serviceframework/bin',
     '../common/bin',
     '../xatmi/bin',
@@ -78,10 +80,10 @@ LinkUnittest( 'bin/test-buffer',
 
 lib_casual_buffer_sample = LinkLibrary( 'bin/casual_buffer_sample',
     [
-     Compile( 'sample/client/source/field.c'),
-     Compile( 'sample/client/source/octet.c'),
-     Compile( 'sample/client/source/order.c'),
-     Compile( 'sample/client/source/string.c'),
+     Compile( 'sample/client/source/field.cpp'),
+     Compile( 'sample/client/source/octet.cpp'),
+     Compile( 'sample/client/source/order.cpp'),
+     Compile( 'sample/client/source/string.cpp'),
     ],
     [
      lib_buffer, 'casual-xatmi'

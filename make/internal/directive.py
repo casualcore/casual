@@ -8,6 +8,8 @@ import os
 import sys
 import re
 
+from itertools import izip, tee
+
 from casual.make.output import Output
 #
 # Defines the return from "all" functions, that can be used
@@ -67,7 +69,29 @@ class Target:
         # base
         #   
         self.base = os.path.basename( self.source);
-        
+
+
+
+
+def targets_name( targets):
+    
+    def target_name( target):
+        if isinstance( target, basestring):
+            return target
+        else:
+            return target.name
+    
+    if( isinstance( targets, list)):
+        return map( target_name, targets)   
+    else:
+        return target_name( targets) 
+
+
+def pairwise( iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)            
 
 def base_extract( output, parameter): 
     

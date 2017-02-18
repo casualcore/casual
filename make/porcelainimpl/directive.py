@@ -105,11 +105,7 @@ def Environment( name, value = '', export = True):
     :param export: if the variable shuld be exportet to sub-makefiles and shells
     
     """
-    
-    if( export):
-        print 'export ' + name + ' := ' + value
-    else:
-        print name + ' := ' + value
+    plumbing.add_environment( name, value, export)
     
     
 
@@ -133,27 +129,20 @@ def Compile( sourcefile, objectfile = None, directive = ''):
     object_directory = os.path.dirname( target.file)
     
     dependency_file = plumbing.dependency_file_name( target.file)
-    cross_object_file = plumbing.cross_object_name( target.file)
+
     
-    print "#"
-    print "# compiling {0} to {1}".format( sourcefile, objectfile)
-    print
-    print "-include " + dependency_file
-    print
-    print 'compile: ' + target.name
-    print
-    print target.name + ': ' + target.file
-    print
-    print target.file + ": " + target.source + ' | ' + object_directory
-    print '\t' + platform().compile( target.source, target.file, directive)
-    print '\t' + platform().header_dependency( target.source, [ cross_object_file, target.file], dependency_file)
-    print
-    print 'cross: ' + cross_object_file
-    print 
-    print cross_object_file + ": " + target.source + ' | ' + object_directory
-    print '\t' + platform().cross_compile( target.source, cross_object_file, directive)
-    print '\t' + platform().header_dependency( target.source, [ cross_object_file, target.file], dependency_file)
-    print
+    plumbing.add_includes( dependency_file)
+    plumbing.add_dependency( [ 'compile'], [ target.name])
+    plumbing.add_dependency( [ target.name], [ target.file])
+    
+    plumbing.add_rule( target.file, [ target.source], 
+                       ordered_prerequisites = [ object_directory],
+                       comments = "compiling {0} to {1}".format( sourcefile, objectfile),
+                       recipes=[ 
+                            platform().compile( target.source, target.file, directive),
+                            platform().header_dependency( target.source, [ target.file], dependency_file)
+                        ])
+
     
     plumbing.register_object_path_for_clean( object_directory)
     plumbing.register_path_for_create( object_directory)
@@ -175,8 +164,6 @@ def LinkLibrary(output,objectfiles,libs = []):
     target = plumbing.target( output, output, operation = plumbing.shared_library_name_path)
         
     plumbing.link( platform().link_library, target, objectfiles, libs)
-    
-    plumbing.deploy( target, 'lib')
         
     return target
 
@@ -212,7 +199,6 @@ def LinkExecutable( name, objectfiles, libraries = []):
     
     plumbing.link( platform().link_executable, target, objectfiles, libraries)
     
-    plumbing.deploy( target, 'exe')
     
     return target;
 
@@ -230,20 +216,12 @@ def Dependencies( target, dependencies):
     
     :param target: the target that has dependencies
     :param dependencies: target dependencies
-    
     """
-    dependant = list()
-    for dependency in dependencies:
-        dependant.append( dependency.file)
     
-    
-    print '#'
-    print '# explicit dependencies'
-    print target.name + ": " + ' '.join( dependant)
-    
+    plumbing.add_dependency( [ target], dependencies, 'explicit dependencies')
 
 
-def Build(casualMakefile):
+def Build( casualMakefile):
     """
     "builds" another casual-make-file: jumps to the specific file and execute make
 
@@ -273,14 +251,24 @@ def LinkUnittest(name,objectfiles,libraries = [], test_target = True):
     # We add the unittest lib for the user...
     #
     plumbing.link( platform().link_executable, target, objectfiles, libraries + platform().unittest_libraries)
-    plumbing.deploy( target, 'client')
-    if test_target:
-        plumbing.set_ld_path()
-        print "test: " + 'test_' + target.name    
-        print
-        print 'test_' + target.name + ": " +  target.name
-        print "\t @LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(PRE_UNITTEST_DIRECTIVE) " + target.file + " $(ISOLATED_UNITTEST_DIRECTIVES)"
-        print 
+    
+    unittest_target = 'test_' + target.name;
+        
+    plumbing.add_dependency( [ 'test'], [ unittest_target])
+
+    plumbing.set_ld_path()
+    plumbing.add_rule( unittest_target, [ target.name], 
+                       comments= 'Execute unittest',
+                       recipes=[ "@LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(PRE_UNITTEST_DIRECTIVE) " + target.file + " $(ISOLATED_UNITTEST_DIRECTIVES)"])
+
+    
+    plumbing.register_target( 'unittest', unittest_target)
+    
+    plumbing.register_post_action(
+        'unittest-dependencies', 
+        lambda: plumbing.add_sequential_ordering( targets=plumbing.targets( 'unittest'), comments='enforce sequentual ordering of unittest'))
+    
+    
     return target
     
 

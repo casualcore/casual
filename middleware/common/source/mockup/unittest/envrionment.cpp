@@ -78,8 +78,11 @@ namespace casual
 
 } // casual
 
+namespace 
+{
+   const auto registration CASUAL_OPTION_UNUSED = ::testing::AddGlobalTestEnvironment( new casual::common::mockup::unittest::Environment());
+}
 
-const auto registration = ::testing::AddGlobalTestEnvironment( new casual::common::mockup::unittest::Environment());
 
 
 

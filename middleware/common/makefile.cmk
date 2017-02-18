@@ -34,7 +34,7 @@ IncludePaths( [
     ]
     + platform_specific_include_paths)
 
-LibraryPaths( platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
+LibraryPaths( [ 'bin'] + platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 
 install_libs = []

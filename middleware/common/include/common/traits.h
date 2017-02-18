@@ -295,7 +295,7 @@ namespace casual
 
 
 
-#if __cplusplus > 201402L // vector will have notrhow move in c++17
+#if __cplusplus > 201402L // vector will have nothrow move in c++17
          template< typename T>
          struct is_movable : std::integral_constant< bool,
             std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
