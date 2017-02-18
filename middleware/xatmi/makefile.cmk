@@ -1,11 +1,13 @@
 from casual.middleware.make.dsl import *
 
-IncludePaths([ 
+IncludePaths([
+	'include', 
 	'../common/include', 
 	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
 	])
 
-LibraryPaths([ 
+LibraryPaths([
+	'bin',
     '../common/bin',
     '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
     ])
