@@ -255,6 +255,8 @@ def LinkUnittest(name,objectfiles,libraries = [], test_target = True):
     unittest_target = 'test_' + target.name;
         
     plumbing.add_dependency( [ 'test'], [ unittest_target])
+
+    plumbing.set_ld_path()
     plumbing.add_rule( unittest_target, [ target.name], 
                        comments= 'Execute unittest',
                        recipes=[ "@LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) $(PRE_UNITTEST_DIRECTIVE) " + target.file + " $(ISOLATED_UNITTEST_DIRECTIVES)"])
