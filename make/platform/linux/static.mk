@@ -13,7 +13,7 @@ endif
 
 COMPILER = $(CXX)
 
-WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter
+WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter -Wno-missing-declarations
 
 #
 # Linkers
