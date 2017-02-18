@@ -106,14 +106,16 @@ def build( name, image, content)
 
 node {
 
+     slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+
 //   bitbucketStatusNotify(
 //      buildState: 'INPROGRESS',
 //      buildKey: 'build',
 //      buildName: 'Build'
 //   )
 
-//  try
-//  {
+  try
+  {
       stage('Checkout')
       {
          checkout scm
@@ -170,22 +172,25 @@ node {
          }
 
       }
-//
+     slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+///
 //      bitbucketStatusNotify(
 //         buildState: 'SUCCESSFUL',
 //         buildKey: 'build',
 //         buildName: 'Build'
 //      )
 //
-//   }
-//   catch (Exception e)
-//   {
+   }
+   catch (Exception e)
+   {
+       slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+
 //      bitbucketStatusNotify(
 //          buildState: 'FAILED',
 //          buildKey: 'build',
 //          buildName: 'Build',
 //          buildDescription: 'Something went wrong with build!'
 //      )
-//   }
+   }
 
 }
