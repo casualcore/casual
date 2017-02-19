@@ -23,7 +23,7 @@ namespace casual
 
          namespace type
          {
-            const std::string& get( platform::raw_buffer_type buffer)
+            const std::string& get( platform::buffer::raw::type buffer)
             {
                return common::buffer::pool::Holder::instance().get( buffer).payload().type;
             }

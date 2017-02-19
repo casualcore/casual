@@ -82,7 +82,7 @@ namespace casual
             //!
             //! Start a new transaction
             //!
-            void start( const platform::time_point& start);
+            void start( const platform::time::point::type& start);
 
             //!
             //! trid server is invoked with

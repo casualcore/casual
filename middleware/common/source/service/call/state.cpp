@@ -95,7 +95,7 @@ namespace casual
                throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
             }
 
-            signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time_point& now) const
+            signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time::point::type& now) const
             {
                if( descriptor == 0)
                {
@@ -107,7 +107,7 @@ namespace casual
                   return { desc.timeout.deadline(), now};
                }
 
-               return { platform::time_point::max(), now};
+               return { platform::time::point::type::max(), now};
             }
 
             void State::Pending::discard( descriptor_type descriptor)

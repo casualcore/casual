@@ -108,7 +108,7 @@ namespace casual
                   void read( double& value) const;
                   void read( std::string& value) const;
                   void read( char& value) const;
-                  void read( platform::binary_type& value) const;
+                  void read( platform::binary::type& value) const;
 
                private:
 
@@ -175,7 +175,7 @@ namespace casual
                   void write( const float value);
                   void write( const double value);
                   void write( const std::string& value);
-                  void write( const platform::binary_type& value);
+                  void write( const platform::binary::type& value);
 
 
                private:

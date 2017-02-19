@@ -19,7 +19,7 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name)
          {
-            platform::binary_type uuid;
+            platform::binary::type uuid;
             archive >> name::value::pair::make( name, uuid);
 
             common::range::copy_max( uuid, value.get());
@@ -27,7 +27,7 @@ namespace casual
 
          void serialize( Writer& archive, const platform::Uuid& value, const char* name)
          {
-            platform::binary_type uuid( sizeof( value.get()));
+            platform::binary::type uuid( sizeof( value.get()));
             common::range::copy( value.get(), std::begin( uuid));
 
             archive << name::value::pair::make( name, uuid);
@@ -74,14 +74,14 @@ namespace casual
          }
 
 
-         void serialize( Reader& archive, platform::time_point& value, const char* name)
+         void serialize( Reader& archive, platform::time::point::type& value, const char* name)
          {
-            platform::time_point::rep representation;
+            platform::time::point::type::rep representation;
             archive >> name::value::pair::make( name, representation);
-            value = platform::time_point( platform::time_point::duration( representation));
+            value = platform::time::point::type( platform::time::point::type::duration( representation));
          }
 
-         void serialize( Writer& archive, const platform::time_point& value, const char* name)
+         void serialize( Writer& archive, const platform::time::point::type& value, const char* name)
          {
             archive << name::value::pair::make( name, value.time_since_epoch().count());
          }

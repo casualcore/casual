@@ -48,8 +48,8 @@ namespace casual
                common::range::copy( common::uuid::string( common::uuid::make()), std::back_inserter(result.message.payload));
 
 
-               result.message.avalible = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::clock_type::now());
-               //result.message.timestamp = common::platform::clock_type::now();
+               result.message.avalible = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::time::clock::type::now());
+               //result.message.timestamp = common::platform::time::clock::type::now();
 
                return result;
             }

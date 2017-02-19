@@ -1,8 +1,5 @@
 //!
-//! test_vo.cpp
-//!
-//! Created on: Dec 21, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -25,11 +22,11 @@ namespace casual
 
             Implementation( long value) : m_long( value) {}
 
-            long m_long;
+            long m_long = 0;
             std::string m_string;
-            short m_short;
-            long long m_longlong;
-            sf::platform::time_point m_time;
+            short m_short = 0;
+            long long m_longlong = 0;
+            sf::platform::time::point::type m_time;
 
             template< typename A>
             void serialize( A& archive)

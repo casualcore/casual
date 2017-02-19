@@ -414,7 +414,7 @@ namespace casual
 
 
 
-            Scoped::Scoped( std::chrono::microseconds timeout, const platform::time_point& now)
+            Scoped::Scoped( std::chrono::microseconds timeout, const platform::time::point::type& now)
             {
                auto old = timer::set( timeout);
 
@@ -425,12 +425,12 @@ namespace casual
                }
                else
                {
-                  m_old = platform::time_point::min();
+                  m_old = platform::time::point::type::min();
                }
             }
 
             Scoped::Scoped( std::chrono::microseconds timeout)
-               : Scoped( timeout, platform::clock_type::now())
+               : Scoped( timeout, platform::time::clock::type::now())
             {
             }
 
@@ -438,21 +438,21 @@ namespace casual
             {
                if( ! m_moved)
                {
-                  if( m_old == platform::time_point::min())
+                  if( m_old == platform::time::point::type::min())
                   {
                      timer::unset();
                   }
                   else
                   {
-                     timer::set( m_old - platform::clock_type::now());
+                     timer::set( m_old - platform::time::clock::type::now());
                   }
                }
             }
 
 
-            Deadline::Deadline( const platform::time_point& deadline, const platform::time_point& now)
+            Deadline::Deadline( const platform::time::point::type& deadline, const platform::time::point::type& now)
             {
-               if( deadline != platform::time_point::max())
+               if( deadline != platform::time::point::type::max())
                {
                   timer::set( deadline - now);
                }
@@ -462,15 +462,15 @@ namespace casual
                }
             }
 
-            Deadline::Deadline( const platform::time_point& deadline)
-             : Deadline( deadline, platform::clock_type::now()) {}
+            Deadline::Deadline( const platform::time::point::type& deadline)
+             : Deadline( deadline, platform::time::clock::type::now()) {}
 
 
-            Deadline::Deadline( std::chrono::microseconds timeout, const platform::time_point& now)
+            Deadline::Deadline( std::chrono::microseconds timeout, const platform::time::point::type& now)
              : Deadline( now + timeout, now) {}
 
             Deadline::Deadline( std::chrono::microseconds timeout)
-             : Deadline( timeout, platform::clock_type::now()) {}
+             : Deadline( timeout, platform::time::clock::type::now()) {}
 
 
             Deadline::~Deadline()

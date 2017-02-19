@@ -25,7 +25,7 @@ namespace casual
                Transaction result;
 
                result.trid = common::transaction::ID::create( common::process::handle());
-               result.started = common::platform::clock_type::now();
+               result.started = common::platform::time::clock::type::now();
                result.deadline = result.started + std::chrono::seconds{ 10};
 
                return result;

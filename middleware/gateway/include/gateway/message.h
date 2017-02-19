@@ -202,7 +202,7 @@ namespace casual
 
             struct Connect : common::message::basic_message< common::message::Type::gateway_worker_connect>
             {
-               common::platform::binary_type information;
+               common::platform::binary::type information;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);

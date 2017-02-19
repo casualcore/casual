@@ -1,9 +1,6 @@
-/*
- * field.c
- *
- *  Created on: Apr 26, 2016
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 /*
  * Disclaimer: This might not be a valid C-function

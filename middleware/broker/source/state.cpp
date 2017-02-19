@@ -66,7 +66,7 @@ namespace casual
 
          namespace instance
          {
-            void Local::lock( const common::platform::time_point& when)
+            void Local::lock( const common::platform::time::point::type& when)
             {
                assert( m_state != State::busy);
 
@@ -79,7 +79,7 @@ namespace casual
                m_last = when;
             }
 
-            void Local::unlock( const common::platform::time_point& when)
+            void Local::unlock( const common::platform::time::point::type& when)
             {
                assert( m_state != State::idle);
 
@@ -91,7 +91,7 @@ namespace casual
                m_last = when;
             }
 
-            void Remote::requested( const common::platform::time_point& when)
+            void Remote::requested( const common::platform::time::point::type& when)
             {
                ++invoked;
                m_last = when;
@@ -109,7 +109,7 @@ namespace casual
             namespace pending
             {
 
-               void Metric::add( const common::platform::time_point::duration& duration)
+               void Metric::add( const common::platform::time::point::type::duration& duration)
                {
                   ++m_count;
                   m_total += std::chrono::duration_cast< std::chrono::microseconds>( duration);
@@ -123,11 +123,11 @@ namespace casual
 
             } // pending
 
-            void Metric::begin( const common::platform::time_point& time)
+            void Metric::begin( const common::platform::time::point::type& time)
             {
                m_begin = time;
             }
-            void Metric::end( const common::platform::time_point& time)
+            void Metric::end( const common::platform::time::point::type& time)
             {
                ++m_invoked;
                m_total += std::chrono::duration_cast< std::chrono::microseconds>( time - m_begin);
@@ -155,19 +155,19 @@ namespace casual
 
             namespace instance
             {
-               void Local::lock( const common::platform::time_point& when)
+               void Local::lock( const common::platform::time::point::type& when)
                {
                   get().lock( when);
                   metric.begin( when);
                }
 
-               void Local::unlock( const common::platform::time_point& when)
+               void Local::unlock( const common::platform::time::point::type& when)
                {
                   get().unlock( when);
                   metric.end( when);
                }
 
-               void Remote::lock( const common::platform::time_point& when)
+               void Remote::lock( const common::platform::time::point::type& when)
                {
                   get().requested( when);
                   ++invoked;

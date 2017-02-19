@@ -127,7 +127,7 @@ namespace casual
             {
                Trace trace{ "broker::handle::service::Lookup"};
 
-               auto now = platform::clock_type::now();
+               auto now = platform::time::clock::type::now();
 
                try
                {
@@ -371,7 +371,7 @@ namespace casual
 
             try
             {
-               auto now = platform::clock_type::now();
+               auto now = platform::time::clock::type::now();
 
 
                auto& service = m_state.service( message.service);
@@ -451,7 +451,7 @@ namespace casual
             sendACK( ack);
          }
 
-         void Policy::transaction( const common::message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
+         void Policy::transaction( const common::message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&)
          {
             // broker doesn't bother with transactions...
          }

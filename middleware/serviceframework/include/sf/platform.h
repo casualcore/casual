@@ -40,13 +40,25 @@ namespace casual
 
       namespace platform
       {
-         typedef common::platform::raw_buffer_type raw_buffer_type;
-         using const_raw_buffer_type = common::platform::const_raw_buffer_type;
+         namespace buffer
+         {
+            using namespace common::platform::buffer;
+         } // buffer
 
 
-         using binary_type = common::platform::binary_type;
+         namespace binary
+         {
+            using namespace common::platform::binary;
 
-         using const_binary_range_type = common::Range< binary_type::const_iterator>;
+            namespace range
+            {
+               namespace immutable
+               {
+                  using type = common::Range< binary::type::const_iterator>;
+               } // immutable
+            } // range
+
+         } // binary
 
          using Uuid = common::Uuid;
 
@@ -55,8 +67,11 @@ namespace casual
             using namespace common::uuid;
          } // uuid
 
+         namespace time
+         {
+            using namespace common::platform::time;
+         } // time
 
-         using time_point = common::platform::time_point;
 
          namespace pid
          {
@@ -88,8 +103,8 @@ namespace casual
          void serialize( Writer& archive, const common::domain::Identity& value, const char* name);
 
 
-         void serialize( Reader& archive, platform::time_point& value, const char* name);
-         void serialize( Writer& archive, const platform::time_point& value, const char* name);
+         void serialize( Reader& archive, platform::time::point::type& value, const char* name);
+         void serialize( Writer& archive, const platform::time::point::type& value, const char* name);
 
          void serialize( Reader& archive, std::chrono::nanoseconds& value, const char* name);
          void serialize( Writer& archive, const std::chrono::nanoseconds& value, const char* name);

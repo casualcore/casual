@@ -186,7 +186,7 @@ namespace casual
          mockup::domain::echo::Server server{ { "service1"}};
 
 
-         platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+         platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 
          message::interdomain::service::call::receive::Request request;
@@ -208,7 +208,7 @@ namespace casual
 
          local::Domain domain;
 
-         platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+         platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
          message::interdomain::service::call::receive::Request request;
          {
@@ -230,7 +230,7 @@ namespace casual
 
          local::Domain domain;
 
-         platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+         platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
          message::interdomain::service::call::receive::Request request;
          {

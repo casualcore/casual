@@ -1,8 +1,5 @@
 //!
-//! xatmi.h
-//!
-//! Created on: Mar 28, 2012
-//!     Author: Lazan
+//! casual
 //!
 //! "stolen" from BlackTie for the time being..
 //!
@@ -93,10 +90,11 @@ extern void tpreturn( int rval, long rcode, char* data, long len, long flags); /
 extern int tpadvertise( const char* svcname, void(*func)(TPSVCINFO *)); // SERVER
 extern int tpunadvertise( const char* svcname); // SERVER
 
-extern int tpsend( int id, char* idata, long ilen, long flags, long *revent); // COMMUNICATION
-extern int tprecv( int id, char ** odata, long *olen, long flags, long* event); // COMMUNICATION
-extern int tpconnect( char* svc, char* idata, long ilen, long flags); // COMMUNICATION
-extern int tpdiscon( int id); // COMMUNICATION
+// COMMUNICATION
+extern int tpconnect( const char* svc, const char* idata, long ilen, long flags);
+extern int tpsend( int id, const char* idata, long ilen, long flags, long *revent);
+extern int tprecv( int id, char ** odata, long *olen, long flags, long* event);
+extern int tpdiscon( int id);
 
 
 extern int casual_get_tperrno(void); // CLIENT

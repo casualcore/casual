@@ -115,7 +115,7 @@ namespace casual
 
          typename TestFixture::type current_type;
 
-         platform::binary_type original;
+         platform::binary::type original;
 
          memory::append( current_type, original);
 
@@ -129,7 +129,7 @@ namespace casual
 
          //
          // append to new buffer
-         platform::binary_type copied;
+         platform::binary::type copied;
 
          memory::append( current_type, copied);
 

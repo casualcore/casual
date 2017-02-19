@@ -38,22 +38,22 @@ namespace casual
 
             struct Context
             {
-               using dispatch_type = std::function< void(platform::raw_buffer_type&, platform::raw_buffer_size&, const std::string&, Lifecycle, const std::string&)>;
+               using dispatch_type = std::function< void( platform::buffer::raw::type&, platform::buffer::raw::size::type&, const std::string&, Lifecycle, const std::string&)>;
 
                static Context& instance();
 
                void registration( std::size_t order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback);
 
                void dispatch(
-                     platform::raw_buffer_type& buffer,
-                     platform::raw_buffer_size& size,
+                     platform::buffer::raw::type& buffer,
+                     platform::buffer::raw::size::type& size,
                      const std::string& service,
                      Lifecycle lifecycle,
                      const std::string& type);
 
                void dispatch(
-                     platform::raw_buffer_type& buffer,
-                     platform::raw_buffer_size& size,
+                     platform::buffer::raw::type& buffer,
+                     platform::buffer::raw::size::type& size,
                      const std::string& service,
                      Lifecycle lifecycle);
 

@@ -213,11 +213,11 @@ namespace casual
 
             namespace call
             {
-
-               struct base_call : basic_message< Type::service_call>
+               template< Type type>
+               struct basic_call : basic_message< type>
                {
 
-                  platform::descriptor_type descriptor = 0;
+                  platform::descriptor::type descriptor = 0;
                   common::process::Handle process;
 
                   Service service;
@@ -231,7 +231,7 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     base_type::marshal( archive);
+                     basic_message< type>::marshal( archive);
                      archive & descriptor;
                      archive & process;
                      archive & service;
@@ -241,6 +241,10 @@ namespace casual
                      archive & header;
                   })
 
+               };
+
+               struct base_call : basic_call< Type::service_call>
+               {
                   friend std::ostream& operator << ( std::ostream& out, const base_call& value);
                };
                static_assert( traits::is_movable< base_call>::value, "not movable");

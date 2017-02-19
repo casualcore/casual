@@ -70,10 +70,10 @@ namespace casual
 
          namespace random
          {
-            platform::binary_type binary( std::size_t size);
+            platform::binary::type binary( std::size_t size);
 
 
-            platform::binary_type::value_type byte();
+            platform::binary::type::value_type byte();
 
             template< typename R>
             auto range( R&& range) -> decltype( std::forward< R>( range))

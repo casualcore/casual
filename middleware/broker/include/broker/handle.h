@@ -206,7 +206,7 @@ namespace casual
 
             void ack( const common::message::service::call::callee::Request& message);
 
-            void transaction( const common::message::service::call::callee::Request&, const common::server::Service&, const common::platform::time_point&);
+            void transaction( const common::message::service::call::callee::Request&, const common::server::Service&, const common::platform::time::point::type&);
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 

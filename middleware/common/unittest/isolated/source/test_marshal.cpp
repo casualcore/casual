@@ -56,7 +56,7 @@ namespace casual
             long someLong = 3;
             std::string someString = "banan";
 
-            platform::binary_type buffer;
+            platform::binary::type buffer;
             auto output = output_type{}( buffer);
 
             output << someLong;
@@ -93,7 +93,7 @@ namespace casual
 
             }
 
-            platform::binary_type buffer;
+            platform::binary::type buffer;
             auto output = output_type{}( buffer);
             output << binaryInput;
 
@@ -181,7 +181,7 @@ namespace casual
 
             transaction::ID xid_source;
 
-            platform::binary_type buffer;
+            platform::binary::type buffer;
             auto output = output_type{}( buffer);
 
             output << xid_source;
@@ -204,7 +204,7 @@ namespace casual
 
             auto xid_source = transaction::ID::create();
 
-            platform::binary_type buffer;
+            platform::binary::type buffer;
             auto output = output_type{}( buffer);
 
             output & xid_source;
@@ -228,7 +228,7 @@ namespace casual
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
-            platform::binary_type buffer;
+            platform::binary::type buffer;
 
             const std::string info( "test string");
             const std::string type{ "X_OCTET/binary"};
@@ -300,7 +300,7 @@ namespace casual
             using input_type = typename TestFixture::input_type;
             using output_type = typename TestFixture::output_type;
 
-            platform::binary_type buffer;
+            platform::binary::type buffer;
 
             common::message::queue::enqueue::Request source;
 

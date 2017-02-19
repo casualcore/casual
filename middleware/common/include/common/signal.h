@@ -1,8 +1,5 @@
 //!
-//! casual_utility_signal.h
-//!
-//! Created on: May 6, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_SIGNAL_H_
@@ -127,7 +124,7 @@ namespace casual
             public:
 
 			      Scoped( std::chrono::microseconds timeout);
-               Scoped( std::chrono::microseconds timeout, const platform::time_point& now);
+               Scoped( std::chrono::microseconds timeout, const platform::time::point::type& now);
 
 
                template< typename R, typename P>
@@ -139,7 +136,7 @@ namespace casual
                ~Scoped();
 
             private:
-               platform::time_point m_old;
+               platform::time::point::type m_old;
                move::Moved m_moved;
 
             };
@@ -152,9 +149,9 @@ namespace casual
             {
             public:
 
-               Deadline( const platform::time_point& deadline, const platform::time_point& now);
-               Deadline( const platform::time_point& deadline);
-               Deadline( std::chrono::microseconds timeout, const platform::time_point& now);
+               Deadline( const platform::time::point::type& deadline, const platform::time::point::type& now);
+               Deadline( const platform::time::point::type& deadline);
+               Deadline( std::chrono::microseconds timeout, const platform::time::point::type& now);
                Deadline( std::chrono::microseconds timeout);
                ~Deadline();
 
@@ -163,7 +160,7 @@ namespace casual
 
             private:
                move::Moved m_moved;
-               platform::time_point m_old;
+               platform::time::point::type m_old;
             };
 
 			}

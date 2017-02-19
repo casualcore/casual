@@ -1,8 +1,5 @@
 //!
-//! casual_archive_yaml_policy.h
-//!
-//! Created on: Oct 31, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_ARCHIVE_YAML_POLICY_H_
@@ -96,7 +93,7 @@ namespace casual
                   void read( double& value) const;
                   void read( char& value) const;
                   void read( std::string& value) const;
-                  void read( platform::binary_type& value) const;
+                  void read( platform::binary::type& value) const;
 
                private:
 
@@ -174,7 +171,7 @@ namespace casual
 
                   void write( const char& value);
                   void write( const std::string& value);
-                  void write( const platform::binary_type& value);
+                  void write( const platform::binary::type& value);
 
 
                private:

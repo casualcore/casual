@@ -35,7 +35,7 @@ namespace casual
          std::string m_string = "foo";
          short m_short = 256;
          long long m_longlong = std::numeric_limits< long long>::max();
-         sf::platform::time_point m_time = sf::platform::time_point::max();
+         sf::platform::time::point::type m_time = sf::platform::time::point::type::max();
 
          sf::optional< long> m_optional = 42;
 
@@ -116,7 +116,7 @@ value:
 
       struct Binary : public SimpleVO
       {
-         sf::platform::binary_type m_binary;
+         sf::platform::binary::type m_binary;
 
          template< typename A>
          void serialize( A& archive)

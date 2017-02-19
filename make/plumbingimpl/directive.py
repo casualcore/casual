@@ -698,7 +698,10 @@ def install(target, destination):
     if isinstance( target, list):
         for t in target:
             install( t, destination)
-    
+            
+    elif isinstance( target, tuple):
+        install( target[ 0], destination + '/' + target[ 1])
+        
     elif isinstance( target, basestring):
         install( internal.Target( target), destination)
     else:

@@ -69,8 +69,8 @@ namespace casual
          {
             common::transaction::ID trid;
             common::platform::pid::type pid = 0;
-            common::platform::time_point started;
-            common::platform::time_point updated;
+            common::platform::time::point::type started;
+            common::platform::time::point::type updated;
             State state = State::prepared;
          };
 

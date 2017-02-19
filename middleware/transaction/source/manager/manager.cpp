@@ -52,7 +52,7 @@ namespace casual
       Manager::Manager( const Settings& settings) :
           m_state( settings.log)
       {
-         auto start = common::platform::clock_type::now();
+         auto start = common::platform::time::clock::type::now();
 
          common::log::internal::transaction << "transaction manager start\n";
 
@@ -103,7 +103,7 @@ namespace casual
                }
                );
 
-         auto end = common::platform::clock_type::now();
+         auto end = common::platform::time::clock::type::now();
 
 
          common::log::information << "transaction manager is on-line - "

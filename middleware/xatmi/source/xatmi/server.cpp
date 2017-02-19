@@ -2,7 +2,7 @@
 //! casual
 //!
 
-#include "xatmi_server.h"
+#include "xatmi/server.h"
 
 
 #include <vector>

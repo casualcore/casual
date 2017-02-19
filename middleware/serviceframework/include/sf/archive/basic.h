@@ -104,7 +104,7 @@ namespace casual
             bool pod( float& value, const char* name) override { return handle_pod( value, name);}
             bool pod( double& value, const char* name) override { return handle_pod( value, name);}
             bool pod( std::string& value, const char* name) override { return handle_pod( value, name);}
-            bool pod( platform::binary_type& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( platform::binary::type& value, const char* name) override { return handle_pod( value, name);}
 
             implementation_type m_implementation;
          };
@@ -169,7 +169,7 @@ namespace casual
             void pod( const float value, const char* name) override { handle_pod( value, name);}
             void pod( const double value, const char* name) override { handle_pod( value, name);}
             void pod( const std::string& value, const char* name) override { handle_pod( value, name);}
-            void pod( const platform::binary_type& value, const char* name) override { handle_pod( value, name);}
+            void pod( const platform::binary::type& value, const char* name) override { handle_pod( value, name);}
 
             implementation_type m_implementation;
 

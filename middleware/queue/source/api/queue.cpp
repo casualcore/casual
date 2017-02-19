@@ -261,7 +261,7 @@ namespace casual
                   Payload& operator = ( Payload&&) = default;
 
                   std::string type;
-                  sf::platform::binary_type data;
+                  sf::platform::binary::type data;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {

@@ -17,7 +17,7 @@ namespace casual
       {
          namespace
          {
-            platform::binary_type payload()
+            platform::binary::type payload()
             {
                return { '1', '2', '3', 4};
             }

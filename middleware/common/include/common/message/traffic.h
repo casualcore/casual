@@ -1,8 +1,5 @@
 //!
-//! monitor.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMMONMESSAGEMONITOR_H_
@@ -51,8 +48,8 @@ namespace casual
 
                common::transaction::ID trid;
 
-               common::platform::time_point start;
-               common::platform::time_point end;
+               common::platform::time::point::type start;
+               common::platform::time::point::type end;
 
                CASUAL_CONST_CORRECT_MARSHAL
                (

@@ -101,7 +101,7 @@ namespace casual
                   {
                      inline message::service::call::caller::Request message(
                            State& state,
-                           const platform::time_point& start,
+                           const platform::time::point::type& start,
                            char* idata,
                            long ilen,
                            long flags,
@@ -180,7 +180,7 @@ namespace casual
                // We do as much as possible while we wait for the broker reply
                //
 
-               auto start = platform::clock_type::now();
+               auto start = platform::time::clock::type::now();
 
                //
                // Invoke pre-transport buffer modifiers
@@ -240,12 +240,13 @@ namespace casual
                //
                // Call the service
                //
-               message.service = target.service;
+               {
+                  message.service = target.service;
 
-               log::internal::debug << "async - message: " << message << std::endl;
+                  log::internal::debug << "async - message: " << message << std::endl;
 
-
-               communication::ipc::blocking::send( target.process.queue, message);
+                  communication::ipc::blocking::send( target.process.queue, message);
+               }
 
                unreserve.release();
                send_ack.release();
@@ -264,7 +265,7 @@ namespace casual
                // TODO: validate input...
 
 
-               auto start = platform::clock_type::now();
+               auto start = platform::time::clock::type::now();
 
                if( common::flag< TPGETANY>( flags))
                {
@@ -361,7 +362,6 @@ namespace casual
                {
                   throw exception::xatmi::service::Fail{};
                }
-
             }
 
 

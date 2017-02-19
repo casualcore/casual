@@ -180,7 +180,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            platform::binary_type marshal_buffer;
+            platform::binary::type marshal_buffer;
 
             const std::string info( "test string");
             const auto type = buffer::type::binary();

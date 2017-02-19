@@ -186,7 +186,7 @@ namespace casual
                         if( ipc::device().non_blocking_push( instance.process.queue, message))
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
-                           instance.statistics.roundtrip.start( common::platform::clock_type::now());
+                           instance.statistics.roundtrip.start( common::platform::time::clock::type::now());
                            return true;
                         }
                         return false;

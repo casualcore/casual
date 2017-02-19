@@ -1,14 +1,11 @@
 //!
-//! resource_proxy_server.h
-//!
-//! Created on: Aug 2, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef RESOURCE_PROXY_SERVER_H_
 #define RESOURCE_PROXY_SERVER_H_
 
-#include <xatmi_server.h>
+#include <xatmi/server.h>
 
 #ifdef __cplusplus
 extern "C" {

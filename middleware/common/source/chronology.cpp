@@ -26,9 +26,9 @@ namespace chronology
    {
 
       template<typename F>
-      std::string format( const platform::time_point& time, F function)
+      std::string format( const platform::time::point::type& time, F function)
       {
-         if( time == platform::time_point::min())
+         if( time == platform::time::point::type::min())
          {
             return "0000-00-00T00:00:00.000";
          }
@@ -36,7 +36,7 @@ namespace chronology
          //
          // to_time_t does not exist as a static member in common::clock_type
          //
-         auto time_t = platform::clock_type::to_time_t( time);
+         auto time_t = platform::time::clock::type::to_time_t( time);
          //const std::time_t seconds = std::chrono::duration_cast< std::chrono::seconds>( time.time_since_epoch()).count();
 
          struct tm time_parts;
@@ -66,22 +66,22 @@ namespace chronology
    }
 
 
-   std::string local( const platform::time_point& time)
+   std::string local( const platform::time::point::type& time)
    {
       return internal::format( time, &::localtime_r);
    }
 
    std::string local()
    {
-      return local( platform::clock_type::now());
+      return local( platform::time::clock::type::now());
    }
 
    std::string universal()
    {
-      return local( platform::clock_type::now());
+      return local( platform::time::clock::type::now());
    }
 
-   std::string universal( const platform::time_point& time)
+   std::string universal( const platform::time::point::type& time)
    {
       return internal::format( time, &gmtime_r);
    }

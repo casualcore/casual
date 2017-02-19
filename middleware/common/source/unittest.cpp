@@ -42,18 +42,18 @@ namespace casual
                } // <unnamed>
             } // local
 
-            platform::binary_type::value_type byte()
+            platform::binary::type::value_type byte()
             {
-               using limit_type = std::numeric_limits< platform::binary_type::value_type>;
+               using limit_type = std::numeric_limits< platform::binary::type::value_type>;
 
                std::uniform_int_distribution<> distribution( limit_type::min(), limit_type::max());
 
                return distribution( local::engine());
             }
 
-            platform::binary_type binary( std::size_t size)
+            platform::binary::type binary( std::size_t size)
             {
-               platform::binary_type result( size);
+               platform::binary::type result( size);
 
                for( auto& value : result)
                {

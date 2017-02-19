@@ -232,7 +232,7 @@ namespace casual
                   local::read( *m_stack.back(), value);
                   value = common::transcode::utf8::decode( value);
                }
-               void Implementation::read( platform::binary_type& value) const
+               void Implementation::read( platform::binary::type& value) const
                {
                   YAML::Binary binary;
                   local::read( *m_stack.back(), binary);
@@ -312,7 +312,7 @@ namespace casual
                   m_output << common::transcode::utf8::encode( value);
                }
 
-               void Implementation::write( const platform::binary_type& value)
+               void Implementation::write( const platform::binary::type& value)
                {
                   // TODO: Is this conformant ?
                   const YAML::Binary binary{ reinterpret_cast< const unsigned char*>( value.data()), value.size()};

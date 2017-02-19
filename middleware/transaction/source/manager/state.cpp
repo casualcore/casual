@@ -32,16 +32,16 @@ namespace casual
 
          }
 
-         void Statistics::start( const common::platform::time_point& start)
+         void Statistics::start( const common::platform::time::point::type& start)
          {
             m_start = start;
          }
-         void Statistics::end( const common::platform::time_point& end)
+         void Statistics::end( const common::platform::time::point::type& end)
          {
             time( m_start, end);
          }
 
-         void Statistics::time( const common::platform::time_point& start, const common::platform::time_point& end)
+         void Statistics::time( const common::platform::time::point::type& start, const common::platform::time::point::type& end)
          {
             auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
             total += time;

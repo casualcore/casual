@@ -1,9 +1,6 @@
-/*
- * chronology.h
- *
- *  Created on: 5 maj 2013
- *      Author: Kristone
- */
+//!
+//! casual
+//!
 
 #ifndef CHRONOLOGY_H_
 #define CHRONOLOGY_H_
@@ -21,9 +18,9 @@ namespace casual
       namespace chronology
       {
          std::string local();
-         std::string local( const platform::time_point& time);
+         std::string local( const platform::time::point::type& time);
          std::string universal();
-         std::string universal( const platform::time_point& time);
+         std::string universal( const platform::time::point::type& time);
 
 
          namespace from

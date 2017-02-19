@@ -19,47 +19,71 @@
 #include <stdarg.h>
 
 
-//
-// Define globals
-//
+
 
 namespace local
 {
    namespace
    {
-      int tperrno_value = 0;
+      namespace error
+      {
+         int value = 0;
+
+         void set( int value)
+         {
+            error::value = value;
+         }
+
+         template< typename T>
+         int wrap( T&& task)
+         {
+            try
+            {
+               error::set( 0);
+               task();
+            }
+            catch( ...)
+            {
+               error::set( casual::common::error::handler());
+               return -1;
+            }
+            return 0;
+         }
+
+      } // tperrno
+
+      namespace user
+      {
+         namespace code
+         {
+            void set( long value)
+            {
+               casual::common::service::call::Context::instance().user_code( value);
+            }
+         } // code
+      } // user
+
+
+
+
    } // <unnamed>
 } // local
 
-int casual_get_tperrno(void)
+int casual_get_tperrno()
 {
-   return local::tperrno_value;
+   return local::error::value;
 }
 
-void casual_set_tperrno( int value)
-{
-   local::tperrno_value = value;
-}
-
-
-
-long casual_get_tpurcode(void)
+long casual_get_tpurcode()
 {
    return casual::common::service::call::Context::instance().user_code();
 }
-
-void casual_set_tpurcode( long value)
-{
-   casual::common::service::call::Context::instance().user_code( value);
-}
-
-
 
 
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-   casual_set_tperrno( 0);
+   local::error::set( 0);
 
    try
    {
@@ -70,14 +94,14 @@ char* tpalloc( const char* type, const char* subtype, long size)
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      local::error::set( casual::common::error::handler());
       return nullptr;
    }
 }
 
 char* tprealloc( const char* ptr, long size)
 {
-   casual_set_tperrno( 0);
+   local::error::set( 0);
 
    try
    {
@@ -88,7 +112,7 @@ char* tprealloc( const char* ptr, long size)
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      local::error::set( casual::common::error::handler());
       return nullptr;
    }
 
@@ -97,7 +121,7 @@ char* tprealloc( const char* ptr, long size)
 
 long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
-   casual_set_tperrno( 0);
+   local::error::set( 0);
 
    try
    {
@@ -130,7 +154,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      local::error::set( casual::common::error::handler());
       return -1;
    }
 
@@ -143,38 +167,29 @@ void tpfree( const char* const ptr)
 
 void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
 {
-   casual_set_tperrno( 0);
-
-
-   try
-   {
-
+   local::error::wrap( [&](){
       casual::common::server::Context::instance().long_jump_return( rval, rcode, data, len, flags);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-   }
+   });
 }
 
 int tpcall( const char* const svc, char* idata, const long ilen, char** odata, long* olen, const long flags)
 {
-   casual_set_tperrno( 0);
-   casual_set_tpurcode( 0);
+   local::error::set( 0);
 
    if( svc == nullptr)
    {
-      casual_set_tperrno( TPEINVAL);
+      local::error::set( TPEINVAL);
       return -1;
    }
 
    try
    {
+      local::user::code::set( 0);
       casual::common::service::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      local::error::set( casual::common::error::handler());
       return -1;
    }
    return 0;
@@ -182,12 +197,11 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
 
 int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
 {
-   casual_set_tperrno( 0);
-   casual_set_tpurcode( 0);
+   local::error::set( 0);
 
    if( svc == nullptr)
    {
-      casual_set_tperrno( TPEINVAL);
+      local::error::set( TPEINVAL);
       return -1;
    }
 
@@ -197,75 +211,71 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      local::error::set( casual::common::error::handler());
       return -1;
    }
 }
 
 int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
 {
-   casual_set_tperrno( 0);
-
-   try
-   {
+   return local::error::wrap( [&](){
       casual::common::service::call::Context::instance().reply( *idPtr, odata, *olen, flags);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
+   });
 }
 
 int tpcancel( int id)
 {
-   casual_set_tperrno( 0);
-
-   try
-   {
+   return local::error::wrap( [id](){
       casual::common::service::call::Context::instance().cancel( id);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
+   });
 }
 
 
-int tpadvertise( const char* const svcname, void (*func)( TPSVCINFO *))
+int tpadvertise( const char* service, void (*function)( TPSVCINFO *))
 {
-   casual_set_tperrno( 0);
-
-   try
-   {
-      casual::common::server::Context::instance().advertise( svcname, func);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
+   return local::error::wrap( [&](){
+      casual::common::server::Context::instance().advertise( service, function);
+   });
 }
 
-int tpunadvertise( const char* const svcname)
+int tpunadvertise( const char* const service)
 {
-   casual_set_tperrno( 0);
-
-   try
-   {
-      casual::common::server::Context::instance().unadvertise( svcname);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
+   return local::error::wrap( [&](){
+      casual::common::server::Context::instance().unadvertise( service);
+   });
 }
+
+
+
+int tpconnect( const char* svc, const char* idata, long ilen, long flags)
+{
+   return local::error::wrap( [&](){
+
+   });
+}
+
+int tpsend( int id, const char* idata, long ilen, long flags, long *revent)
+{
+   return local::error::wrap( [&](){
+
+   });
+}
+
+int tprecv( int id, char ** odata, long *olen, long flags, long* event)
+{
+   return local::error::wrap( [&](){
+
+   });
+}
+
+int tpdiscon( int id)
+{
+   return local::error::wrap( [&](){
+
+   });
+}
+
+
 
 const char* tperrnostring( int error)
 {
@@ -275,13 +285,13 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
-   casual_set_tperrno( 0);
+   local::error::set( 0);
    return tx_open() == TX_OK ? 0 : -1;
 }
 
 void tpsvrdone()
 {
-   casual_set_tperrno( 0);
+   local::error::set( 0);
    tx_close();
 }
 

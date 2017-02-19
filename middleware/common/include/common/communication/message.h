@@ -195,7 +195,7 @@ namespace casual
             struct Complete
             {
                using message_type_type = common::message::Type;
-               using payload_type = platform::binary_type;
+               using payload_type = platform::binary::type;
                using range_type = decltype( range::make( payload_type::iterator(), 0));
 
                Complete();

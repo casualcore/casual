@@ -186,7 +186,7 @@ namespace casual
 
             EXPECT_TRUE( local::boolean( socket));
 
-            platform::binary_type payload{ 1,2,3,4,5,6,7,8,9};
+            platform::binary::type payload{ 1,2,3,4,5,6,7,8,9};
             auto correlation = uuid::make();
 
             // send
@@ -227,7 +227,7 @@ namespace casual
             }
 
 
-            platform::binary_type payload{ 1,2,3,4,5,6,7,8,9};
+            platform::binary::type payload{ 1,2,3,4,5,6,7,8,9};
             auto correlation = uuid::make();
 
             for( auto& socket : connections)

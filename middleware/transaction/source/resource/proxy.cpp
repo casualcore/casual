@@ -79,7 +79,7 @@ namespace casual
                {
                   reply_type reply;
 
-                  reply.statistics.start = platform::clock_type::now();
+                  reply.statistics.start = platform::time::clock::type::now();
 
 
                   reply.process = common::process::handle();
@@ -88,7 +88,7 @@ namespace casual
                   reply.state = policy_type()( m_state, message);
                   reply.trid = std::move( message.trid);
 
-                  reply.statistics.end = platform::clock_type::now();
+                  reply.statistics.end = platform::time::clock::type::now();
 
                   communication::ipc::blocking::send( m_state.tm_queue, reply);
 

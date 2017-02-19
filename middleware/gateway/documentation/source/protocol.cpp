@@ -233,7 +233,7 @@ namespace casual
                         std::end( value));
                   }
 
-                  void write( const common::platform::binary_type& value)
+                  void write( const common::platform::binary::type& value)
                   {
                      write_pod( value.size());
 

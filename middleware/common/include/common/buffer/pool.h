@@ -37,24 +37,24 @@ namespace casual
                {
                   virtual ~Base() = default;
 
-                  virtual platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size) = 0;
-                  virtual platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size) = 0;
+                  virtual platform::buffer::raw::type allocate( const std::string& type, platform::binary::size::type size) = 0;
+                  virtual platform::buffer::raw::type reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size) = 0;
 
 
-                  virtual bool manage( platform::const_raw_buffer_type handle) = 0;
+                  virtual bool manage( platform::buffer::raw::immutable::type handle) = 0;
 
                   virtual bool manage( const std::string& type) = 0;
 
-                  virtual void deallocate( platform::const_raw_buffer_type handle) = 0;
+                  virtual void deallocate( platform::buffer::raw::immutable::type handle) = 0;
 
 
-                  virtual platform::raw_buffer_type insert( Payload payload) = 0;
+                  virtual platform::buffer::raw::type insert( Payload payload) = 0;
 
-                  virtual payload::Send get( platform::const_raw_buffer_type handle) = 0;
-                  virtual payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
+                  virtual payload::Send get( platform::buffer::raw::immutable::type handle) = 0;
+                  virtual payload::Send get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size) = 0;
 
-                  virtual Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) = 0;
-                  virtual Payload release( platform::const_raw_buffer_type handle) = 0;
+                  virtual Payload release( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size) = 0;
+                  virtual Payload release( platform::buffer::raw::immutable::type handle) = 0;
 
                   virtual void clear() = 0;
 
@@ -78,17 +78,17 @@ namespace casual
 
                private:
 
-                  platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size) override
+                  platform::buffer::raw::type allocate( const std::string& type, platform::binary::size::type size) override
                   {
                      return m_pool.allocate( type, size);
                   }
-                  platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size) override
+                  platform::buffer::raw::type reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size) override
                   {
                      return m_pool.reallocate( handle, size);
                   }
 
 
-                  bool manage( platform::const_raw_buffer_type handle) override
+                  bool manage( platform::buffer::raw::immutable::type handle) override
                   {
                      return m_pool.manage( handle);
                   }
@@ -105,25 +105,25 @@ namespace casual
                      return false;
                   }
 
-                  void deallocate( platform::const_raw_buffer_type handle) override
+                  void deallocate( platform::buffer::raw::immutable::type handle) override
                   {
                      m_pool.deallocate( handle);
                   }
 
 
-                  platform::raw_buffer_type insert( Payload payload) override
+                  platform::buffer::raw::type insert( Payload payload) override
                   {
                      return m_pool.insert( std::move( payload));
                   }
 
-                  payload::Send get( platform::const_raw_buffer_type handle) override
+                  payload::Send get( platform::buffer::raw::immutable::type handle) override
                   {
                      auto& buffer = m_pool.get( handle);
 
                      return { buffer.payload, buffer.transport( buffer.reserved()), buffer.reserved()};
                   }
 
-                  payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
+                  payload::Send get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size) override
                   {
                      auto& buffer = m_pool.get( handle);
 
@@ -134,12 +134,12 @@ namespace casual
                      return result;
                   }
 
-                  Payload release( platform::const_raw_buffer_type handle) override
+                  Payload release( platform::buffer::raw::immutable::type handle) override
                   {
                      return m_pool.release( handle).payload;
                   }
 
-                  Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size) override
+                  Payload release( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size) override
                   {
                      auto buffer = m_pool.release( handle);
 
@@ -161,7 +161,7 @@ namespace casual
                };
 
 
-               platform::raw_buffer_type m_inbound = nullptr;
+               platform::buffer::raw::type m_inbound = nullptr;
                std::vector< std::unique_ptr< Base>> m_pools;
 
                template< typename P>
@@ -201,7 +201,7 @@ namespace casual
 
 
                Base& find( const std::string& type);
-               Base& find( platform::const_raw_buffer_type handle);
+               Base& find( platform::buffer::raw::immutable::type handle);
 
                const Payload& null_payload() const;
 
@@ -214,33 +214,33 @@ namespace casual
                }
 
 
-               inline platform::raw_buffer_type allocate( const char* type, const char* subtype, platform::binary_size_type size)
+               inline platform::buffer::raw::type allocate( const char* type, const char* subtype, platform::binary::size::type size)
                {
                   return allocate( type::combine( type, subtype), size);
                }
-               platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size);
+               platform::buffer::raw::type allocate( const std::string& type, platform::binary::size::type size);
 
-               platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size);
+               platform::buffer::raw::type reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size);
 
-               const std::string& type( platform::const_raw_buffer_type handle);
+               const std::string& type( platform::buffer::raw::immutable::type handle);
 
-               void deallocate( platform::const_raw_buffer_type handle);
+               void deallocate( platform::buffer::raw::immutable::type handle);
 
                //!
                //! Adopts the payload in 'service-invoke' context. So we keep track of
                //! inbound buffer (which is 'special' in XATMI). Otherwise it's the same semantics
                //! as insert
                //!
-               platform::raw_buffer_type adopt( Payload&& payload);
+               platform::buffer::raw::type adopt( Payload&& payload);
 
-               platform::raw_buffer_type insert( Payload&& payload);
+               platform::buffer::raw::type insert( Payload&& payload);
 
-               payload::Send get( platform::const_raw_buffer_type handle);
+               payload::Send get( platform::buffer::raw::immutable::type handle);
 
-               payload::Send get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size);
+               payload::Send get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size);
 
-               Payload release( platform::const_raw_buffer_type handle, platform::binary_size_type user_size);
-               Payload release( platform::const_raw_buffer_type handle);
+               Payload release( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size);
+               Payload release( platform::buffer::raw::immutable::type handle);
 
                void clear();
 
@@ -257,7 +257,7 @@ namespace casual
 
                using types_type = std::vector< std::string>;
 
-               platform::raw_buffer_type allocate( const std::string& type, platform::binary_size_type size)
+               platform::buffer::raw::type allocate( const std::string& type, platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, size);
 
@@ -274,7 +274,7 @@ namespace casual
                   return payload.memory.data();
                }
 
-               platform::raw_buffer_type reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size)
+               platform::buffer::raw::type reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
                {
                   auto found = find( handle);
 
@@ -298,12 +298,12 @@ namespace casual
                }
 
 
-               bool manage( platform::const_raw_buffer_type handle)
+               bool manage( platform::buffer::raw::immutable::type handle)
                {
                   return find( handle);
                }
 
-               void deallocate( platform::const_raw_buffer_type handle)
+               void deallocate( platform::buffer::raw::immutable::type handle)
                {
                   auto found = find( handle);
 
@@ -314,7 +314,7 @@ namespace casual
                }
 
 
-               platform::raw_buffer_type insert( Payload payload)
+               platform::buffer::raw::type insert( Payload payload)
                {
                   m_pool.emplace_back( std::move( payload));
 
@@ -326,7 +326,7 @@ namespace casual
                   return m_pool.back().payload.memory.data();
                }
 
-               buffer_type& get( platform::const_raw_buffer_type handle)
+               buffer_type& get( platform::buffer::raw::immutable::type handle)
                {
                   auto found = find( handle);
 
@@ -338,7 +338,7 @@ namespace casual
                }
 
 
-               buffer_type release( platform::const_raw_buffer_type handle)
+               buffer_type release( platform::buffer::raw::immutable::type handle)
                {
                   auto found = find( handle);
 
@@ -365,7 +365,7 @@ namespace casual
 
             protected:
 
-               range_type find( platform::const_raw_buffer_type handle)
+               range_type find( platform::buffer::raw::immutable::type handle)
                {
                   return range::find_if( m_pool,
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});

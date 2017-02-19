@@ -42,12 +42,12 @@ namespace casual
             Message delay;
             delay.destination = message.destination;
             delay.message = std::move( message.message);
-            delay.deadline = platform::clock_type::now() + message.delay;
+            delay.deadline = platform::time::clock::type::now() + message.delay;
 
             m_messages.push_back( std::move( delay));
          }
 
-         std::vector< State::Message> State::passed( common::platform::time_point time)
+         std::vector< State::Message> State::passed( common::platform::time::point::type time)
          {
             auto partition = range::partition( m_messages, [=]( const State::Message& m){
                return m.deadline > time;
@@ -68,7 +68,7 @@ namespace casual
             if( min)
             {
                return std::chrono::duration_cast< std::chrono::microseconds>(
-                     min->deadline - platform::clock_type::now()
+                     min->deadline - platform::time::clock::type::now()
                );
             }
             return std::chrono::microseconds::min();

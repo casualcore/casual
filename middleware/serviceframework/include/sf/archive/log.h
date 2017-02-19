@@ -51,7 +51,7 @@ namespace casual
                void write( const bool& value, const char* name);
                void write( const std::string& value, const char* name);
                void write( const std::wstring& value, const char* name);
-               void write( const platform::binary_type& value, const char* name);
+               void write( const platform::binary::type& value, const char* name);
 
 
             private:

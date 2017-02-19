@@ -227,7 +227,7 @@ namespace casual
                { value = *common::transcode::utf8::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
                void Implementation::read( std::string& value) const
                { value = common::transcode::utf8::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
-               void Implementation::read( platform::binary_type& value) const
+               void Implementation::read( platform::binary::type& value) const
                { value = common::transcode::base64::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
 
             } // reader
@@ -380,7 +380,7 @@ namespace casual
                { m_stack.back()->SetDouble( value); }
                void Implementation::write( const std::string& value)
                { m_stack.back()->SetString( common::transcode::utf8::encode( value), m_allocator); }
-               void Implementation::write( const platform::binary_type& value)
+               void Implementation::write( const platform::binary::type& value)
                { m_stack.back()->SetString( common::transcode::base64::encode( value), m_allocator); }
 
             } // writer

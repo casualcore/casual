@@ -219,7 +219,7 @@ namespace casual
 
 
 
-               Transaction startTransaction( const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
+               Transaction startTransaction( const platform::time::point::type& start, TRANSACTION_TIMEOUT timeout)
                {
 
                   Transaction transaction{ transaction::ID::create( process::handle())};
@@ -276,7 +276,7 @@ namespace casual
             m_transactions.push_back( std::move( transaction));
          }
 
-         void Context::start( const platform::time_point& start)
+         void Context::start( const platform::time::point::type& start)
          {
             common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
 
@@ -573,7 +573,7 @@ namespace casual
                throw exception::tx::Outside{ "begin - resources not done with work outside global transaction"}; //, exception::make_nip( "resources", range::make( transaction.resources))};
             }
 
-            auto trans = local::startTransaction( platform::clock_type::now(), m_timeout);
+            auto trans = local::startTransaction( platform::time::clock::type::now(), m_timeout);
 
             resources_start( trans, TMNOFLAGS);
 

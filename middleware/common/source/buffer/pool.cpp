@@ -33,7 +33,7 @@ namespace casual
                return **pool;
             }
 
-            Holder::Base& Holder::find( platform::const_raw_buffer_type handle)
+            Holder::Base& Holder::find( platform::buffer::raw::immutable::type handle)
             {
                auto pool = range::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
                   return b->manage( handle);
@@ -53,7 +53,7 @@ namespace casual
             }
 
 
-            platform::raw_buffer_type Holder::allocate( const std::string& type, platform::binary_size_type size)
+            platform::buffer::raw::type Holder::allocate( const std::string& type, platform::binary::size::type size)
             {
                auto buffer = find( type).allocate( type, size);
 
@@ -64,7 +64,7 @@ namespace casual
                return buffer;
             }
 
-            platform::raw_buffer_type Holder::reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size)
+            platform::buffer::raw::type Holder::reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
                auto buffer = find( handle).reallocate( handle, size);
 
@@ -82,12 +82,12 @@ namespace casual
                return buffer;
             }
 
-            const std::string& Holder::type( platform::const_raw_buffer_type handle)
+            const std::string& Holder::type( platform::buffer::raw::immutable::type handle)
             {
                return get( handle).payload().type;
             }
 
-            void Holder::deallocate( platform::const_raw_buffer_type handle)
+            void Holder::deallocate( platform::buffer::raw::immutable::type handle)
             {
                //
                // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
@@ -100,7 +100,7 @@ namespace casual
                }
             }
 
-            platform::raw_buffer_type Holder::adopt( Payload&& payload)
+            platform::buffer::raw::type Holder::adopt( Payload&& payload)
             {
                common::trace::internal::Scope trace{ "buffer::pool::adopt"};
 
@@ -116,7 +116,7 @@ namespace casual
                return m_inbound;
             }
 
-            platform::raw_buffer_type Holder::insert( Payload&& payload)
+            platform::buffer::raw::type Holder::insert( Payload&& payload)
             {
                log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
                      << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
@@ -129,7 +129,7 @@ namespace casual
                return find( payload.type).insert( std::move( payload));
             }
 
-            payload::Send Holder::get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size)
+            payload::Send Holder::get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size)
             {
                if( handle == nullptr)
                {
@@ -138,7 +138,7 @@ namespace casual
                return find( handle).get( handle, user_size);
             }
 
-            payload::Send Holder::get( platform::const_raw_buffer_type handle)
+            payload::Send Holder::get( platform::buffer::raw::immutable::type handle)
             {
                if( handle == nullptr)
                {
@@ -149,7 +149,7 @@ namespace casual
             }
 
 
-            Payload Holder::release( platform::const_raw_buffer_type handle)
+            Payload Holder::release( platform::buffer::raw::immutable::type handle)
             {
                if( handle == nullptr)
                {
@@ -165,7 +165,7 @@ namespace casual
                return result;
             }
 
-            Payload Holder::release( platform::const_raw_buffer_type handle, platform::binary_size_type size)
+            Payload Holder::release( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
                if( handle == nullptr)
                {

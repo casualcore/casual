@@ -32,14 +32,14 @@ namespace casual
             {
                common::platform::ipc::id::type destination;
                common::communication::message::Complete message;
-               common::platform::time_point deadline;
+               common::platform::time::point::type deadline;
 
                friend bool operator < ( const Message& lhs, const Message& rhs);
             };
 
             void add( message::Request&& message);
-            std::vector< Message> passed( common::platform::time_point time);
-            std::vector< Message> passed() { return passed( common::platform::clock_type::now());}
+            std::vector< Message> passed( common::platform::time::point::type time);
+            std::vector< Message> passed() { return passed( common::platform::time::clock::type::now());}
 
             std::chrono::microseconds timeout() const;
 

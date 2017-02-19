@@ -47,7 +47,7 @@ namespace casual
 
                struct buffer_t
                {
-                  platform::raw_buffer_type data = nullptr;
+                  platform::buffer::raw::type data = nullptr;
                   long len = 0;
 
                } buffer;

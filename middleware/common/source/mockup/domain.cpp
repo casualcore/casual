@@ -583,7 +583,7 @@ namespace casual
                         reply.id = uuid::make();
 
                         Broker::Message message{ r.message};
-                        message.timestamp = platform::clock_type::now();
+                        message.timestamp = platform::time::clock::type::now();
                         message.id = reply.id;
 
                         m_queues[ r.name].push( std::move( message));

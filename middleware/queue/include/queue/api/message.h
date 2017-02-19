@@ -34,7 +34,7 @@ namespace casual
          //!
          //! When the message is available, in absolute time.
          //!
-         sf::platform::time_point available = sf::platform::time_point::min();
+         sf::platform::time::point::type available = sf::platform::time::point::type::min();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -68,7 +68,7 @@ namespace casual
       struct Payload
       {
          std::string type;
-         sf::platform::binary_type data;
+         sf::platform::binary::type data;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -115,7 +115,7 @@ namespace casual
             struct Information
             {
                common::Uuid id;
-               common::platform::binary_type trid;
+               common::platform::binary::type trid;
                std::size_t state;
 
                Attributes attributes;
@@ -135,7 +135,7 @@ namespace casual
 
 
                std::size_t redelivered;
-               common::platform::time_point timestamp;
+               common::platform::time::point::type timestamp;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -162,14 +162,14 @@ namespace casual
          struct Payload
          {
             Payload() = default;
-            Payload( common::platform::raw_buffer_type buffer, common::platform::raw_buffer_size size)
+            Payload( common::platform::buffer::raw::type buffer, common::platform::buffer::raw::size::type size)
               : buffer( buffer), size( size) {}
 
-            Payload( common::platform::raw_buffer_type buffer)
+            Payload( common::platform::buffer::raw::type buffer)
               : buffer( buffer), size( 0) {}
 
-            common::platform::raw_buffer_type buffer;
-            common::platform::raw_buffer_size size;
+            common::platform::buffer::raw::type buffer;
+            common::platform::buffer::raw::size::type size;
          };
 
          using Message = basic_message< Payload>;

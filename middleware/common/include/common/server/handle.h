@@ -199,7 +199,7 @@ namespace casual
                   //
                   // Set start time.
                   //
-                  state.traffic.start = platform::clock_type::now();
+                  state.traffic.start = platform::time::clock::type::now();
 
 
                   //
@@ -361,7 +361,7 @@ namespace casual
                   auto execute_monitor = scope::execute( [&](){
                      if( ! message.service.traffic_monitors.empty())
                      {
-                        state.traffic.end = platform::clock_type::now();
+                        state.traffic.end = platform::time::clock::type::now();
                         state.traffic.execution = message.execution;
                         state.traffic.service = message.service.name;
                         state.traffic.parent = message.parent;
@@ -385,7 +385,7 @@ namespace casual
             private:
 
 
-               using descriptor_type = platform::descriptor_type;
+               using descriptor_type = platform::descriptor::type;
 
                struct transform
                {
@@ -475,7 +475,7 @@ namespace casual
 
                   void statistics( platform::ipc::id::type id, message::traffic::Event& event);
 
-                  void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now);
+                  void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time::point::type& now);
                   void transaction( message::service::call::Reply& message, int return_state);
 
                   void forward( const message::service::call::callee::Request& message, const State::jump_t& jump);
@@ -496,7 +496,7 @@ namespace casual
 
                   void statistics( platform::ipc::id::type id, message::traffic::Event&);
 
-                  void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&);
+                  void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&);
 
                   void transaction( message::service::call::Reply& message, int return_state);
 

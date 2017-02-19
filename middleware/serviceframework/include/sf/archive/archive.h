@@ -50,7 +50,7 @@ namespace casual
             bool read( float& value, const char* name);
             bool read( double& value, const char* name);
             bool read( std::string& value, const char* name);
-            bool read( platform::binary_type& value, const char* name);
+            bool read( platform::binary::type& value, const char* name);
 
          private:
 
@@ -68,7 +68,7 @@ namespace casual
             virtual bool pod( float& value, const char* name) = 0;
             virtual bool pod( double& value, const char* name) = 0;
             virtual bool pod( std::string& value, const char* name) = 0;
-            virtual bool pod( platform::binary_type& value, const char* name) = 0;
+            virtual bool pod( platform::binary::type& value, const char* name) = 0;
 
          };
 
@@ -166,7 +166,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::container::is_sequence< T>::value && ! std::is_same< platform::binary_type, T>::value, bool>
+         traits::enable_if_t< traits::container::is_sequence< T>::value && ! std::is_same< platform::binary::type, T>::value, bool>
          serialize( Reader& archive, T& container, const char* name)
          {
             auto properties = archive.container_start( 0, name);
@@ -275,7 +275,7 @@ namespace casual
             void write( const float value, const char* name);
             void write( const double value, const char* name);
             void write( const std::string& value, const char* name);
-            void write( const platform::binary_type& value, const char* name);
+            void write( const platform::binary::type& value, const char* name);
 
          private:
 
@@ -293,7 +293,7 @@ namespace casual
             virtual void pod( const float value, const char* name) = 0;
             virtual void pod( const double value, const char* name) = 0;
             virtual void pod( const std::string& value, const char* name) = 0;
-            virtual void pod( const platform::binary_type& value, const char* name) = 0;
+            virtual void pod( const platform::binary::type& value, const char* name) = 0;
 
          };
 
@@ -375,7 +375,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::container::is_container< T>::value && ! std::is_same< platform::binary_type, T>::value>
+         traits::enable_if_t< traits::container::is_container< T>::value && ! std::is_same< platform::binary::type, T>::value>
          serialize( Writer& archive, const T& container, const char* name)
          {
             archive.container_start( container.size(), name);

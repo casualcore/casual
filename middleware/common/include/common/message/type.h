@@ -72,6 +72,15 @@ namespace casual
             service_reply,
             service_acknowledge,
 
+            service_conversation_connect_request = SERVICE_BASE + 200,
+            service_conversation_connect_reply,
+            service_conversation_send_request,
+            service_conversation_send_reply,
+            service_conversation_disconnect_request,
+            service_conversation_disconnect_reply,
+
+
+
             // Monitor
             TRAFFICMONITOR_BASE = 4000,
             traffic_monitor_connect_request,
@@ -241,8 +250,8 @@ namespace casual
 
          struct Statistics
          {
-            platform::time_point start;
-            platform::time_point end;
+            platform::time::point::type start;
+            platform::time::point::type end;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {

@@ -48,16 +48,16 @@ namespace casual
             std::chrono::microseconds total;
             std::size_t invoked;
 
-            void start( const common::platform::time_point& start);
-            void end( const common::platform::time_point& end);
+            void start( const common::platform::time::point::type& start);
+            void end( const common::platform::time::point::type& end);
 
-            void time( const common::platform::time_point& start, const common::platform::time_point& end);
+            void time( const common::platform::time::point::type& start, const common::platform::time::point::type& end);
 
 
             friend Statistics& operator += ( Statistics& lhs, const Statistics& rhs);
 
          private:
-            common::platform::time_point m_start;
+            common::platform::time::point::type m_start;
          };
 
          struct Stats
@@ -213,7 +213,7 @@ namespace casual
                base_message& operator = ( base_message&&) noexcept = default;
 
                common::communication::message::Complete message;
-               common::platform::time_point created;
+               common::platform::time::point::type created;
             };
 
             struct Reply : base_message
@@ -402,8 +402,8 @@ namespace casual
          common::transaction::ID trid;
          std::vector< Resource> resources;
 
-         common::platform::time_point started;
-         common::platform::time_point deadline;
+         common::platform::time::point::type started;
+         common::platform::time::point::type deadline;
 
 
          //!

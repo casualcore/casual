@@ -157,7 +157,7 @@ namespace casual
                   }
                }
 
-               void Default::transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time_point& now)
+               void Default::transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time::point::type& now)
                {
                   trace::internal::Scope trace{ "server::handle::policy::Default::transaction"};
 
@@ -309,7 +309,7 @@ namespace casual
                   // no-op
                }
 
-               void Admin::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
+               void Admin::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&)
                {
                   // no-op
                }

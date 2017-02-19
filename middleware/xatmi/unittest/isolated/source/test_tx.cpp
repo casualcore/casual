@@ -1,11 +1,8 @@
 //!
-//! test_transaction.cpp
-//!
-//! Created on: Mar 7, 2015
-//!     Author: Lazan
+//! casual
 //!
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "tx.h"
 
@@ -32,16 +29,12 @@ namespace casual
                   // Set up a tm
                   //
                   Domain()
-                     : tm{ communication::ipc::inbound::id(), mockup::create::transaction::manager()},
-                     // link the global mockup-transaction-manager-queue's output to 'our' tm
-                     link_tm_reply{ mockup::ipc::transaction::manager::queue().output().connector().id(), tm.input()}
                   {
 
                   }
 
-                  mockup::ipc::Router tm;
-                  mockup::ipc::Link link_tm_reply;
-
+                  mockup::domain::Manager domain;
+                  mockup::domain::transaction::Manager tm;
                };
 
             } // <unnamed>
@@ -49,6 +42,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, tx_info__expect_0_transaction)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             EXPECT_TRUE( tx_info( nullptr) == 0);
@@ -57,6 +52,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, tx_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             XID xid;
@@ -66,6 +63,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, tx_begin__expect_transaction)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             ASSERT_TRUE( tx_begin() == TX_OK);
@@ -76,6 +75,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, two_tx_begin__expect_TX_PROTOCOLL_ERROR)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             ASSERT_TRUE( tx_begin() == TX_OK);
@@ -87,6 +88,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, tx_begin_tx_suspend_tx_resume__tx_rollback__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             XID xid;
@@ -100,6 +103,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, tx_begin__10_tx_suspend_tx_begin___tx_commit_tx_resume__rollback__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             // global...
@@ -131,6 +136,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, tx_begin__10_tx_suspend_tx_begin__in_revers_order__tx_commit_tx_resume__rollback__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             // global...
@@ -163,6 +170,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, chained_control__tx_begin_tx_commit__expect_new_transaction)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             tx_set_transaction_control( TX_CHAINED);
@@ -179,6 +188,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, chained_control__tx_begin_tx_begin__expect_TX_PROTOCOLL_ERROR)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             tx_set_transaction_control( TX_CHAINED);
@@ -193,6 +204,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, stacked_control__tx_begin_tx_begin__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             tx_set_transaction_control( TX_STACKED);
@@ -211,6 +224,8 @@ namespace casual
 
          TEST( casual_xatmi_tx, stacked_control__tx_begin_tx_begin_tx_suspend__expect_TX_OK)
          {
+            common::unittest::Trace trace;
+
             local::Domain domain;
 
             tx_set_transaction_control( TX_STACKED);

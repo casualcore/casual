@@ -220,7 +220,7 @@ namespace casual
 
          local::Domain domain;
 
-         platform::binary_type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+         platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 
          common::message::service::call::callee::Request request;

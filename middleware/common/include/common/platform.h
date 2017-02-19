@@ -68,17 +68,6 @@ namespace casual
 		namespace platform
 		{
 
-		   //
-		   // Some sizes
-		   //
-
-
-         //!
-         //! The common type used to represent sizes (especially in buffers)
-         //!
-		   using binary_size_type = uint64_t;
-
-
 		   namespace batch
          {
 	         //!
@@ -228,30 +217,72 @@ namespace casual
          } // resource
 
 
-
-			typedef std::vector< char> binary_type;
-
-			using raw_buffer_type = char*;
-			using raw_buffer_size = long;
-			using const_raw_buffer_type = const char*;
-
-         inline raw_buffer_type public_buffer( const_raw_buffer_type buffer)
+			namespace binary
          {
-            return const_cast< raw_buffer_type>( buffer);
-         }
+            using type = std::vector< char>;
 
-         // TODO: change to: typedef std::chrono::steady_clock clock_type;
-         // When clang has to_time_t for steady_clock
-         using clock_type = std::chrono::system_clock;
+            namespace size
+            {
 
-         using time_point = clock_type::time_point;
+               //!
+               //! The common type used to represent sizes (especially in buffers)
+               //!
+               using type = uint64_t;
+
+            } // size
+
+         } // binary
+
+			namespace buffer
+         {
+            namespace raw
+            {
+               using type = char*;
+
+               namespace size
+               {
+                  using type = long;
+               } // size
 
 
-         //!
-         //! Call-descriptor type
-         //!
-         using descriptor_type = int;
+               namespace immutable
+               {
+                  using type = const char*;
+               } // immutable
 
+               inline type external( immutable::type buffer)
+               {
+                  return const_cast< type>( buffer);
+               }
+
+            } // raw
+         } // buffer
+
+
+			namespace time
+         {
+            namespace clock
+            {
+               // TODO: change to: typedef std::chrono::steady_clock clock_type;
+               // When clang has to_time_t for steady_clock
+               using type = std::chrono::system_clock;
+            } // clock
+
+            namespace point
+            {
+               using type = clock::type::time_point;
+            } // point
+
+         } // time
+
+
+         namespace descriptor
+         {
+            //!
+            //! Call-descriptor type
+            //!
+            using type = int;
+         } // descriptor
 
 
 
@@ -280,18 +311,18 @@ namespace casual
 
 
    template< typename M>
-   void casual_marshal_value( const common::platform::time_point& value, M& marshler)
+   void casual_marshal_value( const common::platform::time::point::type& value, M& marshler)
    {
       const auto time = value.time_since_epoch().count();
       marshler << time;
    }
 
    template< typename M>
-   void casual_unmarshal_value( common::platform::time_point& value, M& unmarshler)
+   void casual_unmarshal_value( common::platform::time::point::type& value, M& unmarshler)
    {
-      common::platform::time_point::rep representation;
+      common::platform::time::point::type::rep representation;
       unmarshler >> representation;
-      value = common::platform::time_point( common::platform::time_point::duration( representation));
+      value = common::platform::time::point::type( common::platform::time::point::type::duration( representation));
    }
    //! @}
 

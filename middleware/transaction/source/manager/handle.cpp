@@ -288,7 +288,7 @@ namespace casual
                   }
 
                   template< typename M>
-                  void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time_point& now)
+                  void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time::point::type& now)
                   {
                      instance.statistics.resource.time( message.statistics.start, message.statistics.end);
                      instance.statistics.roundtrip.end( now);
@@ -920,7 +920,7 @@ namespace casual
 
                      {
                         local::instance::done( this->m_state, instance);
-                        local::instance::statistics( instance, message, common::platform::clock_type::now());
+                        local::instance::statistics( instance, message, common::platform::time::clock::type::now());
                      }
 
                   }

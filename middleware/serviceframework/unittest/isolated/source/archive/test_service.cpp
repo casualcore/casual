@@ -77,7 +77,7 @@ namespace casual
             struct Composite
             {
                std::string some_string;
-               platform::binary_type some_binary;
+               platform::binary::type some_binary;
                long some_long = 0;
                bool some_bool = true;
                double some_double = 0.0;
