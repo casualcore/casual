@@ -7,6 +7,8 @@ def backend_builder = '''#! /bin/sh
 CASUAL_VERSION="0.42"
 CASUAL_RELEASE="1"
 
+source scl_source enable devtoolset-4
+
 umask 000
 cd /git/casual
 find . -name "*.gcda"| xargs rm
