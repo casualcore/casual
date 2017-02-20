@@ -104,7 +104,7 @@ namespace casual
                   std::unique_ptr< Result::impl_base> receive() override
                   {
                      using result_type = decltype( m_implemenentation());
-                     return common::make::unique< result::basic_impl< result_type>>( m_implemenentation());
+                     return std::make_unique< result::basic_impl< result_type>>( m_implemenentation());
                   }
                   T m_implemenentation;
                };
@@ -135,7 +135,7 @@ namespace casual
                   std::unique_ptr< Receive::impl_base> call() override
                   {
                      using receive_type = decltype( m_implemenentation());
-                     return common::make::unique< receive::basic_impl< receive_type>>( m_implemenentation());
+                     return std::make_unique< receive::basic_impl< receive_type>>( m_implemenentation());
                   }
 
                   IO::Input& input() override
@@ -210,7 +210,7 @@ namespace casual
                   //
                   // We could create other protocols later, including mockup.
                   //
-                  return common::make::unique< Binary>( std::move( service), flags);
+                  return std::make_unique< Binary>( std::move( service), flags);
                }
             } // protocol
 
@@ -276,7 +276,7 @@ namespace casual
                   std::unique_ptr< Result::impl_base> call() override
                   {
                      using receive_type = decltype( m_implemenentation());
-                     return common::make::unique< result::basic_impl< receive_type>>( m_implemenentation());
+                     return std::make_unique< result::basic_impl< receive_type>>( m_implemenentation());
                   }
 
                   IO::Input& input() override
@@ -299,7 +299,7 @@ namespace casual
                   //
                   // We could create other protocols later, including mockup.
                   //
-                  return common::make::unique< Binary>( std::move( service), flags);
+                  return std::make_unique< Binary>( std::move( service), flags);
                }
             }
 

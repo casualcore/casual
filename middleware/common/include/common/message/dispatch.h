@@ -183,7 +183,7 @@ namespace casual
                   //
                   // assert( result.count( handle_type::message_type::type()) == 0);
 
-                  auto holder = make::unique< handle_type>( std::forward< H>( handler));
+                  auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
 
                   result.emplace(
                         handle_type::message_type::type(),

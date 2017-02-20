@@ -293,21 +293,21 @@ namespace casual
 
          state::Executable* State::find_executable( common::platform::pid::type pid)
          {
-            return range::find_if( executables, [=]( const state::Executable& e){
+            return range::find_if( executables, [=]( const auto& e){
                return range::find( e.instances, pid) == true;
             }).data();
          }
 
          state::Group& State::group( state::Group::id_type id)
          {
-            return range::front( range::find_if( groups, [=]( const state::Group& g){
+            return range::front( range::find_if( groups, [=]( const auto& g){
                return g.id == id;
             }));
          }
 
          const state::Group& State::group( state::Group::id_type id) const
          {
-            return range::front( range::find_if( groups, [=]( const state::Group& g){
+            return range::front( range::find_if( groups, [=]( const auto& g){
                return g.id == id;
             }));
          }

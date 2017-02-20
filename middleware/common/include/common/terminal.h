@@ -279,7 +279,7 @@ namespace casual
                {
                   auto result = initialize( std::forward< Columns>( columns)...);
 
-                  auto basic = make::unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
+                  auto basic = std::make_unique< basic_column< typename std::decay< C>::type>>( std::forward< C>( column));
 
                   result.emplace( std::begin( result), std::move( basic));
                   return result;

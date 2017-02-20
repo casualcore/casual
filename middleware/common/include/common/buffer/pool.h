@@ -190,7 +190,7 @@ namespace casual
 
                   }
 
-                  auto subtype = make::unique< Concrete< P>>( std::forward< P>( pool));
+                  auto subtype = std::make_unique< Concrete< P>>( std::forward< P>( pool));
 
                   auto& result = subtype->pool();
 
