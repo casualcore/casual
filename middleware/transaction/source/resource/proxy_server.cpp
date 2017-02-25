@@ -5,12 +5,11 @@
 
 #include "transaction/resource/proxy_server.h"
 #include "transaction/resource/proxy.h"
+#include "transaction/common.h"
 
 #include "common/error.h"
 #include "common/arguments.h"
 #include "common/environment.h"
-#include "common/trace.h"
-#include "common/internal/trace.h"
 #include "common/exception.h"
 
 #include "sf/log.h"
@@ -25,7 +24,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
    try
    {
 
-      casual::common::trace::internal::Scope trace{ "casual_start_reource_proxy"};
+      casual::transaction::Trace trace{ "casual_start_reource_proxy"};
 
       casual::transaction::resource::State state;
       state.xa_switches = serverArguments->xaSwitches;
@@ -42,7 +41,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
          arguments.parse( serverArguments->argc, serverArguments->argv);
       }
 
-      casual::common::log::internal::transaction << CASUAL_MAKE_NVP( state);
+      casual::transaction::log << CASUAL_MAKE_NVP( state);
 
 
       casual::transaction::resource::Proxy proxy( std::move( state));

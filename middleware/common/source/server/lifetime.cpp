@@ -1,16 +1,12 @@
 //!
-//! lifetime.cpp
-//!
-//! Created on: Oct 27, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/server/lifetime.h"
 #include "common/communication/ipc.h"
 
-#include "common/trace.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
+
 
 namespace casual
 {
@@ -25,9 +21,9 @@ namespace casual
             {
                std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
-                  trace::internal::Scope trace{ "common::server::lifetime::soft::shutdown"};
+                  Trace trace{ "common::server::lifetime::soft::shutdown"};
 
-                  log::internal::debug << "servers: " << range::make( servers) << std::endl;
+                  log::debug << "servers: " << range::make( servers) << std::endl;
 
                   auto result = process::lifetime::ended();
 
@@ -58,7 +54,7 @@ namespace casual
 
                   range::append( std::get< 0>( range::intersection( terminated, requested)), result);
 
-                  log::internal::debug << "soft off-line: " << range::make( result) << std::endl;
+                  log::debug << "soft off-line: " << range::make( result) << std::endl;
 
                   return result;
 
@@ -70,7 +66,7 @@ namespace casual
             {
                std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
                {
-                  trace::internal::Scope trace{ "common::server::lifetime::hard::shutdown"};
+                  Trace trace{ "common::server::lifetime::hard::shutdown"};
 
                   std::vector< platform::pid::type> origin;
 
@@ -84,11 +80,11 @@ namespace casual
 
                   auto running = range::difference( origin, result);
 
-                  log::internal::debug << "still on-line: " << range::make( running) << std::endl;
+                  log::debug << "still on-line: " << range::make( running) << std::endl;
 
                   range::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
 
-                  log::internal::debug << "hard off-line: " << std::get< 0>( range::intersection( running, result)) << std::endl;
+                  log::debug << "hard off-line: " << std::get< 0>( range::intersection( running, result)) << std::endl;
 
                   return result;
 

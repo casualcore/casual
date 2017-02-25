@@ -9,7 +9,6 @@
 
 #include "common/arguments.h"
 #include "common/exception.h"
-#include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"

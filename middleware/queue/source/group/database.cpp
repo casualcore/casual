@@ -8,8 +8,6 @@
 #include "common/algorithm.h"
 
 #include "common/exception.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 
 // temp
 #include "common/chronology.h"

@@ -4,7 +4,7 @@
 
 
 #include "common/error.h"
-#include "common/log.h"
+#include "common/log/category.h"
 #include "common/exception.h"
 #include "common/transaction/context.h"
 #include "common/process.h"
@@ -43,8 +43,8 @@ namespace casual
                      switch( exception.category())
                      {
                         case exception::code::log::Category::debug: return common::log::debug;
-                        case exception::code::log::Category::information: return common::log::information;
-                        default: return common::log::error;
+                        case exception::code::log::Category::information: return common::log::category::information;
+                        default: return common::log::category::error;
                      }
                   }
 
@@ -73,18 +73,18 @@ namespace casual
             }
             catch( const exception::Shutdown& exception)
             {
-               log::information << "off-line" << std::endl;
+               log::category::information << "off-line" << std::endl;
                return 0;
             }
             catch( const exception::signal::Terminate& exception)
             {
-               log::information << "terminated - " <<  exception << std::endl;
-               log::internal::debug << exception << std::endl;
+               log::category::information << "terminated - " <<  exception << std::endl;
+               log::debug << exception << std::endl;
                return 0;
             }
             catch( const exception::invalid::Process& exception)
             {
-               log::error << exception << std::endl;
+               log::category::error << exception << std::endl;
             }
             catch( const exception::xatmi::base& exception)
             {
@@ -97,7 +97,7 @@ namespace casual
             //
             catch( const exception::tx::Fail& exception)
             {
-               log::error << exception.what() << std::endl;
+               log::category::error << exception.what() << std::endl;
                return TX_FAIL;
             }
             catch( const exception::code::base& exception)
@@ -107,17 +107,17 @@ namespace casual
             }
             catch( const exception::base& exception)
             {
-               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
+               log::category::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << std::endl;
                return TPESYSTEM;
             }
             catch( const std::exception& exception)
             {
-               log::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << " (" << type::name( exception) << ')' << std::endl;
+               log::category::error << xatmi::error( TPESYSTEM) << " - " << exception.what() << " (" << type::name( exception) << ')' << std::endl;
                return TPESYSTEM;
             }
             catch( ...)
             {
-               log::error << xatmi::error( TPESYSTEM) << " - unexpected exception" << std::endl;
+               log::category::error << xatmi::error( TPESYSTEM) << " - unexpected exception" << std::endl;
                return TPESYSTEM;
             }
 
@@ -246,22 +246,22 @@ namespace casual
                }
                catch( const exception::tx::Protocol& exception)
                {
-                  log::error << "TX_PROTOCOL_ERROR " << exception << std::endl;
+                  log::category::error << "TX_PROTOCOL_ERROR " << exception << std::endl;
                   return TX_PROTOCOL_ERROR;
                }
                catch( const exception::tx::Fail& exception)
                {
-                  log::error << "TX_FAIL " << exception << std::endl;
+                  log::category::error << "TX_FAIL " << exception << std::endl;
                   return TX_FAIL;
                }
                catch( const exception::tx::no::Support& exception)
                {
-                  log::internal::transaction << "TX_NOT_SUPPORTED " << exception << std::endl;
+                  log::category::transaction << "TX_NOT_SUPPORTED " << exception << std::endl;
                   return TX_NOT_SUPPORTED;
                }
                catch( const exception::tx::no::Begin& exception)
                {
-                  log::internal::transaction << "TX_NO_BEGIN " << exception << std::endl;
+                  log::category::transaction << "TX_NO_BEGIN " << exception << std::endl;
                   return TX_NO_BEGIN;
                }
                catch( ...)

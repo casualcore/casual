@@ -14,8 +14,6 @@
 #include "common/message/transaction.h"
 #include "common/mockup/ipc.h"
 #include "common/mockup/domain.h"
-#include "common/internal/trace.h"
-#include "common/internal/log.h"
 #include "common/environment.h"
 
 

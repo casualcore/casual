@@ -13,7 +13,6 @@
 #include "common/mockup/domain.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
-#include "common/trace.h"
 
 namespace casual
 {

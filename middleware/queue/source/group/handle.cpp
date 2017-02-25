@@ -7,9 +7,7 @@
 
 #include "queue/common/environment.h"
 
-#include "common/internal/log.h"
 #include "common/message/handle.h"
-#include "common/trace.h"
 #include "common/error.h"
 
 namespace casual
@@ -229,7 +227,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::error << exception.what() << std::endl;
+                     common::log::category::error << exception.what() << std::endl;
                   }
                }
 
@@ -270,7 +268,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::error << exception.what() << std::endl;
+                     common::log::category::error << exception.what() << std::endl;
                   }
                   return false;
                }
@@ -356,7 +354,7 @@ namespace casual
                      try
                      {
                         m_state.queuebase.commit( message.trid);
-                        common::log::internal::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        common::log::category::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
 
                         //
                         // Will try to dequeue pending requests
@@ -407,7 +405,7 @@ namespace casual
                      try
                      {
                         m_state.queuebase.rollback( message.trid);
-                        common::log::internal::transaction << "rollback trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        common::log::category::transaction << "rollback trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
 
                         //
                         // Removes any associated enqueues with this trid

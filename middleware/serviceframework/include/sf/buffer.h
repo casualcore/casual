@@ -10,7 +10,6 @@
 
 
 #include "common/algorithm.h"
-#include "common/internal/log.h"
 #include "common/string.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/type.h"

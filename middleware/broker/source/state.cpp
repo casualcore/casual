@@ -8,8 +8,6 @@
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 #include "common/exception.h"
 #include "common/algorithm.h"
 
@@ -457,7 +455,7 @@ namespace casual
             }
             default:
             {
-               log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+               log::category::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
                break;
             }
          }
@@ -497,7 +495,7 @@ namespace casual
             }
             default:
             {
-               log::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+               log::category::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
             }
          }
 

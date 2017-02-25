@@ -5,7 +5,7 @@
 #include "common/buffer/pool.h"
 #include "common/algorithm.h"
 #include "common/exception.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include <functional>
 
@@ -57,9 +57,9 @@ namespace casual
             {
                auto buffer = find( type).allocate( type, size);
 
-               if( log::internal::buffer)
+               if( log::category::buffer)
                {
-                  log::internal::buffer << "allocate type: " << type << " size: " << size << " @" << static_cast< const void*>( buffer) << '\n';
+                  log::category::buffer << "allocate type: " << type << " size: " << size << " @" << static_cast< const void*>( buffer) << '\n';
                }
                return buffer;
             }
@@ -68,9 +68,9 @@ namespace casual
             {
                auto buffer = find( handle).reallocate( handle, size);
 
-               if( log::internal::buffer)
+               if( log::category::buffer)
                {
-                  log::internal::buffer << "reallocate size: " << size
+                  log::category::buffer << "reallocate size: " << size
                         << " from @" << static_cast< const void*>( handle) << " to " << static_cast< const void*>( buffer) << '\n';
                }
 
@@ -96,13 +96,13 @@ namespace casual
                {
                   find( handle).deallocate( handle);
 
-                  log::internal::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
+                  log::category::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
                }
             }
 
             platform::buffer::raw::type Holder::adopt( Payload&& payload)
             {
-               common::trace::internal::Scope trace{ "buffer::pool::adopt"};
+               Trace trace{ "buffer::pool::adopt"};
 
                //
                // This is the only place where a buffer is consumed by the pool, hence can only happen
@@ -118,7 +118,7 @@ namespace casual
 
             platform::buffer::raw::type Holder::insert( Payload&& payload)
             {
-               log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
+               log::category::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
                      << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
 
                if( payload.null())
@@ -160,7 +160,7 @@ namespace casual
 
                if( m_inbound == handle) m_inbound = nullptr;
 
-               log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+               log::category::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
             }
@@ -176,7 +176,7 @@ namespace casual
 
                if( m_inbound == handle) m_inbound = nullptr;
 
-               log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+               log::category::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
             }
@@ -193,7 +193,7 @@ namespace casual
                   }
                   catch( const exception::base& exception)
                   {
-                     log::error << "failed to deallocate inbound buffer - " << exception << std::endl;
+                     log::category::error << "failed to deallocate inbound buffer - " << exception << std::endl;
                   }
                }
                range::for_each( m_pools, std::mem_fn( &Base::clear));

@@ -29,9 +29,9 @@ namespace casual
 
             void call( const std::string& service, buffer::Buffer& input, buffer::Buffer& output, long flags)
             {
-               common::trace::internal::Scope trace{ "service::call"};
+               Trace trace{ "service::call"};
 
-               common::log::internal::debug << "input: " << input << std::endl;
+               log::sf << "input: " << input << std::endl;
 
 
                auto out = output.release();
@@ -46,16 +46,16 @@ namespace casual
                out.size = size;
                output.reset( out);
 
-               common::log::internal::debug << "output: " << output << std::endl;
+               log::sf << "output: " << output << std::endl;
 
 
             }
 
             call_descriptor_type send( const std::string& service, buffer::Buffer& input, long flags)
             {
-               common::trace::internal::Scope trace{ "service::send"};
+               Trace trace{ "service::send"};
 
-               common::log::internal::debug << "input: " << input << std::endl;
+               log::sf << "input: " << input << std::endl;
 
                auto callDescriptor = tpacall( service.c_str(), input.data(), input.size(), flags);
 
@@ -69,7 +69,7 @@ namespace casual
 
             bool receive( call_descriptor_type& callDescriptor, buffer::Buffer& output, long flags)
             {
-               common::trace::internal::Scope trace{ "service::receive"};
+               Trace trace{ "service::receive"};
 
                auto out = output.release();
                long size = out.size;
@@ -97,7 +97,7 @@ namespace casual
                out.size = size;
                output.reset( out);
 
-               common::log::internal::debug << "output: " << output << std::endl;
+               log::sf << "output: " << output << std::endl;
 
                return true;
             }

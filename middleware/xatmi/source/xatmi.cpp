@@ -343,16 +343,16 @@ int casual_vlog( casual_log_category_t category, const char* const format, va_li
       switch( category)
       {
       case casual_log_category_t::c_log_debug:
-         casual::common::log::write( "debug", data);
+         casual::common::log::stream::write( "debug", data);
          break;
       case casual_log_category_t::c_log_information:
-         casual::common::log::write( "information", data);
+         casual::common::log::stream::write( "information", data);
          break;
       case casual_log_category_t::c_log_warning:
-         casual::common::log::write( "warning", data);
+         casual::common::log::stream::write( "warning", data);
          break;
       default:
-         casual::common::log::write( "error", data);
+         casual::common::log::stream::write( "error", data);
          break;
       }
    };
@@ -363,7 +363,7 @@ int casual_vlog( casual_log_category_t category, const char* const format, va_li
 int casual_user_vlog( const char* category, const char* const format, va_list arglist)
 {
    auto user_logger = [=]( const char* data){
-      casual::common::log::write( category, data);
+      casual::common::log::stream::write( category, data);
    };
 
    return local::vlog( user_logger, format, arglist);
@@ -371,7 +371,7 @@ int casual_user_vlog( const char* category, const char* const format, va_list ar
 
 int casual_user_log( const char* category, const char* const message)
 {
-   casual::common::log::write( category, message);
+   casual::common::log::stream::write( category, message);
 
    return 0;
 }

@@ -16,7 +16,6 @@
 
 
 #include "sf/xatmi_call.h"
-#include "sf/trace.h"
 
 
 namespace casual

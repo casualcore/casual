@@ -15,8 +15,7 @@
 #include "common/signal.h"
 #include "common/exception.h"
 
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include "common/message/type.h"
 
@@ -280,7 +279,7 @@ namespace casual
 
                                  try
                                  {
-                                    log::internal::debug << "mockup ipc::eventually::Sender::worker_thread ipc.put\n";
+                                    log::debug << "mockup ipc::eventually::Sender::worker_thread ipc.put\n";
 
                                     ipc.put( message.message, communication::ipc::policy::Blocking{});
                                  }
@@ -339,7 +338,7 @@ namespace casual
 
                   if( ! ( communication::ipc::exists( input) && communication::ipc::exists( output)))
                   {
-                     log::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << std::endl;
+                     log::category::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << std::endl;
                      return;
                   }
 

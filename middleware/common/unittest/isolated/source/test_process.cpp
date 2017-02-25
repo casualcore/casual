@@ -12,7 +12,6 @@
 
 #include "common/signal.h"
 
-#include "common/trace.h"
 
 namespace casual
 {

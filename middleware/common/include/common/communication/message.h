@@ -9,6 +9,7 @@
 #include "common/platform.h"
 #include "common/message/type.h"
 #include "common/memory.h"
+#include "common/log/category.h"
 
 
 #include <cstdint>
@@ -235,7 +236,7 @@ namespace casual
                {
                   if( payload.size() != transport.complete_size())
                   {
-                     log::error << "payload.size(): " << payload.size() << " - transport.complete_size(): " << transport.complete_size() << '\n';
+                     log::category::error << "payload.size(): " << payload.size() << " - transport.complete_size(): " << transport.complete_size() << '\n';
                   }
                   assert( payload.size() == transport.complete_size());
 

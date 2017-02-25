@@ -10,7 +10,6 @@
 
 #include "common/platform.h"
 #include "common/move.h"
-#include "common/internal/log.h"
 #include "common/algorithm.h"
 #include "common/thread.h"
 

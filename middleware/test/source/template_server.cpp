@@ -13,7 +13,6 @@
 #include "common/arguments.h"
 #include "common/string.h"
 #include "common/process.h"
-#include "common/trace.h"
 
 #include "sf/log.h"
 #include "sf/archive/archive.h"
@@ -108,7 +107,7 @@ void casual_test3( TPSVCINFO *serviceContext)
    auto outcome = TPSUCCESS;
    try
    {
-      casual::common::trace::Scope trace{ "casual_test3 called"};
+      casual::common::Trace trace{ "casual_test3 called"};
 
 
       std::string argumentString;

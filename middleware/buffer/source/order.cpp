@@ -10,7 +10,6 @@
 #include "common/network/byteorder.h"
 #include "common/platform.h"
 #include "common/log.h"
-#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 #include <cstring>

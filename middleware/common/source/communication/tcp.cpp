@@ -7,7 +7,7 @@
 
 #include "common/error.h"
 
-#include "common/trace.h"
+#include "common/log.h"
 
 
 

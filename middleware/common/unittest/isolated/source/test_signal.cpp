@@ -6,7 +6,7 @@
 #include "common/signal.h"
 #include "common/process.h"
 #include "common/exception.h"
-#include "common/trace.h"
+
 
 namespace casual
 {

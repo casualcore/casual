@@ -1,8 +1,5 @@
 //!
-//! xatmi_call.h
-//!
-//! Created on: May 25, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef XATMI_CALL_H_
@@ -11,10 +8,9 @@
 #include "sf/archive/archive.h"
 #include "sf/archive/binary.h"
 #include "sf/buffer.h"
+#include "sf/log.h"
 
 
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 #include "common/move.h"
 
 //
@@ -102,7 +98,7 @@ namespace casual
                basic_result( basic_result&&) = default;
                basic_result( policy_type&& policy) : m_policy{ std::move( policy)}
                {
-                  common::log::internal::debug << "basic_result buffer: " << m_policy.buffer() << '\n';
+                  sf::log::sf << "basic_result buffer: " << m_policy.buffer() << '\n';
                }
 
                template< typename T>
@@ -144,9 +140,9 @@ namespace casual
 
                   result_type operator () ()
                   {
-                     common::trace::internal::Scope trace{ "service::sync::basic_call::operator()"};
+                     sf::Trace trace{ "service::sync::basic_call::operator()"};
 
-                     common::log::internal::debug << "buffer: " << m_policy.buffer() << '\n';
+                     log::sf << "buffer: " << m_policy.buffer() << '\n';
 
                      result_policy resultPolicy;
                      caller_type caller;
@@ -155,7 +151,7 @@ namespace casual
 
                      m_policy.buffer().clear();
 
-                     common::log::internal::debug << "output: " << resultPolicy.buffer() << '\n';
+                     log::sf  << "output: " << resultPolicy.buffer() << '\n';
 
                      return result_type{ std::move( resultPolicy)};
                   }

@@ -5,7 +5,7 @@
 #include <common/unittest.h>
 
 #include "gateway/inbound/cache.h"
-#include "common/trace.h"
+
 
 namespace casual
 {

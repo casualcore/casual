@@ -22,7 +22,6 @@
 
 #include "common/flag.h"
 
-#include "common/trace.h"
 
 namespace casual
 {
@@ -238,7 +237,7 @@ namespace casual
                   }
                   catch( const common::exception::invalid::Argument&)
                   {
-                     common::log::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
+                     common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                   }
                }
 
@@ -301,7 +300,7 @@ namespace casual
                               }
                               catch( const common::exception::communication::Unavailable&)
                               {
-                                 common::log::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
+                                 common::log::category::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
                               }
                            }
                         }
@@ -649,7 +648,7 @@ namespace casual
                   //
                   {
 
-                     common::Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect", log};
+                     Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect"};
 
                      message::worker::Connect message;
 
@@ -663,7 +662,7 @@ namespace casual
                   }
 
 
-                  common::log::information << "connection established - policy: " << policy << "\n";
+                  common::log::category::information << "connection established - policy: " << policy << "\n";
 
                   //
                   // we start our reply-message-pump

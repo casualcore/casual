@@ -103,7 +103,7 @@ namespace casual
          template< typename T>
          std::unique_ptr< Interface> Factory::Creator< T>::operator()( TPSVCINFO* service_info) const
          {
-            if( common::log::parameter)
+            if( sf::log::parameter)
             {
                return std::make_unique< protocol::parameter::Log< T>>( service_info);
             }

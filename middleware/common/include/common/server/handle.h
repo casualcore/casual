@@ -9,7 +9,7 @@
 #include "common/server/argument.h"
 #include "common/server/context.h"
 
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 
 #include "common/transaction/context.h"
@@ -82,7 +82,7 @@ namespace casual
                basic_call( server::Arguments arguments, Args&&... args)
                   : m_policy( std::forward< Args>( args)...)
                {
-                  trace::internal::Scope trace{ "server::handle::basic_call::basic_call"};
+                  Trace trace{ "server::handle::basic_call::basic_call"};
 
                   server::Context::instance().configure( arguments);
 
@@ -131,9 +131,9 @@ namespace casual
                   // Set the call-chain-id for this "chain"
                   //
 
-                  trace::internal::Scope trace{ "server::handle::basic_call::operator()"};
+                  Trace trace{ "server::handle::basic_call::operator()"};
 
-                  log::internal::debug << "message: " << message << '\n';
+                  log::debug << "message: " << message << '\n';
 
                   try
                   {
@@ -154,7 +154,7 @@ namespace casual
                void dispatch( message_type& message)
                {
 
-                  trace::internal::Scope trace{ "server::handle::basic_call::dispatch"};
+                  Trace trace{ "server::handle::basic_call::dispatch"};
 
 
                   //
@@ -275,7 +275,7 @@ namespace casual
                      catch( ...)
                      {
                         error::handler();
-                        log::error << "exception thrown from service: " << message.service.name << std::endl;
+                        log::category::error << "exception thrown from service: " << message.service.name << std::endl;
                      }
 
                      //
@@ -429,7 +429,7 @@ namespace casual
                   {
                      static TPSVCINFO information( message::service::call::callee::Request& message)
                      {
-                        trace::internal::Scope trace{ "server::handle::basic_call::service::information"};
+                        Trace trace{ "server::handle::basic_call::service::information"};
 
                         TPSVCINFO result;
 

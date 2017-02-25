@@ -1,9 +1,9 @@
-/*
- *  Created on: 8 dec 2012
- *      Author: hbergk
- */
+//!
+//! casual
+//!
 
-#include "common/trace.h"
+#include "traffic/common.h"
+
 #include "common/chronology.h"
 #include "common/arguments.h"
 #include "common/process.h"

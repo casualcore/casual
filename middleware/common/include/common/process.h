@@ -9,7 +9,6 @@
 #include "common/exception.h"
 #include "common/file.h"
 
-#include "common/internal/log.h"
 #include "common/algorithm.h"
 
 #include "common/marshal/marshal.h"

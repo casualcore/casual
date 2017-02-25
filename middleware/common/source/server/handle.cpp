@@ -21,7 +21,7 @@ namespace casual
             {
                void advertise( std::vector< message::service::advertise::Service> services)
                {
-                  trace::internal::Scope trace{ "common::server::local::advertise"};
+                  Trace trace{ "common::server::local::advertise"};
 
                   if( ! services.empty())
                   {
@@ -29,7 +29,7 @@ namespace casual
                      advertise.process = process::handle();
                      advertise.services = std::move( services);
 
-                     log::internal::debug << "advertise: " << advertise << '\n';
+                     log::debug << "advertise: " << advertise << '\n';
 
                      communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
                   }
@@ -41,7 +41,7 @@ namespace casual
                         const std::vector< server::Service>& services,
                         const message::domain::configuration::server::Reply& configuration)
                   {
-                     trace::internal::Scope trace{ "common::server::local::configure::services"};
+                     Trace trace{ "common::server::local::configure::services"};
 
                      std::vector< message::service::advertise::Service> advertise;
 
@@ -99,7 +99,7 @@ namespace casual
             {
                void Default::configure( server::Arguments& arguments)
                {
-                  trace::internal::Scope trace{ "server::handle::policy::Default::configure"};
+                  Trace trace{ "server::handle::policy::Default::configure"};
 
                   //
                   // Connection to the domain has been done before...
@@ -124,14 +124,14 @@ namespace casual
 
                void Default::reply( platform::ipc::id::type id, message::service::call::Reply& message)
                {
-                  trace::internal::Scope trace{ "server::handle::policy::Default::reply"};
+                  Trace trace{ "server::handle::policy::Default::reply"};
 
                   communication::ipc::blocking::send( id, message);
                }
 
                void Default::ack( const message::service::call::callee::Request& message)
                {
-                  trace::internal::Scope trace{ "server::handle::policy::Default::ack"};
+                  Trace trace{ "server::handle::policy::Default::ack"};
 
                   message::service::call::ACK ack;
                   ack.process = process::handle();
@@ -143,9 +143,9 @@ namespace casual
 
                void Default::statistics( platform::ipc::id::type id,  message::traffic::Event& event)
                {
-                  trace::internal::Scope trace{ "server::handle::policy::Default::statistics"};
+                  Trace trace{ "server::handle::policy::Default::statistics"};
 
-                  log::internal::debug << "event:" << event << '\n';
+                  log::debug << "event:" << event << '\n';
 
                   try
                   {
@@ -159,9 +159,9 @@ namespace casual
 
                void Default::transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time::point::type& now)
                {
-                  trace::internal::Scope trace{ "server::handle::policy::Default::transaction"};
+                  Trace trace{ "server::handle::policy::Default::transaction"};
 
-                  log::internal::debug << "message: " << message << ", service: " << service << '\n';
+                  log::debug << "message: " << message << ", service: " << service << '\n';
 
                   //
                   // We keep track of callers transaction (can be null-trid).
@@ -219,7 +219,7 @@ namespace casual
 
                void Default::forward( const message::service::call::callee::Request& message, const State::jump_t& jump)
                {
-                  trace::internal::Scope trace{ "server::handle::policy::Default::forward"};
+                  Trace trace{ "server::handle::policy::Default::forward"};
 
                   if( transaction::Context::instance().pending())
                   {
@@ -263,7 +263,7 @@ namespace casual
                   request.service = target.service;
 
 
-                  log::internal::debug << "policy::Default::forward - request:" << request << std::endl;
+                  log::debug << "policy::Default::forward - request:" << request << std::endl;
 
                   communication::ipc::blocking::send( target.process.queue, request);
                }

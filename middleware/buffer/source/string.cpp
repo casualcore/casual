@@ -10,7 +10,6 @@
 #include "common/log.h"
 #include "common/memory.h"
 
-#include "common/internal/trace.h"
 
 
 #include <cstring>

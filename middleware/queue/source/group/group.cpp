@@ -10,7 +10,6 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
-#include "common/trace.h"
 
 
 namespace casual
@@ -238,7 +237,7 @@ namespace casual
 
          Server::~Server()
          {
-            common::trace::Scope trace{ "queue::server::Server dtor"};
+            Trace trace{ "queue::server::Server dtor"};
 
             try
             {

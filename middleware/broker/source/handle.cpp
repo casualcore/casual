@@ -424,7 +424,7 @@ namespace casual
             }
             catch( const state::exception::Missing&)
             {
-               common::log::error << "failed to find instance on ACK - indicate inconsistency - action: ignore\n";
+               common::log::category::error << "failed to find instance on ACK - indicate inconsistency - action: ignore\n";
             }
          }
 

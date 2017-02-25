@@ -11,7 +11,6 @@
 #include "common/buffer/type.h"
 #include "common/log.h"
 #include "common/platform.h"
-#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 
@@ -1380,13 +1379,13 @@ namespace casual
                            else
                            {
                               // TODO: Much better
-                              common::log::warning << "id for " << field.name << " is invalid" << std::endl;
+                              common::log::category::warning << "id for " << field.name << " is invalid" << std::endl;
                            }
                         }
                         catch( const std::out_of_range&)
                         {
                            // TODO: Much better
-                           common::log::warning << "type for " << field.name << " is invalid" << std::endl;
+                           common::log::category::warning << "type for " << field.name << " is invalid" << std::endl;
                         }
                      }
                   }
@@ -1408,7 +1407,7 @@ namespace casual
                   if( ! result.emplace( field.name, field.id).second)
                   {
                      // TODO: Much better
-                     common::log::warning << "name for " << field.name << " is not unique" << std::endl;
+                     common::log::category::warning << "name for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1426,7 +1425,7 @@ namespace casual
                   if( ! result.emplace( field.id, field.name).second)
                   {
                      // TODO: Much better
-                     common::log::warning << "id for " << field.name << " is not unique" << std::endl;
+                     common::log::category::warning << "id for " << field.name << " is not unique" << std::endl;
                   }
                }
 

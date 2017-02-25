@@ -16,7 +16,6 @@
 #include "common/mockup/rm.h"
 #include "common/mockup/process.h"
 
-#include "common/trace.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/environment.h"

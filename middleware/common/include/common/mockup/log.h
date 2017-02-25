@@ -6,7 +6,7 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_LOG_H_
 
 #include "common/log.h"
-#include "common/trace.h"
+#include "common/log/trace.h"
 
 namespace casual
 {
@@ -19,10 +19,10 @@ namespace casual
          //!
          extern common::log::Stream log;
 
-         struct Trace : common::Trace
+         struct Trace : common::log::Trace
          {
             template< typename T>
-            Trace( T&& value) : common::Trace( std::forward< T>( value), log) {}
+            Trace( T&& value) : common::log::Trace( std::forward< T>( value), log) {}
          };
       } // mockup
    } // common

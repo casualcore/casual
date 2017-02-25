@@ -10,9 +10,6 @@
 #include "common/transaction/context.h"
 
 
-#include "common/trace.h"
-#include "common/internal/log.h"
-
 namespace casual
 {
    namespace common

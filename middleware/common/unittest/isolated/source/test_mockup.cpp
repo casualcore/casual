@@ -15,8 +15,6 @@
 
 #include "common/communication/ipc.h"
 #include "common/log.h"
-#include "common/trace.h"
-#include "common/internal/log.h"
 
 #include "common/environment.h"
 
@@ -109,7 +107,7 @@ namespace casual
 
 
          {
-            trace::Scope trace( "sender.add  200");
+            Trace trace( "sender.add  200");
             message::service::lookup::Request request;
             request.requested = "someService";
             request.process = process::handle();
@@ -124,7 +122,7 @@ namespace casual
          }
 
          {
-            trace::Scope trace( "read( ipc::receive::queue())  200");
+            Trace trace( "read( ipc::receive::queue())  200");
 
             message::service::lookup::Request request;
 
@@ -173,7 +171,7 @@ namespace casual
          }
 
          {
-            trace::Scope trace( "read( ipc::receive::queue())  200");
+            Trace trace( "read( ipc::receive::queue())  200");
 
             message::service::lookup::Request request;
 

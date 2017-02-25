@@ -12,7 +12,7 @@
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
 
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 
 

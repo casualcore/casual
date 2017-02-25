@@ -9,6 +9,7 @@
 #include "common/communication/message.h"
 #include "common/traits.h"
 #include "common/marshal/complete.h"
+#include "common/log/category.h"
 
 
 #include <map>
@@ -111,7 +112,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
+                        log::category::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
                      }
                   }
                   return false;

@@ -12,7 +12,6 @@
 #include "configuration/domain.h"
 #include "configuration/message/transform.h"
 
-#include "common/trace.h"
 #include "common/environment.h"
 
 

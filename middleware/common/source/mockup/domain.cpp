@@ -13,7 +13,6 @@
 
 
 #include "common/flag.h"
-#include "common/trace.h"
 
 
 #include <fstream>

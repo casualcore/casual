@@ -6,7 +6,6 @@
 #include "gateway/common.h"
 
 #include "common/algorithm.h"
-#include "common/trace.h"
 #include "common/environment.h"
 
 namespace casual

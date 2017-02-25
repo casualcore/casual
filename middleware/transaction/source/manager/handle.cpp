@@ -282,7 +282,7 @@ namespace casual
                         }
                         else
                         {
-                           common::log::error << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
+                           common::log::category::error << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
                         }
                      }
                   }
@@ -310,7 +310,7 @@ namespace casual
                         }
                         else
                         {
-                           common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                           common::log::category::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
                         }
                      }
 
@@ -438,7 +438,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                              common::log::category::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
 
                               local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                  state,
@@ -506,7 +506,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::error << "TODO: something has gone wrong...\n";
+                              common::log::category::error << "TODO: something has gone wrong...\n";
 
                               //
                               // prepare send reply. Will be sent after persistent write to file.
@@ -569,7 +569,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::error << "TODO: resource rollback - something has gone wrong...\n";
+                              common::log::category::error << "TODO: resource rollback - something has gone wrong...\n";
 
                               //
                               // prepare send reply. Will be sent after persistent write to file
@@ -773,7 +773,7 @@ namespace casual
                                        //
                                        // Something has gone wrong.
                                        //
-                                       common::log::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                                       common::log::category::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
 
                                        local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                           state,
@@ -955,14 +955,14 @@ namespace casual
                      else
                      {
                         // TODO: what to do? We have previously sent a prepare request, why do we not find the resource?
-                        common::log::error << "failed to locate resource: " <<  message.resource  << " for trid: " << message.trid << " - action: discard?\n";
+                        common::log::category::error << "failed to locate resource: " <<  message.resource  << " for trid: " << message.trid << " - action: discard?\n";
                      }
 
                   }
                   else
                   {
                      // TODO: what to do? We have previously sent a prepare request, why do we not find the trid?
-                     common::log::error << "failed to locate trid: " << message.trid << " - action: discard?\n";
+                     common::log::category::error << "failed to locate trid: " << message.trid << " - action: discard?\n";
                   }
                }
 
@@ -987,7 +987,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
+                        common::log::category::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
                         instance.state( state::resource::Proxy::Instance::State::error);
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
@@ -996,7 +996,7 @@ namespace casual
                   }
                   catch( common::exception::invalid::Argument&)
                   {
-                     common::log::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
+                     common::log::category::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
 
                      log << "resources: " << common::range::make( m_state.resources) << std::endl;
                   }
@@ -1132,7 +1132,7 @@ namespace casual
             }
             catch( ...)
             {
-               common::log::error << "unexpected error - action: send reply XAER_RMERR\n";
+               common::log::category::error << "unexpected error - action: send reply XAER_RMERR\n";
 
                common::error::handler();
 
@@ -1448,7 +1448,7 @@ namespace casual
                      }
                      default:
                      {
-                        common::log::error << "unexpected transaction stage: " << transaction << '\n';
+                        common::log::category::error << "unexpected transaction stage: " << transaction << '\n';
                         break;
                      }
                   }

@@ -10,7 +10,6 @@
 
 #include "common/mockup/domain.h"
 #include "common/communication/ipc.h"
-#include "common/trace.h"
 
 
 namespace casual

@@ -11,7 +11,6 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 #include "common/mockup/domain.h"
-#include "common/trace.h"
 
 #include "common/flag.h"
 

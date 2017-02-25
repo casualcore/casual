@@ -1,13 +1,9 @@
 //!
-//! log.cpp
-//!
-//! Created on: May 6, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "traffic/receiver.h"
 
-#include "common/internal/trace.h"
 #include "common/arguments.h"
 #include "common/process.h"
 

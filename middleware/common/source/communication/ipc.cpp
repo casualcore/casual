@@ -6,7 +6,7 @@
 #include "common/communication/log.h"
 #include "common/environment.h"
 #include "common/error.h"
-#include "common/trace.h"
+#include "common/log.h"
 #include "common/domain.h"
 
 
@@ -476,7 +476,7 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
+                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
                   }
                }
                return false;

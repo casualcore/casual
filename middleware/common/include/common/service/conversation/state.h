@@ -5,6 +5,7 @@
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_CONVERSATION_STATE_H_
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_CONVERSATION_STATE_H_
 
+#include "common/platform.h"
 
 namespace casual
 {
@@ -17,7 +18,7 @@ namespace casual
          {
             namespace descriptor
             {
-               using type = platform::descriptor_type;
+               using type = platform::descriptor::type;
             } // descriptor
 
             struct State

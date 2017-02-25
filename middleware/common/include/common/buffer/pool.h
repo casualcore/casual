@@ -11,7 +11,6 @@
 #include "common/exception.h"
 
 #include "common/log.h"
-#include "common/internal/log.h"
 
 
 #include <memory>
@@ -129,7 +128,7 @@ namespace casual
 
                      payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
 
-                     log::internal::buffer << "pool::get - buffer: " << result << std::endl;
+                     log::category::buffer << "pool::get - buffer: " << result << std::endl;
 
                      return result;
                   }
@@ -143,7 +142,7 @@ namespace casual
                   {
                      auto buffer = m_pool.release( handle);
 
-                     log::internal::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << std::endl;
+                     log::category::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << std::endl;
 
                      //
                      // Adjust the buffer size, with regards to the user size

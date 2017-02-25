@@ -112,7 +112,7 @@ namespace casual
 
                         if( pending_queue.empty())
                         {
-                           log::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
+                           log::category::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
                            return;
                         }
 
@@ -135,7 +135,7 @@ namespace casual
 
                         if( message.state == message::service::lookup::Reply::State::absent)
                         {
-                           log::error << "service '" << message.service.name << "' has no entry - action: send error reply\n";
+                           log::category::error << "service '" << message.service.name << "' has no entry - action: send error reply\n";
                            return;
                         }
 

@@ -255,7 +255,7 @@ namespace casual
                      }
                      catch( const exception::invalid::Argument& e)
                      {
-                        log::error << "failed to spawn executable: " << executable << " - " << e << '\n';
+                        log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
                      }
                   }
 
@@ -391,12 +391,12 @@ namespace casual
                         {
                            case common::process::lifetime::Exit::Reason::core:
                            {
-                              log::error << "process cored: " << message.death << '\n';
+                              log::category::error << "process cored: " << message.death << '\n';
                               break;
                            }
                            default:
                            {
-                              log::information << "process exited: " << message.death << '\n';
+                              log::category::information << "process exited: " << message.death << '\n';
                               break;
                            }
                         }
@@ -478,7 +478,7 @@ namespace casual
                            else
                            {
                               // invalid
-                              log::error << "invalid lookup request: " << '\n';
+                              log::category::error << "invalid lookup request: " << '\n';
                            }
                            return true;
                         }
@@ -562,7 +562,7 @@ namespace casual
 
                      if( found)
                      {
-                        log::error << "domain::manager only one instance is allowed for " << message.identification << '\n';
+                        log::category::error << "domain::manager only one instance is allowed for " << message.identification << '\n';
                         //
                         // A "singleton" is trying to connect, while we already have one connected
                         //

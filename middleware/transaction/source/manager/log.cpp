@@ -6,8 +6,6 @@
 #include "transaction/manager/state.h"
 
 #include "common/algorithm.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 
 #include <chrono>
 

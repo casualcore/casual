@@ -6,7 +6,6 @@
 
 #include "sql/database.h"
 
-#include "common/trace.h"
 #include "common/environment.h"
 
 //## includes protected section end   [.10]

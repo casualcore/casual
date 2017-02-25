@@ -7,8 +7,7 @@
 
 
 #include "common/communication/ipc.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include "common/buffer/pool.h"
 #include "common/buffer/transport.h"
@@ -67,7 +66,7 @@ namespace casual
 
                      inline message::service::lookup::Request::Context input( const char* buffer, long size, long flags)
                      {
-                        Trace trace( "call::validate::input", log::internal::transaction);
+                        log::Trace trace( "call::validate::input", log::category::transaction);
 
                         if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && common::transaction::Context::instance().current())
                         {
@@ -168,9 +167,9 @@ namespace casual
 
             descriptor_type Context::async( const std::string& service, char* idata, long ilen, long flags)
             {
-               trace::internal::Scope trace( "calling::Context::async");
+               Trace trace( "calling::Context::async");
 
-               log::internal::debug << "input - service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+               log::debug << "input - service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
 
                auto context = local::validate::input( idata, ilen, flags);
 
@@ -243,7 +242,7 @@ namespace casual
                {
                   message.service = target.service;
 
-                  log::internal::debug << "async - message: " << message << std::endl;
+                  log::debug << "async - message: " << message << std::endl;
 
                   communication::ipc::blocking::send( target.process.queue, message);
                }
@@ -257,9 +256,9 @@ namespace casual
 
             void Context::reply( descriptor_type& descriptor, char** odata, long& olen, long flags)
             {
-               trace::internal::Scope trace( "calling::Context::reply");
+               Trace trace( "calling::Context::reply");
 
-               log::internal::debug << "descriptor: " << descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+               log::debug << "descriptor: " << descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
                //
                // TODO: validate input...
@@ -288,7 +287,7 @@ namespace casual
                   throw common::exception::xatmi::no::Message();
                }
 
-               log::internal::debug << "reply: " << reply << '\n';
+               log::debug << "reply: " << reply << '\n';
 
                descriptor = reply.descriptor;
 
@@ -356,7 +355,7 @@ namespace casual
                   buffer::pool::Holder::instance().insert( std::move( reply.buffer));
                }
 
-               log::internal::debug << "descriptor: " << reply.descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+               log::debug << "descriptor: " << reply.descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
 
                if( reply.error == TPESVCFAIL)
                {

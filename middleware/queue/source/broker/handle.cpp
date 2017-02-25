@@ -98,7 +98,7 @@ namespace casual
                   {
                      if( ! optional::send( std::forward< D>( device), std::forward< M>( message)))
                      {
-                        common::log::error << "device [" << device << "] unavailable for reply - action: ignore\n";
+                        common::log::category::error << "device [" << device << "] unavailable for reply - action: ignore\n";
                      }
                   }
 

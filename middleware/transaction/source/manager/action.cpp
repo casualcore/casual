@@ -8,9 +8,7 @@
 #include "transaction/common.h"
 
 #include "common/process.h"
-#include "common/internal/log.h"
 #include "common/environment.h"
-#include "common/internal/trace.h"
 #include "common/server/handle.h"
 
 
@@ -129,7 +127,7 @@ namespace casual
                               // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
                               // hope to send it later...
                               //
-                              log::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
+                              log::category::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
 
                               m_state.persistent.replies.emplace_back( instance.process.queue, message::shutdown::Request{});
                            }
@@ -249,7 +247,7 @@ namespace casual
                }
                catch( const exception::queue::Unavailable&)
                {
-                  common::log::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
+                  common::log::category::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
                   //
                   // ipc-queue has been removed...
                   // TODO attention: deduce from message.message.type what we should do

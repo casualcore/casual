@@ -137,7 +137,7 @@ namespace casual
 
             common::range::copy( source, std::begin( result));
 
-            common::log::internal::debug << "copy - source: " << source << " result: " << result << std::endl;
+            common::log::category::buffer << "copy - source: " << source << " result: " << result << std::endl;
 
             return result;
          }

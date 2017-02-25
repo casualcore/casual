@@ -15,9 +15,9 @@
 #include "common/process.h"
 
 #include "common/log.h"
+#include "common/log/category.h"
 #include "common/error.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 
 
@@ -49,7 +49,7 @@ namespace casual
 
          Context::Context()
          {
-            trace::internal::Scope log{ "server::Context instansiated"};
+            Trace log{ "server::Context instansiated"};
          }
 
 
@@ -67,7 +67,7 @@ namespace casual
             m_state.jump.buffer.len = len;
             m_state.jump.forward.service.clear();
 
-            log::internal::debug << "Context::long_jump_return - jump state: " << m_state.jump << '\n';
+            log::debug << "Context::long_jump_return - jump state: " << m_state.jump << '\n';
 
             longjmp( m_state.long_jump_buffer, State::jump_t::From::c_return);
          }
@@ -82,14 +82,14 @@ namespace casual
 
             m_state.jump.forward.service = service ? service : "";
 
-            log::internal::debug << "Context::forward - jump state: " << m_state.jump << '\n';
+            log::debug << "Context::forward - jump state: " << m_state.jump << '\n';
 
             longjmp( m_state.long_jump_buffer, State::jump_t::From::c_forward);
          }
 
          void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))
          {
-            trace::internal::Scope trace{ "server::Context::advertise"};
+            Trace trace{ "server::Context::advertise"};
 
             Service prospect{ service, adress};
 
@@ -99,7 +99,7 @@ namespace casual
             if( prospect.origin.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
                prospect.origin.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::warning << "service name '" << service << "' truncated to '" << prospect.origin << "'";
+               log::category::warning << "service name '" << service << "' truncated to '" << prospect.origin << "'";
             }
 
 
@@ -144,7 +144,7 @@ namespace casual
 
          void Context::unadvertise( const std::string& service)
          {
-            trace::internal::Scope log{ "server::Context::unadvertise"};
+            Trace log{ "server::Context::unadvertise"};
 
             if( m_state.services.erase( service) != 1)
             {
@@ -163,7 +163,7 @@ namespace casual
 
          void Context::configure( const server::Arguments& arguments)
          {
-            trace::internal::Scope log{ "server::Context::configure"};
+            Trace log{ "server::Context::configure"};
 
             m_state.server_done = arguments.server_done;
 

@@ -6,8 +6,7 @@
 #include "common/exception.h"
 #include "common/error.h"
 #include "common/file.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 #include "common/signal.h"
 #include "common/string.h"
 #include "common/environment.h"
@@ -224,9 +223,9 @@ namespace casual
 
                Handle handle( const Uuid& identity, Directive directive)
                {
-                  trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
+                  Trace trace{ "instance::handle::fetch"};
 
-                  log::internal::debug << "identity: " << identity << ", directive: " << directive << '\n';
+                  log::debug << "identity: " << identity << ", directive: " << directive << '\n';
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -237,9 +236,9 @@ namespace casual
 
                Handle handle( platform::pid::type pid , Directive directive)
                {
-                  trace::Scope trace{ "instance::handle::fetch (pid)", log::internal::trace};
+                  Trace trace{ "instance::handle::fetch (pid)"};
 
-                  log::internal::debug << "pid: " << pid << ", directive: " << directive << '\n';
+                  log::debug << "pid: " << pid << ", directive: " << directive << '\n';
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -261,12 +260,12 @@ namespace casual
                      {
                         case M::Directive::singleton:
                         {
-                           log::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
+                           log::category::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
                            throw exception::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
                         }
                         case M::Directive::shutdown:
                         {
-                           log::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
+                           log::category::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
                            throw exception::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
                         }
                         default:
@@ -281,7 +280,7 @@ namespace casual
 
             void connect( const Uuid& identity, const Handle& process)
             {
-               trace::Scope trace{ "process::instance::connect identity", log::internal::trace};
+               Trace trace{ "process::instance::connect identity"};
 
                message::domain::process::connect::Request request;
                request.identification = identity;
@@ -297,7 +296,7 @@ namespace casual
 
             void connect( const Handle& process)
             {
-               trace::Scope trace{ "process::instance::connect process", log::internal::trace};
+               Trace trace{ "process::instance::connect process"};
 
                message::domain::process::connect::Request request;
                request.process = process;
@@ -333,7 +332,7 @@ namespace casual
 
          void sleep( std::chrono::microseconds time)
          {
-            log::internal::debug << "process::sleep time: " << time.count() << "us\n";
+            log::debug << "process::sleep time: " << time.count() << "us\n";
 
             //
             // We check signals before we sleep
@@ -522,7 +521,7 @@ namespace casual
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
          {
-            trace::Scope trace{ "process::spawn", log::internal::trace};
+            Trace trace{ "process::spawn"};
 
             path = environment::string( path);
 
@@ -556,7 +555,7 @@ namespace casual
 
             platform::pid::type pid = 0;
 
-            log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+            log::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
             {
                local::spawn::Attributes attributes;
@@ -602,7 +601,7 @@ namespace casual
 
             process::sleep( std::chrono::microseconds{ 200});
 
-            log::internal::debug << "process::spawned pid: " << pid << '\n';
+            log::debug << "process::spawned pid: " << pid << '\n';
 
             //
             // Try to figure out if the process started correctly..
@@ -689,7 +688,7 @@ namespace casual
                            }
                            default:
                            {
-                              log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
+                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
                               throw std::system_error{ error::last(), std::system_category()};
                            }
                         }
@@ -733,7 +732,7 @@ namespace casual
 
                   while( loop());
 
-                  //log::internal::debug << "wait exit: " << exit << '\n';
+                  //log::debug << "wait exit: " << exit << '\n';
 
                   return exit;
                }
@@ -777,7 +776,7 @@ namespace casual
 
          std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids)
          {
-            log::internal::debug << "process::terminate pids: " << range::make( pids) << '\n';
+            log::debug << "process::terminate pids: " << range::make( pids) << '\n';
 
             std::vector< platform::pid::type> result;
             for( auto pid : pids)
@@ -820,7 +819,7 @@ namespace casual
 
          Handle ping( platform::ipc::id::type queue)
          {
-            trace::Scope trace{ "process::ping", log::internal::trace};
+            Trace trace{ "process::ping"};
 
             message::server::ping::Request request;
             request.process = process::handle();
@@ -862,7 +861,7 @@ namespace casual
 
             std::vector< lifetime::Exit> ended()
             {
-               trace::internal::Scope trace{ "process::lifetime::ended"};
+               Trace trace{ "process::lifetime::ended"};
 
                //
                // We'll only handle child signals.
@@ -880,7 +879,7 @@ namespace casual
                   }
                   else
                   {
-                     log::internal::debug << "terminations: " << range::make( terminations) << '\n';
+                     log::debug << "terminations: " << range::make( terminations) << '\n';
                      return terminations;
                   }
                }
@@ -890,7 +889,7 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< platform::pid::type>& pids)
             {
-               log::internal::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
+               log::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
 
                std::vector< Exit> result;
 
@@ -901,10 +900,10 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout)
             {
-               trace::internal::Scope trace{ "common::process::lifetime::wait"};
+               Trace trace{ "common::process::lifetime::wait"};
 
 
-               log::internal::debug << "wait for pids: " << range::make( pids) << std::endl;
+               log::debug << "wait for pids: " << range::make( pids) << std::endl;
 
                if( pids.empty())
                   return {};

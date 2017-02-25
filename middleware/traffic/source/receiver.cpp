@@ -3,14 +3,14 @@
 //!
 
 #include "traffic/receiver.h"
-
+#include "traffic/common.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/server/handle.h"
 #include "common/communication/ipc.h"
 
-#include "common/internal/trace.h"
+
 
 namespace casual
 {
@@ -78,7 +78,7 @@ namespace casual
 
       Receiver::Receiver( const common::Uuid& application)
       {
-         common::trace::internal::Scope trace( "traffic::Receiver::Receiver( application)");
+         Trace trace( "traffic::Receiver::Receiver( application)");
 
          //
          // Connect to domain
@@ -99,14 +99,14 @@ namespace casual
 
       Receiver::Receiver() : Receiver{ uuid::empty()}
       {
-         common::trace::internal::Scope trace( "traffic::Receiver::Receiver");
+         Trace trace( "traffic::Receiver::Receiver");
 
 
       }
 
       Receiver::~Receiver()
       {
-         common::trace::internal::Scope trace( "traffic::Receiver::~Receiver");
+         Trace trace( "traffic::Receiver::~Receiver");
 
          //
          // We could try to process pending traffic messages, but if this

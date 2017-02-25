@@ -8,7 +8,6 @@
 #include "broker/broker.h"
 
 
-#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 #include "sf/server.h"

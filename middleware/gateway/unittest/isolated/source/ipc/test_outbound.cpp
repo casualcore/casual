@@ -8,6 +8,7 @@
 
 #include "gateway/message.h"
 #include "gateway/environment.h"
+#include "gateway/common.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -15,9 +16,6 @@
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"
 #include "common/mockup/file.h"
-
-
-#include "common/trace.h"
 
 
 namespace casual
@@ -51,7 +49,7 @@ namespace casual
 
                auto file = mockup::file::temporary::content( "", std::to_string( queue));
 
-               log::internal::debug << "created domain file: " << file << " - qid: " << queue << '\n';
+               log << "created domain file: " << file << " - qid: " << queue << '\n';
 
                return file;
             }

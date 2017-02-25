@@ -4,6 +4,7 @@
 
 #include "domain/delay/delay.h"
 #include "domain/delay/message.h"
+#include "domain/common.h"
 
 #include "common/server/handle.h"
 #include "common/arguments.h"
@@ -21,7 +22,7 @@ namespace casual
 
          void start( State state)
          {
-            Trace trace{ "domain::delay::start", log::internal::trace};
+            Trace trace{ "domain::delay::start"};
 
             //
             // Connect to domain
@@ -106,7 +107,7 @@ namespace casual
 
                      if( ! ipc.put( message.message, communication::ipc::policy::non::Blocking{}))
                      {
-                        log::internal::debug << "failed to send delayed message to ipc: " << message.destination << " - action: try to resend in 500ms\n";
+                        log << "failed to send delayed message to ipc: " << message.destination << " - action: try to resend in 500ms\n";
 
                         //
                         // Could not send... We set a new timeout in .5s
@@ -121,7 +122,7 @@ namespace casual
                   }
                   catch( const exception::queue::Unavailable&)
                   {
-                     log::internal::debug << "failed to send delayed message to ipc: " << message.destination << " queue is unavailable - action: ignore\n";
+                     log << "failed to send delayed message to ipc: " << message.destination << " queue is unavailable - action: ignore\n";
                   }
                }
             }
@@ -154,7 +155,7 @@ namespace casual
          {
             void pump( State& state)
             {
-               Trace trace{ "domain::delay::message::pump", log::internal::trace};
+               Trace trace{ "domain::delay::message::pump"};
 
 
                communication::ipc::Helper ipc{ handle::Timeout{ state}};

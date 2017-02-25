@@ -12,7 +12,6 @@
 #include "common/mockup/domain.h"
 
 #include "common/environment.h"
-#include "common/trace.h"
 
 #include "common/message/domain.h"
 

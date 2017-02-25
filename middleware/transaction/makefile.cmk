@@ -81,7 +81,7 @@ target = LinkLibrary( 'bin/casual-resource-proxy-server',
     Compile( 'source/resource/proxy_server.cpp'),
     Compile( 'source/resource/proxy.cpp'),
    ],
-   ['casual-common', 'casual-sf'])
+   [ manager_archive, 'casual-common', 'casual-sf'])
 
 install_lib.append( target)
 

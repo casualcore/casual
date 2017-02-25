@@ -5,7 +5,7 @@
 #include "common/domain.h"
 
 #include "common/environment.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include <fstream>
 
@@ -84,7 +84,7 @@ namespace casual
          {
             file::scoped::Path create( const process::Handle& process, const Identity& identity)
             {
-               trace::internal::Scope trace{ "common::domain::singleton::create"};
+               Trace trace{ "common::domain::singleton::create"};
 
 
                auto path = environment::domain::singleton::file();
@@ -100,7 +100,7 @@ namespace casual
                   output << identity.name << '\n';
                   output << identity.id << std::endl;
 
-                  log::internal::debug << "domain information - id: " << identity << " - process: " << process << '\n';
+                  log::debug << "domain information - id: " << identity << " - process: " << process << '\n';
                }
                else
                {
@@ -134,7 +134,7 @@ namespace casual
 
             Result read()
             {
-               trace::internal::Scope trace{ "common::domain::singleton::read"};
+               Trace trace{ "common::domain::singleton::read"};
 
                process::pattern::Sleep retries{
                   { std::chrono::milliseconds{ 10}, 10},
@@ -161,7 +161,7 @@ namespace casual
                      environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
                      common::domain::identity( result.identity);
 
-                     log::internal::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
+                     log::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
 
                      return result;
                   }
