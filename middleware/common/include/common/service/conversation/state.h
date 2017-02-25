@@ -21,6 +21,20 @@ namespace casual
                using type = platform::descriptor::type;
             } // descriptor
 
+            namespace state
+            {
+               namespace descriptor
+               {
+                  struct Holder
+                  {
+                     Holder();
+
+                  };
+
+               } // descriptor
+
+            } // state
+
             struct State
             {
 

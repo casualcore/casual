@@ -17,6 +17,7 @@ namespace casual
          {
             struct Node
             {
+
                platform::ipc::id::type address = 0;
 
                CASUAL_CONST_CORRECT_MARSHAL(

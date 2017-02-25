@@ -21,10 +21,13 @@ namespace casual
             public:
                static Context& instance();
 
-               descriptor::type connect( const std::string& service, platform::buffer::raw::immutable::type data, platform::buffer::raw::size::type size, long flags);
+               descriptor::type connect( const std::string& service, platform::buffer::raw::type data, platform::buffer::raw::size::type size, long flags);
 
             private:
                Context();
+
+               State m_state;
+
             };
 
          } // conversation
