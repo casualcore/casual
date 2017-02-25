@@ -264,6 +264,7 @@ namespace casual
 
                Implementation::Implementation( YAML::Emitter& output) : m_output( output)
                {
+                  m_output << YAML::BeginDoc;
                   m_output << YAML::BeginMap;
                }
 
