@@ -103,10 +103,10 @@ namespace casual
                      template<typename IO>
                      Holder name( IO&& stream, std::string name)
                      {
-                        using yml_type = maker::factory< Holder, Interface,   yaml::Load, yaml::Reader>;
-                        using jsn_type = maker::factory< Holder, Interface,   json::Load, json::Reader>;
-                        using xml_type = maker::factory< Holder, Interface,   xml::Load,  xml::Reader>;
-                        using ini_type = maker::factory< Holder, Interface,   ini::Load,  ini::Reader>;
+                        using yml_type = maker::factory< Holder, Interface,   yaml::Load, yaml::relaxed::Reader>;
+                        using jsn_type = maker::factory< Holder, Interface,   json::Load, json::relaxed::Reader>;
+                        using xml_type = maker::factory< Holder, Interface,   xml::Load,  xml::relaxed::Reader>;
+                        using ini_type = maker::factory< Holder, Interface,   ini::Load,  ini::relaxed::Reader>;
 
                         static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
                         {
