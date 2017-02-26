@@ -6,6 +6,7 @@
 #include "sf/xatmi_call.h"
 #include "sf/namevaluepair.h"
 #include "sf/archive/log.h"
+#include "sf/archive/maker.h"
 
 #include "broker/admin/brokervo.h"
 #include "domain/manager/admin/vo.h"
@@ -623,10 +624,16 @@ namespace casual
             print::instances( set_format( std::cout), state);
          }
 
-         void list_pending()
-         {
 
+         void output_state( const std::string& format)
+         {
+            auto archive = sf::archive::writer::from::name( std::cout, format);
+
+            auto state = call::state();
+
+            archive << CASUAL_MAKE_NVP( state);
          }
+
 
       } // action
 
@@ -645,7 +652,8 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"--admin"}, "casual administration services will be included", casual::broker::global::admin_services),
          casual::common::argument::directive( {"-ls", "--list-services"}, "list services", &casual::broker::action::list_services),
          casual::common::argument::directive( {"-li", "--list-instances"}, "list instances", &casual::broker::action::list_instances),
-         casual::common::argument::directive( {"-lp", "--list-pending"}, "list pending service call", &casual::broker::action::list_pending),
+         casual::common::argument::directive( {"-s", "--state"}, "prints the state on stdout in the provided format (json|yaml|xml|ini)", &casual::broker::action::output_state),
+
       }
    };
 
