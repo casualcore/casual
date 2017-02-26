@@ -176,6 +176,8 @@ namespace casual
 
          } // name
 
+         bool exists( const std::string& path);
+
          bool create( const std::string& path);
 
          bool remove( const std::string& path);

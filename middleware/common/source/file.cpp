@@ -9,6 +9,7 @@
 #include "common/exception.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
+#include "common/memory.h"
 
 #include <cstdio>
 
@@ -302,6 +303,10 @@ namespace casual
 
          } // name
 
+         bool exists( const std::string& path)
+         {
+            return memory::guard( opendir( path.c_str()), &closedir).get() != nullptr;
+         }
 
          bool create( const std::string& path)
          {
