@@ -11,7 +11,7 @@ source scl_source enable devtoolset-4
 
 umask 000
 cd /git/casual
-find . -name "*.gcda"| xargs rm
+find . -name "*.gcda" -print | xargs rm
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make -d -a --use-valgrind make && \
    casual-make clean && \
@@ -33,7 +33,10 @@ casual-make -d -a --use-valgrind make && \
    cp casual-middleware.tar /git/casual/. && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
    rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  &&
-   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/.
+   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
+   cd /git/casual && \
+   mkdir -p /git/casual/coverage && \
+   gcovr -r . --html --html-details -o coverage/index.html
 '''
 
 //
@@ -110,12 +113,6 @@ node {
 
      slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-//   bitbucketStatusNotify(
-//      buildState: 'INPROGRESS',
-//      buildKey: 'build',
-//      buildName: 'Build'
-//   )
-
   try
   {
       stage('Checkout')
@@ -140,6 +137,16 @@ node {
              tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
           archive includes: '**/casual-middleware*.rpm'
+
+          publishHTML (target: [
+              allowMissing: false,
+              alwaysLinkToLastBuild: false,
+              keepAll: true,
+              reportDir: 'coverage',
+              reportFiles: '*.html',
+              reportName: "GCOV Report"
+          ])
+
       }
 
       if ( "${env.BRANCH_NAME}" == "develop" )
@@ -176,24 +183,11 @@ node {
       }
       slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
       currentBuild.result = 'SUCCESS'
-///
-//      bitbucketStatusNotify(
-//         buildState: 'SUCCESSFUL',
-//         buildKey: 'build',
-//         buildName: 'Build'
-//      )
-//
    }
    catch (Exception e)
    {
        slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
        currentBuild.result = 'FAILURE'
-//      bitbucketStatusNotify(
-//          buildState: 'FAILED',
-//          buildKey: 'build',
-//          buildName: 'Build',
-//          buildDescription: 'Something went wrong with build!'
-//      )
    }
 
 }
