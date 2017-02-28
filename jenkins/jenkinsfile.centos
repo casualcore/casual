@@ -7,6 +7,8 @@ def backend_builder = '''#! /bin/sh
 CASUAL_VERSION="0.42"
 CASUAL_RELEASE="1"
 
+source scl_source enable devtoolset-4
+
 umask 000
 cd /git/casual
 find . -name "*.gcda"| xargs rm
@@ -172,7 +174,8 @@ node {
          }
 
       }
-     slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+      slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+      currentBuild.result = 'SUCCESS'
 ///
 //      bitbucketStatusNotify(
 //         buildState: 'SUCCESSFUL',
@@ -184,7 +187,7 @@ node {
    catch (Exception e)
    {
        slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-
+       currentBuild.result = 'FAILURE'
 //      bitbucketStatusNotify(
 //          buildState: 'FAILED',
 //          buildKey: 'build',

@@ -344,8 +344,18 @@ int build( const std::string& c_file, const Settings& settings)
 
    arguments.emplace_back( "-lcasual-xatmi");
 
-   arguments.push_back( "-I${CASUAL_HOME}/include");
-   arguments.push_back( "-L${CASUAL_HOME}/lib");
+   if( common::environment::variable::exists( "CASUAL_HOME"))
+   {
+      auto casual_home = common::environment::variable::get( "CASUAL_HOME");
+
+      if( common::directory::exists( casual_home + "/include"))
+         arguments.push_back( "-I" + casual_home + "/include");
+
+      if( common::directory::exists( casual_home + "/lib"))
+         arguments.push_back( "-L" + casual_home + "/lib");
+   }
+
+
 
    //
    // Make sure we resolve environment stuff

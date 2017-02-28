@@ -1,0 +1,237 @@
+@startuml
+
+title gateway startup
+
+
+box "domain A" #LightBlue
+   actor "client" as CA
+   participant "broker" as BA
+   participant "TM" as TMA
+   participant "gateway" as GA
+   participant "outbound" as OA
+   
+end box
+
+box "domain B"
+   participant "inbound" as IB
+   participant "gateway" as GB 
+   participant "TM" as TMB
+   participant "rm-proxy" as RMPB
+   participant "Server B" as SB
+   database "RM" as RMB
+   participant "broker" as BB
+end box
+
+
+
+activate CA 
+CA -> CA: tx_begin
+CA -> CA: tpcall X
+
+group discover
+
+activate CA
+CA -> BA: Type::service_name_lookup_request (X)
+activate BA
+BA -> GA: Type::gateway_domain_discover_request
+deactivate BA
+activate GA
+GA -> OA: Type::gateway_domain_discover_request
+deactivate GA
+activate OA
+OA -> IB: Type::interdomain_domain_discover_request
+deactivate OA
+activate IB
+
+IB -> GB: Type::gateway_domain_discover_request
+deactivate IB
+
+activate GB
+note over GB, BB : casual-queue could also be requested
+GB -> BB:Type::gateway_domain_discover_request
+deactivate GB
+activate BB
+BB -> GB: Type::gateway_domain_discover_reply
+deactivate BB
+activate GB
+GB -> IB: Type::gateway_domain_discover_reply
+deactivate GB
+activate IB
+
+
+IB -> OA: Type::interdomain_domain_discover_reply
+deactivate IB
+activate OA
+
+
+note over OA,BA: We adverties the found services\nwe might change this and only act on\nType::gateway_domain_discover_accumulated_reply.
+OA -> BA: Type::gateway_domain_advertise (X)
+activate BA
+BA -> CA: Type::service_name_lookup_reply (X)
+deactivate BA
+
+OA -> GA: Type::gateway_domain_discover_reply
+deactivate OA
+activate GA
+
+
+note over GA,BA: Could be replies from several domains.
+
+GA -> BA: Type::gateway_domain_discover_accumulated_reply
+deactivate GA
+activate BA
+
+end
+
+group call service
+
+CA -> OA: Type::service_call
+deactivate BA
+activate OA
+OA -> TMA: Type::transaction_external_resource_involved
+activate TMA
+TMA -> TMA: associate trid to resource
+OA -> IB: Type::interdomain_service_call
+deactivate TMA
+deactivate OA
+activate IB
+
+IB -> BB: Type::service_name_lookup_request (X)
+deactivate IB
+activate BB
+BB -> IB: Type::service_name_lookup_reply (x)
+deactivate BB
+activate IB
+
+' service call to SB
+IB -> SB: Type::service_call
+deactivate IB
+activate SB
+SB -> RMB: xa_start
+activate RMB
+SB -> TMB: Type::transaction_resource_involved
+activate TMB
+TMB -> TMB: associate trid to rm-id
+deactivate TMB
+
+SB -> SB: call user-service
+activate SB
+
+SB -> RMB: update stuff in db
+SB -> SB: tpreturn
+deactivate SB
+
+SB -> RMB: xa_end
+deactivate RMB
+
+SB -> BB: Type::service_acknowledge
+
+activate BB
+BB -> BB: make instance avaliable
+SB -> IB: Type::service_reply
+deactivate BB
+deactivate SB
+
+
+
+activate IB
+IB -> OA: Type::interdomain_service_reply
+deactivate IB
+activate OA
+OA -> CA: Type::service_reply
+deactivate OA
+deactivate CA
+
+end
+
+group commit transaction
+
+CA -> CA: tx_commit
+activate CA
+CA -> TMA: Type::transaction_commit_request
+activate TMA
+
+note over TMA
+  In this particular example it would be
+  Type::transaction_resource_commit
+  with on-phase-optimization, but we pretend that
+  other resources are involved
+end note 
+
+TMA -> OA: Type::transaction_resource_prepare_request
+deactivate TMA
+activate OA
+
+
+
+OA -> IB: Type::interdomain_transaction_resource_prepare_request
+deactivate OA
+activate IB
+IB -> TMB: Type::transaction_resource_prepare_request
+deactivate IB
+activate TMB
+TMB -> RMPB: Type::transaction_resource_prepare_request
+deactivate TMB
+activate RMPB
+
+RMPB -> RMB: xa_prepare
+activate RMB
+RMB -> RMPB: xa_prepare XA_OK
+deactivate RMB
+
+RMPB -> TMB: Type::transaction_resource_prepare_reply
+deactivate RMPB
+activate TMB
+
+TMB -> IB: Type::transaction_resource_prepare_reply
+deactivate TMB
+activate IB
+IB -> OA: Type::interdomain_transaction_resource_prepare_reply
+deactivate IB
+activate OA
+OA -> TMA: Type::transaction_resource_prepare_reply
+deactivate OA
+activate TMA
+
+TMA -> OA: Type::transaction_resource_commit_request
+deactivate TMA
+activate OA
+OA -> IB: Type::interdomain_transaction_resource_commit_request
+deactivate OA
+activate IB
+IB -> TMB: Type::transaction_resource_commit_request
+deactivate IB
+activate TMB
+TMB -> RMPB: Type::transaction_resource_commit_request
+deactivate TMB
+activate RMPB
+
+RMPB -> RMB: xa_commit
+activate RMB
+RMB -> RMPB: xa_commit XA_OK
+deactivate RMB
+
+RMPB -> TMB: Type::transaction_resource_commit_reply
+deactivate RMPB
+activate TMB
+TMB -> IB: Type::transaction_resource_commit_reply
+deactivate TMB
+activate IB
+IB -> OA: Type::interdomain_transaction_resource_commit_reply
+deactivate IB
+activate OA
+OA -> TMA: Type::transaction_resource_commit_reply
+deactivate OA
+activate TMA
+TMA -> CA: Type::transaction_commit_reply
+deactivate TMA
+deactivate CA
+deactivate CA
+
+deactivate BB
+
+end
+
+
+
+@enduml

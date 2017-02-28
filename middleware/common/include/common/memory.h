@@ -94,7 +94,7 @@ namespace casual
 
 
          template< typename T>
-         auto append( const T& value, platform::binary::type& buffer) -> decltype( buffer.size())
+         auto append( const T& value, platform::binary::type& buffer)
          {
             auto first = reinterpret_cast< const unsigned char*>( &value);
 
@@ -145,15 +145,23 @@ namespace casual
             return offset + copy( source, destination);
          }
 
-         /*
-          * not needed for now...
-          *
+
+         //!
+         //! Create a 'deallocator' that uses @p deleter when it goes
+         //! out of scope.
+         //!
+         //! Aims to improve safety when fiddeling with c-api:s
+         //!
+         //! @param memory
+         //! @param deleter
+         //! @return a guard that will apply deleter in dtor
+         //!
          template< typename T, typename D>
-         auto guard( T* memory, D&& deleter) -> decltype( std::unique_ptr< T, D>( memory, std::forward< D>( deleter)))
+         auto guard( T* memory, D&& deleter)
          {
             return std::unique_ptr< T, D>( memory, std::forward< D>( deleter));
          }
-         */
+
 
       } // memory
 
