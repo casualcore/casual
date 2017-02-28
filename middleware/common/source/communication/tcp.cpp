@@ -484,6 +484,8 @@ namespace casual
                            char* const last,
                            common::Flags< Flag> flags)
                      {
+                        Trace trace{ "tcp::native::local::receive"};
+
                         log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( first) << ", size: " << last - first << ", flags: " << flags << '\n';
 
 
@@ -509,96 +511,143 @@ namespace casual
                   } // <unnamed>
                } // local
 
-               bool send( const Socket& socket, const message::Transport& transport, common::Flags< Flag> flags)
+
+               Uuid send( const Socket& socket, const communication::message::Complete& complete, common::Flags< Flag> flags)
                {
                   Trace trace{ "tcp::native::send"};
 
-                  auto first = &transport.message;
-                  const auto last = first + transport.size();
 
                   try
                   {
-                     while( first != last)
-                     {
-                        const auto bytes = local::send( socket.descriptor(), first, std::distance( first, last), flags);
 
-                        if( bytes > std::distance( first, last))
+                     auto local_send = []( auto descriptor, auto first, auto last, auto flags){
+                        while( first != last)
                         {
-                           throw exception::Casual( "somehow more bytes was sent over the socket than requested");
-                        }
+                           const auto bytes = local::send( descriptor, first, std::distance( first, last), flags);
 
-                        first += bytes;
+                           if( bytes > std::distance( first, last))
+                           {
+                              throw exception::Casual( "somehow more bytes was sent over the socket than requested");
+                           }
+
+                           first += bytes;
+                        }
+                     };
+
+                     //
+                     // First we send the header
+                     //
+                     {
+                        auto header = complete.header();
+
+                        auto first = reinterpret_cast< const char*>( &header);
+                        auto last = first + communication::message::complete::network::header::size();
+
+                        local_send( socket.descriptor(), first, last, flags);
                      }
-                     log << "tcp send ---> socket: " << socket << ", transport: " << transport << '\n';
-                     return true;
+
+                     //
+                     // Now we can send the payload
+                     //
+                     {
+                        local_send( socket.descriptor(), complete.payload.data(), complete.payload.data() + complete.payload.size(), flags);
+                     }
+
+                     log << "tcp send ---> socket: " << socket << ", complete: " << complete << '\n';
+
+                     return complete.correlation;
                   }
                   catch( const exception::communication::no::Message&)
                   {
-                     return false;
+                     return uuid::empty();
                   }
                }
 
-               bool receive( const Socket& socket, message::Transport& transport, common::Flags< Flag> flags)
+               communication::message::Complete receive( const Socket& socket, common::Flags< Flag> flags)
                {
                   Trace trace{ "tcp::native::receive"};
 
-                  auto current = reinterpret_cast< char*>( &transport.message);
-
                   try
                   {
+
+                     communication::message::complete::network::Header header;
+
+                     auto current = reinterpret_cast< char*>( &header);
 
                      //
                      // First we get the header
                      //
                      {
-                        const auto header_end = current + transport.header_size();
+                        const auto header_end = current + communication::message::complete::network::header::size();
 
-                        current = local::receive( socket.descriptor(), current, header_end, flags);
+                        local::receive( socket.descriptor(), current, header_end, flags);
+
+                        log << "header: " << header << '\n';
                      }
 
                      //
                      // Now we can get the payload
                      //
-                     {
-                        const auto payload_end = current + transport.pyaload_size();
 
-                        local::receive( socket.descriptor(), current, payload_end, flags);
-                     }
+                     communication::message::Complete message{ header};
 
-                     log << "tcp receive <---- socket: " << socket << " , transport: " << transport << '\n';
+                     local::receive( socket.descriptor(), message.payload.data(), message.payload.data() + message.payload.size(), flags);
 
-                     return true;
+                     log << "tcp receive <---- socket: " << socket << " , complete: " << message << '\n';
+
+                     return message;
                   }
                   catch( const exception::communication::no::Message&)
                   {
-                     return false;
+                     return {};
                   }
                }
+
+               namespace local
+               {
+                  namespace
+                  {
+                     policy::cache_range_type receive( const inbound::Connector& tcp, policy::cache_type& cache, common::Flags< Flag> flags)
+                     {
+                        auto message = native::receive( tcp.socket(), {});
+
+                        if( message)
+                        {
+                           cache.push_back( std::move( message));
+
+                           return { std::end( cache) - 1, std::end( cache)};
+                        }
+                        return {};
+                     }
+                  } // <unnamed>
+               } // local
 
             } // native
 
             namespace policy
             {
-               bool basic_blocking::receive( const inbound::Connector& tcp, message::Transport& transport)
+
+               cache_range_type basic_blocking::receive( const inbound::Connector& tcp, cache_type& cache)
                {
-                  return native::receive( tcp.socket(), transport, {});
+                  return native::local::receive( tcp, cache, {});
                }
 
-               bool basic_blocking::send( const outbound::Connector& tcp, const message::Transport& transport)
+               Uuid basic_blocking::send( const outbound::Connector& tcp, const communication::message::Complete& complete)
                {
-                  return native::send( tcp.socket(), transport, {});
+                  return native::send( tcp.socket(), complete, {});
                }
+
 
                namespace non
                {
-                  bool basic_blocking::receive( const inbound::Connector& tcp, message::Transport& transport)
+                  cache_range_type basic_blocking::receive( const inbound::Connector& tcp, cache_type& cache)
                   {
-                     return native::receive( tcp.socket(), transport, native::Flag::non_blocking);
+                     return native::local::receive( tcp, cache, native::Flag::non_blocking);
                   }
 
-                  bool basic_blocking::send( const outbound::Connector& tcp, const message::Transport& transport)
+                  Uuid basic_blocking::send( const outbound::Connector& tcp, const communication::message::Complete& complete)
                   {
-                     return native::send( tcp.socket(), transport, native::Flag::non_blocking);
+                     return native::send( tcp.socket(), complete, native::Flag::non_blocking);
                   }
 
                } // non

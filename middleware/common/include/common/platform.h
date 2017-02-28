@@ -1,8 +1,5 @@
 //!
-//! casual_utility_platform.h
-//!
-//! Created on: Jun 14, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_UTILITY_PLATFORM_H_

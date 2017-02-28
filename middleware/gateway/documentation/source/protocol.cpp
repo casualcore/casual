@@ -21,6 +21,32 @@
 
 namespace casual
 {
+   namespace common
+   {
+      namespace communication
+      {
+         namespace message
+         {
+            namespace complete
+            {
+               namespace network
+               {
+                  //
+                  // just a local marshaler to help format Header...
+                  //
+                  template< typename A>
+                  void casual_marshal_value( const Header& value, A& archive)
+                  {
+                     archive << value.type;
+                     archive << value.correlation;
+                     archive << value.size;
+                  }
+               }
+            }
+         }
+      }
+   }
+
    namespace gateway
    {
 
@@ -106,14 +132,6 @@ namespace casual
                   Info info( T&& value, std::string role, std::string description)
                   {
                      return Info{ { std::move( role), std::move( description)}, native( std::forward< T>( value)), network( std::forward< T>( value))};
-                  }
-
-
-                  void print( std::ostream& out, Info info)
-                  {
-                     out << "| " << info.name.role << " | " << info.native.type << " | " << info.native.size
-                        << " | " << info.network.type << " | " << info.network.size
-                        << " | " << info.name.description << '\n';
                   }
 
 
@@ -305,47 +323,41 @@ namespace casual
 )";
             }
 
-            void transport( std::ostream& out)
+            void message_header( std::ostream& out)
             {
-               common::communication::tcp::message::Transport transport;
+               common::communication::message::complete::network::Header header;
 
                out << R"(
 # casual domain protocol
 
 Defines what messages is sent between domains and exactly what they contain. 
 
+Some definitions:
 
-## common::communication::tcp::message::Transport 
+* `fixed array`: an array of fixed size where every element is an 8 bit byte.
+* `dynamic array`: an array with dynamic size, where every element is an 8 bit byte.
 
-This "message" holds all other messages in it's payload, hence act as a placeholder.
+If an attribute name has `element` in it, for example: `services.element.timeout`, the
+data is part of an element in a container. You should read it as `container.element.attribute`
+
+
+## common::communication::message::complete::network::Header 
+
+This header will be the first part of every message below, hence it's name, _Header_
 
 message.type is used to dispatch to handler for that particular message, and knows how to (un)marshal and act on the message.
 
-It's probably a good idea to read only the header (including message.type) only, to see how much more one has to read to get
-the complete transport message.
-
-1..* transport messages construct one logical complete message
+It's probably a good idea (probably the only way) to read the header only, to see how much more one has to read to get
+the rest of the message.
 
 
 )";
-               print::header( out);
 
-               local::type::print( out, transport.type(), "message.header.type", "type of the message that the payload contains");
-               local::type::print( out, transport.message.header.correlation, "message.header.correlation", "correlation id of the message");
-               local::type::print( out, transport.message.header.offset, "message.header.offset", "which offset this transport message represent of the complete message");
-               local::type::print( out, transport.message.header.count, "message.header.count", "size of payload in this transport message");
-               local::type::print( out, transport.message.header.complete_size, "message.header.complete_size", "size of the logical complete message");
-
-               {
-                  local::type::Info info;
-                  info.name = { "message.payload","actual structured (part of) message is serialized here"};
-                  info.native = { "byte array", transport.message.payload.size()};
-                  info.network = info.native;
-                  local::type::print( out, std::move( info));
-               }
-
-
-
+               local::format::type( out, header, {
+                  { "header.type", "type of the message that the payload contains"},
+                  { "header.correlation", "correlation id of the message"},
+                  { "header.size", "the size of the payload that follows"},
+               });
             }
 
             template< typename M>
@@ -600,6 +612,7 @@ Sent to and received from other domains when one domain wants discover informati
                   message_type message;
 
                   message.services.push_back( std::string( 128, 0));
+                  message.queues.push_back( std::string( 128, 0));
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
@@ -609,6 +622,9 @@ Sent to and received from other domains when one domain wants discover informati
                            { "services.size", "number of requested services to follow (an array of services)"},
                            { "services.element.size", "size of the current service name"},
                            { "services.element.data", "dynamic byte array of the current service name"},
+                           { "queues.size", "number of requested queues to follow (an array of queues)"},
+                           { "queues.element.size", "size of the current queue name"},
+                           { "queues.element.data", "dynamic byte array of the current queue name"},
                         });
 
 
@@ -630,6 +646,7 @@ Sent to and received from other domains when one domain wants discover informati
                   message_type message;
 
                   message.services.push_back( std::string( 128, 0));
+                  message.queues.push_back( std::string( 128, 0));
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
@@ -639,22 +656,22 @@ Sent to and received from other domains when one domain wants discover informati
                            { "services.size", "number of services to follow (an array of services)"},
                            { "services.element.name.size", "size of the current service name"},
                            { "services.element.name.data", "dynamic byte array of the current service name"},
-                           { "services.element.type", "service type"},
-                           { "services.element.timeout", "service timeout"},
+                           { "services.element.category.size", "size of the current service category"},
+                           { "services.element.category.data", "dynamic byte array of the current service category"},
                            { "services.element.transaction", "service transaction mode (auto, atomic, join, none)"},
+                           { "services.element.timeout", "service timeout"},
                            { "services.element.hops", "number of domain hops to the service (local services has 0 hops)"},
+                           { "queues.size", "number of requested queues to follow (an array of queues)"},
+                           { "queues.element.size", "size of the current queue name"},
+                           { "queues.element.data", "dynamic byte array of the current queue name"},
+                           { "queues.element.retries", "how many 'retries' the queue has"},
                         });
-
-
                }
-
             }
-
-
 
             void protocol()
             {
-               transport( std::cout);
+               message_header( std::cout);
                domain_discovery( std::cout);
                service_call( std::cout);
                transaction( std::cout);

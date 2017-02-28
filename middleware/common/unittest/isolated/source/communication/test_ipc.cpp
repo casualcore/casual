@@ -70,7 +70,9 @@ namespace casual
                   {
                      assert( ! parts.empty());
 
-                     message::Complete message{ parts.front()};
+                     auto& front = parts.front();
+
+                     message::Complete message{ front.type(), front.correlation(), front.complete_size(), front};
 
                      for( auto& transport : range::make( std::begin( parts) + 1, std::end( parts)))
                      {
@@ -176,7 +178,7 @@ namespace casual
             namespace
             {
 
-               using exactly_transport_size = unittest::message::basic_message< ipc::message::Transport::max_payload_size()>;
+               using exactly_transport_size = unittest::message::basic_message< ipc::message::transport::max_payload_size()>;
 
             } // <unnamed>
          } // local
@@ -198,7 +200,7 @@ namespace casual
                ipc::message::Transport transport;
                EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
                EXPECT_TRUE( transport.message.header.offset == 0);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
+               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
                // we expect no more transports
                {
@@ -206,7 +208,7 @@ namespace casual
                   EXPECT_FALSE( ipc::native::receive( ipc::inbound::id(), dummy, { ipc::native::Flag::non_blocking}));
                }
 
-               message::Complete complete{ transport};
+               message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
                marshal::complete( complete, receive_message);
             }
 
@@ -218,7 +220,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 2 * ipc::message::Transport::max_payload_size()>;
+            using message_type = unittest::message::basic_message< 2 * ipc::message::transport::max_payload_size()>;
 
 
             message_type send_message;
@@ -233,13 +235,13 @@ namespace casual
                ipc::message::Transport transport;
                EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
                EXPECT_TRUE( transport.message.header.offset == 0);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
+               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
-               message::Complete complete{ transport};
+               message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
 
                EXPECT_TRUE( ipc::native::receive( ipc::inbound::id(), transport, {}));
                EXPECT_TRUE( transport.message.header.offset == transport.message.header.count);
-               EXPECT_TRUE( transport.message.header.count == ipc::message::Transport::max_payload_size());
+               EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
                // we expect no more transports
                {
@@ -259,7 +261,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 10 * ipc::message::Transport::max_payload_size()>;
+            using message_type = unittest::message::basic_message< 10 * ipc::message::transport::max_payload_size()>;
 
 
             message_type send_message;
@@ -299,7 +301,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 3 * ipc::message::Transport::max_payload_size()>;
+            using message_type = unittest::message::basic_message< 3 * ipc::message::transport::max_payload_size()>;
 
             std::vector< common::Uuid> correlations;
 

@@ -137,10 +137,10 @@ namespace casual
 
                         while( true)
                         {
-                           tcp::message::Transport transport;
-
-                           tcp::native::receive( socket, transport, {});
-                           tcp::native::send( socket, transport, {});
+                           tcp::native::send(
+                                 socket,
+                                 tcp::native::receive( socket, {}),
+                                 {});
                         }
                      }
                      catch( ...)
@@ -191,22 +191,19 @@ namespace casual
 
             // send
             {
-               tcp::message::Transport transport{ common::message::Type::process_lookup_request};
-               correlation.copy( transport.message.header.correlation);
-               transport.assign( std::begin( payload), std::end( payload));
+               communication::message::Complete message{ common::message::Type::process_lookup_request, correlation};
+               message.payload = payload;
 
-               EXPECT_TRUE( tcp::native::send( socket, transport, {}));
+               EXPECT_TRUE( tcp::native::send( socket, message, {}) == correlation);
             }
 
             // receive
             {
-               tcp::message::Transport transport;
+               auto message = tcp::native::receive( socket, {});
 
-               EXPECT_TRUE( tcp::native::receive( socket, transport, {}));
-               EXPECT_TRUE( transport.message.header.correlation == correlation);
-               EXPECT_TRUE( transport.type() == common::message::Type::process_lookup_request);
-               auto payload_range = range::make( std::begin( transport.message.payload), transport.message.header.count);
-               EXPECT_TRUE( range::equal( payload, payload_range)) << "payload: " << transport;
+               EXPECT_TRUE( message.correlation == correlation);
+               EXPECT_TRUE( message.type == common::message::Type::process_lookup_request);
+               EXPECT_TRUE( message.payload == payload) << "message: " << message;
             }
          }
 
@@ -233,23 +230,20 @@ namespace casual
             for( auto& socket : connections)
             {
                // send
-               tcp::message::Transport transport{ common::message::Type::process_lookup_request};
-               correlation.copy( transport.message.header.correlation);
-               transport.assign( std::begin( payload), std::end( payload));
+               communication::message::Complete message{ common::message::Type::process_lookup_request, correlation};
+               message.payload = payload;
 
-               EXPECT_TRUE( tcp::native::send( socket, transport, {}));
+               EXPECT_TRUE( tcp::native::send( socket, message, {}) == correlation);
             }
 
             // receive
             for( auto& socket : connections)
             {
-               tcp::message::Transport transport;
+               auto message = tcp::native::receive( socket, {});
 
-               EXPECT_TRUE( tcp::native::receive( socket, transport, {}));
-               EXPECT_TRUE( transport.message.header.correlation == correlation);
-               EXPECT_TRUE( transport.type() == common::message::Type::process_lookup_request);
-               auto payload_range = range::make( std::begin( transport.message.payload), transport.message.header.count);
-               EXPECT_TRUE( range::equal( payload, payload_range)) << "payload: " << transport;
+               EXPECT_TRUE( message.correlation == correlation);
+               EXPECT_TRUE( message.type == common::message::Type::process_lookup_request);
+               EXPECT_TRUE( message.payload == payload) << "message: " << message;
             }
          }
 
@@ -289,7 +283,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__exact_transport_size)
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__10k_payload)
          {
             common::unittest::Trace trace;
 
@@ -299,7 +293,7 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< tcp::outbound::Device::transport_type::max_payload_size()>;
+            using message_type = unittest::message::basic_message< 10 * 1024>;
 
 
             message_type send_message;
@@ -319,7 +313,7 @@ namespace casual
             }
          }
 
-         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__3x_transport_size)
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive_100k_payload)
          {
             common::unittest::Trace trace;
 
@@ -329,7 +323,7 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< 3 * tcp::outbound::Device::transport_type::max_payload_size()>;
+            using message_type = unittest::message::basic_message< 100 * 1024>;
 
 
             message_type send_message;
@@ -349,7 +343,7 @@ namespace casual
             }
          }
 
-         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__10x_transport_size)
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__1M_paylad)
          {
             common::unittest::Trace trace;
 
@@ -359,7 +353,7 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< 10 * tcp::outbound::Device::transport_type::max_payload_size()>;
+            using message_type = unittest::message::basic_message< 1024 * 1024>;
 
 
             message_type send_message;
@@ -380,7 +374,7 @@ namespace casual
          }
 
 
-         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__1_5x_transport_size)
+         TEST( casual_common_communication_tcp, echo_server_port_23666__tcp_device_send_receive__10M_payload)
          {
             common::unittest::Trace trace;
 
@@ -390,7 +384,7 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< static_cast< std::size_t>(  1.5 * tcp::outbound::Device::transport_type::max_payload_size())>;
+            using message_type = unittest::message::basic_message< 10 * 1024 * 1024>;
 
 
             message_type send_message;

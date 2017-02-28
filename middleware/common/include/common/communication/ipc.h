@@ -38,13 +38,156 @@ namespace casual
 
             namespace message
             {
-               struct Policy
+               namespace transport
                {
-                  static constexpr std::size_t message_size() { return platform::ipc::message::size;}
-                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size;}
+                  struct Header
+                  {
+                     using correalation_type = Uuid::uuid_type;
+
+                     //!
+                     //! The message correlation id
+                     //!
+                     correalation_type correlation;
+
+                     //!
+                     //! which offset this transport message represent of the complete message
+                     //!
+                     std::int64_t offset;
+
+                     //!
+                     //! Size of payload in this transport message
+                     //!
+                     std::int64_t count;
+
+                     //!
+                     //! size of the logical complete message
+                     //!
+                     std::int64_t complete_size;
+                  };
+
+                  constexpr std::int64_t max_message_size() { return platform::ipc::message::size;}
+                  constexpr std::int64_t header_size() { return sizeof( Header);}
+                  constexpr std::int64_t max_payload_size() { return max_message_size() - header_size();}
+
+               } // transport
+
+               struct Transport
+               {
+                  using correalation_type = Uuid::uuid_type;
+
+                  using payload_type = std::array< char, transport::max_payload_size()>;
+                  using range_type = range::type_t< payload_type>;
+                  using const_range_type = range::const_type_t< payload_type>;
+
+                  struct message_t
+                  {
+                     //!
+                     //! Which logical type of message this transport is carrying
+                     //!
+                     //! @attention has to be the first bytes in the message
+                     //!
+                     platform::ipc::message::type type;
+
+                     transport::Header header;
+                     payload_type payload;
+
+                  } message;
+
+
+                  static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
+                  static_assert( std::is_pod< message_t>::value, "Message has be a POD");
+                  //static_assert( sizeof( message_t) - header_size() == max_payload_size(), "something is wrong with padding");
+
+
+                  inline Transport() { memory::set( message);}
+
+                  inline Transport( common::message::Type type, std::size_t complete_size) : Transport()
+                  {
+                     Transport::type( type);
+                     message.header.complete_size = complete_size;
+                  }
+
+                  inline Transport( common::message::Type type) : Transport() { Transport::type( type);}
+
+
+
+                  //!
+                  //! @return the message type
+                  //!
+                  inline common::message::Type type() const { return static_cast< common::message::Type>( message.type);}
+
+                  //!
+                  //! Sets the message type
+                  //!
+                  //! @param type type to set
+                  //!
+                  inline void type( common::message::Type type) { message.type = static_cast< platform::ipc::message::type>( type);}
+
+
+                  inline const_range_type payload() const
+                  {
+                     return range::make( std::begin( message.payload), message.header.count);
+                  }
+
+
+                  inline const correalation_type& correlation() const { return message.header.correlation;}
+                  inline correalation_type& correlation() { return message.header.correlation;}
+
+                  //!
+                  //! @return payload size
+                  //!
+                  inline std::size_t pyaload_size() const { return message.header.count;}
+
+                  //!
+                  //! @return the offset of the logical complete message this transport
+                  //!    message represent.
+                  //!
+                  inline std::size_t pyaload_offset() const { return message.header.offset;}
+
+
+                  //!
+                  //! @return the size of the complete logical message
+                  //!
+                  inline std::size_t complete_size() const { return message.header.complete_size;}
+                  //inline void complete_size( std::size_t size) const { message.header.complete_size = size;}
+
+
+                  //!
+                  //! @return the total size of the transport message including header.
+                  //!
+                  inline std::size_t size() const { return transport::header_size() + pyaload_size();}
+
+
+                  //!
+                  //! Indication if this transport message is the last of the logical message.
+                  //!
+                  //! @return true if this transport message is the last of the logical message.
+                  //!
+                  //! @attention this does not give any guarantees that no more transport messages will arrive...
+                  //!
+                  inline bool last() const { return message.header.offset + message.header.count == message.header.complete_size;}
+
+
+                  auto begin() { return std::begin( message.payload);}
+                  inline auto begin() const { return std::begin( message.payload);}
+                  auto end() { return begin() + message.header.count;}
+                  auto end() const { return begin() + message.header.count;}
+
+                  template< typename Iter>
+                  void assign( Iter first, Iter last)
+                  {
+                     message.header.count = std::distance( first, last);
+                     assert( first <= last && message.header.count <=  transport::max_payload_size());
+
+                     std::copy( first, last, std::begin( message.payload));
+                  }
+
+                  friend std::ostream& operator << ( std::ostream& out, const Transport& value);
                };
 
-               using Transport = communication::message::basic_transport< Policy>;
+
+               inline std::size_t offset( const Transport& value) { return value.message.header.offset;}
+
             } // message
 
 
@@ -64,25 +207,34 @@ namespace casual
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags);
                bool receive( handle_type id, message::Transport& transport, common::Flags< Flag> flags);
 
+
+
             } // native
 
 
             namespace policy
             {
+               using cache_type = communication::inbound::cache_type;
+               using cache_range_type =  communication::inbound::cache_range_type;
+
+               cache_range_type receive( handle_type id, cache_type& cache, common::Flags< native::Flag> flags);
+               Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags);
 
                struct Blocking
                {
+
                   template< typename Connector>
-                  bool receive( Connector&& ipc, message::Transport& transport)
+                  cache_range_type receive( Connector&& connector, cache_type& cache)
                   {
-                     return native::receive( ipc.id(), transport, {});
+                     return policy::receive( connector.id(), cache, {});
                   }
 
                   template< typename Connector>
-                  bool send( Connector&& connector, const message::Transport& transport)
+                  Uuid send( Connector&& connector, const communication::message::Complete& complete)
                   {
-                     return native::send( std::forward< Connector>( connector), transport, {});
+                     return policy::send( std::forward< Connector>( connector), complete, {});
                   }
+
 
                };
 
@@ -91,17 +243,16 @@ namespace casual
                   struct Blocking
                   {
                      template< typename Connector>
-                     bool receive( Connector&& connector, message::Transport& transport)
+                     cache_range_type receive( Connector&& connector, cache_type& cache)
                      {
-                        return native::receive( connector.id(), transport, native::Flag::non_blocking);
+                        return policy::receive( connector.id(), cache, native::Flag::non_blocking);
                      }
 
                      template< typename Connector>
-                     bool send( Connector&& connector, const message::Transport& transport)
+                     Uuid send( Connector&& connector, const communication::message::Complete& complete)
                      {
-                        return native::send( connector, transport, native::Flag::non_blocking);
+                        return policy::send( std::forward< Connector>( connector), complete, native::Flag::non_blocking);
                      }
-
                   };
 
                } // non
