@@ -169,17 +169,23 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
 Dependencies( target_unittest, install_bin)
 
 
-
-tartet = LinkExecutable( "documentation/bin/print-protocol",
+tartet = LinkExecutable( "documentation/protocol/bin/markdown-protocol",
      [
-        Compile( 'documentation/source/protocol.cpp')
+        Compile( 'documentation/protocol/source/markdown.cpp')
       ],
      [
       'casual-common'
       ]
      )
 
-
+target = LinkExecutable( "documentation/protocol/bin/binary-protocol",
+     [
+        Compile( 'documentation/protocol/source/binary.cpp')
+      ],
+     [
+      'casual-common'
+      ]
+     )
 
 
 Install( install_bin,'$(CASUAL_HOME)/bin')

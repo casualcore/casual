@@ -40,6 +40,8 @@ namespace casual
                            std::size_t hops = 0)
                       : message::Service{ std::move( name), std::move( category), transaction}, hops{ hops} {}
 
+                      Service( std::function<void(Service&)> foreign) { foreign( *this);}
+
                      std::size_t hops = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -58,6 +60,8 @@ namespace casual
 
                      Queue( std::string name, std::size_t retries) : name{ std::move( name)}, retries{ retries} {}
                      Queue( std::string name) : name{ std::move( name)} {}
+
+                     Queue( std::function<void(Queue&)> foreign) { foreign( *this);}
 
                      std::string name;
                      std::size_t retries = 0;
