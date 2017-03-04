@@ -5,7 +5,7 @@
 //
 def backend_builder = '''#! /bin/sh
 CASUAL_VERSION="0.42"
-CASUAL_RELEASE="1"
+CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 
 source scl_source enable devtoolset-4
 
@@ -75,7 +75,7 @@ ENV CASUAL_HOME /opt/casual
 ENV PATH $CASUAL_HOME/bin:$PATH
 ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
 ENV CASUAL_DOMAIN_HOME /test/casual
-ENV CASUAL_LOG ".*"
+ENV CASUAL_LOG '(error|warning|information)'
 
 RUN mkdir -p $CASUAL_DOMAIN_HOME
 RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
