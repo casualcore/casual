@@ -2,7 +2,7 @@
 
 ## Sample
 
-- [client](./../sample/client/source/string.c)
+- [client](./../sample/client/source/string.cpp)
 
 ## Overview
 
