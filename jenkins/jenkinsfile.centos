@@ -36,7 +36,7 @@ casual-make -d -a --use-valgrind make && \
    cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
    cd /git/casual && \
    mkdir -p /git/casual/coverage && \
-   gcovr -r . --html --html-details -o coverage/index.html
+   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
 '''
 
 //
