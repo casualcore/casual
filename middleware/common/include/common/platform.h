@@ -25,13 +25,10 @@
 #include <uuid/uuid.h>
 
 // longjump
-#include <setjmp.h>
+#include <csetjmp>
 
 // time
 #include <time.h>
-
-// syslog
-#include <syslog.h>
 
 
 
@@ -41,7 +38,7 @@
 // SSIZE_MAX and others...
 #include <climits>
 
-#include <string.h>
+#include <cstring>
 
 
 #ifdef __APPLE__
@@ -163,10 +160,10 @@ namespace casual
 
          } // uuid
 
-			//
-			// long jump
-			//
-			using long_jump_buffer_type = jmp_buf;
+			namespace jump
+         {
+            using buffer = std::jmp_buf;
+         } // jump
 
 
 			namespace flag

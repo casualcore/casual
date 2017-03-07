@@ -204,7 +204,7 @@ namespace casual
 
          namespace convert
          {
-            using underlying_type = typename std::underlying_type< Type>::type;
+            using underlying_type = typename std::underlying_type_t< message::Type>;
 
             constexpr Type type( underlying_type type) { return static_cast< Type>( type);}
             constexpr underlying_type type( Type type) { return static_cast< underlying_type>( type);}
@@ -237,6 +237,19 @@ namespace casual
                //
 
                archive & execution;
+            })
+         };
+
+         //!
+         //! Wraps a message with basic_message
+         //!
+         template< typename Message, message::Type message_type>
+         struct type_wrapper : Message, basic_message< message_type>
+         {
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< message_type>::marshal( archive);
+               Message::marshal( archive);
             })
          };
 

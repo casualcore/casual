@@ -76,5 +76,44 @@ namespace casual
          EXPECT_TRUE( local::boolean( ( flags | Enum::flag2) & Enum::flag2));
       }
 
+      TEST( casual_common_flags, one_flag__equality)
+      {
+         EXPECT_TRUE( local::boolean( Flags< Enum>{ Enum::flag1} == Flags< Enum>{ Enum::flag1}));
+      }
+
+      TEST( casual_common_flags, three_flag__equality)
+      {
+         EXPECT_TRUE( local::boolean(
+               Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}
+            == Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
+      }
+
+      TEST( casual_common_flags, initialize_flag1_flag2__binary_and__initialize_flag1_flag2___expect_true)
+      {
+         Flags< Enum> flags{ Enum::flag1, Enum::flag2};
+         EXPECT_TRUE( local::boolean( flags & flags));
+      }
+
+      TEST( casual_common_flags, initialize_flag1_flag2_flag3__binary_and__initialize_flag1_flag2___expect_true)
+      {
+         EXPECT_TRUE( local::boolean(
+               Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}
+             & Flags< Enum>{ Enum::flag1, Enum::flag2}));
+      }
+
+      TEST( casual_common_flags, initialize_flag1_flag2__binary_and__initialize_flag1_flag2_flag3___expect_true)
+      {
+         EXPECT_TRUE( local::boolean(
+               Flags< Enum>{ Enum::flag1, Enum::flag2}
+               & Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
+      }
+
+      TEST( casual_common_flags, init_flag1_flag2__binary_or__init_flag2_flag3__equal_to__init_flag1_flag2_flag3)
+      {
+         EXPECT_TRUE( local::boolean(
+               ( Flags< Enum>{ Enum::flag1, Enum::flag2} | Flags< Enum>{ Enum::flag2, Enum::flag3})
+                  ==  Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
+      }
+
    } // common
 } // casual

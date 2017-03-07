@@ -33,11 +33,18 @@ namespace casual
       namespace server
       {
 
-         std::ostream& operator << ( std::ostream& out, const State::jump_t& value)
+         namespace state
          {
-            return out << "{ value: " << value.state.value << ", code: " << value.state.code << ", data: @" << static_cast< void*>( value.buffer.data)
-               << ", len: " << value.buffer.len << ", service: " << value.forward.service << '}';
-         }
+            std::ostream& operator << ( std::ostream& out, const Jump& value)
+            {
+               return out << "{ value: " << value.state.value
+                     << ", code: " << value.state.code
+                     << ", data: @" << static_cast< void*>( value.buffer.data)
+                     << ", size: " << value.buffer.size
+                     << ", service: " << value.forward.service << '}';
+            }
+         } // state
+
 
          Context& Context::instance()
          {
@@ -53,7 +60,7 @@ namespace casual
          }
 
 
-         void Context::long_jump_return( int rval, long rcode, char* data, long len, long flags)
+         void Context::jump_return( int rval, long rcode, char* data, long len, long flags)
          {
             //
             // Prepare buffer.
@@ -64,12 +71,12 @@ namespace casual
             m_state.jump.state.value = rval;
             m_state.jump.state.code = rcode;
             m_state.jump.buffer.data = data;
-            m_state.jump.buffer.len = len;
+            m_state.jump.buffer.size = len;
             m_state.jump.forward.service.clear();
 
-            log::debug << "Context::long_jump_return - jump state: " << m_state.jump << '\n';
+            log::debug << "Context::jump_return - jump state: " << m_state.jump << '\n';
 
-            longjmp( m_state.long_jump_buffer, State::jump_t::From::c_return);
+            std::longjmp( m_state.jump.environment, state::Jump::Location::c_return);
          }
 
 
@@ -78,13 +85,13 @@ namespace casual
             m_state.jump.state.value = 0;
             m_state.jump.state.code = 0;
             m_state.jump.buffer.data = data;
-            m_state.jump.buffer.len = size;
+            m_state.jump.buffer.size = size;
 
             m_state.jump.forward.service = service ? service : "";
 
             log::debug << "Context::forward - jump state: " << m_state.jump << '\n';
 
-            longjmp( m_state.long_jump_buffer, State::jump_t::From::c_forward);
+            std::longjmp( m_state.jump.environment, state::Jump::Location::c_forward);
          }
 
          void Context::advertise( const std::string& service, void (*adress)( TPSVCINFO *))

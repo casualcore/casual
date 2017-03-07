@@ -36,7 +36,7 @@ namespace casual
 
             std::string combine( const char* type, const char* subtype = nullptr);
 
-            inline auto dismantle( const std::string& type) -> decltype( range::split( type, '/'))
+            inline auto dismantle( const std::string& type)
             {
                return range::split( type, '/');
             }
@@ -82,13 +82,13 @@ namespace casual
             struct Send
             {
                Send( const Payload& payload, platform::binary::size::type transport, platform::binary::size::type reserved)
-                  :  transport( transport), reserved( reserved), m_payload( &payload) {}
+                  :  transport( transport), reserved( reserved), m_payload( payload) {}
 
                Send( const Payload& payload)
-                  : m_payload( &payload) {}
+                  : m_payload( payload) {}
 
 
-               inline const Payload& payload() const { return *m_payload;};
+               inline const Payload& payload() const { return m_payload.get();};
                platform::binary::size::type transport = 0;
                platform::binary::size::type reserved = 0;
 
@@ -106,8 +106,9 @@ namespace casual
 
             private:
                // gcc 4.9.4 requires Payload to be defined, switch to pointer untill we can use a better compiler
-               //std::reference_wrapper< const Payload> m_payload;
-               const Payload* m_payload;
+               //const Payload* m_payload;
+               std::reference_wrapper< const Payload> m_payload;
+
             };
 
          } // payload

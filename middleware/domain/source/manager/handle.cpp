@@ -11,7 +11,7 @@
 #include "configuration/gateway.h"
 
 #include "common/message/handle.h"
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
 #include "common/cast.h"
 #include "common/environment.h"
 
@@ -668,9 +668,9 @@ namespace casual
                {
                   namespace server
                   {
-                     struct Policy : common::server::handle::policy::Admin
+                     struct Policy : common::server::handle::policy::call::Admin
                      {
-                        using common::server::handle::policy::Admin::Admin;
+                        using common::server::handle::policy::call::Admin::Admin;
 
                         void configure( common::server::Arguments& arguments)
                         {

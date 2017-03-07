@@ -149,7 +149,6 @@ namespace casual
                   //! @return the size of the complete logical message
                   //!
                   inline std::size_t complete_size() const { return message.header.complete_size;}
-                  //inline void complete_size( std::size_t size) const { message.header.complete_size = size;}
 
 
                   //!
@@ -391,7 +390,7 @@ namespace casual
 
             template< typename D, typename M, typename P>
             auto send( D& ipc, M&& message, P&& policy, const error_type& handler = nullptr)
-             -> typename std::enable_if< ! std::is_same< D, platform::ipc::id::type>::value, Uuid>::type
+             -> std::enable_if_t< ! std::is_same< D, platform::ipc::id::type>::value, Uuid>
             {
                return ipc.send( message, policy, handler);
             }
@@ -401,6 +400,7 @@ namespace casual
             {
                return outbound::Device{ ipc}.send( message, policy, handler);
             }
+
 
 
             namespace blocking
@@ -465,6 +465,29 @@ namespace casual
                } // blocking
             } // non
 
+            namespace receive
+            {
+               enum class Flag : char
+               {
+                  blocking,
+                  non_blocking
+               };
+
+               template< typename D, typename M, typename... Args>
+               bool message( D& device, M& message, Flag flag, Args&&... args)
+               {
+                  if( flag == Flag::blocking)
+                  {
+                     return blocking::receive( device, message, std::forward< Args>( args)...);
+                  }
+                  else
+                  {
+                     return non::blocking::receive( device, message, std::forward< Args>( args)...);
+                  }
+               }
+
+            } // receive
+
             template< typename D, typename M, typename Policy = policy::Blocking>
             auto call(
                   D&& destination,
@@ -472,7 +495,6 @@ namespace casual
                   Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
                   inbound::Device& device = ipc::inbound::device())
-               -> decltype( common::message::reverse::type( std::forward< M>( message)))
             {
                auto correlation = ipc::send( std::forward< D>( destination), message, policy, handler);
 
@@ -574,22 +596,18 @@ namespace casual
 
                template< typename D, typename M>
                auto blocking_send( D&& device, M&& message) const
-                -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
                {
                   return common::communication::ipc::blocking::send( std::forward< D>( device), message, m_error_handler);
                }
 
                template< typename D, typename M>
                auto non_blocking_send( D&& device, M&& message) const
-                -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
                {
                   return common::communication::ipc::non::blocking::send( std::forward< D>( device), message, m_error_handler);
                }
 
                template< typename M, typename... Args>
                auto blocking_receive( M& message, Args&&... args) const
-                -> decltype( common::communication::ipc::blocking::receive(
-                      common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., nullptr))
                {
                   return common::communication::ipc::blocking::receive(
                         common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);
@@ -597,8 +615,6 @@ namespace casual
 
                template< typename M, typename... Args>
                auto non_blocking_receive( M& message, Args&&... args) const
-                -> decltype( common::communication::ipc::non::blocking::receive(
-                      common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., nullptr))
                {
                   return common::communication::ipc::non::blocking::receive(
                         common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);

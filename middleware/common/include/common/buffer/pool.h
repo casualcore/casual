@@ -232,7 +232,8 @@ namespace casual
                //!
                platform::buffer::raw::type adopt( Payload&& payload);
 
-               platform::buffer::raw::type insert( Payload&& payload);
+
+               std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type> insert( Payload&& payload);
 
                payload::Send get( platform::buffer::raw::immutable::type handle);
 

@@ -15,6 +15,8 @@ namespace casual
          namespace handle
          {
 
+
+
             void Shutdown::operator () ( message_type& message)
             {
                log::debug << "shutdown received from: " << message.process << '\n';

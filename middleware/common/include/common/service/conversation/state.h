@@ -6,6 +6,9 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_CONVERSATION_STATE_H_
 
 #include "common/platform.h"
+#include "common/service/descriptor.h"
+
+#include "common/message/conversation.h"
 
 namespace casual
 {
@@ -16,18 +19,22 @@ namespace casual
       {
          namespace conversation
          {
-            namespace descriptor
-            {
-               using type = platform::descriptor::type;
-            } // descriptor
-
             namespace state
             {
                namespace descriptor
                {
-                  struct Holder
+                  struct Information
                   {
-                     Holder();
+                     enum class Duplex : char
+                     {
+                        send,
+                        receive,
+                        terminated
+                     };
+
+                     message::conversation::Route route;
+
+                     Duplex duplex = Duplex::receive;
 
                   };
 
@@ -37,8 +44,12 @@ namespace casual
 
             struct State
             {
+               State();
 
+               using holder_type =  service::descriptor::Holder< state::descriptor::Information>;
+               using descriptor_type = typename holder_type::descriptor_type;
 
+               holder_type descriptors;
             };
 
          } // conversation

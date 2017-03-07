@@ -9,7 +9,8 @@
 #include <algorithm>
 
 
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
+#include "common/server/handle/conversation.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/communication/ipc.h"
@@ -78,6 +79,7 @@ int casual_start_server( casual_server_argument* serverArgument)
 
       auto handler = common::communication::ipc::inbound::device().handler(
          common::server::handle::Call( local::transform::arguments( *serverArgument)),
+         common::server::handle::Conversation{},
          common::message::handle::Shutdown{},
          common::message::handle::ping()
       );

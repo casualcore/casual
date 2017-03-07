@@ -121,6 +121,11 @@ namespace casual
                using base::base;
             };
 
+            struct Flags : base
+            {
+               using base::base;
+            };
+
             //!
             //! Something is used in a way it's not design to support.
             //!

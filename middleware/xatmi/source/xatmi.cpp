@@ -6,6 +6,7 @@
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"
+#include "common/service/conversation/context.h"
 #include "common/server/context.h"
 #include "common/platform.h"
 #include "common/log.h"
@@ -168,7 +169,7 @@ void tpfree( const char* const ptr)
 void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
 {
    local::error::wrap( [&](){
-      casual::common::server::Context::instance().long_jump_return( rval, rcode, data, len, flags);
+      casual::common::server::Context::instance().jump_return( rval, rcode, data, len, flags);
    });
 }
 
@@ -249,21 +250,116 @@ int tpunadvertise( const char* const service)
 
 int tpconnect( const char* svc, const char* idata, long ilen, long flags)
 {
+   if( svc == nullptr)
+   {
+      local::error::set( TPEINVAL);
+      return -1;
+   }
+
    return local::error::wrap( [&](){
+
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+
+      using Flag = casual::common::service::conversation::connect::Flag;
+
+      casual::common::service::conversation::Context::instance().connect(
+            svc,
+            buffer,
+            casual::common::flags::convert( flags, {
+                  Flag::no_block,
+                  Flag::no_time,
+                  Flag::no_transaction,
+                  Flag::receive_only,
+                  Flag::send_only,
+                  Flag::signal_restart
+            })
+      );
 
    });
 }
 
-int tpsend( int id, const char* idata, long ilen, long flags, long *revent)
+namespace local
 {
-   return local::error::wrap( [&](){
+   namespace
+   {
+      namespace conversation
+      {
+         template< typename T>
+         int wrap( long& event, T&& task)
+         {
+            try
+            {
+               error::set( 0);
+               auto result = task();
+
+               if( result)
+               {
+                  event = result.underlaying();
+                  local::error::set( TPEEVENT);
+                  return -1;
+               }
+            }
+            catch( ...)
+            {
+               error::set( casual::common::error::handler());
+               return -1;
+            }
+            return 0;
+         }
+
+      } // error
+   } // <unnamed>
+} // local
+
+int tpsend( int id, const char* idata, long ilen, long flags, long* event)
+{
+   return local::conversation::wrap( *event, [&](){
+
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+
+      using Flag = casual::common::service::conversation::send::Flag;
+
+      return casual::common::service::conversation::Context::instance().send(
+            id,
+            std::move( buffer),
+            casual::common::flags::convert( flags, {
+                  Flag::receive_only,
+                  Flag::no_block,
+                  Flag::no_time,
+                  Flag::signal_restart
+            })
+      );
 
    });
 }
 
-int tprecv( int id, char ** odata, long *olen, long flags, long* event)
+int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
 {
-   return local::error::wrap( [&](){
+   return local::conversation::wrap( *event, [&](){
+
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( *odata);
+
+      using Flag = casual::common::service::conversation::receive::Flag;
+
+      auto flag = casual::common::flags::convert( bitmask, {
+            Flag::no_change,
+            Flag::no_block,
+            Flag::no_time,
+            Flag::signal_restart});
+
+      auto result = casual::common::service::conversation::Context::instance().receive(
+            id,
+            flag);
+
+      if( ( flag & Flag::no_change) && buffer.payload().type != result.buffer.type)
+      {
+         throw casual::common::exception::xatmi::buffer::type::Output{};
+      }
+
+      casual::common::buffer::pool::Holder::instance().deallocate( *odata);
+      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+
+      return result.event;
 
    });
 }

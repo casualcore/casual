@@ -14,16 +14,7 @@ namespace casual
       {
          namespace conversation
          {
-
-            namespace state
-            {
-               namespace descriptor
-               {
-                  Holder::Holder() = default;
-
-               } // descriptor
-
-            } // state
+            State::State() = default;
 
 
          } // conversation

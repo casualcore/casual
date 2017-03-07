@@ -461,7 +461,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::state::Jump& jump)
          {
             throw common::exception::xatmi::System{ "can't forward within broker"};
          }

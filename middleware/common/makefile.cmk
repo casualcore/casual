@@ -43,8 +43,10 @@ install_libs = []
 casual_common_objectfiles = [
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
-    Compile( 'source/server/handle.cpp'),
     Compile( 'source/server/service.cpp'),
+    Compile( 'source/server/handle/service.cpp'),
+    Compile( 'source/server/handle/conversation.cpp'),
+    Compile( 'source/server/handle/policy.cpp'),
     
     Compile( 'source/service/call/context.cpp'),
     Compile( 'source/service/call/state.cpp'),
@@ -80,6 +82,8 @@ casual_common_objectfiles = [
     Compile( 'source/message/transaction.cpp'),
     Compile( 'source/message/domain.cpp'),
     Compile( 'source/message/gateway.cpp'),
+    Compile( 'source/message/conversation.cpp'),
+    
     
     Compile( 'source/log/stream.cpp'),
     Compile( 'source/log/trace.cpp'),

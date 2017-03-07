@@ -10,7 +10,7 @@
 #include "queue/common/environment.h"
 #include "queue/broker/admin/server.h"
 
-#include "common/server/handle.h"
+
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/algorithm.h"

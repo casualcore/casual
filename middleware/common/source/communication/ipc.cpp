@@ -171,7 +171,9 @@ namespace casual
                      auto found = range::find_if( cache,
                            [&]( const auto& m)
                            {
-                              return transport.type() == m.type && transport.message.header.correlation == m.correlation;
+                              return transport.type() == m.type
+                                    && ! m.complete()
+                                    && transport.message.header.correlation == m.correlation;
                            });
 
                      if( found)

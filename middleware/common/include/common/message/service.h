@@ -6,6 +6,7 @@
 #define CASUAL_COMMON_MESSAGE_SERVICE_H_
 
 #include "common/message/type.h"
+#include "common/message/buffer.h"
 
 #include "common/transaction/id.h"
 #include "common/service/type.h"
@@ -213,8 +214,7 @@ namespace casual
 
             namespace call
             {
-               template< Type type>
-               struct basic_call : basic_message< type>
+               struct base_request
                {
 
                   platform::descriptor::type descriptor = 0;
@@ -231,7 +231,6 @@ namespace casual
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     basic_message< type>::marshal( archive);
                      archive & descriptor;
                      archive & process;
                      archive & service;
@@ -241,66 +240,40 @@ namespace casual
                      archive & header;
                   })
 
+                  friend std::ostream& operator << ( std::ostream& out, const base_request& value);
                };
 
-               struct base_call : basic_call< Type::service_call>
+               template< Type type>
+               using basic_request = type_wrapper< base_request, type>;
+
+
+               namespace caller
                {
-                  friend std::ostream& operator << ( std::ostream& out, const base_call& value);
-               };
-               static_assert( traits::is_movable< base_call>::value, "not movable");
+                  template< Type type>
+                  using basic_request = message::buffer::caller::basic_request< call::basic_request< type>>;
+
+                  //!
+                  //! Represents a service call. via tp(a)call, from the callers perspective
+                  //!
+                  using Request = basic_request< Type::service_call>;
+
+                  static_assert( traits::is_movable< Request>::value, "not movable");
+               } // caller
 
                namespace callee
                {
+                  template< Type type>
+                  using basic_request = message::buffer::callee::basic_request< call::basic_request< type>>;
 
                   //!
                   //! Represents a service call. via tp(a)call, from the callee's perspective
                   //!
-                  struct Request : public base_call
-                  {
+                  using Request = basic_request< Type::service_call>;
 
-                     buffer::Payload buffer;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        base_call::marshal( archive);
-                        archive & buffer;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
-                  };
                   static_assert( traits::is_movable< Request>::value, "not movable");
 
                } // callee
 
-               namespace caller
-               {
-                  //!
-                  //! Represents a service call. via tp(a)call, from the callers perspective
-                  //!
-                  struct Request : public base_call
-                  {
-
-                     Request( buffer::payload::Send&& buffer)
-                           : buffer( std::move( buffer))
-                     {
-                     }
-
-
-                     buffer::payload::Send buffer;
-
-                     //
-                     // Only for output
-                     //
-                     template< typename A>
-                     void marshal( A& archive) const
-                     {
-                        base_call::marshal( archive);
-                        archive << buffer;
-                     }
-                  };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-
-               }
 
                //!
                //! Represent service reply.
@@ -308,11 +281,11 @@ namespace casual
                struct Reply :  basic_message< Type::service_reply>
                {
 
-                  int descriptor = 0;
+                  platform::descriptor::type descriptor = 0;
                   int error = 0;
                   long code = 0;
                   Transaction transaction;
-                  buffer::Payload buffer;
+                  common::buffer::Payload buffer;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

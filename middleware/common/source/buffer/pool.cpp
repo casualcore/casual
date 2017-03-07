@@ -111,22 +111,23 @@ namespace casual
                // Keep track of the inbound buffer given to the user. This is a
                // 'special' buffer according to the XATMI-spec.
                //
-               m_inbound = insert( std::move( payload));
+               m_inbound = std::get< 0>( insert( std::move( payload)));
 
                return m_inbound;
             }
 
-            platform::buffer::raw::type Holder::insert( Payload&& payload)
+            std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type> Holder::insert( Payload&& payload)
             {
                log::category::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
                      << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
 
                if( payload.null())
                {
-                  return nullptr;
+                  return { nullptr, 0};
                }
+               auto size = payload.memory.size();
 
-               return find( payload.type).insert( std::move( payload));
+               return { find( payload.type).insert( std::move( payload)), size};
             }
 
             payload::Send Holder::get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size)

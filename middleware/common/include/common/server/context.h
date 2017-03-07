@@ -15,6 +15,7 @@
 #include "common/platform.h"
 
 
+
 #include "xatmi.h"
 
 
@@ -33,40 +34,46 @@ namespace casual
       {
          struct Arguments;
 
-
-         struct State
+         namespace state
          {
-            struct jump_t
+            struct Jump
             {
-               enum From
+               enum Location : int
                {
                   c_no_jump = 0,
                   c_return = 10,
-                  c_forward = 20,
+                  c_forward = 20
                };
 
-               struct buffer_t
+               platform::jump::buffer environment;
+
+               struct Buffer
                {
                   platform::buffer::raw::type data = nullptr;
-                  long len = 0;
+                  platform::buffer::raw::size::type size = 0;
 
                } buffer;
 
-               struct state_t
+               struct State
                {
                   int value = 0;
                   long code = 0;
                } state;
 
-               struct forward_t
+               struct Forward
                {
                   std::string service;
 
                } forward;
 
-               friend std::ostream& operator << ( std::ostream& out, const jump_t& value);
 
-            } jump;
+               friend std::ostream& operator << ( std::ostream& out, const Jump& value);
+            };
+         } // state
+
+         struct State
+         {
+            state::Jump jump;
 
 
             State() = default;
@@ -79,7 +86,6 @@ namespace casual
             using service_mapping_type = std::unordered_map< std::string, std::reference_wrapper< Service>>;
             service_mapping_type services;
 
-            common::platform::long_jump_buffer_type long_jump_buffer;
 
             message::traffic::Event traffic;
 
@@ -100,7 +106,7 @@ namespace casual
             //!
             //! Being called from tpreturn
             //!
-            void long_jump_return( int rval, long rcode, char* data, long len, long flags);
+            void jump_return( int rval, long rcode, char* data, long len, long flags);
 
             //!
             //! called from extern casual_service_forward
