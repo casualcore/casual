@@ -119,6 +119,7 @@ namespace casual
                   auto& header = common::service::header::fields();
 
                   return out << "{ process: " << value.process
+                     << ", descriptor: " << value.descriptor
                      << ", service: " << value.service
                      << ", parent: " << value.parent
                      << ", flags: " << value.flags

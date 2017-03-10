@@ -65,25 +65,18 @@ namespace casual
 
                log << "payload: " << payload << std::endl;
 
-
-               auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
-
-               common::service::call::Context::instance().sync( m_service,
-                     std::get< 0>( buffer), std::get< 1>( buffer),
-                     std::get< 0>( buffer), std::get< 1>( buffer), TPNOTIME);
+               auto result = common::service::call::Context::instance().sync( m_service,
+                     payload,
+                     common::service::call::sync::Flag::no_time);
 
                const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
 
                if( ! replyqueue.empty())
                {
-                  auto data = common::buffer::pool::Holder::instance().release( std::get< 0>( buffer));
-
                   queue::Message reply;
-                  reply.payload.data = std::move( data.memory);
-                  reply.payload.type = std::move( data.type);
-
+                  reply.payload.data = std::move( result.buffer.memory);
+                  reply.payload.type = std::move( result.buffer.type);
                   queue::enqueue( replyqueue, reply);
-
                }
             }
 

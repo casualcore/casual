@@ -46,7 +46,7 @@ namespace casual
 
                receive::Result receive( descriptor::type descriptor, common::Flags< receive::Flag> flags);
 
-               State::holder_type& descriptors() { return m_state.descriptors;}
+               inline State::holder_type& descriptors() { return m_state.descriptors;}
 
                bool pending() const;
 

@@ -46,9 +46,8 @@ namespace local
             catch( ...)
             {
                error::set( casual::common::error::handler());
-               return -1;
             }
-            return 0;
+            return error::value == 0 ? 0 : -1;
          }
 
       } // tperrno
@@ -173,11 +172,36 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
    });
 }
 
-int tpcall( const char* const svc, char* idata, const long ilen, char** odata, long* olen, const long flags)
+namespace local
+{
+   namespace
+   {
+      template< typename R, typename Flags>
+      void handle_reply_buffer( R&& result, Flags flags, char** odata, long* olen)
+      {
+         auto output = casual::common::buffer::pool::Holder::instance().get( *odata);
+
+         using enum_type = typename Flags::enum_type;
+
+         if( flags.exist( enum_type::no_change) && result.buffer.type != output.payload().type)
+         {
+            throw casual::common::exception::xatmi::buffer::type::Output{};
+         }
+
+         casual::common::buffer::pool::Holder::instance().deallocate( *odata);
+         std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+
+         local::error::set( casual::common::cast::underlying( result.state));
+      }
+
+   } // <unnamed>
+} // local
+
+int tpcall( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
 {
    local::error::set( 0);
 
-   if( svc == nullptr)
+   if( service == nullptr)
    {
       local::error::set( TPEINVAL);
       return -1;
@@ -186,21 +210,49 @@ int tpcall( const char* const svc, char* idata, const long ilen, char** odata, l
    try
    {
       local::user::code::set( 0);
-      casual::common::service::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
+
+      using Flag = casual::common::service::call::sync::Flag;
+
+      constexpr casual::common::service::call::sync::Flags valid_flags{
+         Flag::no_transaction,
+         Flag::no_change,
+         Flag::no_block,
+         Flag::no_time,
+         Flag::signal_restart};
+
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+
+      auto flags = valid_flags.convert( bitmap);
+
+      auto result = casual::common::service::call::Context::instance().sync(
+            service,
+            buffer,
+            flags);
+
+      auto output = casual::common::buffer::pool::Holder::instance().get( *odata);
+
+      if( flags.exist( Flag::no_change) && result.buffer.type != output.payload().type)
+      {
+         throw casual::common::exception::xatmi::buffer::type::Output{};
+      }
+
+      casual::common::buffer::pool::Holder::instance().deallocate( *odata);
+      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+
+      local::error::set( casual::common::cast::underlying( result.state));
    }
    catch( ...)
    {
       local::error::set( casual::common::error::handler());
-      return -1;
    }
-   return 0;
+   return local::error::value == 0 ? 0 : -1;
 }
 
-int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
+int tpacall( const char* const service, char* idata, const long ilen, const long flags)
 {
    local::error::set( 0);
 
-   if( svc == nullptr)
+   if( service == nullptr)
    {
       local::error::set( TPEINVAL);
       return -1;
@@ -208,19 +260,50 @@ int tpacall( const char* const svc, char* idata, const long ilen, const long fla
 
    try
    {
-      return casual::common::service::call::Context::instance().async( svc, idata, ilen, flags);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+
+      using Flag = casual::common::service::call::async::Flag;
+
+      constexpr casual::common::service::call::async::Flags valid_flags{
+         Flag::no_transaction,
+         Flag::no_reply,
+         Flag::no_block,
+         Flag::no_time,
+         Flag::signal_restart};
+
+      return casual::common::service::call::Context::instance().async(
+            service,
+            buffer,
+            valid_flags.convert( flags));
    }
    catch( ...)
    {
       local::error::set( casual::common::error::handler());
-      return -1;
    }
+   return local::error::value == 0 ? 0 : -1;
 }
 
-int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
+int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitmap)
 {
    return local::error::wrap( [&](){
-      casual::common::service::call::Context::instance().reply( *idPtr, odata, *olen, flags);
+
+      using Flag = casual::common::service::call::reply::Flag;
+
+      constexpr casual::common::service::call::reply::Flags valid_flags{
+         Flag::any,
+         Flag::no_change,
+         Flag::no_block,
+         Flag::no_time,
+         Flag::signal_restart};
+
+      auto flags = valid_flags.convert( bitmap);
+
+      auto result = casual::common::service::call::Context::instance().reply( *descriptor, flags);
+
+      *descriptor = result.descriptor;
+
+      local::handle_reply_buffer( result, flags, odata, olen);
+
    });
 }
 
@@ -262,18 +345,18 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
 
       using Flag = casual::common::service::conversation::connect::Flag;
 
+      constexpr casual::common::service::conversation::connect::Flags valid_flags{
+         Flag::no_block,
+         Flag::no_time,
+         Flag::no_transaction,
+         Flag::receive_only,
+         Flag::send_only,
+         Flag::signal_restart};
+
       casual::common::service::conversation::Context::instance().connect(
             svc,
             buffer,
-            casual::common::flags::convert( flags, {
-                  Flag::no_block,
-                  Flag::no_time,
-                  Flag::no_transaction,
-                  Flag::receive_only,
-                  Flag::send_only,
-                  Flag::signal_restart
-            })
-      );
+            valid_flags.convert( flags));
 
    });
 }
@@ -319,16 +402,16 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
 
       using Flag = casual::common::service::conversation::send::Flag;
 
+      constexpr casual::common::service::conversation::send::Flags valid_flags{
+         Flag::receive_only,
+         Flag::no_block,
+         Flag::no_time,
+         Flag::signal_restart};
+
       return casual::common::service::conversation::Context::instance().send(
             id,
             std::move( buffer),
-            casual::common::flags::convert( flags, {
-                  Flag::receive_only,
-                  Flag::no_block,
-                  Flag::no_time,
-                  Flag::signal_restart
-            })
-      );
+            valid_flags.convert( flags));
 
    });
 }
@@ -341,11 +424,14 @@ int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
 
       using Flag = casual::common::service::conversation::receive::Flag;
 
-      auto flag = casual::common::flags::convert( bitmask, {
-            Flag::no_change,
-            Flag::no_block,
-            Flag::no_time,
-            Flag::signal_restart});
+      constexpr casual::common::service::conversation::receive::Flags valid_flags{
+         Flag::no_change,
+         Flag::no_block,
+         Flag::no_time,
+         Flag::signal_restart
+      };
+
+      auto flag = valid_flags.convert( bitmask);
 
       auto result = casual::common::service::conversation::Context::instance().receive(
             id,

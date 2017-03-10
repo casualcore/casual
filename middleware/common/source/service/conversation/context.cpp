@@ -247,7 +247,8 @@ namespace casual
                result.buffer = std::move( message.buffer);
                result.event = message.events;
 
-               static const Events termination_events{ { Event::disconnect, Event::service_error, Event::service_fail, Event::service_success}};
+               constexpr Events termination_events{
+                  Event::disconnect, Event::service_error, Event::service_fail, Event::service_success};
 
                if( result.event & termination_events)
                {

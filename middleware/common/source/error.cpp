@@ -86,6 +86,11 @@ namespace casual
             {
                log::category::error << exception << std::endl;
             }
+            catch( const exception::invalid::Flags& exception)
+            {
+               log::category::error << exception << std::endl;
+               return TPEINVAL;
+            }
             catch( const exception::xatmi::base& exception)
             {
                local::log::stream( exception) << "xatmi - " << exception << std::endl;

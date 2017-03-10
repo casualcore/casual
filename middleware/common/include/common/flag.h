@@ -33,45 +33,64 @@ namespace casual
 
          using underlaying_type = typename std::underlying_type< enum_type>::type;
 
-         Flags() = default;
+         constexpr Flags() = default;
 
-         Flags( enum_type e) : Flags( static_cast< underlaying_type>( e)) {}
+         template< typename... Enums>
+         constexpr Flags( enum_type e, Enums... enums) : Flags( bitmask( e, enums...)) {}
 
-         Flags( std::initializer_list< enum_type> enums)
+
+
+         constexpr Flags convert( underlaying_type flags) const
          {
-            for( auto e : enums) { binary_or( e);}
+            if( flags & ~underlaying())
+            {
+               throw exception::invalid::Flags{ "invalid flags", CASUAL_NIP( flags), exception::make_nip( "limit", *this)};
+            }
+            return { flags};
+         }
+
+         template< typename E2>
+         constexpr Flags convert( Flags< E2> flags) const
+         {
+            return convert( flags.underlaying());
          }
 
 
-         explicit operator bool() const noexcept
+         constexpr explicit operator bool() const noexcept
          {
             return m_flags != underlaying_type{};
          }
 
-
-         underlaying_type underlaying() const noexcept { return m_flags;}
-
-
-         friend Flags& operator |= ( Flags& lhs, enum_type rhs) { lhs.binary_or( rhs); return lhs;}
-         friend Flags& operator |= ( Flags& lhs, Flags rhs) { lhs.m_flags |= rhs.m_flags; return lhs;}
-         friend Flags operator | ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags | rhs.m_flags};}
-         friend Flags operator | ( Flags lhs, enum_type rhs) { lhs.binary_or( rhs); return lhs;}
-         friend Flags operator | ( enum_type lhs, Flags rhs) { rhs.binary_or( rhs); return rhs;}
-
-         friend Flags& operator &= ( Flags& lhs, enum_type rhs) { lhs.binary_and( rhs); return lhs;}
-         friend Flags& operator &= ( Flags& lhs, Flags rhs) { lhs.m_flags &= rhs.m_flags; return lhs;}
-         friend Flags operator & ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & rhs.m_flags};}
-         friend Flags operator & ( Flags lhs, enum_type rhs) { lhs.binary_and( rhs); return lhs;}
-         friend Flags operator & ( enum_type lhs, Flags rhs) { rhs.binary_and( rhs); return rhs;}
+         constexpr bool exist( enum_type flag) const
+         {
+            return m_flags & underlaying( flag) == underlaying( flag);
+         };
 
 
-         friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
-         friend bool operator == ( Flags lhs, enum_type rhs) { return lhs.m_flags == static_cast< underlaying_type>( rhs);}
-         friend bool operator == ( enum_type lhs, Flags rhs) { return rhs == lhs;}
+         constexpr underlaying_type underlaying() const noexcept { return m_flags;}
+
+
+         constexpr friend Flags& operator |= ( Flags& lhs, Flags rhs) { lhs.m_flags |= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator | ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags | rhs.m_flags};}
+
+         constexpr friend Flags& operator &= ( Flags& lhs, Flags rhs) { lhs.m_flags &= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator & ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & rhs.m_flags};}
+
+         constexpr friend Flags& operator ^= ( Flags& lhs, Flags rhs) { lhs.m_flags ^= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator ^ ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags ^ rhs.m_flags};}
+
+         constexpr friend Flags operator ~ ( Flags lhs) { return Flags{ ~lhs.m_flags};}
+
+         constexpr friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
+         constexpr friend bool operator != ( Flags lhs, Flags rhs) { return ! ( lhs == rhs);}
+
+         constexpr friend Flags operator - ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & ~rhs.m_flags};}
+         constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) { lhs.m_flags &= ~rhs.m_flags; return lhs;}
+
 
          friend std::ostream& operator << ( std::ostream& out, Flags flags)
          {
-            return out << std::ios::hex << flags.m_flags;
+            return out << "0x" << std::hex << flags.m_flags << std::dec;
          }
 
          CASUAL_CONST_CORRECT_MARSHAL(
@@ -81,70 +100,23 @@ namespace casual
 
       private:
 
-         Flags( underlaying_type bitmask) : m_flags( bitmask) {}
+         constexpr Flags( underlaying_type bitmask) : m_flags( bitmask) {}
 
-         void binary_or( enum_type e)
+         static constexpr underlaying_type bitmask( enum_type e) { return underlaying( e);}
+
+         template< typename... Enums>
+         static constexpr underlaying_type bitmask( enum_type e, Enums... enums)
          {
-            m_flags |= static_cast< underlaying_type>( e);
+            static_assert( traits::is_same< enum_type, Enums...>::value, "wrong enum type");
+
+            return underlaying( e) | bitmask( enums...);
          }
 
-         void binary_and( enum_type e)
-         {
-            m_flags &= static_cast< underlaying_type>( e);
-         }
+         static constexpr underlaying_type underlaying( enum_type e) { return static_cast< underlaying_type>( e);}
 
 
          underlaying_type m_flags = underlaying_type{};
       };
-
-      namespace flags
-      {
-         namespace detail
-         {
-            template< typename E>
-            struct holder_type
-            {
-               using bitmask_type = typename std::underlying_type< E>::type;
-
-               holder_type( bitmask_type bitmask) : bitmask( bitmask) {}
-
-               Flags< E> flags;
-               typename std::underlying_type< E>::type bitmask;
-
-            };
-
-            template< typename E>
-            holder_type< E> assign( holder_type< E> holder, E e)
-            {
-               auto bit_enum = static_cast< typename std::underlying_type< E>::type>( e);
-
-               if( ( holder.bitmask & bit_enum) == bit_enum)
-               {
-                  holder.flags |= e;
-                  holder.bitmask &= ~bit_enum;
-               }
-               return holder;
-            }
-
-         } // detail
-
-         template< typename E>
-         Flags< E> convert( typename std::underlying_type< E>::type flags, std::initializer_list< E> enums)
-         {
-            detail::holder_type< E> result{ flags};
-            for( auto e : enums)
-            {
-               result = detail::assign( result, e);
-            }
-
-            if( result.bitmask != 0)
-            {
-               throw exception::invalid::Flags{ "invalid flags", CASUAL_NIP( flags), exception::make_nip( "expected", range::make( enums))};
-            }
-
-            return result.flags;
-         }
-      } // flags
 
 	} // common
 } // casual

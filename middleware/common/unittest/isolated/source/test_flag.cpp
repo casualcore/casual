@@ -33,6 +33,23 @@ namespace casual
       } // local
 
 
+      //
+      // Test the compile time initialization
+      //
+      static_assert( Flags< Enum>{ Enum::flag1, Enum::flag2}.underlaying() == ( 1 | 2), "bla");
+      static_assert( Flags< Enum>{ Enum::flag1} == Flags< Enum>{ Enum::flag1}, "bla");
+      static_assert( Flags< Enum>{ Enum::flag1} != Flags< Enum>{ Enum::flag2}, "bla");
+      static_assert( Flags< Enum>{ Enum::flag1}, "bla");
+
+      static_assert( Flags< Enum>{ Enum::flag1} == Enum::flag1, "bla");
+
+      static_assert( Flags< Enum>{ Enum::flag1} & Enum::flag1, "bla");
+      static_assert( ! ( Flags< Enum>{ Enum::flag1} & Enum::flag2), "bla");
+      static_assert( ( Flags< Enum>{ Enum::flag1} | Enum::flag2 | Enum::flag3 ) == Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3} , "bla");
+
+
+      static_assert( ! Flags< Enum>{}, "bla");
+
 
       TEST( casual_common_flags, empty__expect_false)
       {
@@ -113,6 +130,13 @@ namespace casual
          EXPECT_TRUE( local::boolean(
                ( Flags< Enum>{ Enum::flag1, Enum::flag2} | Flags< Enum>{ Enum::flag2, Enum::flag3})
                   ==  Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
+      }
+
+
+      TEST( casual_common_flags, exist)
+      {
+         Flags< Enum> flags{ Enum::flag1, Enum::flag2};
+         EXPECT_TRUE( flags.exist( Enum::flag2));
       }
 
    } // common

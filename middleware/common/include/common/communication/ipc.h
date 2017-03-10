@@ -408,9 +408,9 @@ namespace casual
                using error_type = typename inbound::Device::error_type;
 
                template< typename S, typename M>
-               void receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
+               bool receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
                {
-                  ipc.receive( message, policy::Blocking{}, handler);
+                  return ipc.receive( message, policy::Blocking{}, handler);
                }
 
                template< typename S, typename M>
