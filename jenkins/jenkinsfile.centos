@@ -160,9 +160,9 @@ node {
              writeFile file: 'Dockerfile', text: dockerfile
              writeFile file: 'start.sh', text: dockerstart
 
-             sh """
+             sh '''
              docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
-             """
+             '''
           }
 
 //         stage('Publishing to dockerhub')
