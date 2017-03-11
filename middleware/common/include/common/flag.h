@@ -63,7 +63,7 @@ namespace casual
 
          constexpr bool exist( enum_type flag) const
          {
-            return m_flags & underlaying( flag) == underlaying( flag);
+            return ( m_flags & underlaying( flag)) == underlaying( flag);
          };
 
 
