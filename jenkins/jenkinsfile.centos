@@ -64,8 +64,9 @@ RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch
 RUN rpm -Uvh epel-release*rpm
 RUN yum -y install pugixml yaml-cpp03
 
-COPY casual-middleware-0.42-1.x86_64.rpm /tmp/casual-middleware-0.42-1.x86_64.rpm
-RUN rpm -i -p /tmp/casual-middleware-0.42-1.x86_64.rpm
+ARG CASUAL_RPM
+COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
+RUN rpm -i -p /tmp/casual-middleware.rpm
 COPY start.sh /opt/casual/start.sh
 RUN chmod 755 /opt/casual/start.sh
 
@@ -160,7 +161,7 @@ node {
              writeFile file: 'start.sh', text: dockerstart
 
              sh """
-             docker build -t casual/middleware-centos -f Dockerfile .
+             docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
              """
           }
 
