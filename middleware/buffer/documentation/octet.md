@@ -2,7 +2,7 @@
 
 ## Sample
 
-- [client](./../sample/client/source/octet.c)
+- [client](./../sample/client/source/octet.cpp)
 
 ## Overview
 
