@@ -51,7 +51,7 @@ namespace casual
 
          namespace message
          {
-
+            
             template< std::size_t size, common::message::Type type = common::message::Type::MOCKUP_BASE>
             struct basic_message : common::message::basic_message< type>
             {
@@ -63,7 +63,12 @@ namespace casual
                   archive & payload;
                })
 
-               std::array< char, size> payload;
+               //
+               // cores on ubuntu 16.04 when size gets over 5M.
+               // guessing that the stack gets to big... 
+               // We switch to a vector instead.
+               // std::array< char, size> payload;
+               std::vector< char> payload = std::vector< char>( size);
             };
 
          } // message

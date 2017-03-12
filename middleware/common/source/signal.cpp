@@ -644,9 +644,16 @@ namespace casual
 
             void send( common::thread::native::type thread, Type signal)
             {
-               if( pthread_kill( thread, cast::underlying( signal)) != 0)
-               {
-                  log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - errno: " << errno << " - "<< error::string() << std::endl;
+               if( pthread_kill( thread, 0) == 0)
+	       {
+                  if( pthread_kill( thread, cast::underlying( signal)) != 0)
+                  {
+                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - errno: " << errno << " - "<< error::string() << std::endl;
+                  } 
+               }
+               else
+               {     
+                  log::category::error << "thread-handle is not valid - action: ignore"  << std::endl;
                }
             }
 

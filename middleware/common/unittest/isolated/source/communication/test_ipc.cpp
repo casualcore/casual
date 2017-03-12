@@ -189,7 +189,7 @@ namespace casual
 
 
             local::exactly_transport_size send_message;
-            memory::set( send_message.payload, 6);
+            memory::set( range::make( send_message.payload), 6);
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
@@ -224,7 +224,7 @@ namespace casual
 
 
             message_type send_message;
-            memory::set( send_message.payload, 6);
+            memory::set( range::make( send_message.payload), 6);
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
@@ -265,7 +265,7 @@ namespace casual
 
 
             message_type send_message;
-            memory::set( send_message.payload, 6);
+            memory::set( range::make( send_message.payload), 6);
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
@@ -284,7 +284,7 @@ namespace casual
 
 
             message_type send_message;
-            memory::set( send_message.payload, 6);
+            memory::set( range::make( send_message.payload), 6);
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
@@ -306,7 +306,7 @@ namespace casual
             std::vector< common::Uuid> correlations;
 
             message_type send_message;
-            memory::set( send_message.payload, 6);
+            memory::set( range::make( send_message.payload), 6);
 
             for( int count = 10; count > 0; --count)
             {
