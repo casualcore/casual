@@ -64,8 +64,9 @@ RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch
 RUN rpm -Uvh epel-release*rpm
 RUN yum -y install pugixml yaml-cpp03
 
-COPY casual-middleware-0.42-1.x86_64.rpm /tmp/casual-middleware-0.42-1.x86_64.rpm
-RUN rpm -i -p /tmp/casual-middleware-0.42-1.x86_64.rpm
+ARG CASUAL_RPM
+COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
+RUN rpm -i -p /tmp/casual-middleware.rpm
 COPY start.sh /opt/casual/start.sh
 RUN chmod 755 /opt/casual/start.sh
 
@@ -111,10 +112,10 @@ def build( name, image, content)
 
 node {
 
-     slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+   slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-  try
-  {
+   try
+   {
       stage('Checkout')
       {
          checkout scm
@@ -151,18 +152,18 @@ node {
 
       if ( "${env.BRANCH_NAME}" == "develop" )
       {
-         stage('Create container')
-         {
-            // 
-            // Setup files
-            //
-            writeFile file: 'Dockerfile', text: dockerfile
-            writeFile file: 'start.sh', text: dockerstart
+          stage('Create container')
+          {
+             // 
+             // Setup files
+             //
+             writeFile file: 'Dockerfile', text: dockerfile
+             writeFile file: 'start.sh', text: dockerstart
 
-            sh """
-            docker build -t casual/middleware-centos -f Dockerfile .
-            """
-         }
+             sh '''
+             docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
+             '''
+          }
 
 //         stage('Publishing to dockerhub')
 //         {
@@ -172,22 +173,29 @@ node {
 //            """
 //         }
 //
-         stage('Deploy')
-         {
-            sh """
-            cd /var/lib/jenkins/git/casual/docker
-            ./restart.sh
-            """
-         }
+          stage('Deploy')
+          {
+             sh """
+             cd /var/lib/jenkins/git/casual/docker
+             ./restart.sh
+             """
+          }
 
+          stage('Documentation')
+          {
+             sh """
+             gitbook init .
+             gitbook build .
+             """
+          }
       }
       slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
       currentBuild.result = 'SUCCESS'
    }
    catch (Exception e)
    {
-       slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-       currentBuild.result = 'FAILURE'
+      slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+      currentBuild.result = 'FAILURE'
    }
 
 }
