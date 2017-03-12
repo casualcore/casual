@@ -293,18 +293,14 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< 10 * 1024>;
-
-
-            message_type send_message;
-            unittest::random::range( send_message.payload);
+            auto send_message = unittest::random::message( 10 * 1024);
 
             auto correlation = outbund.blocking_send( send_message);
 
 
             // receive (the echo)
             {
-               message_type receive_message;
+               unittest::Message receive_message;
                tcp::inbound::Device tcp{ outbund.connector().socket()};
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
@@ -323,18 +319,14 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< 100 * 1024>;
-
-
-            message_type send_message;
-            unittest::random::range( send_message.payload);
+            auto send_message = unittest::random::message( 100 * 1024);
 
             auto correlation = outbund.blocking_send( send_message);
 
 
             // receive (the echo)
             {
-               message_type receive_message;
+               unittest::Message receive_message;
                tcp::inbound::Device tcp{ outbund.connector().socket()};
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
@@ -353,18 +345,14 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< 1024 * 1024>;
-
-
-            message_type send_message;
-            unittest::random::range( send_message.payload);
+            auto send_message = unittest::random::message( 1024 * 1024);;
 
             auto correlation = outbund.blocking_send( send_message);
 
 
             // receive (the echo)
             {
-               message_type receive_message;
+               unittest::Message receive_message;
                tcp::inbound::Device tcp{ outbund.connector().socket()};
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
@@ -384,18 +372,20 @@ namespace casual
 
             tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
 
-            using message_type = unittest::message::basic_message< 10 * 1024 * 1024>;
 
-
-            message_type send_message;
+            auto send_message = unittest::random::message( 10 * 1024 * 1024);
             unittest::random::range( send_message.payload);
+
+            std::cerr << "sending outbund " << std::endl;
 
             auto correlation = outbund.blocking_send( send_message);
 
 
             // receive (the echo)
             {
-               message_type receive_message;
+               std::cerr << "receiving outbund " << std::endl;
+
+               unittest::Message receive_message;
                tcp::inbound::Device tcp{ outbund.connector().socket()};
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});

@@ -24,6 +24,27 @@ namespace casual
 
          } // clean
 
+         namespace local
+         {
+            namespace
+            {
+               std::size_t transform_size( std::size_t size)
+               {
+                  const auto size_type_size = sizeof( platform::binary::type::size_type);
+
+                  if( size < size_type_size)
+                  {
+                     throw exception::invalid::Argument{ "mockup message size is to small"};
+                  }
+                  return size - size_type_size;
+               }
+            } // <unnamed>
+         } // local
+
+         Message::Message() = default;
+         Message::Message( std::size_t size) : payload( local::transform_size( size)) {}
+
+         std::size_t Message::size() const { return payload.size() + sizeof( platform::binary::type::size_type);}
 
          namespace random
          {
@@ -39,14 +60,32 @@ namespace casual
                      return engine;
                   }
 
+                  auto distribution()
+                  {
+                     using limit_type = std::numeric_limits< platform::binary::type::value_type>;
+
+                     std::uniform_int_distribution<> distribution( limit_type::min(), limit_type::max());
+
+                     return distribution;
+                  }
+
+                  template< typename C>
+                  void randomize( C& container)
+                  {
+                     auto dist = local::distribution();
+
+                     for( auto& value : container)
+                     {
+                        value = dist( local::engine());
+                     }
+                  }
+
                } // <unnamed>
             } // local
 
             platform::binary::type::value_type byte()
             {
-               using limit_type = std::numeric_limits< platform::binary::type::value_type>;
-
-               std::uniform_int_distribution<> distribution( limit_type::min(), limit_type::max());
+               auto distribution = local::distribution();
 
                return distribution( local::engine());
             }
@@ -55,11 +94,16 @@ namespace casual
             {
                platform::binary::type result( size);
 
-               for( auto& value : result)
-               {
-                  value = byte();
-               }
+               local::randomize( result);
 
+               return result;
+            }
+
+            unittest::Message message( std::size_t size)
+            {
+               unittest::Message result( size);
+
+               local::randomize( result.payload);
                return result;
             }
          } // random

@@ -49,32 +49,48 @@ namespace casual
             }
          };
 
-         namespace message
-         {
             
-            template< std::size_t size, common::message::Type type = common::message::Type::MOCKUP_BASE>
-            struct basic_message : common::message::basic_message< type>
+         struct Message : common::message::basic_message< common::message::Type::MOCKUP_BASE>
+         {
+            Message();
+
+            //!
+            //! Will adjust the size of the paylad, and exclude the size of
+            //! the 'payload size'.
+            //!
+            //! payload-size = size - sizeof( platform::binary::type::size_type)
+            //!
+            //! @param size the size of what is transported.
+            //!
+            Message( std::size_t size);
+
+
+            //!
+            //! @return the transport size
+            //!   ( payload-size + sizeof( platform::binary::type::size_type)
+            //!
+            std::size_t size() const;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
             {
+               // we don't serialize execution
+               //base_type::marshal( archive);
+               archive & payload;
+            })
 
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  // we don't serialize execution
-                  //base_type::marshal( archive);
-                  archive & payload;
-               })
+            //
+            // cores on ubuntu 16.04 when size gets over 5M.
+            // guessing that the stack gets to big...
+            // We switch to a vector instead.
+            // std::array< char, size> payload;
+            platform::binary::type payload;
+         };
 
-               //
-               // cores on ubuntu 16.04 when size gets over 5M.
-               // guessing that the stack gets to big... 
-               // We switch to a vector instead.
-               // std::array< char, size> payload;
-               std::vector< char> payload = std::vector< char>( size);
-            };
-
-         } // message
 
          namespace random
          {
+            unittest::Message message( std::size_t size);
+
             platform::binary::type binary( std::size_t size);
 
 

@@ -173,28 +173,17 @@ namespace casual
             EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
          }
 
-         namespace local
-         {
-            namespace
-            {
-
-               using exactly_transport_size = unittest::message::basic_message< ipc::message::transport::max_payload_size()>;
-
-            } // <unnamed>
-         } // local
 
          TEST( casual_common_communication_ipc, send_receivce__1_exactly_transport_size__expect_exactly_1_transport_message)
          {
             common::unittest::Trace trace;
 
-
-            local::exactly_transport_size send_message;
-            memory::set( range::make( send_message.payload), 6);
+            auto send_message = unittest::random::message( ipc::message::transport::max_payload_size());
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
 
-            local::exactly_transport_size receive_message;
+            unittest::Message receive_message;
             {
 
                ipc::message::Transport transport;
@@ -220,16 +209,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 2 * ipc::message::transport::max_payload_size()>;
-
-
-            message_type send_message;
-            memory::set( range::make( send_message.payload), 6);
-
+            auto send_message = unittest::random::message( 2 * ipc::message::transport::max_payload_size());
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
 
-            message_type receive_message;
+            unittest::Message receive_message;
             {
 
                ipc::message::Transport transport;
@@ -261,16 +245,12 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 10 * ipc::message::transport::max_payload_size()>;
-
-
-            message_type send_message;
-            memory::set( range::make( send_message.payload), 6);
+            auto send_message = unittest::random::message( 10 * ipc::message::transport::max_payload_size());
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
 
-            message_type receive_message;
+            unittest::Message receive_message;
             ipc::blocking::receive( ipc::inbound::device(), receive_message);
             EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
 
@@ -280,17 +260,14 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 1103>;
-
-
-            message_type send_message;
-            memory::set( range::make( send_message.payload), 6);
+            auto send_message = unittest::random::message( 1103);
 
             mockup::ipc::eventually::send( ipc::inbound::id(), send_message);
 
 
-            message_type receive_message;
+            unittest::Message receive_message;
             ipc::blocking::receive( ipc::inbound::device(), receive_message);
+            EXPECT_TRUE( receive_message.size() == 1103);
             EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
 
          }
@@ -301,12 +278,9 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            using message_type = unittest::message::basic_message< 3 * ipc::message::transport::max_payload_size()>;
-
             std::vector< common::Uuid> correlations;
 
-            message_type send_message;
-            memory::set( range::make( send_message.payload), 6);
+            auto send_message = unittest::random::message( 3 * ipc::message::transport::max_payload_size());
 
             for( int count = 10; count > 0; --count)
             {
@@ -317,7 +291,7 @@ namespace casual
             // We reverse the order we fetch the messages
             for( auto& correlation : common::range::reverse( correlations))
             {
-               message_type receive_message;
+               unittest::Message receive_message;
 
                ipc::blocking::receive( ipc::inbound::device(), receive_message, correlation);
 

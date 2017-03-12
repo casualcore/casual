@@ -135,10 +135,11 @@ namespace casual
                   //
                   // Remove those who have been handled.
                   //
-		  // This should work, doesn't on g++ 5.4
-		  // auto last = std::partition( std::begin( m_unhandled), std::end( m_unhandled), []( const auto& r){ return ! r.empty();});
+                  // This should work, doesn't on g++ 5.4
+                  // auto last = std::partition( std::begin( m_unhandled), std::end( m_unhandled), []( const auto& r){ return ! r.empty();});
                   using unhandled_type = decltype( *std::begin( m_unhandled));
-		  auto last = std::partition( std::begin( m_unhandled), std::end( m_unhandled), []( const unhandled_type& r){ return ! r.empty();});
+                  auto last = std::partition( std::begin( m_unhandled), std::end( m_unhandled), []( unhandled_type& r){ return ! r.empty();});
+
                   m_unhandled.erase( last, std::end( m_unhandled));
                }
 
