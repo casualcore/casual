@@ -106,11 +106,12 @@ def build( name, image, content)
 
    sh """
    chmod +x builder.sh
-   docker run -v $current_dir:/git/casual $image
+   docker run -v $current_dir:/git/casual:Z $image
    """
 }
 
-node {
+node
+{
 
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
