@@ -31,7 +31,7 @@ namespace casual
                namespace transform
                {
                   message::service::call::Reply reply( const message::service::call::callee::Request& message);
-                  message::conversation::send::caller::Request reply( const message::conversation::connect::callee::Request& message);
+                  message::conversation::caller::Send reply( const message::conversation::connect::callee::Request& message);
 
 
                   TPSVCINFO information( message::service::call::callee::Request& message);
@@ -42,7 +42,7 @@ namespace casual
                namespace complement
                {
                   void reply( message::service::call::Reply& reply, const server::state::Jump& jump);
-                  void reply( message::conversation::send::caller::Request& reply, const server::state::Jump& jump);
+                  void reply( message::conversation::caller::Send& reply, const server::state::Jump& jump);
 
                } // complement
 
@@ -68,12 +68,13 @@ namespace casual
                   //
                   auto reply = transform::reply( message);
 
+                  using flag_type =  typename decltype( message.flags)::enum_type;
 
                   //
                   // Make sure we always send reply to caller
                   //
                   auto execute_reply = scope::execute( [&](){
-                     if( ! flag< TPNOREPLY>( message.flags))
+                     if( ! message.flags.exist( flag_type::no_transaction))
                      {
                         //
                         // Send reply to caller.

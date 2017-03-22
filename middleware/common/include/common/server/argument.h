@@ -22,30 +22,18 @@ namespace casual
 
          struct Arguments
          {
-            //Arguments() = default;
-            Arguments( Arguments&&) = default;
-            Arguments& operator = (Arguments&&) = default;
-
-            Arguments( int argc, char** argv) : argc( argc), argv( argv)
-            {
-
-            }
-
-            Arguments( std::vector< std::string> args) : arguments( std::move( args))
-            {
-               for( auto& argument : arguments)
-               {
-                  c_arguments.push_back( const_cast< char*>( argument.c_str()));
-               }
-               argc = c_arguments.size();
-               argv = c_arguments.data();
-            }
+            Arguments( Arguments&&);
+            Arguments& operator = (Arguments&&);
+            Arguments( int argc, char** argv);
+            Arguments( std::vector< std::string> args);
 
             std::vector< Service> services;
-            std::function<int( int, char**)> server_init = &tpsvrinit;
-            std::function<void()> server_done = &tpsvrdone;
-            int argc;
-            char** argv;
+
+            std::function<int( int, char**)> server_init;
+            std::function<void()> server_done;
+
+            int argc = 0;
+            char** argv = nullptr;
 
             std::vector< std::string> arguments;
 
@@ -55,12 +43,8 @@ namespace casual
             std::vector< char*> c_arguments;
          };
 
-
-
       } // server
    } // common
-
-
 } // casual
 
 #endif // ARGUMENTS_H_

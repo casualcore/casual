@@ -95,6 +95,16 @@ namespace casual
                throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
             }
 
+            const State::Pending::Descriptor& State::Pending::get( const Uuid& correlation) const
+            {
+               auto found = range::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
+               if( found && found->active)
+               {
+                  return *found;
+               }
+               throw exception::xatmi::invalid::Descriptor{ "failed to locate pending from correlation", CASUAL_NIP( correlation)};
+            }
+
             signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time::point::type& now) const
             {
                if( descriptor == 0)

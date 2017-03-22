@@ -42,8 +42,6 @@ namespace casual
                      auto& descriptor = common::service::conversation::Context::instance().descriptors().reserve( message.correlation);
                      descriptor.route = message.recording;
 
-                     message.descriptor = descriptor.descriptor;
-
                      reply.status = 0;
 
                   }

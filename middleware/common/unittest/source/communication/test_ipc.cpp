@@ -308,7 +308,6 @@ namespace casual
             {
                message.correlation = uuid::make();
                message.execution = uuid::make();
-               message.descriptor = 42;
                message.transaction.trid = transaction::ID::create( process::handle());
                message.transaction.state = 666;
                message.buffer.type = ".binary";
@@ -325,7 +324,6 @@ namespace casual
 
             EXPECT_TRUE( receive_message.correlation == correlation);
             EXPECT_TRUE( receive_message.execution == message.execution);
-            EXPECT_TRUE( receive_message.descriptor == message.descriptor);
             EXPECT_TRUE( receive_message.transaction.trid == message.transaction.trid);
             EXPECT_TRUE( receive_message.transaction.state == message.transaction.state);
             EXPECT_TRUE( receive_message.buffer.memory == message.buffer.memory);

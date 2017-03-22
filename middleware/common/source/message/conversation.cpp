@@ -42,27 +42,51 @@ namespace casual
                return out << "{ nodes: " << range::make( value.nodes) << '}';
             }
 
-            namespace send
+            namespace connect
             {
-               std::ostream& operator << ( std::ostream& out, const base_request& value)
+               std::ostream& operator << ( std::ostream& out, const basic_request& value)
                {
-                  return out << "{ " << value.correlation
-                        << ", process: " << value.process
+                  return out << "{ process: " << value.process
+                        << ", service: " << value.service
+                        << ", parent: " << value.parent
+                        << ", trid: " << value.trid
+                        << ", header: " << range::make( value.header)
                         << ", flags: " << value.flags
-                        << ", events: " << value.events
-                        << ", route: " << value.route
+                        << ", recording: " << value.recording
                         << '}';
                }
 
                std::ostream& operator << ( std::ostream& out, const Reply& value)
                {
-                  return out << "{ " << value.correlation
-                        << ", process: " << value.process
-                        << ", events: " << value.events
+                  return out << "{ process: " << value.process
                         << ", route: " << value.route
+                        << ", recording: " << value.recording
+                        << ", status: " << value.status
                         << '}';
                }
-            } // send
+
+            } // connect
+
+            std::ostream& operator << ( std::ostream& out, const basic_send& value)
+            {
+               return out << "{ " << value.correlation
+                     << ", process: " << value.process
+                     << ", flags: " << value.flags
+                     << ", events: " << value.events
+                     << ", route: " << value.route
+                     << '}';
+            }
+
+
+            std::ostream& operator << ( std::ostream& out, const Disconnect& value)
+            {
+               return out << "{ " << value.correlation
+                     << ", process: " << value.process
+                     << ", events: " << value.events
+                     << ", route: " << value.route
+                     << '}';
+            }
+
          } // conversation
 
 

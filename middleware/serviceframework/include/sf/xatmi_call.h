@@ -13,10 +13,6 @@
 
 #include "common/move.h"
 
-//
-// xatmi
-//
-#include <xatmi.h>
 
 //
 // std

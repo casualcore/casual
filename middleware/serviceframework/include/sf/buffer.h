@@ -23,13 +23,6 @@
 #include <iosfwd>
 
 
-#include <cstring>
-
-
-#include <xatmi.h>
-
-
-
 namespace casual
 {
    namespace sf

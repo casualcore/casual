@@ -1,15 +1,14 @@
 //!
-//! server.h
-//!
-//! Created on: Dec 27, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef SERVER_H_
 #define SERVER_H_
 
-#include "xatmi.h"
+
 #include "sf/service/interface.h"
+
+#include "xatmi/defines.h"
 
 #include <memory>
 

@@ -169,27 +169,32 @@ namespace casual
                typedef std::map< message_type, std::unique_ptr< base_handler> > handlers_type;
 
 
-               static void assign( handlers_type& result)
-               {
-
-               }
-
-               template< typename H, typename... Args>
-               static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
+               template< typename H>
+               static void add( handlers_type& result, H&& handler)
                {
                   using handle_type = handle_holder< typename std::decay< H>::type>;
-
-                  //
-                  //  We need to override handlers in unittest.
-                  //
-                  // assert( result.count( handle_type::message_type::type()) == 0);
 
                   auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
 
                   result.emplace(
                         handle_type::message_type::type(),
                         std::move( holder));
+               }
 
+               static void add( handlers_type& result, basic_handler&& holder)
+               {
+                  for( auto&& handler : holder.m_handlers)
+                  {
+                     result.insert( std::move( handler));
+                  }
+               }
+
+               static void assign( handlers_type& result) { }
+
+               template< typename H, typename... Args>
+               static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
+               {
+                  add( result, std::forward< H>( handler));
                   assign( result, std::forward< Args>( handlers)...);
                }
 

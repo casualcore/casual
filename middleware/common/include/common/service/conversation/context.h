@@ -11,13 +11,30 @@
 #include "common/buffer/type.h"
 #include "common/flag.h"
 
-#include "xatmi.h"
+#include "xatmi/defines.h"
 
 namespace casual
 {
 
    namespace common
    {
+      namespace exception
+      {
+         namespace conversation
+         {
+            using base_exception = xatmi::basic_xatmi< TPEEVENT, code::log::Category::error>;
+            struct Event : base_exception
+            {
+               Event( service::conversation::Events event) :
+                  event( event) {}
+
+               service::conversation::Events event;
+            };
+
+         } // conversation
+
+      } // exception
+
       namespace service
       {
          namespace conversation
@@ -37,6 +54,7 @@ namespace casual
             {
             public:
                static Context& instance();
+               ~Context();
 
                descriptor::type connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flags flags);
 
@@ -45,6 +63,8 @@ namespace casual
                common::Flags< Event> send( descriptor::type descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
 
                receive::Result receive( descriptor::type descriptor, common::Flags< receive::Flag> flags);
+
+               void disconnect( descriptor::type descriptor);
 
                inline State::holder_type& descriptors() { return m_state.descriptors;}
 

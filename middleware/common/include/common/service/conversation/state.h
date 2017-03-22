@@ -32,10 +32,14 @@ namespace casual
                         terminated
                      };
 
+
                      message::conversation::Route route;
 
                      Duplex duplex = Duplex::receive;
+                     bool initiator = false;
 
+                     friend std::ostream& operator << ( std::ostream& out, const Duplex& value);
+                     friend std::ostream& operator << ( std::ostream& out, const Information& value);
                   };
 
                } // descriptor

@@ -19,7 +19,7 @@
 #include <ostream>
 
 
-#include <xatmi.h>
+#include <xatmi/defines.h>
 #include <tx.h>
 
 namespace casual
@@ -370,6 +370,7 @@ namespace casual
 
                typedef basic_xatmi< TPEMATCH, code::log::Category::debug> Advertised;
             }
+
 
             using System = basic_xatmi< TPESYSTEM,code::log::Category::error>;
 

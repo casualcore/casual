@@ -5,6 +5,7 @@
 #include "common/server/handle/service.h"
 
 #include "common/server/context.h"
+#include "common/service/conversation/context.h"
 #include "common/buffer/pool.h"
 
 
@@ -26,16 +27,15 @@ namespace casual
                      message::service::call::Reply result;
 
                      result.correlation = message.correlation;
-                     result.descriptor = message.descriptor;
                      result.buffer = buffer::Payload{ nullptr};
                      result.error = TPESVCERR;
 
                      return result;
                   }
 
-                  message::conversation::send::caller::Request reply( const message::conversation::connect::callee::Request& message)
+                  message::conversation::caller::Send reply( const message::conversation::connect::callee::Request& message)
                   {
-                     message::conversation::send::caller::Request result{ buffer::Payload{ nullptr}};
+                     message::conversation::caller::Send result{ buffer::Payload{ nullptr}};
 
                      result.correlation = message.correlation;
                      result.buffer = buffer::Payload{ nullptr};
@@ -57,8 +57,8 @@ namespace casual
                      //range::copy_max( message.service.name, )
                      strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
                      result.len = message.buffer.memory.size();
-                     result.cd = message.descriptor;
-                     result.flags = message.flags;
+                     result.cd = 0;
+                     result.flags = message.flags.underlaying();
 
                      //
                      // This is the only place where we use adopt
@@ -70,7 +70,31 @@ namespace casual
 
                   TPSVCINFO information( message::conversation::connect::callee::Request& message)
                   {
-                     return {};
+                     Trace trace{ "server::handle::transform::information connect"};
+
+                     TPSVCINFO result;
+
+                     //
+                     // Before we call the user function we have to add the buffer to the "buffer-pool"
+                     //
+                     //range::copy_max( message.service.name, )
+                     strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
+                     result.len = message.buffer.memory.size();
+                     result.flags = message.flags.underlaying();
+
+                     auto& descriptor = common::service::conversation::Context::instance().descriptors().reserve( message.correlation);
+
+                     result.cd = descriptor.descriptor;
+
+                     //
+                     // This is the only place where we use adopt
+                     //
+                     result.data = buffer::pool::Holder::instance().adopt( std::move( message.buffer));
+
+
+
+
+                     return result;
                   }
 
                } // transform
@@ -100,7 +124,7 @@ namespace casual
                      }
                   }
 
-                  void reply( message::conversation::send::caller::Request& reply, const server::state::Jump& jump)
+                  void reply( message::conversation::caller::Send& reply, const server::state::Jump& jump)
                   {
                      auto event = []( int value){
                         return value == TPSUCCESS ? common::service::conversation::Event::service_success :

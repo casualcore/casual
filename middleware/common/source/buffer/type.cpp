@@ -3,8 +3,9 @@
 //!
 
 #include "common/buffer/type.h"
-
 #include "common/exception.h"
+
+#include "xatmi/extended.h"
 
 namespace casual
 {

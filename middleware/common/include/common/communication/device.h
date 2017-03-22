@@ -102,9 +102,21 @@ namespace casual
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
+               ~Device()
+               {
+                  if( ! m_cache.empty() && log::category::warning)
+                  {
+                     log::category::warning << "pending messages in cache - " << *this << '\n';
+                  }
+                  else if( log::debug)
+                  {
+                     log::debug << "device: " << *this << '\n';
+                  }
+               }
+
+
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
-
 
 
                //!
@@ -180,6 +192,22 @@ namespace casual
 
 
                //!
+               //! Tries to find a logic complete message a specific type and correlation
+               //!
+               //! @return a logical complete message if there is one,
+               //!         otherwise the message has absent_message as type
+               //!
+               template< typename P>
+               complete_type next( message_type type, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
+               {
+                  return find_complete(
+                        std::forward< P>( policy),
+                        handler,
+                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;});
+               }
+
+
+               //!
                //! Tries to find a message whith the same type as @p message
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
@@ -197,7 +225,7 @@ namespace casual
                }
 
                //!
-               //! Tries to find a message that has @p correlation
+               //! Tries to find a message that has the same type and @p correlation
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
@@ -207,6 +235,7 @@ namespace casual
                {
                   return unmarshal(
                         this->next(
+                              common::message::type( message),
                               correlation,
                               std::forward< P>( policy),
                               handler),
@@ -221,6 +250,8 @@ namespace casual
                //!
                void discard( const Uuid& correlation)
                {
+                  flush();
+
                   auto complete = range::find_if( m_cache, [&]( const auto& m){ return m.correlation == correlation;});
 
                   if( complete)

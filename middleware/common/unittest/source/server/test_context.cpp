@@ -105,7 +105,6 @@ namespace casual
                message::service::call::callee::Request message;
 
                message.buffer = { buffer::type::binary(), platform::binary::type( 1024)};
-               message.descriptor = 10;
                message.service.name = "test_service";
                message.process.queue = id;
 
@@ -259,7 +258,6 @@ namespace casual
 
                   message.correlation = uuid::make();
                   message.buffer = { buffer::type::binary(), platform::binary::type( 1024)};
-                  message.descriptor = 10;
                   message.service.name = std::move( service);
                   message.process.queue = queue;
                   message.trid = std::move( trid);

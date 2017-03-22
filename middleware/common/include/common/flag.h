@@ -55,11 +55,9 @@ namespace casual
             return convert( flags.underlaying());
          }
 
+         constexpr bool empty() const noexcept { return m_flags == underlaying_type{};}
 
-         constexpr explicit operator bool() const noexcept
-         {
-            return m_flags != underlaying_type{};
-         }
+         constexpr explicit operator bool() const noexcept { return ! empty();}
 
          constexpr bool exist( enum_type flag) const
          {

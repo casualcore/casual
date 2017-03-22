@@ -13,7 +13,7 @@
 
 #include "common/functional.h"
 
-#include "xatmi.h"
+#include "xatmi/defines.h"
 
 //
 // std

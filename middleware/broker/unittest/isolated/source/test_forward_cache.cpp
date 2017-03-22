@@ -48,7 +48,7 @@ namespace casual
             request.process.queue = caller.id();
             request.service.name = "service2";
             request.trid = transaction::ID::create( process::handle());
-            request.flags = TPNOTRAN;
+            request.flags = message::service::call::request::Flag::no_transaction;
          }
 
          //

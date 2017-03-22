@@ -527,7 +527,7 @@ namespace casual
                   communication::ipc::inbound::Device ipc;
                   process.queue = ipc.connector().id();
 
-                  m_thread = std::thread{ &worker_thread, std::move( ipc), std::move( replier)};
+                  m_thread = std::thread{ &worker_thread, std::move( ipc), std::move( replier), process.pid};
                }
 
                ~Implementation()
@@ -537,12 +537,24 @@ namespace casual
                   local::shutdown_thread( m_thread, process.queue);
                }
 
-               static void worker_thread( communication::ipc::inbound::Device&& ipc, communication::ipc::dispatch::Handler&& replier)
+               static void worker_thread(
+                     communication::ipc::inbound::Device&& ipc,
+                     communication::ipc::dispatch::Handler&& replier,
+                     platform::pid::type pid)
                {
                   Trace trace{ "Replier::worker_thread"};
 
                   try
                   {
+                     if( range::find( replier.types(), common::message::Type::mockup_need_worker_process))
+                     {
+                        message::mockup::thread::Process message;
+                        message.process.pid = pid;
+                        message.process.queue = ipc.connector().id();
+
+                        replier( marshal::complete( message));
+                     }
+
                      replier.insert( []( message::mockup::Disconnect&){
                         log << "Replier::worker_thread disconnect\n";
                         throw exception::Shutdown{ "worker_thread disconnect"};
@@ -573,6 +585,7 @@ namespace casual
 
             Replier::Replier( Replier&&) noexcept = default;
             Replier& Replier::operator = ( Replier&&) noexcept = default;
+
 
             process::Handle Replier::process() const { return m_implementation->process;}
             id_type Replier::input() const { return m_implementation->process.queue;}

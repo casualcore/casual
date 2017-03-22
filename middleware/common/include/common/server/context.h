@@ -16,7 +16,7 @@
 
 
 
-#include "xatmi.h"
+#include "xatmi/defines.h"
 
 
 //

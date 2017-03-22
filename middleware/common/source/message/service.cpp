@@ -114,12 +114,11 @@ namespace casual
             namespace call
             {
 
-               std::ostream& operator << ( std::ostream& out, const base_request& value)
+               std::ostream& operator << ( std::ostream& out, const common_request& value)
                {
                   auto& header = common::service::header::fields();
 
                   return out << "{ process: " << value.process
-                     << ", descriptor: " << value.descriptor
                      << ", service: " << value.service
                      << ", parent: " << value.parent
                      << ", flags: " << value.flags
@@ -130,8 +129,7 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const Reply& message)
                {
-                  return out << "{ descriptor: " << message.descriptor
-                        << ", transaction: " << message.transaction
+                  return out << "{ transaction: " << message.transaction
                         << ", error: " << message.error
                         << ", code: " << message.code
                         << ", buffer: " << message.buffer

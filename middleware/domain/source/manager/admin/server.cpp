@@ -12,7 +12,7 @@
 
 #include "sf/server.h"
 
-
+#include "xatmi.h"
 
 namespace casual
 {

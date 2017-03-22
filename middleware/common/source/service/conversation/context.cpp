@@ -29,24 +29,33 @@ namespace casual
                {
                   namespace prepare
                   {
+                     template< typename Message, typename... Args>
+                     Message message( const State::descriptor_type& descriptor, Args&&... args)
+                     {
+                        Message result{ std::forward< Args>( args)...};
+                        result.correlation = descriptor.correlation;
+                        result.route = descriptor.route;
+                        result.process = process::handle();
+
+                        return result;
+                     }
 
                      auto connect(
                            State& state,
                            platform::time::point::type& start,
                            common::buffer::payload::Send buffer,
-                           common::Flags< connect::Flag> flags,
+                           connect::Flags flags,
                            const message::service::call::Service& service)
                      {
                         message::conversation::connect::caller::Request message{ std::move( buffer)};
 
+
+                        constexpr auto valid_flags = ~message::conversation::connect::Flags{};
+
                         message.correlation = uuid::make();
                         message.service = service;
                         message.process = process::handle();
-
-
-                        auto& descriptor = state.descriptors.reserve( message.correlation);
-
-                        message.descriptor = descriptor.descriptor;
+                        message.flags = valid_flags.convert( flags);
 
                         //
                         // we push the ipc-queue-id that this instance has. This will
@@ -58,50 +67,105 @@ namespace casual
                         return message;
                      }
 
-                     message::conversation::send::caller::Request send(
+                     message::conversation::caller::Send send(
                            const State::descriptor_type& descriptor,
                            common::buffer::payload::Send&& buffer,
                            send::Flags flags)
                      {
-                        message::conversation::send::caller::Request message{ std::move( buffer)};
-
-                        message.correlation = descriptor.correlation;
-                        message.process = process::handle();
-                        message.route = descriptor.route;
-                        message.execution = execution::id();
-
-
-                        return message;
+                        return prepare::message< message::conversation::caller::Send>( descriptor, std::move( buffer));
                      }
+
+                     auto& descriptor( State& state, connect::Flags flags)
+                     {
+                        auto& result = state.descriptors.reserve( uuid::make());
+                        result.duplex = flags.exist( connect::Flag::receive_only) ?
+                              state::descriptor::Information::Duplex::receive
+                            : state::descriptor::Information::Duplex::send;
+
+                        result.initiator = true;
+
+                        return result;
+                     }
+
                   } // prepare
 
                   namespace validate
                   {
-                     void send( const state::descriptor::Information& descriptor)
+                     void flags( connect::Flags flags)
+                     {
+                        constexpr connect::Flags duplex{ connect::Flag::send_only, connect::Flag::receive_only};
+
+                        if( ( flags & duplex) == duplex || ! ( flags & duplex))
+                        {
+                           throw exception::xatmi::invalid::Argument{ "send or receive intention must be provided", CASUAL_NIP( flags)};
+                        }
+                     }
+
+                     void send( const State::descriptor_type& descriptor)
                      {
                         Trace trace{ "common::service::conversation::local::validate::send"};
+
+                        log::debug << "descriptor: " << descriptor << '\n';
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::send)
                         {
                            throw exception::xatmi::Protocoll{ "caller has not the control of the conversation"};
                         }
-
-
                      }
 
-                     void receive( const state::descriptor::Information& descriptor)
+                     void receive( const State::descriptor_type& descriptor)
                      {
-                        Trace trace{ "common::service::conversation::local::validate::send"};
+                        Trace trace{ "common::service::conversation::local::validate::receive"};
+
+                        log::debug << "descriptor: " << descriptor << '\n';
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::receive)
                         {
                            throw exception::xatmi::Protocoll{ "caller has not the control of the conversation"};
                         }
+                     }
 
+                     void diconnect( const State::descriptor_type& descriptor)
+                     {
+                        Trace trace{ "common::service::conversation::local::validate::diconnect"};
 
+                        log::debug << "descriptor: " << descriptor << '\n';
+
+                        if( ! descriptor.initiator)
+                        {
+                           throw exception::xatmi::invalid::Descriptor{ "not the initiator of the conversation"};
+                        }
                      }
 
                   } // validate
+
+                  namespace check
+                  {
+                     void disconnect( const State::descriptor_type& descriptor)
+                     {
+                        message::conversation::Disconnect disconnect;
+
+                        if( communication::ipc::non::blocking::receive(
+                              communication::ipc::inbound::device(),
+                              disconnect,
+                              descriptor.correlation))
+                        {
+                           throw exception::conversation::Event{ disconnect.events | Event::disconnect};
+                        }
+                     }
+
+                  } // check
+
+                  namespace route
+                  {
+                     template< typename M>
+                     void send( M&& message)
+                     {
+                        auto node = message.route.next();
+                        communication::ipc::blocking::send( node.address, message);
+                     }
+                  } // route
+
 
                } // <unnamed>
             } // local
@@ -114,6 +178,15 @@ namespace casual
 
             Context::Context() = default;
 
+            Context::~Context()
+            {
+               if( pending())
+               {
+                  log::category::error << "pending conversations: " << m_state.descriptors << '\n';
+
+               }
+            }
+
 
             descriptor::type Context::connect(
                   const std::string& service,
@@ -122,6 +195,8 @@ namespace casual
             {
                Trace trace{ "common::service::conversation::connect"};
 
+               local::validate::flags( flags);
+
                service::Lookup lookup{ service};
 
                log::debug << "service: " << service << " buffer: " << buffer << " flags: " << flags << '\n';
@@ -129,7 +204,14 @@ namespace casual
 
                auto start = platform::time::clock::type::now();
 
-               auto& descriptor = m_state.descriptors.reserve( uuid::make());
+               auto& descriptor = local::prepare::descriptor( m_state, flags);
+
+               log::debug << "descriptor: " << descriptor << '\n';
+
+               //
+               // If some thing goes wrong we unreserve the descriptor
+               //
+               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 
                //
                // TODO: Invoke pre-transport buffer modifiers
@@ -148,11 +230,9 @@ namespace casual
                // The service exists. Take care of reserving descriptor and determine timeout
                //
                auto message = local::prepare::connect( m_state, start, std::move( buffer), flags, target.service);
+               message.correlation = descriptor.correlation;
 
-               //
-               // If some thing goes wrong we unreserve the descriptor
-               //
-               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( message.descriptor);});
+
 
                //
                // If something goes wrong (most likely a timeout), we need to send ack to broker in that case, cus the service(instance)
@@ -180,18 +260,20 @@ namespace casual
                {
                   message.service = target.service;
 
-                  log::debug << "connect - message: " << message << std::endl;
+                  log::debug << "connect - request: " << message << '\n';
 
                   auto reply = communication::ipc::call( target.process.queue, message);
 
-                  descriptor.route = std::move( reply.route);
+                  log::debug << "connect - reply: " << reply << '\n';
+
+                  descriptor.route = std::move( reply.recording);
                }
 
                unreserve.release();
                send_ack.release();
 
 
-               return 0;
+               return descriptor.descriptor;
             }
 
             common::Flags< Event> Context::send( descriptor::type handle, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags)
@@ -201,6 +283,11 @@ namespace casual
                auto& descriptor = m_state.descriptors.get( handle);
 
                local::validate::send( descriptor);
+
+               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+
+               local::check::disconnect( descriptor);
+
 
                auto message = local::prepare::send( descriptor, std::move( buffer), flags);
 
@@ -213,11 +300,11 @@ namespace casual
                   message.events = { Event::send_only};
                }
 
-               auto node = message.route.next();
+               local::route::send( message);
 
-               auto reply = communication::ipc::call( node.address, message);
+               unreserve.release();
 
-               return reply.events;
+               return {};
 
             }
 
@@ -229,7 +316,11 @@ namespace casual
 
                local::validate::receive( descriptor);
 
-               message::conversation::send::callee::Request message;
+               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+
+               local::check::disconnect( descriptor);
+
+               message::conversation::callee::Send message;
 
                if( ! communication::ipc::receive::message(
                      communication::ipc::inbound::device(),
@@ -260,32 +351,43 @@ namespace casual
                }
                else
                {
-                  //
-                  // Send reply
-                  //
-                  {
-                     auto reply = message::reverse::type( message);
-
-
-                     reply.process = process::handle();
-                     reply.route = descriptor.route;
-
-                     log::debug << "reply: " << reply << '\n';
-
-                     auto node = message.route.next();
-
-                     communication::ipc::blocking::send( node.address, message);
-                  }
+                  unreserve.release();
                }
 
 
                return result;
+            }
+
+            void Context::disconnect( descriptor::type handle)
+            {
+               Trace trace{ "common::service::conversation::disconnect"};
+
+               auto& descriptor = m_state.descriptors.get( handle);
+
+               local::validate::diconnect( descriptor);
+
+               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+
+               {
+                  auto message = local::prepare::message< message::conversation::Disconnect>( descriptor);
+                  message.events = Event::disconnect;
+                  local::route::send( message);
+               }
+
+
+               //
+               // If we're not in control we "need" to discard the possible incoming message
+               //
+               if( descriptor.duplex == state::descriptor::Information::Duplex::receive)
+               {
+                  communication::ipc::inbound::device().discard( descriptor.correlation);
+               }
 
             }
 
             bool Context::pending() const
             {
-               return false;
+               return m_state.descriptors.active();
             }
 
          } // conversation

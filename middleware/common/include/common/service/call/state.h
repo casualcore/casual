@@ -56,6 +56,7 @@ namespace casual
                   bool active( descriptor_type descriptor) const;
 
                   const Descriptor& get( descriptor_type descriptor) const;
+                  const Descriptor& get( const Uuid& correlation) const;
 
                   //!
                   //! Tries to discard descriptor, throws if fail.

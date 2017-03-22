@@ -101,14 +101,13 @@ namespace casual
                      message::interdomain::service::call::receive::Request message;
                      set_general( message);
 
-                     message.descriptor = 42;
                      message.service.name = "service1";
                      message.service.timeout = std::chrono::seconds{ 42};
 
                      message.parent = "parent-service";
                      message.trid = trid();
 
-                     message.flags = 4;
+                     message.flags = common::message::service::call::request::Flag::no_reply;
                      message.buffer.type = ".json/";
                      message.buffer.memory = { '{', '}'};
 
@@ -120,7 +119,6 @@ namespace casual
                      message::interdomain::service::call::receive::Reply message;
                      set_general( message);
 
-                     message.descriptor = 42;
                      message.error = 9;
                      message.code = 42;
                      message.transaction.trid = trid();

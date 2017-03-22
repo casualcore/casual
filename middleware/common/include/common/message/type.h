@@ -74,11 +74,8 @@ namespace casual
 
             service_conversation_connect_request = SERVICE_BASE + 200,
             service_conversation_connect_reply,
-            service_conversation_send_request,
-            service_conversation_send_reply,
-            service_conversation_disconnect_request,
-            service_conversation_disconnect_reply,
-
+            service_conversation_send,
+            service_conversation_disconnect,
 
 
             // Monitor
@@ -173,6 +170,10 @@ namespace casual
             interdomain_domain_discover_reply,
             interdomain_service_call = INTERDOMAIN_BASE + 100,
             interdomain_service_reply,
+            interdomain_conversation_connect_request = INTERDOMAIN_BASE + 200,
+            interdomain_conversation_connect_reply,
+            interdomain_conversation_send,
+            interdomain_conversation_disconnect,
             interdomain_transaction_resource_prepare_request = INTERDOMAIN_BASE + 300,
             interdomain_transaction_resource_prepare_reply,
             interdomain_transaction_resource_commit_request,
@@ -190,6 +191,7 @@ namespace casual
             MOCKUP_BASE = 10000000, // avoid conflict with real messages
             mockup_disconnect,
             mockup_clear,
+            mockup_need_worker_process,
          };
 
          //!

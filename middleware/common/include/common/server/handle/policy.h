@@ -35,7 +35,7 @@ namespace casual
                      void configure( server::Arguments& arguments);
 
                      void reply( platform::ipc::id::type id, message::service::call::Reply& message);
-                     void reply( platform::ipc::id::type id, message::conversation::send::caller::Request& message);
+                     void reply( platform::ipc::id::type id, message::conversation::caller::Send& message);
 
                      void ack( const message::service::call::callee::Request& message);
                      void ack( const message::conversation::connect::callee::Request& message);
@@ -48,7 +48,7 @@ namespace casual
                      void transaction( const message::conversation::connect::callee::Request& message, const server::Service& service, const platform::time::point::type& now);
 
                      void transaction( message::service::call::Reply& message, int return_state);
-                     void transaction( message::conversation::send::caller::Request& message, int return_state);
+                     void transaction( message::conversation::caller::Send& message, int return_state);
 
 
                      void forward( const message::service::call::callee::Request& message, const state::Jump& jump);

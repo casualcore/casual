@@ -8,7 +8,7 @@
 
 #include "common/flag.h"
 
-#include "xatmi.h"
+#include "xatmi/defines.h"
 
 namespace casual
 {

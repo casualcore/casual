@@ -37,6 +37,16 @@ namespace casual
 
                friend bool operator == ( descriptor::type cd, const basic_information& d) { return cd == d.descriptor;}
                friend bool operator == ( const basic_information& d, descriptor::type cd) { return cd == d.descriptor;}
+
+               friend std::ostream& operator << ( std::ostream& out, const basic_information& value)
+               {
+                  return out << "{ id: " << value.descriptor
+                        << ", active: " << value.active
+                        << ", correlation: " << value.correlation
+                        << ", trid: " << value.trid
+                        << ", " << static_cast< const Information&>( value)
+                        << '}';
+               }
             };
 
             template< typename Information>
@@ -53,6 +63,22 @@ namespace casual
 
                descriptor_type& get( descriptor::type descriptor);
 
+               std::size_t size() const { return m_descriptors.size();}
+               bool empty() const { return m_descriptors.empty();}
+
+               bool active() const
+               {
+                  return range::find_if( m_descriptors, []( const auto& d){
+                     return d.active;
+                  });
+               }
+
+               friend std::ostream& operator << ( std::ostream& out, const Holder& value)
+               {
+                  return out << "{ descriptors: " << range::make( value.m_descriptors)
+                        << '}';
+               }
+
             private:
                descriptor_type& reserve()
                {
@@ -67,7 +93,7 @@ namespace casual
                   }
                   else
                   {
-                     m_descriptors.emplace_back( m_descriptors.back().descriptor + 1, true);
+                     m_descriptors.emplace_back( m_descriptors.size() + 1, true);
                      return m_descriptors.back();
                   }
                }
@@ -97,7 +123,7 @@ namespace casual
                }
                else
                {
-                  throw exception::xatmi::invalid::Descriptor{ "invalid descriptor: " + std::to_string( descriptor)};
+                  throw exception::xatmi::invalid::Descriptor{ "invalid descriptor", CASUAL_NIP( descriptor)};
                }
             }
 
@@ -109,7 +135,7 @@ namespace casual
                {
                   return *found;
                }
-               throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor: " + std::to_string( descriptor)};
+               throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor", CASUAL_NIP( descriptor)};
             }
 
 

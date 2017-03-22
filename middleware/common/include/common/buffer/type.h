@@ -85,7 +85,7 @@ namespace casual
                   :  transport( transport), reserved( reserved), m_payload( payload) {}
 
                Send( const Payload& payload)
-                  : m_payload( payload) {}
+                  : transport( payload.memory.size()), m_payload( payload) {}
 
 
                inline const Payload& payload() const { return m_payload.get();};

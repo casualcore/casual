@@ -30,37 +30,44 @@ namespace casual
 
             namespace service
             {
+
+               namespace local
+               {
+                  namespace
+                  {
+                     constexpr int success = 420000;
+
+                     int reply_error( const std::string& service)
+                     {
+                        if( range::search( service, std::string{ "TPEOS"})) { return TPEOS;}
+                        if( range::search( service, std::string{ "TPEPROTO"})) { return TPEPROTO;}
+                        if( range::search( service, std::string{ "TPESVCERR"})) { return TPESVCERR;}
+                        if( range::search( service, std::string{ "TPESVCFAIL"})) { return TPESVCFAIL;}
+                        if( range::search( service, std::string{ "TPESYSTEM"})) { return TPESYSTEM;}
+                        if( range::search( service, std::string{ "SUCCESS"})) { return success;}
+                        return 0;
+                     }
+
+                  } // <unnamed>
+               } // local
+
                void Echo::operator()( message::service::call::callee::Request& request)
                {
                   Trace trace{ "mockup domain::service::Echo"};
 
-                  if( ! common::flag< TPNOREPLY>( request.flags))
+                  if( ! request.flags.exist( message::service::call::request::Flag::no_reply))
                   {
                      auto reply = message::reverse::type( request);
 
                      reply.buffer = std::move( request.buffer);
                      reply.transaction.trid = request.trid;
-                     reply.descriptor = request.descriptor;
 
                      if( range::search( request.service.name, std::string{ "urcode"}))
                      {
                         reply.code = 42;
                      }
 
-                     /*
-                        #define TPEOS 7
-                        #define TPEPROTO 9
-                        #define TPESVCERR 10
-                        #define TPESVCFAIL 11
-                        #define TPESYSTEM 12
-                      */
-
-                     if( range::search( request.service.name, std::string{ "TPEOS"})) { reply.error = TPEOS;}
-                     if( range::search( request.service.name, std::string{ "TPEPROTO"})) { reply.error = TPEPROTO;}
-                     if( range::search( request.service.name, std::string{ "TPESVCERR"})) { reply.error = TPESVCERR;}
-                     if( range::search( request.service.name, std::string{ "TPESVCFAIL"})) { reply.error = TPESVCFAIL;}
-                     if( range::search( request.service.name, std::string{ "TPESYSTEM"})) { reply.error = TPESYSTEM;}
-
+                     reply.error = local::reply_error( request.service.name);
 
                      ipc::eventually::send( request.process.queue, reply);
                   }
@@ -69,6 +76,139 @@ namespace casual
                      log << "TPNOREPLY was set, no echo\n";
                   }
                }
+
+               namespace conversation
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+                        struct State
+                        {
+                           common::process::Handle process;
+                           common::message::conversation::Route route;
+                        };
+
+                        common::service::conversation::Events event_from_error( int error)
+                        {
+                           switch( error)
+                           {
+                              case service::local::success: return common::service::conversation::Event::service_success;
+                              case TPESVCFAIL: return common::service::conversation::Event::service_fail;
+                              case TPESVCERR: return common::service::conversation::Event::service_error;
+                           }
+                           return {};
+                        }
+
+                     } // <unnamed>
+                  } // local
+                  dispatch_type echo()
+                  {
+                     auto state = std::make_shared< local::State>();
+
+                     return dispatch_type{
+                        [=]( message::mockup::thread::Process& message){
+                           Trace trace{ "mockup message::mockup::thread::Process"};
+
+                           state->process = message.process;
+
+                           log << "process: " << state->process << '\n';
+                        },
+                        [=]( message::conversation::connect::callee::Request& request){
+                           Trace trace{ "message::conversation::connect::callee::Request"};
+
+                           log << "message: " << request << '\n';
+
+                           state->route = request.recording;
+
+
+
+                           // emulate errors from the service
+                           const auto error = service::local::reply_error( request.service.name);
+
+                           log << "error based on service name: " << error << '\n';
+
+                           if( request.flags & message::conversation::connect::Flag::receive_only)
+                           {
+                              message::conversation::caller::Send message{ request.buffer};
+                              message.correlation = request.correlation;
+                              message.execution = request.execution;
+                              message.process = state->process;
+                              message.route = request.recording;
+
+                              if( error)
+                              {
+                                 message.events = local::event_from_error( error);
+                              }
+                              else
+                              {
+                                 message.events = common::service::conversation::Event::send_only;
+                              }
+
+                              auto node = message.route.next();
+
+                              log << "send request: " << message << '\n';
+
+                              ipc::eventually::send( node.address, message);
+                           }
+                           else if( error)
+                           {
+                              message::conversation::Disconnect message;
+                              message.correlation = request.correlation;
+                              message.execution = request.execution;
+                              message.process = state->process;
+                              message.route = request.recording;
+                              message.events = local::event_from_error( error);
+
+                              auto node = message.route.next();
+
+                              ipc::eventually::send( node.address, message);
+                           }
+
+                           //
+                           // send the reply. This is actually sent before any other messages,
+                           // but it's easier to unittest if we know that the potentially replies
+                           // above is in the cache (at the caller site), hence we don't have to
+                           // worry about 'polling' for the replies, or some other glitches...
+                           {
+                              auto reply = message::reverse::type( request);
+
+                              reply.process = state->process;
+                              reply.recording.nodes.emplace_back( reply.process.queue);
+                              reply.route = state->route;
+
+                              auto node = reply.route.next();
+
+                              log << "send connect reply: " << reply << '\n';
+
+                              ipc::eventually::send( node.address, reply);
+                           }
+                        },
+                        [=]( message::conversation::callee::Send& request){
+                           Trace trace{ "message::conversation::send::callee::Request"};
+
+                           log << "message: " << request << '\n';
+
+                           if( request.events & common::service::conversation::Event::send_only)
+                           {
+                              // echo the message
+                              request.route = state->route;
+                              request.process = state->process;
+                              auto node = request.route.next();
+
+                              ipc::eventually::send( node.address, request);
+                           }
+                        },
+                        [=]( message::conversation::Disconnect& message){
+                           Trace trace{ "mockup message::conversation::Disconnect"};
+
+                           log << "message: " << message << '\n';
+                        }
+
+                     };
+                  }
+
+               } // conversation
 
             } // server
 
@@ -647,7 +787,11 @@ namespace casual
 
 
                Server::Server( std::vector< message::service::advertise::Service> services)
-                : m_replier{ dispatch_type{ service::Echo{}, local::handle::connect::Reply{ "echo server"},}}
+                : m_replier{ dispatch_type{
+                   service::Echo{},
+                   local::handle::connect::Reply{ "echo server"},
+                   service::conversation::echo()
+                }}
                {
                   //
                   // Connect to the domain

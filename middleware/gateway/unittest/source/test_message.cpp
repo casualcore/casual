@@ -77,8 +77,7 @@ namespace casual
                         {
                            common::message::service::call::callee::Request message;
                            general::intitialize( message);
-                           message.descriptor = 42;
-                           message.flags = 43;
+                           message.flags = common::message::service::call::request::Flag::no_transaction;
                            message.header = { { "key", "value"}};
                            message.trid = common::transaction::ID::create();
                            message.parent = "parent_service";
@@ -130,7 +129,6 @@ namespace casual
                         {
                            common::message::service::call::Reply message;
                            general::intitialize( message);
-                           message.descriptor = 42;
                            message.code = 43;
                            message.error = 666;
                            message.transaction.trid = common::transaction::ID::create();

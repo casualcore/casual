@@ -12,6 +12,7 @@
 #include "common/service/type.h"
 #include "common/buffer/type.h"
 #include "common/uuid.h"
+#include "common/flag.h"
 
 #include "common/service/header.h"
 
@@ -214,24 +215,32 @@ namespace casual
 
             namespace call
             {
-               struct base_request
+               namespace request
                {
+                  enum class Flag : long
+                  {
+                     no_transaction = TPNOTRAN,
+                     no_reply = TPNOREPLY,
+                     no_time = TPNOTIME,
+                  };
+                  using Flags = common::Flags< Flag>;
 
-                  platform::descriptor::type descriptor = 0;
+               } // request
+               struct common_request
+               {
                   common::process::Handle process;
 
                   Service service;
                   std::string parent;
 
                   common::transaction::ID trid;
-                  std::int64_t flags = 0;
+                  request::Flags flags;
 
                   std::vector< common::service::header::Field> header;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     archive & descriptor;
                      archive & process;
                      archive & service;
                      archive & parent;
@@ -240,35 +249,37 @@ namespace casual
                      archive & header;
                   })
 
-                  friend std::ostream& operator << ( std::ostream& out, const base_request& value);
+                  friend std::ostream& operator << ( std::ostream& out, const common_request& value);
                };
 
-               template< Type type>
-               using basic_request = type_wrapper< base_request, type>;
+               using base_request = type_wrapper< common_request, Type::service_call>;
+               struct basic_request : base_request
+               {
+                  request::Flags flags;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                     base_request::marshal( archive);
+                     archive & flags;
+                  )
+               };
 
 
                namespace caller
                {
-                  template< Type type>
-                  using basic_request = message::buffer::caller::basic_request< call::basic_request< type>>;
-
                   //!
                   //! Represents a service call. via tp(a)call, from the callers perspective
                   //!
-                  using Request = basic_request< Type::service_call>;
+                  using Request = message::buffer::caller::basic_request< call::basic_request>;
 
                   static_assert( traits::is_movable< Request>::value, "not movable");
                } // caller
 
                namespace callee
                {
-                  template< Type type>
-                  using basic_request = message::buffer::callee::basic_request< call::basic_request< type>>;
-
                   //!
                   //! Represents a service call. via tp(a)call, from the callee's perspective
                   //!
-                  using Request = basic_request< Type::service_call>;
+                  using Request = message::buffer::callee::basic_request< call::basic_request>;
 
                   static_assert( traits::is_movable< Request>::value, "not movable");
 
@@ -280,8 +291,6 @@ namespace casual
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-
-                  platform::descriptor::type descriptor = 0;
                   int error = 0;
                   long code = 0;
                   Transaction transaction;
@@ -290,7 +299,6 @@ namespace casual
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & descriptor;
                      archive & error;
                      archive & code;
                      archive & transaction;

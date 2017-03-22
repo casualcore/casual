@@ -43,14 +43,13 @@ namespace casual
                      {
                         Trace trace{ "broker::forward::handle::service::send::error::reply"};
 
-                        if( ! common::flag< TPNOREPLY>( message.flags))
+                        if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
                         {
                            common::message::service::call::Reply reply;
                            reply.correlation = message.correlation;
                            reply.execution = message.execution;
                            reply.transaction.trid = message.trid;
                            reply.error = TPESVCERR;
-                           reply.descriptor = message.descriptor;
                            reply.buffer = buffer::Payload{ nullptr};
 
                            try

@@ -20,6 +20,8 @@ namespace casual
          {
             struct Node
             {
+               inline Node() = default;
+               inline Node( platform::ipc::id::type address) : address( address) {}
 
                platform::ipc::id::type address = 0;
 
@@ -51,30 +53,40 @@ namespace casual
 
             namespace connect
             {
-               template< template< message::Type> class base>
-               struct basic_request : base< Type::service_conversation_connect_request>
+               enum class Flag : long
                {
-                  using base_request = base< Type::service_conversation_connect_request>;
-                  using base_request::base_request;
+                  no_transaction = TPNOTRAN,
+                  send_only = TPSENDONLY,
+                  receive_only = TPRECVONLY,
+                  no_time = TPNOTIME,
+               };
+               using Flags = common::Flags< Flag>;
 
+               using base_request = type_wrapper< service::call::common_request, Type::service_conversation_connect_request>;
+               struct basic_request : base_request
+               {
                   Route recording;
+                  Flags flags;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_request::marshal( archive);
                      archive & recording;
+                     archive & flags;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const basic_request& value);
                };
 
                namespace caller
                {
-                  using Request = basic_request< service::call::caller::basic_request>;
+                  using Request = message::buffer::caller::basic_request< basic_request>;
 
                } // caller
 
                namespace callee
                {
-                  using Request = basic_request< service::call::callee::basic_request>;
+                  using Request = message::buffer::callee::basic_request< basic_request>;
 
                } // callee
 
@@ -93,58 +105,55 @@ namespace casual
                      archive & recording;
                      archive & status;
                   })
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                };
 
             } // connect
 
-            namespace send
+            using send_base = basic_request< Type::service_conversation_send>;
+            struct basic_send : send_base
             {
-               using request_base = basic_request< Type::service_conversation_send_request>;
-               struct base_request : request_base
+               Route route;
+               common::service::conversation::send::Flags flags;
+               common::service::conversation::Events events;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  Route route;
-                  common::service::conversation::send::Flags flags;
-                  common::service::conversation::Events events;
+                  send_base::marshal( archive);
+                  archive & route;
+                  archive & flags;
+                  archive & events;
+               })
+               friend std::ostream& operator << ( std::ostream& out, const basic_send& value);
+            };
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     request_base::marshal( archive);
-                     archive & route;
-                     archive & flags;
-                     archive & events;
-                  })
-                  friend std::ostream& operator << ( std::ostream& out, const base_request& value);
-               };
+            namespace caller
+            {
+               using Send = message::buffer::caller::basic_request< basic_send>;
+            } // caller
 
-               namespace caller
+
+            namespace callee
+            {
+               using Send = message::buffer::callee::basic_request< basic_send>;
+            } // callee
+
+
+            using disconnect_base = basic_reply< Type::service_conversation_disconnect>;
+            struct Disconnect : disconnect_base
+            {
+               Route route;
+               common::service::conversation::Events events;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
                {
-                  using Request = message::buffer::caller::basic_request< base_request>;
-               } // caller
+                  disconnect_base::marshal( archive);
+                  archive & route;
+                  archive & events;
+               })
 
-
-               namespace callee
-               {
-                  using Request = message::buffer::callee::basic_request< base_request>;
-               } // callee
-
-               using reply_base = basic_reply< Type::service_conversation_send_reply>;
-               struct Reply : reply_base
-               {
-                  Route route;
-
-                  common::service::conversation::Events events;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                  {
-                     reply_base::marshal( archive);
-                     archive & route;
-                     archive & events;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-               };
-
-            } // send
+               friend std::ostream& operator << ( std::ostream& out, const Disconnect& value);
+            };
 
 
          } // conversation
@@ -158,11 +167,6 @@ namespace casual
             template<>
             struct type_traits< conversation::connect::callee::Request> : detail::type< conversation::connect::Reply> {};
 
-            template<>
-            struct type_traits< conversation::send::callee::Request> : detail::type< conversation::send::Reply> {};
-
-            template<>
-            struct type_traits< conversation::send::caller::Request> : detail::type< conversation::send::Reply> {};
 
          } // reverse
 

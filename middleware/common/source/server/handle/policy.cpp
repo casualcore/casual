@@ -137,7 +137,7 @@ namespace casual
                      communication::ipc::blocking::send( id, message);
                   }
 
-                  void Default::reply( platform::ipc::id::type id, message::conversation::send::caller::Request& message)
+                  void Default::reply( platform::ipc::id::type id, message::conversation::caller::Send& message)
                   {
                      Trace trace{ "server::handle::policy::Default::conversation::reply"};
 
@@ -263,7 +263,7 @@ namespace casual
                      transaction::Context::instance().finalize( message, return_state);
                   }
 
-                  void Default::transaction( message::conversation::send::caller::Request& message, int return_state)
+                  void Default::transaction( message::conversation::caller::Send& message, int return_state)
                   {
                      //transaction::Context::instance().finalize( message, return_state);
                   }
