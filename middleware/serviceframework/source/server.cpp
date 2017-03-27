@@ -1,8 +1,5 @@
 //!
-//! server.cpp
-//!
-//! Created on: Dec 27, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/server.h"
@@ -14,35 +11,25 @@ namespace casual
 {
    namespace sf
    {
+      class Server::Implementation
+      {
+      public:
+         virtual ~Implementation() = default;
+         virtual service::IO service( TPSVCINFO& information) = 0;
+         virtual void exception( TPSVCINFO& information, service::reply::State& reply) = 0;
+      };
+
       namespace server
       {
-
-
-         service::IO Interface::createService( TPSVCINFO* serviceInfo)
+         class Implementation : public Server::Implementation
          {
-            return service::IO{ doCreateService( serviceInfo)};
-         }
-
-         Interface::~Interface()
-         {
-
-         }
-
-         void Interface::handleException( TPSVCINFO* serviceInfo, service::reply::State& reply)
-         {
-            doHandleException( serviceInfo, reply);
-         }
-
-         class Implementation : public Interface
-         {
-
          private:
-            std::unique_ptr< service::Interface> doCreateService( TPSVCINFO* serviceInfo) override
+            service::IO service( TPSVCINFO& information) override
             {
-               return sf::service::Factory::instance().create( serviceInfo);
+               return { sf::service::Factory::instance().create( &information)};
             }
 
-            void doHandleException( TPSVCINFO* serviceInfo, service::reply::State& reply) override
+            void exception( TPSVCINFO& information, service::reply::State& reply) override
             {
                // TODO: try to propagate the exception in the ballast, later on...
 
@@ -55,19 +42,37 @@ namespace casual
 
                //reply.data = tpalloc( )
 
-               reply.data = serviceInfo->data;
-
+               reply.data = information.data;
             }
-
          };
-
-
-         std::unique_ptr< Interface> create( int argc, char **argv)
-         {
-            return std::unique_ptr< Interface>( new Implementation{});
-         }
-
       } // server
+
+      Server::Server() : Server( 0, nullptr) {}
+
+      Server::Server( int argc, char **argv) : m_implementation{ std::make_unique< server::Implementation>()}
+      {
+
+      }
+      Server::~Server() = default;
+
+      service::IO Server::service( TPSVCINFO& information)
+      {
+         return m_implementation->service( information);
+      }
+
+      void Server::exception( TPSVCINFO& information, service::reply::State& reply)
+      {
+         m_implementation->exception( information, reply);
+      }
+
+      namespace server
+      {
+         void sink( sf::Server&& server)
+         {
+
+         }
+      } // server
+
    } // sf
 } // casual
 

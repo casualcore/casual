@@ -124,7 +124,7 @@ namespace casual
 
 
             template< typename F, typename... Args>
-            auto call( F&& function, Args&&... args) -> decltype( common::invoke( std::forward< F>( function), std::forward< Args>( args)...))
+            auto call( F&& function, Args&&... args)
             {
                sf::Trace trace{ "sf::service::IO::call"};
 

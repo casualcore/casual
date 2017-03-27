@@ -4,6 +4,8 @@
 
 #include "common/server/argument.h"
 
+
+
 namespace casual
 {
    namespace common
@@ -13,13 +15,13 @@ namespace casual
          Arguments::Arguments( Arguments&&) = default;
          Arguments& Arguments::operator = (Arguments&&) = default;
 
-         Arguments::Arguments( int argc, char** argv)
-            : argc( argc), argv( argv)
+         Arguments::Arguments( int argc, char** argv, function_init_type init, function_done_type done)
+            : argc( argc), argv( argv), init( std::move( init)), done( std::move( done))
          {
          }
 
-         Arguments::Arguments( std::vector< std::string> args)
-            : arguments( std::move( args))
+         Arguments::Arguments( std::vector< std::string> args, function_init_type init, function_done_type done)
+            : arguments( std::move( args)), init( std::move( init)), done( std::move( done))
          {
             for( auto& argument : arguments)
             {

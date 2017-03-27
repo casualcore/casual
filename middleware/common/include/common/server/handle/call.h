@@ -81,7 +81,7 @@ namespace casual
                   //
                   // Call tpsrvinit
                   //
-                  if( arguments.server_init( arguments.argc, arguments.argv) == -1)
+                  if( arguments.init && arguments.init( arguments.argc, arguments.argv) == -1)
                   {
                      throw exception::NotReallySureWhatToNameThisException( "service init failed");
                   }
@@ -102,7 +102,8 @@ namespace casual
                         //
                         // Call tpsrvdone
                         //
-                        state.server_done();
+                        if( state.server_done)
+                           state.server_done();
                      }
                      catch( ...)
                      {

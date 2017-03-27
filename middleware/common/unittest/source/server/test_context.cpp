@@ -26,19 +26,6 @@
 #include <fstream>
 
 
-extern "C"
-{
-
-   int tpsvrinit(int argc, char **argv)
-   {
-      return 0;
-   }
-
-   void tpsvrdone()
-   {
-
-   }
-}
 
 
 namespace casual
@@ -47,10 +34,21 @@ namespace casual
    {
       namespace local
       {
-
-
          namespace
          {
+            namespace lifetime
+            {
+               struct Init
+               {
+                  int operator () ( int argc, char **argv) { return 0; }
+               };
+
+               struct Done
+               {
+                  void operator () () {}
+               };
+
+            } // lifetime
 
 
             const std::string& replyMessage()
@@ -82,7 +80,7 @@ namespace casual
 
             server::Arguments arguments()
             {
-               server::Arguments arguments{ { "/test/path"}};
+               server::Arguments arguments{ { "/test/path"}, lifetime::Init{}, lifetime::Done{}};
 
                arguments.services.emplace_back( "test_service", &test_service, service::category::none, service::transaction::Type::none);
 
@@ -120,7 +118,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         server::Arguments arguments{ { "arg1", "arg2"}};
+         server::Arguments arguments{ { "arg1", "arg2"}, local::lifetime::Init{}, local::lifetime::Done{}};
 
          ASSERT_TRUE( arguments.argc == 2);
          EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
@@ -134,7 +132,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         server::Arguments origin{ { "arg1", "arg2"}};
+         server::Arguments origin{ { "arg1", "arg2"}, local::lifetime::Init{}, local::lifetime::Done{}};
 
          server::Arguments arguments = std::move( origin);
 

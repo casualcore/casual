@@ -88,9 +88,9 @@ namespace casual
 
       TPSVCINFO serviceInfo = local::prepareYaml( someVO);
 
-      auto server = casual::sf::server::create( 0, 0);
+      sf::Server server;
 
-      auto service_io = server->createService( &serviceInfo);
+      auto service_io = server.service( serviceInfo);
 
       test::SimpleVO value;
 

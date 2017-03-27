@@ -22,42 +22,12 @@ namespace casual
    {
       namespace
       {
-         sf::server::type server;
-
-
-
+         sf::Server server;
       }
    }
 
    namespace domain
    {
-      extern "C"
-      {
-         int tpsvrinit( int argc, char **argv)
-         {
-            try
-            {
-               local::server = casual::sf::server::create( argc, argv);
-            }
-            catch( ...)
-            {
-               // TODO
-               return -1;
-            }
-
-            return 0;
-         }
-
-         void tpsvrdone()
-         {
-            //
-            // delete the implementation an server implementation
-            //
-            casual::sf::server::sink( local::server);
-         }
-      }
-
-
 
       namespace manager
       {
@@ -104,13 +74,13 @@ namespace casual
                extern "C"
                {
 
-                  void get_state( TPSVCINFO *serviceInfo, manager::State& state)
+                  void get_state( TPSVCINFO* service_info, manager::State& state)
                   {
                      casual::sf::service::reply::State reply;
 
                      try
                      {
-                        auto service_io = local::server->createService( serviceInfo);
+                        auto service_io = local::server.service( *service_info);
 
                         manager::admin::vo::State (*function)(const manager::State&) = casual::domain::transform::state;
 
@@ -124,7 +94,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        local::server->handleException( serviceInfo, reply);
+                        local::server.exception( *service_info, reply);
                      }
 
                      tpreturn(
@@ -143,7 +113,7 @@ namespace casual
 
                      try
                      {
-                        auto service_io = local::server->createService( service_info);
+                        auto service_io = local::server.service( *service_info);
 
                         std::vector< vo::scale::Instances> instances;
                         service_io >> CASUAL_MAKE_NVP( instances);
@@ -156,7 +126,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        local::server->handleException( service_info, reply);
+                        local::server.exception( *service_info, reply);
                      }
 
                      tpreturn(
@@ -174,7 +144,7 @@ namespace casual
 
                      try
                      {
-                        auto service_io = local::server->createService( service_info);
+                        auto service_io = local::server.service( *service_info);
 
                         service_io.call( &handle::shutdown, state);
 
@@ -183,7 +153,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        local::server->handleException( service_info, reply);
+                        local::server.exception( *service_info, reply);
                      }
 
                      tpreturn(
@@ -200,8 +170,7 @@ namespace casual
 
                      try
                      {
-                        auto service_io = local::server->createService( service_info);
-
+                        auto service_io = local::server.service( *service_info);
 
                         service_io.call(
                               static_cast< void(*)( const manager::State&)>( persistent::state::save),
@@ -213,7 +182,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        local::server->handleException( service_info, reply);
+                        local::server.exception( *service_info, reply);
                      }
 
                      tpreturn(
@@ -230,7 +199,7 @@ namespace casual
 
             common::server::Arguments services( manager::State& state)
             {
-               common::server::Arguments result{ { common::process::path()}};
+               common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
                result.services.emplace_back( ".casual.domain.state",
                      std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),

@@ -28,7 +28,7 @@ namespace local
    {
       typedef casual::test::TestServerImplementation implementation_type;
 
-      casual::sf::server::type server;
+      casual::sf::Server server;
       casual::sf::server::implementation::type< implementation_type> implementation;
    }
 }
@@ -48,8 +48,6 @@ int tpsvrinit(int argc, char **argv)
 {
    try
    {
-      local::server = casual::sf::server::create( argc, argv);
-
       local::implementation = casual::sf::server::implementation::make< local::implementation_type>( argc, argv);
    }
    catch( ...)
@@ -65,8 +63,7 @@ void tpsvrdone()
    //
    // delete the implementation an server implementation
    //
-   casual::sf::server::sink( local::implementation);
-   casual::sf::server::sink( local::server);
+   casual::sf::server::implementation::sink( std::move( local::implementation));
 }
 
 //
@@ -75,7 +72,7 @@ void tpsvrdone()
 
 
 
-void casual_sf_test1( TPSVCINFO *serviceInfo)
+void casual_sf_test1( TPSVCINFO *information)
 {
    casual::sf::service::reply::State reply;
 
@@ -83,7 +80,7 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
    {
    
      
-      auto service_io = local::server->createService( serviceInfo);
+      auto service_io = local::server.service( *information);
 
       //
       // Instantiate and serialize input parameters
@@ -132,7 +129,7 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
    }
    catch( ...)
    {
-      local::server->handleException( serviceInfo, reply);
+      local::server.exception( *information, reply);
    }
 
    tpreturn(
@@ -146,7 +143,7 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
 	
 
 
-void casual_sf_test2( TPSVCINFO *serviceInfo)
+void casual_sf_test2( TPSVCINFO *information)
 {
    casual::sf::service::reply::State reply;
 
@@ -154,7 +151,7 @@ void casual_sf_test2( TPSVCINFO *serviceInfo)
    {
    
      
-      auto service_io = local::server->createService( serviceInfo);
+      auto service_io = local::server.service( *information);
 
       //
       // Instantiate and serialize input parameters
@@ -199,7 +196,7 @@ void casual_sf_test2( TPSVCINFO *serviceInfo)
    }
    catch( ...)
    {
-      local::server->handleException( serviceInfo, reply);
+      local::server.exception( *information, reply);
    }
 
    tpreturn(

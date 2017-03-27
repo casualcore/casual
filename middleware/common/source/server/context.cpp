@@ -172,7 +172,7 @@ namespace casual
          {
             Trace log{ "server::Context::configure"};
 
-            m_state.server_done = arguments.server_done;
+            m_state.server_done = arguments.done;
 
             for( auto& service : arguments.services)
             {

@@ -10,53 +10,54 @@
 
 #include "xatmi/defines.h"
 
+
 #include <memory>
 
 namespace casual
 {
    namespace sf
    {
+
+      class Server
+      {
+      public:
+
+         Server();
+         Server( int argc, char **argv);
+         ~Server();
+
+         Server( Server&&);
+         Server& operator = ( Server&&);
+
+         service::IO service( TPSVCINFO& information);
+         void exception( TPSVCINFO& information, service::reply::State& reply);
+
+         class Implementation;
+      private:
+         std::unique_ptr< Implementation> m_implementation;
+
+      };
+
       namespace server
       {
-         class Interface
-         {
-         public:
-            service::IO createService( TPSVCINFO* serviceInfo);
-
-            virtual ~Interface();
-
-            void handleException( TPSVCINFO* serviceInfo, service::reply::State& reply);
-
-         private:
-
-            virtual std::unique_ptr< service::Interface> doCreateService( TPSVCINFO* serviceInfo) = 0;
-
-            virtual void doHandleException( TPSVCINFO* serviceInfo, service::reply::State& reply) = 0;
-         };
-
-         using type = std::unique_ptr< Interface>;
-
-         std::unique_ptr< Interface> create( int argc, char **argv);
-
          namespace implementation
          {
             template< typename T>
-            using type = std::unique_ptr< T>;
+            using type =  std::unique_ptr< T>;
 
             template< typename T>
-            type< T> make( int argc, char **argv)
+            auto make( int argc, char **argv)
             {
-               return type< T>{ new T{ argc, argv}};
+               return std::make_unique< T>( argc, argv);
             }
-         }
 
-         template< typename T>
-         void sink( T&& server)
-         {
-            server.reset();
-         }
+            template< typename T>
+            void sink( type< T>&& value)
+            {
+            }
 
-
+         } // implementation
+         void sink( sf::Server&& server);
       } // server
    } // sf
 } // casual

@@ -31,7 +31,7 @@ namespace local
 	   {
          common::server::Arguments arguments( struct casual_server_argument& value)
          {
-            common::server::Arguments result( value.argc, value.argv);
+            common::server::Arguments result( value.argc, value.argv, value.service_init, value.service_done);
 
             auto service = value.services;
 
@@ -54,11 +54,7 @@ namespace local
                ++xaSwitch;
             }
 
-            result.server_init = value.service_init;
-            result.server_done = value.service_done;
-
             return result;
-
          }
 	   } // transform
 	} // <unnamed>
