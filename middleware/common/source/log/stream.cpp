@@ -48,7 +48,8 @@ namespace casual
                      return singleton;
                   }
 
-                  void log( const std::string& category, const char* message)
+                  template< typename M>
+                  void log( const std::string& category, M&& message)
                   {
                      static const std::string basename{ file::name::base( process::path())};
 
@@ -64,11 +65,6 @@ namespace casual
                         << '|' << category
                         << '|' << message
                         << std::endl;
-                  }
-
-                  void log( const std::string& category, const std::string& message)
-                  {
-                     log( category, message.c_str());
                   }
 
                private:

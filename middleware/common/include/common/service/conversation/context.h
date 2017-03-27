@@ -58,8 +58,6 @@ namespace casual
 
                descriptor::type connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flags flags);
 
-
-
                common::Flags< Event> send( descriptor::type descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
 
                receive::Result receive( descriptor::type descriptor, common::Flags< receive::Flag> flags);

@@ -38,16 +38,32 @@ namespace casual
          {
             namespace code
             {
+               namespace local
+               {
+                  namespace
+                  {
+                     long value = 0;
+
+                  } // <unnamed>
+               } // local
+
                void set( long value)
                {
-                  casual::common::service::call::Context::instance().user_code( value);
+                  local::value = value;
                }
                long get()
                {
-                  return casual::common::service::call::Context::instance().user_code();
+                  return local::value;
                }
             } // code
          } // user
+
+         void clear()
+         {
+            error::local::value = 0;
+            user::code::local::value = 0;
+         }
+
       } // internal
    } // xatmi
 } // casual

@@ -89,14 +89,16 @@ namespace casual
 
             void Holder::deallocate( platform::buffer::raw::immutable::type handle)
             {
+               Trace trace{ "buffer::pool::deallocate"};
+
+               log::category::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
+
                //
                // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
                //
                if( handle != m_inbound && handle != nullptr)
                {
                   find( handle).deallocate( handle);
-
-                  log::category::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
                }
             }
 
@@ -118,6 +120,8 @@ namespace casual
 
             std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type> Holder::insert( Payload&& payload)
             {
+               Trace trace{ "buffer::pool::insert"};
+
                using return_type = std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type>;
 
                log::category::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
@@ -126,13 +130,13 @@ namespace casual
                if( payload.null())
                {
                   // This should work - doesn't on g++ 5.4
-		  //return { nullptr, 0};
+                  //return { nullptr, 0};
                   return return_type{ nullptr, 0}; 
                }
                auto size = payload.memory.size();
 
                // This should work - doesn't on g++ 5.4
-	       //return { find( payload.type).insert( std::move( payload)), size};
+               //return { find( payload.type).insert( std::move( payload)), size};
                return return_type{ find( payload.type).insert( std::move( payload)), size};
             }
 

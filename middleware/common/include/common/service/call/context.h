@@ -41,6 +41,7 @@ namespace casual
                struct Result
                {
                   common::buffer::Payload buffer;
+                  long user = 0;
                   descriptor_type descriptor;
                   State state;
                };
@@ -52,6 +53,7 @@ namespace casual
                struct Result
                {
                   common::buffer::Payload buffer;
+                  long user = 0;
                   State state;
                };
             } // sync
@@ -70,9 +72,6 @@ namespace casual
                void cancel( descriptor_type descriptor);
 
                void clean();
-
-               long user_code() const;
-               void user_code( long code);
 
                //!
                //! @returns true if there are pending replies or associated transactions.

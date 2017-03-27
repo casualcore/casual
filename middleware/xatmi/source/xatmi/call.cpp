@@ -36,7 +36,7 @@ namespace local
 
 int tpcall( const char* const service, char* idata, const long ilen, char** odata, long* olen, const long bitmap)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::clear();
 
    if( service == nullptr)
    {
@@ -46,8 +46,6 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
 
    try
    {
-      casual::xatmi::internal::user::code::set( 0);
-
       using Flag = casual::common::service::call::sync::Flag;
 
       constexpr casual::common::service::call::sync::Flags valid_flags{
@@ -66,6 +64,8 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
             buffer,
             flags);
 
+      casual::xatmi::internal::user::code::set( result.user);
+
       auto output = casual::common::buffer::pool::Holder::instance().get( *odata);
 
       if( flags.exist( Flag::no_change) && result.buffer.type != output.payload().type)
@@ -77,6 +77,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
       std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
 
       casual::xatmi::internal::error::set( casual::common::cast::underlying( result.state));
+
    }
    catch( ...)
    {
@@ -87,7 +88,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
 
 int tpacall( const char* const service, char* idata, const long ilen, const long flags)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::clear();
 
    if( service == nullptr)
    {
@@ -122,6 +123,8 @@ int tpacall( const char* const service, char* idata, const long ilen, const long
 
 int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitmap)
 {
+   casual::xatmi::internal::clear();
+
    return casual::xatmi::internal::error::wrap( [&](){
 
       using Flag = casual::common::service::call::reply::Flag;
@@ -138,6 +141,7 @@ int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitma
       auto result = casual::common::service::call::Context::instance().reply( *descriptor, flags);
 
       *descriptor = result.descriptor;
+      casual::xatmi::internal::user::code::set( result.user);
 
       local::handle_reply_buffer( result, flags, odata, olen);
 

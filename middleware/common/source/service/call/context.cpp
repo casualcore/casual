@@ -330,8 +330,7 @@ namespace casual
                auto prepared = get_reply();
                auto& reply = std::get< 0>( prepared);
                result.descriptor = std::get< 1>( prepared);
-
-               user_code( reply.code);
+               result.user = reply.code;
 
                result.buffer = std::move( reply.buffer);
                result.state = reply.error == TPESVCFAIL ? reply::State::service_fail : reply::State::service_success;
@@ -364,7 +363,7 @@ namespace casual
             sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags)
             {
                //
-               // We can't have no-block when gettint the reply
+               // We can't have no-block when getting the reply
                //
                flags -= sync::Flag::no_block;
 
@@ -375,7 +374,7 @@ namespace casual
                constexpr auto reply_flags = ~reply::Flags{};
                auto result = reply( descriptor, reply_flags.convert( flags));
 
-               return { std::move( result.buffer), result.state};
+               return { std::move( result.buffer), result.user, result.state};
             }
 
 
@@ -392,15 +391,6 @@ namespace casual
                // TODO: Do some cleaning on buffers, pending replies and such...
                //
 
-            }
-
-            long Context::user_code() const
-            {
-               return m_state.user_code;
-            }
-            void Context::user_code( long code)
-            {
-               m_state.user_code = code;
             }
 
             Context::Context()

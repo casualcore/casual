@@ -200,5 +200,40 @@ namespace casual
       }
 
 
+      TEST( casual_xatmi_conversation, connect__TPRECVONLY__echo_service)
+      {
+         unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         unittest::random::range( range::make( buffer, buffer + len));
+
+         auto descriptor = tpconnect( "echo", buffer, len, TPRECVONLY);
+         EXPECT_TRUE( descriptor != -1);
+         EXPECT_TRUE( tperrno == 0);
+
+         // receive
+         {
+            auto reply = tpalloc( X_OCTET, nullptr, 128);
+
+            long event = 0;
+            EXPECT_TRUE( tprecv( descriptor, &reply, &len, 0, &event) == -1);
+            EXPECT_TRUE( tperrno == TPEEVENT);
+            EXPECT_TRUE( event & TPEV_SENDONLY);
+
+            EXPECT_TRUE( range::equal( range::make( reply, 128), range::make( buffer, 128)));
+
+            tpfree( reply);
+
+         }
+         tpfree( buffer);
+
+         EXPECT_TRUE( tpdiscon( descriptor) != -1);
+      }
+
+
    } // xatmi
 } // casual

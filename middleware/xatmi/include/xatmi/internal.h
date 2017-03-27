@@ -13,6 +13,8 @@ namespace casual
    {
       namespace internal
       {
+         void clear();
+
          namespace error
          {
             void set( int value);

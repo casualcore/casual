@@ -78,8 +78,6 @@ namespace casual
                   std::vector< Descriptor> m_descriptors;
 
                } pending;
-
-               long user_code = 0;
             };
 
 
