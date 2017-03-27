@@ -130,7 +130,7 @@ namespace casual
                            //
                            // No reply, hence no descriptor and no transaction (we validated this before)
                            //
-                           return { 0, std::move( message) };
+                           return std::tuple< platform::descriptor::type, message::service::call::caller::Request>{ 0, std::move( message) };
                         }
                         else
                         {
@@ -161,7 +161,7 @@ namespace casual
 
                            message.service.timeout = descriptor.timeout.timeout;
 
-                           return { descriptor.descriptor, std::move( message) };
+                           return std::tuple< platform::descriptor::type, message::service::call::caller::Request>{ descriptor.descriptor, std::move( message) };
                         }
                      }
 

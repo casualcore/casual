@@ -21,9 +21,9 @@ namespace casual
                {
                   struct Domain
                   {
-                     Domain() : server{ {
+                     Domain() : server{
                         mockup::domain::echo::create::service( "echo.conversation"),
-                     }}
+                     }
                      {}
 
                      mockup::domain::Manager manager;

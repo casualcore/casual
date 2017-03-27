@@ -106,11 +106,13 @@ namespace casual
                {
                   if( ! m_cache.empty() && log::category::warning)
                   {
-                     log::category::warning << "pending messages in cache - " << *this << '\n';
+                     log::Stream warning{ "warning"};
+                     warning << "pending messages in cache - " << *this << '\n';
                   }
                   else if( log::debug)
                   {
-                     log::debug << "device: " << *this << '\n';
+                     log::Stream debug{ "casual.debug"};
+                     debug  << "device: " << *this << '\n';
                   }
                }
 
