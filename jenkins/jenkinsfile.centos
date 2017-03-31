@@ -168,7 +168,7 @@ node
           stage('Publishing to dockerhub')
           {
              sh """
-             docker tag -f casual/middleware-centos casual/middleware:latest
+             docker tag casual/middleware-centos casual/middleware:latest
              docker push casual/middleware
              """
           }
