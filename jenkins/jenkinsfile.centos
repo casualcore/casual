@@ -34,8 +34,8 @@ casual-make -d -a --use-valgrind make && \
    tar cvf casual-middleware.tar casual && \
    cp casual-middleware.tar /git/casual/. && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
-   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  &&
-   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
+   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  && \
+   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. 
 '''
 
 //
