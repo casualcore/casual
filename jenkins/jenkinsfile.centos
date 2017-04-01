@@ -18,6 +18,8 @@ casual-make -d -a --use-valgrind make && \
    casual-make -d -a --use-valgrind compile && \
    casual-make -d -a --use-valgrind link && \
    ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test && \
+   mkdir -p /git/casual/coverage && \
+   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html && \
    casual-make make && \
    casual-make clean && \
    casual-make compile && \
@@ -32,11 +34,8 @@ casual-make -d -a --use-valgrind make && \
    tar cvf casual-middleware.tar casual && \
    cp casual-middleware.tar /git/casual/. && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
-   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  &&
-   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
-   cd /git/casual && \
-   mkdir -p /git/casual/coverage && \
-   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
+   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  && \
+   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. 
 '''
 
 //
@@ -166,14 +165,14 @@ node
              '''
           }
 
-//         stage('Publishing to dockerhub')
-//         {
-//            sh """
-//            docker tag -f casual-test-ubuntu casual/middleware:latest
-//            docker push casual/middleware
-//            """
-//         }
-//
+          stage('Publishing to dockerhub')
+          {
+             sh """
+             docker tag casual/middleware-centos casual/middleware:latest
+             docker push casual/middleware
+             """
+          }
+
           stage('Deploy')
           {
              sh """
