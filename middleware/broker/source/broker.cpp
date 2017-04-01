@@ -12,9 +12,6 @@
 #include "common/environment.h"
 #include "common/domain.h"
 
-#include "common/internal/trace.h"
-#include "common/internal/log.h"
-
 #include "common/message/dispatch.h"
 #include "common/message/domain.h"
 #include "common/message/handle.h"

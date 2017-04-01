@@ -8,12 +8,12 @@
 #include "broker/broker.h"
 
 
-#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 #include "sf/server.h"
 
 
+#include "xatmi.h"
 
 
 namespace casual
@@ -29,32 +29,8 @@ namespace broker
          namespace
          {
 
-            casual::sf::server::type server;
+            sf::Server server;
          }
-      }
-
-
-      int tpsvrinit( int argc, char **argv)
-      {
-         try
-         {
-            local::server = casual::sf::server::create( argc, argv);
-
-         }
-         catch( ...)
-         {
-            return -1;
-         }
-
-         return 0;
-      }
-
-      void tpsvrdone()
-      {
-         //
-         // delete the implementation an server implementation
-         //
-         casual::sf::server::sink( local::server);
       }
 
 
@@ -66,7 +42,7 @@ namespace broker
          try
          {
 
-            auto service_io = local::server->createService( serviceInfo);
+            auto service_io = local::server.service( *serviceInfo);
 
 
             auto serviceReturn = service_io.call( &transform::state, state);
@@ -77,7 +53,7 @@ namespace broker
          }
          catch( ...)
          {
-            local::server->handleException( serviceInfo, reply);
+            local::server.exception( *serviceInfo, reply);
          }
 
          tpreturn(
@@ -93,10 +69,7 @@ namespace broker
       common::server::Arguments services( broker::State& state)
       {
 
-         common::server::Arguments result{ { common::process::path()}};
-
-         result.server_init = &tpsvrinit;
-         result.server_done = &tpsvrdone;
+         common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
          result.services.emplace_back( ".casual.broker.state",
                std::bind( &service_broker_state, std::placeholders::_1, std::ref( state)),

@@ -6,7 +6,7 @@
 #include "common/communication/log.h"
 #include "common/environment.h"
 #include "common/error.h"
-#include "common/trace.h"
+#include "common/log.h"
 #include "common/domain.h"
 
 
@@ -23,6 +23,20 @@ namespace casual
       {
          namespace ipc
          {
+            namespace message
+            {
+               std::ostream& operator << ( std::ostream& out, const Transport& value)
+               {
+                  return out << "{ type: " << value.type()
+                        << ", correlation: " << uuid::string( value.correlation())
+                        << ", offset: " << value.pyaload_offset()
+                        << ", payload.size: " << value.pyaload_size()
+                        << ", complete_size: " << value.complete_size()
+                        << ", header-size: " << transport::header_size()
+                        << ", transport-size: " <<  value.size()
+                        << ", max-size: " << transport::max_message_size() << "}";
+               }
+            } // message
 
             namespace native
             {
@@ -98,7 +112,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, transport.max_message_size(), 0, flags.underlaying());
+                  auto result = msgrcv( id, &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -144,6 +158,78 @@ namespace casual
                }
 
             } // native
+
+            namespace policy
+            {
+               cache_range_type receive( handle_type id, cache_type& cache, common::Flags< native::Flag> flags)
+               {
+                  message::Transport transport;
+
+
+                  if( native::receive( id, transport, flags))
+                  {
+                     auto found = range::find_if( cache,
+                           [&]( const auto& m)
+                           {
+                              return transport.type() == m.type
+                                    && ! m.complete()
+                                    && transport.message.header.correlation == m.correlation;
+                           });
+
+                     if( found)
+                     {
+                        found->add( transport);
+                        return found;
+                     }
+                     else
+                     {
+                        cache.emplace_back(
+                              transport.type(),
+                              transport.correlation(),
+                              transport.complete_size(),
+                              transport);
+
+                        return { std::end( cache) - 1, std::end( cache)};
+                     }
+                  }
+
+                  return {};
+               }
+
+               Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags)
+               {
+                  message::Transport transport{ complete.type, complete.payload.size()};
+
+                  complete.correlation.copy( transport.correlation());
+
+
+                  auto part_begin = std::begin( complete.payload);
+
+                  do
+                  {
+                     auto part_end = std::distance( part_begin, std::end( complete.payload)) > message::transport::max_payload_size() ?
+                           part_begin + message::transport::max_payload_size() : std::end( complete.payload);
+
+                     transport.assign( part_begin, part_end);
+                     transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
+
+                     //
+                     // send the physical message
+                     //
+                     if( ! native::send(  id, transport, flags))
+                     {
+                        return uuid::empty();
+                     }
+
+                     part_begin = part_end;
+                  }
+                  while( part_begin != std::end( complete.payload));
+
+                  return complete.correlation;
+
+               }
+
+            } // policy
 
             namespace inbound
             {
@@ -476,7 +562,7 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
+                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
                   }
                }
                return false;

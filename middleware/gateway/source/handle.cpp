@@ -5,7 +5,6 @@
 #include "gateway/handle.h"
 #include "gateway/common.h"
 
-#include "common/trace.h"
 
 namespace casual
 {
@@ -22,7 +21,7 @@ namespace casual
 
             if( message.reason == message_type::Reason::disconnect && message.remote.id)
             {
-               common::log::information << "disconnect from domain: " << message.remote << '\n';
+               common::log::category::information << "disconnect from domain: " << message.remote << '\n';
             }
 
             //

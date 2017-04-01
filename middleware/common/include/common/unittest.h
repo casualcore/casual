@@ -40,40 +40,61 @@ namespace casual
             Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::trace << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - in\n";
+               log::debug << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - in\n";
             }
             ~Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::trace << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - out\n";
+               log::debug << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - out\n";
             }
          };
 
-         namespace message
+            
+         struct Message : common::message::basic_message< common::message::Type::MOCKUP_BASE>
          {
+            Message();
 
-            template< std::size_t size, common::message::Type type = common::message::Type::MOCKUP_BASE>
-            struct basic_message : common::message::basic_message< type>
+            //!
+            //! Will adjust the size of the paylad, and exclude the size of
+            //! the 'payload size'.
+            //!
+            //! payload-size = size - sizeof( platform::binary::type::size_type)
+            //!
+            //! @param size the size of what is transported.
+            //!
+            Message( std::size_t size);
+
+
+            //!
+            //! @return the transport size
+            //!   ( payload-size + sizeof( platform::binary::type::size_type)
+            //!
+            std::size_t size() const;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
             {
+               // we don't serialize execution
+               //base_type::marshal( archive);
+               archive & payload;
+            })
 
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  // we don't serialize execution
-                  //base_type::marshal( archive);
-                  archive & payload;
-               })
+            //
+            // cores on ubuntu 16.04 when size gets over 5M.
+            // guessing that the stack gets to big...
+            // We switch to a vector instead.
+            // std::array< char, size> payload;
+            platform::binary::type payload;
+         };
 
-               std::array< char, size> payload;
-            };
-
-         } // message
 
          namespace random
          {
-            platform::binary_type binary( std::size_t size);
+            unittest::Message message( std::size_t size);
+
+            platform::binary::type binary( std::size_t size);
 
 
-            platform::binary_type::value_type byte();
+            platform::binary::type::value_type byte();
 
             template< typename R>
             auto range( R&& range) -> decltype( std::forward< R>( range))

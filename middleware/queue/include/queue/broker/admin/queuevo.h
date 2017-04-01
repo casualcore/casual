@@ -67,7 +67,7 @@ namespace casual
                std::size_t count;
                std::size_t size;
                std::size_t uncommitted;
-               common::platform::time_point timestamp;
+               sf::platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -96,14 +96,14 @@ namespace casual
                sf::platform::Uuid id;
                std::size_t queue;
                std::size_t origin;
-               sf::platform::binary_type trid;
+               sf::platform::binary::type trid;
                std::size_t state;
                std::string reply;
                std::size_t redelivered;
                std::string type;
 
-               sf::platform::time_point avalible;
-               sf::platform::time_point timestamp;
+               sf::platform::time::point::type avalible;
+               sf::platform::time::point::type timestamp;
 
                std::size_t size;
 

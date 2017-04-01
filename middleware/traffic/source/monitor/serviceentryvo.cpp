@@ -50,8 +50,8 @@ struct ServiceEntryVO::Implementation
    std::string parentService;
    std::string service;
    sf::platform::Uuid callId;
-   sf::platform::time_point start;
-   sf::platform::time_point end;
+   sf::platform::time::point::type start;
+   sf::platform::time::point::type end;
    //## additional attributes protected section begin [200.impl.attr.20]
    //## additional attributes protected section end   [200.impl.attr.20]
 
@@ -84,11 +84,11 @@ sf::platform::Uuid ServiceEntryVO::getCallId() const
 {
    return pimpl->callId;
 }
-sf::platform::time_point ServiceEntryVO::getStart() const
+sf::platform::time::point::type ServiceEntryVO::getStart() const
 {
    return pimpl->start;
 }
-sf::platform::time_point ServiceEntryVO::getEnd() const
+sf::platform::time::point::type ServiceEntryVO::getEnd() const
 {
    return pimpl->end;
 }
@@ -106,11 +106,11 @@ void ServiceEntryVO::setCallId( sf::platform::Uuid value)
 {
    pimpl->callId = value;
 }
-void ServiceEntryVO::setStart( sf::platform::time_point value)
+void ServiceEntryVO::setStart( sf::platform::time::point::type value)
 {
    pimpl->start = value;
 }
-void ServiceEntryVO::setEnd( sf::platform::time_point value)
+void ServiceEntryVO::setEnd( sf::platform::time::point::type value)
 {
    pimpl->end = value;
 }

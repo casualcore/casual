@@ -17,9 +17,9 @@ namespace casual
          namespace
          {
 
-            typedef common::platform::binary_type::size_type size_type;
-            typedef common::platform::binary_type::const_pointer const_data_type;
-            typedef common::platform::binary_type::pointer data_type;
+            typedef common::platform::binary::type::size_type size_type;
+            typedef common::platform::binary::type::const_pointer const_data_type;
+            typedef common::platform::binary::type::pointer data_type;
 
 
             struct Buffer : common::buffer::Buffer
@@ -60,7 +60,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const std::string& type, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, size);
 
@@ -71,7 +71,7 @@ namespace casual
                }
 
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
                {
                   const auto result = find( handle);
 

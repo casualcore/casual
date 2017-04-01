@@ -11,7 +11,6 @@
 #include "common/buffer/type.h"
 #include "common/log.h"
 #include "common/platform.h"
-#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 
@@ -42,9 +41,9 @@ namespace casual
          namespace
          {
 
-            typedef common::platform::binary_type::size_type size_type;
-            typedef common::platform::binary_type::const_pointer const_data_type;
-            typedef common::platform::binary_type::pointer data_type;
+            typedef common::platform::binary::type::size_type size_type;
+            typedef common::platform::binary::type::const_pointer const_data_type;
+            typedef common::platform::binary::type::pointer data_type;
 
 
             struct compare_first
@@ -197,7 +196,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const std::string& type, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, 0);
 
@@ -207,7 +206,7 @@ namespace casual
                   return m_pool.back().handle();
                }
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
                {
                   const auto result = find( handle);
 
@@ -1380,13 +1379,13 @@ namespace casual
                            else
                            {
                               // TODO: Much better
-                              common::log::warning << "id for " << field.name << " is invalid" << std::endl;
+                              common::log::category::warning << "id for " << field.name << " is invalid" << std::endl;
                            }
                         }
                         catch( const std::out_of_range&)
                         {
                            // TODO: Much better
-                           common::log::warning << "type for " << field.name << " is invalid" << std::endl;
+                           common::log::category::warning << "type for " << field.name << " is invalid" << std::endl;
                         }
                      }
                   }
@@ -1408,7 +1407,7 @@ namespace casual
                   if( ! result.emplace( field.name, field.id).second)
                   {
                      // TODO: Much better
-                     common::log::warning << "name for " << field.name << " is not unique" << std::endl;
+                     common::log::category::warning << "name for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1426,7 +1425,7 @@ namespace casual
                   if( ! result.emplace( field.id, field.name).second)
                   {
                      // TODO: Much better
-                     common::log::warning << "id for " << field.name << " is not unique" << std::endl;
+                     common::log::category::warning << "id for " << field.name << " is not unique" << std::endl;
                   }
                }
 

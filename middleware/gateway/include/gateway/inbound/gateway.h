@@ -23,8 +23,6 @@
 #include "common/message/coordinate.h"
 #include "common/message/handle.h"
 
-#include "common/trace.h"
-
 namespace casual
 {
    namespace gateway
@@ -153,20 +151,20 @@ namespace casual
                               }
                               catch( const common::exception::queue::Unavailable&)
                               {
-                                 common::log::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
+                                 common::log::category::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
                                  send_error_reply( message);
                               }
                               break;
                            }
                            case message_type::State::absent:
                            {
-                              common::log::error << "service: " << message.service << " is not handled by this domain (any more) - action: reply with TPESVCERR\n";
+                              common::log::category::error << "service: " << message.service << " is not handled by this domain (any more) - action: reply with TPESVCERR\n";
                               send_error_reply( message);
                               break;
                            }
                            default:
                            {
-                              common::log::error << "unexpected state on lookup reply: " << message << " - action: drop message\n";
+                              common::log::category::error << "unexpected state on lookup reply: " << message << " - action: drop message\n";
                               break;
                            }
                         }
@@ -280,7 +278,7 @@ namespace casual
                            }
                            default:
                            {
-                              common::log::error << "unexpected message type for queue request: " << message << " - action: drop message\n";
+                              common::log::category::error << "unexpected message type for queue request: " << message << " - action: drop message\n";
                            }
                         }
                      }
@@ -310,7 +308,7 @@ namespace casual
                         }
                         catch( const common::exception::communication::Unavailable&)
                         {
-                           common::log::error << "failed to lookup queue - action: send error reply\n";
+                           common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
                            common::message::queue::enqueue::Reply reply;
                            reply.correlation = message.correlation;
@@ -348,7 +346,7 @@ namespace casual
                         }
                         catch( const common::exception::communication::Unavailable&)
                         {
-                           common::log::error << "failed to lookup queue - action: send error reply\n";
+                           common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
                            common::message::queue::enqueue::Reply reply;
                            reply.correlation = message.correlation;
@@ -846,7 +844,7 @@ namespace casual
                      common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
                   }
 
-                  common::log::information << "connection established - policy: " << policy << "\n";
+                  common::log::category::information << "connection established - policy: " << policy << "\n";
 
 
                   //

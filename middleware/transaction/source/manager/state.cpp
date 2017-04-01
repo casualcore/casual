@@ -3,14 +3,13 @@
 //!
 
 #include "transaction/manager/state.h"
+#include "transaction/common.h"
 
 #include "configuration/domain.h"
 
 
 #include "common/exception.h"
 #include "common/algorithm.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 #include "common/environment.h"
 
 
@@ -18,7 +17,6 @@
 
 namespace casual
 {
-   using namespace common;
 
    namespace transaction
    {
@@ -32,16 +30,16 @@ namespace casual
 
          }
 
-         void Statistics::start( const common::platform::time_point& start)
+         void Statistics::start( const common::platform::time::point::type& start)
          {
             m_start = start;
          }
-         void Statistics::end( const common::platform::time_point& end)
+         void Statistics::end( const common::platform::time::point::type& end)
          {
             time( m_start, end);
          }
 
-         void Statistics::time( const common::platform::time_point& start, const common::platform::time_point& end)
+         void Statistics::time( const common::platform::time::point::type& start, const common::platform::time::point::type& end)
          {
             auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
             total += time;
@@ -146,7 +144,7 @@ namespace casual
                {
                   id::type id( State& state, const common::process::Handle& process)
                   {
-                     auto found = range::find( state.externals, process);
+                     auto found = common::range::find( state.externals, process);
 
                      if( found)
                      {
@@ -169,7 +167,7 @@ namespace casual
          {
 
             {
-               Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
+               Trace trace{ "transaction manager xa-switch configuration"};
 
                auto resources = configuration::resource::property::get();
 
@@ -177,7 +175,7 @@ namespace casual
                {
                   if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
                   {
-                     throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
+                     throw common::exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
                }
             }
@@ -186,7 +184,7 @@ namespace casual
             // configure resources
             //
             {
-               Trace trace( "transaction manager resource configuration", log::internal::transaction);
+               Trace trace{ "transaction manager resource configuration"};
 
                auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
 
@@ -202,7 +200,7 @@ namespace casual
                   return proxy;
                };
 
-               range::transform(
+               common::range::transform(
                      configuration.domain.transaction.resources,
                      state.resources,
                      transform_resource);
@@ -341,7 +339,7 @@ namespace casual
 
       bool State::ready() const
       {
-         return range::all_of( resources, []( const state::resource::Proxy& p){ return p.ready();});
+         return common::range::all_of( resources, []( const state::resource::Proxy& p){ return p.ready();});
       }
 
       std::size_t State::instances() const
@@ -382,18 +380,18 @@ namespace casual
             {
                if( found->state() != state::resource::Proxy::Instance::State::shutdown)
                {
-                  log::error << "resource proxy instance died - " << *found << std::endl;
+                  common::log::category::error << "resource proxy instance died - " << *found << std::endl;
                }
 
                resource.statistics += found->statistics;
                resource.instances.erase( std::begin( found));
 
-               log::internal::transaction << "remove dead process: " << death << std::endl;
+               transaction::log << "remove dead process: " << death << std::endl;
                return;
             }
          }
 
-         log::warning << "failed to find and remove dead instance: " << death << std::endl;
+         common::log::category::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
       state::resource::Proxy& State::get_resource( state::resource::id::type rm)
@@ -431,7 +429,7 @@ namespace casual
 
       const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
       {
-         auto found = range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
+         auto found = common::range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
             return p.id == rm;
          });
 

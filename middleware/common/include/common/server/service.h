@@ -7,7 +7,7 @@
 
 #include "common/service/type.h"
 
-#include "xatmi.h"
+#include <xatmi/defines.h>
 
 #include <functional>
 #include <string>

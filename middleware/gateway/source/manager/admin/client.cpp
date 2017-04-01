@@ -26,9 +26,9 @@ namespace casual
       namespace normalize
       {
 
-         std::string timestamp( const platform::time_point& time)
+         std::string timestamp( const platform::time::point::type& time)
          {
-            if( time != platform::time_point::min())
+            if( time != platform::time::point::type::min())
             {
                return chronology::local( time);
             }

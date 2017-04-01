@@ -114,6 +114,7 @@ target_delay_message = LinkExecutable( 'bin/casual-delay-message',
     ] + delay_objects,
     [
       message_lib,
+      manager_archive,
      'casual-common'
     ])
 

@@ -1,8 +1,5 @@
 //!
-//! receiver.h
-//!
-//! Created on: May 6, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef TRAFFIC_RECEIVER_H_
@@ -33,8 +30,8 @@ namespace casual
          common::platform::pid::type pid() const;
          const common::Uuid& execution() const;
          const common::transaction::ID& transaction() const;
-         const common::platform::time_point& start() const;
-         const common::platform::time_point& end() const;
+         const common::platform::time::point::type& start() const;
+         const common::platform::time::point::type& end() const;
 
       protected:
          Event();
@@ -45,8 +42,8 @@ namespace casual
          virtual common::platform::pid::type get_pid() const = 0;
          virtual const common::Uuid& get_execution() const = 0;
          virtual const common::transaction::ID& get_transaction() const = 0;
-         virtual const common::platform::time_point& get_start() const = 0;
-         virtual const common::platform::time_point& get_end() const = 0;
+         virtual const common::platform::time::point::type& get_start() const = 0;
+         virtual const common::platform::time::point::type& get_end() const = 0;
       };
 
 

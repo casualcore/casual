@@ -50,7 +50,7 @@ namespace casual
 
                void fields( std::vector< header::Field> header)
                {
-                  log::internal::debug << "header: " << range::make( header) << '\n';
+                  log::debug << "header: " << range::make( header) << '\n';
                   fields() = std::move( header);
                }
 

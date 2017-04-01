@@ -79,12 +79,12 @@ public:
    void setCallId( sf::platform::Uuid value);
 
 
-   sf::platform::time_point getStart() const;
-   void setStart( sf::platform::time_point value);
+   sf::platform::time::point::type getStart() const;
+   void setStart( sf::platform::time::point::type value);
 
 
-   sf::platform::time_point getEnd() const;
-   void setEnd( sf::platform::time_point value);
+   sf::platform::time::point::type getEnd() const;
+   void setEnd( sf::platform::time::point::type value);
 
 
 

@@ -7,6 +7,7 @@
 
 #include "common/execution.h"
 
+#include "xatmi.h"
 
 namespace casual
 {

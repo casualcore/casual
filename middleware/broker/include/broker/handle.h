@@ -14,7 +14,7 @@
 #include "common/message/gateway.h"
 #include "common/message/transaction.h"
 
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
 #include "common/server/context.h"
 
 
@@ -206,11 +206,11 @@ namespace casual
 
             void ack( const common::message::service::call::callee::Request& message);
 
-            void transaction( const common::message::service::call::callee::Request&, const common::server::Service&, const common::platform::time_point&);
+            void transaction( const common::message::service::call::callee::Request&, const common::server::Service&, const common::platform::time::point::type&);
 
             void transaction( const common::message::service::call::Reply& message, int return_state);
 
-            void forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump);
+            void forward( const common::message::service::call::callee::Request& message, const common::server::state::Jump& jump);
 
             void statistics( common::platform::ipc::id::type id, common::message::traffic::Event& event);
 

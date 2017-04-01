@@ -8,8 +8,7 @@
 #include "common/environment.h"
 #include "common/uuid.h"
 #include "common/file.h"
-#include "common/internal/log.h"
-#include "common/trace.h"
+#include "common/log.h"
 #include "common/domain.h"
 
 #include "common/mockup/ipc.h"

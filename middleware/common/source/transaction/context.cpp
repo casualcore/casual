@@ -8,8 +8,7 @@
 #include "common/communication/ipc.h"
 #include "common/environment.h"
 #include "common/process.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 #include "common/algorithm.h"
 #include "common/error.h"
 #include "common/exception.h"
@@ -28,6 +27,11 @@ namespace casual
 
       namespace transaction
       {
+         struct Trace : common::log::Trace
+         {
+            template< typename T>
+            Trace( T&& value) : common::log::Trace( std::forward< T>( value), log::category::transaction) {}
+         };
 
          int xaTotx( int code)
          {
@@ -108,7 +112,7 @@ namespace casual
 
                   message::transaction::resource::lookup::Reply configuration( std::vector< std::string> names)
                   {
-                     common::trace::Scope trace{ "transaction::local::resource::configuration", common::log::internal::transaction};
+                     Trace trace{ "transaction::local::resource::configuration"};
 
 
                      message::transaction::resource::lookup::Request request;
@@ -126,7 +130,7 @@ namespace casual
 
          void Context::configure( const std::vector< Resource>& resources, std::vector< std::string> names)
          {
-            common::trace::Scope trace{ "transaction::Context::configure", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::configure"};
 
             if( ! resources.empty())
             {
@@ -180,8 +184,8 @@ namespace casual
             std::tie( m_resources.dynamic, m_resources.fixed) =
                   range::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
 
-            common::log::internal::transaction << "static resources: " << m_resources.fixed << std::endl;
-            common::log::internal::transaction << "dynamic resources: " << m_resources.dynamic << std::endl;
+            common::log::category::transaction << "static resources: " << m_resources.fixed << std::endl;
+            common::log::category::transaction << "dynamic resources: " << m_resources.dynamic << std::endl;
 
 
             //
@@ -219,7 +223,7 @@ namespace casual
 
 
 
-               Transaction startTransaction( const platform::time_point& start, TRANSACTION_TIMEOUT timeout)
+               Transaction startTransaction( const platform::time::point::type& start, TRANSACTION_TIMEOUT timeout)
                {
 
                   Transaction transaction{ transaction::ID::create( process::handle())};
@@ -246,7 +250,7 @@ namespace casual
 
          void Context::involved( const transaction::ID& trid, std::vector< int> resources)
          {
-            common::trace::Scope trace{ "transaction::Context::involved", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::involved"};
 
             if( ! resources.empty())
             {
@@ -255,7 +259,7 @@ namespace casual
                message.trid = trid;
                message.resources = std::move( resources);
 
-               common::log::internal::transaction << "involved message: " << message << '\n';
+               common::log::category::transaction << "involved message: " << message << '\n';
 
                communication::ipc::blocking::send( communication::ipc::transaction::manager::device(), message);
             }
@@ -264,7 +268,7 @@ namespace casual
 
          void Context::join( const transaction::ID& trid)
          {
-            common::trace::Scope trace{ "transaction::Context::join", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::join"};
 
             Transaction transaction( trid);
 
@@ -276,9 +280,9 @@ namespace casual
             m_transactions.push_back( std::move( transaction));
          }
 
-         void Context::start( const platform::time_point& start)
+         void Context::start( const platform::time::point::type& start)
          {
-            common::trace::Scope trace{ "transaction::Context::start", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::start"};
 
             auto transaction = local::startTransaction( start, m_timeout);
 
@@ -313,7 +317,7 @@ namespace casual
                //
                transaction.replied( reply.correlation);
 
-               log::internal::transaction << "updated state: " << transaction << std::endl;
+               log::category::transaction << "updated state: " << transaction << std::endl;
             }
             else
             {
@@ -333,7 +337,7 @@ namespace casual
 
          void Context::finalize( message::service::call::Reply& message, int return_state)
          {
-            common::trace::Scope trace{ "transaction::Context::finalize", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::finalize"};
 
             //
             // Regardless, we will consume every transaction.
@@ -351,8 +355,8 @@ namespace casual
                {
                   if( transaction.trid)
                   {
-                     log::error << "pending replies associated with transaction - action: transaction state to rollback only\n";
-                     log::internal::transaction << transaction << std::endl;
+                     log::category::error << "pending replies associated with transaction - action: transaction state to rollback only\n";
+                     log::category::transaction << transaction << std::endl;
 
                      transaction.state = Transaction::State::rollback;
                      message.error = TPESVCERR;
@@ -377,7 +381,7 @@ namespace casual
 
                if( result != TX_OK)
                {
-                  log::error << "failed to rollback transaction: " << transaction.trid << " - " << error::tx::error( result) << std::endl;
+                  log::category::error << "failed to rollback transaction: " << transaction.trid << " - " << error::tx::error( result) << std::endl;
                   message.error = TPESVCERR;
                }
             };
@@ -390,7 +394,7 @@ namespace casual
 
                   if( result != TX_OK)
                   {
-                     log::error << "failed to commit transaction: " << transaction.trid << " - " << error::tx::error( result) << std::endl;
+                     log::category::error << "failed to commit transaction: " << transaction.trid << " - " << error::tx::error( result) << std::endl;
                      message.error = TPESVCERR;
                   }
                }
@@ -489,14 +493,14 @@ namespace casual
 
          int Context::resourceRegistration( int rmid, XID* xid, long flags)
          {
-            common::trace::Scope trace{ "transaction::Context::resourceRegistration", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resourceRegistration"};
 
             //
             // Verify that rmid is known and is dynamic
             //
             if( ! common::range::find( m_resources.dynamic, rmid))
             {
-               common::log::error << "invalid resource id " << rmid << " TMER_INVAL\n";
+               log::category::error << "invalid resource id " << rmid << " TMER_INVAL\n";
                return TMER_INVAL;
             }
 
@@ -527,7 +531,7 @@ namespace casual
 
          int Context::resourceUnregistration( int rmid, long flags)
          {
-            common::trace::Scope trace{ "transaction::Context::resourceUnregistration", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resourceUnregistration"};
 
             auto&& transaction = current();
 
@@ -551,7 +555,7 @@ namespace casual
 
          int Context::begin()
          {
-            common::trace::Scope trace{ "transaction::Context::begin", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::begin"};
 
             auto&& transaction = current();
 
@@ -573,13 +577,13 @@ namespace casual
                throw exception::tx::Outside{ "begin - resources not done with work outside global transaction"}; //, exception::make_nip( "resources", range::make( transaction.resources))};
             }
 
-            auto trans = local::startTransaction( platform::clock_type::now(), m_timeout);
+            auto trans = local::startTransaction( platform::time::clock::type::now(), m_timeout);
 
             resources_start( trans, TMNOFLAGS);
 
             m_transactions.push_back( std::move( trans));
 
-            common::log::internal::transaction << "transaction: " << m_transactions.back().trid << " started\n";
+            common::log::category::transaction << "transaction: " << m_transactions.back().trid << " started\n";
 
             return TX_OK;
          }
@@ -587,7 +591,7 @@ namespace casual
 
          void Context::open()
          {
-            common::trace::Scope trace{ "transaction::Context::open", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::open"};
 
             std::vector< int> result;
 
@@ -609,7 +613,7 @@ namespace casual
 
          void Context::close()
          {
-            common::trace::Scope trace{ "transaction::Context::close", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::close"};
 
             std::vector< int> result;
 
@@ -632,7 +636,7 @@ namespace casual
 
          int Context::commit( const Transaction& transaction)
          {
-            common::trace::Scope trace{ "transaction::Context::commit", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::commit"};
 
             const auto process = process::handle();
 
@@ -665,7 +669,7 @@ namespace casual
 
             if( transaction.local() && transaction.resources.size() + m_resources.fixed.size() <= 1)
             {
-               Trace trace{ "transaction::Context::commit - local", common::log::internal::transaction};
+               Trace trace{ "transaction::Context::commit - local"};
 
                //
                // transaction is local, and at most one resource is involved.
@@ -691,7 +695,7 @@ namespace casual
             }
             else
             {
-               Trace trace{ "transaction::Context::commit - distributed", common::log::internal::transaction};
+               Trace trace{ "transaction::Context::commit - distributed"};
 
                message::transaction::commit::Request request;
                request.trid = transaction.trid;
@@ -713,11 +717,11 @@ namespace casual
                   {
                      case message::transaction::commit::Reply::Stage::prepare:
                      {
-                        log::internal::transaction << "prepare reply: " << error::xa::error( reply.state) << '\n';
+                        log::category::transaction << "prepare reply: " << error::xa::error( reply.state) << '\n';
 
                         if( m_commit_return == Commit_Return::logged)
                         {
-                           log::internal::transaction << "decision logged directive\n";
+                           log::category::transaction << "decision logged directive\n";
 
                            //
                            // Discard the coming commit-message
@@ -731,20 +735,20 @@ namespace casual
                            //
                            communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
 
-                           log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+                           log::category::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
                         }
 
                         break;
                      }
                      case message::transaction::commit::Reply::Stage::commit:
                      {
-                        log::internal::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+                        log::category::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
 
                         break;
                      }
                      case message::transaction::commit::Reply::Stage::error:
                      {
-                        log::error << "commit error: " << error::xa::error( reply.state) << std::endl;
+                        log::category::error << "commit error: " << error::xa::error( reply.state) << std::endl;
 
                         break;
                      }
@@ -757,7 +761,7 @@ namespace casual
 
          int Context::commit()
          {
-            common::trace::Scope trace{ "transaction::Context::commit", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::commit"};
 
             auto result = commit( current());
 
@@ -776,7 +780,7 @@ namespace casual
 
          int Context::rollback( const Transaction& transaction)
          {
-            common::trace::Scope trace{ "transaction::Context::rollback", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::rollback"};
 
             if( ! transaction)
             {
@@ -803,7 +807,7 @@ namespace casual
 
             auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
-            log::internal::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
+            log::category::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
 
             return xaTotx( reply.state);
 
@@ -902,7 +906,7 @@ namespace casual
 
          void Context::suspend( XID* xid)
          {
-            common::trace::Scope trace{ "transaction::Context::suspend", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::suspend"};
 
             if( xid == nullptr)
             {
@@ -937,7 +941,7 @@ namespace casual
 
          void Context::resume( const XID* xid)
          {
-            common::trace::Scope trace{ "transaction::Context::resume", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resume"};
 
             if( xid == nullptr)
             {
@@ -996,7 +1000,7 @@ namespace casual
 
          void Context::resources_start( const Transaction& transaction, long flags)
          {
-            Trace trace{ "transaction::Context::resources_start", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resources_start"};
 
             if( transaction && m_resources.fixed)
             {
@@ -1012,7 +1016,7 @@ namespace casual
 
          void Context::resources_end( const Transaction& transaction, long flags)
          {
-            Trace trace{ "transaction::Context::resources_end", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resources_end"};
 
             if( transaction && ! m_resources.all.empty())
             {
@@ -1030,7 +1034,7 @@ namespace casual
 
          int Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags)
          {
-            Trace trace{ "transaction::Context::resources_commit", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::resources_commit"};
 
             auto commit = std::bind( &Resource::commit, std::placeholders::_1, std::ref( transaction), flags);
 
@@ -1047,7 +1051,7 @@ namespace casual
 
          int Context::pop_transaction()
          {
-            Trace trace{ "transaction::Context::pop_transaction", common::log::internal::transaction};
+            Trace trace{ "transaction::Context::pop_transaction"};
 
             //
             // Dependent on control we do different stuff

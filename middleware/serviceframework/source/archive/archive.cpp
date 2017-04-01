@@ -101,7 +101,7 @@ namespace casual
             return pod( value, name);
          }
 
-         bool Reader::read( platform::binary_type& value, const char* name)
+         bool Reader::read( platform::binary::type& value, const char* name)
          {
             return pod( value, name);
          }
@@ -184,7 +184,7 @@ namespace casual
             pod( value, name);
          }
 
-         void Writer::write( const platform::binary_type& value, const char* name)
+         void Writer::write( const platform::binary::type& value, const char* name)
          {
             pod( value, name);
          }

@@ -1,19 +1,16 @@
 //!
-//! receiver.cpp
-//!
-//! Created on: May 6, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "traffic/receiver.h"
-
+#include "traffic/common.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
 #include "common/communication/ipc.h"
 
-#include "common/internal/trace.h"
+
 
 namespace casual
 {
@@ -37,8 +34,8 @@ namespace casual
                common::platform::pid::type get_pid() const { return message.process.pid;};
                const common::Uuid& get_execution() const { return message.execution;};
                const common::transaction::ID& get_transaction() const { return message.trid;};
-               const common::platform::time_point& get_start() const { return message.start;};
-               const common::platform::time_point& get_end() const { return message.end;};
+               const common::platform::time::point::type& get_start() const { return message.start;};
+               const common::platform::time::point::type& get_end() const { return message.end;};
 
                message_type& message;
             };
@@ -74,14 +71,14 @@ namespace casual
       common::platform::pid::type Event::pid() const { return get_pid(); }
       const common::Uuid& Event::execution() const { return get_execution(); }
       const common::transaction::ID& Event::transaction() const { return get_transaction(); }
-      const common::platform::time_point& Event::start() const { return get_start(); }
-      const common::platform::time_point& Event::end() const { return get_end(); }
+      const common::platform::time::point::type& Event::start() const { return get_start(); }
+      const common::platform::time::point::type& Event::end() const { return get_end(); }
 
 
 
       Receiver::Receiver( const common::Uuid& application)
       {
-         common::trace::internal::Scope trace( "traffic::Receiver::Receiver( application)");
+         Trace trace( "traffic::Receiver::Receiver( application)");
 
          //
          // Connect to domain
@@ -102,14 +99,14 @@ namespace casual
 
       Receiver::Receiver() : Receiver{ uuid::empty()}
       {
-         common::trace::internal::Scope trace( "traffic::Receiver::Receiver");
+         Trace trace( "traffic::Receiver::Receiver");
 
 
       }
 
       Receiver::~Receiver()
       {
-         common::trace::internal::Scope trace( "traffic::Receiver::~Receiver");
+         Trace trace( "traffic::Receiver::~Receiver");
 
          //
          // We could try to process pending traffic messages, but if this

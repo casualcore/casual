@@ -1,9 +1,6 @@
-//
-// network_byteorder.h
-//
-//  Created on: 7 nov 2013
-//      Author: Kristone
-//
+//!
+//! casual
+//!
 
 #ifndef CASUAL_COMMON_NETWORK_BYTEORDER_H_
 #define CASUAL_COMMON_NETWORK_BYTEORDER_H_

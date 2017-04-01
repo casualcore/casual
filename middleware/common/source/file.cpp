@@ -36,11 +36,11 @@ namespace casual
             {
                if( std::remove( path.c_str()))
                {
-                  log::error << "failed to remove file: " << path << '\n';
+                  log::category::error << "failed to remove file: " << path << '\n';
                }
                else
                {
-                  log::internal::debug << "removed file: " << path << '\n';
+                  log::debug << "removed file: " << path << '\n';
                }
             }
          }
@@ -52,7 +52,7 @@ namespace casual
                throw exception::invalid::File{ "failed to move file", CASUAL_NIP( source), CASUAL_NIP( destination), CASUAL_NIP( error::string())};
             }
 
-            log::internal::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
+            log::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
          }
 
 
@@ -323,7 +323,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::error << "failed to create " << path << " - " << error::string() << std::endl;
+               log::category::error << "failed to create " << path << " - " << error::string() << std::endl;
                return false;
             }
 
@@ -334,7 +334,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::error << "failed to remove " << path << " - " << error::string() << std::endl;
+               log::category::error << "failed to remove " << path << " - " << error::string() << std::endl;
                return false;
             }
             return true;

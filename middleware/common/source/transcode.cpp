@@ -1,9 +1,8 @@
-//
-// transcoding.cpp
-//
-//  Created on: Dec 26, 2013
-//      Author: Kristone
-//
+//!
+//! casaul
+//!
+
+
 
 #include "common/transcode.h"
 
@@ -68,7 +67,7 @@ namespace casual
             } // detail
 
 
-            platform::binary_type decode( const std::string& value)
+            platform::binary::type decode( const std::string& value)
             {
                std::vector<char> result( (value.size() / 4) * 3);
 
@@ -339,9 +338,9 @@ namespace casual
             } // detail
 
 
-            platform::binary_type decode( const std::string& value)
+            platform::binary::type decode( const std::string& value)
             {
-               platform::binary_type result( value.size() / 2);
+               platform::binary::type result( value.size() / 2);
 
                local::decode( value.begin(), value.end(), result.begin());
 

@@ -7,7 +7,6 @@
 
 #include "common/transaction/id.h"
 #include "common/transaction/transaction.h"
-#include "common/internal/log.h"
 #include "common/flag.h"
 
 #include "xa.h"
@@ -52,7 +51,7 @@ namespace casual
 
             if( ! transactions.all.empty())
             {
-               log::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
+               log::category::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
                return XAER_PROTO;
             }
 
@@ -65,7 +64,7 @@ namespace casual
 
             if( ! transactions.all.empty())
             {
-               log::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
+               log::category::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
                return XAER_PROTO;
             }
             log << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
@@ -81,7 +80,7 @@ namespace casual
 
             if( transactions.current)
             {
-               log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << transactions.current << std::endl;
+               log::category::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << transactions.current << std::endl;
                return XAER_PROTO;
             }
 
@@ -95,7 +94,7 @@ namespace casual
             {
                if( ! common::flag< TMRESUME>( flags))
                {
-                  log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << transactions.current << std::endl;
+                  log::category::error << error::xa::error( XAER_PROTO) << " xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << transactions.current << std::endl;
                   return XAER_PROTO;
                }
             }
@@ -114,7 +113,7 @@ namespace casual
 
             if( transactions.current != trid)
             {
-               log::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not current with RM" << std::endl;
+               log::category::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not current with RM" << std::endl;
                return XAER_INVAL;
             }
 

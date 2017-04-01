@@ -1,8 +1,5 @@
 //!
-//! test_xatmi_call.cpp
-//!
-//! Created on: Jun 2, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -10,8 +7,6 @@
 
 #include "sf/xatmi_call.h"
 
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 
 #include "../include/test_vo.h"
 
@@ -29,11 +24,11 @@ namespace casual
                {
                   void operator() ( const std::string& service, buffer::Buffer& input, buffer::Buffer& output, long flags) const
                   {
-                     common::trace::internal::Scope trace{ "service::call"};
+                     Trace trace{ "service::call"};
 
-                     common::log::internal::debug << "input: " << input << std::endl;
+                     log::sf << "input: " << input << std::endl;
                      output.reset( input.release());
-                     common::log::internal::debug << "output: " << output << std::endl;
+                     log::sf << "output: " << output << std::endl;
                   }
                };
 
@@ -41,11 +36,11 @@ namespace casual
                {
                   service::call_descriptor_type operator() ( const std::string& service, buffer::Buffer& input, long flags)
                   {
-                     common::trace::internal::Scope trace{ "service::send"};
+                     Trace trace{ "service::send"};
 
                      static int cd = 10;
 
-                     common::log::internal::debug << "input: " << input << std::endl;
+                     log::sf << "input: " << input << std::endl;
 
                      m_holder.emplace( ++cd, buffer::copy( input));
 
@@ -54,7 +49,7 @@ namespace casual
 
                   bool operator() ( service::call_descriptor_type& cd, buffer::Buffer& output, long flags)
                   {
-                     common::trace::internal::Scope trace{ "service::receive"};
+                     Trace trace{ "service::receive"};
 
                      auto found = m_holder.find( cd);
 
@@ -63,7 +58,7 @@ namespace casual
                         output.swap( found->second);
                         m_holder.erase( found);
 
-                        common::log::internal::debug << "output: " << output << std::endl;
+                        log::sf << "output: " << output << std::endl;
 
                         return true;
                      }

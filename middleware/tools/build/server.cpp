@@ -198,7 +198,7 @@ void generate( std::ostream& out, Settings& settings)
 */
 
 #include <xatmi.h>
-#include <xatmi_server.h>
+#include <xatmi/server.h>
 
 #ifdef __cplusplus
 extern "C" {

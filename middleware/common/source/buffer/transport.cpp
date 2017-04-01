@@ -44,8 +44,8 @@ namespace casual
             }
 
             void Context::dispatch(
-                  platform::raw_buffer_type& buffer,
-                  platform::raw_buffer_size& size,
+                  platform::buffer::raw::type& buffer,
+                  platform::buffer::raw::size::type& size,
                   const std::string& service,
                   Lifecycle lifecycle,
                   const std::string& type)
@@ -67,8 +67,8 @@ namespace casual
             }
 
             void Context::dispatch(
-                  platform::raw_buffer_type& buffer,
-                  platform::raw_buffer_size& size,
+                  platform::buffer::raw::type& buffer,
+                  platform::buffer::raw::size::type& size,
                   const std::string& service,
                   Lifecycle lifecycle)
             {

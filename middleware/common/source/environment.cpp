@@ -7,8 +7,7 @@
 #include "common/exception.h"
 #include "common/file.h"
 #include "common/algorithm.h"
-#include "common/internal/log.h"
-#include "common/trace.h"
+#include "common/log.h"
 
 
 #include <memory>
@@ -124,7 +123,7 @@ namespace casual
 				{
 				   local::native::Variable::instance().set( name, value);
 
-				   //log::internal::debug << "environment variable: " << name << " set to: " << value << std::endl;
+				   //log::debug << "environment variable: " << name << " set to: " << value << std::endl;
 				}
 
             namespace process
@@ -356,7 +355,7 @@ namespace casual
                }
             }
 
-            log::internal::debug << "environment::string - we_wordc: " << holder.we_wordc << " we_offs: " << holder.we_offs << '\n';
+            log::debug << "environment::string - we_wordc: " << holder.we_wordc << " we_offs: " << holder.we_offs << '\n';
 
             //
             // We join with ' '. Not sure if this is what we always want

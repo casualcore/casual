@@ -13,6 +13,13 @@
 #include <functional>
 #include <vector>
 
+
+extern "C"
+{
+extern int tpsvrinit( int argc, char** argv);
+extern void tpsvrdone();
+}
+
 namespace casual
 {
    namespace common
@@ -22,32 +29,23 @@ namespace casual
 
          struct Arguments
          {
-            //Arguments() = default;
-            Arguments( Arguments&&) = default;
-            Arguments& operator = (Arguments&&) = default;
+            using function_init_type = std::function<int( int, char**)>;
+            using function_done_type = std::function<void()>;
 
-            Arguments( int argc, char** argv) : argc( argc), argv( argv)
-            {
-
-            }
-
-            Arguments( std::vector< std::string> args) : arguments( std::move( args))
-            {
-               for( auto& argument : arguments)
-               {
-                  c_arguments.push_back( const_cast< char*>( argument.c_str()));
-               }
-               argc = c_arguments.size();
-               argv = c_arguments.data();
-            }
+            Arguments( Arguments&&);
+            Arguments& operator = (Arguments&&);
+            Arguments( int argc, char** argv, function_init_type init, function_done_type done);
+            Arguments( std::vector< std::string> args, function_init_type init, function_done_type done);
 
             std::vector< Service> services;
-            std::function<int( int, char**)> server_init = &tpsvrinit;
-            std::function<void()> server_done = &tpsvrdone;
-            int argc;
-            char** argv;
+
+            int argc = 0;
+            char** argv = nullptr;
 
             std::vector< std::string> arguments;
+
+            function_init_type init;
+            function_done_type done;
 
             std::vector< transaction::Resource> resources;
 
@@ -55,12 +53,8 @@ namespace casual
             std::vector< char*> c_arguments;
          };
 
-
-
       } // server
    } // common
-
-
 } // casual
 
 #endif // ARGUMENTS_H_

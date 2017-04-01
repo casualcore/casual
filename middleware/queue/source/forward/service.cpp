@@ -9,7 +9,6 @@
 
 #include "common/arguments.h"
 #include "common/exception.h"
-#include "common/internal/trace.h"
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"
@@ -66,24 +65,18 @@ namespace casual
 
                log << "payload: " << payload << std::endl;
 
-               long size = payload.memory.size();
-
-               auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
-
-               common::service::call::Context::instance().sync( m_service, buffer, size, buffer, size, TPNOTIME);
+               auto result = common::service::call::Context::instance().sync( m_service,
+                     payload,
+                     common::service::call::sync::Flag::no_time);
 
                const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
 
                if( ! replyqueue.empty())
                {
-                  auto data = common::buffer::pool::Holder::instance().release( buffer);
-
                   queue::Message reply;
-                  reply.payload.data = std::move( data.memory);
-                  reply.payload.type = std::move( data.type);
-
+                  reply.payload.data = std::move( result.buffer.memory);
+                  reply.payload.type = std::move( result.buffer.type);
                   queue::enqueue( replyqueue, reply);
-
                }
             }
 

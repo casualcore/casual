@@ -23,6 +23,11 @@ LibraryPaths([
 install_lib = []
 install_bin = []
 
+common_archive = LinkArchive( 'bin/casual-traffic-common',
+	[
+		Compile( 'source/common.cpp')
+	] 
+	)
 
 lib_vo = LinkLibrary( 'bin/casual-traffic-monitor-vo',
     [Compile( 'source/monitor/serviceentryvo.cpp')],
@@ -33,7 +38,10 @@ install_lib.append( lib_vo)
 
 link_log_base = LinkLibrary('bin/casual-traffic-log-base',
     [Compile( 'source/receiver.cpp')],
-    ['casual-common'])
+    [
+		common_archive,
+		'casual-common'
+	])
 
 install_lib.append( link_log_base)
     

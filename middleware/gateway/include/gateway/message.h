@@ -13,6 +13,7 @@
 #include "common/message/service.h"
 #include "common/message/gateway.h"
 #include "common/message/queue.h"
+#include "common/message/conversation.h"
 #include "common/domain.h"
 
 #include <thread>
@@ -202,7 +203,7 @@ namespace casual
 
             struct Connect : common::message::basic_message< common::message::Type::gateway_worker_connect>
             {
-               common::platform::binary_type information;
+               common::platform::binary::type information;
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);
@@ -269,11 +270,26 @@ namespace casual
                constexpr common::message::Type message_type( common::message::transaction::resource::rollback::Reply&&)
                { return common::message::Type::interdomain_transaction_resource_rollback_reply;}
 
+
                constexpr common::message::Type message_type( common::message::service::call::callee::Request&&)
                { return common::message::Type::interdomain_service_call;}
 
                constexpr common::message::Type message_type( common::message::service::call::Reply&&)
                { return common::message::Type::interdomain_service_reply;}
+
+
+               constexpr common::message::Type message_type( common::message::conversation::connect::callee::Request&&)
+               { return common::message::Type::interdomain_conversation_connect_request;}
+
+               constexpr common::message::Type message_type( common::message::conversation::connect::Reply&&)
+               { return common::message::Type::interdomain_conversation_connect_reply;}
+
+               constexpr common::message::Type message_type( common::message::conversation::callee::Send&&)
+               { return common::message::Type::interdomain_conversation_send;}
+
+               constexpr common::message::Type message_type( common::message::conversation::Disconnect&&)
+               { return common::message::Type::interdomain_conversation_disconnect;}
+
 
                constexpr common::message::Type message_type( common::message::gateway::domain::discover::Request&&)
                { return common::message::Type::interdomain_domain_discover_request;}
@@ -434,7 +450,6 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL({
                         archive & this->get().execution;
-                        archive & this->get().descriptor;
                         archive & this->get().service.name;
                         archive & this->get().service.timeout;
                         archive & this->get().parent;
@@ -453,7 +468,6 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL({
                         archive & this->get().execution;
-                        archive & this->get().descriptor;
                         archive & this->get().error;
                         archive & this->get().code;
 
@@ -478,6 +492,67 @@ namespace casual
                   } // receive
 
                } // call
+
+               namespace conversation
+               {
+                  namespace connect
+                  {
+                     template< typename Wrapper>
+                     struct basic_request : call::basic_request< Wrapper>
+                     {
+                        using base_request = call::basic_request< Wrapper>;
+                        using base_request::base_request;
+
+                        CASUAL_CONST_CORRECT_MARSHAL({
+                           base_request::marshal( archive);
+                           archive & this->get().recording;
+                        })
+                     };
+
+                     template< typename Wrapper>
+                     struct basic_reply : Wrapper
+                     {
+                        using Wrapper::Wrapper;
+
+                        CASUAL_CONST_CORRECT_MARSHAL({
+                           archive & this->get().execution;
+                           archive & this->get().route;
+                           archive & this->get().recording;
+                           archive & this->get().status;
+                        })
+                     };
+
+                     namespace send
+                     {
+                        using Request = basic_request< detail::external_send_wrapper< common::message::conversation::connect::callee::Request>>;
+                        using Reply = basic_reply< detail::external_send_wrapper< common::message::conversation::connect::Reply>>;
+                     } // send
+
+                     namespace receive
+                     {
+                        using Request = basic_request< detail::external_receive_wrapper< common::message::conversation::connect::callee::Request>>;
+                        using Reply = basic_reply< detail::external_receive_wrapper< common::message::conversation::connect::Reply>>;
+                     } // receive
+
+                  } // connect
+
+                  namespace send
+                  {
+                     template< typename Wrapper>
+                     struct basic_request : call::basic_request< Wrapper>
+                     {
+                        using base_request = call::basic_request< Wrapper>;
+                        using base_request::base_request;
+
+                        CASUAL_CONST_CORRECT_MARSHAL({
+                           base_request::marshal( archive);
+                           archive & this->get().recording;
+                        })
+                     };
+
+                  } // send
+
+               } // conversation
             } // service
 
             namespace queue
@@ -647,6 +722,13 @@ namespace casual
                { return { message};}
 
                inline service::call::send::Reply wrap( common::message::service::call::Reply& message)
+               { return { message};}
+
+
+               inline service::conversation::connect::send::Request wrap( common::message::conversation::connect::callee::Request& message)
+               { return { message};}
+
+               inline service::conversation::connect::send::Reply wrap( common::message::conversation::connect::Reply& message)
                { return { message};}
 
 

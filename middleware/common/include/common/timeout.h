@@ -21,13 +21,13 @@ namespace casual
       {
 
          Timeout();
-         Timeout( platform::time_point start, std::chrono::microseconds timeout);
+         Timeout( platform::time::point::type start, std::chrono::microseconds timeout);
 
-         void set( platform::time_point start, std::chrono::microseconds timeout);
+         void set( platform::time::point::type start, std::chrono::microseconds timeout);
 
-         platform::time_point deadline() const;
+         platform::time::point::type deadline() const;
 
-         platform::time_point start;
+         platform::time::point::type start;
          std::chrono::microseconds timeout;
 
          friend std::ostream& operator << ( std::ostream& out, const Timeout& rhs);

@@ -72,6 +72,12 @@ namespace casual
             service_reply,
             service_acknowledge,
 
+            service_conversation_connect_request = SERVICE_BASE + 200,
+            service_conversation_connect_reply,
+            service_conversation_send,
+            service_conversation_disconnect,
+
+
             // Monitor
             TRAFFICMONITOR_BASE = 4000,
             traffic_monitor_connect_request,
@@ -164,6 +170,10 @@ namespace casual
             interdomain_domain_discover_reply,
             interdomain_service_call = INTERDOMAIN_BASE + 100,
             interdomain_service_reply,
+            interdomain_conversation_connect_request = INTERDOMAIN_BASE + 200,
+            interdomain_conversation_connect_reply,
+            interdomain_conversation_send,
+            interdomain_conversation_disconnect,
             interdomain_transaction_resource_prepare_request = INTERDOMAIN_BASE + 300,
             interdomain_transaction_resource_prepare_reply,
             interdomain_transaction_resource_commit_request,
@@ -181,6 +191,7 @@ namespace casual
             MOCKUP_BASE = 10000000, // avoid conflict with real messages
             mockup_disconnect,
             mockup_clear,
+            mockup_need_worker_process,
          };
 
          //!
@@ -195,7 +206,7 @@ namespace casual
 
          namespace convert
          {
-            using underlying_type = typename std::underlying_type< Type>::type;
+            using underlying_type = typename std::underlying_type_t< message::Type>;
 
             constexpr Type type( underlying_type type) { return static_cast< Type>( type);}
             constexpr underlying_type type( Type type) { return static_cast< underlying_type>( type);}
@@ -231,6 +242,19 @@ namespace casual
             })
          };
 
+         //!
+         //! Wraps a message with basic_message
+         //!
+         template< typename Message, message::Type message_type>
+         struct type_wrapper : Message, basic_message< message_type>
+         {
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< message_type>::marshal( archive);
+               Message::marshal( archive);
+            })
+         };
+
 
          namespace flush
          {
@@ -241,8 +265,8 @@ namespace casual
 
          struct Statistics
          {
-            platform::time_point start;
-            platform::time_point end;
+            platform::time::point::type start;
+            platform::time::point::type end;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {

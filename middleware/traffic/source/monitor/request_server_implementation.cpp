@@ -6,7 +6,6 @@
 
 #include "sql/database.h"
 
-#include "common/trace.h"
 #include "common/environment.h"
 
 //## includes protected section end   [.10]
@@ -48,9 +47,9 @@ namespace
          //vo.setTransactionId( local::getValue( *row, "transactionid"));
 
          std::chrono::microseconds start{ row.get< long long>( 4)};
-         vo.setStart( common::platform::time_point{ start});
+         vo.setStart( common::platform::time::point::type{ start});
          std::chrono::microseconds end{ row.get< long long>( 5)};
-         vo.setEnd( common::platform::time_point{ end});
+         vo.setEnd( common::platform::time::point::type{ end});
          result.push_back( vo);
       }
 

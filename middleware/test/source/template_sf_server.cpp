@@ -1,8 +1,5 @@
 //!
-//! template_sf_server.cpp
-//!
-//! Created on: Jan 4, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -47,7 +44,7 @@ namespace local
    namespace
    {
 
-      casual::sf::server::type server;
+      casual::sf::Server server;
 
       typedef casual::test::ServerImplementation implementation_type;
 
@@ -61,8 +58,6 @@ int tpsvrinit(int argc, char **argv)
 {
    try
    {
-      local::server = casual::sf::server::create( argc, argv);
-
       local::implementation = casual::sf::server::implementation::make< casual::test::ServerImplementation>( argc, argv);
    }
    catch( ...)
@@ -78,18 +73,17 @@ void tpsvrdone()
    //
    // delete the implementation an server implementation
    //
-   casual::sf::server::sink( local::implementation);
-   casual::sf::server::sink( local::server);
+   casual::sf::server::implementation::sink( std::move( local::implementation));
 }
 
 
-void casual_sf_test1( TPSVCINFO *serviceInfo)
+void casual_sf_test1( TPSVCINFO *information)
 {
    casual::sf::service::reply::State reply;
 
    try
    {
-      auto service_io = local::server->createService( serviceInfo);
+      auto service_io = local::server.service( *information);
 
       //
       // Initialize the input parameters to the service implementation
@@ -125,7 +119,7 @@ void casual_sf_test1( TPSVCINFO *serviceInfo)
    }
    catch( ...)
    {
-      local::server->handleException( serviceInfo, reply);
+      local::server.exception( *information, reply);
    }
 
    tpreturn(

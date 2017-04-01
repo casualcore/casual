@@ -6,10 +6,10 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
 #include "transaction/manager/admin/server.h"
+#include "transaction/common.h"
 
 
-#include "common/server/handle.h"
-#include "common/trace.h"
+#include "common/server/handle/call.h"
 #include "common/environment.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -52,9 +52,9 @@ namespace casual
       Manager::Manager( const Settings& settings) :
           m_state( settings.log)
       {
-         auto start = common::platform::clock_type::now();
+         auto start = common::platform::time::clock::type::now();
 
-         common::log::internal::transaction << "transaction manager start\n";
+         log << "transaction manager start\n";
 
 
          //
@@ -72,7 +72,7 @@ namespace casual
          // Start resource-proxies
          //
          {
-            trace::internal::Scope trace( "start rm-proxy-servers", common::log::internal::transaction);
+            Trace trace{ "start rm-proxy-servers"};
 
             common::range::for_each(
                m_state.resources,
@@ -103,10 +103,10 @@ namespace casual
                }
                );
 
-         auto end = common::platform::clock_type::now();
+         auto end = common::platform::time::clock::type::now();
 
 
-         common::log::information << "transaction manager is on-line - "
+         common::log::category::information << "transaction manager is on-line - "
                << m_state.resources.size() << " resources - "
                << instances << " instances - boot time: "
                << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
@@ -115,7 +115,7 @@ namespace casual
 
       Manager::~Manager()
       {
-         common::Trace trace{ "transaction::Manager::~Manager", common::log::internal::transaction};
+         common::Trace trace{ "transaction::Manager::~Manager"};
 
          try
          {
@@ -173,7 +173,7 @@ namespace casual
             {
 
 
-               common::log::internal::transaction << "prepare message dispatch handlers\n";
+               log << "prepare message dispatch handlers\n";
 
                //
                // prepare message dispatch handlers...
@@ -200,7 +200,7 @@ namespace casual
                );
 
 
-               common::log::internal::transaction << "start message pump\n";
+               log << "start message pump\n";
 
 
 
@@ -208,7 +208,7 @@ namespace casual
 
                while( true)
                {
-                  common::Trace trace{ "transaction::Manager message pump", common::log::internal::transaction};
+                  Trace trace{ "transaction::Manager message pump"};
 
                   {
                      batchWrite.begin();
@@ -254,7 +254,7 @@ namespace casual
                      //
                      {
 
-                        common::log::internal::transaction << "manager persistent replies: " << state.persistent.replies.size() << "\n";
+                        log << "manager persistent replies: " << state.persistent.replies.size() << "\n";
 
                         auto not_done = common::range::partition(
                               state.persistent.replies,
@@ -262,14 +262,14 @@ namespace casual
 
                         common::range::trim( state.persistent.replies, std::get< 0>( not_done));
 
-                        common::log::internal::transaction << "manager persistent replies: " << state.persistent.replies.size() << "\n";
+                        log << "manager persistent replies: " << state.persistent.replies.size() << "\n";
                      }
 
                      //
                      // Send persistent resource requests
                      //
                      {
-                        common::log::internal::transaction << "manager persistent request: " << state.persistent.requests.size() << "\n";
+                        log << "manager persistent request: " << state.persistent.requests.size() << "\n";
 
                         auto not_done = common::range::partition(
                               state.persistent.requests,
@@ -284,7 +284,7 @@ namespace casual
 
                      }
                   }
-                  common::log::internal::transaction << "manager transactions: " << state.transactions.size() << "\n";
+                  log << "manager transactions: " << state.transactions.size() << "\n";
                }
             }
             catch( const exception::Shutdown&)

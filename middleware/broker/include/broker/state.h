@@ -79,13 +79,13 @@ namespace casual
                common::process::Handle process;
                std::size_t invoked = 0;
 
-               inline const common::platform::time_point& last() const { return m_last;}
+               inline const common::platform::time::point::type& last() const { return m_last;}
 
                inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
                inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
 
             protected:
-               common::platform::time_point m_last = common::platform::time_point::min();
+               common::platform::time::point::type m_last = common::platform::time::point::type::min();
             };
 
             struct Local : base_instance
@@ -98,8 +98,8 @@ namespace casual
 
                using base_instance::base_instance;
 
-               void lock( const common::platform::time_point& when);
-               void unlock( const common::platform::time_point& when);
+               void lock( const common::platform::time::point::type& when);
+               void unlock( const common::platform::time::point::type& when);
 
                inline State state() const { return m_state;}
                inline bool idle() const { return m_state == State::idle;}
@@ -114,7 +114,7 @@ namespace casual
 
                std::size_t order;
 
-               void requested( const common::platform::time_point& when);
+               void requested( const common::platform::time::point::type& when);
 
                friend bool operator < ( const Remote& lhs, const Remote& rhs);
             };
@@ -131,7 +131,7 @@ namespace casual
                   inline std::size_t count() const { return m_count;}
                   inline std::chrono::microseconds total() const { return m_total;}
 
-                  void add( const common::platform::time_point::duration& duration);
+                  void add( const common::platform::time::point::type::duration& duration);
                   void reset();
 
                private:
@@ -146,19 +146,19 @@ namespace casual
                inline std::size_t invoked() const { return m_invoked;}
                inline std::chrono::microseconds total() const { return m_total;}
 
-               void begin( const common::platform::time_point& time);
-               void end( const common::platform::time_point& time);
+               void begin( const common::platform::time::point::type& time);
+               void end( const common::platform::time::point::type& time);
 
                void reset();
 
-               inline const common::platform::time_point& used() const { return m_begin;}
+               inline const common::platform::time::point::type& used() const { return m_begin;}
 
                Metric& operator += ( const Metric& rhs);
 
             private:
 
                std::size_t m_invoked = 0;
-               common::platform::time_point m_begin = common::platform::time_point::min();
+               common::platform::time::point::type m_begin = common::platform::time::point::type::min();
 
                std::chrono::microseconds m_total = std::chrono::microseconds::zero();
             };
@@ -167,7 +167,7 @@ namespace casual
             {
                struct base_instance
                {
-                  virtual void lock( const common::platform::time_point& when) = 0;
+                  virtual void lock( const common::platform::time::point::type& when) = 0;
                   virtual const common::process::Handle& process() const = 0;
 
                   friend inline bool operator == ( const base_instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
@@ -184,8 +184,8 @@ namespace casual
                   inline bool idle() const { return get().idle();}
 
                   inline const common::process::Handle& process() const override { return get().process;}
-                  void lock( const common::platform::time_point& when) override;
-                  void unlock( const common::platform::time_point& when);
+                  void lock( const common::platform::time::point::type& when) override;
+                  void unlock( const common::platform::time::point::type& when);
 
 
                   Metric metric;
@@ -199,7 +199,7 @@ namespace casual
                   Remote( state::instance::Remote& instance, std::size_t hops) : base_type{ instance}, m_hops{ hops} {}
 
                   inline const common::process::Handle& process() const override { return get().process;}
-                  void lock( const common::platform::time_point& when) override;
+                  void lock( const common::platform::time::point::type& when) override;
 
                   inline std::size_t hops() const { return m_hops;}
 
@@ -216,11 +216,11 @@ namespace casual
 
             struct Pending
             {
-               Pending( common::message::service::lookup::Request&& request, const common::platform::time_point& when)
+               Pending( common::message::service::lookup::Request&& request, const common::platform::time::point::type& when)
                 : request{ std::move( request)}, when{ when} {}
 
                common::message::service::lookup::Request request;
-               common::platform::time_point when;
+               common::platform::time::point::type when;
             };
 
          } // service

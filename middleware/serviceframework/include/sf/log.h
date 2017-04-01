@@ -5,8 +5,7 @@
 #ifndef SF_LOG_H_
 #define SF_LOG_H_
 
-#include "common/log.h"
-#include "common/trace.h"
+#include "common/log/category.h"
 #include "common/traits.h"
 
 #include "sf/namevaluepair.h"
@@ -26,11 +25,10 @@ namespace casual
       namespace log
       {
          using common::log::debug;
-         using common::log::trace;
-         using common::log::parameter;
-         using common::log::information;
-         using common::log::warning;
-         using common::log::error;
+         using common::log::category::parameter;
+         using common::log::category::information;
+         using common::log::category::warning;
+         using common::log::category::error;
 
          extern common::log::Stream sf;
 
@@ -40,7 +38,7 @@ namespace casual
       {
          namespace detail
          {
-            class Scope : common::trace::basic::Scope
+            class Scope : common::log::trace::basic::Scope
             {
             public:
                ~Scope();

@@ -1,8 +1,5 @@
 //!
-//! string.cpp
-//!
-//! Created on: Dec 26, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "buffer/string.h"
@@ -13,7 +10,6 @@
 #include "common/log.h"
 #include "common/memory.h"
 
-#include "common/internal/trace.h"
 
 
 #include <cstring>
@@ -36,8 +32,8 @@ namespace casual
             };
 */
 
-            typedef common::platform::binary_type::size_type size_type;
-            typedef common::platform::raw_buffer_type data_type;
+            typedef common::platform::binary::type::size_type size_type;
+            typedef common::platform::buffer::raw::type data_type;
 
 
             namespace local
@@ -98,7 +94,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const std::string& type, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, size ? size : 1);
 
@@ -107,7 +103,7 @@ namespace casual
                   return m_pool.back().payload.memory.data();
                }
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
                {
                   const auto result = find( handle);
 
@@ -121,7 +117,7 @@ namespace casual
                   return result->payload.memory.data();
                }
 
-               common::platform::raw_buffer_type insert( common::buffer::Payload payload)
+               common::platform::buffer::raw::type insert( common::buffer::Payload payload)
                {
                   //
                   // Validate it before we move it

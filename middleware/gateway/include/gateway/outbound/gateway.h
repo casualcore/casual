@@ -19,10 +19,10 @@
 #include "common/message/handle.h"
 #include "common/message/service.h"
 #include "common/message/transaction.h"
+#include "common/message/conversation.h"
 
 #include "common/flag.h"
 
-#include "common/trace.h"
 
 namespace casual
 {
@@ -144,7 +144,7 @@ namespace casual
                   {
                      log << "call request: " << message << '\n';
 
-                     if( ! common::flag< TPNOREPLY>( message.flags))
+                     if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
                      {
                         if( message.trid)
                         {
@@ -165,6 +165,45 @@ namespace casual
                };
 
             } // call
+
+            namespace conversation
+            {
+               namespace connect
+               {
+                  template< typename D>
+                  struct Request : basic_request< common::message::conversation::connect::callee::Request, D>
+                  {
+                     using message_type = common::message::conversation::connect::callee::Request;
+                     using request_base = basic_request< common::message::conversation::connect::callee::Request, D>;
+
+                     Request( const Routing& routing, D& device)
+                        : request_base{ routing, device} {}
+
+                     void operator() ( message_type& message)
+                     {
+                        log << "conversation connect request: " << message << '\n';
+
+                        if( message.trid)
+                        {
+                           //
+                           // Notify TM that this "resource" is involved in the transaction
+                           //
+                           common::communication::ipc::blocking::send(
+                                 common::communication::ipc::transaction::manager::device(),
+                                 common::message::transaction::resource::external::involved::create( message));
+                        }
+
+                        this->routing.add( message);
+
+
+                        auto&& request = message::interdomain::send::wrap( message);
+                        this->device.blocking_send( request);
+                     }
+                  };
+
+               } // connect
+
+            } // conversation
 
             namespace queue
             {
@@ -238,7 +277,7 @@ namespace casual
                   }
                   catch( const common::exception::invalid::Argument&)
                   {
-                     common::log::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
+                     common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                   }
                }
 
@@ -301,7 +340,7 @@ namespace casual
                               }
                               catch( const common::exception::communication::Unavailable&)
                               {
-                                 common::log::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
+                                 common::log::category::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
                               }
                            }
                         }
@@ -442,6 +481,7 @@ namespace casual
                   // external messages, that will be forward to remote domain
                   //
                   handle::call::Request< outbound_device_type>{ m_routing, outbound_device},
+                  handle::conversation::connect::Request< outbound_device_type>{ m_routing, outbound_device},
 
                   handle::queue::enqueue::Request< outbound_device_type>{ m_routing, outbound_device},
                   handle::queue::dequeue::Request< outbound_device_type>{ m_routing, outbound_device},
@@ -649,7 +689,7 @@ namespace casual
                   //
                   {
 
-                     common::Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect", log};
+                     Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect"};
 
                      message::worker::Connect message;
 
@@ -663,7 +703,7 @@ namespace casual
                   }
 
 
-                  common::log::information << "connection established - policy: " << policy << "\n";
+                  common::log::category::information << "connection established - policy: " << policy << "\n";
 
                   //
                   // we start our reply-message-pump

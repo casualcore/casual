@@ -8,8 +8,6 @@
 #include "common/algorithm.h"
 
 #include "common/exception.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 
 // temp
 #include "common/chronology.h"
@@ -56,8 +54,8 @@ namespace casual
                      row.get( offset + 3, message.redelivered);
                      row.get( offset + 4, message.type);
 
-                     message.avalible = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( offset + 5)}};
-                     message.timestamp = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( offset + 6)}};
+                     message.avalible = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 5)}};
+                     message.timestamp = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 6)}};
                      row.get( offset + 7, message.payload);
                   }
 
@@ -180,7 +178,7 @@ namespace casual
                "CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid);" );
 
 
-            auto now = common::platform::clock_type::now();
+            auto now = common::platform::time::clock::type::now();
             //
             // group error queue
             //
@@ -409,7 +407,7 @@ namespace casual
                   timestamp    INTEGER NOT NULL -- last update to the queue
              */
 
-            auto now = common::platform::clock_type::now();
+            auto now = common::platform::time::clock::type::now();
 
             //
             // Create corresponding error queue
@@ -535,7 +533,7 @@ namespace casual
                   0,
                   message.message.type,
                   message.message.avalible,
-                  common::platform::clock_type::now(),
+                  common::platform::time::clock::type::now(),
                   message.message.payload);
 
             return reply;
@@ -553,7 +551,7 @@ namespace casual
             common::message::queue::dequeue::Reply reply;
 
             auto now = std::chrono::time_point_cast< std::chrono::microseconds>(
-                  common::platform::clock_type::now()).time_since_epoch().count();
+                  common::platform::time::clock::type::now()).time_since_epoch().count();
 
             auto query = [&](){
                if( message.selector.id)

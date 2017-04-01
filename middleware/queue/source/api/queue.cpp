@@ -16,7 +16,6 @@
 
 
 #include "sf/xatmi_call.h"
-#include "sf/trace.h"
 
 
 namespace casual
@@ -261,7 +260,7 @@ namespace casual
                   Payload& operator = ( Payload&&) = default;
 
                   std::string type;
-                  sf::platform::binary_type data;
+                  sf::platform::binary::type data;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -318,8 +317,8 @@ namespace casual
                      payload.type = std::move( message.payload.type);
                      payload.memory = std::move( message.payload.data);
 
-                     result.payload.size = payload.memory.size();
-                     result.payload.buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
+                     std::tie( result.payload.buffer, result.payload.size) =
+                           common::buffer::pool::Holder::instance().insert( std::move( payload));
                   }
 
                   results.push_back( std::move( result));

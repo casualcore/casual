@@ -10,7 +10,8 @@
 #include "common/exception.h"
 #include "common/process.h"
 #include "common/server/lifetime.h"
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
+#include "common/message/handle.h"
 
 
 
@@ -98,7 +99,7 @@ namespace casual
                   {
                      if( ! optional::send( std::forward< D>( device), std::forward< M>( message)))
                      {
-                        common::log::error << "device [" << device << "] unavailable for reply - action: ignore\n";
+                        common::log::category::error << "device [" << device << "] unavailable for reply - action: ignore\n";
                      }
                   }
 

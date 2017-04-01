@@ -71,7 +71,7 @@ namespace casual
             {
                using base_type = result::basic_impl< T>;
                template< typename ...Args>
-               basic_log( Args&&... args) : base_type( std::forward< Args>( args)...), m_writer{ common::log::parameter}
+               basic_log( Args&&... args) : base_type( std::forward< Args>( args)...), m_writer{ sf::log::parameter}
                {
                   this->output().writers.push_back( &m_writer);
                }

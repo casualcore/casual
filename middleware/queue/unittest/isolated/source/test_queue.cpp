@@ -222,7 +222,7 @@ namespace casual
       {
          namespace
          {
-            bool compare( const common::platform::time_point& lhs, const common::platform::time_point& rhs)
+            bool compare( const common::platform::time::point::type& lhs, const common::platform::time::point::type& rhs)
             {
                return std::chrono::time_point_cast< std::chrono::microseconds>( lhs)
                      == std::chrono::time_point_cast< std::chrono::microseconds>( rhs);
@@ -236,7 +236,7 @@ namespace casual
 
          local::Domain domain{ local::configuration()};
 
-         auto now = common::platform::clock_type::now();
+         auto now = common::platform::time::clock::type::now();
 
          const std::string payload{ "some message"};
          queue::Message message;
@@ -277,7 +277,7 @@ namespace casual
 
          local::Domain domain{ local::configuration()};
 
-         auto now = common::platform::clock_type::now();
+         auto now = common::platform::time::clock::type::now();
 
          const std::string payload{ "some message"};
 

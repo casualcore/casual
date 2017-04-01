@@ -9,7 +9,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
 
 #include "common/flag.h"
 
@@ -43,14 +43,13 @@ namespace casual
                      {
                         Trace trace{ "broker::forward::handle::service::send::error::reply"};
 
-                        if( ! common::flag< TPNOREPLY>( message.flags))
+                        if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
                         {
                            common::message::service::call::Reply reply;
                            reply.correlation = message.correlation;
                            reply.execution = message.execution;
                            reply.transaction.trid = message.trid;
                            reply.error = TPESVCERR;
-                           reply.descriptor = message.descriptor;
                            reply.buffer = buffer::Payload{ nullptr};
 
                            try
@@ -112,7 +111,7 @@ namespace casual
 
                         if( pending_queue.empty())
                         {
-                           log::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
+                           log::category::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
                            return;
                         }
 
@@ -135,7 +134,7 @@ namespace casual
 
                         if( message.state == message::service::lookup::Reply::State::absent)
                         {
-                           log::error << "service '" << message.service.name << "' has no entry - action: send error reply\n";
+                           log::category::error << "service '" << message.service.name << "' has no entry - action: send error reply\n";
                            return;
                         }
 

@@ -9,11 +9,10 @@
 
 
 
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
 #include "common/message/handle.h"
 
 
-#include "common/trace.h"
 #include "common/environment.h"
 #include "common/process.h"
 #include "common/cast.h"
@@ -158,7 +157,7 @@ namespace casual
                         }
                         else
                         {
-                           log::error << "boot connection: " << connection << " - wrong runlevel - action: ignore\n";
+                           log::category::error << "boot connection: " << connection << " - wrong runlevel - action: ignore\n";
                         }
                      }
 
@@ -255,13 +254,13 @@ namespace casual
 
                   if( inbound_found)
                   {
-                     log::information << "inbound connection terminated - connection: " << *inbound_found << std::endl;
+                     log::category::information << "inbound connection terminated - connection: " << *inbound_found << std::endl;
 
                      state().connections.inbound.erase( std::begin( inbound_found));
                   }
                   else if( outbound_found)
                   {
-                     log::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
+                     log::category::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
 
                      if( outbound_found->restart && state().runlevel == State::Runlevel::online)
                      {
@@ -281,7 +280,7 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "failed to correlate child termination - death: " << message.death << " - action: discard\n";
+                     log::category::error << "failed to correlate child termination - death: " << message.death << " - action: discard\n";
                   }
                }
 
@@ -375,7 +374,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
+                        common::log::category::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
                      }
                   }
 
@@ -402,12 +401,12 @@ namespace casual
                      }
                      else
                      {
-                        log::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
+                        log::category::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
                      }
                   }
                   else
                   {
-                     log::error << "unknown outbound connected " << message << " - action: discard\n";
+                     log::category::error << "unknown outbound connected " << message << " - action: discard\n";
                   }
                }
             } // outbound
@@ -435,7 +434,7 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "unknown inbound connected " << message << " - action: discard\n";
+                     log::category::error << "unknown inbound connected " << message << " - action: discard\n";
                   }
                }
 

@@ -10,7 +10,6 @@
 
 
 #include "common/algorithm.h"
-#include "common/internal/log.h"
 #include "common/string.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/type.h"
@@ -24,13 +23,6 @@
 #include <iosfwd>
 
 
-#include <cstring>
-
-
-#include <xatmi.h>
-
-
-
 namespace casual
 {
    namespace sf
@@ -41,7 +33,7 @@ namespace casual
          {
             using namespace common::buffer::type;
 
-            const std::string& get( platform::raw_buffer_type buffer);
+            const std::string& get( platform::buffer::raw::type buffer);
          } // type
 
 
@@ -56,9 +48,9 @@ namespace casual
                defaultSize = 256
             };
 
-            using buffer_type =  platform::raw_buffer_type;
+            using buffer_type =  platform::buffer::raw::type;
             using iterator = buffer_type;
-            using const_iterator = platform::const_raw_buffer_type;
+            using const_iterator = platform::buffer::raw::immutable::type;
             using size_type = std::size_t;
             using value_type = char;
 
@@ -233,7 +225,7 @@ namespace casual
                   append( common::memory::range::make( encoded));
                }
 
-               void write( const platform::binary_type& value)
+               void write( const platform::binary::type& value)
                {
                   //
                   // TODO: Write the size as some-common_size_type
@@ -282,7 +274,7 @@ namespace casual
                   consume( common::range::make( value));
                }
 
-               void read( platform::binary_type& value)
+               void read( platform::binary::type& value)
                {
                   //
                   // TODO: Read the size as some-common_size_type

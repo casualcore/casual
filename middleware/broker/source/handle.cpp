@@ -127,7 +127,7 @@ namespace casual
             {
                Trace trace{ "broker::handle::service::Lookup"};
 
-               auto now = platform::clock_type::now();
+               auto now = platform::time::clock::type::now();
 
                try
                {
@@ -371,7 +371,7 @@ namespace casual
 
             try
             {
-               auto now = platform::clock_type::now();
+               auto now = platform::time::clock::type::now();
 
 
                auto& service = m_state.service( message.service);
@@ -424,7 +424,7 @@ namespace casual
             }
             catch( const state::exception::Missing&)
             {
-               common::log::error << "failed to find instance on ACK - indicate inconsistency - action: ignore\n";
+               common::log::category::error << "failed to find instance on ACK - indicate inconsistency - action: ignore\n";
             }
          }
 
@@ -451,7 +451,7 @@ namespace casual
             sendACK( ack);
          }
 
-         void Policy::transaction( const common::message::service::call::callee::Request&, const server::Service&, const common::platform::time_point&)
+         void Policy::transaction( const common::message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&)
          {
             // broker doesn't bother with transactions...
          }
@@ -461,7 +461,7 @@ namespace casual
             // broker doesn't bother with transactions...
          }
 
-         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::State::jump_t& jump)
+         void Policy::forward( const common::message::service::call::callee::Request& message, const common::server::state::Jump& jump)
          {
             throw common::exception::xatmi::System{ "can't forward within broker"};
          }

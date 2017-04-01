@@ -286,7 +286,7 @@ namespace casual
 
       TYPED_TEST( casual_sf_archive_write_read, type_binary)
       {
-         common::platform::binary_type value{ 0, 42, -123, 23, 43, 11, 124};
+         common::platform::binary::type value{ 0, 42, -123, 23, 43, 11, 124};
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 

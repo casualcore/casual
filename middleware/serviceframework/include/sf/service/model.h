@@ -55,7 +55,7 @@ namespace casual
                   struct traits;
 
                   template<> struct traits< std::string> : base_traits< Category::string>{};
-                  template<> struct traits< platform::binary_type> : base_traits< Category::binary>{};
+                  template<> struct traits< platform::binary::type> : base_traits< Category::binary>{};
 
                   template<> struct traits< char> : base_traits< Category::character>{};
                   template<> struct traits< bool> : base_traits< Category::boolean>{};

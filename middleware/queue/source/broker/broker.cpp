@@ -10,14 +10,13 @@
 #include "queue/common/environment.h"
 #include "queue/broker/admin/server.h"
 
-#include "common/server/handle.h"
+
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/algorithm.h"
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/exception.h"
-#include "common/internal/log.h"
 
 #include "configuration/message/transform.h"
 #include "configuration/queue.h"
@@ -138,7 +137,7 @@ namespace casual
 
                auto handler = broker::handlers( state);
 
-               common::log::information << "casual-queue-broker is on-line" << std::endl;
+               common::log::category::information << "casual-queue-broker is on-line" << std::endl;
 
 
                while( true)
@@ -252,13 +251,13 @@ namespace casual
                   std::bind( &broker::handle::process::Exit::apply, broker::handle::process::Exit{ m_state}, std::placeholders::_1),
                   m_state.processes());
 
-            common::log::information << "casual-queue-broker is off-line" << std::endl;
+            common::log::category::information << "casual-queue-broker is off-line" << std::endl;
 
          }
          catch( const common::exception::signal::Timeout& exception)
          {
             auto pids = m_state.processes();
-            common::log::error << "failed to terminate groups - pids: " << common::range::make( pids) << std::endl;
+            common::log::category::error << "failed to terminate groups - pids: " << common::range::make( pids) << std::endl;
          }
          catch( ...)
          {

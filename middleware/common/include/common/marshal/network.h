@@ -54,7 +54,7 @@ namespace casual
 
                   template< typename T>
                   static typename std::enable_if< ! detail::is_network_array< T>::value>::type
-                  write( const T& value, platform::binary_type& buffer)
+                  write( const T& value, platform::binary::type& buffer)
                   {
                      auto net_value = common::network::byteorder::encode( detail::cast( value));
                      memory::append( net_value, buffer);
@@ -62,7 +62,7 @@ namespace casual
 
                   template< typename T>
                   static typename std::enable_if< detail::is_network_array< T>::value>::type
-                  write( const T& value, platform::binary_type& buffer)
+                  write( const T& value, platform::binary::type& buffer)
                   {
                      memory::append( value, buffer);
                   }
@@ -70,7 +70,7 @@ namespace casual
 
                   template< typename T>
                   static typename std::enable_if< ! detail::is_network_array< T>::value, std::size_t>::type
-                  read( const platform::binary_type& buffer, std::size_t offset, T& value)
+                  read( const platform::binary::type& buffer, std::size_t offset, T& value)
                   {
                      using value_type = decltype( detail::cast( value));
                      common::network::byteorder::type< value_type> net_value;
@@ -82,7 +82,7 @@ namespace casual
 
                   template< typename T>
                   static typename std::enable_if< detail::is_network_array< T>::value, std::size_t>::type
-                  read( const platform::binary_type& buffer, std::size_t offset, T& value)
+                  read( const platform::binary::type& buffer, std::size_t offset, T& value)
                   {
                      return memory::copy( buffer, offset, value);
                   }
@@ -96,7 +96,7 @@ namespace casual
                {
                   struct Output
                   {
-                     network::Output operator () ( platform::binary_type& buffer) const
+                     network::Output operator () ( platform::binary::type& buffer) const
                      {
                         return network::Output{ buffer};
                      }
@@ -104,7 +104,7 @@ namespace casual
 
                   struct Input
                   {
-                     network::Input operator () ( platform::binary_type& buffer) const
+                     network::Input operator () ( platform::binary::type& buffer) const
                      {
                         return network::Input{ buffer};
                      }

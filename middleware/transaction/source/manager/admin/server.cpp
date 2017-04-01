@@ -32,36 +32,17 @@ namespace casual
          {
             namespace
             {
-               casual::sf::server::type server;
+               casual::sf::Server server;
             }
          }
 
-         int tpsvrinit(int argc, char **argv)
-         {
-            try
-            {
-               local::server = casual::sf::server::create( argc, argv);
-            }
-            catch( ...)
-            {
-               return -1;
-            }
-            return 0;
-         }
-
-         void tpsvrdone()
-         {
-            casual::sf::server::sink( local::server);
-         }
-
-
-         void transaction_state( TPSVCINFO *serviceInfo, State& state)
+         void transaction_state( TPSVCINFO *information, State& state)
          {
             casual::sf::service::reply::State reply;
 
             try
             {
-               auto service_io = local::server->createService( serviceInfo);
+               auto service_io = local::server.service( *information);
 
                auto serviceReturn = service_io.call( &transform::state, state);
 
@@ -71,7 +52,7 @@ namespace casual
             }
             catch( ...)
             {
-               local::server->handleException( serviceInfo, reply);
+               local::server.exception( *information, reply);
             }
 
             tpreturn(
@@ -82,13 +63,13 @@ namespace casual
                reply.flags);
          }
 
-         void update_instances( TPSVCINFO *serviceInfo, State& state)
+         void update_instances( TPSVCINFO *information, State& state)
          {
             casual::sf::service::reply::State reply;
 
             try
             {
-               auto service_io = local::server->createService( serviceInfo);
+               auto service_io = local::server.service( *information);
 
                std::vector< vo::update::Instances> instances;
 
@@ -102,7 +83,7 @@ namespace casual
             }
             catch( ...)
             {
-               local::server->handleException( serviceInfo, reply);
+               local::server.exception( *information, reply);
             }
 
             tpreturn(
@@ -116,10 +97,7 @@ namespace casual
 
          common::server::Arguments services( State& state)
          {
-            common::server::Arguments result{ { common::process::path()}};
-
-            result.server_init = &tpsvrinit;
-            result.server_done = &tpsvrdone;
+            common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
             result.services.emplace_back( ".casual.transaction.state",
                   std::bind( &transaction_state, std::placeholders::_1, std::ref( state)),

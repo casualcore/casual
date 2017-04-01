@@ -50,8 +50,8 @@ namespace casual
 
          namespace range
          {
-            using range_type = Range< platform::binary_type::iterator::pointer>;
-            using const_range_type = Range< platform::binary_type::const_iterator::pointer>;
+            using range_type = Range< platform::binary::type::iterator::pointer>;
+            using const_range_type = Range< platform::binary::type::const_iterator::pointer>;
 
             namespace detail
             {
@@ -94,7 +94,7 @@ namespace casual
 
 
          template< typename T>
-         auto append( const T& value, platform::binary_type& buffer)
+         auto append( const T& value, platform::binary::type& buffer)
          {
             auto first = reinterpret_cast< const unsigned char*>( &value);
 
@@ -135,7 +135,7 @@ namespace casual
          //! @return the new offset ( @p offset + memory::size( value) )
          //!
          template< typename T>
-         std::size_t copy( const platform::binary_type& buffer, std::size_t offset, T& value)
+         std::size_t copy( const platform::binary::type& buffer, std::size_t offset, T& value)
          {
             assert( buffer.size() - offset >=  memory::size( value));
 

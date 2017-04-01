@@ -20,14 +20,19 @@ install_include = []
 lib_xatmi = LinkLibrary( 'bin/casual-xatmi',
 	[
 		Compile( 'source/xatmi.cpp'),
-		Compile( 'source/xatmi_server.cpp'),
+		Compile( 'source/xatmi/server.cpp'),
+		Compile( 'source/xatmi/conversation.cpp'),
+		Compile( 'source/xatmi/call.cpp'),
+		Compile( 'source/xatmi/internal.cpp'),
 		Compile( 'source/xa.cpp'),
 		Compile( 'source/tx.cpp'),
 	],
 	['casual-common'])
 
 install_lib.append( lib_xatmi)
-install_include.append( 'include/xatmi_server.h')
+install_include.append( ( 'include/xatmi/server.h', 'xatmi'))
+install_include.append( ( 'include/xatmi/defines.h', 'xatmi'))
+install_include.append( ( 'include/xatmi/extended.h', 'xatmi'))
 install_include.append( 'include/xa.h')
 install_include.append( 'include/tx.h')
 install_include.append( 'include/xatmi.h')
@@ -38,9 +43,11 @@ install_include.append( 'include/xatmi.h')
 
 LinkUnittest( 'bin/test-casual-xatmi',
     [
-       Compile( 'unittest/isolated/source/test_buffer.cpp'),
-       Compile( 'unittest/isolated/source/test_xatmi.cpp'),
-       #Compile( 'unittest/isolated/source/test_tx.cpp'),
+       Compile( 'unittest/source/test_buffer.cpp'),
+       Compile( 'unittest/source/test_xatmi.cpp'),
+       Compile( 'unittest/source/test_tx.cpp'),
+       Compile( 'unittest/source/xatmi/test_conversation.cpp'),
+       
     ],
     [ lib_xatmi, 'casual-common', 'casual-mockup', 'casual-mockup-unittest-environment', 'casual-unittest'])
 

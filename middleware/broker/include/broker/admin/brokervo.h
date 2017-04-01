@@ -20,7 +20,7 @@ namespace casual
             {
                common::process::Handle process;
                std::size_t invoked = 0;
-               sf::platform::time_point last;
+               sf::platform::time::point::type last;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -82,7 +82,7 @@ namespace casual
             struct Metric
             {
                std::size_t invoked = 0;
-               sf::platform::time_point last;
+               sf::platform::time::point::type last;
                std::chrono::microseconds total;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -113,7 +113,7 @@ namespace casual
                   sf::platform::pid::type pid;
                   std::size_t invoked;
                   std::size_t hops;
-                  sf::platform::time_point last;
+                  sf::platform::time::point::type last;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {

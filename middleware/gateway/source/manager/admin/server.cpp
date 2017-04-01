@@ -11,6 +11,7 @@
 #include "sf/server.h"
 
 
+#include "xatmi.h"
 
 namespace casual
 {
@@ -18,39 +19,12 @@ namespace casual
    {
       namespace
       {
-         sf::server::type server;
+         sf::Server server;
       }
    }
 
    namespace gateway
    {
-      extern "C"
-      {
-         int tpsvrinit( int argc, char **argv)
-         {
-            try
-            {
-               local::server = casual::sf::server::create( argc, argv);
-            }
-            catch( ...)
-            {
-               // TODO
-               return -1;
-            }
-
-            return 0;
-         }
-
-         void tpsvrdone()
-         {
-            //
-            // delete the implementation an server implementation
-            //
-            casual::sf::server::sink( local::server);
-         }
-      }
-
-
 
       namespace manager
       {
@@ -68,7 +42,7 @@ namespace casual
 
                      try
                      {
-                        auto service_io = local::server->createService( serviceInfo);
+                        auto service_io = local::server.service( *serviceInfo);
 
                         manager::admin::vo::State (*function)( const manager::State& state) = &gateway::transform::state;
 
@@ -81,7 +55,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        local::server->handleException( serviceInfo, reply);
+                        local::server.exception( *serviceInfo, reply);
                      }
 
                      tpreturn(
@@ -98,7 +72,7 @@ namespace casual
 
             common::server::Arguments services( manager::State& state)
             {
-               common::server::Arguments result{ { common::process::path()}};
+               common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
                result.services.emplace_back( ".casual.gateway.state",
                      std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),

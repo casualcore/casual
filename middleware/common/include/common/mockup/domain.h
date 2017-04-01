@@ -12,6 +12,7 @@
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 #include "common/message/queue.h"
+#include "common/message/conversation.h"
 
 
 #include "common/file.h"
@@ -51,6 +52,13 @@ namespace casual
                {
                   void operator()( message::service::call::callee::Request& reqeust);
                };
+
+               namespace conversation
+               {
+
+                  dispatch_type echo();
+
+               } // conversation
             } // server
 
 

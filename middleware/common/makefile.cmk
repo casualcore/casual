@@ -43,11 +43,17 @@ install_libs = []
 casual_common_objectfiles = [
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
-    Compile( 'source/server/handle.cpp'),
     Compile( 'source/server/service.cpp'),
+    Compile( 'source/server/argument.cpp'),
+    Compile( 'source/server/handle/service.cpp'),
+    Compile( 'source/server/handle/conversation.cpp'),
+    Compile( 'source/server/handle/policy.cpp'),
     
     Compile( 'source/service/call/context.cpp'),
     Compile( 'source/service/call/state.cpp'),
+    Compile( 'source/service/conversation/context.cpp'),
+    Compile( 'source/service/conversation/state.cpp'),
+    
     Compile( 'source/service/lookup.cpp'),
     Compile( 'source/service/header.cpp'),
     Compile( 'source/service/type.cpp'),
@@ -77,6 +83,13 @@ casual_common_objectfiles = [
     Compile( 'source/message/transaction.cpp'),
     Compile( 'source/message/domain.cpp'),
     Compile( 'source/message/gateway.cpp'),
+    Compile( 'source/message/conversation.cpp'),
+    
+    
+    Compile( 'source/log/stream.cpp'),
+    Compile( 'source/log/trace.cpp'),
+    Compile( 'source/log/category.cpp'),
+    Compile( 'source/log.cpp'),
     
     Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),
@@ -84,8 +97,7 @@ casual_common_objectfiles = [
     Compile( 'source/file.cpp'),
     Compile( 'source/string.cpp'),
     Compile( 'source/signal.cpp'),
-    Compile( 'source/log.cpp'),
-    Compile( 'source/trace.cpp'),
+    
     Compile( 'source/error.cpp'),
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
@@ -162,7 +174,7 @@ mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
 
 target_simple_process = LinkExecutable( 'bin/simple_process',
     [
-     Compile( 'unittest/isolated/source/simple_process.cpp')
+     Compile( 'unittest/source/simple_process.cpp')
     ], 
     [ common]
     )	
@@ -172,53 +184,56 @@ target_simple_process = LinkExecutable( 'bin/simple_process',
 # unittest
 #
 unittest_objectfiles = [
-    Compile( 'unittest/isolated/source/test_conformance.cpp'),  
+    Compile( 'unittest/source/test_conformance.cpp'),  
     
-    Compile( 'unittest/isolated/source/test_algorithm.cpp'),      
-    Compile( 'unittest/isolated/source/test_memory.cpp'),
-    Compile( 'unittest/isolated/source/test_pimpl.cpp'),
+    Compile( 'unittest/source/test_algorithm.cpp'),      
+    Compile( 'unittest/source/test_memory.cpp'),
+    Compile( 'unittest/source/test_pimpl.cpp'),
     
-    Compile( 'unittest/isolated/source/test_flag.cpp'),  
+    Compile( 'unittest/source/test_flag.cpp'),  
             
-    Compile( 'unittest/isolated/source/test_signal.cpp'),
+    Compile( 'unittest/source/test_signal.cpp'),
                          
-    Compile( 'unittest/isolated/source/test_buffer.cpp'),
-    Compile( 'unittest/isolated/source/test_marshal.cpp'),
+    Compile( 'unittest/source/test_buffer.cpp'),
+    Compile( 'unittest/source/test_marshal.cpp'),
  
-    Compile( 'unittest/isolated/source/test_uuid.cpp'),
-    Compile( 'unittest/isolated/source/test_arguments.cpp'),
-    Compile( 'unittest/isolated/source/test_file.cpp'),
-    Compile( 'unittest/isolated/source/test_process.cpp'),
-    Compile( 'unittest/isolated/source/test_string.cpp'),
-    Compile( 'unittest/isolated/source/test_environment.cpp'),
-    Compile( 'unittest/isolated/source/test_error.cpp'),
+    Compile( 'unittest/source/test_uuid.cpp'),
+    Compile( 'unittest/source/test_arguments.cpp'),
+    Compile( 'unittest/source/test_file.cpp'),
+    Compile( 'unittest/source/test_process.cpp'),
+    Compile( 'unittest/source/test_string.cpp'),
+    Compile( 'unittest/source/test_environment.cpp'),
+    Compile( 'unittest/source/test_error.cpp'),
     
-    Compile( 'unittest/isolated/source/network/test_byteorder.cpp'),
+    Compile( 'unittest/source/network/test_byteorder.cpp'),
     
-    Compile( 'unittest/isolated/source/test_traits.cpp'),
-    Compile( 'unittest/isolated/source/test_chronology.cpp'),
-    Compile( 'unittest/isolated/source/test_transcode.cpp'),
+    Compile( 'unittest/source/test_traits.cpp'),
+    Compile( 'unittest/source/test_chronology.cpp'),
+    Compile( 'unittest/source/test_transcode.cpp'),
     
     
-    Compile( 'unittest/isolated/source/communication/test_tcp.cpp'),
-    Compile( 'unittest/isolated/source/communication/test_ipc.cpp'),
+    Compile( 'unittest/source/communication/test_tcp.cpp'),
+    Compile( 'unittest/source/communication/test_ipc.cpp'),
     
 
     
-    Compile( 'unittest/isolated/source/message/test_dispatch.cpp'),
-    Compile( 'unittest/isolated/source/message/test_coordinate.cpp'),
+    Compile( 'unittest/source/message/test_dispatch.cpp'),
+    Compile( 'unittest/source/message/test_coordinate.cpp'),
     
     
-    Compile( 'unittest/isolated/source/server/test_context.cpp'),
-    Compile( 'unittest/isolated/source/server/test_service.cpp'),
-    Compile( 'unittest/isolated/source/server/test_arguments.cpp'),
+    Compile( 'unittest/source/server/test_context.cpp'),
+    Compile( 'unittest/source/server/test_service.cpp'),
+    Compile( 'unittest/source/server/test_arguments.cpp'),
     
-    Compile( 'unittest/isolated/source/service/test_header.cpp'),
+    Compile( 'unittest/source/service/test_header.cpp'),
+    #Compile( 'unittest/source/service/conversation/test_context.cpp'),
 
-    Compile( 'unittest/isolated/source/test_mockup.cpp'),
+    Compile( 'unittest/source/test_mockup.cpp'),
     
-    Compile( 'unittest/isolated/source/transaction/test_id.cpp'),
-    Compile( 'unittest/isolated/source/transaction/test_context.cpp'),
+    Compile( 'unittest/source/transaction/test_id.cpp'),
+    Compile( 'unittest/source/transaction/test_context.cpp'),
+    
+    Compile( 'unittest/source/service/conversation/test_context.cpp'),
 ]
 
 

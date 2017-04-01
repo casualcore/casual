@@ -21,7 +21,7 @@ namespace casual
 
          namespace call
          {
-            using descriptor_type = platform::descriptor_type;
+            using descriptor_type = platform::descriptor::type;
 
 
             struct State
@@ -56,13 +56,14 @@ namespace casual
                   bool active( descriptor_type descriptor) const;
 
                   const Descriptor& get( descriptor_type descriptor) const;
+                  const Descriptor& get( const Uuid& correlation) const;
 
                   //!
                   //! Tries to discard descriptor, throws if fail.
                   //!
                   void discard( descriptor_type descriptor);
 
-                  signal::timer::Deadline deadline( descriptor_type descriptor, const platform::time_point& now) const;
+                  signal::timer::Deadline deadline( descriptor_type descriptor, const platform::time::point::type& now) const;
 
                   //!
                   //! @returns true if there are no pending replies or associated transactions.
@@ -77,8 +78,6 @@ namespace casual
                   std::vector< Descriptor> m_descriptors;
 
                } pending;
-
-               long user_code = 0;
             };
 
 

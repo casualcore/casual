@@ -23,7 +23,7 @@ namespace casual
 
          namespace type
          {
-            const std::string& get( platform::raw_buffer_type buffer)
+            const std::string& get( platform::buffer::raw::type buffer)
             {
                return common::buffer::pool::Holder::instance().get( buffer).payload().type;
             }
@@ -137,7 +137,7 @@ namespace casual
 
             common::range::copy( source, std::begin( result));
 
-            common::log::internal::debug << "copy - source: " << source << " result: " << result << std::endl;
+            common::log::category::buffer << "copy - source: " << source << " result: " << result << std::endl;
 
             return result;
          }
