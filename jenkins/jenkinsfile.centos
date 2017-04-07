@@ -109,12 +109,12 @@ def build( name, image, content)
    """
 }
 
-node
-{
 
+try
+{ 
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-   try
+   node( "frontend" && "cplusplus")
    {
       stage('Checkout')
       {
@@ -180,22 +180,27 @@ node
              ./restart.sh
              """
           }
-
-          stage('Documentation')
-          {
-             sh """
-             gitbook init .
-             gitbook build .
-             """
-          }
       }
-      slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-      currentBuild.result = 'SUCCESS'
-   }
-   catch (Exception e)
-   {
-      slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-      currentBuild.result = 'FAILURE'
-   }
+   }   
 
-}
+   node( "documentation")
+   {
+       stage('Documentation')
+       {
+           checkout scm          
+           sh """
+              gitbook init .
+              gitbook build .
+           """
+        }
+    }
+
+    slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+    currentBuild.result = 'SUCCESS'
+ }
+ catch (Exception e)
+ {
+    slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+    currentBuild.result = 'FAILURE'
+ }
+
