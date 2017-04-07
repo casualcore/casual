@@ -80,7 +80,7 @@ namespace casual
          } // local
 
 
-         TEST( test_domain_basic, empty_configuration)
+         TEST( test_domain_basic, DISABLED_empty_configuration)
          {
             const std::string configuration = R"(
 domain:
