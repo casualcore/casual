@@ -105,7 +105,7 @@ def build( name, image, content)
 
    sh """
    chmod +x builder.sh
-   docker run -v $current_dir:/git/casual:Z $image
+   docker run --rm -v $current_dir:/git/casual:Z $image
    """
 }
 
