@@ -12,6 +12,7 @@ source scl_source enable devtoolset-4
 umask 000
 cd /git/casual
 find . -name "*.gcda" -print | xargs rm
+find . -name "report.xml" -print | xargs rm
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make -d -a --use-valgrind make && \
    casual-make clean && \
