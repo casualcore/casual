@@ -353,31 +353,6 @@ namespace casual
 
 
 
-               namespace termination
-               {
-                  using Registration = basic_request< Type::domain_process_termination_registration>;
-
-                  using base_event = basic_message< Type::domain_process_termination_event>;
-
-                  struct Event : base_event
-                  {
-                     Event() = default;
-                     Event( common::process::lifetime::Exit death) : death{ std::move( death)} {}
-
-                     common::process::lifetime::Exit death;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        base_event::marshal( archive);
-                        archive & death;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Event& value);
-                  };
-                  static_assert( traits::is_movable< Event>::value, "not movable");
-
-               } // termination
-
                namespace lookup
                {
                   using base_reqeust = message::basic_request< Type::domain_process_lookup_request>;

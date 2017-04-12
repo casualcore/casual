@@ -381,6 +381,22 @@ namespace casual
                      void reconnect();
                   };
                   using Device = communication::outbound::Device< Connector>;
+
+                  namespace optional
+                  {
+
+                     struct Connector : outbound::Connector
+                     {
+                        Connector();
+                        void reconnect();
+                     };
+
+                     //!
+                     //! Will not wait and try to connect to domain
+                     //!
+                     using Device = communication::outbound::Device< Connector>;
+
+                  } // optional
                } // domain
 
             } // outbound
@@ -563,7 +579,15 @@ namespace casual
                namespace manager
                {
                   outbound::domain::Device& device();
+
+                  namespace optional
+                  {
+                     outbound::domain::optional::Device& device();
+                  } // optional
                } // manager
+
+
+
             } // domain
 
             bool exists( handle_type id);

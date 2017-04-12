@@ -10,7 +10,7 @@
 #include "common/message/traffic.h"
 #include "common/message/gateway.h"
 
-
+#include "common/event/dispatch.h"
 
 #include "common/flag.h"
 
@@ -367,25 +367,23 @@ namespace casual
                            ipc::eventually::send( r.process.queue, reply);
                         }
                      },
-                     [&]( message::domain::process::termination::Registration& m)
+                     [&]( common::message::event::subscription::Begin& m)
                      {
-                        Trace trace{ "mockup domain process::termination::Registration"};
+                        Trace trace{ "mockup common::message::event::subscription::Begin"};
 
-
-                        if( ! range::find( m_state.event_listeners, m.process))
-                        {
-                           m_state.event_listeners.push_back( m.process);
-                        }
-
+                        m_state.events.subscription( m);
                      },
-                     [&](  message::domain::process::termination::Event& m)
+                     [&]( common::message::event::subscription::End& m)
+                     {
+                        Trace trace{ "mockup common::message::event::subscription::End"};
+
+                        m_state.events.subscription( m);
+                     },
+                     [&]( common::message::event::process::Exit& m)
                      {
                         Trace trace{ "mockup domain process::termination::Event"};
 
-                        for( auto& listener : m_state.event_listeners)
-                        {
-                           ipc::eventually::send( listener.queue, m);
-                        }
+                        m_state.events( m);
                      },
 
                   };
@@ -399,7 +397,16 @@ namespace casual
                   std::map< common::Uuid, common::process::Handle> singeltons;
                   std::vector< common::message::domain::process::lookup::Request> pending;
                   std::vector< common::process::Handle> executables;
-                  std::vector< common::process::Handle> event_listeners;
+
+
+                  common::event::dispatch::Collection<
+                     common::message::event::process::Exit,
+                     common::message::event::process::Spawn,
+                     common::message::event::domain::Error,
+                     common::message::event::domain::server::Connect
+                  > events;
+
+
 
                   message::domain::configuration::Domain configuration;
                };

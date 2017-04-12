@@ -79,6 +79,13 @@ namespace casual
             {
                auto state = local::state( settings);
 
+               if( settings.event_queue)
+               {
+                  common::message::event::subscription::Begin request;
+                  request.process.queue = settings.event_queue;
+                  state.event.subscription( request);
+               }
+
                state.auto_persist = ! settings.no_auto_persist;
 
                return state;

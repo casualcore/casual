@@ -62,6 +62,7 @@ namespace casual
                Identity identity;
             };
 
+            Result read( process::pattern::Sleep retries);
             Result read();
 
          } // singleton

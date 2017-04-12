@@ -8,6 +8,7 @@
 #include "queue/common/environment.h"
 
 #include "common/message/handle.h"
+#include "common/event/listener.h"
 #include "common/error.h"
 
 namespace casual
@@ -133,14 +134,14 @@ namespace casual
 
             namespace dead
             {
-               void Process::operator() ( const common::message::domain::process::termination::Event& message)
+               void Process::operator() ( const common::message::event::process::Exit& message)
                {
                   Trace trace{ "queue::handle::dead::Process"};
 
                   //
                   // We check and do some clean up, if the dead process has any pending replies.
                   //
-                  m_state.pending.erase( message.death.pid);
+                  m_state.pending.erase( message.state.pid);
                }
 
             } // dead
@@ -456,7 +457,7 @@ namespace casual
          handle::dispatch_type handler( State& state)
          {
             return {
-               handle::dead::Process{ state},
+               common::event::listener( handle::dead::Process{ state}),
                handle::enqueue::Request{ state},
                handle::dequeue::Request{ state},
                handle::dequeue::forget::Request{ state},

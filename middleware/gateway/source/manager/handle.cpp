@@ -235,8 +235,7 @@ namespace casual
                   // We put a dead process event on our own ipc device, that
                   // will be handled later on.
                   //
-                  common::message::domain::process::termination::Event event{ exit};
-
+                  common::message::event::process::Exit event{ exit};
                   communication::ipc::inbound::device().push( std::move( event));
                }
 
@@ -249,8 +248,8 @@ namespace casual
                   //
                   ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
 
-                  auto inbound_found = range::find( state().connections.inbound, message.death.pid);
-                  auto outbound_found = range::find( state().connections.outbound, message.death.pid);
+                  auto inbound_found = range::find( state().connections.inbound, message.state.pid);
+                  auto outbound_found = range::find( state().connections.outbound, message.state.pid);
 
                   if( inbound_found)
                   {
@@ -275,12 +274,12 @@ namespace casual
                      //
                      // remove discover coordination, if any.
                      //
-                     state().discover.remove( message.death.pid);
+                     state().discover.remove( message.state.pid);
 
                   }
                   else
                   {
-                     log::category::error << "failed to correlate child termination - death: " << message.death << " - action: discard\n";
+                     log::category::error << "failed to correlate child termination - state: " << message.state << " - action: discard\n";
                   }
                }
 

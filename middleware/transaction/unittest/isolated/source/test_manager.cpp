@@ -423,9 +423,9 @@ namespace casual
 
          // caller dies
          {
-            common::message::domain::process::termination::Event event;
-            event.death.pid = process::handle().pid;
-            event.death.reason = common::process::lifetime::Exit::Reason::core;
+            common::message::event::process::Exit event;
+            event.state.pid = process::handle().pid;
+            event.state.reason = common::process::lifetime::Exit::Reason::core;
 
             local::send::tm( event);
          }

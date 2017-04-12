@@ -48,8 +48,10 @@ namespace casual
                template< std::size_t index>
                struct argument
                {
-                  using type = typename std::tuple_element< index, std::tuple< Args...>>::type;
+                  using type = std::tuple_element_t< index, std::tuple< Args...>>;
                };
+
+
             };
 
          }
@@ -98,7 +100,7 @@ namespace casual
          template< typename T>
          struct basic_type
          {
-            using type = typename std::remove_reference< typename std::remove_cv< T>::type>::type;
+            using type = std::remove_reference_t< std::remove_cv_t< T>>;
          };
 
 

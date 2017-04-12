@@ -840,9 +840,12 @@ namespace casual
          template< typename R, typename T>
          auto transform( R&& range, T transformer)
          {
-            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
+            using value_type = std::remove_const_t< std::remove_reference_t< decltype( transformer( *std::begin( range)))>>;
+            std::vector< value_type> result;
+
             result.reserve( range.size());
             std::transform( std::begin( range), std::end( range), std::back_inserter( result), transformer);
+
             return result;
          }
 

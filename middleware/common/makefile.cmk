@@ -84,7 +84,11 @@ casual_common_objectfiles = [
     Compile( 'source/message/domain.cpp'),
     Compile( 'source/message/gateway.cpp'),
     Compile( 'source/message/conversation.cpp'),
+    Compile( 'source/message/pending.cpp'),
+    Compile( 'source/message/event.cpp'),
     
+    Compile( 'source/event/listener.cpp'),
+    Compile( 'source/event/dispatch.cpp'),
     
     Compile( 'source/log/stream.cpp'),
     Compile( 'source/log/trace.cpp'),
@@ -226,14 +230,15 @@ unittest_objectfiles = [
     Compile( 'unittest/source/server/test_arguments.cpp'),
     
     Compile( 'unittest/source/service/test_header.cpp'),
-    #Compile( 'unittest/source/service/conversation/test_context.cpp'),
+    Compile( 'unittest/source/service/conversation/test_context.cpp'),
 
     Compile( 'unittest/source/test_mockup.cpp'),
     
     Compile( 'unittest/source/transaction/test_id.cpp'),
     Compile( 'unittest/source/transaction/test_context.cpp'),
     
-    Compile( 'unittest/source/service/conversation/test_context.cpp'),
+    
+    Compile( 'unittest/source/event/test_dispatch.cpp'),
 ]
 
 

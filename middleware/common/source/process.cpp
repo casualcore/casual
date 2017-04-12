@@ -110,22 +110,6 @@ namespace casual
 
          namespace instance
          {
-            namespace termination
-            {
-               void registration( const Handle& process)
-               {
-                  Trace trace{ "common::process::instance::termination::registration"};
-
-                  message::domain::process::termination::Registration message;
-                  message.process = common::process::handle();
-
-                  signal::thread::scope::Block block{ { signal::Type::child}};
-
-                  communication::ipc::blocking::send( communication::ipc::domain::manager::device(), message);
-               }
-
-            } // termination
-
             namespace identity
             {
                const Uuid& broker()

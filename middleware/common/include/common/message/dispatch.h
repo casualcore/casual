@@ -140,7 +140,7 @@ namespace casual
                         std::is_same< typename traits_type::result_type, void>::value
                         || std::is_same< typename traits_type::result_type, bool>::value , "handlers has to have this signature: void|bool( <some message>), can be declared const");
 
-                  using message_type = typename std::decay< typename traits_type::template argument< 0>::type>::type;
+                  using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;
 
 
                   handle_holder( handle_holder&&) = default;

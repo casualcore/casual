@@ -103,19 +103,6 @@ namespace casual
                   configure::services( state, configuration);
 
 
-
-                  //
-                  // Register for process termination
-                  //
-                  {
-                     Trace trace{ "broker::configure process::termination"};
-
-                     common::message::domain::process::termination::Registration message;
-                     message.process = common::process::handle();
-
-                     ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
-                  }
-
                   //
                   // Start forward
                   //

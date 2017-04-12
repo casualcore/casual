@@ -25,7 +25,7 @@ namespace casual
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
                      //
-                     common::message::domain::process::termination::Event event{ exit};
+                     common::message::event::process::Exit event{ exit};
                      common::communication::ipc::inbound::device().push( std::move( event));
                   }
                }
@@ -825,12 +825,12 @@ namespace casual
 
             void Exit::operator () ( message_type& message)
             {
-               apply( message.death);
+               apply( message.state);
             }
 
             void Exit::apply( const common::process::lifetime::Exit& exit)
             {
-               Trace trace{ "transaction::handle::dead::Process"};
+               Trace trace{ "transaction::handle::process::Exit"};
 
                // TODO: check if it's one of spawned resource proxies, if so, restart?
 

@@ -30,7 +30,9 @@ namespace casual
          {
             const communication::ipc::Helper& device()
             {
-               static communication::ipc::Helper singleton{ communication::error::handler::callback::on::Terminate{ &handle::process::termination::event}};
+               static communication::ipc::Helper singleton{
+                  communication::error::handler::callback::on::Terminate{ &handle::event::process::exit}};
+
                return singleton;
             }
 
@@ -56,6 +58,14 @@ namespace casual
                      catch( const exception::communication::Unavailable&)
                      {
                         log << "failed to send message - type: " << common::message::type( message) << " to: " << process << " - action: ignore\n";
+                     }
+                  }
+
+                  void send( State& state, message::pending::Message&& pending)
+                  {
+                     if( ! message::pending::non::blocking::send( pending, manager::ipc::device().error_handler()))
+                     {
+                        state.pending.replies.push_back( std::move( pending));
                      }
                   }
 
@@ -111,6 +121,34 @@ namespace casual
                         return out << "{ done: " << value.done() << ", batch: " << value.m_batch << '}';
                      }
                   };
+
+
+                  namespace boot
+                  {
+                     struct Done : handle::Base
+                     {
+                        using handle::Base::Base;
+
+                        void start()
+                        {
+                           if( state().event.active< message::event::boot::End>())
+                           {
+                              message::event::boot::End event;
+                              event.domain = common::domain::identity();
+                              manager::local::ipc::send( state(), state().event( event));
+                           }
+                        }
+
+                        bool done() const { return true;}
+                        bool started() const { return true;}
+
+                        friend std::ostream& operator << ( std::ostream& out, const Done& value)
+                        {
+                           return out << "{ boot event - done}";
+                        }
+                     };
+
+                  } // boot
 
                } // task
 
@@ -184,10 +222,21 @@ namespace casual
             {
                Trace trace{ "domain::manager::handle::boot"};
 
+               if( state.event.active< message::event::boot::Start>())
+               {
+                  message::event::boot::Start event;
+                  event.domain = common::domain::identity();
+                  manager::local::ipc::send( state, state.event( event));
+               }
 
                range::for_each( state.bootorder(), [&]( state::Batch& batch){
                      state.tasks.add( manager::local::task::Boot{ batch});
                   });
+
+               if( state.event.active< message::event::boot::End>())
+               {
+                  state.tasks.add( manager::local::task::boot::Done{ state});
+               }
             }
 
             void shutdown( State& state)
@@ -240,16 +289,34 @@ namespace casual
             {
                namespace
                {
-                  void out( state::Executable& executable)
+                  void out( State& state, state::Executable& executable)
                   {
                      Trace trace{ "domain::manager::handle::scale::out"};
                      try
                      {
-                        auto current = executable.instances.size();
+                        const auto size = executable.instances.size();
+
+                        auto send_event = scope::execute( [&,size](){
+                           if( state.event.active< common::message::event::process::Spawn>())
+                           {
+                              common::message::event::process::Spawn message;
+                              message.path = executable.path;
+                              common::range::copy(
+                                    range::make(
+                                          std::begin( executable.instances) + size,
+                                          std::end( executable.instances)),
+                                    std::back_inserter( message.pids));
+
+                              manager::local::ipc::send( state, state.event( message));
+                           }
+                        });
+
+                        auto current = size;
 
                         while( current++ < executable.configured_instances)
                         {
                            auto pid = common::process::spawn( executable.path, executable.arguments, executable.environment.variables);
+
                            executable.instances.push_back( pid);
                         }
                      }
@@ -323,7 +390,7 @@ namespace casual
                      {
                         if( found->instances.size() < found->configured_instances)
                         {
-                           scale::out( *found);
+                           scale::out( state(), *found);
                         }
                         else if( found->instances.size() > found->configured_instances)
                         {
@@ -339,91 +406,94 @@ namespace casual
 
             } // scale
 
-
-            namespace process
+            namespace event
             {
-               namespace termination
+
+
+
+               namespace subscription
                {
-                  void event( const common::process::lifetime::Exit& exit)
+                  void Begin::operator () ( const common::message::event::subscription::Begin& message)
                   {
-                     Trace trace{ "domain::manager::handle::process::termination::event"};
+                     Trace trace{ "domain::manager::handle::event::subscription::Begin"};
+
+                     log << "message: " << message << '\n';
+
+                     state().event.subscription( message);
+
+                     log << "event: " << state().event << '\n';
+                  }
+
+                  void End::operator () ( const common::message::event::subscription::End& message)
+                  {
+                     Trace trace{ "domain::manager::handle::event::subscription::End"};
+
+                     log << "message: " << message << '\n';
+
+                     state().event.subscription( message);
+
+                     log << "event: " << state().event << '\n';
+                  }
+
+               } // subscription
+
+               namespace process
+               {
+                  void exit( const common::process::lifetime::Exit& exit)
+                  {
+                     Trace trace{ "domain::manager::handle::event::process::exit"};
 
                      //
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
                      //
-                     common::message::domain::process::termination::Event event{ exit};
+                     common::message::event::process::Exit event{ exit};
                      communication::ipc::inbound::device().push( std::move( event));
                   }
 
-                  void Registration::operator () ( const common::message::domain::process::termination::Registration& message)
+                  void Exit::operator () ( common::message::event::process::Exit& message)
                   {
-                     Trace trace{ "domain::manager::handle::process::termination::Registration"};
+                     Trace trace{ "domain::manager::handle::event::process::Exit"};
 
-                     auto& listeners = state().termination.listeners;
-
-                     auto found = range::find_if( listeners, common::process::Handle::equal::pid{ message.process.pid});
-                     if( found)
-                     {
-                        *found = message.process;
-                     }
-                     else
-                     {
-                        listeners.push_back( message.process);
-                     }
-
-                     log << "termination.listeners: " << range::make( listeners);
-
-                  }
-
-                  void Event::operator () ( common::message::domain::process::termination::Event& message)
-                  {
-                     Trace trace{ "domain::manager::handle::process::termination::Event"};
-
-                     if( message.death.deceased())
+                     if( message.state.deceased())
                      {
                         //
                         // We don't want to handle any signals in this task
                         //
                         signal::thread::scope::Block block;
 
-                        switch( message.death.reason)
+                        switch( message.state.reason)
                         {
                            case common::process::lifetime::Exit::Reason::core:
                            {
-                              log::category::error << "process cored: " << message.death << '\n';
+                              log::category::error << "process cored: " << message.state << '\n';
                               break;
                            }
                            default:
                            {
-                              log::category::information << "process exited: " << message.death << '\n';
+                              log::category::information << "process exited: " << message.state << '\n';
                               break;
                            }
                         }
 
-
-                        state().remove_process( message.death.pid);
-
-                        auto& listeners = state().termination.listeners;
+                        state().remove_process( message.state.pid);
 
 
                         //
-                        // We send event to all listeners
+                        // Are there any listeners to this event?
                         //
+                        if( state().event.active< common::message::event::process::Exit>())
                         {
-                           common::message::pending::Message pending{ message,
-                              range::transform( listeners, std::mem_fn( &common::process::Handle::queue))};
-
-                           if( ! common::message::pending::send( pending,
-                                 communication::ipc::policy::non::Blocking{}))
-                           {
-                              state().pending.replies.push_back( std::move( pending));
-                           }
+                           manager::local::ipc::send( state(), state().event( message));
                         }
                      }
                   }
-               } // termination
+               } // process
+            } // event
 
+
+            namespace process
+            {
                namespace local
                {
                   namespace
@@ -569,6 +639,16 @@ namespace casual
 
                         reply.directive = decltype( reply)::Directive::singleton;
                         manager::local::ipc::send( state(), message.process, reply);
+
+                        if( state().event.active< message::event::domain::Error>())
+                        {
+                           message::event::domain::Error event;
+                           event.severity = message::event::domain::Error::Severity::warning;
+                           event.message = "server connect - only one instance is allowed for " + uuid::string( message.identification);
+
+                           manager::local::ipc::send( state(), state().event( event));
+                        }
+
                         return;
                      }
 
@@ -590,6 +670,15 @@ namespace casual
                   auto& pending = state().pending.lookup;
 
                   range::trim( pending, range::remove_if( pending, local::Lookup{ state()}));
+
+                  if( state().event.active< message::event::domain::server::Connect>())
+                  {
+                     message::event::domain::server::Connect event;
+                     event.process = message.process;
+                     event.identification = message.identification;
+
+                     manager::local::ipc::send( state(), state().event( event));
+                  }
 
                }
 
@@ -696,8 +785,9 @@ namespace casual
                common::message::handle::ping(),
                common::message::handle::Shutdown{},
                manager::handle::scale::Executable{ state},
-               manager::handle::process::termination::Event{ state},
-               manager::handle::process::termination::Registration{ state},
+               manager::handle::event::process::Exit{ state},
+               manager::handle::event::subscription::Begin{ state},
+               manager::handle::event::subscription::End{ state},
                manager::handle::process::Connect{ state},
                manager::handle::process::Lookup{ state},
                manager::handle::configuration::Domain{ state},

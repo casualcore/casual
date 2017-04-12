@@ -71,30 +71,43 @@ namespace casual
 
 
 
+            namespace event
+            {
+               namespace subscription
+               {
+                  struct Begin : Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( const common::message::event::subscription::Begin& message);
+                  };
+
+                  struct End : Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( const common::message::event::subscription::End& message);
+                  };
+
+               } // subscription
+
+
+               namespace process
+               {
+                  void exit( const common::process::lifetime::Exit& exit);
+
+                  struct Exit : Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( common::message::event::process::Exit& message);
+                  };
+               } // process
+            } // event
 
 
             namespace process
             {
-               namespace termination
-               {
-                  struct Registration : Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( const common::message::domain::process::termination::Registration& message);
-                  };
-
-
-                  void event( const common::process::lifetime::Exit& exit);
-
-                  struct Event : Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( common::message::domain::process::termination::Event& message);
-                  };
-               } // termination
-
                struct Connect : public Base
                {
                   using Base::Base;

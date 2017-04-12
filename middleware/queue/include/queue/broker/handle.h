@@ -11,6 +11,7 @@
 #include "common/message/transaction.h"
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
+#include "common/message/event.h"
 #include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
 
@@ -53,7 +54,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  using message_type = common::message::domain::process::termination::Event;
+                  using message_type = common::message::event::process::Exit;
 
                   void operator () ( message_type& message);
 

@@ -13,6 +13,7 @@
 #include "common/message/server.h"
 #include "common/message/gateway.h"
 #include "common/message/transaction.h"
+#include "common/message/event.h"
 
 #include "common/server/handle/call.h"
 #include "common/server/context.h"
@@ -56,7 +57,7 @@ namespace casual
             struct Exit : Base
             {
                using Base::Base;
-               using message_type = common::message::domain::process::termination::Event;
+               using message_type = common::message::event::process::Exit;
 
                void operator () ( message_type& message);
             };

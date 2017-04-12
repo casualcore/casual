@@ -43,8 +43,8 @@ namespace casual
             domain_scale_executable,
             domain_process_connect_request,
             domain_process_connect_reply,
-            domain_process_termination_registration,
-            domain_process_termination_event,
+
+
             domain_process_lookup_request,
             domain_process_lookup_reply,
 
@@ -184,6 +184,24 @@ namespace casual
             interdomain_queue_enqueue_reply,
             interdomain_queue_dequeue_request,
             interdomain_queue_dequeue_reply,
+
+            // event messages
+            EVENT_BASE = 9000,
+            event_subscription_begin,
+            event_subscription_end,
+            event_subscribe_update,
+            event_unsubscribe_request,
+
+            event_domain_boot_start,
+            event_domain_boot_end,
+            event_domain_error,
+            event_domain_server_connect,
+            event_domain_boot_group_start,
+            event_domain_boot_group_end,
+            event_domain_group,
+
+            event_process_spawn,
+            event_process_exit,
 
 
 

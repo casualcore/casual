@@ -12,6 +12,7 @@
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
+#include "common/event/listener.h"
 
 
 
@@ -35,7 +36,7 @@ namespace casual
                         // We put a dead process event on our own ipc device, that
                         // will be handled later on.
                         //
-                        common::message::domain::process::termination::Event event{ exit};
+                        common::message::event::process::Exit event{ exit};
                         common::communication::ipc::inbound::device().push( std::move( event));
                      }
                   }
@@ -112,7 +113,7 @@ namespace casual
             {
                void Exit::operator () ( message_type& message)
                {
-                  apply( message.death);
+                  apply( message.state);
                }
 
                void Exit::apply( const common::process::lifetime::Exit& exit)
@@ -334,7 +335,7 @@ namespace casual
          handle::dispatch_type handlers( State& state)
          {
             return {
-               broker::handle::process::Exit{ state},
+               common::event::listener( broker::handle::process::Exit{ state}),
                broker::handle::connect::Request{ state},
                broker::handle::shutdown::Request{ state},
                broker::handle::lookup::Request{ state},

@@ -390,7 +390,8 @@ namespace casual
                      namespace
                      {
 
-                        platform::ipc::id::type reconnect()
+                        template< typename R>
+                        platform::ipc::id::type reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -426,7 +427,7 @@ namespace casual
                      } // <unnamed>
                   } // local
 
-                  Connector::Connector() : outbound::Connector{ local::reconnect()}
+                  Connector::Connector() : outbound::Connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
                   {
 
                   }
@@ -435,8 +436,33 @@ namespace casual
                   {
                      Trace trace{ "ipc::outbound::domain::Connector::reconnect"};
 
-                     m_id = local::reconnect();
+                     m_id = local::reconnect( [](){ return common::domain::singleton::read().process;});
                   }
+
+                  namespace optional
+                  {
+                     Connector::Connector()
+                      : outbound::Connector{ local::reconnect( [](){
+                         return common::domain::singleton::read(
+                               process::pattern::Sleep{
+                                { std::chrono::milliseconds{ 10}, 10}}
+                         ).process;
+                      })}
+                     {
+
+                     }
+
+                     void Connector::reconnect()
+                     {
+                        m_id = local::reconnect( [](){
+                           return common::domain::singleton::read(
+                                 process::pattern::Sleep{
+                                  { std::chrono::milliseconds{ 10}, 10}}
+                           ).process;
+                        });
+                     }
+                  } // optional
+
                } // domain
 
             } // outbound
@@ -537,6 +563,15 @@ namespace casual
                      static outbound::domain::Device singelton;
                      return singelton;
                   }
+
+                  namespace optional
+                  {
+                     outbound::domain::optional::Device& device()
+                     {
+                        static outbound::domain::optional::Device singelton;
+                        return singelton;
+                     }
+                  } // optional
 
                } // manager
             } // domain

@@ -14,6 +14,8 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 
+#include "common/event/listener.h"
+
 
 //
 // std
@@ -69,7 +71,7 @@ namespace casual
             // We put a dead process event on our own ipc device, that
             // will be handled later on.
             //
-            common::message::domain::process::termination::Event event{ exit};
+            common::message::event::process::Exit event{ exit};
             communication::ipc::inbound::device().push( std::move( event));
          }
 
@@ -83,7 +85,7 @@ namespace casual
 
                log << "message: " << message << '\n';
 
-               m_state.remove_process( message.death.pid);
+               m_state.remove_process( message.state.pid);
             }
 
          } // process
@@ -478,7 +480,7 @@ namespace casual
       handle::dispatch_type handler( State& state)
       {
          return {
-            handle::process::Exit{ state},
+            common::event::listener( handle::process::Exit{ state}),
             handle::service::Advertise{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},

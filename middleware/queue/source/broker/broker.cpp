@@ -219,12 +219,6 @@ namespace casual
                common::process::handle());
 
 
-         //
-         // Register for process termination events
-         //
-         common::process::instance::termination::registration( common::process::handle());
-
-
          {
             //
             // We ask the domain manager for configuration

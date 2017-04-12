@@ -28,7 +28,6 @@ namespace casual
       {
          void configure( State& state)
          {
-
             {
 
                Trace trace( "configure");
@@ -44,13 +43,6 @@ namespace casual
                //
                state::configure( state, configuration);
             }
-
-            {
-               Trace trace( "event registration");
-
-               common::process::instance::termination::registration( common::process::handle());
-            }
-
          }
 
 

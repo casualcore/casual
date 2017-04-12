@@ -8,6 +8,9 @@
 #include "common/terminal.h"
 #include "common/environment.h"
 
+#include "common/communication/ipc.h"
+#include "common/event/listener.h"
+
 #include "sf/xatmi_call.h"
 
 namespace casual
@@ -61,9 +64,19 @@ namespace casual
 
                   void boot( const std::vector< std::string>& files)
                   {
-                     using file_range = decltype( range::make( files));
+                     //
+                     // Make sure we unsubscribe for events
+                     //
+                     auto unsubscribe = scope::execute( [](){
+                        message::event::subscription::End message;
+                        message.process = process::handle();
 
-                     auto get_arguments = []( file_range files){
+                        communication::ipc::non::blocking::send(
+                              communication::ipc::domain::manager::optional::device(),
+                              message);
+                     });
+
+                     auto get_arguments = []( auto&& files){
                         std::vector< std::string> arguments;
 
                         if( ! files.empty())
@@ -75,12 +88,102 @@ namespace casual
                            arguments.emplace_back( "--configuration-files");
                            range::copy( files, std::back_inserter( arguments));
                         }
+
+                        arguments.emplace_back( "--event-queue");
+                        arguments.emplace_back( std::to_string( common::communication::ipc::inbound::id()));
+
                         return arguments;
                      };
 
                      common::process::spawn(
                            common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager",
                            get_arguments( range::make( files)));
+
+                     struct event_done {};
+
+                     common::communication::ipc::inbound::Device::handler_type event_handler{
+                        []( message::event::process::Spawn& m){
+                           std::cout << "spawn: " << m << std::endl;
+                        },
+                        []( message::event::process::Exit& m){
+                           std::cout << "exit: " << m << std::endl;
+                        },
+                        []( message::event::domain::server::Connect& m){
+                           std::cout << terminal::color::green << "connected: " << terminal::color::white << m.process;
+                           if( m.identification)
+                           {
+                              std::cout << " identification: " << m.identification;
+                           }
+                           std::cout << std::endl;
+
+                        },
+                        []( message::event::boot::Start& m){
+                           std::cout << "begin - boot domain: " << m.domain << std::endl;
+                        },
+                        []( message::event::boot::End& m){
+                           std::cerr << "done - boot domain: " << m.domain << std::endl;
+
+                           throw event_done{};
+                        },
+                        []( message::event::domain::Group& m){
+                           using context_type = message::event::domain::Group::Context;
+                           static const std::map< context_type, std::string> context{
+                              { context_type::boot_start, "group boot start"},
+                              { context_type::boot_end, "group boot end"},
+                              { context_type::shutdown_start, "group shutdown start"},
+                              { context_type::shutdown_end, "group shutdown end"},
+                           };
+
+                           std::cout << context.at( m.context) << " - name: " << m.name << " - id: " << m.id << std::endl;
+                        },
+                        []( message::event::domain::Error& m){
+                           switch( m.severity)
+                           {
+                              case message::event::domain::Error::Severity::fatal:
+                              {
+                                 std::cerr << terminal::color::red << "fatal: " << terminal::color::white << m.message << '\n';
+                                 throw event_done{};
+                              }
+                              case message::event::domain::Error::Severity::error:
+                              {
+                                 std::cerr << terminal::color::red << "error: " << terminal::color::white << m.message << '\n';
+                                 break;
+                              }
+                              default:
+                              {
+                                 std::cerr << terminal::color::cyan << "warning " << terminal::color::white << m.message << '\n';
+                              }
+                           }
+                        }
+                     };
+
+                     try
+                     {
+                        common::message::dispatch::blocking::pump( event_handler, common::communication::ipc::inbound::device());
+                     }
+                     catch( const event_done&)
+                     {
+                        // no-op
+                     }
+                     catch( const exception::signal::child::Terminate&)
+                     {
+                        std::cerr << terminal::color::red << "fatal";
+                        std::cerr << " failed to boot domain\n";
+
+                        //
+                        // Check if we got some error events
+                        //
+                        common::message::dispatch::pump(
+                              event_handler,
+                              common::communication::ipc::inbound::device(),
+                              common::communication::ipc::inbound::Device::non_blocking_policy{});
+
+                     }
+                     catch( ...)
+                     {
+                        error::handler();
+                     }
+
                   }
 
                   void shutdown()

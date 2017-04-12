@@ -206,14 +206,10 @@ namespace casual
             Trace trace{ "domain::manager::State::remove_process"};
 
             //
-            // Vi remove from listeners if one of them has died
+            // Vi remove from event listeners if one of them has died
             //
             {
-               auto found = range::find_if( termination.listeners, common::process::Handle::equal::pid{ pid});
-               if( found)
-               {
-                  termination.listeners.erase( std::begin( found));
-               }
+               event.remove( pid);
             }
 
 
@@ -318,6 +314,7 @@ namespace casual
 
             return ! ( runlevel() >= Runlevel::shutdown && tasks.empty());
          }
+
 
          void State::runlevel( Runlevel runlevel)
          {

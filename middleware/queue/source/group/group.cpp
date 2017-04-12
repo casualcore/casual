@@ -177,17 +177,6 @@ namespace casual
                common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), request);
             }
 
-            //
-            // Make sure we'll get notify when processes dies
-            // TODO: we could wait until we know there's a blocking dequeue
-            //
-            {
-               common::message::domain::process::termination::Registration registration;
-               registration.process = common::process::handle();
-
-               common::communication::ipc::blocking::send( common::communication::ipc::domain::manager::device(), registration);
-            }
-
             {
                std::vector< std::string> existing;
                for( auto&& queue : m_state.queuebase.queues())

@@ -14,6 +14,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/log.h"
+#include "common/event/listener.h"
 
 #include "configuration/domain.h"
 #include "configuration/file.h"
@@ -180,8 +181,8 @@ namespace casual
                //
 
                auto handler = ipc::device().handler(
+                  event::listener( handle::process::Exit{ state}),
                   common::message::handle::Shutdown{},
-                  handle::process::Exit{ state},
                   handle::Commit{ state},
                   handle::Rollback{ state},
                   handle::resource::Involved{ state},

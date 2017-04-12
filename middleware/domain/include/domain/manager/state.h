@@ -13,6 +13,8 @@
 #include "common/platform.h"
 #include "common/process.h"
 
+#include "common/event/dispatch.h"
+
 
 #include  "sf/namevaluepair.h"
 
@@ -197,12 +199,6 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Batch& value);
             };
 
-            namespace configuration
-            {
-
-
-
-            } // configuration
 
          } // state
 
@@ -232,12 +228,6 @@ namespace casual
                std::vector< common::message::pending::Message> replies;
                std::vector< common::message::domain::process::lookup::Request> lookup;
             } pending;
-
-            struct
-            {
-               std::vector< common::process::Handle> listeners;
-            } termination;
-
 
 
             //!
@@ -280,6 +270,19 @@ namespace casual
                )
 
             } group_id;
+
+
+
+            common::event::dispatch::Collection<
+               common::message::event::process::Spawn,
+               common::message::event::process::Exit,
+               common::message::event::boot::Start,
+               common::message::event::boot::End,
+               common::message::event::domain::Group,
+               common::message::event::domain::Error,
+               common::message::event::domain::server::Connect
+            > event;
+
 
 
             //!

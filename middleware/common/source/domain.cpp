@@ -113,7 +113,7 @@ namespace casual
                   //
                   // There is potentially a running casual-domain already - abort
                   //
-                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain");
+                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path);
                }
 
                //
@@ -134,13 +134,16 @@ namespace casual
 
             Result read()
             {
-               Trace trace{ "common::domain::singleton::read"};
-
-               process::pattern::Sleep retries{
+               return read( process::pattern::Sleep{
                   { std::chrono::milliseconds{ 10}, 10},
                   { std::chrono::milliseconds{ 100}, 10},
                   { std::chrono::seconds{ 1}, 60}
-               };
+               });
+            }
+
+            Result read( process::pattern::Sleep retries)
+            {
+               Trace trace{ "common::domain::singleton::read"};
 
                do
                {
