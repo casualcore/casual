@@ -32,7 +32,7 @@ We're trying to show all configuration options that is possible in casual.
  [yaml](domain/domain.yaml)   | [yaml](domain/default/domain.yaml)
  [json](domain/domain.json)   | [json](domain/default/domain.json)
  [xml](domain/domain.xml)     | [xml](domain/default/domain.xml)
- [ini](domain/domain.ini)     | [yaml](domain/default/domain.ini)
+ [ini](domain/domain.ini)     | [ini](domain/default/domain.ini)
 
 
 ## resource properties
@@ -43,10 +43,10 @@ and also by `casual-transaction-manager` to deduce which xa-resource-proxy-serve
 
  example                            | default
 ------------------------------------|--------------------------
- [yaml](resource/properties.yaml)   | _no default values_
- [json](resource/properties.json)   | _no default values_
- [xml](resource/properties.xml)     | _no default values_
- [ini](resource/properties.ini)     | _no default values_
+ [yaml](resource/property.yaml)   | _no default values_
+ [json](resource/property.json)   | _no default values_
+ [xml](resource/property.xml)     | _no default values_
+ [ini](resource/property.ini)     | _no default values_
 
 
 ## build server
@@ -56,7 +56,7 @@ Defines user configuration when building a casual server
  example                     | default
 -----------------------------|--------------------------
  [yaml](build/server.yaml)   | [yaml](build/default/server.yaml)
- [json](build/server.json)   | [yaml](build/default/server.json)
+ [json](build/server.json)   | [json](build/default/server.json)
  [xml](build/server.xml)     | [xml](build/default/server.xml)
  [ini](build/server.ini)     | [ini](build/default/server.ini)
  
