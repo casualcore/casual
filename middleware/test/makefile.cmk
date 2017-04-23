@@ -121,6 +121,7 @@ LinkUnittest( 'unittest/bin/test-casual-generation-isolated',
 		'casual-xatmi', 
 		'yaml-cpp', 
 		'casual-mockup',
+		'casual-unittest',
 	])
 	
 	

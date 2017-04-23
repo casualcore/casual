@@ -65,8 +65,8 @@ namespace casual
                      //
                      // Wait for the domain to boot
                      //
-                     common::message::event::domain::boot::End message;
-                     common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+                     unittest::domain::manager::wait( common::communication::ipc::inbound::device());
+
                   }
 
                   struct remove_singleton_file_t
