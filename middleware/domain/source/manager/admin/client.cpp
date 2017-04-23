@@ -225,8 +225,10 @@ namespace casual
 
                      event::Handler events;
 
-                     auto get_arguments = []( auto&& files){
+                     auto get_arguments = []( auto& value){
                         std::vector< std::string> arguments;
+
+                        auto files = common::range::make( value);
 
                         if( ! files.empty())
                         {
@@ -246,7 +248,7 @@ namespace casual
 
                      common::process::spawn(
                            common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager",
-                           get_arguments( range::make( files)));
+                           get_arguments( files));
 
                      events();
                   }

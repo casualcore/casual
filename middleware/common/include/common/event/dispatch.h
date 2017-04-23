@@ -71,7 +71,7 @@ namespace casual
 
             explicit operator bool () const { return ! subscribers.empty();}
 
-            common::message::pending::Message operator () ( const Event& event) const
+            common::message::pending::Message create( const Event& event) const
             {
                return pending( marshal::complete( event));
             }
@@ -122,6 +122,14 @@ namespace casual
                void remove( platform::pid::type pid)
                {
                   do_remove( pid, Events{}...);
+               }
+               
+               template< typename E>
+               common::message::pending::Message operator () ( const E& event) const
+               {
+                  // hack: gcc 5.4 thinks overloading is ambiguous, so we need to have a 
+                  // level of indirection, and an explicit call.
+                  return event::Dispatch< E>::create( event);
                }
 
                friend std::ostream& operator << ( std::ostream& out, const Collection& value)

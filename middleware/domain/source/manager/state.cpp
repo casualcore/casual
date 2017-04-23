@@ -185,8 +185,8 @@ namespace casual
                std::chrono::milliseconds result{ 4000};
                constexpr std::chrono::milliseconds timeout{ 400};
 
-               range::for_each( servers, [&]( const auto& e){ result +=  state().server( e.id).instances.size() * timeout;});
-               range::for_each( executables, [&]( const auto& e){ result +=  state().executable( e.id).instances.size() * timeout;});
+               range::for_each( servers, [&]( const auto& e){ result +=  this->state().server( e.id).instances.size() * timeout;});
+               range::for_each( executables, [&]( const auto& e){ result +=  this->state().executable( e.id).instances.size() * timeout;});
 
                return result;
             }
@@ -195,20 +195,20 @@ namespace casual
             bool Batch::online() const
             {
                return range::all_of( servers, [&]( auto task){
-                  return state().server( task.id).online();
+                  return this->state().server( task.id).online();
                })
                && range::all_of( executables, [&]( auto task){
-                  return state().executable( task.id).online();
+                  return this->state().executable( task.id).online();
                });
             }
 
             bool Batch::offline() const
             {
                return range::all_of( servers, [&]( auto task){
-                  return state().server( task.id).offline();
+                  return this->state().server( task.id).offline();
                })
                && range::all_of( executables, [&]( auto task){
-                  return state().executable( task.id).offline();
+                  return this->state().executable( task.id).offline();
                });
             }
 
