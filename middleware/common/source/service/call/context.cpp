@@ -108,6 +108,8 @@ namespace casual
                      {
                         Trace trace( "service::call::local::prepare::message");
 
+                        using return_type = std::tuple< platform::descriptor::type, message::service::call::caller::Request>;
+
                         message::service::call::caller::Request message( std::move( buffer));
 
                         message.correlation = uuid::make();
@@ -130,7 +132,7 @@ namespace casual
                            //
                            // No reply, hence no descriptor and no transaction (we validated this before)
                            //
-                           return std::tuple< platform::descriptor::type, message::service::call::caller::Request>{ 0, std::move( message) };
+                           return return_type{ 0, std::move( message) };
                         }
                         else
                         {
@@ -143,7 +145,7 @@ namespace casual
                               descriptor.timeout.set( start, service.timeout);
                            }
 
-                           auto& transaction = common::transaction::Context::instance().current();
+                           auto& transaction = common::transaction::context().current();
 
                            if( ! flags.exist( async::Flag::no_transaction) && transaction)
                            {
@@ -161,7 +163,7 @@ namespace casual
 
                            message.service.timeout = descriptor.timeout.timeout;
 
-                           return std::tuple< platform::descriptor::type, message::service::call::caller::Request>{ descriptor.descriptor, std::move( message) };
+                           return return_type{ descriptor.descriptor, std::move( message) };
                         }
                      }
 
