@@ -12,6 +12,7 @@ source scl_source enable devtoolset-4
 umask 000
 cd /git/casual
 find . -name "*.gcda" -print | xargs rm
+find . -name "report.xml" -print | xargs rm
 rm -rf middleware/.casual/unittest/.singleton/.domain-singleton
 casual-make -d -a --use-valgrind make && \
    casual-make clean && \
@@ -105,97 +106,102 @@ def build( name, image, content)
 
    sh """
    chmod +x builder.sh
-   docker run -v $current_dir:/git/casual:Z $image
+   docker run --rm -v $current_dir:/git/casual:Z $image
    """
 }
 
-node
-{
 
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-
-   try
+   node( "frontend" && "cplusplus")
    {
-      stage('Checkout')
-      {
-         checkout scm
-      }  
+      try
+      { 
 
-      stage('Build frontend')
-      {
+         stage('Checkout')
+         {
+            checkout scm
+         }  
 
-          build( 'casualfrontend', 'casual/frontend', frontend_builder)
+         stage('Build frontend')
+         {
 
-          archive includes: '**/casual-webapp.zip'
+             build( 'casualfrontend', 'casual/frontend', frontend_builder)
+
+             archive includes: '**/casual-webapp.zip'
+         }
+
+         stage('Build backend - Unittest/CodeCoverage')
+         {
+             build( 'centoscompile', 'casual/centos', backend_builder)
+
+             step([$class: 'XUnitBuilder',
+                thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
+                tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+
+             archive includes: '**/casual-middleware*.rpm'
+
+             publishHTML (target: [
+                 allowMissing: false,
+                 alwaysLinkToLastBuild: false,
+                 keepAll: true,
+                 reportDir: 'coverage',
+                 reportFiles: '*.html',
+                 reportName: "GCOV Report"
+             ])
+
+          }
+
+          if ( "${env.BRANCH_NAME}" == "develop" )
+          {
+             stage('Create container')
+             {
+                // 
+                // Setup files
+                //
+                writeFile file: 'Dockerfile', text: dockerfile
+                writeFile file: 'start.sh', text: dockerstart
+
+                sh '''
+                docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
+                '''
+             }
+
+             stage('Publishing to dockerhub')
+             {
+                sh """
+                docker tag casual/middleware-centos casual/middleware:latest
+                docker push casual/middleware
+                """
+             }
+
+             stage('Deploy')
+             {
+                sh """
+                cd /var/lib/jenkins/git/casual/docker
+                ./restart.sh
+                """
+             }
+         }
       }
-
-      stage('Build backend - Unittest/CodeCoverage')
+      catch (Exception e)
       {
-          build( 'centoscompile', 'casual/centos', backend_builder)
-
-          step([$class: 'XUnitBuilder',
-             thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
-             tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
-
-          archive includes: '**/casual-middleware*.rpm'
-
-          publishHTML (target: [
-              allowMissing: false,
-              alwaysLinkToLastBuild: false,
-              keepAll: true,
-              reportDir: 'coverage',
-              reportFiles: '*.html',
-              reportName: "GCOV Report"
-          ])
-
+            slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+            currentBuild.result = 'FAILURE'
+            archive includes: '**/casual.log'
       }
-
-      if ( "${env.BRANCH_NAME}" == "develop" )
-      {
-          stage('Create container')
-          {
-             // 
-             // Setup files
-             //
-             writeFile file: 'Dockerfile', text: dockerfile
-             writeFile file: 'start.sh', text: dockerstart
-
-             sh '''
-             docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
-             '''
-          }
-
-          stage('Publishing to dockerhub')
-          {
-             sh """
-             docker tag casual/middleware-centos casual/middleware:latest
-             docker push casual/middleware
-             """
-          }
-
-          stage('Deploy')
-          {
-             sh """
-             cd /var/lib/jenkins/git/casual/docker
-             ./restart.sh
-             """
-          }
-
-          stage('Documentation')
-          {
-             sh """
-             gitbook init .
-             gitbook build .
-             """
-          }
-      }
-      slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-      currentBuild.result = 'SUCCESS'
    }
-   catch (Exception e)
+   node( "documentation")
    {
-      slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-      currentBuild.result = 'FAILURE'
-   }
+      stage('Documentation')
+      {
+         checkout scm          
+         sh """
+           gitbook init .
+           gitbook build .
+          """
+       }
+    }
 
-}
+    slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+    currentBuild.result = 'SUCCESS'
+

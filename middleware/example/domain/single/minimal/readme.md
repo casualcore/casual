@@ -3,7 +3,7 @@
 
 ## pre requirements
 
-see [domain example]( ../../domain.md)
+see [domain example]( ../../readme.md)
 
 
 ## create domain
