@@ -182,27 +182,26 @@ def build( name, image, content)
                 """
              }
          }
-         catch (Exception e)
-         {
+      }
+      catch (Exception e)
+      {
             slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
             currentBuild.result = 'FAILURE'
             archive includes: '**/casual.log'
-         }
-      }   
-
-      node( "documentation")
-      {
-         stage('Documentation')
-         {
-            checkout scm          
-            sh """
-              gitbook init .
-              gitbook build .
-            """
-         }
       }
-
-      slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-      currentBuild.result = 'SUCCESS'
    }
+   node( "documentation")
+   {
+      stage('Documentation')
+      {
+         checkout scm          
+         sh """
+           gitbook init .
+           gitbook build .
+          """
+       }
+    }
+
+    slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+    currentBuild.result = 'SUCCESS'
 
