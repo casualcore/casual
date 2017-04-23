@@ -15,9 +15,17 @@ namespace casual
             namespace scale
             {
 
+               std::ostream& operator << ( std::ostream& out, const Executable::Scale& value)
+               {
+                  return out << "{ id: " << value.id
+                        << ", instances: " << value.instances
+                        << '}';
+               }
+
                std::ostream& operator << ( std::ostream& out, const Executable& value)
                {
-                  return out << "{ executables: " << range::make( value.executables)
+                  return out << "{ servers: " << range::make( value.servers)
+                        << ", executables: " << range::make( value.executables)
                         << '}';
                }
 

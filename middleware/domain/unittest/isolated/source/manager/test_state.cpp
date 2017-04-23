@@ -37,10 +37,10 @@ namespace casual
                }
 
 
-               const state::Batch& find_batch( const std::vector< state::Batch>& bootorder, const std::string& group)
+               const state::Batch& find_batch( const State& state, const std::vector< state::Batch>& bootorder, const std::string& group)
                {
-                  return common::range::front( common::range::find_if( bootorder, [&group]( const state::Batch& b){
-                     return b.group.get().name == group;
+                  return common::range::front( common::range::find_if( bootorder, [&]( const state::Batch& b){
+                     return state.group( b.group).name == group;
                   }));
                }
 
@@ -72,11 +72,11 @@ domain:
 )" );
 
             auto bootorder = state.bootorder();
-            auto& global = local::find_batch( bootorder, ".global");
+            auto& global = local::find_batch( state, bootorder, ".global");
 
             EXPECT_TRUE( global.executables.size() == 1) << ".global: " << global;
             auto& executable = global.executables.at( 0);
-            EXPECT_TRUE( executable.get().path == "echo" );
+            EXPECT_TRUE( state.executable( executable.id).path == "echo" );
          }
 
          TEST( domain_state_boot_order, group_1_exe1__global_exe2__expect__exe2_exe1)
@@ -103,14 +103,14 @@ domain:
             auto bootorder = state.bootorder();
 
             {
-               auto& batch = local::find_batch( bootorder, ".global");
+               auto& batch = local::find_batch( state, bootorder, ".global");
                ASSERT_TRUE( batch.executables.size() == 1) << "state: " << state << "\nbatch: " << batch;
-               EXPECT_TRUE( batch.executables.at( 0).get().path == "exe2");
+               EXPECT_TRUE( state.executable( batch.executables.at( 0).id).path == "exe2");
             }
             {
-               auto& batch = local::find_batch( bootorder, "group_1");
+               auto& batch = local::find_batch( state, bootorder, "group_1");
                ASSERT_TRUE( batch.executables.size() == 1);
-               EXPECT_TRUE( batch.executables.at( 0).get().path == "exe1");
+               EXPECT_TRUE(state.executable( batch.executables.at( 0).id).path == "exe1");
             }
          }
 
@@ -174,13 +174,14 @@ domain:
          {
             common::unittest::Trace trace;
 
+
             State state;
             {
-               state.group_id.master = 10;
-               state.group_id.transaction = 11;
-               state.group_id.queue = 12;
-               state.group_id.global = 13;
-               state.group_id.gateway = 14;
+               state.group_id.master = state::Group::id_type{ 10};
+               state.group_id.transaction = state::Group::id_type{ 11};
+               state.group_id.queue = state::Group::id_type{ 12};
+               state.group_id.global = state::Group::id_type{ 13};
+               state.group_id.gateway = state::Group::id_type{ 14};
             }
 
             auto persisted = local::persistent::serialization( state);

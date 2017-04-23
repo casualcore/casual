@@ -217,9 +217,9 @@ namespace casual
 
       TYPED_TEST( casual_sf_relaxed_archive_write_read, simple_vo)
       {
-         auto result = TestFixture::template write_read< local::vo::simple::Total>( local::vo::simple::Reduced{ "test"});
+         auto result = TestFixture::template write_read< local::vo::simple::Total>( local::vo::simple::Reduced{ "test test"});
 
-         EXPECT_TRUE( result.some_string == "test") << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.some_string == "test test") << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.some_long == 42) << CASUAL_MAKE_NVP( result);
       }
 
@@ -277,10 +277,10 @@ namespace casual
          auto result = TestFixture::template write_read<
                local::vo::Optional< local::vo::medium::Total>>(
                      local::vo::Optional< local::vo::medium::Reduced>(
-                           local::vo::medium::Reduced{ "test", { { "index-0"}, { "index-1"}}}));
+                           local::vo::medium::Reduced{ "test test", { { "index-0"}, { "index-1"}}}));
 
          EXPECT_TRUE( result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
-         EXPECT_TRUE( result.optional_value.value().some_string == "test") << CASUAL_MAKE_NVP( result);
+         EXPECT_TRUE( result.optional_value.value().some_string == "test test") << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.optional_value.value().some_long == 666) << CASUAL_MAKE_NVP( result);
          ASSERT_TRUE( result.optional_value.value().some_set.size() == 2) << CASUAL_MAKE_NVP( result);
          EXPECT_TRUE( result.optional_value.value().some_set.at( 0).some_string == "index-0") << CASUAL_MAKE_NVP( result);

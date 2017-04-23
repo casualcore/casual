@@ -709,7 +709,7 @@ namespace casual
          }
 
          template< typename R>
-         decltype( auto)  stable_sort( R&& range)
+         decltype( auto) stable_sort( R&& range)
          {
             std::stable_sort( std::begin( range), std::end( range));
             return std::forward< R>( range);
@@ -737,7 +737,15 @@ namespace casual
          {
             return std::copy( std::begin( range), std::end( range), output);
          }
-
+/*
+         template< typename R, typename Out,
+            std::enable_if_t< common::traits::container::is_sequence< Out>::value> = 0>
+         auto copy( R&& range, Out&& output)
+         {
+            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
+            return std::forward< Out>( output);
+         }
+*/
          template< typename R, typename OutIter, typename P,
             std::enable_if_t< common::traits::iterator::is_output< OutIter>::value>* dummy = nullptr>
          auto copy_if( R&& range, OutIter output, P predicate)
@@ -1236,6 +1244,17 @@ namespace casual
             auto result = make( std::forward< R>( range));
 
             return make( std::max_element( std::begin( result), std::end( result), functor), std::end( result));
+         }
+
+         template< typename R>
+         auto max( R&& range)
+         {
+            //
+            // Just to make sure range is not an rvalue container. we could use enable_if instead
+            //
+            auto result = make( std::forward< R>( range));
+
+            return make( std::max_element( std::begin( result), std::end( result)), std::end( result));
          }
 
          template< typename R, typename F>

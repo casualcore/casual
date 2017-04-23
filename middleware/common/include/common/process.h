@@ -234,21 +234,22 @@ namespace casual
 
                   bool done();
 
+                  friend std::ostream& operator << ( std::ostream& out, const Pattern& value);
+
                private:
                   std::chrono::microseconds m_time;
                   std::size_t m_quantity = 0;
                };
 
-               Sleep( std::vector< Pattern> pattern);
+               //Sleep( std::vector< Pattern> pattern);
                Sleep( std::initializer_list< Pattern> pattern);
 
                bool operator () ();
 
+               friend std::ostream& operator << ( std::ostream& out, const Sleep& value);
 
             private:
-
                std::vector< Pattern> m_pattern;
-               range::type_t< std::vector< Pattern>> m_range;
             };
 
          } // pattern

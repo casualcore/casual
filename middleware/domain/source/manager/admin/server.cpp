@@ -45,18 +45,29 @@ namespace casual
 
                      message::domain::scale::Executable message;
 
-                     for( auto& instance : instances)
-                     {
-                        auto found = range::find_if( state.executables, [&]( const state::Executable& e){
+                     auto extract = []( auto& instance, auto& entites, auto& output){
+
+                        auto found = range::find_if( entites, [&instance]( auto& e){
                            return e.alias == instance.alias;
                         });
 
                         if( found)
                         {
-                           found->configured_instances = instance.instances;
-                           message.executables.push_back( found->id);
-                           result.push_back( std::move( instance));
+                           message::domain::scale::Executable::Scale scale;
+                           scale.id = common::id::underlaying( found->id);
+                           scale.instances = instance.instances;
+                           output.push_back( std::move( scale));
+                           return true;
+                        }
+                        return false;
+                     };
 
+                     for( auto& instance : instances)
+                     {
+                        if( extract( instance, state.servers, message.servers) ||
+                           extract( instance, state.executables, message.executables))
+                        {
+                           result.push_back( std::move( instance));
                         }
                      }
 

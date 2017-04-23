@@ -71,6 +71,13 @@ target = LinkExecutable( 'bin/casual-domain-admin',
 Install( target,'$(CASUAL_HOME)/internal/bin')
 
 
+target_simple_server = LinkExecutable( 'bin/test-simple-server',
+    [
+        Compile( 'unittest/isolated/source/simple_server.cpp'),
+    ],
+    [
+     'casual-common'
+    ])
 
 
 target_test_domain = LinkUnittest( 'bin/test-casual-domain', 
@@ -91,9 +98,9 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
     ]) 
 
 #
-# We use domain-manager from the unittests
+# We use domain-manager and simple-server from the unittests
 #
-Dependencies( target_test_domain, [ target_domain_manager ]);
+Dependencies( target_test_domain, [ target_domain_manager, target_simple_server]);
 
 
 message_lib = LinkLibrary( 'bin/casual-delay-message', 

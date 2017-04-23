@@ -120,38 +120,31 @@ namespace casual
                   )
                };
 
+               template< common::message::Type type>
+               struct basic_procedure : common::message::basic_message< type>
+               {
+                  common::domain::Identity domain;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                     common::message::basic_message< type>::marshal( archive);
+                     archive & domain;
+                  )
+               };
+
+               namespace boot
+               {
+                  struct Begin : basic_procedure< common::message::Type::event_domain_boot_begin>{};
+                  struct End : basic_procedure< common::message::Type::event_domain_boot_end>{};
+               } // boot
+
+               namespace shutdown
+               {
+                  struct Begin : basic_procedure< common::message::Type::event_domain_shutdown_begin>{};
+                  struct End : basic_procedure< common::message::Type::event_domain_shutdown_end>{};
+               } // shutdown
+
+
             } // domain
-
-            namespace boot
-            {
-
-               using base_start = common::message::basic_message< common::message::Type::event_domain_boot_start>;
-               struct Start : base_start
-               {
-                  common::domain::Identity domain;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_start::marshal( archive);
-                     archive & domain;
-                  )
-               };
-
-               using base_end = common::message::basic_message< common::message::Type::event_domain_boot_end>;
-               struct End : base_end
-               {
-                  common::domain::Identity domain;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_end::marshal( archive);
-                     archive & domain;
-                  )
-               };
-
-
-
-
-            } // boot
-
 
 
             namespace process
@@ -159,11 +152,13 @@ namespace casual
                using base_spawn = common::message::basic_message< common::message::Type::event_process_spawn>;
                struct Spawn : base_spawn
                {
+                  std::string alias;
                   std::string path;
                   std::vector< platform::pid::type> pids;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      base_spawn::marshal( archive);
+                     archive & alias;
                      archive & path;
                      archive & pids;
                   )

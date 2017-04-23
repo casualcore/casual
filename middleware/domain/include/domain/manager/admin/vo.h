@@ -44,7 +44,7 @@ namespace casual
 
                   };
 
-                  struct Executable
+                  struct Process
                   {
                      using pid_type = common::platform::pid::type;
 
@@ -54,7 +54,6 @@ namespace casual
                      std::vector< std::string> arguments;
                      std::string note;
 
-                     std::vector< pid_type> instances;
                      std::vector< id_type> memberships;
 
                      struct
@@ -80,7 +79,6 @@ namespace casual
                         archive & CASUAL_MAKE_NVP( path);
                         archive & CASUAL_MAKE_NVP( arguments);
                         archive & CASUAL_MAKE_NVP( note);
-                        archive & CASUAL_MAKE_NVP( instances);
                         archive & CASUAL_MAKE_NVP( memberships);
                         archive & CASUAL_MAKE_NVP( environment);
                         archive & CASUAL_MAKE_NVP( configured_instances);
@@ -88,6 +86,35 @@ namespace casual
                         archive & CASUAL_MAKE_NVP( restarts);
                      })
 
+                     inline friend bool operator < ( const Process& lhs, const Process& rhs) { return lhs.id < rhs.id;}
+
+                  };
+
+                  struct Executable : Process
+                  {
+                     using pid_type = common::platform::pid::type;
+
+                     std::vector< pid_type> instances;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE({
+                        Process::serialize( archive);
+                        archive & CASUAL_MAKE_NVP( instances);
+                     })
+                  };
+
+                  struct Server : Process
+                  {
+                     std::vector< common::process::Handle> instances;
+
+                     std::vector< std::string> resources;
+                     std::vector< std::string> restriction;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE({
+                        Process::serialize( archive);
+                        archive & CASUAL_MAKE_NVP( instances);
+                        archive & CASUAL_MAKE_NVP( resources);
+                        archive & CASUAL_MAKE_NVP( restriction);
+                     })
                   };
 
 
@@ -95,6 +122,7 @@ namespace casual
                   {
                      std::vector< vo::Group> groups;
                      std::vector< vo::Executable> executables;
+                     std::vector< vo::Server> servers;
 
                      struct
                      {
@@ -105,13 +133,14 @@ namespace casual
                            archive & CASUAL_MAKE_NVP( listeners);
                         })
 
-                     } termination;
+                     } event;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         archive & CASUAL_MAKE_NVP( groups);
                         archive & CASUAL_MAKE_NVP( executables);
-                        archive & CASUAL_MAKE_NVP( termination);
+                        archive & CASUAL_MAKE_NVP( servers);
+                        archive & CASUAL_MAKE_NVP( event);
                      })
 
                   };

@@ -145,6 +145,8 @@ namespace casual
             {
                Trace trace{ "common::domain::singleton::read"};
 
+               log::debug << "retries: " << retries << '\n';
+
                do
                {
                   std::ifstream file{ common::environment::domain::singleton::file()};

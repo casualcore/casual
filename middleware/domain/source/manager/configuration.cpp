@@ -44,18 +44,18 @@ namespace casual
                         // We need to adjust 'next-id' so runtime configuration works.
                         //
                         {
-                           auto max = range::max( state.executables, []( const state::Executable& l, const state::Executable& r){ return l.id < r.id;});
+                           auto max = range::max( state.executables);
                            if( max)
                            {
-                              state::Executable::set_next_id( max.front().id + 1);
+                              state::Executable::set_next_id( max.front().id + state::Executable::id_type{ 1});
                            }
                         }
 
                         {
-                           auto max = range::max( state.groups, []( const state::Group& l, const state::Group& r){ return l.id < r.id;});
+                           auto max = range::max( state.groups);
                            if( max)
                            {
-                              state::Group::set_next_id( max.front().id + 1);
+                              state::Group::set_next_id( max.front().id + state::Group::id_type{ 1});
                            }
                         }
 

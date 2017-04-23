@@ -57,11 +57,16 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./bin/casual-domain-manager", {
+                        "--event-queue", std::to_string( common::communication::ipc::inbound::id()),
                         "--configuration-files", configuration::names( files),
                         "--bare",
                      }}
                   {
-
+                     //
+                     // Wait for the domain to boot
+                     //
+                     common::message::event::domain::boot::End message;
+                     common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
                   }
 
                   struct remove_singleton_file_t
@@ -151,7 +156,7 @@ domain:
   name: sleep
   executables:
     - path: sleep
-      arguments: [100]
+      arguments: [60]
       instances: 4    
 
 )";
@@ -205,6 +210,26 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::sleep()}};
+               process::ping( local::manager::ipc());
+
+            });
+         }
+
+         TEST( casual_domain_manager, non_existent_executable__expect_boot)
+         {
+            common::unittest::Trace trace;
+
+            const std::string configuration{ R"(
+domain:
+  name: sleep
+  executables:
+    - path: a360ec9bec0b4e5fae131c0e7ad931f4-non-existent
+      instances: 1
+
+)"};
+
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { configuration}};
                process::ping( local::manager::ipc());
 
             });
@@ -295,7 +320,7 @@ domain:
   executables:
     - alias: sleep
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 5    
 
 )";
@@ -332,8 +357,10 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 2);
-            EXPECT_TRUE( state.executables.at( 1).instances.size() == 5) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.servers.size() == 1) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 1) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 0).instances.size() == 5) << CASUAL_MAKE_NVP( state);
 
          }
 
@@ -356,9 +383,9 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 2);
-            EXPECT_TRUE( state.executables.at( 1).configured_instances == 10) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 1).instances.size() == 10) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 1);
+            EXPECT_TRUE( state.executables.at( 0).configured_instances == 10) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
          }
 
          TEST( casual_domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
@@ -380,13 +407,41 @@ domain:
 
             auto state = local::call::state();
 
-            ASSERT_TRUE( state.executables.size() == 2);
-            EXPECT_TRUE( state.executables.at( 1).configured_instances == 0) << CASUAL_MAKE_NVP( state);
+            ASSERT_TRUE( state.executables.size() == 1);
+            EXPECT_TRUE( state.executables.at( 0).configured_instances == 0) << CASUAL_MAKE_NVP( state);
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
          }
 
+
+         TEST( casual_domain_manager, state_simple_server__expect_boot)
+         {
+            common::unittest::Trace trace;
+
+            const std::string configuration{ R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 1
+
+)"};
+
+            local::Manager manager{ { configuration}};
+            process::ping( local::manager::ipc());
+
+            mockup::domain::Broker broker;
+
+
+            auto state = local::call::state();
+
+            ASSERT_TRUE( state.servers.size() == 2) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_MAKE_NVP( state);
+            EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
+
+         }
 
          TEST( casual_domain_manager, configuration_service_routes)
          {
@@ -439,105 +494,105 @@ domain:
   executables:
     - alias: sleepA1
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupA]    
     - alias: sleepA2
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupA]
     - alias: sleepA3
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupA]
     - alias: sleepA4
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupA]
     - alias: sleepA5
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupA]
 
     - alias: sleepB1
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupB]    
     - alias: sleepB2
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupB]
     - alias: sleepB3
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupB]
     - alias: sleepB4
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupB]
     - alias: sleepB5
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupB]
 
     - alias: sleepC1
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupC]    
     - alias: sleepC2
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupC]
     - alias: sleepC3
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupC]
     - alias: sleepC4
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupC]
     - alias: sleepC5
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupC]
 
     - alias: sleepD1
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupD]    
     - alias: sleepD2
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupD]
     - alias: sleepD3
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupD]
     - alias: sleepD4
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupD]
     - alias: sleepD5
       path: sleep
-      arguments: [3600]
+      arguments: [60]
       instances: 1
       memberships: [groupD]
 )"};

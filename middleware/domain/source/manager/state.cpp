@@ -30,6 +30,21 @@ namespace casual
                      }
                   }
                } // remove
+
+
+               template< typename T>
+               void print_executables( std::ostream& out, const T& value)
+               {
+                  out << "id: " << value.id
+                     << ", alias: " << value.alias
+                     << ", path: " << value.path
+                     << ", arguments: " << range::make( value.arguments)
+                     << ", restart: " << value.restart
+                     << ", memberships: " << range::make( value.memberships)
+                     << ", configured-instances: " << value.configured_instances
+                     << ", instances: " << range::make( value.instances);
+               }
+
             } // <unnamed>
          } // local
 
@@ -85,26 +100,93 @@ namespace casual
 
             std::ostream& operator << ( std::ostream& out, const Executable& value)
             {
-               return out << "{ id: " << value.id
-                     << ", alias: " << value.alias
-                     << ", path: " << value.path
-                     << ", arguments: " << range::make( value.arguments)
-                     << ", restart: " << value.restart
-                     << ", memberships: " << range::make( value.memberships)
-                     << ", configured-instances: " << value.configured_instances
-                     << ", instances: " << range::make( value.instances)
-                     << ", resources: " << range::make( value.resources)
-                     << '}';
+               out << "{ ";
+               local::print_executables( out, value);
+               return out << '}';
             }
 
-            Batch::Batch( const Group& group) : group{ group} {}
+            common::process::Handle Server::process( common::platform::pid::type pid) const
+            {
+               auto found = range::find_if( instances, [pid]( auto& p){
+                  return p.pid == pid;
+               });
+
+               if( found)
+               {
+                  return *found;
+               }
+               return {};
+            }
+
+            common::process::Handle Server::remove( common::platform::pid::type pid)
+            {
+               auto found = range::find_if( instances, [pid]( auto& p){
+                  return p.pid == pid;
+               });
+
+               common::process::Handle result;
+
+               if( found)
+               {
+                  result = *found;
+
+                  instances.erase( std::begin( found));
+               }
+               return result;
+            }
+
+            bool Server::connect( common::process::Handle process)
+            {
+               auto found = range::find_if( instances, common::process::Handle::equal::pid( process.pid));
+
+               if( found)
+               {
+                  *found = process;
+               }
+               return found;
+            }
+
+            bool Server::offline() const
+            {
+               return instances.empty();
+            }
+
+            bool Server::online() const
+            {
+               return configured_instances == 0
+                     || ( ! instances.empty()
+                           && range::all_of( instances, []( auto& p){ return p;}));
+            }
+
+            bool Server::complete() const
+            {
+               return instances.size() >= configured_instances;
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Server& value)
+            {
+               out << "{ ";
+               local::print_executables( out, value);
+               return out << ", resources: " << range::make( value.resources)
+                  << ", restrictions: " << range::make( value.restrictions)
+                  << '}';
+            }
+
+            bool operator == ( const Server& lhs, common::platform::pid::type rhs)
+            {
+               return lhs.process( rhs).pid == rhs;
+            }
+
+
+            Batch::Batch( State& state, Group::id_type group) : group( group), m_state( state) {}
 
             std::chrono::milliseconds Batch::timeout() const
             {
                std::chrono::milliseconds result{ 4000};
                constexpr std::chrono::milliseconds timeout{ 400};
 
-               range::for_each( executables, [&]( const Executable& e){ result +=  e.instances.size() * timeout;});
+               range::for_each( servers, [&]( const auto& e){ result +=  state().server( e.id).instances.size() * timeout;});
+               range::for_each( executables, [&]( const auto& e){ result +=  state().executable( e.id).instances.size() * timeout;});
 
                return result;
             }
@@ -112,17 +194,34 @@ namespace casual
 
             bool Batch::online() const
             {
-               return range::all_of( executables, []( const Executable& e){ return e.online();});
+               return range::all_of( servers, [&]( auto task){
+                  return state().server( task.id).online();
+               })
+               && range::all_of( executables, [&]( auto task){
+                  return state().executable( task.id).online();
+               });
             }
 
             bool Batch::offline() const
             {
-               return range::all_of( executables, []( const Executable& e){ return e.offline();});
+               return range::all_of( servers, [&]( auto task){
+                  return state().server( task.id).offline();
+               })
+               && range::all_of( executables, [&]( auto task){
+                  return state().executable( task.id).offline();
+               });
             }
+
+            const State& Batch::state() const { return m_state.get();}
+            State& Batch::state() { return m_state.get();}
+
 
             std::ostream& operator << ( std::ostream& out, const Batch& value)
             {
-               return out << "{ group: " << value.group << ", executables: " << range::make( value.executables) << ", timeout: " << value.timeout().count() << "ms}";
+               return out << "{ group: " << value.group
+                     << ", servers: " << range::make( value.servers)
+                     << ", executables: " << range::make( value.executables)
+                     << ", timeout: " << value.timeout().count() << "ms}";
             }
 
          } // state
@@ -141,16 +240,20 @@ namespace casual
                      range::copy( state.groups, std::back_inserter( groups));
                      range::stable_sort( groups, state::Group::boot::Order{});
 
+                     std::vector< std::reference_wrapper< state::Server>> server_wrappers;
                      std::vector< std::reference_wrapper< state::Executable>> excutable_wrappers;
 
                      //
                      // We make sure we don't include our self in the boot sequence.
                      //
-                     range::copy_if( state.executables, std::back_inserter( excutable_wrappers), [&state]( const state::Executable& e){
+                     range::copy_if( state.servers, std::back_inserter( server_wrappers), [&state]( const auto& e){
                         return e.id != state.manager_id;
                      });
 
+                     range::copy( state.executables, std::back_inserter( excutable_wrappers));
+
                      auto executable = range::make( excutable_wrappers);
+                     auto servers = range::make( server_wrappers);
 
                      //
                      // Reverse the order, so we 'consume' executable based on the group
@@ -158,20 +261,29 @@ namespace casual
                      //
                      for( auto& group : range::reverse( groups))
                      {
-                        state::Batch batch{ group};
+                        state::Batch batch{ state, group.get().id};
 
-                        //
-                        // Partition executables so we get the ones that has current group as a dependency
-                        //
-                        auto slice = range::stable_partition( executable, [&]( const state::Executable& e){
-                           return static_cast< bool>( range::find( e.memberships, group.get().id));
-                        });
+                        auto extract = [&]( auto& entites, auto& output){
 
-                        //
-                        // copy and consume the executables
-                        //
-                        range::copy( std::get< 0>( slice), std::back_inserter( batch.executables));
-                        executable = std::get< 1>( slice);
+                           //
+                           // Partition executables so we get the ones that has current group as a dependency
+                           //
+                           auto slice = range::stable_partition( entites, [&]( const auto& e){
+                              return static_cast< bool>( range::find( e.get().memberships, group.get().id));
+                           });
+
+                           range::transform( std::get< 0>( slice), output, []( auto& e){
+                              common::traits::concrete::type_t< decltype( range::front( output))> result;
+                              result.id = e.get().id;
+                              result.instances = e.get().configured_instances;
+                              return result;
+                           });
+
+                           return std::get< 1>( slice);
+                        };
+
+                        servers = extract( servers, batch.servers);
+                        executable = extract( executable, batch.executables);
 
                         result.push_back( std::move( batch));
                      }
@@ -212,42 +324,35 @@ namespace casual
                event.remove( pid);
             }
 
+            message::domain::scale::Executable restart;
+
+            auto restart_process = [&]( auto& executable, auto& output){
+
+               if( ! executable.complete() && executable.restart && m_runlevel == Runlevel::running)
+               {
+                  message::domain::scale::Executable::Scale scale;
+                  scale.id = common::id::underlaying( executable.id);
+                  scale.instances = executable.configured_instances;
+                  output.push_back( std::move( scale));
+               }
+            };
 
             //
-            // Find and remove process
+            // Check if it's a server
             //
             {
-               auto found = range::find( processes, pid);
+               auto found = range::find( servers, pid);
 
                if( found)
                {
+                  auto process = found->remove( pid);
                   //
                   // Try to remove ipc-queue (no-op if it's removed already)
                   //
-                  local::remove::ipc( found->second.queue);
+                  local::remove::ipc( process.queue);
 
-                  processes.erase( std::begin( found));
+                  restart_process( *found, restart.servers);
                }
-               else
-               {
-                  log << "process with pid: " << pid << " has not register - action: assume it's a basic executable\n";
-               }
-            }
-
-            //
-            // Remove from instances
-            //
-            {
-               using value_type = decltype( *std::begin( singeltons));
-               auto found = range::find_if( singeltons, [&]( value_type& v){
-                  return v.second.pid == pid;
-               });
-
-               if( found)
-               {
-                  singeltons.erase( std::begin( found));
-               }
-
             }
 
             //
@@ -262,32 +367,41 @@ namespace casual
                {
                   log << "removed executable with pid: " << pid << '\n';
 
-                  if( ! found->complete() && found->restart)
-                  {
-                     communication::ipc::inbound::device().push( message::domain::scale::Executable{ found->id });
-                  }
-               }
-               else
-               {
-                  log << "failed to find executable with pid: " << pid << " - assume it's a grand child";
+                  restart_process( *found, restart.executables);
                }
             }
-         }
 
-
-
-         state::Executable& State::executable( common::platform::pid::type pid)
-         {
-            auto found = find_executable( pid);
-
-            if( found)
+            //
+            // Remove from singeltons
+            //
             {
-               return *found;
+               auto found = range::find_if( singeltons, [pid]( auto& v){
+                  return v.second.pid == pid;
+               });
+
+               if( found)
+               {
+                  singeltons.erase( std::begin( found));
+               }
             }
-            throw exception::invalid::Argument{ "failed to locate executable", CASUAL_NIP( pid)};
+
+            if( restart)
+            {
+               communication::ipc::inbound::device().push( restart);
+            }
+
          }
 
-         state::Executable* State::find_executable( common::platform::pid::type pid)
+
+         state::Server* State::server( common::platform::pid::type pid)
+         {
+            return range::find_if( servers, [pid]( const auto& s){
+               return s.process( pid).pid == pid;
+            }).data();
+         }
+
+
+         state::Executable* State::executable( common::platform::pid::type pid)
          {
             return range::find_if( executables, [=]( const auto& e){
                return range::find( e.instances, pid) == true;
@@ -305,6 +419,20 @@ namespace casual
          {
             return range::front( range::find_if( groups, [=]( const auto& g){
                return g.id == id;
+            }));
+         }
+
+         const state::Server& State::server( state::Server::id_type id) const
+         {
+            return range::front( range::find_if( servers, [id]( const auto& s){
+               return s.id == id;
+            }));
+         }
+
+         const state::Executable& State::executable( state::Executable::id_type id) const
+         {
+            return range::front( range::find_if( executables, [id]( const auto& e){
+               return e.id == id;
             }));
          }
 
@@ -327,16 +455,16 @@ namespace casual
 
          std::vector< std::string> State::resources( common::platform::pid::type pid)
          {
-            auto executable = find_executable( pid);
+            auto process = server( pid);
 
-            if( ! executable)
+            if( ! process)
             {
                return {};
             }
 
-            auto resources = executable->resources;
+            auto resources = process->resources;
 
-            for( auto& id : executable->memberships)
+            for( auto& id : process->memberships)
             {
                auto& group = State::group( id);
 

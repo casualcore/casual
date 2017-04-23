@@ -192,8 +192,10 @@ namespace casual
             event_subscribe_update,
             event_unsubscribe_request,
 
-            event_domain_boot_start,
+            event_domain_boot_begin,
             event_domain_boot_end,
+            event_domain_shutdown_begin,
+            event_domain_shutdown_end,
             event_domain_error,
             event_domain_server_connect,
             event_domain_boot_group_start,

@@ -414,7 +414,7 @@ namespace casual
 
                            log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
 
-                           process = common::domain::singleton::read().process;
+                           process = singleton_policy();
 
                            if( ! ipc::exists( process.queue))
                            {
@@ -444,8 +444,7 @@ namespace casual
                      Connector::Connector()
                       : outbound::Connector{ local::reconnect( [](){
                          return common::domain::singleton::read(
-                               process::pattern::Sleep{
-                                { std::chrono::milliseconds{ 10}, 10}}
+                               process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
                          ).process;
                       })}
                      {
@@ -456,8 +455,7 @@ namespace casual
                      {
                         m_id = local::reconnect( [](){
                            return common::domain::singleton::read(
-                                 process::pattern::Sleep{
-                                  { std::chrono::milliseconds{ 10}, 10}}
+                                 process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
                            ).process;
                         });
                      }

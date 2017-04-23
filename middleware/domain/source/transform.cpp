@@ -27,32 +27,33 @@ namespace casual
                   struct Alias
                   {
 
-                     void operator () ( manager::state::Executable& executable)
+                     template< typename E>
+                     void operator () ( E& process)
                      {
-                        if( executable.alias.empty())
+                        if( process.alias.empty())
                         {
-                           executable.alias = file::name::base( executable.path);
+                           process.alias = file::name::base( process.path);
 
-                           if( executable.alias.empty())
+                           if( process.alias.empty())
                            {
-                              throw exception::invalid::Configuration{ "executables has to have a path", CASUAL_NIP( executable)};
+                              throw exception::invalid::Configuration{ "executables has to have a path", CASUAL_NIP( process)};
                            }
                         }
 
 
 
-                        auto& count = m_mapping[ executable.alias];
+                        auto& count = m_mapping[ process.alias];
                         ++count;
 
                         if( count > 1)
                         {
-                           executable.alias = executable.alias + "_" + std::to_string( count);
+                           process.alias = process.alias + "_" + std::to_string( count);
 
                            //
                            // Just to make sure we don't get duplicates if users has configure aliases
                            // such as 'alias_1', and so on, we do another run
                            //
-                           operator ()( executable);
+                           operator ()( process);
                         }
                      }
 
@@ -143,12 +144,12 @@ namespace casual
 
                   manager::state::Executable operator() ( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
                   {
-                     return transform( value, groups);
+                     return transform< manager::state::Executable>( value, groups);
                   }
 
-                  manager::state::Executable operator() ( const configuration::server::Server& value, const std::vector< manager::state::Group>& groups)
+                  manager::state::Server operator() ( const configuration::server::Server& value, const std::vector< manager::state::Group>& groups)
                   {
-                     auto result = transform( value, groups);
+                     auto result = transform< manager::state::Server>( value, groups);
 
                      if( value.resources)
                         result.resources = value.resources.value();
@@ -160,9 +161,10 @@ namespace casual
                   }
 
                private:
-                  manager::state::Executable transform( const configuration::server::Executable& value, const std::vector< manager::state::Group>& groups)
+                  template< typename R, typename C>
+                  R transform( const C& value, const std::vector< manager::state::Group>& groups)
                   {
-                     manager::state::Executable result;
+                     R result;
 
                      result.alias = value.alias.value_or( "");
                      result.arguments = value.arguments.value_or( result.arguments);
@@ -187,7 +189,7 @@ namespace casual
                };
 
                template< typename C>
-               std::vector< manager::state::Executable> executables( C&& values, const std::vector< manager::state::Group>& groups)
+               auto executables( C&& values, const std::vector< manager::state::Group>& groups)
                {
                   return range::transform( values, std::bind( Executable{}, std::placeholders::_1, std::ref( groups)));
                }
@@ -201,11 +203,13 @@ namespace casual
                      {
                         manager::admin::vo::Group result;
 
-                        result.id = value.id;
+                        result.id = value.id.underlaying();
                         result.name = value.name;
                         result.note = value.note;
 
-                        result.dependencies = value.dependencies;
+                        result.dependencies = range::transform( value.dependencies, []( auto& id){
+                           return id.underlaying();
+                        });
                         result.resources = value.resources;
 
                         return result;
@@ -217,15 +221,35 @@ namespace casual
                   {
                      manager::admin::vo::Executable operator () ( const manager::state::Executable& value)
                      {
-                        manager::admin::vo::Executable result;
+                        return transform< manager::admin::vo::Executable>( value);
+                     }
 
-                        result.id = value.id;
+                     manager::admin::vo::Server operator () ( const manager::state::Server& value)
+                     {
+                        auto result = transform< manager::admin::vo::Server>( value);
+
+                        result.resources = value.resources;
+                        result.restriction = value.restrictions;
+
+                        return result;
+                     }
+
+                  private:
+
+                     template< typename R, typename T>
+                     R transform( const T& value)
+                     {
+                        R result;
+
+                        result.id = value.id.underlaying();
                         result.alias = value.alias;
                         result.path = value.path;
                         result.arguments = value.arguments;
                         result.note = value.note;
                         result.instances = value.instances;
-                        result.memberships = value.memberships;
+                        result.memberships = range::transform( value.memberships, []( auto id){
+                           return common::id::underlaying( id);
+                        });
                         result.environment.variables = value.environment.variables;
                         result.configured_instances = value.configured_instances;
                         result.restart = value.restart;
@@ -233,6 +257,7 @@ namespace casual
 
                         return result;
                      }
+
                   };
                } // vo
 
@@ -244,6 +269,7 @@ namespace casual
             manager::admin::vo::State result;
 
             result.groups = range::transform( state.groups, local::vo::Group{});
+            result.servers = range::transform( state.servers, local::vo::Executable{});
             result.executables = range::transform( state.executables, local::vo::Executable{});
 
             return result;
@@ -334,9 +360,7 @@ namespace casual
                //
                {
 
-                  result.processes[ common::process::handle().pid] = common::process::handle();
-
-                  manager::state::Executable manager;
+                  manager::state::Server manager;
                   result.manager_id = manager.id;
                   manager.alias = "casual-domain-manager";
                   manager.path = "casual-domain-manager";
@@ -344,15 +368,18 @@ namespace casual
                   manager.memberships.push_back( result.group_id.master);
                   manager.note = "responsible for all executables in this domain";
 
-                  manager.instances.push_back( common::process::id());
+                  manager.instances.push_back( common::process::handle());
 
-                  result.executables.push_back( std::move( manager));
+                  result.servers.push_back( std::move( manager));
                }
 
-               range::append( local::executables( domain.servers, result.groups), result.executables);
+               range::append( local::executables( domain.servers, result.groups), result.servers);
                range::append( local::executables( domain.executables, result.groups), result.executables);
 
-               range::for_each( result.executables, local::verify::Alias{});
+               local::verify::Alias verify;
+
+               range::for_each( result.servers, verify);
+               range::for_each( result.executables, verify);
 
             }
 

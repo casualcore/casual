@@ -12,6 +12,7 @@
 #include "common/event/listener.h"
 
 #include "sf/xatmi_call.h"
+#include "sf/archive/maker.h"
 
 namespace casual
 {
@@ -31,6 +32,163 @@ namespace casual
                   bool no_header = false;
 
                } // global
+
+               namespace event
+               {
+                  struct Done{};
+
+                  struct Handler
+                  {
+                     using mapping_type = std::map< platform::pid::type, std::string>;
+
+                     Handler() = default;
+                     Handler( mapping_type mapping) : m_alias_mapping{ std::move( mapping)} {}
+
+                     void operator () ()
+                     {
+                        //
+                        // Make sure we unsubscribe for events
+                        //
+                        auto unsubscribe = scope::execute( [](){
+                           message::event::subscription::End message;
+                           message.process = process::handle();
+
+                           communication::ipc::non::blocking::send(
+                                 communication::ipc::domain::manager::optional::device(),
+                                 message);
+                        });
+
+                        common::communication::ipc::inbound::Device::handler_type event_handler{
+                           [&]( message::event::process::Spawn& m){
+                              group( std::cout) << "spawned: " << terminal::color::yellow << m.alias << " "
+                                    << terminal::color::no_color << range::make( m.pids) << std::endl;
+                              for( auto pid : m.pids)
+                              {
+                                 m_alias_mapping[ pid] = m.alias;
+                              }
+                           },
+                           [&]( message::event::process::Exit& m){
+                              using reason_t = process::lifetime::Exit::Reason;
+                              switch( m.state.reason)
+                              {
+                                 case reason_t::core:
+                                    group( std::cout) << terminal::color::red << "core: "
+                                          << terminal::color::white << m.state.pid << " " << m_alias_mapping[ m.state.pid] << std::endl;
+                                    break;
+                                 default:
+                                    group( std::cout) << terminal::color::green << "exit: "
+                                       <<  terminal::color::white << m.state.pid
+                                       << " " << terminal::color::yellow << m_alias_mapping[ m.state.pid] << std::endl;
+                                    break;
+                              }
+
+                           },
+                           [&]( message::event::domain::server::Connect& m){
+
+                              group( std::cout) << terminal::color::green << "connected: "
+                                    <<  terminal::color::white << m.process.pid
+                                    << " " << terminal::color::yellow << m_alias_mapping[ m.process.pid] << std::endl;
+
+
+                           },
+                           []( message::event::domain::boot::Begin& m){
+                                 std::cout << "boot domain: " << terminal::color::cyan << m.domain.name << terminal::color::no_color
+                                       << " - id: " << terminal::color::yellow << m.domain.id << std::endl;
+                           },
+                           []( message::event::domain::boot::End& m){
+                              throw event::Done{};
+                           },
+                           []( message::event::domain::shutdown::Begin& m){
+                                 std::cout << "shutdown domain: " << terminal::color::cyan << m.domain.name << terminal::color::no_color
+                                       << " - id: " << terminal::color::yellow << m.domain.id << std::endl;
+                           },
+                           []( message::event::domain::shutdown::End& m){
+                              throw event::Done{};
+                           },
+                           []( message::event::domain::Error& m)
+                           {
+                              switch( m.severity)
+                              {
+                                 case message::event::domain::Error::Severity::fatal:
+                                 {
+                                    std::cerr << terminal::color::red << "fatal: " << terminal::color::white << m.message << '\n';
+                                    throw Done{};
+                                 }
+                                 case message::event::domain::Error::Severity::error:
+                                 {
+                                    std::cerr << terminal::color::red << "error: " << terminal::color::white << m.message << '\n';
+                                    break;
+                                 }
+                                 default:
+                                 {
+                                    std::cerr << terminal::color::magenta << "warning " << terminal::color::white << m.message << '\n';
+                                 }
+                              }
+                           },
+                           [&]( message::event::domain::Group& m){
+                              using context_type = message::event::domain::Group::Context;
+
+                              switch( m.context)
+                              {
+                                 case context_type::boot_start:
+                                 case context_type::shutdown_start:
+                                 {
+                                    m_group = m.name;
+                                    break;
+                                 }
+                                 default:
+                                 {
+                                    m_group.clear();
+                                    break;
+                                 }
+                              }
+                           }
+                        };
+
+                        try
+                        {
+                           common::message::dispatch::blocking::pump( event_handler, common::communication::ipc::inbound::device());
+                        }
+                        catch( const event::Done&)
+                        {
+                           // no-op
+                        }
+                        catch( const exception::signal::child::Terminate&)
+                        {
+                           std::cerr << terminal::color::red << "fatal";
+                           std::cerr << " failed to boot domain\n";
+
+                           //
+                           // Check if we got some error events
+                           //
+                           common::message::dispatch::pump(
+                                 event_handler,
+                                 common::communication::ipc::inbound::device(),
+                                 common::communication::ipc::inbound::Device::non_blocking_policy{});
+
+                        }
+                        catch( ...)
+                        {
+                           error::handler();
+                        }
+                     }
+
+                  private:
+
+                     std::ostream& group( std::ostream& out)
+                     {
+                        if( ! m_group.empty())
+                        {
+                           out << terminal::color::blue << m_group << " ";
+                        }
+                        return out;
+                     }
+
+                     std::map< platform::pid::type, std::string> m_alias_mapping;
+                     std::string m_group;
+                  };
+
+               } // event
 
                namespace call
                {
@@ -64,17 +222,8 @@ namespace casual
 
                   void boot( const std::vector< std::string>& files)
                   {
-                     //
-                     // Make sure we unsubscribe for events
-                     //
-                     auto unsubscribe = scope::execute( [](){
-                        message::event::subscription::End message;
-                        message.process = process::handle();
 
-                        communication::ipc::non::blocking::send(
-                              communication::ipc::domain::manager::optional::device(),
-                              message);
-                     });
+                     event::Handler events;
 
                      auto get_arguments = []( auto&& files){
                         std::vector< std::string> arguments;
@@ -99,128 +248,86 @@ namespace casual
                            common::environment::variable::get( common::environment::variable::name::home()) + "/bin/casual-domain-manager",
                            get_arguments( range::make( files)));
 
-                     struct event_done {};
+                     events();
+                  }
 
-                     common::communication::ipc::inbound::Device::handler_type event_handler{
-                        []( message::event::process::Spawn& m){
-                           std::cout << "spawn: " << m << std::endl;
-                        },
-                        []( message::event::process::Exit& m){
-                           std::cout << "exit: " << m << std::endl;
-                        },
-                        []( message::event::domain::server::Connect& m){
-                           std::cout << terminal::color::green << "connected: " << terminal::color::white << m.process;
-                           if( m.identification)
-                           {
-                              std::cout << " identification: " << m.identification;
-                           }
-                           std::cout << std::endl;
+                  auto get_alias_mapping()
+                  {
+                     auto state = call::state();
 
-                        },
-                        []( message::event::boot::Start& m){
-                           std::cout << "begin - boot domain: " << m.domain << std::endl;
-                        },
-                        []( message::event::boot::End& m){
-                           std::cerr << "done - boot domain: " << m.domain << std::endl;
+                     std::map< platform::pid::type, std::string> mapping;
 
-                           throw event_done{};
-                        },
-                        []( message::event::domain::Group& m){
-                           using context_type = message::event::domain::Group::Context;
-                           static const std::map< context_type, std::string> context{
-                              { context_type::boot_start, "group boot start"},
-                              { context_type::boot_end, "group boot end"},
-                              { context_type::shutdown_start, "group shutdown start"},
-                              { context_type::shutdown_end, "group shutdown end"},
-                           };
-
-                           std::cout << context.at( m.context) << " - name: " << m.name << " - id: " << m.id << std::endl;
-                        },
-                        []( message::event::domain::Error& m){
-                           switch( m.severity)
-                           {
-                              case message::event::domain::Error::Severity::fatal:
-                              {
-                                 std::cerr << terminal::color::red << "fatal: " << terminal::color::white << m.message << '\n';
-                                 throw event_done{};
-                              }
-                              case message::event::domain::Error::Severity::error:
-                              {
-                                 std::cerr << terminal::color::red << "error: " << terminal::color::white << m.message << '\n';
-                                 break;
-                              }
-                              default:
-                              {
-                                 std::cerr << terminal::color::cyan << "warning " << terminal::color::white << m.message << '\n';
-                              }
-                           }
+                     for( auto& s : state.servers)
+                     {
+                        for( auto& i : s.instances)
+                        {
+                           mapping[ i.pid] = s.alias;
                         }
-                     };
-
-                     try
-                     {
-                        common::message::dispatch::blocking::pump( event_handler, common::communication::ipc::inbound::device());
-                     }
-                     catch( const event_done&)
-                     {
-                        // no-op
-                     }
-                     catch( const exception::signal::child::Terminate&)
-                     {
-                        std::cerr << terminal::color::red << "fatal";
-                        std::cerr << " failed to boot domain\n";
-
-                        //
-                        // Check if we got some error events
-                        //
-                        common::message::dispatch::pump(
-                              event_handler,
-                              common::communication::ipc::inbound::device(),
-                              common::communication::ipc::inbound::Device::non_blocking_policy{});
-
-                     }
-                     catch( ...)
-                     {
-                        error::handler();
                      }
 
+                     for( auto& e : state.executables)
+                     {
+                        for( auto& pid : e.instances)
+                        {
+                           mapping[ pid] = e.alias;
+                        }
+                     }
+                     return mapping;
                   }
 
                   void shutdown()
                   {
+
+                     //
+                     // subscribe for events
+                     //
+                     {
+                        message::event::subscription::Begin message;
+                        message.process = process::handle();
+
+                        communication::ipc::non::blocking::send(
+                              communication::ipc::domain::manager::optional::device(),
+                              message);
+                     }
+
+                     event::Handler events{ get_alias_mapping()};
+
                      sf::xatmi::service::binary::Sync service( ".casual.domain.shutdown");
                      auto reply = service();
+
+                     events();
                   }
                } // call
 
                namespace format
                {
 
-                  terminal::format::formatter< admin::vo::Executable> executables()
+                  template< typename P>
+                  terminal::format::formatter< P> process()
                   {
 
-                     auto format_no_of_instances = []( const admin::vo::Executable& e){
+                     auto format_no_of_instances = []( const P& e){
                         return e.instances.size();
                      };
 
-                     auto format_restart = []( const admin::vo::Executable& e){
+                     auto format_restart = []( const P& e){
                         if( e.restart) { return "true";}
                         return "false";
                      };
 
-                     auto format_restarts = []( const admin::vo::Executable& e){
+                     auto format_restarts = []( const P& e){
                         return e.restarts;
                      };
 
 
                      return {
                         { global::porcelain, ! global::no_color, ! global::no_header},
-                        terminal::format::column( "alias", std::mem_fn( &admin::vo::Executable::alias), terminal::color::yellow, terminal::format::Align::left),
+                        terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "instances", format_no_of_instances, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "#c", std::mem_fn( &admin::vo::Executable::configured_instances), terminal::color::blue, terminal::format::Align::right),
+                        terminal::format::column( "#c", std::mem_fn( &P::configured_instances), terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
-                        terminal::format::column( "path", std::mem_fn( &admin::vo::Executable::path), terminal::color::blue, terminal::format::Align::left),
+                        terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left),
                      };
                   }
                } // format
@@ -228,15 +335,14 @@ namespace casual
                namespace print
                {
 
-                  void executables( std::ostream& out, admin::vo::State& state)
+                  template< typename VO>
+                  void processes( std::ostream& out, std::vector< VO>& processes)
                   {
                      out << std::boolalpha;
 
-                     auto formatter = format::executables();
+                     auto formatter = format::process< VO>();
 
-                     formatter.print( std::cout, range::sort(
-                           state.executables,
-                           []( const admin::vo::Executable& l, const admin::vo::Executable& r){ return l.id < r.id;}));
+                     formatter.print( std::cout, range::sort( processes));
                   }
 
                } // print
@@ -247,15 +353,32 @@ namespace casual
                   {
                      auto state = call::state();
 
-                     print::executables( std::cout, state);
+                     //print::executables( std::cout, state);
                   }
 
                   void list_executable()
                   {
                      auto state = call::state();
 
-                     print::executables( std::cout, state);
+                     print::processes( std::cout, state.executables);
                   }
+
+                  void list_servers()
+                  {
+                     auto state = call::state();
+
+                     print::processes( std::cout, state.servers);
+                  }
+
+                  /*
+                  void list_processes()
+                  {
+                     auto state = call::state();
+
+                     print::processes( std::cout, state.servers);
+                  }
+                  */
+
 
                   void scale_instances( const std::vector< std::string>& values)
                   {
@@ -298,6 +421,16 @@ namespace casual
                   } // persist
 
 
+                  void state( const std::string& format)
+                  {
+                     auto state = call::state();
+
+                     auto archive = sf::archive::writer::from::name( std::cout, format);
+
+                     archive << CASUAL_MAKE_NVP( state);
+                  }
+
+
                } // action
 
             } // <unnamed>
@@ -312,6 +445,8 @@ namespace casual
                   common::argument::directive( {"--no-color"}, "no color will be used", local::global::no_color),
                   common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", local::global::no_header),
 
+                  common::argument::directive( {"--state"}, "domain state in the provided format (xml|json|yaml|ini)", &local::action::state),
+                  common::argument::directive( {"-ls", "--list-servers"}, "list all servers", &local::action::list_servers),
                   common::argument::directive( {"-le", "--list-executables"}, "list all executables", &local::action::list_executable),
                   common::argument::directive( {"-li", "--list-instances"}, "list all instances", &local::action::list_instances),
                   common::argument::directive( {"-si", "--scale-instances"}, "<alias> <#> scale executable instances", &local::action::scale_instances),

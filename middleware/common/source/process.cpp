@@ -380,23 +380,38 @@ namespace casual
                return --m_quantity == 0;
             }
 
+            std::ostream& operator << ( std::ostream& out, const Sleep::Pattern& value)
+            {
+               return out << "{ duration: " << value.m_time.count() << "us, quantity: " << value.m_quantity
+                     << '}';
+            }
 
-            Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)), m_range{ range::make( m_pattern)} {}
 
-            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern{ std::move( pattern)}, m_range{ range::make( m_pattern)} {}
-
+            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern( std::move( pattern))
+            {
+               //
+               // We reverse the patterns so we can go from the back
+               //
+               range::reverse( m_pattern);
+            }
             bool Sleep::operator () ()
             {
-               if( m_range)
+               if( ! m_pattern.empty())
                {
-                  if( m_range->done())
+                  if( m_pattern.back().done())
                   {
-                     ++m_range;
+                     m_pattern.pop_back();
                   }
                   return true;
                }
                return false;
             }
+
+            std::ostream& operator << ( std::ostream& out, const Sleep& value)
+            {
+               return out << "{ pattern: " << range::make( value.m_pattern) << '}';
+            }
+
          } // pattern
 
          namespace local

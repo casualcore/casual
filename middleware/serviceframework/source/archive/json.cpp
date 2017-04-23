@@ -1,8 +1,5 @@
 //!
-//! json.cpp
-//!
-//! Created on: Jan 18, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/archive/json.h"
@@ -69,9 +66,12 @@ namespace casual
 
             const rapidjson::Document& Load::operator() ( std::istream& stream)
             {
+               //
+               // note: istreambuf_iterator does not skip whitespace, which is what we want.
+               //
                const std::string buffer{
-                  std::istream_iterator< char>( stream),
-                  std::istream_iterator< char>()};
+                  std::istreambuf_iterator<char>(stream),
+                  {}};
 
                return local::parse( m_document, buffer.c_str());
             }
