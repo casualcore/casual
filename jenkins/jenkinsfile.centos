@@ -203,5 +203,6 @@ try
  {
     slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
     currentBuild.result = 'FAILURE'
+    archive includes: '**/casual.log'
  }
 
