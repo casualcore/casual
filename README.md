@@ -9,10 +9,10 @@ casual has a few 'products' that could be split into separate repos in the futur
 we keep them all in this repository.
 
 ### middleware
-casual main purpose is [casual-middelware](/middleware/readme.md), which is an XATMI implementation
+casual main purpose is [casual-middelware](middleware/readme.md), which is an XATMI implementation
 
 ### make
-[casual-make](/make/readme.md) is the 'build system' that is used to build casual
+[casual-make](make/readme.md) is the 'build system' that is used to build casual
 
 ## Getting started
 
@@ -22,7 +22,7 @@ Follow the [build instructions](build.md)
 
 ### Use casual-middleware
 
-See [examples](/middleware/example/domain/readme.md)
+See [examples](middleware/example/domain/readme.md)
 
 
 ### Status
@@ -56,7 +56,7 @@ We've done some field tests
 
 ### License
 Our intention is that everything in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT),
-with the exception of stuff under [thirdparty](/thirdparty/readme.md), which has their own licenses.
+with the exception of stuff under [thirdparty](thirdparty/readme.md), which has their own licenses.
 
-We (think we) show this by the file [licence.md](/license.md). If this is not enough legally, please enlighten us!
+We (think we) show this by the file [licence.md](license.md). If this is not enough legally, please enlighten us!
 
