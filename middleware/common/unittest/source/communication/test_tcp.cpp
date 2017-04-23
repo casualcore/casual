@@ -22,11 +22,11 @@ namespace casual
          {
             namespace
             {
-               void simple_server( std::string port)
+               void simple_server( tcp::Address address)
                {
                   try
                   {
-                     tcp::Listener listener{ tcp::Address::Port{ port}};
+                     tcp::Listener listener{ std::move( address)};
 
                      std::vector< tcp::Socket> connections;
 
@@ -50,10 +50,11 @@ namespace casual
                   return static_cast< bool>( value);
                }
 
-               std::string next_port()
+
+               tcp::Address address()
                {
-                  static std::size_t port = 23666;
-                  return std::to_string( ++port);
+                  static long port = 23666;
+                  return { { "127.0.0.1"}, { ++port}};
                }
 
             } // <unnamed>
@@ -64,7 +65,7 @@ namespace casual
             common::unittest::Trace trace;
 
             EXPECT_THROW( {
-               tcp::connect( tcp::Address::Port{ local::next_port()});
+               tcp::connect( local::address());
             }, exception::communication::Refused);
          }
 
@@ -73,7 +74,7 @@ namespace casual
             common::unittest::Trace trace;
 
             EXPECT_NO_THROW({
-               tcp::Listener listener{ tcp::Address::Port{ local::next_port()}};
+               tcp::Listener listener{ local::address()};
             });
          }
 
@@ -82,11 +83,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::simple_server, port};
+            mockup::Thread server{ &local::simple_server, adress};
 
-            auto socket = tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}});
+            auto socket = tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}});
 
             EXPECT_TRUE( local::boolean( socket));
          }
@@ -96,15 +97,15 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::simple_server, port};
+            mockup::Thread server{ &local::simple_server, adress};
 
             std::vector< tcp::Socket> connections;
 
             for( int count = 0; count < 10; ++count)
             {
-               connections.push_back( tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}}));
+               connections.push_back( tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}}));
             }
 
             for( auto& s : connections)
@@ -139,13 +140,13 @@ namespace casual
 
                   }
 
-                  void server( std::string port)
+                  void server( tcp::Address address)
                   {
                      std::vector< mockup::Thread> workers;
 
                      try
                      {
-                        tcp::Listener listener{ tcp::Address::Port{ port}};
+                        tcp::Listener listener{ std::move( address)};
 
                         while( true)
                         {
@@ -167,11 +168,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
-            auto socket = tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}});
+            auto socket = tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}});
 
             EXPECT_TRUE( local::boolean( socket));
 
@@ -200,15 +201,15 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
             std::vector< tcp::Socket> connections( 10);
 
             for( auto& socket : connections)
             {
-               socket = tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}});
+               socket = tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}});
                EXPECT_TRUE( local::boolean( socket));
             }
 
@@ -240,11 +241,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
 
 
             auto send = [&](){
@@ -276,11 +277,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 10 * 1024);
 
@@ -302,11 +303,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 100 * 1024);
 
@@ -328,11 +329,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 1024 * 1024);;
 
@@ -355,11 +356,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto port = local::next_port();
+            const auto adress = local::address();
 
-            mockup::Thread server{ &local::echo::server, port};
+            mockup::Thread server{ &local::echo::server, adress};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( tcp::Address::Port{ port}, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
 
 
             auto send_message = unittest::random::message( 10 * 1024 * 1024);
