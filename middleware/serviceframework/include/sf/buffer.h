@@ -227,23 +227,21 @@ namespace casual
 
                void write( const platform::binary::type& value)
                {
-                  //
-                  // TODO: Write the size as some-common_size_type
-                  //
-                  write( value.size());
+                  const auto encoded = common::network::byteorder::size::encode( value.size());
+                  append( common::memory::range::make( encoded));
                   append( common::range::make( value));
                }
 
                void write( const std::string& value)
                {
                   //
-                  // TODO: Write the size as some-common_size_type or just
-                  // write the string null-terminated that will save us a few
-                  // bytes that might be substantial
+                  // TODO: Write the string null-terminated that will save us a
+                  // few bytes that might be substantial
                   //
                   // append( value.c_str(), value.size() + 1)
                   //
-                  write( value.size());
+                  const auto encoded = common::network::byteorder::size::encode( value.size());
+                  append( common::memory::range::make( encoded));
                   append( common::range::make( value));
                }
 
@@ -259,29 +257,25 @@ namespace casual
                void read( std::string& value)
                {
                   //
-                  // TODO: Read the size as some-common_size_type or just read
-                  // until first null-termination and then advance the cursor
-                  // that might save us a few bytes per string that might be
-                  // substantial
+                  // TODO: Read read until first null-termination and then
+                  // advance the cursor that might save us a few bytes per
+                  // string that might be substantial
                   //
                   // pseudo-code
                   // value = buffer + offset;
                   // advance( value.size() + 1);
                   //
-                  auto size = value.size();
-                  read( size);
-                  value.resize( size);
+                  decltype( common::network::byteorder::size::encode( value.size())) size;
+                  consume( common::memory::range::make( size));
+                  value.resize( common::network::byteorder::size::decode<std::string::size_type>( size));
                   consume( common::range::make( value));
                }
 
                void read( platform::binary::type& value)
                {
-                  //
-                  // TODO: Read the size as some-common_size_type
-                  //
-                  auto size = value.size();
-                  read( size);
-                  value.resize( size);
+                  decltype( common::network::byteorder::size::encode( value.size())) size;
+                  consume( common::memory::range::make( size));
+                  value.resize( common::network::byteorder::size::decode<std::string::size_type>( size));
                   consume( common::range::make( value));
                }
 

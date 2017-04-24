@@ -67,6 +67,13 @@ namespace casual
                      memory::append( value, buffer);
                   }
 
+                  template<typename T>
+                  static void write_size( const T& size, platform::binary::type& buffer)
+                  {
+                     const auto encoded = common::network::byteorder::size::encode( size);
+                     memory::append( encoded, buffer);
+                  }
+
 
                   template< typename T>
                   static typename std::enable_if< ! detail::is_network_array< T>::value, std::size_t>::type
@@ -86,6 +93,17 @@ namespace casual
                   {
                      return memory::copy( buffer, offset, value);
                   }
+
+                  template<typename T>
+                  static std::size_t read_size( const platform::binary::type& buffer, std::size_t offset, T& value)
+                  {
+                     decltype(common::network::byteorder::size::encode( value)) encoded;
+                     offset = memory::copy( buffer, offset, encoded);
+                     value = common::network::byteorder::size::decode<T>( encoded);
+                     return offset;
+                  }
+
+
                };
 
                using Input = basic_input< Policy>;

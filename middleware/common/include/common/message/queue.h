@@ -102,7 +102,7 @@ namespace casual
 
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  std::size_t queue = 0;
+                  long queue = 0;
                   std::string name;
 
                   Message message;
@@ -187,7 +187,7 @@ namespace casual
                      //Message& operator = ( Message&&) = default;
 
 
-                     std::size_t redelivered = 0;
+                     long redelivered = 0;
                      common::platform::time::point::type timestamp;
 
                      CASUAL_CONST_CORRECT_MARSHAL(

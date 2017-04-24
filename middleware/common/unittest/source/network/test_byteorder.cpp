@@ -28,7 +28,9 @@ namespace casual
             EXPECT_TRUE( byteorder::bytes<bool>() == 1);
             EXPECT_TRUE( byteorder::bytes<char>() == 1);
             EXPECT_TRUE( byteorder::bytes<short>() == 2);
+            EXPECT_TRUE( byteorder::bytes<int>() == 4);
             EXPECT_TRUE( byteorder::bytes<long>() == 8);
+            EXPECT_TRUE( byteorder::bytes<long long>() == 8);
             EXPECT_TRUE( byteorder::bytes<float>() == 4);
             EXPECT_TRUE( byteorder::bytes<double>() == 8);
          }
@@ -44,15 +46,11 @@ namespace casual
             EXPECT_TRUE( typeid( byteorder::type<bool>) == typeid(uint8_t));
             EXPECT_TRUE( typeid( byteorder::type<char>) == typeid(uint8_t));
             EXPECT_TRUE( typeid( byteorder::type<short>) == typeid(uint16_t));
+            EXPECT_TRUE( typeid( byteorder::type<int>) == typeid(uint32_t));
             EXPECT_TRUE( typeid( byteorder::type<long>) == typeid(uint64_t));
+            EXPECT_TRUE( typeid( byteorder::type<long long>) == typeid(uint64_t));
             EXPECT_TRUE( typeid( byteorder::type<float>) == typeid(uint32_t));
             EXPECT_TRUE( typeid( byteorder::type<double>) == typeid(uint64_t));
-
-            EXPECT_TRUE( typeid( byteorder::type<uint8_t>) == typeid(uint8_t));
-            EXPECT_TRUE( typeid( byteorder::type<uint16_t>) == typeid(uint16_t));
-            EXPECT_TRUE( typeid( byteorder::type<uint32_t>) == typeid(uint64_t));
-            EXPECT_TRUE( typeid( byteorder::type<uint64_t>) == typeid(uint64_t));
-
          }
 
          //
@@ -68,14 +66,11 @@ namespace casual
             EXPECT_TRUE( typeid(decltype(byteorder::decode<bool>( 0))) == typeid(bool));
             EXPECT_TRUE( typeid(decltype(byteorder::decode<char>( 0))) == typeid(char));
             EXPECT_TRUE( typeid(decltype(byteorder::decode<short>( 0))) == typeid(short));
+            EXPECT_TRUE( typeid(decltype(byteorder::decode<int>( 0))) == typeid(int));
             EXPECT_TRUE( typeid(decltype(byteorder::decode<long>( 0))) == typeid(long));
+            EXPECT_TRUE( typeid(decltype(byteorder::decode<long long>( 0))) == typeid(long long));
             EXPECT_TRUE( typeid(decltype(byteorder::decode<float>( 0))) == typeid(float));
             EXPECT_TRUE( typeid(decltype(byteorder::decode<double>( 0))) == typeid(double));
-
-            EXPECT_TRUE( typeid(decltype(byteorder::decode<uint8_t>( 0))) == typeid(uint8_t));
-            EXPECT_TRUE( typeid(decltype(byteorder::decode<uint16_t>( 0))) == typeid(uint16_t));
-            EXPECT_TRUE( typeid(decltype(byteorder::decode<uint32_t>( 0))) == typeid(uint32_t));
-            EXPECT_TRUE( typeid(decltype(byteorder::decode<uint64_t>( 0))) == typeid(uint64_t));
 
          }
 
@@ -129,6 +124,14 @@ namespace casual
                const double initial = 1234.5678;
                const auto encoded = byteorder::encode( initial);
                const auto decoded = byteorder::decode< double>( encoded);
+               EXPECT_TRUE( initial == decoded) << "initial: " << initial << " - decoded: " << decoded;
+            }
+
+
+            {
+               const std::size_t initial = 1234;
+               const auto encoded = byteorder::size::encode( initial);
+               const auto decoded = byteorder::size::decode<std::size_t>( encoded);
                EXPECT_TRUE( initial == decoded) << "initial: " << initial << " - decoded: " << decoded;
             }
          }

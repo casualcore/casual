@@ -37,12 +37,12 @@ namespace casual
                      Service( std::string name,
                            std::string category = {},
                            common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
-                           std::size_t hops = 0)
+                           long hops = 0)
                       : message::Service{ std::move( name), std::move( category), transaction}, hops{ hops} {}
 
                       Service( std::function<void(Service&)> foreign) { foreign( *this);}
 
-                     std::size_t hops = 0;
+                     long hops = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -58,13 +58,13 @@ namespace casual
                   {
                      Queue() = default;
 
-                     Queue( std::string name, std::size_t retries) : name{ std::move( name)}, retries{ retries} {}
+                     Queue( std::string name, long retries) : name{ std::move( name)}, retries{ retries} {}
                      Queue( std::string name) : name{ std::move( name)} {}
 
                      Queue( std::function<void(Queue&)> foreign) { foreign( *this);}
 
                      std::string name;
-                     std::size_t retries = 0;
+                     long retries = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

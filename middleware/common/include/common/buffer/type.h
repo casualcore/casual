@@ -9,6 +9,7 @@
 
 #include "common/marshal/marshal.h"
 #include "common/algorithm.h"
+#include "common/network/byteorder.h"
 
 
 #include <string>
@@ -98,14 +99,18 @@ namespace casual
                void marshal( A& archive) const
                {
                   archive << payload().type;
-                  archive << transport;
+                  //
+                  // TODO: Fix this ... this is bad
+                  // We should somehow use network::byteorder::size::encode instead
+                  //
+                  archive << static_cast<network::byteorder::size::type>(transport);
                   archive.append( std::begin( payload().memory), std::begin( payload().memory) + transport);
                }
 
                friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
             private:
-               // gcc 4.9.4 requires Payload to be defined, switch to pointer untill we can use a better compiler
+               // gcc 4.9.4 requires Payload to be defined, switch to pointer until we can use a better compiler
                //const Payload* m_payload;
                std::reference_wrapper< const Payload> m_payload;
 

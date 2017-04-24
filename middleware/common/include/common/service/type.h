@@ -19,7 +19,7 @@ namespace casual
       {
          namespace transaction
          {
-            enum class Type : std::uint16_t
+            enum class Type : short
             {
                //! join transaction if present else start a new transaction
                automatic = 0,

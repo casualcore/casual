@@ -25,16 +25,15 @@ namespace casual
                   {
                      namespace header
                      {
-                        common::message::Type type( const network::Header& value)
+                        auto type( const network::Header& value)
                         {
                            return static_cast< common::message::Type>(
-                                 common::network::byteorder::decode<
-                                    traits::underlying_type_t< common::message::Type>>( value.type));
+                                 common::network::byteorder::decode<network::Header::host_type_type>( value.type));
                         }
 
-                        std::size_t size( const network::Header& value)
+                        auto size( const network::Header& value)
                         {
-                           return common::network::byteorder::decode< std::size_t>( value.size);
+                           return common::network::byteorder::size::decode<network::Header::host_size_type>( value.size);
                         }
 
                      } // header
@@ -73,7 +72,7 @@ namespace casual
 
                correlation.copy( header.correlation);
                header.type = network::byteorder::encode( cast::underlying( type));
-               header.size = network::byteorder::encode( payload.size());
+               header.size = network::byteorder::size::encode( payload.size());
 
                return header;
             }

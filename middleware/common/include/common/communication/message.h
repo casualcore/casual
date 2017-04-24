@@ -30,14 +30,23 @@ namespace casual
                {
                   struct Header
                   {
-                     platform::ipc::message::type type = 0;
+                     using host_type_type = platform::ipc::message::type;
+                     using network_type_type = decltype( common::network::byteorder::encode( host_type_type{}));
+
+                     //using host_size_type = platform::binary::size::type;
+                     using host_size_type = common::network::byteorder::size::type;
+                     using network_size_type = decltype( common::network::byteorder::size::encode( host_size_type{}));
+
+                     network_type_type type = 0;
                      Uuid::uuid_type correlation;
-                     platform::binary::size::type size = 0;
+                     network_size_type size = 0;
 
                      friend std::ostream& operator << ( std::ostream& out, const Header& value);
 
                   };
                   static_assert( std::is_trivially_copyable< Header>::value, "Complete::Header needs to be trivially copyable" );
+                  static_assert( sizeof( Header::network_type_type) == 8, "Wrong size for type");
+                  static_assert( sizeof( Header::network_size_type) == 8, "Wrong size for size");
 
                   namespace header
                   {

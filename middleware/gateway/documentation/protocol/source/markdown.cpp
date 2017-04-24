@@ -37,9 +37,9 @@ namespace casual
                   template< typename A>
                   void casual_marshal_value( const Header& value, A& archive)
                   {
-                     archive << value.type;
+                     archive << static_cast<Header::host_type_type>(value.type);
                      archive << value.correlation;
-                     archive << value.size;
+                     archive << static_cast<Header::host_size_type>(value.size);
                   }
                }
             }
@@ -63,10 +63,11 @@ namespace casual
                      std::string role;
                      std::string description;
                   };
+
                   struct Type
                   {
                      std::string type;
-                     std::size_t size;
+                     common::network::byteorder::size::type size;
                   };
 
                   struct Info
@@ -79,14 +80,16 @@ namespace casual
                   template< typename T>
                   const char* name( T&& value)
                   {
-                     static std::unordered_map< std::type_index, const char*> names{
+                     static std::unordered_map< std::type_index, const char*> names
+                     {
                         { typeid( short), "short"},
                         { typeid( int), "int"},
                         { typeid( long), "long"},
-                        { typeid( std::uint64_t), "uint64"},
-                        { typeid( std::int64_t), "int64"},
-                        { typeid( std::uint16_t), "uint16"},
-                        { typeid( std::size_t), "size"},
+                        { typeid( long long), "long long"},
+                        //{ typeid( std::uint64_t), "uint64"},
+                        //{ typeid( std::int64_t), "int64"},
+                        //{ typeid( std::uint16_t), "uint16"},
+                        //{ typeid( std::size_t), "size"},
                      };
 
 
@@ -234,7 +237,8 @@ namespace casual
                   template< typename T>
                   void write( const std::vector< T>& value)
                   {
-                     write_pod( value.size());
+                     // TODO
+                     write_pod( static_cast<common::network::byteorder::size::type>(value.size()));
 
                      for( auto& current : value)
                      {
@@ -244,7 +248,7 @@ namespace casual
 
                   void write( const std::string& value)
                   {
-                     write_pod( value.size());
+                     write_pod( static_cast<common::network::byteorder::size::type>(value.size()));
 
                      append(
                         std::begin( value),
@@ -253,7 +257,7 @@ namespace casual
 
                   void write( const common::platform::binary::type& value)
                   {
-                     write_pod( value.size());
+                     write_pod( static_cast<common::network::byteorder::size::type>(value.size()));
 
                      append(
                         std::begin( value),
