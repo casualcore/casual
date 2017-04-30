@@ -110,7 +110,8 @@ def build( name, image, content)
    """
 }
 
-
+try
+{
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
    node( "frontend" && "cplusplus")
    {
@@ -185,9 +186,8 @@ def build( name, image, content)
       }
       catch (Exception e)
       {
-            slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-            currentBuild.result = 'FAILURE'
             archive includes: '**/casual.log'
+            throw;
       }
    }
    node( "documentation")
@@ -204,4 +204,10 @@ def build( name, image, content)
 
     slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
     currentBuild.result = 'SUCCESS'
+}
+catch (Exception e)
+{
+    slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+    currentBuild.result = 'FAILURE'
+}
 
