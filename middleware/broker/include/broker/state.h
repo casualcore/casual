@@ -18,6 +18,8 @@
 
 #include "common/communication/ipc.h"
 
+#include "common/event/dispatch.h"
+
 #include "common/exception.h"
 
 #include "sf/log.h"
@@ -320,21 +322,10 @@ namespace casual
          } pending;
 
 
+         common::event::dispatch::Collection<
+            common::message::event::service::Call> events;
 
-         struct traffic_t
-         {
-            struct monitors_t
-            {
-               void add( common::process::Handle process);
-               void remove( common::platform::pid::type pid);
-
-               std::vector< common::platform::ipc::id::type> get() const;
-
-            private:
-               std::vector< common::process::Handle> processes;
-            } monitors;
-
-         } traffic;
+         std::vector< common::platform::ipc::id::type> subscribers() const;
 
 
          common::process::Handle forward;

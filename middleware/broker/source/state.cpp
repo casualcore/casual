@@ -265,25 +265,17 @@ namespace casual
       } // state
 
 
-      void State::traffic_t::monitors_t::add( common::process::Handle process)
-      {
-         processes.push_back( process);
-      }
-
-      void State::traffic_t::monitors_t::remove( common::platform::pid::type pid)
-      {
-         range::trim( processes, range::remove_if( processes, [pid]( const process::Handle& p){ return p.pid == pid;}));
-      }
-
-      std::vector< common::platform::ipc::id::type> State::traffic_t::monitors_t::get() const
-      {
-         return range::transform( processes, []( const process::Handle& p){ return p.queue;});
-      }
-
 
       state::Service& State::service( const std::string& name)
       {
          return local::get( services, name);
+      }
+
+      std::vector< common::platform::ipc::id::type> State::subscribers() const
+      {
+         return range::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
+            return v.queue;
+         });
       }
 
 
@@ -414,6 +406,8 @@ namespace casual
          {
             forward = common::process::Handle{};
          }
+
+         events.remove( pid);
 
          local::remove_process( instances.local, services, pid);
          local::remove_process( instances.remote, services, pid);

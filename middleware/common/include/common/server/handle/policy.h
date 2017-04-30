@@ -9,7 +9,7 @@
 #include "common/server/context.h"
 #include "common/communication/device.h"
 
-#include "common/message/traffic.h"
+#include "common/message/event.h"
 #include "common/message/service.h"
 #include "common/message/conversation.h"
 
@@ -42,7 +42,7 @@ namespace casual
 
 
 
-                     void statistics( platform::ipc::id::type id, message::traffic::Event& event);
+                     void statistics( platform::ipc::id::type id, message::event::service::Call& event);
 
                      void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time::point::type& now);
                      void transaction( const message::conversation::connect::callee::Request& message, const server::Service& service, const platform::time::point::type& now);
@@ -68,7 +68,7 @@ namespace casual
                      void ack( const message::service::call::callee::Request& message);
 
 
-                     void statistics( platform::ipc::id::type id, message::traffic::Event&);
+                     void statistics( platform::ipc::id::type id, message::event::service::Call& event);
 
                      void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&);
 
