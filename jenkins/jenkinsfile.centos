@@ -178,8 +178,13 @@ try
              stage('Deploy')
              {
                 sh """
-                cd /var/lib/jenkins/git/casual/docker
-                ./restart.sh
+                if [[ -d /var/lib/jenkins/git/casual/docker ]]
+                then
+                    cd /var/lib/jenkins/git/casual/docker
+                    ./restart.sh
+                else
+                   echo "Mock deploy"
+                fi
                 """
              }
          }
