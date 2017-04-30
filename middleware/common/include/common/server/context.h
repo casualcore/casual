@@ -10,9 +10,9 @@
 #include "common/server/service.h"
 
 
-#include "common/message/traffic.h"
-
 #include "common/platform.h"
+
+#include "common/message/event.h"
 
 
 
@@ -87,7 +87,7 @@ namespace casual
             service_mapping_type services;
 
 
-            message::traffic::Event traffic;
+            message::event::service::Call event;
 
             std::function<void()> server_done;
 

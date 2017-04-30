@@ -13,7 +13,6 @@
 
 #include "common/flag.h"
 
-#include "common/message/traffic.h"
 #include "common/message/service.h"
 #include "common/message/conversation.h"
 
@@ -95,7 +94,7 @@ namespace casual
                   //
                   // Set start time.
                   //
-                  state.traffic.start = platform::time::clock::type::now();
+                  state.event.start = platform::time::clock::type::now();
 
 
                   //
@@ -128,7 +127,7 @@ namespace casual
                   // - notify TM about potentially resources involved.
                   // - set 'global' deadline/timeout
                   //
-                  policy.transaction( message, service, state.traffic.start);
+                  policy.transaction( message, service, state.event.start);
 
 
                   //
@@ -267,17 +266,17 @@ namespace casual
                   // Take end time
                   //
                   auto execute_monitor = scope::execute( [&](){
-                     if( ! message.service.traffic_monitors.empty())
+                     if( ! message.service.event_subscribers.empty())
                      {
-                        state.traffic.end = platform::time::clock::type::now();
-                        state.traffic.execution = message.execution;
-                        state.traffic.service = message.service.name;
-                        state.traffic.parent = message.parent;
-                        state.traffic.process = process::handle();
+                        state.event.end = platform::time::clock::type::now();
+                        state.event.execution = message.execution;
+                        state.event.service = message.service.name;
+                        state.event.parent = message.parent;
+                        state.event.process = process::handle();
 
-                        for( auto& queue : message.service.traffic_monitors)
+                        for( auto& queue : message.service.event_subscribers)
                         {
-                           policy.statistics( queue, state.traffic);
+                           policy.statistics( queue, state.event);
                         }
                      }
                   });

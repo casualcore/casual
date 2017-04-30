@@ -1,22 +1,10 @@
 //!
-//! casual_isolatedunittet_uuid.cpp
-//!
-//! Created on: May 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
 #include <gtest/gtest.h>
 
-#include "common/message/traffic.h"
-#include "common/platform.h"
-#include "common/process.h"
-
-#include <iostream>
-#include <chrono>
-
-
-//#include <unistd.h>
 
 namespace casual
 {

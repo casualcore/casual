@@ -7,7 +7,7 @@
 
 #include "common/environment.h"
 #include "common/message/domain.h"
-#include "common/message/traffic.h"
+#include "common/message/event.h"
 #include "common/message/gateway.h"
 
 #include "common/event/dispatch.h"
@@ -570,12 +570,11 @@ namespace casual
 
                      //log << "services: " << range::make( m_state.services) << '\n';
                   },
-                  [&]( message::traffic::monitor::connect::Request& m)
+                  [&]( message::event::subscription::Begin& m)
                   {
                      m_state.traffic_monitors.push_back( m.process.queue);
-                     ipc::eventually::send( m.process.queue, message::reverse::type( m));
                   },
-                  [&]( message::traffic::monitor::Disconnect& m)
+                  [&]( message::event::subscription::End& m)
                   {
                      range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
                   },

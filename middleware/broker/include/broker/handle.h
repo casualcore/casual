@@ -64,31 +64,29 @@ namespace casual
          } // process
 
 
-
-         namespace traffic
+         namespace event
          {
-            //!
-            //! Traffic Connect
-            //!
-            struct Connect: public Base
+            namespace subscription
             {
-               using Base::Base;
+               struct Begin: public Base
+               {
+                  using Base::Base;
 
-               void operator () ( common::message::traffic::monitor::connect::Request& message);
-            };
+                  void operator () ( common::message::event::subscription::Begin& message);
+               };
 
-            struct Disconnect: public Base
-            {
-               typedef common::message::traffic::monitor::Disconnect message_type;
+               struct End: public Base
+               {
+                  typedef common::message::event::subscription::End message_type;
 
-               using Base::Base;
+                  using Base::Base;
 
-               void operator () ( message_type& message);
-            };
+                  void operator () ( message_type& message);
+               };
 
-         } // monitor
+            } // subscription
 
-
+         } // event
 
 
 		   namespace service
@@ -213,7 +211,7 @@ namespace casual
 
             void forward( const common::message::service::call::callee::Request& message, const common::server::state::Jump& jump);
 
-            void statistics( common::platform::ipc::id::type id, common::message::traffic::Event& event);
+            void statistics( common::platform::ipc::id::type, common::message::event::service::Call&);
 
          private:
 

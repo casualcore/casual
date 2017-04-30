@@ -2,6 +2,7 @@
 //! casual
 //!
 
+#include "../../../../common/include/common/event/listen.h"
 #include "domain/manager/admin/vo.h"
 
 #include "common/arguments.h"
@@ -9,8 +10,6 @@
 #include "common/environment.h"
 
 #include "common/communication/ipc.h"
-#include "common/event/listener.h"
-
 #include "sf/xatmi_call.h"
 #include "sf/archive/maker.h"
 

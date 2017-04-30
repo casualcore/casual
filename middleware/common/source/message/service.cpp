@@ -40,11 +40,21 @@ namespace casual
             out << "{ ";
             local::output::base_service( out, value);
             return out << ", timeout: " << value.timeout.count() << '}';
-;
          }
 
          namespace service
          {
+            namespace call
+            {
+               std::ostream& operator << ( std::ostream& out, const call::Service& value)
+               {
+                  out << "{ ";
+                  local::output::base_service( out, value);
+                  return out << ", timeout: " << value.timeout.count()
+                        << ", event_subscribers: " << range::make( value.event_subscribers)
+                        << '}';
+               }
+            } // call
 
             std::ostream& operator << ( std::ostream& out, const Transaction& message)
             {

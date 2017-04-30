@@ -90,7 +90,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::traffic_event));
+            auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::event_service_call));
 
             EXPECT_TRUE( static_cast< bool>( complete));
             EXPECT_TRUE( complete.complete()) << "complete.unhandled().size()" << complete.unhandled().size();
@@ -109,7 +109,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto parts = local::payload::parts( 100, common::message::Type::traffic_event);
+            auto parts = local::payload::parts( 100, common::message::Type::event_service_call);
             range::reverse( parts);
             auto complete = local::payload::complete( parts);
 

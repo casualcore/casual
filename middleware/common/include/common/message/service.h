@@ -79,13 +79,15 @@ namespace casual
                {
                   using message::Service::Service;
 
-                  std::vector< platform::ipc::id::type> traffic_monitors;
+                  std::vector< platform::ipc::id::type> event_subscribers;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      message::Service::marshal( archive);
-                     archive & traffic_monitors;
+                     archive & event_subscribers;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const call::Service& value);
                };
                static_assert( traits::is_movable< Service>::value, "not movable");
             } // call

@@ -81,18 +81,10 @@ RequestServerImplementation::~RequestServerImplementation()
 //
 
 
-bool RequestServerImplementation::getMonitorStatistics( std::vector< ServiceEntryVO>& outputValues)
+std::vector< ServiceEntryVO> RequestServerImplementation::getMonitorStatistics()
 {
    //## service implementation protected section begin [2000]
-
-
-   std::vector< ServiceEntryVO> result;
-   result = local::database::select();
-
-   std::copy( result.begin(), result.end(), std::back_inserter( outputValues));
-
-   return true;
-
+   return local::database::select();
    //## service implementation protected section end   [2000]
 }
 
