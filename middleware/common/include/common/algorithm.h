@@ -133,13 +133,13 @@ namespace casual
                basic_link( T1&& left, T2&& right) : left( std::forward< T1>( left)), right( std::forward< T2>( right)) {}
 
                template< typename ...Values>
-               auto operator() ( Values&& ...values) const -> decltype( link_type::link( std::declval< T1>(),  std::declval< T2>(), std::forward< Values>( values)...))
+               decltype( auto) operator() ( Values&& ...values) const
                {
                   return link_type::link( left, right, std::forward< Values>( values)...);
                }
 
                template< typename ...Values>
-               auto operator() ( Values&& ...values) -> decltype( link_type::link( std::declval< T1>(),  std::declval< T2>(), std::forward< Values>( values)...))
+               decltype( auto) operator() ( Values&& ...values)
                {
                   return link_type::link( left, right, std::forward< Values>( values)...);
                }
@@ -150,13 +150,13 @@ namespace casual
             };
 
             template< typename Link, typename Arg>
-            Arg make( Arg&& param) //-> decltype( std::forward< Arg>( param))
+            auto make( Arg&& param)
             {
-               return param; //std::forward< Arg>( param);
+               return param;
             }
 
             template< typename L, typename Arg, typename... Args>
-            auto make( Arg&& param, Args&&... params) -> basic_link< L, Arg, decltype( make< L>( std::forward< Args>( params)...))>
+            decltype( auto) make( Arg&& param, Args&&... params)
             {
                using nested_type = decltype( make< L>( std::forward< Args>( params)...));
                return basic_link< L, Arg, nested_type>( std::forward< Arg>( param), make< L>( std::forward< Args>( params)...));
@@ -165,7 +165,7 @@ namespace casual
             struct Nested
             {
                template< typename T1, typename T2, typename T>
-               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( right( value)))
+               static decltype( auto) link( T1& left, T2& right, T&& value)
                {
                   return left( right( value));
                }
@@ -174,7 +174,7 @@ namespace casual
             struct And
             {
                template< typename T1, typename T2, typename T>
-               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) && right( value))
+               static decltype( auto) link( T1& left, T2& right, T&& value)
                {
                   return left( value) && right( value);
                }
@@ -183,7 +183,7 @@ namespace casual
             struct Or
             {
                template< typename T1, typename T2, typename T>
-               static auto link( T1&& left, T2&& right, T&& value) -> decltype( left( value) || right( value))
+               static decltype( auto) link( T1& left, T2& right, T&& value)
                {
                   return left( value) || right( value);
                }
@@ -192,7 +192,7 @@ namespace casual
             struct Order
             {
                template< typename T1, typename T2, typename V1, typename V2>
-               static auto link( T1&& left, T2&& right, V1&& lhs, V2&& rhs) -> decltype( left( lhs, rhs))
+               static decltype( auto) link( T1& left, T2& right, V1&& lhs, V2&& rhs)
                {
                   if( left( lhs, rhs))
                      return true;
@@ -208,7 +208,7 @@ namespace casual
          struct basic_chain
          {
             template< typename... Args>
-            static auto link( Args&&... params) -> decltype( link::make< Link>( std::forward< Args>( params)...))
+            static decltype( auto) link( Args&&... params)
             {
                return link::make< Link>( std::forward< Args>( params)...);
             }
@@ -225,17 +225,6 @@ namespace casual
 
       namespace extract
       {
-         struct Get
-         {
-            template< typename T>
-            auto operator () ( T&& value) const -> decltype( value.get())
-            {
-               return value.get();
-            }
-
-         };
-
-
          struct Second
          {
             template< typename T>
@@ -247,13 +236,15 @@ namespace casual
 
       }
 
+
       namespace compare
       {
          template< typename T>
-         auto inverse( T&& functor) -> decltype( std::bind( std::forward< T>( functor), std::placeholders::_2, std::placeholders::_1))
+         auto inverse( T&& functor)
          {
             return std::bind( std::forward< T>( functor), std::placeholders::_2, std::placeholders::_1);
          }
+
 
          template< typename T>
          struct Inverse
@@ -262,13 +253,13 @@ namespace casual
             Inverse( Args&&... args) : m_functor( std::forward< Args>( args)...) {}
 
             template< typename V1, typename V2>
-            auto operator () ( V1&& lhs, V2&& rhs) const -> decltype( std::declval< T>()( std::forward< V2>( rhs), std::forward< V1>( lhs)))
+            auto operator () ( V1&& lhs, V2&& rhs) const
             {
                return m_functor( std::forward< V2>( rhs), std::forward< V1>( lhs));
             }
 
             template< typename V1, typename V2>
-            auto operator () ( V1&& lhs, V2&& rhs) -> decltype( std::declval< T>()( std::forward< V2>( rhs), std::forward< V1>( lhs)))
+            auto operator () ( V1&& lhs, V2&& rhs)
             {
                return m_functor( std::forward< V2>( rhs), std::forward< V1>( lhs));
             }
@@ -278,6 +269,7 @@ namespace casual
          };
 
       } // compare
+
 
       namespace detail
       {
@@ -423,13 +415,13 @@ namespace casual
             }
 
             template< typename... Args>
-            bool operator () ( Args&& ...args) const
+            decltype( auto) operator () ( Args&& ...args) const
             {
                return ! m_functor( std::forward< Args>( args)...);
             }
 
             template< typename... Args>
-            bool operator () ( Args&& ...args)
+            decltype( auto) operator () ( Args&& ...args)
             {
                return ! m_functor( std::forward< Args>( args)...);
             }
@@ -447,21 +439,6 @@ namespace casual
       {
          return detail::negate< T>{ std::forward< T>( functor)};
       }
-
-
-      namespace make
-      {
-         //!
-         //! Make a scoped deleter for a 'raw pointer'
-         //!
-         //! Only makes sense when dealing with c-api
-         //!
-         template< typename P, typename D>
-         auto deleter( P* pointer, D&& deleter) -> std::unique_ptr< P, D>
-         {
-            return std::unique_ptr< P, D>( pointer, std::forward< D>( deleter));
-         }
-      } // make
 
 
       //!

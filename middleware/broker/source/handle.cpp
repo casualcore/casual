@@ -14,14 +14,9 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 
-#include "common/event/listener.h"
-
-
-//
-// std
-//
 #include <vector>
 #include <string>
+#include "../../common/include/common/event/listen.h"
 
 namespace casual
 {
@@ -91,26 +86,28 @@ namespace casual
          } // process
 
 
-
-         namespace traffic
+         namespace event
          {
-            void Connect::operator () ( common::message::traffic::monitor::connect::Request& message)
+            namespace subscription
             {
-               Trace trace{ "broker::handle::traffic::Connect"};
+               void Begin::operator () ( common::message::event::subscription::Begin& message)
+               {
+                  Trace trace{ "broker::handle::event::subscription::Begin"};
 
-               m_state.traffic.monitors.add( message.process);
+                  m_state.events.subscription( message);
+               }
 
-               auto reply = common::message::reverse::type( message);
-               ipc::device().blocking_send( message.process.queue, reply);
-            }
+               void End::operator () ( message_type& message)
+               {
+                  Trace trace{ "broker::handle::event::subscription::End"};
 
-            void Disconnect::operator () ( message_type& message)
-            {
-               Trace trace{ "broker::handle::monitor::Disconnect"};
+                  m_state.events.subscription( message);
+               }
 
-               m_state.traffic.monitors.remove( message.process.pid);
-            }
-         }
+
+            } // subscription
+
+         } // event
 
 
          namespace service
@@ -142,7 +139,7 @@ namespace casual
 
                      auto reply = common::message::reverse::type( message);
                      reply.service = service.information;
-                     reply.service.traffic_monitors = m_state.traffic.monitors.get();
+                     reply.service.event_subscribers = m_state.subscribers();
                      reply.state = decltype( reply.state)::idle;
                      reply.process = instance->process();
 
@@ -162,7 +159,7 @@ namespace casual
                   {
                      auto reply = common::message::reverse::type( message);
                      reply.service = service.information;
-                     reply.service.traffic_monitors = m_state.traffic.monitors.get();
+                     reply.service.event_subscribers = m_state.subscribers();
 
                      switch( message.context)
                      {
@@ -468,7 +465,7 @@ namespace casual
             throw common::exception::xatmi::System{ "can't forward within broker"};
          }
 
-         void Policy::statistics( platform::ipc::id::type id,common::message::traffic::Event&)
+         void Policy::statistics( platform::ipc::id::type, common::message::event::service::Call&)
          {
             //
             // We don't collect statistics for the broker
@@ -484,8 +481,8 @@ namespace casual
             handle::service::Advertise{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},
-            handle::traffic::Connect{ state},
-            handle::traffic::Disconnect{ state},
+            handle::event::subscription::Begin{ state},
+            handle::event::subscription::End{ state},
             handle::Call{ admin::services( state), state},
             handle::domain::Advertise{ state},
             handle::domain::discover::Request{ state},

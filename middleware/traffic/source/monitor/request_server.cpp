@@ -84,12 +84,6 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       //## input protected section end   [2000.110]
 
 
-      //
-      // Instantiate the output parameters
-      //
-            
-      std::vector< ServiceEntryVO> outputValues;
-
       //## output protected section begin [2000.120]
       //## output protected section end   [2000.120]
 
@@ -98,18 +92,15 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       // Call the implementation
       //
       
-      bool serviceReturn = service_io.call(
+      auto serviceReturn = service_io.call(
          &local::implementation_type::getMonitorStatistics,
-         *local::implementation,
-         outputValues);
+         *local::implementation);
       
       
       //
       // Serialize output
       //
-            
       service_io << CASUAL_MAKE_NVP( serviceReturn);
-      service_io << CASUAL_MAKE_NVP( outputValues);
 
       //## output protected section begin [2000.200]
       //## output protected section end   [2000.200]

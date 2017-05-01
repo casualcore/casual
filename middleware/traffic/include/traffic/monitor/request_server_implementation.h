@@ -48,10 +48,8 @@ public:
    //!
    //! Does some stuff 
    //! 
-   //! @return true if some condition is met
-   //! @param values holds some values
    //!
-   bool getMonitorStatistics( std::vector< ServiceEntryVO>& outputValues);
+   std::vector< ServiceEntryVO> getMonitorStatistics();
 
    //## declarations protected section begin [.300]
    //## declarations protected section end   [.300]

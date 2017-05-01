@@ -44,11 +44,15 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./home/bin/casual-domain-manager", {
+                        "--event-queue", std::to_string( common::communication::ipc::inbound::id()),
                         "--configuration-files", configuration::names( files),
                         "--no-auto-persist"
                      }}
                   {
-
+                     //
+                     // Wait for the domain to boot
+                     //
+                     unittest::domain::manager::wait( common::communication::ipc::inbound::device());
                   }
 
                   struct set_environment_variables_t

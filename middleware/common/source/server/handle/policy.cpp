@@ -168,7 +168,7 @@ namespace casual
                   }
 
 
-                  void Default::statistics( platform::ipc::id::type id,  message::traffic::Event& event)
+                  void Default::statistics( platform::ipc::id::type id,  message::event::service::Call& event)
                   {
                      Trace trace{ "server::handle::policy::Default::statistics"};
 
@@ -384,7 +384,7 @@ namespace casual
                   }
 
 
-                  void Admin::statistics( platform::ipc::id::type id, message::traffic::Event&)
+                  void Admin::statistics( platform::ipc::id::type id, message::event::service::Call& event)
                   {
                      // no-op
                   }

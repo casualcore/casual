@@ -78,7 +78,6 @@ casual_common_objectfiles = [
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/service.cpp'),
     Compile( 'source/message/server.cpp'),
-    Compile( 'source/message/traffic.cpp'),
     Compile( 'source/message/queue.cpp'),
     Compile( 'source/message/transaction.cpp'),
     Compile( 'source/message/domain.cpp'),
@@ -87,7 +86,7 @@ casual_common_objectfiles = [
     Compile( 'source/message/pending.cpp'),
     Compile( 'source/message/event.cpp'),
     
-    Compile( 'source/event/listener.cpp'),
+    Compile( 'source/event/listen.cpp'),
     Compile( 'source/event/dispatch.cpp'),
     
     Compile( 'source/log/stream.cpp'),
@@ -239,6 +238,7 @@ unittest_objectfiles = [
     
     
     Compile( 'unittest/source/event/test_dispatch.cpp'),
+    Compile( 'unittest/source/event/test_listen.cpp'),
 ]
 
 

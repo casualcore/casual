@@ -9,6 +9,7 @@
 #include "common/log.h"
 #include "common/marshal/marshal.h"
 #include "common/message/type.h"
+#include "common/communication/ipc.h"
 
 #include <gtest/gtest.h>
 
@@ -106,6 +107,20 @@ namespace casual
                return std::forward< R>( range);
             }
          } // random
+
+         namespace domain
+         {
+            namespace manager
+            {
+               //!
+               //! Waits for the domain manager to boot
+               //!
+               void wait( communication::ipc::inbound::Device& device);
+
+            } // manager
+
+         } // domain
+
       } // unittest
    } // common
 } // casual

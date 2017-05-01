@@ -6,6 +6,8 @@
 
 #include "common/signal.h"
 
+#include "common/message/event.h"
+
 
 #include <random>
 
@@ -107,6 +109,41 @@ namespace casual
                return result;
             }
          } // random
+
+         namespace domain
+         {
+            namespace manager
+            {
+
+               void wait( communication::ipc::inbound::Device& device)
+               {
+                  struct wait_done{};
+
+                  auto handler = device.handler(
+                     []( const message::event::domain::boot::End&){
+                        throw wait_done{};
+                     },
+                     []( const message::event::domain::Error& error){
+                        if( error.severity == message::event::domain::Error::Severity::fatal)
+                        {
+                           throw wait_done{};
+                        }
+                     }
+                  );
+
+                  try
+                  {
+                     message::dispatch::blocking::pump( handler, device);
+                  }
+                  catch( const wait_done&)
+                  {
+                     // no-op
+                  }
+               }
+
+            } // manager
+
+         } // domain
 
 
       } // unittest

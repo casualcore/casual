@@ -14,7 +14,7 @@ to the corresponding error queue.
 
 A simplified sequence diagram on what's going on (discovery and transaction related activity is omitted)
 
-![scenario](diagram/scenario.png)
+![scenario](diagram/scenario.svg)
 
 
 

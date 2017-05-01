@@ -137,7 +137,7 @@ namespace casual
                            }
                         }
 
-                        std::unique_ptr< struct addrinfo, std::function< void( struct addrinfo*)>> deleter( information, &freeaddrinfo);
+                        auto deleter = memory::guard( information, &freeaddrinfo);
 
                         for( const struct addrinfo* info = information; info; info = info->ai_next)
                         {
@@ -170,9 +170,17 @@ namespace casual
                         //
                         //common::signal::thread::scope::Block block;
 
-                        return create( address,[]( const Socket& s, const addrinfo& info)
+                        return create( address,[]( Socket& s, const addrinfo& info)
                               {
                                  Trace trace( "common::communication::tcp::local::socket::connect lambda");
+
+                                 //
+                                 // To avoid possible TIME_WAIT from previous
+                                 // possible connections
+                                 //
+                                 //
+                                 s.option( Socket::Option::reuse_address, 1);
+                                 s.linger( std::chrono::seconds{ 1});
 
                                  return ::connect( s.descriptor(), info.ai_addr, info.ai_addrlen) != -1;
                               });
@@ -189,7 +197,7 @@ namespace casual
 
                         static const Flags< Flag> flags{ Flag::address_config, Flag::passive};
 
-                        return create( address,[]( const Socket& s, const addrinfo& info)
+                        return create( address,[]( Socket& s, const addrinfo& info)
                               {
                                  Trace trace( "common::communication::tcp::local::socket::local lambda");
 
@@ -201,12 +209,8 @@ namespace casual
                                  //
                                  // Checkout SO_LINGER as well
                                  //
-                                 const int value = 1;
-
-                                 check::result(
-                                       ::setsockopt( s.descriptor(), SOL_SOCKET, SO_REUSEADDR, &value, sizeof( value))
-                                 );
-
+                                 s.option( Socket::Option::reuse_address, 1);
+                                 s.linger( std::chrono::seconds{ 1});
 
                                  return ::bind( s.descriptor(), info.ai_addr, info.ai_addrlen) != -1;
                               }, flags);
@@ -360,6 +364,22 @@ namespace casual
             Socket::Socket( const Socket& other)
                : m_descriptor{ local::socket::duplicate( other.m_descriptor)}
             {
+            }
+
+            void Socket::linger( std::chrono::seconds time)
+            {
+               struct
+               {
+                   int l_onoff;
+                   int l_linger;
+               } linger{ 1, static_cast< int>( time.count())};
+
+               option( Option::linger, linger);
+            }
+
+            void Socket::option( int optname, const void *optval, std::size_t optlen)
+            {
+               local::socket::check::result( ::setsockopt( descriptor(), SOL_SOCKET, optname, optval, optlen));
             }
 
             Socket& Socket::operator = ( const Socket& other)

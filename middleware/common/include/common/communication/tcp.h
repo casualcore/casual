@@ -81,6 +81,12 @@ namespace casual
 
                using descriptor_type = socket::descriptor_type;
 
+               enum class Option : int
+               {
+                  reuse_address = SO_REUSEADDR,
+                  linger = SO_LINGER,
+               };
+
                Socket() noexcept;
                ~Socket() noexcept;
 
@@ -101,12 +107,23 @@ namespace casual
 
                descriptor_type descriptor() const noexcept;
 
+               void linger( std::chrono::seconds time);
+
+
+               template< typename V>
+               void option( Option option, V&& value)
+               {
+                  return Socket::option( cast::underlying( option), &value, sizeof( V));
+               }
+
                friend Socket adopt( socket::descriptor_type descriptor);
                friend std::ostream& operator << ( std::ostream& out, const Socket& value);
 
 
             private:
                Socket( descriptor_type descriptor) noexcept;
+
+               void option( int optname, const void *optval, std::size_t optlen);
 
                descriptor_type m_descriptor = -1;
                move::Moved m_moved;
