@@ -67,7 +67,7 @@ namespace casual
 
          auto arguments = broker::admin::services( state);
 
-         EXPECT_TRUE( arguments.services.at( 0).origin == ".casual.broker.state");
+         EXPECT_TRUE( arguments.services.at( 0).name == ".casual.broker.state");
       }
 
 

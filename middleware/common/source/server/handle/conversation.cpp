@@ -50,7 +50,7 @@ namespace casual
 
                   policy::call::Default policy;
 
-                  service::call( policy, common::service::conversation::context(), message);
+                  service::call( policy, common::service::conversation::context(), message, true);
                }
                catch( ...)
                {

@@ -335,7 +335,7 @@ namespace casual
                result.user = reply.code;
 
                result.buffer = std::move( reply.buffer);
-               result.state = reply.error == TPESVCFAIL ? reply::State::service_fail : reply::State::service_success;
+               result.state = reply.status == TPESVCFAIL ? reply::State::service_fail : reply::State::service_success;
 
 
 
@@ -353,9 +353,9 @@ namespace casual
                //
                // Check any errors
                //
-               if( reply.error != 0 && reply.error != TPESVCFAIL)
+               if( reply.status != 0 && reply.status != TPESVCFAIL)
                {
-                  exception::xatmi::propagate( reply.error);
+                  exception::xatmi::propagate( reply.status);
                }
 
                return result;

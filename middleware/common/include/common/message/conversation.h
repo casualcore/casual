@@ -116,6 +116,8 @@ namespace casual
                Route route;
                common::service::conversation::send::Flags flags;
                common::service::conversation::Events events;
+               service::Transaction transaction;
+               int status;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -123,6 +125,7 @@ namespace casual
                   archive & route;
                   archive & flags;
                   archive & events;
+                  archive & status;
                })
                friend std::ostream& operator << ( std::ostream& out, const basic_send& value);
             };

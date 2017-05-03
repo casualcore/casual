@@ -335,7 +335,7 @@ namespace casual
             }
          }
 
-         void Context::finalize( message::service::call::Reply& message, int return_state)
+         message::service::Transaction Context::finalize( bool commit)
          {
             Trace trace{ "transaction::Context::finalize"};
 
@@ -345,8 +345,17 @@ namespace casual
             decltype( m_transactions) transactions;
             std::swap( transactions, m_transactions);
 
+            if( log::category::transaction)
+            {
+               log::category::transaction << "transactions: " << range::make( transactions) << '\n';
+            }
+
             const auto process = process::handle();
 
+
+            message::service::Transaction result;
+            result.trid = std::move( caller);
+            result.state = message::service::Transaction::State::active;
 
 
             auto pending_check = [&]( Transaction& transaction)
@@ -359,7 +368,7 @@ namespace casual
                      log::category::transaction << transaction << std::endl;
 
                      transaction.state = Transaction::State::rollback;
-                     message.error = TPESVCERR;
+                     result.state = message::service::Transaction::State::error;
                   }
 
                   //
@@ -377,25 +386,25 @@ namespace casual
 
             auto trans_rollback = [&]( const Transaction& transaction)
             {
-               auto result = rollback( transaction);
+               auto status = Context::rollback( transaction);
 
-               if( result != TX_OK)
+               if( status != TX_OK)
                {
-                  log::category::error << "failed to rollback transaction: " << transaction.trid << " - " << error::tx::error( result) << std::endl;
-                  message.error = TPESVCERR;
+                  log::category::error << "failed to rollback transaction: " << transaction.trid << " - " << error::tx::error( status) << std::endl;
+                  result.state = message::service::Transaction::State::error;
                }
             };
 
             auto trans_commit_rollback = [&]( const Transaction& transaction)
             {
-               if( return_state == TPSUCCESS && transaction.state == Transaction::State::active)
+               if( commit && transaction.state == Transaction::State::active)
                {
-                  auto result = commit( transaction);
+                  auto status = Context::commit( transaction);
 
-                  if( result != TX_OK)
+                  if( status != TX_OK)
                   {
-                     log::category::error << "failed to commit transaction: " << transaction.trid << " - " << error::tx::error( result) << std::endl;
-                     message.error = TPESVCERR;
+                     log::category::error << "failed to commit transaction: " << transaction.trid << " - " << error::tx::error( status) << std::endl;
+                     result.state = message::service::Transaction::State::error;
                   }
                }
                else
@@ -404,12 +413,7 @@ namespace casual
                }
             };
 
-            switch( return_state)
-            {
-               case TPESVCERR: break;
-               case TPSUCCESS: break;
-               default: message.error = TPESVCFAIL; break;
-            }
+
 
 
             //
@@ -453,20 +457,29 @@ namespace casual
                assert( not_owner.size() <= 1);
 
                auto found = range::find_if( not_owner, [&]( const Transaction& transaction){
-                  return transaction.trid == caller;
+                  return transaction.trid == result.trid;
                });
+
+               auto transform_state = []( Transaction::State state){
+                  switch( state)
+                  {
+                     case Transaction::State::active: return message::service::Transaction::State::active;
+                     case Transaction::State::rollback: return message::service::Transaction::State::rollback;
+                     case Transaction::State::timeout: return message::service::Transaction::State::timeout;
+                  }
+               };
 
                if( found)
                {
-                  if( return_state == TPSUCCESS)
+                  log::category::transaction << "caller: " << *found << '\n';
+
+                  result.state = transform_state( found->state);
+
+                  if( ! commit && result.state == message::service::Transaction::State::active)
                   {
-                     message.transaction.state = static_cast< decltype( message.transaction.state)>( found->state);
+                     result.state = message::service::Transaction::State::rollback;
                   }
-                  else
-                  {
-                     message.transaction.state = static_cast< decltype( message.transaction.state)>( Transaction::State::rollback);
-                  }
-                  
+
 
                   //
                   // Notify TM about resources involved in this transaction
@@ -487,7 +500,9 @@ namespace casual
                   //
                   resources_end( *found, TMSUCCESS);
                }
-               message.transaction.trid = std::move( caller);
+
+
+               return result;
             }
          }
 

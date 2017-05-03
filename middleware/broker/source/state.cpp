@@ -519,7 +519,7 @@ namespace casual
             common::message::service::advertise::Service result;
 
             result.category = s.category;
-            result.name = s.origin;
+            result.name = s.name;
             result.transaction = s.transaction;
 
             return result;

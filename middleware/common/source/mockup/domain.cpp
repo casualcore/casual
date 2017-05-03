@@ -67,7 +67,7 @@ namespace casual
                         reply.code = 42;
                      }
 
-                     reply.error = local::reply_error( request.service.name);
+                     reply.status = local::reply_error( request.service.name);
 
                      ipc::eventually::send( request.process.queue, reply);
                   }

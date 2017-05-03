@@ -720,7 +720,7 @@ namespace casual
                                  {
                                     common::message::service::advertise::Service result;
 
-                                    result.name = s.origin;
+                                    result.name = s.name;
                                     result.category = s.category;
                                     result.transaction = s.transaction;
 

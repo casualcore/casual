@@ -309,9 +309,9 @@ namespace casual
                message.correlation = uuid::make();
                message.execution = uuid::make();
                message.transaction.trid = transaction::ID::create( process::handle());
-               message.transaction.state = 666;
+               message.transaction.state = common::message::service::Transaction::State::rollback;
                message.buffer.type = ".binary";
-               message.error = 0;
+               message.status = 0;
                message.code = 0;
                message.buffer.memory = unittest::random::binary( 1200);
             }

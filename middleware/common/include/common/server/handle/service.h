@@ -33,33 +33,35 @@ namespace casual
                   message::conversation::caller::Send reply( const message::conversation::connect::callee::Request& message);
 
 
-                  TPSVCINFO information( message::service::call::callee::Request& message);
-                  TPSVCINFO information( message::conversation::connect::callee::Request& message);
+                  common::service::invoke::Parameter parameter( message::service::call::callee::Request& message);
+                  common::service::invoke::Parameter parameter( message::conversation::connect::callee::Request& message);
 
                } // transform
 
                namespace complement
                {
-                  void reply( message::service::call::Reply& reply, const server::state::Jump& jump);
-                  void reply( message::conversation::caller::Send& reply, const server::state::Jump& jump);
+                  void reply( common::service::invoke::Result&& result, message::service::call::Reply& reply);
+                  void reply( common::service::invoke::Result&& result, message::conversation::caller::Send& reply);
 
                } // complement
 
                template< typename P, typename C, typename M>
-               void call( P& policy, C& service_context, M&& message)
+               void call( P& policy, C& service_context, M&& message, bool send_reply)
                {
                   Trace trace{ "server::handle::service::call"};
 
+                  execution::service::name( message.service.name);
+                  execution::service::parent::name( message.parent);
+
+
 
                   //
-                  // Make sure we do some cleanup...
+                  // Make sure we do some cleanup and send ACK to broker.
                   //
-                  auto execute_finalize = scope::execute( [](){ server::Context::instance().finalize();});
-
-                  //
-                  // Make sure we'll always send ACK to broker
-                  //
-                  auto execute_ack = scope::execute( [&](){ policy.ack( message);});
+                  auto execute_finalize = scope::execute( [&](){
+                     policy.ack( message.service.name);
+                     server::context().finalize();
+                  });
 
 
                   //
@@ -67,26 +69,27 @@ namespace casual
                   //
                   auto reply = transform::reply( message);
 
-                  using flag_type =  typename decltype( message.flags)::enum_type;
-
-                  //
-                  // Make sure we always send reply to caller
-                  //
                   auto execute_reply = scope::execute( [&](){
-                     if( ! message.flags.exist( flag_type::no_transaction))
+                     if( send_reply)
                      {
                         //
                         // Send reply to caller.
                         //
                         policy.reply( message.process.queue, reply);
-                     }});
+                     }
+                  });
+
+
+                  auto parameter = transform::parameter( message);
 
 
                   //
                   // If something goes wrong, make sure to rollback before reply with error.
                   // this will execute before execute_reply
                   //
-                  auto execute_error_reply = scope::execute( [&](){ policy.transaction( reply, TPESVCERR); });
+                  auto execute_error_reply = scope::execute( [&](){
+                     reply.transaction = policy.transaction( false);
+                  });
 
 
                   auto& state = server::Context::instance().state();
@@ -98,28 +101,17 @@ namespace casual
 
 
                   //
-                  // set the call-correlation
+                  // Find service
                   //
 
-                  auto found = range::find( state.services, message.service.name);
+                  auto found = range::find( state.services, parameter.service.name);
 
                   if( ! found)
                   {
-                     throw common::exception::xatmi::System( "service: " + message.service.name + " not present at server - inconsistency between broker and server");
+                     throw common::exception::xatmi::System( "service: " + parameter.service.name + " not present at server - inconsistency between broker and server");
                   }
 
                   auto& service = found->second;
-
-                  execution::service::name( message.service.name);
-                  execution::service::parent::name( message.parent);
-
-                  //
-                  // set header
-                  //
-                  common::service::header::fields( std::move( message.header));
-
-
-
 
                   //
                   // Do transaction stuff...
@@ -127,107 +119,38 @@ namespace casual
                   // - notify TM about potentially resources involved.
                   // - set 'global' deadline/timeout
                   //
-                  policy.transaction( message, service, state.event.start);
-
-
-                  //
-                  // Also takes care of buffer to pool
-                  //
-                  TPSVCINFO information = transform::information( message);
+                  policy.transaction( message.trid, service, message.service.timeout, state.event.start);
 
 
                   //
                   // Apply pre service buffer manipulation
                   //
+                  /*
                   buffer::transport::Context::instance().dispatch(
                         information.data,
                         information.len,
                         information.name,
                         buffer::transport::Lifecycle::pre_service);
-
+                        */
 
                   //
-                  // Set destination for the coming jump...
-                  // we can't wrap the jump in some abstraction since it's
-                  // UB (http://en.cppreference.com/w/cpp/utility/program/setjmp)
+                  // call the service
                   //
-                  switch( ::setjmp( state.jump.environment))
+                  try
                   {
-                     case state::Jump::Location::c_no_jump:
-                     {
-                        //
-                        // ATTENTION: no types with destructor should be instantiated
-                        // within this scope, since we're jumping back to the switch case, hence
-                        // no dtors will run...
-                        //
-
-                        //
-                        // No longjmp has been called, this is the first time in this "service call"
-                        // Let's call the user service...
-                        //
-
-                        try
-                        {
-                           service.get().call( &information);
-                        }
-                        catch( ...)
-                        {
-                           error::handler();
-                           log::category::error << "exception thrown from service: " << message.service.name << std::endl;
-                        }
-
-                        //
-                        // User service returned, not by tpreturn.
-                        //
-                        throw common::exception::xatmi::service::Error( "service: " + message.service.name + " did not call tpreturn");
-                     }
-                     case state::Jump::Location::c_forward:
-                     {
-                        //
-                        // user has called casual_service_forward
-                        //
-
-                        if( service_context.pending())
-                        {
-                           //
-                           // We can't do a forward, user has pending stuff in flight
-                           //
-                           throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending actions");
-                        }
-
-                        //
-                        // Check if service is present at this instance
-                        //
-                        if( range::find( state.services, state.jump.forward.service))
-                        {
-                           throw common::exception::xatmi::service::Error( "not implemented to forward to a service in the same instance");
-                        }
-
-                        policy.forward( message, state.jump);
-
-                        //
-                        // Forward went ok, make sure we don't do error stuff
-                        //
-                        execute_reply.release();
-                        execute_error_reply.release();
-
-                        return;
-                     }
-                     default:
-                     {
-                        throw common::exception::invalid::Semantic{ "unexpected value from setjmp"};
-                     }
-                     case state::Jump::Location::c_return:
-                     {
-                        log::debug << "user called tpreturn\n";
-
-                        //
-                        // we continue below...
-                        //
-
-                        break;
-                     }
+                     complement::reply( service( std::move( parameter)), reply);
                   }
+                  catch( common::service::invoke::Forward& forward)
+                  {
+                     policy.forward( std::move( forward), message);
+
+                     execute_reply.release();
+                     execute_error_reply.release();
+
+                     return;
+                  }
+
+
 
                   // TODO: What are the semantics of 'order' of failure?
                   //       If TM is down, should we send reply to caller?
@@ -237,16 +160,13 @@ namespace casual
                   //
                   // Apply post service buffer manipulation
                   //
+                  /*
                   buffer::transport::Context::instance().dispatch(
                         state.jump.buffer.data,
                         state.jump.buffer.size,
                         message.service.name,
                         buffer::transport::Lifecycle::post_service);
-
-                  //
-                  // Modify reply with stuff from tpreturn...
-                  //
-                  complement::reply( reply, state.jump);
+                        */
 
 
 
@@ -254,7 +174,10 @@ namespace casual
                   // Do transaction stuff...
                   // - commit/rollback transaction if service has "auto-transaction"
                   //
-                  auto execute_transaction = scope::execute( [&](){ policy.transaction( reply, state.jump.state.value); });
+                  auto execute_transaction = scope::execute( [&](){
+                     reply.transaction = policy.transaction(
+                           reply.transaction.state == message::service::Transaction::State::active);
+                  });
 
                   //
                   // Nothing did go wrong
@@ -281,7 +204,6 @@ namespace casual
                      }
                   });
 
-                  execute_ack();
                   execute_transaction();
                   execute_reply();
                   execute_monitor();

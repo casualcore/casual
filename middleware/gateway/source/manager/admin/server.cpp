@@ -74,10 +74,12 @@ namespace casual
             {
                common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
-               result.services.emplace_back( ".casual.gateway.state",
-                     std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
-                     common::service::category::admin,
-                     common::service::transaction::Type::none);
+               result.services = {
+                     common::server::xatmi::service( ".casual.gateway.state",
+                        std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin)
+               };
 
 
                return result;

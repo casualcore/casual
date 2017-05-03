@@ -97,7 +97,7 @@ namespace casual
             //!
             //! commits or rollback transaction created from this server
             //!
-            void finalize( message::service::call::Reply& message, int return_state);
+            message::service::Transaction finalize( bool commit);
 
 
             //!

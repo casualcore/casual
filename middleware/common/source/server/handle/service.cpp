@@ -28,7 +28,7 @@ namespace casual
 
                      result.correlation = message.correlation;
                      result.buffer = buffer::Payload{ nullptr};
-                     result.error = TPESVCERR;
+                     result.status = TPESVCERR;
 
                      return result;
                   }
@@ -45,111 +45,84 @@ namespace casual
                   }
 
 
-                  TPSVCINFO information( message::service::call::callee::Request& message)
+                  common::service::invoke::Parameter parameter( message::service::call::callee::Request& message)
                   {
-                     Trace trace{ "server::handle::transform::information"};
+                     common::service::invoke::Parameter result{ std::move( message.buffer)};
 
-                     TPSVCINFO result;
+                     constexpr auto valid_flags = ~common::service::invoke::Parameter::Flags{};
 
-                     //
-                     // Before we call the user function we have to add the buffer to the "buffer-pool"
-                     //
-                     //range::copy_max( message.service.name, )
-                     strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
-                     result.len = message.buffer.memory.size();
-                     result.cd = 0;
-                     result.flags = message.flags.underlaying();
-
-                     //
-                     // This is the only place where we use adopt
-                     //
-                     result.data = buffer::pool::Holder::instance().adopt( std::move( message.buffer));
+                     result.service.name = message.service.name;
+                     result.parent = std::move( message.parent);
+                     result.flags = valid_flags.convert( message.flags);
 
                      return result;
                   }
 
-                  TPSVCINFO information( message::conversation::connect::callee::Request& message)
+                  common::service::invoke::Parameter parameter( message::conversation::connect::callee::Request& message)
                   {
-                     Trace trace{ "server::handle::transform::information connect"};
+                     common::service::invoke::Parameter result{ std::move( message.buffer)};
 
-                     TPSVCINFO result;
+                     constexpr auto valid_flags = ~common::service::invoke::Parameter::Flags{};
 
-                     //
-                     // Before we call the user function we have to add the buffer to the "buffer-pool"
-                     //
-                     //range::copy_max( message.service.name, )
-                     strncpy( result.name, message.service.name.c_str(), sizeof( result.name) );
-                     result.len = message.buffer.memory.size();
-                     result.flags = message.flags.underlaying();
+                     result.service.name = std::move( message.service.name);
+                     result.parent = std::move( message.parent);
+                     result.flags = valid_flags.convert( message.flags);
 
                      auto& descriptor = common::service::conversation::Context::instance().descriptors().reserve( message.correlation);
-
-                     result.cd = descriptor.descriptor;
-
-                     //
-                     // This is the only place where we use adopt
-                     //
-                     result.data = buffer::pool::Holder::instance().adopt( std::move( message.buffer));
-
-
-
+                     result.descriptor = descriptor.descriptor;
 
                      return result;
+
                   }
 
                } // transform
 
                namespace complement
                {
-                  void reply( message::service::call::Reply& reply, const server::state::Jump& jump)
+                  void reply( common::service::invoke::Result&& result, message::service::call::Reply& reply)
                   {
-                     reply.code = jump.state.code;
-                     reply.error = jump.state.value == TPSUCCESS ? 0 : TPESVCFAIL;
+                     Trace trace{ "server::handle::service::complement::reply"};
 
-                     if( jump.buffer.data != nullptr)
+                     log::debug << "result: " << result << '\n';
+
+                     reply.code = result.code;
+                     reply.buffer = std::move( result.payload);
+
+                     if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
-                        try
-                        {
-                           reply.buffer = buffer::pool::Holder::instance().release( jump.buffer.data, jump.buffer.size);
-                        }
-                        catch( ...)
-                        {
-                           error::handler();
-                           reply.error = TPESVCERR;
-                        }
+                        reply.transaction.state = message::service::Transaction::State::active;
+                        reply.status = 0;
                      }
                      else
                      {
-                        reply.buffer = buffer::Payload{ nullptr};
+                        reply.transaction.state = message::service::Transaction::State::rollback;
+                        reply.status = TPESVCFAIL;
                      }
+
+                     log::debug << "reply: " << reply << '\n';
                   }
 
-                  void reply( message::conversation::caller::Send& reply, const server::state::Jump& jump)
+
+                  void reply( common::service::invoke::Result&& result, message::conversation::caller::Send& reply)
                   {
-                     auto event = []( int value){
-                        return value == TPSUCCESS ? common::service::conversation::Event::service_success :
-                              common::service::conversation::Event::service_fail;
-                     };
+                     Trace trace{ "server::handle::service::complement::reply"};
 
-                     reply.events = event( jump.state.value);
+                     log::debug << "result: " << result << '\n';
 
-                     if( jump.buffer.data != nullptr)
+                     if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
-                        try
-                        {
-                           reply.buffer = buffer::pool::Holder::instance().release( jump.buffer.data, jump.buffer.size);
-                        }
-                        catch( ...)
-                        {
-                           error::handler();
-                           reply.events = common::service::conversation::Event::service_error;
-                        }
+                        reply.events = common::service::conversation::Event::service_success;
+                        reply.status = 0;
                      }
                      else
                      {
-                        reply.buffer = buffer::Payload{ nullptr};
+                        reply.events = common::service::conversation::Event::service_fail;
+                        reply.status = TPESVCFAIL;
                      }
 
+                     reply.buffer = std::move( result.payload);
+
+                     log::debug << "reply: " << reply << '\n';
                   }
 
                } // complement

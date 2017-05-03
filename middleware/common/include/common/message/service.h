@@ -94,8 +94,17 @@ namespace casual
 
             struct Transaction
             {
+               enum class State : char
+               {
+                  absent,
+                  active = absent,
+                  rollback,
+                  timeout,
+                  error,
+               };
+
                common::transaction::ID trid;
-               std::int64_t state = 0;
+               State state = State::active;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -103,6 +112,7 @@ namespace casual
                   archive & state;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, State value);
                friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
             static_assert( traits::is_movable< Transaction>::value, "not movable");
@@ -293,7 +303,7 @@ namespace casual
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-                  int error = 0;
+                  int status = 0;
                   long code = 0;
                   Transaction transaction;
                   common::buffer::Payload buffer;
@@ -301,7 +311,7 @@ namespace casual
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & error;
+                     archive & status;
                      archive & code;
                      archive & transaction;
                      archive & buffer;
@@ -327,6 +337,8 @@ namespace casual
                      archive & service;
                      archive & process;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const ACK& message);
                };
                static_assert( traits::is_movable< ACK>::value, "not movable");
 

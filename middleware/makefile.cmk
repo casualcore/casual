@@ -13,7 +13,7 @@ with Scope():
     Parallel( True)
     
     Build( 'domain/makefile.cmk')    
-    Build( 'traffic/makefile.cmk')
+    Build( 'event/makefile.cmk')
     Build( 'administration/makefile.cmk')
     Build( 'gateway/makefile.cmk')
 

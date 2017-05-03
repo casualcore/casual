@@ -57,6 +57,7 @@ casual_common_objectfiles = [
     Compile( 'source/service/lookup.cpp'),
     Compile( 'source/service/header.cpp'),
     Compile( 'source/service/type.cpp'),
+    Compile( 'source/service/invoke.cpp'),
     
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),

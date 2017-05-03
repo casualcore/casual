@@ -98,20 +98,20 @@ namespace casual
          {
             Trace trace{ "server::Context::advertise"};
 
-            Service prospect{ service, adress};
+            auto prospect = xatmi::service( service, adress);
 
             //
             // validate
             //
-            if( prospect.origin.size() >= XATMI_SERVICE_NAME_LENGTH)
+            if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
-               prospect.origin.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::category::warning << "service name '" << service << "' truncated to '" << prospect.origin << "'";
+               prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
+               log::category::warning << "service name '" << service << "' truncated to '" << prospect.name << "'";
             }
 
 
 
-            auto found = range::find( m_state.services, prospect.origin);
+            auto found = range::find( m_state.services, prospect.name);
 
             if( found)
             {
@@ -121,7 +121,7 @@ namespace casual
                //
                if( found->second != prospect)
                {
-                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.origin);
+                  throw common::exception::xatmi::service::Advertised( "service name: " + prospect.name);
                }
             }
             else
@@ -135,15 +135,15 @@ namespace casual
 
                if( found)
                {
-                  m_state.services.emplace( prospect.origin, *found);
-                  message.services.emplace_back( prospect.origin, found->category, found->transaction);
+                  m_state.services.emplace( prospect.name, *found);
+                  message.services.emplace_back( prospect.name, found->category, found->transaction);
                }
                else
                {
-                  message.services.emplace_back( prospect.origin, prospect.category, prospect.transaction);
+                  message.services.emplace_back( prospect.name, prospect.category, prospect.transaction);
 
                   m_state.physical_services.push_back( prospect);
-                  m_state.services.emplace( prospect.origin, m_state.physical_services.back());
+                  m_state.services.emplace( prospect.name, m_state.physical_services.back());
                }
                communication::ipc::blocking::send( communication::ipc::broker::device(), message);
             }
@@ -178,7 +178,7 @@ namespace casual
             {
                m_state.physical_services.push_back( service);
                m_state.services.emplace(
-                     service.origin,
+                     service.name,
                      m_state.physical_services.back());
             }
          }
@@ -204,14 +204,14 @@ namespace casual
          server::Service* Context::physical( const std::string& name)
          {
             return local::find_physical(  m_state.physical_services, [&]( const server::Service& s){
-               return s.origin == name;
+               return s.name == name;
             });
          }
 
-         server::Service* Context::physical( const server::Service::function_type& function)
+         server::Service* Context::physical( const server::xatmi::function_type& function)
          {
             return local::find_physical(  m_state.physical_services, [&]( const server::Service& s){
-               return s == function;
+               return s == xatmi::address( function);
             });
 
          }
