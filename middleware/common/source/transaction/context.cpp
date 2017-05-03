@@ -466,6 +466,7 @@ namespace casual
                      case Transaction::State::active: return message::service::Transaction::State::active;
                      case Transaction::State::rollback: return message::service::Transaction::State::rollback;
                      case Transaction::State::timeout: return message::service::Transaction::State::timeout;
+                     default: return message::service::Transaction::State::error;
                   }
                };
 
