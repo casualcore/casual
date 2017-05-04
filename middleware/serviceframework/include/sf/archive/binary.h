@@ -40,7 +40,8 @@ namespace casual
 
                   std::size_t container_start( const std::size_t size, const char*)
                   {
-                     const auto elements = static_cast<common::network::byteorder::size::type>( size);
+                     // TODO:
+                     const auto elements = static_cast<common::network::byteorder::size::host::type>( size);
                      write( elements, nullptr);
                      return size;
                   }
@@ -74,7 +75,8 @@ namespace casual
 
                   std::tuple< std::size_t, bool> container_start( std::size_t size, const char*)
                   {
-                     common::network::byteorder::size::type elements;
+                     // TODO:
+                     common::network::byteorder::size::host::type elements;
                      read( elements, nullptr);
                      return std::make_tuple( elements, true);
                   }

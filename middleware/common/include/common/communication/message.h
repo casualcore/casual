@@ -31,11 +31,11 @@ namespace casual
                   struct Header
                   {
                      using host_type_type = platform::ipc::message::type;
-                     using network_type_type = decltype( common::network::byteorder::encode( host_type_type{}));
+                     using network_type_type = common::network::byteorder::type<host_type_type>;
 
                      //using host_size_type = platform::binary::size::type;
-                     using host_size_type = common::network::byteorder::size::type;
-                     using network_size_type = decltype( common::network::byteorder::size::encode( host_size_type{}));
+                     using host_size_type = common::network::byteorder::size::host::type;
+                     using network_size_type = common::network::byteorder::type<host_type_type>;
 
                      network_type_type type = 0;
                      Uuid::uuid_type correlation;

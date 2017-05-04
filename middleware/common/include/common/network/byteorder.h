@@ -113,7 +113,13 @@ namespace casual
             namespace size
             {
                using S = long;
-               using type = S;
+
+               namespace host
+               {
+                  using type = S;
+               } // host
+
+               using type = decltype(detail::transcode<S>::encode( host::type{}));
 
                template< typename T>
                inline auto encode( const T value) noexcept

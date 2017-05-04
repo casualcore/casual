@@ -67,7 +67,7 @@ namespace casual
                   struct Type
                   {
                      std::string type;
-                     common::network::byteorder::size::type size;
+                     common::network::byteorder::size::host::type size;
                   };
 
                   struct Info
@@ -237,8 +237,8 @@ namespace casual
                   template< typename T>
                   void write( const std::vector< T>& value)
                   {
-                     // TODO
-                     write_pod( static_cast<common::network::byteorder::size::type>(value.size()));
+                     // TODO:
+                     write_pod( static_cast<common::network::byteorder::size::host::type>(value.size()));
 
                      for( auto& current : value)
                      {
@@ -248,7 +248,8 @@ namespace casual
 
                   void write( const std::string& value)
                   {
-                     write_pod( static_cast<common::network::byteorder::size::type>(value.size()));
+                     // TODO:
+                     write_pod( static_cast<common::network::byteorder::size::host::type>(value.size()));
 
                      append(
                         std::begin( value),
@@ -257,7 +258,8 @@ namespace casual
 
                   void write( const common::platform::binary::type& value)
                   {
-                     write_pod( static_cast<common::network::byteorder::size::type>(value.size()));
+                     // TODO:
+                     write_pod( static_cast<common::network::byteorder::size::host::type>(value.size()));
 
                      append(
                         std::begin( value),

@@ -103,7 +103,7 @@ namespace casual
                   // TODO: Fix this ... this is bad
                   // We should somehow use network::byteorder::size::encode instead
                   //
-                  archive << static_cast<network::byteorder::size::type>(transport);
+                  archive << static_cast<network::byteorder::size::host::type>(transport);
                   archive.append( std::begin( payload().memory), std::begin( payload().memory) + transport);
                }
 
@@ -129,7 +129,7 @@ namespace casual
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
-            platform::binary::size::type transport(  platform::binary::size::type user_size) const;
+            platform::binary::size::type transport( platform::binary::size::type user_size) const;
 
             platform::binary::size::type reserved() const;
 
