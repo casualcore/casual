@@ -429,7 +429,6 @@ domain:
 )"};
 
             local::Manager manager{ { configuration}};
-            process::ping( local::manager::ipc());
 
             mockup::domain::Broker broker;
 
@@ -441,6 +440,52 @@ domain:
             EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_MAKE_NVP( state);
             EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
 
+         }
+
+         TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_broker)
+         {
+            common::unittest::Trace trace;
+
+            const std::string configuration{ R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 2
+
+)"};
+
+            local::Manager manager{ { configuration}};
+
+            //
+            // We add/override handler for prepare shutdown and forward to our
+            // local ipc queue
+            //
+            auto local_queue = communication::ipc::inbound::id();
+
+            mockup::domain::Broker broker{
+               [local_queue]( message::domain::process::prepare::shutdown::Request& m)
+               {
+                  Trace trace{ "local forward"};
+                  mockup::ipc::eventually::send( local_queue, m);
+               }
+            };
+
+            auto instances = local::call::scale( "test-simple-server", 1);
+            ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_MAKE_NVP( instances);
+
+            //
+            // Consume the request and send reply.
+            //
+            {
+               message::domain::process::prepare::shutdown::Request request;
+               EXPECT_TRUE( communication::ipc::blocking::receive( communication::ipc::inbound::device(), request));
+               EXPECT_TRUE( request.processes.size() == 1) << "request: " << request;
+
+               auto reply = message::reverse::type( request);
+               reply.processes = std::move( request.processes);
+               communication::ipc::blocking::send( request.process.queue, reply);
+            }
          }
 
          TEST( casual_domain_manager, configuration_service_routes)

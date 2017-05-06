@@ -119,10 +119,10 @@ namespace casual
                      message::interdomain::service::call::receive::Reply message;
                      set_general( message);
 
-                     message.error = 9;
+                     message.status = 9;
                      message.code = 42;
                      message.transaction.trid = trid();
-                     message.transaction.state = 0;
+                     message.transaction.state = common::message::service::Transaction::State::active;
 
                      message.buffer.type = ".json/";
                      message.buffer.memory = { '{', '}'};

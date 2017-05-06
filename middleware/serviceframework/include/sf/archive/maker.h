@@ -87,6 +87,7 @@ namespace casual
                Holder data( std::istream& stream);
                //! @}
 
+
                //! @{
                Holder file( std::string name);
                //! @}
@@ -95,6 +96,11 @@ namespace casual
                Holder name( std::string name);
                Holder name( std::istream& stream, std::string name);
                //! @}
+
+               Holder buffer( const platform::binary::type& data, std::string type);
+
+
+
             } // from
 
          } // reader
@@ -138,6 +144,8 @@ namespace casual
                Holder name( std::string name);
                Holder name( std::ostream& stream, std::string name);
                //! @}
+
+               Holder buffer( platform::binary::type& data, std::string type);
 
             } // from
 

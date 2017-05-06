@@ -59,7 +59,7 @@ namespace casual
                                  common::message::service::call::Reply reply;
 
                                  reply.correlation = point.correlation;
-                                 reply.error = TPESYSTEM;
+                                 reply.status = TPESYSTEM;
 
                                  ipc::optional::send( point.destination.queue, reply);
                               }

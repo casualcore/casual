@@ -28,7 +28,6 @@ namespace casual
             const auto cINI{ "ini"};
          }
 
-
          namespace maker
          {
             namespace
@@ -118,7 +117,6 @@ namespace casual
 
                         return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
                      }
-
                   } // <unnamed>
                } // local
 
@@ -186,6 +184,11 @@ namespace casual
                   return local::name( stream, std::move( name));
                }
 
+               Holder buffer( const platform::binary::type& data, std::string type)
+               {
+                  return local::name( data, std::move( type));
+               }
+
             } // from
 
          } // reader
@@ -240,6 +243,11 @@ namespace casual
                Holder name( std::ostream& stream, std::string name)
                {
                   return local::name( stream, std::move( name));
+               }
+
+               Holder buffer( platform::binary::type& data, std::string type)
+               {
+                  return local::name( data, std::move( type));
                }
 
             } // from

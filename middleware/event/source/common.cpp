@@ -2,12 +2,12 @@
 //! casual 
 //!
 
-#include "traffic/common.h"
+#include "event/common.h"
 
 
 namespace casual
 {
-   namespace traffic
+   namespace event
    {
       common::log::Stream log{ "casual.traffic"};
 

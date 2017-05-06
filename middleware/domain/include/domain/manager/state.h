@@ -379,6 +379,9 @@ namespace casual
             const state::Executable& executable( state::Executable::id_type id) const;
 
 
+            common::process::Handle singleton( const common::Uuid& id) const;
+
+
 
             //!
             //! Extract all resources (names) configured to a specific process (server)

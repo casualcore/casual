@@ -12,8 +12,7 @@
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
-
-#include "../../../common/include/common/event/listen.h"
+#include "common/event/listen.h"
 
 
 
@@ -345,7 +344,7 @@ namespace casual
                broker::handle::domain::discover::Request{ state},
                broker::handle::domain::discover::Reply{ state},
 
-               common::server::handle::basic_admin_call{
+               common::server::handle::admin::Call{
                   broker::admin::services( state),
                   ipc::device().error_handler()},
                common::message::handle::ping(),

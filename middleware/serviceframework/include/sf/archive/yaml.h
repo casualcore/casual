@@ -35,6 +35,7 @@ namespace casual
                const YAML::Node& operator() () const noexcept;
 
                const YAML::Node& operator() ( std::istream& stream);
+               const YAML::Node& operator() ( const platform::binary::type& yaml);
                const YAML::Node& operator() ( const std::string& yaml);
                const YAML::Node& operator() ( const char* yaml, std::size_t size);
                const YAML::Node& operator() ( const char* yaml);
@@ -116,6 +117,7 @@ namespace casual
                YAML::Emitter& operator() () noexcept;
 
                void operator() ( std::ostream& yaml) const;
+               void operator() ( platform::binary::type& yaml) const;
                void operator() ( std::string& yaml) const;
 
 

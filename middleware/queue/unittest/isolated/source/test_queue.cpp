@@ -10,6 +10,7 @@
 #include "queue/common/transform.h"
 #include "queue/api/queue.h"
 #include "queue/broker/admin/queuevo.h"
+#include "queue/broker/admin/services.h"
 
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
@@ -81,7 +82,7 @@ namespace casual
             {
                broker::admin::State state()
                {
-                  sf::xatmi::service::binary::Sync service( ".casual/queue/state");
+                  sf::xatmi::service::binary::Sync service( broker::admin::service::name::state());
 
                   auto reply = service();
 
@@ -94,7 +95,7 @@ namespace casual
 
                std::vector< broker::admin::Message> messages( const std::string& queue)
                {
-                  sf::xatmi::service::binary::Sync service( ".casual.queue.list.messages");
+                  sf::xatmi::service::binary::Sync service(  broker::admin::service::name::list_messages());
                   service << CASUAL_MAKE_NVP( queue);
 
                   auto reply = service();
