@@ -89,6 +89,11 @@ namespace casual
                m_last = when;
             }
 
+            void Local::exiting()
+            {
+               m_state = State::exiting;
+            }
+
             void Remote::requested( const common::platform::time::point::type& when)
             {
                ++invoked;
@@ -227,6 +232,14 @@ namespace casual
          void Service::partition_remote_instances()
          {
             range::stable_sort( instances.remote);
+         }
+
+
+         bool Service::Instances::active() const
+         {
+            return ! remote.empty() || range::any_of( local, []( const auto& i){
+               return i.state() != instance::Local::State::exiting;
+            });
          }
 
          void Service::metric_reset()
@@ -411,6 +424,25 @@ namespace casual
 
          local::remove_process( instances.local, services, pid);
          local::remove_process( instances.remote, services, pid);
+      }
+
+      void State::prepare_shutdown( common::platform::pid::type pid)
+      {
+         Trace trace{ "broker::State::prepare_shutdown"};
+
+         auto found = common::range::find( instances.local, pid);
+
+         if( found)
+         {
+            found->second.exiting();
+         }
+         else
+         {
+            //
+            // Assume that it's a remote instances
+            //
+            local::remove_process( instances.remote, services, pid);
+         }
       }
 
 

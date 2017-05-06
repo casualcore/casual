@@ -83,6 +83,26 @@ namespace casual
                m_state.remove_process( message.state.pid);
             }
 
+            namespace prepare
+            {
+               void Shutdown::operator () ( common::message::domain::process::prepare::shutdown::Request& message)
+               {
+                  Trace trace{ "broker::handle::process::prepare::Shutdown"};
+
+                  auto reply = common::message::reverse::type( message);
+                  reply.process = common::process::handle();
+                  reply.processes = std::move( message.processes);
+
+                  range::for_each( reply.processes, [&]( const auto& p){
+                     m_state.prepare_shutdown( p.pid);
+                  });
+
+
+                  ipc::device().blocking_send( message.process.queue, reply);
+               }
+
+            } // prepare
+
          } // process
 
 
@@ -151,7 +171,7 @@ namespace casual
                         instance->lock( now);
                      }
                   }
-                  else if( service.instances.empty())
+                  else if( ! service.instances.active())
                   {
                      throw state::exception::Missing{ "no instances"};
                   }
@@ -485,6 +505,7 @@ namespace casual
       {
          return {
             common::event::listener( handle::process::Exit{ state}),
+            handle::process::prepare::Shutdown{ state},
             handle::service::Advertise{ state},
             handle::service::Lookup{ state},
             handle::ACK{ state},

@@ -492,29 +492,35 @@ namespace casual
                      //
                      signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
 
+
+                     common::message::domain::process::prepare::shutdown::Request prepare;
+                     prepare.process = common::process::handle();
+
                      auto handles = range::make_reverse(
                            range::make(
                                  std::begin( server.instances) + server.configured_instances,
                                  std::end( server.instances)));
 
-                     range::for_each( handles, [&]( auto& process){
+                     prepare.processes = range::to_vector( handles);
 
-                        if( process)
-                        {
-                           message::shutdown::Request shutdown{ common::process::handle()};
+                     auto broker = state.singleton( common::process::instance::identity::broker());
 
-                           //
-                           // Just to make each shutdown easy to follow in log.
-                           //
-                           shutdown.execution = uuid::make();
+                     try
+                     {
+                        manager::ipc::device().blocking_send( broker.queue, prepare);
+                     }
+                     catch( const exception::communication::Unavailable&)
+                     {
+                        //
+                        // broker is not online, we simulate the reply from the broker
+                        //
 
-                           manager::local::ipc::send( state, process, shutdown);
-                        }
-                        else
-                        {
-                           common::process::terminate( process.pid);
-                        }
-                     });
+                        auto reply = common::message::reverse::type( prepare);
+                        reply.processes = std::move( prepare.processes);
+
+                        scale::prepare::Shutdown handle{ state};
+                        handle( reply);
+                     }
                    }
 
                } // scale
@@ -555,6 +561,35 @@ namespace casual
                   scaler( scale.servers, state().servers);
                   scaler( scale.executables, state().executables);
                }
+
+               namespace prepare
+               {
+                  void Shutdown::operator () ( common::message::domain::process::prepare::shutdown::Reply& message)
+                  {
+                     Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
+
+                     range::for_each( message.processes, [&]( auto& process){
+
+                        if( process)
+                        {
+                           message::shutdown::Request shutdown{ common::process::handle()};
+
+                           //
+                           // Just to make each shutdown easy to follow in log.
+                           //
+                           shutdown.execution = uuid::make();
+
+                           manager::local::ipc::send( state(), process, shutdown);
+                        }
+                        else
+                        {
+                           common::process::terminate( process.pid);
+                        }
+                     });
+                  }
+
+               } // prepare
+
 
             } // scale
 
@@ -963,6 +998,7 @@ namespace casual
                common::message::handle::ping(),
                common::message::handle::Shutdown{},
                manager::handle::scale::Executable{ state},
+               manager::handle::scale::prepare::Shutdown{ state},
                manager::handle::event::process::Exit{ state},
                manager::handle::event::subscription::Begin{ state},
                manager::handle::event::subscription::End{ state},

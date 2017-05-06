@@ -72,7 +72,7 @@ namespace broker
          common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
          result.services = {
-               common::server::xatmi::service( ".casual.broker.state",
+               common::server::xatmi::service( service::name::state(),
                   std::bind( &service_broker_state, std::placeholders::_1, std::ref( state)),
                   common::service::transaction::Type::none,
                   common::service::category::admin)

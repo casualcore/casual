@@ -84,10 +84,7 @@ namespace casual
 
                basic_handler& operator += ( basic_handler&& other)
                {
-                  for( auto&& handler : other.m_handlers)
-                  {
-                     m_handlers.insert( std::move( handler));
-                  }
+                  add( m_handlers, std::move( other));
                   return *this;
                }
 
@@ -95,6 +92,17 @@ namespace casual
                {
                   lhs += std::move( rhs);
                   return std::move( lhs);
+               }
+
+               friend std::ostream& operator << ( std::ostream& out, const basic_handler& value)
+               {
+                  if( out)
+                  {
+                     auto types = value.types();
+                     return out << "{ types: " << range::make( types)
+                           << '}';
+                  }
+                  return out;
                }
 
             private:
@@ -176,16 +184,14 @@ namespace casual
 
                   auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
 
-                  result.emplace(
-                        handle_type::message_type::type(),
-                        std::move( holder));
+                  result[ handle_type::message_type::type()] = std::move( holder);
                }
 
                static void add( handlers_type& result, basic_handler&& holder)
                {
                   for( auto&& handler : holder.m_handlers)
                   {
-                     result.insert( std::move( handler));
+                     result[ handler.first] = std::move( handler.second);
                   }
                }
 

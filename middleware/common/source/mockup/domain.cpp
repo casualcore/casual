@@ -496,6 +496,7 @@ namespace casual
                      common::environment::variable::name::ipc::broker(),
                      m_replier.process());
 
+
             }
 
             Broker::~Broker() = default;
@@ -535,6 +536,15 @@ namespace casual
                   {
                      Trace trace{ "mockup service::call::ACK"};
 
+                  },
+                  [&]( message::domain::process::prepare::shutdown::Request& m)
+                  {
+                     Trace trace{ "mockup domain::process::prepare::shutdown::Request"};
+
+                     auto reply = message::reverse::type( m);
+                     reply.processes = std::move( m.processes);
+
+                     ipc::eventually::send( m.process.queue, reply);
                   },
                   [&]( message::service::Advertise& m)
                   {

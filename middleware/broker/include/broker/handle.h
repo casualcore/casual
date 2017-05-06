@@ -61,6 +61,16 @@ namespace casual
 
                void operator () ( message_type& message);
             };
+
+            namespace prepare
+            {
+               struct Shutdown : Base
+               {
+                  using Base::Base;
+                  void operator () ( common::message::domain::process::prepare::shutdown::Request& message);
+               };
+            } // prepare
+
          } // process
 
 

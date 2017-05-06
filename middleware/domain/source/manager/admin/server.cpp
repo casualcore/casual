@@ -213,19 +213,19 @@ namespace casual
                common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
                result.services = {
-                     common::server::xatmi::service( ".casual.domain.state",
+                     common::server::xatmi::service( service::name::state(),
                         std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
                         common::service::category::admin),
-                     common::server::xatmi::service( ".casual.domain.scale.instances",
+                     common::server::xatmi::service( service::name::scale::instances(),
                            std::bind( &service::scale_instances, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
                            common::service::category::admin),
-                     common::server::xatmi::service( ".casual.domain.shutdown",
+                     common::server::xatmi::service( service::name::shutdown(),
                            std::bind( &service::shutdown_domain, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
                            common::service::category::admin),
-                     common::server::xatmi::service( ".casual/domain/configuration/persist",
+                     common::server::xatmi::service( service::name::configuration::persist(),
                            std::bind( &service::persist_configuration, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
                            common::service::category::admin),
