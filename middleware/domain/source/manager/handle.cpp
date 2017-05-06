@@ -579,7 +579,7 @@ namespace casual
                            //
                            shutdown.execution = uuid::make();
 
-                           manager::local::ipc::send( state(), process, shutdown);
+                           manager::local::ipc::send( this->state(), process, shutdown);
                         }
                         else
                         {
