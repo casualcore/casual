@@ -818,6 +818,32 @@ namespace casual
 
       }
 
+      TEST( casual_field_buffer, minimum_need__expecting_correct_results)
+      {
+         long size = 0;
+
+         EXPECT_TRUE( casual_field_minimum_need( CASUAL_FIELD_NO_ID, &size) == CASUAL_FIELD_INVALID_ARGUMENT);
+         EXPECT_TRUE( casual_field_minimum_need( FLD_SHORT1, nullptr) == CASUAL_FIELD_INVALID_ARGUMENT);
+
+/*
+         EXPECT_FALSE( casual_field_minimum_need( FLD_SHORT1, &size));
+         EXPECT_TRUE( size == 8+8+2) << size;
+         EXPECT_FALSE( casual_field_minimum_need( FLD_LONG1, &size));
+         EXPECT_TRUE( size == 8+8+8) << size;
+         EXPECT_FALSE( casual_field_minimum_need( FLD_CHAR1, &size));
+         EXPECT_TRUE( size == 8+8+1) << size;
+         EXPECT_FALSE( casual_field_minimum_need( FLD_FLOAT1, &size));
+         EXPECT_TRUE( size == 8+8+4) << size;
+         EXPECT_FALSE( casual_field_minimum_need( FLD_DOUBLE1, &size));
+         EXPECT_TRUE( size == 8+8+8) << size;
+         EXPECT_FALSE( casual_field_minimum_need( FLD_STRING1, &size));
+         EXPECT_TRUE( size == 8+8+1) << size;
+         EXPECT_FALSE( casual_field_minimum_need( FLD_BINARY1, &size));
+         EXPECT_TRUE( size == 8+8+0) << size;
+*/
+      }
+
+
 
       TEST( casual_field_buffer, add_values_as_void_and_get_as_type__expecting_success)
       {
