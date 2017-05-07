@@ -130,9 +130,9 @@ namespace casual
                            common::message::service::call::Reply message;
                            general::intitialize( message);
                            message.code = 43;
-                           message.error = 666;
+                           message.status = 666;
                            message.transaction.trid = common::transaction::ID::create();
-                           message.transaction.state = 777;
+                           message.transaction.state = common::message::service::Transaction::State::rollback;
 
                            message.buffer.type = "buffer/name";
 
@@ -152,7 +152,7 @@ namespace casual
                            EXPECT_TRUE( send_message.correlation == receive_message.correlation);
                            EXPECT_TRUE( send_message.execution == receive_message.execution);
                            EXPECT_TRUE( send_message.code == receive_message.code);
-                           EXPECT_TRUE( send_message.error == receive_message.error);
+                           EXPECT_TRUE( send_message.status == receive_message.status);
                            EXPECT_TRUE( send_message.transaction.trid == receive_message.transaction.trid);
                            EXPECT_TRUE( send_message.transaction.state == receive_message.transaction.state);
 

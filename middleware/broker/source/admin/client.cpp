@@ -126,6 +126,7 @@ namespace casual
                   idle,
                   busy,
                   remote,
+                  exiting,
                };
 
                Instance( const admin::ServiceVO& service) : service{ service} {}
@@ -503,6 +504,7 @@ namespace casual
                         case value_type::State::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
                         case value_type::State::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
                         case value_type::State::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
+                        case value_type::State::exiting: out << std::left << std::setw( width) << terminal::color::magenta << "exiting"; break;
                         default: out << "unknown"; break;
                      }
                   }
@@ -513,6 +515,7 @@ namespace casual
                         case value_type::State::idle: out << std::left << std::setw( width) << "idle"; break;
                         case value_type::State::busy: out << std::left << std::setw( width) << "busy"; break;
                         case value_type::State::remote: out << std::left << std::setw( width) << "remote"; break;
+                        case value_type::State::exiting: out << std::left << std::setw( width) << "exiting"; break;
                         default: out << "unknown"; break;
                      }
                   }

@@ -468,7 +468,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL({
                         archive & this->get().execution;
-                        archive & this->get().error;
+                        archive & this->get().status;
                         archive & this->get().code;
 
                         archive & this->get().transaction.trid.xid;

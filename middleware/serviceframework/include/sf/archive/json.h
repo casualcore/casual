@@ -42,6 +42,7 @@ namespace casual
 
                const rapidjson::Document& operator() ( std::istream& stream);
                const rapidjson::Document& operator() ( const std::string& json);
+               const rapidjson::Document& operator() ( const platform::binary::type& json);
                const rapidjson::Document& operator() ( const char* json, std::size_t size);
                const rapidjson::Document& operator() ( const char* json);
 
@@ -127,6 +128,7 @@ namespace casual
                rapidjson::Document& operator() () noexcept;
 
                void operator() ( std::ostream& json) const;
+               void operator() ( platform::binary::type& json) const;
                void operator() ( std::string& json) const;
 
 

@@ -67,9 +67,6 @@ namespace casual
 
                      return result;
                   }
-
-
-
                };
 
                struct Pending

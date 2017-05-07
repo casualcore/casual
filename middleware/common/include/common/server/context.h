@@ -71,6 +71,15 @@ namespace casual
             };
          } // state
 
+         namespace xatmi
+         {
+            struct Service
+            {
+
+            };
+
+         } // xatmi
+
          struct State
          {
             state::Jump jump;
@@ -145,7 +154,7 @@ namespace casual
             //!
             //! @param name
             //! @return a pointer to the service if found, nullptr otherwise.
-            server::Service* physical( const server::Service::function_type& function);
+            server::Service* physical( const server::xatmi::function_type& function);
 
 
             //!
@@ -164,6 +173,8 @@ namespace casual
 
             State m_state;
          };
+
+         inline Context& context() { return Context::instance();}
 
       } // server
 	} // common

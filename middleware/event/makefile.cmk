@@ -30,16 +30,18 @@ common_archive = LinkArchive( 'bin/casual-traffic-common',
 	)
 
 lib_vo = LinkLibrary( 'bin/casual-traffic-monitor-vo',
-    [Compile( 'source/monitor/serviceentryvo.cpp')],
+    [
+		Compile( 'source/service/monitor/serviceentryvo.cpp')
+	],
     ['casual-common',
     'casual-sf'])
 
 install_lib.append( lib_vo)
 
     
-target = LinkExecutable( 'bin/casual-traffic-monitor',
+target = LinkExecutable( 'bin/casual-service-monitor',
 	[
-        Compile( 'source/monitor/database.cpp')
+        Compile( 'source/service/monitor/database.cpp')
 	],
 	[
 	'casual-common',
@@ -47,21 +49,30 @@ target = LinkExecutable( 'bin/casual-traffic-monitor',
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-traffic-log',
+target = LinkExecutable( 'bin/casual-service-log',
 	[
-	    Compile( 'source/log/log.cpp')
+	    Compile( 'source/service/log/log.cpp')
 	],
 	[
 	'casual-common'] )
 
 install_bin.append( target)
 
+target = LinkExecutable( 'bin/casual-service-monitor-bla',
+	[
+	    Compile( 'source/service/monitor/server.cpp')
+	],
+	[
+		common_archive,
+		'casual-common'
+	] )
 
+install_bin.append( target)
 
-target = LinkServer('bin/casual-traffic-monitor-request-server',
+target = LinkServer('bin/casual-service-monitor-server',
     [
-	   Compile( 'source/monitor/request_server.cpp'),
-	   Compile( 'source/monitor/request_server_implementation.cpp'),			
+	   Compile( 'source/service/monitor/request_server.cpp'),
+	   Compile( 'source/service/monitor/request_server_implementation.cpp'),			
 	],
     [
 	lib_vo,

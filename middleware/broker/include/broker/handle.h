@@ -61,6 +61,16 @@ namespace casual
 
                void operator () ( message_type& message);
             };
+
+            namespace prepare
+            {
+               struct Shutdown : Base
+               {
+                  using Base::Base;
+                  void operator () ( common::message::domain::process::prepare::shutdown::Request& message);
+               };
+            } // prepare
+
          } // process
 
 
@@ -203,13 +213,18 @@ namespace casual
 
             void reply( common::platform::ipc::id::type id, common::message::service::call::Reply& message);
 
-            void ack( const common::message::service::call::callee::Request& message);
+            void ack( const std::string& service);
 
-            void transaction( const common::message::service::call::callee::Request&, const common::server::Service&, const common::platform::time::point::type&);
 
-            void transaction( const common::message::service::call::Reply& message, int return_state);
+            void transaction(
+                  const common::transaction::ID& trid,
+                  const common::server::Service& service,
+                  const std::chrono::microseconds& timeout,
+                  const common::platform::time::point::type& now);
 
-            void forward( const common::message::service::call::callee::Request& message, const common::server::state::Jump& jump);
+            common::message::service::Transaction transaction( bool commit);
+
+            void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message);
 
             void statistics( common::platform::ipc::id::type, common::message::event::service::Call&);
 

@@ -33,7 +33,6 @@ namespace casual
                bool active = false;
                descriptor::type descriptor;
                common::Uuid correlation;
-               common::transaction::ID trid;
 
                friend bool operator == ( descriptor::type cd, const basic_information& d) { return cd == d.descriptor;}
                friend bool operator == ( const basic_information& d, descriptor::type cd) { return cd == d.descriptor;}
@@ -43,7 +42,6 @@ namespace casual
                   return out << "{ id: " << value.descriptor
                         << ", active: " << value.active
                         << ", correlation: " << value.correlation
-                        << ", trid: " << value.trid
                         << ", " << static_cast< const Information&>( value)
                         << '}';
                }
@@ -87,7 +85,6 @@ namespace casual
                   if( found)
                   {
                      found->active = true;
-                     found->trid = common::transaction::ID{};
                      //found->timeout.timeout = std::chrono::microseconds{ 0};
                      return *found;
                   }

@@ -45,6 +45,7 @@ namespace casual
 
       namespace handle
       {
+         using dispatch_type = common::communication::ipc::dispatch::Handler;
 
          namespace implementation
          {
@@ -257,6 +258,8 @@ namespace casual
             };
 
          } // domain
+
+         dispatch_type handlers( State& state);
 
       } // handle
    } // transaction

@@ -216,7 +216,7 @@ namespace casual
 
          auto reply = communication::ipc::call( domain.external.queue, request);
 
-         EXPECT_TRUE( reply.error == TPESVCERR);
+         EXPECT_TRUE( reply.status == TPESVCERR);
          EXPECT_TRUE( reply.buffer.memory.empty());
       }
 
@@ -238,7 +238,7 @@ namespace casual
 
          auto reply = communication::ipc::call( domain.external.queue, request);
 
-         EXPECT_TRUE( reply.error == TPESVCERR);
+         EXPECT_TRUE( reply.status == TPESVCERR);
          EXPECT_TRUE( reply.buffer.memory.empty());
       }
 

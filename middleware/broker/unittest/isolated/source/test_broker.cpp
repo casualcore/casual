@@ -16,6 +16,8 @@
 #include "common/message/type.h"
 #include "common/service/lookup.h"
 
+#include "sf/xatmi_call.h"
+
 
 namespace casual
 {
@@ -35,7 +37,10 @@ namespace casual
             {
                Broker() : process{ "./bin/casual-broker", { "--forward", "./bin/casual-forward-cache"}}
                {
-
+                  //
+                  // Wait for broker to get online
+                  //
+                  EXPECT_TRUE( process.handle() != common::process::handle());
                }
 
                ~Broker()
@@ -54,6 +59,50 @@ namespace casual
                mockup::domain::transaction::Manager tm;
             };
 
+            namespace call
+            {
+               admin::StateVO state()
+               {
+                  sf::xatmi::service::binary::Sync service( admin::service::name::state());
+
+                  auto reply = service();
+
+                  admin::StateVO serviceReply;
+
+                  reply >> CASUAL_MAKE_NVP( serviceReply);
+
+                  return serviceReply;
+               }
+
+            } // call
+
+            namespace service
+            {
+               const admin::ServiceVO* find( const admin::StateVO& state, const std::string& name)
+               {
+                  auto found = range::find_if( state.services, [&name]( auto& s){
+                     return s.name == name;
+                  });
+
+                  if( found) { return &( *found);}
+
+                  return nullptr;
+               }
+            } // service
+
+            namespace instance
+            {
+               const admin::instance::LocalVO* find( const admin::StateVO& state, platform::pid::type pid)
+               {
+                  auto found = range::find_if( state.instances.local, [pid]( auto& i){
+                     return i.process.pid == pid;
+                  });
+
+                  if( found) { return &( *found);}
+
+                  return nullptr;
+               }
+            } // instance
 
          } // <unnamed>
       } // local
@@ -67,9 +116,8 @@ namespace casual
 
          auto arguments = broker::admin::services( state);
 
-         EXPECT_TRUE( arguments.services.at( 0).origin == ".casual.broker.state");
+         EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state());
       }
-
 
       TEST( casual_broker, startup_shutdown__expect_no_throw)
       {
@@ -82,8 +130,123 @@ namespace casual
       }
 
 
+      TEST( casual_broker, startup___expect_1_service_in_state)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto state = local::call::state();
+
+         ASSERT_TRUE( state.services.size() == 1);
+         EXPECT_TRUE( state.services.at( 0).name == admin::service::name::state());
+
+      }
 
 
+      TEST( casual_broker, advertise_2_services_for_1_server__expect__3_services)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+
+         auto state = local::call::state();
+
+         ASSERT_TRUE( state.services.size() == 3);
+
+         {
+            auto service = local::service::find( state, "service1");
+            ASSERT_TRUE( service);
+            ASSERT_TRUE( service->instances.local.size() == 1);
+            EXPECT_TRUE( service->instances.local.at( 0).pid == server.process().pid);
+         }
+         {
+            auto service = local::service::find( state, "service2");
+            ASSERT_TRUE( service);
+            ASSERT_TRUE( service->instances.local.size() == 1);
+            EXPECT_TRUE( service->instances.local.at( 0).pid == server.process().pid);
+         }
+      }
+
+      TEST( casual_broker, advertise_2_services_for_1_server__expect__2_local_instances)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+
+         auto state = local::call::state();
+
+         ASSERT_TRUE( state.instances.local.size() == 2);
+         ASSERT_TRUE( state.instances.remote.empty());
+
+         {
+            auto instance = local::instance::find( state, server.process().pid);
+            ASSERT_TRUE( instance);
+            EXPECT_TRUE( instance->state == admin::instance::LocalVO::State::idle);
+         }
+      }
+
+
+      TEST( casual_broker, advertise_2_services_for_1_server__prepare_shutdown___expect_instance_exiting)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+
+         {
+            common::message::domain::process::prepare::shutdown::Request request;
+            request.process = common::process::handle();
+            request.processes.push_back( server.process());
+
+            auto reply = common::communication::ipc::call( communication::ipc::broker::device(), request);
+
+            EXPECT_TRUE( request.processes == reply.processes);
+
+         }
+
+         auto state = local::call::state();
+
+         {
+            auto instance = local::instance::find( state, server.process().pid);
+            ASSERT_TRUE( instance);
+            EXPECT_TRUE( instance->state == admin::instance::LocalVO::State::exiting);
+         }
+      }
+
+      TEST( casual_broker, advertise_2_services_for_1_server__prepare_shutdown__lookup___expect_absent)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+
+         {
+            common::message::domain::process::prepare::shutdown::Request request;
+            request.process = common::process::handle();
+            request.processes.push_back( server.process());
+
+            auto reply = common::communication::ipc::call( communication::ipc::broker::device(), request);
+
+            EXPECT_TRUE( request.processes == reply.processes);
+
+         }
+
+         {
+            auto service = service::Lookup{ "service1"}();
+            EXPECT_TRUE( service.state == decltype( service)::State::absent) << "service: " << service;
+         }
+         {
+            auto service = service::Lookup{ "service2"}();
+            EXPECT_TRUE( service.state == decltype( service)::State::absent) << "service: " << service;
+         }
+      }
 
 		TEST( casual_broker, advertise_new_services_current_server)
       {

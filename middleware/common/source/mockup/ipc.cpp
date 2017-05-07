@@ -560,6 +560,8 @@ namespace casual
                         throw exception::Shutdown{ "worker_thread disconnect"};
                      });
 
+                     log << "dispatch handler: " << replier << '\n';
+
                      message::dispatch::blocking::pump( replier, ipc);
                   }
                   catch( ...)
@@ -592,7 +594,8 @@ namespace casual
 
             std::ostream& operator << ( std::ostream& out, const Replier& value)
             {
-               return out << "{ process:" << value.m_implementation->process << '}';
+               return out << "{ process:" << value.m_implementation->process
+                     << '}';
             }
 
 

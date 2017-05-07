@@ -175,7 +175,7 @@ namespace casual
                      {
                         common::message::service::call::Reply reply;
                         reply.correlation = message.correlation;
-                        reply.error = TPESVCERR;
+                        reply.status = TPESVCERR;
                         common::communication::ipc::inbound::device().push( reply);
                      }
                   };

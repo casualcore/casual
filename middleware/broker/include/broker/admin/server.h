@@ -13,19 +13,25 @@
 
 namespace casual
 {
-
-
-namespace broker
-{
-   struct State;
-
-   namespace admin
+   namespace broker
    {
-      common::server::Arguments services( broker::State& state);
+      struct State;
 
-   } // admin
+      namespace admin
+      {
+         namespace service
+         {
+            namespace name
+            {
+               constexpr auto state() { return ".casual.broker.state";}
+            } // name
+         } // service
 
-} // broker
+         common::server::Arguments services( broker::State& state);
+
+      } // admin
+
+   } // broker
 } // casual
 
 #endif 

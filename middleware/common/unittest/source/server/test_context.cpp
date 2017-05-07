@@ -65,34 +65,35 @@ namespace casual
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
 
-               server::Context::instance().jump_return( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
+               server::context().jump_return( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
             }
 
             void test_service_TPFAIL( TPSVCINFO *serviceInfo)
             {
-               server::Context::instance().jump_return( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
+               server::context().jump_return( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
             }
 
             void test_service_TPSUCCESS( TPSVCINFO *serviceInfo)
             {
-               server::Context::instance().jump_return( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
+               server::context().jump_return( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
             }
 
             server::Arguments arguments()
             {
                server::Arguments arguments{ { "/test/path"}, lifetime::Init{}, lifetime::Done{}};
 
-               arguments.services.emplace_back( "test_service", &test_service, service::category::none, service::transaction::Type::none);
+               arguments.services = {
+                  server::xatmi::service( "test_service", &test_service, service::transaction::Type::none, service::category::none),
+                  server::xatmi::service( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::none, service::category::none),
+                  server::xatmi::service( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::atomic, service::category::none),
+                  server::xatmi::service( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::join, service::category::none),
+                  server::xatmi::service( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::automatic, service::category::none),
 
-               arguments.services.emplace_back( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::none);
-               arguments.services.emplace_back( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::atomic);
-               arguments.services.emplace_back( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::join);
-               arguments.services.emplace_back( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, service::category::none, service::transaction::Type::automatic);
-
-               arguments.services.emplace_back( "test_service_none_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::none);
-               arguments.services.emplace_back( "test_service_atomic_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::atomic);
-               arguments.services.emplace_back( "test_service_join_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::join);
-               arguments.services.emplace_back( "test_service_auto_TPFAIL", &test_service_TPFAIL, service::category::none, service::transaction::Type::automatic);
+                  server::xatmi::service( "test_service_none_TPFAIL", &test_service_TPFAIL, service::transaction::Type::none, service::category::none),
+                  server::xatmi::service( "test_service_atomic_TPFAIL", &test_service_TPFAIL, service::transaction::Type::atomic, service::category::none),
+                  server::xatmi::service( "test_service_join_TPFAIL", &test_service_TPFAIL, service::transaction::Type::join, service::category::none),
+                  server::xatmi::service( "test_service_auto_TPFAIL", &test_service_TPFAIL, service::transaction::Type::automatic, service::category::none),
+               };
 
                return arguments;
             }
@@ -333,7 +334,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCERR) << "error: " << reply.error << " - "<< common::error::xatmi::error( reply.error);
+         EXPECT_TRUE( reply.status == TPESVCERR) << "error: " << reply.status << " - "<< common::error::xatmi::error( reply.status);
       }
 
 
@@ -353,7 +354,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.status == 0) << "reply: " << reply;
       }
 
       TEST( common_server_context, call_server__test_service_atomic_TPSUCCESS)
@@ -371,7 +372,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
+         EXPECT_TRUE( reply.status == 0) << "reply.error: " << reply.status;
       }
 
 
@@ -392,7 +393,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.status == 0);
       }
 
       TEST( common_server_context, call_server__test_service_auto_TPSUCCESS)
@@ -411,7 +412,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.status == 0);
       }
 
 
@@ -431,7 +432,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.status == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -452,7 +453,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0) << "reply.error: " << reply.error;
+         EXPECT_TRUE( reply.status == 0) << "reply.error: " << reply.status;
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -473,7 +474,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.status == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -494,7 +495,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == 0);
+         EXPECT_TRUE( reply.status == 0);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -514,7 +515,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == TPESVCFAIL);
       }
 
       TEST( common_server_context, call_server__test_service_atomic_TPFAIL)
@@ -533,7 +534,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
+         EXPECT_TRUE( reply.status == TPESVCFAIL) << "reply.error: " << reply.status;
       }
 
       TEST( common_server_context, call_server__test_service_join_TPFAIL)
@@ -552,7 +553,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == TPESVCFAIL);
       }
 
       TEST( common_server_context, call_server__test_service_auto_TPFAIL)
@@ -571,7 +572,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == TPESVCFAIL);
       }
 
 
@@ -589,9 +590,9 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
-         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+         EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
       TEST( common_server_context, call_server_in_transaction__test_service_atomic_TPFAIL)
@@ -610,9 +611,9 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL) << "reply.error: " << reply.error;
+         EXPECT_TRUE( reply.status == TPESVCFAIL) << "reply.error: " << reply.status;
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
-         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
+         EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
 
       TEST( common_server_context, call_server_in_transaction__test_service_join_TPFAIL__expect_rollback)
@@ -629,9 +630,9 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
-         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
+         EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
       }
 
       TEST( common_server_context, call_server_in_transaction__test_service_auto_TPFAIL__expect_rollback)
@@ -649,9 +650,9 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.error == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == TPESVCFAIL);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
-         EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
+         EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
       }
 
 

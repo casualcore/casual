@@ -436,6 +436,16 @@ namespace casual
             }));
          }
 
+         common::process::Handle State::singleton( const common::Uuid& id) const
+         {
+            auto found = range::find( singeltons, id);
+            if( found)
+            {
+               return found->second;
+            }
+            return {};
+         }
+
          bool State::execute()
          {
             tasks.execute();

@@ -273,6 +273,11 @@ namespace casual
                return m_document;
             }
 
+            const tree& Load::operator() ( const platform::binary::type& ini)
+            {
+               return operator() ( ini.data(), ini.size());
+            }
+
             const tree& Load::operator() ( const char* ini, std::size_t size)
             {
                std::istringstream stream( std::string( ini, size));
@@ -569,7 +574,14 @@ namespace casual
             {
                std::ostringstream stream;
                local::write_flat( m_document, stream);
-               ini.assign( stream.str());
+               ini = stream.str();
+            }
+
+            void Save::operator() ( platform::binary::type& ini) const
+            {
+               std::string buffer;
+               operator()( buffer);
+               ini.assign( std::begin( buffer), std::end( buffer));
             }
 
             namespace writer

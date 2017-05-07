@@ -75,6 +75,9 @@ namespace casual
 
             };
 
+            inline Context& context() { return Context::instance();}
+
+
          } // conversation
 
       } // service

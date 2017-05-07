@@ -5,6 +5,12 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
 #include "transaction/common.h"
+#include "transaction/manager/admin/server.h"
+
+
+#include "common/message/handle.h"
+#include "common/event/listen.h"
+#include "common/server/handle/call.h"
 
 
 namespace casual
@@ -1614,6 +1620,31 @@ namespace casual
                template struct Wrapper< basic_rollback>;
 
             } // reply
+
+         }
+
+
+         dispatch_type handlers( State& state)
+         {
+            return ipc::device().handler(
+               common::event::listener( handle::process::Exit{ state}),
+               common::message::handle::Shutdown{},
+               handle::Commit{ state},
+               handle::Rollback{ state},
+               handle::resource::Involved{ state},
+               handle::resource::reply::Connect{ state},
+               handle::resource::reply::Prepare{ state},
+               handle::resource::reply::Commit{ state},
+               handle::resource::reply::Rollback{ state},
+               handle::external::Involved{ state},
+               handle::domain::Prepare{ state},
+               handle::domain::Commit{ state},
+               handle::domain::Rollback{ state},
+               common::server::handle::admin::Call{
+                  admin::services( state),
+                  ipc::device().error_handler()},
+               common::message::handle::ping()
+            );
 
          }
 

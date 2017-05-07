@@ -21,6 +21,23 @@ namespace casual
 
       } // local
 
+
+      TEST( casual_common_algorithm_range, execute_once)
+      {
+         common::unittest::Trace trace;
+
+         long executions = 0;
+
+         for( int count = 0; count < 10; ++count)
+         {
+            execute::once( [&](){
+               ++executions;
+            });
+         }
+
+         EXPECT_TRUE( executions == 1);
+      }
+
       TEST( casual_common_algorithm_range, default_constructor__expect_empty)
       {
          common::unittest::Trace trace;

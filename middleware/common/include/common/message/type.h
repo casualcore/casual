@@ -48,6 +48,9 @@ namespace casual
             domain_process_lookup_request,
             domain_process_lookup_reply,
 
+            domain_process_prepare_shutdown_request,
+            domain_process_prepare_shutdown_reply,
+
             domain_configuration_request = DOMAIN_BASE + 200,
             domain_configuration_reply,
             domain_server_configuration_request,
@@ -90,8 +93,6 @@ namespace casual
             event_domain_shutdown_end,
             event_domain_error,
             event_domain_server_connect,
-            event_domain_boot_group_start,
-            event_domain_boot_group_end,
             event_domain_group,
 
             event_process_spawn,
@@ -101,6 +102,7 @@ namespace casual
             EVENT_SERVICE_BASE = 4200,
             event_service_call = EVENT_SERVICE_BASE,
             EVENT_SERVICE_BASE_END,
+
 
 
             // Transaction

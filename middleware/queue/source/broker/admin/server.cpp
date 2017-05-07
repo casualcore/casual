@@ -3,6 +3,7 @@
 //!
 
 #include "queue/broker/admin/server.h"
+#include "queue/broker/admin/services.h"
 
 #include "queue/broker/broker.h"
 #include "queue/broker/handle.h"
@@ -22,19 +23,6 @@ namespace casual
          namespace
          {
             sf::Server server;
-
-
-            namespace service
-            {
-               namespace name
-               {
-                  constexpr auto state() { return ".casual/queue/state";}
-                  constexpr auto restore() { return ".casual/queue/restore";}
-
-               } // name
-
-            } // service
-
 
          } // <unnamed>
       } // local
@@ -194,21 +182,20 @@ namespace casual
             {
                common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
 
-               result.services.emplace_back( local::service::name::state(),
-                     std::bind( &service::state, std::placeholders::_1, std::ref( state)),
-                     common::service::category::admin,
-                     common::service::transaction::Type::none);
-
-               result.services.emplace_back( ".casual.queue.list.messages",
-                     std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)),
-                     common::service::category::admin,
-                     common::service::transaction::Type::none);
-
-
-               result.services.emplace_back( local::service::name::restore(),
-                     std::bind( &service::restore, std::placeholders::_1, std::ref( state)),
-                     common::service::category::admin,
-                     common::service::transaction::Type::none);
+               result.services = {
+                     common::server::xatmi::service( service::name::state(),
+                        std::bind( &service::state, std::placeholders::_1, std::ref( state)),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin),
+                     common::server::xatmi::service( service::name::list_messages(),
+                        std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin),
+                     common::server::xatmi::service( service::name::restore(),
+                        std::bind( &service::restore, std::placeholders::_1, std::ref( state)),
+                        common::service::transaction::Type::none,
+                        common::service::category::admin)
+               };
 
                return result;
             }

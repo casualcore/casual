@@ -1,11 +1,15 @@
 //## includes protected section begin [.10]
 
 
-#include <xatmi.h>
-#include "traffic/monitor/request_server_implementation.h"
+#include "event/service/monitor/request_server_implementation.h"
+
+
+
 #include "sf/server.h"
 #include "sf/service/interface.h"
 
+
+#include <xatmi.h>
 
 //## declarations protected section begin [.20]
 //## declarations protected section end   [.20]
@@ -15,7 +19,7 @@ namespace local
 {
    namespace
    {
-      using implementation_type = casual::traffic::monitor::RequestServerImplementation;
+      using implementation_type = casual::event::monitor::RequestServerImplementation;
 
       casual::sf::Server server;
       casual::sf::server::implementation::type< implementation_type> implementation;
@@ -28,7 +32,7 @@ extern "C"
 
 namespace casual
 {
-namespace traffic
+namespace event
 {
 namespace monitor
 {
@@ -80,7 +84,7 @@ void getMonitorStatistics( TPSVCINFO *serviceInfo)
       
 
       //## input protected section begin [2000.110]
-      using namespace casual::traffic::monitor;
+      using namespace casual::event::monitor;
       //## input protected section end   [2000.110]
 
 

@@ -509,7 +509,7 @@ namespace casual
 
          common::communication::ipc::dispatch::Handler handler( State& state)
          {
-            static common::server::handle::basic_admin_call admin{
+            static common::server::handle::admin::Call admin{
                manager::admin::services( state),
                ipc::device().error_handler()};
 

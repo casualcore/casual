@@ -1,8 +1,5 @@
 //!
-//! shutdown.h
-//!
-//! Created on: Oct 27, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_SERVER_LIFETIME_H_

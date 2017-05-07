@@ -115,7 +115,7 @@ namespace casual
          {
             std::string result;
 
-            auto directory = make::deleter( opendir( path.c_str()), &closedir);
+            auto directory = memory::guard( opendir( path.c_str()), &closedir);
 
             if( directory)
             {
@@ -140,7 +140,7 @@ namespace casual
 
          std::string absolute( const std::string& path)
          {
-            auto absolut = make::deleter( realpath( path.c_str(), nullptr), &free);
+            auto absolut = memory::guard( realpath( path.c_str(), nullptr), &free);
 
             if( absolut)
             {

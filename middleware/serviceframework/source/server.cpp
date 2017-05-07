@@ -11,45 +11,36 @@ namespace casual
 {
    namespace sf
    {
-      class Server::Implementation
+
+
+      struct Server::Implementation
       {
-      public:
-         virtual ~Implementation() = default;
-         virtual service::IO service( TPSVCINFO& information) = 0;
-         virtual void exception( TPSVCINFO& information, service::reply::State& reply) = 0;
+         service::IO service( TPSVCINFO& information)
+         {
+            return { sf::service::factory().create( &information)};
+         }
+
+         void exception( TPSVCINFO& information, service::reply::State& reply)
+         {
+            // TODO: try to propagate the exception in the ballast, later on...
+
+            common::error::handler();
+
+            reply.code = TPFAIL;
+
+            //auto type = buffer::type( serviceInfo->data);
+
+
+            //reply.data = tpalloc( )
+
+            reply.data = information.data;
+         }
       };
 
-      namespace server
-      {
-         class Implementation : public Server::Implementation
-         {
-         private:
-            service::IO service( TPSVCINFO& information) override
-            {
-               return { sf::service::Factory::instance().create( &information)};
-            }
-
-            void exception( TPSVCINFO& information, service::reply::State& reply) override
-            {
-               // TODO: try to propagate the exception in the ballast, later on...
-
-               common::error::handler();
-
-               reply.code = TPFAIL;
-
-               //auto type = buffer::type( serviceInfo->data);
-
-
-               //reply.data = tpalloc( )
-
-               reply.data = information.data;
-            }
-         };
-      } // server
 
       Server::Server() : Server( 0, nullptr) {}
 
-      Server::Server( int argc, char **argv) : m_implementation{ std::make_unique< server::Implementation>()}
+      Server::Server( int argc, char **argv)
       {
 
       }

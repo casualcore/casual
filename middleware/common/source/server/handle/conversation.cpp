@@ -39,7 +39,7 @@ namespace casual
                   // Prepare the descriptor
                   //
                   {
-                     auto& descriptor = common::service::conversation::Context::instance().descriptors().reserve( message.correlation);
+                     auto& descriptor = common::service::conversation::context().descriptors().reserve( message.correlation);
                      descriptor.route = message.recording;
 
                      reply.status = 0;
@@ -50,7 +50,7 @@ namespace casual
 
                   policy::call::Default policy;
 
-                  service::call( policy, common::service::conversation::Context::instance(), message);
+                  service::call( policy, common::service::conversation::context(), message, true);
                }
                catch( ...)
                {

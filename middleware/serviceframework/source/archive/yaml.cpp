@@ -76,6 +76,11 @@ namespace casual
                return m_document;
             }
 
+            const YAML::Node& Load::operator() ( const platform::binary::type& yaml)
+            {
+               return operator() ( yaml.data(), yaml.size());
+            }
+
             const YAML::Node& Load::operator() ( const std::string& yaml)
             {
                std::istringstream stream{ local::stream( yaml)};
@@ -254,6 +259,13 @@ namespace casual
                yaml << m_emitter.c_str();
             }
 
+            void Save::operator() ( platform::binary::type& yaml) const
+            {
+               yaml.resize( m_emitter.size());
+               common::range::copy(
+                     common::range::make( m_emitter.c_str(), m_emitter.size()),
+                     std::begin( yaml));
+            }
             void Save::operator() ( std::string& yaml) const
             {
                yaml = m_emitter.c_str();

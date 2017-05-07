@@ -42,6 +42,7 @@ namespace casual
                {
                   idle,
                   busy,
+                  exiting,
                };
 
                State state = State::busy;
