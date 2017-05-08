@@ -1,9 +1,6 @@
-/*
- * test_maker.cpp
- *
- *  Created on: Apr 30, 2016
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 #include <gtest/gtest.h>
 
@@ -119,18 +116,20 @@ namespace casual
    {
       EXPECT_THROW
       ({
-         sf::archive::reader::from::file( "hopefully_this_file_does_not_exist.ini");
+         sf::archive::reader::from::file( common::file::name::unique( common::directory::temporary() + "/", ".ini"));
       },sf::exception::invalid::File);
    }
 
    TEST( casual_sf_maker, write_and_read_file__expecting_success)
    {
+      common::file::scoped::Path path{ common::file::name::unique( common::directory::temporary() + "/", ".ini")};
+
       long source = 42;
       {
          Banana banana;
          banana.integer = source;
 
-         auto w = sf::archive::writer::from::file( "/tmp/casual.ini");
+         auto w = sf::archive::writer::from::file( path);
 
          w << CASUAL_MAKE_NVP( banana);
       }
@@ -138,7 +137,34 @@ namespace casual
       long target;
       {
          Banana banana;
-         auto r = sf::archive::reader::from::file( "/tmp/casual.ini");
+         auto r = sf::archive::reader::from::file( path);
+
+         r >> CASUAL_MAKE_NVP( banana);
+
+         target = banana.integer;
+      }
+
+      EXPECT_TRUE( source == target);
+   }
+
+   TEST( casual_sf_maker, write_and_read_buffer__expecting_success)
+   {
+      sf::platform::binary::type buffer;
+
+      long source = 42;
+      {
+         Banana banana;
+         banana.integer = source;
+
+         auto w = sf::archive::writer::from::buffer( buffer, "json");
+
+         w << CASUAL_MAKE_NVP( banana);
+      }
+
+      long target = 0;
+      {
+         Banana banana;
+         auto r = sf::archive::reader::from::buffer( buffer, "json");
 
          r >> CASUAL_MAKE_NVP( banana);
 

@@ -8,6 +8,8 @@
 
 #include "sf/service/interface.h"
 
+#include "common/pimpl.h"
+
 #include "xatmi/defines.h"
 
 
@@ -26,15 +28,13 @@ namespace casual
          Server( int argc, char **argv);
          ~Server();
 
-         Server( Server&&);
-         Server& operator = ( Server&&);
 
          service::IO service( TPSVCINFO& information);
          void exception( TPSVCINFO& information, service::reply::State& reply);
 
-         class Implementation;
       private:
-         std::unique_ptr< Implementation> m_implementation;
+         struct Implementation;
+         common::basic_pimpl< Implementation> m_implementation;
 
       };
 

@@ -86,6 +86,9 @@ namespace casual
                State m_state;
 
             };
+
+            inline Context& context() { return Context::instance();}
+
          } // call
       } // service
 	} // common

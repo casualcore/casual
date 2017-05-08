@@ -5,20 +5,19 @@
 #include "transaction/manager/manager.h"
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
-#include "transaction/manager/admin/server.h"
 #include "transaction/common.h"
 
-
-#include "common/server/handle/call.h"
 #include "common/environment.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/log.h"
+
+
 #include "configuration/domain.h"
 #include "configuration/file.h"
 
 #include <tx.h>
-#include "../../../common/include/common/event/listen.h"
+
 
 
 
@@ -179,29 +178,9 @@ namespace casual
                // prepare message dispatch handlers...
                //
 
-               auto handler = ipc::device().handler(
-                  event::listener( handle::process::Exit{ state}),
-                  common::message::handle::Shutdown{},
-                  handle::Commit{ state},
-                  handle::Rollback{ state},
-                  handle::resource::Involved{ state},
-                  handle::resource::reply::Connect{ state},
-                  handle::resource::reply::Prepare{ state},
-                  handle::resource::reply::Commit{ state},
-                  handle::resource::reply::Rollback{ state},
-                  handle::external::Involved{ state},
-                  handle::domain::Prepare{ state},
-                  handle::domain::Commit{ state},
-                  handle::domain::Rollback{ state},
-                  common::server::handle::basic_admin_call{
-                     admin::services( state),
-                     ipc::device().error_handler()},
-                  common::message::handle::ping()
-               );
-
+               auto handler = handle::handlers( state);
 
                log << "start message pump\n";
-
 
 
                persistent::Writer batchWrite( state.log);

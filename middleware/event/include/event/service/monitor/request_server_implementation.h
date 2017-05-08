@@ -6,13 +6,13 @@
 
 #include <vector>
 
-#include "traffic/monitor/serviceentryvo.h"
+#include "event/service/monitor/serviceentryvo.h"
 
 //## includes protected section end   [.10]
 
 namespace casual
 {
-namespace traffic
+namespace event
 {
 namespace monitor
 {

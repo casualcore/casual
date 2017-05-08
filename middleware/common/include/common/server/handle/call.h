@@ -71,7 +71,7 @@ namespace casual
                {
                   Trace trace{ "server::handle::basic_call::basic_call"};
 
-                  server::Context::instance().configure( arguments);
+                  server::context().configure( arguments);
 
                   //
                   // Connect to casual
@@ -88,9 +88,6 @@ namespace casual
                }
 
 
-               //!
-               //! Sends a message::server::Disconnect to the broker
-               //!
                ~basic_call() noexcept
                {
                   if( ! m_moved)
@@ -121,7 +118,8 @@ namespace casual
 
                   try
                   {
-                     service::call( m_policy, common::service::call::Context::instance(), message);
+                     using Flag = common::message::service::call::request::Flag;
+                     service::call( m_policy, common::service::call::context(), message, ! message.flags.exist( Flag::no_reply));
                   }
                   catch( ...)
                   {
@@ -138,13 +136,14 @@ namespace casual
             //! Handle service calls from other proceses and does a dispatch to
             //! the register XATMI functions.
             //!
-            typedef basic_call< policy::call::Default> Call;
+            using Call = basic_call< policy::call::Default>;
 
-            using basic_admin_call = basic_call< policy::call::Admin>;
-
+            namespace admin
+            {
+               using Call = basic_call< policy::call::Admin>;
+            } // admin
 
          } // handle
-
       } // server
    } // common
 } // casual

@@ -96,12 +96,16 @@ namespace casual
                {
                   idle,
                   busy,
+                  exiting,
                };
 
                using base_instance::base_instance;
 
                void lock( const common::platform::time::point::type& when);
                void unlock( const common::platform::time::point::type& when);
+
+
+               void exiting();
 
                inline State state() const { return m_state;}
                inline bool idle() const { return m_state == State::idle;}
@@ -188,6 +192,9 @@ namespace casual
                   inline const common::process::Handle& process() const override { return get().process;}
                   void lock( const common::platform::time::point::type& when) override;
                   void unlock( const common::platform::time::point::type& when);
+                  inline void exiting() { get().exiting();}
+
+                  inline auto state() const { return get().state();}
 
 
                   Metric metric;
@@ -239,12 +246,17 @@ namespace casual
             template< typename T>
             using instances_type = std::vector< T>;
 
-            struct
+            struct Instances
             {
                instances_type< service::instance::Local> local;
                instances_type< service::instance::Remote> remote;
 
                inline bool empty() const { return local.empty() && remote.empty();}
+
+               //!
+               //! @return true if any of the instances is active (not exiting).
+               //!
+               bool active() const;
 
             } instances;
 
@@ -336,6 +348,7 @@ namespace casual
          state::Service& service( const std::string& name);
 
          void remove_process( common::platform::pid::type pid);
+         void prepare_shutdown( common::platform::pid::type pid);
 
 
          void update( common::message::service::Advertise& message);

@@ -97,7 +97,7 @@ namespace casual
             //!
             //! commits or rollback transaction created from this server
             //!
-            void finalize( message::service::call::Reply& message, int return_state);
+            message::service::Transaction finalize( bool commit);
 
 
             //!
@@ -150,7 +150,7 @@ namespace casual
             {
                std::vector< Resource> all;
 
-               using range_type = typename common::range::traits< std::vector< Resource>>::type;
+               using range_type = common::range::type_t< std::vector< Resource>>;
                range_type fixed;
                range_type dynamic;
 

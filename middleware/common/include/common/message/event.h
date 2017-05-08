@@ -154,40 +154,41 @@ namespace casual
             {
                inline namespace v1
                {
-               using base_spawn = common::message::basic_message< common::message::Type::event_process_spawn>;
-               struct Spawn : base_spawn
-               {
-                  std::string alias;
-                  std::string path;
-                  std::vector< platform::pid::type> pids;
+                  using base_spawn = common::message::basic_message< common::message::Type::event_process_spawn>;
+                  struct Spawn : base_spawn
+                  {
+                     std::string alias;
+                     std::string path;
+                     std::vector< platform::pid::type> pids;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_spawn::marshal( archive);
-                     archive & alias;
-                     archive & path;
-                     archive & pids;
-                  )
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                        base_spawn::marshal( archive);
+                        archive & alias;
+                        archive & path;
+                        archive & pids;
+                     )
 
-                  friend std::ostream& operator << ( std::ostream& out, const Spawn& value);
-               };
+                     friend std::ostream& operator << ( std::ostream& out, const Spawn& value);
+                  };
 
-               using base_exit = common::message::basic_message< common::message::Type::event_process_exit>;
-               struct Exit : base_exit
-               {
-                  Exit() = default;
-                  Exit( common::process::lifetime::Exit state) : state( std::move( state)) {}
+                  using base_exit = common::message::basic_message< common::message::Type::event_process_exit>;
+                  struct Exit : base_exit
+                  {
+                     Exit() = default;
+                     Exit( common::process::lifetime::Exit state) : state( std::move( state)) {}
 
-                  common::process::lifetime::Exit state;
+                     common::process::lifetime::Exit state;
 
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     base_exit::marshal( archive);
-                     archive & state;
-                  )
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                        base_exit::marshal( archive);
+                        archive & state;
+                     )
 
-                  friend std::ostream& operator << ( std::ostream& out, const Exit& value);
-               };
-               static_assert( traits::is_movable< Exit>::value, "not movable");
+                     friend std::ostream& operator << ( std::ostream& out, const Exit& value);
+                  };
+                  static_assert( traits::is_movable< Exit>::value, "not movable");
                }
+
             } // process
 
             namespace service

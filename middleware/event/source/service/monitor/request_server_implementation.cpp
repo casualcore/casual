@@ -2,7 +2,7 @@
 
 //## includes protected section begin [.10]
 
-#include "traffic/monitor/request_server_implementation.h"
+#include "event/service/monitor/request_server_implementation.h"
 
 #include "sql/database.h"
 
@@ -12,7 +12,7 @@
 
 namespace casual
 {
-namespace traffic
+namespace event
 {
 namespace monitor
 {

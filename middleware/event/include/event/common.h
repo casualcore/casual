@@ -11,7 +11,7 @@
 
 namespace casual
 {
-   namespace traffic
+   namespace event
    {
       extern common::log::Stream log;
 

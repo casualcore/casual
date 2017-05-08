@@ -49,7 +49,7 @@ namespace casual
                            reply.correlation = message.correlation;
                            reply.execution = message.execution;
                            reply.transaction.trid = message.trid;
-                           reply.error = TPESVCERR;
+                           reply.status = TPESVCERR;
                            reply.buffer = buffer::Payload{ nullptr};
 
                            try

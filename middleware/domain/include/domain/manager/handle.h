@@ -67,6 +67,15 @@ namespace casual
                   void operator () ( common::message::domain::scale::Executable& executable);
                };
 
+               namespace prepare
+               {
+                  struct Shutdown : Base
+                  {
+                     using Base::Base;
+                     void operator () ( common::message::domain::process::prepare::shutdown::Reply& message);
+                  };
+               } // prepare
+
             } // scale
 
 

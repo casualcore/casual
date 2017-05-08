@@ -192,6 +192,10 @@ namespace casual
             std::unique_ptr< Interface> create( TPSVCINFO* service_info) const;
 
 
+            //std::unique_ptr< Interface> create( common::service::invoke::Parameter&) const;
+
+
+
             template< typename T>
             void registration()
             {
@@ -215,6 +219,8 @@ namespace casual
 
             std::vector< Holder> m_factories;
          };
+
+         inline Factory& factory() { return Factory::instance();}
 
       } // service
    } // sf

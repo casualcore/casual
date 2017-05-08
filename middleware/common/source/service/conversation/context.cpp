@@ -7,6 +7,7 @@
 
 #include "common/log.h"
 #include "common/buffer/transport.h"
+#include "common/transaction/context.h"
 
 #include "common/message/conversation.h"
 
@@ -63,6 +64,25 @@ namespace casual
                         // with us, in the "reverse" order).
                         //
                         message.recording.nodes.push_back( { communication::ipc::inbound::id()});
+
+                        auto& transaction = common::transaction::context().current();
+
+                        if( ! flags.exist( connect::Flag::no_transaction) && transaction)
+                        {
+                           message.trid = transaction.trid;
+                           transaction.associate( message.correlation);
+
+                           //
+                           // We use the transaction deadline if it's earlier
+                           //
+                           /*
+                           if( transaction.timout.deadline() < descriptor.timeout.deadline())
+                           {
+                              descriptor.timeout.set( start, std::chrono::duration_cast< std::chrono::microseconds>( transaction.timout.deadline() - start));
+                           }
+                           */
+                        }
+
 
                         return message;
                      }

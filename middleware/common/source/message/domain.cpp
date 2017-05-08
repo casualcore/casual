@@ -61,6 +61,26 @@ namespace casual
 
                } // lookup
 
+               namespace prepare
+               {
+                  namespace shutdown
+                  {
+                     std::ostream& operator << ( std::ostream& out, const Request& value)
+                     {
+                        return out << "{ process: " << value.process
+                              << ", processes: " << range::make( value.processes)
+                              << '}';
+                     }
+
+                     std::ostream& operator << ( std::ostream& out, const Reply& value)
+                     {
+                        return out << "{ process: " << value.process
+                              << ", processes: " << range::make( value.processes)
+                              << '}';
+                     }
+                  } // shutdown
+               } // prepare
+
             } // process
 
          } // domain

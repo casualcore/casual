@@ -35,15 +35,14 @@ namespace local
 
             auto service = value.services;
 
-            while( service->function_pointer != nullptr)
+            for( ; service->function_pointer != nullptr; ++service)
             {
-               result.services.emplace_back(
-                     service->name,
-                     service->function_pointer,
-                     service->category,
-                     common::service::transaction::mode( service->transaction));
-
-               ++service;
+               result.services.push_back(
+                     common::server::xatmi::service(
+                        service->name,
+                        service->function_pointer,
+                        common::service::transaction::mode( service->transaction),
+                        service->category));
             }
 
             auto xaSwitch = value.xa_switches;

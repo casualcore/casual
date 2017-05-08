@@ -375,6 +375,7 @@ namespace casual
 
 
 
+
                namespace lookup
                {
                   using base_reqeust = message::basic_request< Type::domain_process_lookup_request>;
@@ -419,6 +420,46 @@ namespace casual
 
                } // lookup
 
+               namespace prepare
+               {
+                  namespace shutdown
+                  {
+                     using base_request = basic_request< Type::domain_process_prepare_shutdown_request>;
+                     struct Request : base_request
+                     {
+                        using base_request::base_request;
+
+                        std::vector< common::process::Handle> processes;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           base_request::marshal( archive);
+                           archive & processes;
+                        })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                     };
+
+                     using base_reply = basic_request< Type::domain_process_prepare_shutdown_reply>;
+                     struct Reply : base_reply
+                     {
+                        using base_reply::base_reply;
+
+                        std::vector< common::process::Handle> processes;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           base_reply::marshal( archive);
+                           archive & processes;
+                        })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                     };
+
+
+                  } // shutdown
+               } // prepare
+
             } // process
 
          } // domain
@@ -436,6 +477,10 @@ namespace casual
 
             template<>
             struct type_traits< domain::process::connect::Request> : detail::type< domain::process::connect::Reply> {};
+
+
+            template<>
+            struct type_traits< domain::process::prepare::shutdown::Request> : detail::type< domain::process::prepare::shutdown::Reply> {};
 
 
          } // reverse

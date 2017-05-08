@@ -141,6 +141,8 @@ int casual_field_name_of_type( int type, const char** name);
 int casual_field_type_of_name( const char* name, int* type);
 /* get the host-size of a pod (actually an internal helper function) */
 int casual_field_plain_type_host_size( int type, long* count);
+/* get the minimum_need (of unused space) if a value with provided id would be added */
+int casual_field_minimum_need( long id, long* count);
 
 
 /* get allocated - and used bytes */

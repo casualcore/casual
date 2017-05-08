@@ -1,7 +1,7 @@
 
 		
 
-#include "traffic/monitor/serviceentryvo.h"
+#include "event/service/monitor/serviceentryvo.h"
 
 #include <sf/archive/archive.h>
 
@@ -13,7 +13,7 @@
 
 namespace casual
 {
-namespace traffic
+namespace event
 {
 namespace monitor
 {
