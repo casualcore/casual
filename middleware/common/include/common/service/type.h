@@ -17,6 +17,12 @@ namespace casual
    {
       namespace service
       {
+         namespace category
+         {
+            constexpr auto none() { return "";}
+            constexpr auto admin() { return ".admin";}
+         } // category
+
          namespace transaction
          {
             enum class Type : std::uint16_t

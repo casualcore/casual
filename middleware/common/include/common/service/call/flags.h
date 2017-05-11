@@ -22,6 +22,7 @@ namespace casual
             {
                enum class Flag : long
                {
+                  no_flags = 0,
                   no_transaction = TPNOTRAN,
                   no_reply = TPNOREPLY,
                   no_block = TPNOBLOCK,
@@ -35,6 +36,7 @@ namespace casual
             {
                enum class Flag : long
                {
+                  no_flags = 0,
                   any = TPGETANY,
                   no_change = TPNOCHANGE,
                   no_block = TPNOBLOCK,
@@ -51,6 +53,7 @@ namespace casual
             {
                enum class Flag : long
                {
+                  no_flags = 0,
                   no_transaction = TPNOTRAN,
                   no_change = TPNOCHANGE,
                   no_block = TPNOBLOCK, // ignored

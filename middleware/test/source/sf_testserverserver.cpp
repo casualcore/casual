@@ -1,217 +1,98 @@
-//## includes protected section begin [.10]
 
-#include "sf_testserverimplementation.h"
 
 #include "sf_testvo.h"
 
-//## includes protected section end   [.10]
-
-//
-// xatmi
-//
-#include <xatmi.h>
-
-//
-// sf
-//
-#include "sf/server.h"
-#include "sf/service/interface.h"
+// protected section
 
 
-//## declarations protected section begin [.20]
-//## declarations protected section end   [.20]
-
-
-namespace local
-{
-   namespace
-   {
-      typedef casual::test::TestServerImplementation implementation_type;
-
-      casual::sf::Server server;
-      casual::sf::server::implementation::type< implementation_type> implementation;
-   }
-}
-
-
-extern "C"
-{
+#include "common/server/start.h"
+#include "sf/service/protocol.h"
 
 namespace casual
 {
-namespace test
-{
-
-
-
-int tpsvrinit(int argc, char **argv)
-{
-   try
+   namespace test
    {
-      local::implementation = casual::sf::server::implementation::make< local::implementation_type>( argc, argv);
-   }
-   catch( ...)
-   {
-      // TODO
-   }
+      namespace
+      {
+         namespace implementation
+         {
+            bool casual_sf_test1( std::vector< vo::TestVO> values, std::vector< vo::TestVO>& outputValues)
+            {
+               // protected section
+               return true;
+            }
 
-   return 0;
-}
+            void casual_sf_test2( bool someValue)
+            {
+               // protected section
+            }
 
-void tpsvrdone()
-{
-   //
-   // delete the implementation an server implementation
-   //
-   casual::sf::server::implementation::sink( std::move( local::implementation));
-}
-
-//
-// Services provided
-//
+         } // implementation
 
 
 
-void casual_sf_test1( TPSVCINFO *information)
-{
-   casual::sf::service::reply::State reply;
 
-   try
-   {
+         namespace dispatch
+         {
+            common::service::invoke::Result casual_sf_test1( common::service::invoke::Parameter&& parameter)
+            {
+               auto protocol = sf::service::protocol::deduce( std::move( parameter));
+
+               std::vector< vo::TestVO> values;
+               protocol >> CASUAL_MAKE_NVP( values);
+
+               std::vector< vo::TestVO> outputValues;
+
+               auto result = sf::service::user( protocol, &implementation::casual_sf_test1, std::move( values), outputValues);
+
+               protocol << CASUAL_MAKE_NVP( result);
+               protocol << CASUAL_MAKE_NVP( outputValues);
+
+               return protocol.finalize();
+            }
+
+            common::service::invoke::Result casual_sf_test2( common::service::invoke::Parameter&& parameter)
+            {
+               auto protocol = sf::service::protocol::deduce( std::move( parameter));
+
+               bool someValue;
+               protocol >> CASUAL_MAKE_NVP( someValue);
+
+               sf::service::user( protocol, &implementation::casual_sf_test2, someValue);
+
+               return protocol.finalize();
+            }
+         } // dispatch
+      } // <unnamed>
+
    
-     
-      auto service_io = local::server.service( *information);
+      void main( int argc, char **argv)
+      {
+         // protected section
 
-      //
-      // Instantiate and serialize input parameters
-      //
-            
-      std::vector< vo::TestVO> values;
-      
-      service_io >> CASUAL_MAKE_NVP( values);
+         common::server::start( {
+            {
+               "casual_sf_test1",
+               &dispatch::casual_sf_test1
+            },
+            {
+               "casual_sf_test2",
+               &dispatch::casual_sf_test2
+            }
 
-      //## input protected section begin [501.110]
-      //## input protected section end   [501.110]
+         });
 
-
-      //
-      // Instantiate the output parameters
-      //
-            
-      std::vector< vo::TestVO> outputValues;
-
-      //## output protected section begin [501.120]
-      //## output protected section end   [501.120]
-
-
-      //
-      // Call the implementation
-      //
-      
-      bool serviceReturn = service_io.call( 
-         &local::implementation_type::casual_sf_test1,
-         *local::implementation,
-         values,
-         outputValues);
-      
-      
-      //
-      // Serialize output
-      //
-            
-      service_io << CASUAL_MAKE_NVP( serviceReturn);
-      service_io << CASUAL_MAKE_NVP( outputValues);
-
-      //## output protected section begin [501.200]
-      //## output protected section end   [501.200]
-
-      reply = service_io.finalize();
-   }
-   catch( ...)
-   {
-      local::server.exception( *information, reply);
-   }
-
-   tpreturn(
-      reply.value,
-      reply.code,
-      reply.data,
-      reply.size,
-      reply.flags);
-}
-	
-	
-
-
-void casual_sf_test2( TPSVCINFO *information)
-{
-   casual::sf::service::reply::State reply;
-
-   try
-   {
-   
-     
-      auto service_io = local::server.service( *information);
-
-      //
-      // Instantiate and serialize input parameters
-      //
-            
-      bool someValue;
-      
-      service_io >> CASUAL_MAKE_NVP( someValue);
-
-      //## input protected section begin [502.110]
-      //## input protected section end   [502.110]
-
-
-      //
-      // Instantiate the output parameters
-      //
-            
-
-      //## output protected section begin [502.120]
-      //## output protected section end   [502.120]
-
-
-      //
-      // Call the implementation
-      //
-      
-      service_io.call( 
-         &local::implementation_type::casual_sf_test2,
-         *local::implementation, 
-         someValue);
-      
-      
-      //
-      // Serialize output
-      //
-            
-
-      //## output protected section begin [502.200]
-      //## output protected section end   [502.200]
-
-      reply = service_io.finalize();
-   }
-   catch( ...)
-   {
-      local::server.exception( *information, reply);
-   }
-
-   tpreturn(
-      reply.value,
-      reply.code,
-      reply.data,
-      reply.size,
-      reply.flags);
-}
-	
-	
-
-} // test
+         // protected section
+      }
+   } // test
 } // casual
 
 
-} // extern "C"
+
+int main( int argc, char **argv)
+{
+   return casual::common::server::main( argc, argv, &casual::test::main);
+}
+
+
 

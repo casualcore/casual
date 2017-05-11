@@ -9,6 +9,7 @@
 #include "domain/manager/configuration.h"
 #include "domain/manager/manager.h"
 #include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/server.h"
 
 
 #include "common/string.h"
@@ -17,7 +18,7 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/service/lookup.h"
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
 
@@ -272,11 +273,10 @@ domain:
 
                   admin::vo::State state()
                   {
-                     service::wait::online( ".casual.domain.state");
+                     service::wait::online( admin::service::name::state());
 
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.state");
-
-                     auto reply = service();
+                     sf::service::protocol::binary::Call call;
+                     auto reply = call( admin::service::name::state());
 
                      admin::vo::State serviceReply;
 
@@ -288,17 +288,17 @@ domain:
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     service::wait::online( ".casual.domain.scale.instances");
+                     service::wait::online( admin::service::name::scale::instances());
 
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
-                     service << CASUAL_MAKE_NVP( instances);
+                     sf::service::protocol::binary::Call call;
 
-                     auto reply = service();
+                     call << CASUAL_MAKE_NVP( instances);
+                     auto reply = call( admin::service::name::scale::instances());
 
-                     std::vector< admin::vo::scale::Instances> serviceReply;
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
+                     std::vector< admin::vo::scale::Instances> result;
+                     reply >> CASUAL_MAKE_NVP( result);
 
-                     return serviceReply;
+                     return result;
                   }
 
                   std::vector< admin::vo::scale::Instances> scale( const std::string& alias, std::size_t instances)

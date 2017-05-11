@@ -10,10 +10,11 @@
 
 
 #include "transaction/manager/admin/transactionvo.h"
+#include "transaction/manager/admin/server.h"
 
 
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/archive/log.h"
 
 
@@ -28,19 +29,20 @@ namespace casual
 
          namespace admin
          {
+
             namespace call
             {
 
                vo::State state()
                {
-                  sf::xatmi::service::binary::Sync service( ".casual.transaction.state");
-                  auto reply = service();
+                  sf::service::protocol::binary::Call call;
+                  auto reply = call( service::name::state());
 
-                  vo::State serviceReply;
+                  vo::State result;
 
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
+                  reply >> CASUAL_MAKE_NVP( result);
 
-                  return serviceReply;
+                  return result;
                }
 
 
@@ -48,17 +50,16 @@ namespace casual
                {
                   std::vector< vo::resource::Proxy> instances( const std::vector< vo::update::Instances>& instances)
                   {
-                     sf::xatmi::service::binary::Sync service( ".casual.transaction.update.instances");
+                     sf::service::protocol::binary::Call call;
 
-                     service << CASUAL_MAKE_NVP( instances);
+                     call << CASUAL_MAKE_NVP( instances);
+                     auto reply = call( service::name::update::instances());
 
-                     auto reply = service();
+                     std::vector< vo::resource::Proxy> result;
 
-                     std::vector< vo::resource::Proxy> serviceReply;
+                     reply >> CASUAL_MAKE_NVP( result);
 
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                     return serviceReply;
+                     return result;
                   }
                } // update
 

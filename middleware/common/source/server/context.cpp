@@ -172,8 +172,6 @@ namespace casual
          {
             Trace log{ "server::Context::configure"};
 
-            m_state.server_done = arguments.done;
-
             for( auto& service : arguments.services)
             {
                m_state.physical_services.push_back( service);

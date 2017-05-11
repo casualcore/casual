@@ -3,6 +3,7 @@
 //!
 
 #include "queue/broker/admin/queuevo.h"
+#include "queue/broker/admin/services.h"
 
 #include "queue/api/queue.h"
 #include "queue/common/transform.h"
@@ -13,7 +14,7 @@
 #include "common/chronology.h"
 #include "common/transcode.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
 #include "xatmi.h"
@@ -48,29 +49,25 @@ namespace casual
 
          broker::admin::State state()
          {
-            sf::xatmi::service::binary::Sync service( ".casual/queue/state");
+            sf::service::protocol::binary::Call call;
+            auto reply = call( broker::admin::service::name::state());
 
-            auto reply = service();
+            broker::admin::State result;
+            reply >> CASUAL_MAKE_NVP( result);
 
-            broker::admin::State serviceReply;
-
-            reply >> CASUAL_MAKE_NVP( serviceReply);
-
-            return serviceReply;
+            return result;
          }
 
          std::vector< broker::admin::Message> messages( const std::string& queue)
          {
-            sf::xatmi::service::binary::Sync service( ".casual.queue.list.messages");
-            service << CASUAL_MAKE_NVP( queue);
+            sf::service::protocol::binary::Call call;
+            call << CASUAL_MAKE_NVP( queue);
+            auto reply = call( broker::admin::service::name::list_messages());
 
-            auto reply = service();
+            std::vector< broker::admin::Message> result;
+            reply >> CASUAL_MAKE_NVP( result);
 
-            std::vector< broker::admin::Message> serviceReply;
-
-            reply >> CASUAL_MAKE_NVP( serviceReply);
-
-            return serviceReply;
+            return result;
          }
 
       } // call

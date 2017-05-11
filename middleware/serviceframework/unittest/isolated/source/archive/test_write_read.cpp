@@ -246,7 +246,7 @@ namespace casual
             template< typename T>
             static T write_read( const T& value)
             {
-               sf::buffer::binary::Stream buffer;
+               sf::platform::binary::type buffer;
                {
                   sf::archive::binary::Writer writer( buffer);
                   writer << CASUAL_MAKE_NVP( value);

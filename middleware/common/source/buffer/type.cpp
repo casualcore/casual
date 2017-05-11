@@ -44,6 +44,8 @@ namespace casual
 
          Payload::Payload( std::nullptr_t) : Payload{ "NULL", 0} {}
 
+         Payload::Payload( std::string type) : type( std::move( type)) {}
+
          Payload::Payload( std::string type, platform::binary::type buffer)
           : type( std::move( type)), memory( std::move( buffer)) {}
 

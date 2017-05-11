@@ -23,23 +23,21 @@ LibraryPaths([
 install_lib = []
 install_bin = []
 
-common_archive = LinkArchive( 'bin/casual-traffic-common',
+common_archive = LinkArchive( 'bin/casual-event-common',
 	[
 		Compile( 'source/common.cpp')
 	] 
 	)
 
-lib_vo = LinkLibrary( 'bin/casual-traffic-monitor-vo',
+archive_vo = LinkArchive( 'bin/casual-event-service-monitor-vo',
     [
-		Compile( 'source/service/monitor/serviceentryvo.cpp')
-	],
-    ['casual-common',
-    'casual-sf'])
+		Compile( 'source/service/monitor/vo/entry.cpp')
+	])
 
-install_lib.append( lib_vo)
+install_lib.append( archive_vo)
 
     
-target = LinkExecutable( 'bin/casual-service-monitor',
+target = LinkExecutable( 'bin/casual-event-service-monitor',
 	[
         Compile( 'source/service/monitor/database.cpp')
 	],
@@ -49,7 +47,7 @@ target = LinkExecutable( 'bin/casual-service-monitor',
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-service-log',
+target = LinkExecutable( 'bin/casual-event-service-log',
 	[
 	    Compile( 'source/service/log/log.cpp')
 	],
@@ -58,30 +56,17 @@ target = LinkExecutable( 'bin/casual-service-log',
 
 install_bin.append( target)
 
-target = LinkExecutable( 'bin/casual-service-monitor-bla',
+target = LinkExecutable( 'bin/casual-event-service-monitor-server',
 	[
 	    Compile( 'source/service/monitor/server.cpp')
 	],
 	[
+		archive_vo,
 		common_archive,
-		'casual-common'
+		'casual-common',
+		'casual-sf',
+		'sqlite3'
 	] )
-
-install_bin.append( target)
-
-target = LinkServer('bin/casual-service-monitor-server',
-    [
-	   Compile( 'source/service/monitor/request_server.cpp'),
-	   Compile( 'source/service/monitor/request_server_implementation.cpp'),			
-	],
-    [
-	lib_vo,
-    'casual-xatmi',
-    'casual-common',
-    'casual-sf',
-    'sqlite3'],
-    ['getMonitorStatistics'])
-
 
 install_bin.append( target)
 	
@@ -92,7 +77,7 @@ install_bin.append( target)
 LinkUnittest( 'bin/test-casual-monitor',
 	[ Compile( 'unittest/isolated/source/test_monitor.cpp')],
 	[
-	lib_vo,
+	archive_vo,
 	'casual-common',
 	'sqlite3'])	
 

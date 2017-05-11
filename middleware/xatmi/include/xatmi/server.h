@@ -44,8 +44,8 @@ struct casual_server_argument
 {
    struct casual_service_name_mapping* services;
 
-   tpsvrinit_type service_init;
-   tpsvrdone_type service_done;
+   tpsvrinit_type server_init;
+   tpsvrdone_type server_done;
 
    int argc;
    char** argv;

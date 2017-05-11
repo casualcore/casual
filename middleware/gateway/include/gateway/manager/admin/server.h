@@ -21,6 +21,14 @@ namespace casual
 
          namespace admin
          {
+            namespace service
+            {
+               namespace name
+               {
+                  constexpr auto state() { return ".casual.gateway.state";}
+               } // name
+            } // service
+
             common::server::Arguments services( manager::State& state);
 
          } // admin

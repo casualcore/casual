@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "sf/archive/service.h"
-#include "sf/service/interface.h"
+#include "sf/service/protocol.h"
 #include "sf/log.h"
 
 #include <map>

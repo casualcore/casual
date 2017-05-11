@@ -3,6 +3,7 @@
 //!
 
 #include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/server.h"
 
 #include "common/arguments.h"
 #include "common/message/queue.h"
@@ -10,7 +11,7 @@
 #include "common/chronology.h"
 #include "common/transcode.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
 #include "xatmi.h"
@@ -45,15 +46,13 @@ namespace casual
 
          manager::admin::vo::State state()
          {
-            sf::xatmi::service::binary::Sync service( ".casual.gateway.state");
+            sf::service::protocol::binary::Call call;
+            auto reply = call( manager::admin::service::name::state());
 
-            auto reply = service();
+            manager::admin::vo::State result;
+            reply >> CASUAL_MAKE_NVP( result);
 
-            manager::admin::vo::State serviceReply;
-
-            reply >> CASUAL_MAKE_NVP( serviceReply);
-
-            return serviceReply;
+            return result;
          }
 
       } // call

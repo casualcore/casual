@@ -19,15 +19,6 @@ namespace casual
 {
    namespace common
    {
-      namespace service
-      {
-         namespace category
-         {
-            constexpr const char* none = "";
-            constexpr const char* admin = ".admin";
-         } // category
-      } // service
-
       namespace server
       {
 

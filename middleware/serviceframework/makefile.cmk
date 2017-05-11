@@ -29,12 +29,11 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         Compile( 'source/archive/ini.cpp'),
         Compile( 'source/archive/log.cpp'),
         Compile( 'source/archive/service.cpp'),
-        Compile( 'source/buffer.cpp'),
-        Compile( 'source/server.cpp'),
-        Compile( 'source/proxy.cpp'),
-        Compile( 'source/service/interface.cpp'),
+        #Compile( 'source/proxy.cpp'),
+        #Compile( 'source/service/interface.cpp'),
         Compile( 'source/service/protocol.cpp'),
-        Compile( 'source/xatmi_call.cpp'),
+        Compile( 'source/service/protocol/implementation.cpp'),
+        Compile( 'source/service/call.cpp'),
         Compile( 'source/platform.cpp'),
         Compile( 'source/log.cpp'),
         
@@ -51,12 +50,13 @@ LinkUnittest( 'bin/test-casual-sf',
 	[
         Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
         Compile( 'unittest/isolated/source/test_traits.cpp'),
-        Compile( 'unittest/isolated/source/test_buffer.cpp'),
         Compile( 'unittest/isolated/source/test_maker.cpp'),
-        Compile( 'unittest/isolated/source/test_service.cpp'),
+        
         Compile( 'unittest/isolated/source/test_uuid.cpp'),
-        Compile( 'unittest/isolated/source/test_xatmi_call.cpp'),
+        #Compile( 'unittest/isolated/source/test_xatmi_call.cpp'),
         Compile( 'unittest/isolated/source/test_vo.cpp'),
+        
+        Compile( 'unittest/isolated/source/service/test_protocol.cpp'),
         
         # archive stuff
         Compile( 'unittest/isolated/source/archive/test_archive.cpp'),
@@ -68,7 +68,7 @@ LinkUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/archive/test_ini.cpp'),
         Compile( 'unittest/isolated/source/archive/test_service.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'yaml-cpp', 'pugixml'])
+	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
 
 #
 # Install

@@ -1,8 +1,5 @@
 //!
-//! sf_testproxy.cpp
-//!
-//! Created on: Mar 1, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -30,22 +27,51 @@ namespace test
       //## declarations protected section begin [.30]
       //## declarations protected section end   [.30]
 
-      namespace async
+      namespace local
+      {
+         namespace
+         {
+            namespace someService2
+            {
+               template< typename C>
+               void input( C& caller, const std::string& value)
+               {
+                  caller << CASUAL_MAKE_NVP( value);
+               }
+
+               template< typename R>
+               auto output( R& reply)
+               {
+                  std::vector< std::string> result;
+                  reply >> CASUAL_MAKE_NVP( result);
+                  return result;
+               }
+            } // someService2
+         } // <unnamed>
+      } // local
+
+      namespace send
       {
 
-         SomeService2::SomeService2() : SomeService2( 0) {}
-         SomeService2::SomeService2( long flags) : m_service{ "casual_sf_test2", flags} {}
+         SomeService2::SomeService2() = default;
+         SomeService2::~SomeService2() = default;
 
+         SomeService2::Receive SomeService2::operator() ( const std::string& value, Flags flags)
+         {
+            sf::service::protocol::binary::Send send;
+
+            local::someService2::input( send, value);
+
+            return Receive{ send( "casual_sf_test2")};
+         }
 
          SomeService2::Receive SomeService2::operator() ( const std::string& value)
          {
-            m_service << CASUAL_MAKE_NVP( value);
-
-            return Receive{ m_service()};
+            return operator() ( value, Flag::no_flags);
          }
 
 
-         SomeService2::Receive::Receive( casual::sf::proxy::async::Receive&& receive)
+         SomeService2::Receive::Receive( receive_type&& receive)
             : m_receive{ std::move( receive)} {}
 
 
@@ -54,51 +80,54 @@ namespace test
          {
             auto result = m_receive();
 
-            std::vector< std::string> serviceReturnValue;
-
-            result >> CASUAL_MAKE_NVP( serviceReturnValue);
-
-            return serviceReturnValue;
+            return local::someService2::output( result);
          }
 
 
          // fler services...
 
 
-      } // asynk
+      } // send
 
-      namespace sync
+      namespace call
       {
+         std::vector< std::string> someService2( const std::string& value, Flags flag)
+         {
+            sf::service::protocol::binary::Call call;
+            local::someService2::input( call, value);
 
-         SomeService2::SomeService2() : SomeService2( 0L) {}
+            auto reply = call( "casual_sf_test2", flag);
 
-         SomeService2::SomeService2( long flags) : m_service{ "casual_sf_test2", flags} {}
+            return local::someService2::output( reply);
+         }
 
+         std::vector< std::string> someService2( const std::string& value)
+         {
+            return someService2( value, Flag::no_flags);
+         }
+
+
+         SomeService2::SomeService2() = default;
+         SomeService2::~SomeService2() = default;
 
          std::vector< std::string> SomeService2::operator() ( const std::string& value)
          {
-            m_service << CASUAL_MAKE_NVP( value);
+            return someService2( value);
+         }
 
-            auto result = m_service();
-
-            std::vector< std::string> serviceReturnValue;
-
-            result >> CASUAL_MAKE_NVP( serviceReturnValue);
-
-            return serviceReturnValue;
+         std::vector< std::string> SomeService2::operator() ( const std::string& value, Flags flag)
+         {
+            return someService2( value, flag);
          }
 
 
          // fler services...
 
-      } // sync
+      } // call
 
 
 
-      std::vector< std::string> someService2( const std::string& value)
-      {
-         return sync::SomeService2()( value);
-      }
+
 
    } // proxyName
 

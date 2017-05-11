@@ -16,8 +16,7 @@
 #include "common/message/type.h"
 #include "common/service/lookup.h"
 
-#include "sf/xatmi_call.h"
-
+#include "sf/service/protocol/call.h"
 
 namespace casual
 {
@@ -63,9 +62,9 @@ namespace casual
             {
                admin::StateVO state()
                {
-                  sf::xatmi::service::binary::Sync service( admin::service::name::state());
+                  sf::service::protocol::binary::Call call;
 
-                  auto reply = service();
+                  auto reply = call( admin::service::name::state());
 
                   admin::StateVO serviceReply;
 

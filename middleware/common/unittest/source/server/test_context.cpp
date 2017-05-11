@@ -36,19 +36,6 @@ namespace casual
       {
          namespace
          {
-            namespace lifetime
-            {
-               struct Init
-               {
-                  int operator () ( int argc, char **argv) { return 0; }
-               };
-
-               struct Done
-               {
-                  void operator () () {}
-               };
-
-            } // lifetime
 
 
             const std::string& replyMessage()
@@ -80,20 +67,18 @@ namespace casual
 
             server::Arguments arguments()
             {
-               server::Arguments arguments{ { "/test/path"}, lifetime::Init{}, lifetime::Done{}};
+               server::Arguments arguments{ {
+                  server::xatmi::service( "test_service", &test_service, service::transaction::Type::none, service::category::none()),
+                  server::xatmi::service( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::none, service::category::none()),
+                  server::xatmi::service( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::atomic, service::category::none()),
+                  server::xatmi::service( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::join, service::category::none()),
+                  server::xatmi::service( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::automatic, service::category::none()),
 
-               arguments.services = {
-                  server::xatmi::service( "test_service", &test_service, service::transaction::Type::none, service::category::none),
-                  server::xatmi::service( "test_service_none_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::none, service::category::none),
-                  server::xatmi::service( "test_service_atomic_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::atomic, service::category::none),
-                  server::xatmi::service( "test_service_join_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::join, service::category::none),
-                  server::xatmi::service( "test_service_auto_TPSUCCESS", &test_service_TPSUCCESS, service::transaction::Type::automatic, service::category::none),
-
-                  server::xatmi::service( "test_service_none_TPFAIL", &test_service_TPFAIL, service::transaction::Type::none, service::category::none),
-                  server::xatmi::service( "test_service_atomic_TPFAIL", &test_service_TPFAIL, service::transaction::Type::atomic, service::category::none),
-                  server::xatmi::service( "test_service_join_TPFAIL", &test_service_TPFAIL, service::transaction::Type::join, service::category::none),
-                  server::xatmi::service( "test_service_auto_TPFAIL", &test_service_TPFAIL, service::transaction::Type::automatic, service::category::none),
-               };
+                  server::xatmi::service( "test_service_none_TPFAIL", &test_service_TPFAIL, service::transaction::Type::none, service::category::none()),
+                  server::xatmi::service( "test_service_atomic_TPFAIL", &test_service_TPFAIL, service::transaction::Type::atomic, service::category::none()),
+                  server::xatmi::service( "test_service_join_TPFAIL", &test_service_TPFAIL, service::transaction::Type::join, service::category::none()),
+                  server::xatmi::service( "test_service_auto_TPFAIL", &test_service_TPFAIL, service::transaction::Type::automatic, service::category::none()),
+               }};
 
                return arguments;
             }
@@ -113,38 +98,6 @@ namespace casual
 
          } // <unnamed>
       } // local
-
-
-      TEST( common_server_context, arguments)
-      {
-         common::unittest::Trace trace;
-
-         server::Arguments arguments{ { "arg1", "arg2"}, local::lifetime::Init{}, local::lifetime::Done{}};
-
-         ASSERT_TRUE( arguments.argc == 2);
-         EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
-         EXPECT_TRUE( arguments.argv[ 1] == std::string( "arg2"));
-
-         EXPECT_TRUE( arguments.arguments.at( 0) == "arg1");
-         EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
-      }
-
-      TEST( common_server_context, arguments_move)
-      {
-         common::unittest::Trace trace;
-
-         server::Arguments origin{ { "arg1", "arg2"}, local::lifetime::Init{}, local::lifetime::Done{}};
-
-         server::Arguments arguments = std::move( origin);
-
-         ASSERT_TRUE( arguments.argc == 2);
-         EXPECT_TRUE( arguments.argv[ 0] == std::string( "arg1"));
-         EXPECT_TRUE( arguments.argv[ 1] == std::string( "arg2"));
-
-         EXPECT_TRUE( arguments.arguments.at( 0) == "arg1");
-         EXPECT_TRUE( arguments.arguments.at( 1) == "arg2");
-      }
-
 
 
 

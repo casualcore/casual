@@ -98,8 +98,6 @@ namespace casual
 
             message::event::service::Call event;
 
-            std::function<void()> server_done;
-
          };
 
          class Context

@@ -8,6 +8,7 @@
 
 #include "transaction/manager/handle.h"
 #include "transaction/manager/manager.h"
+#include "transaction/manager/admin/server.h"
 
 
 #include "common/mockup/ipc.h"
@@ -21,7 +22,7 @@
 #include "common/environment.h"
 #include "common/transcode.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/archive/log.h"
 
 #include "tx.h"
@@ -143,14 +144,13 @@ namespace casual
                {
                   vo::State state()
                   {
-                     sf::xatmi::service::binary::Sync service( ".casual.transaction.state");
-                     auto reply = service();
+                     sf::service::protocol::binary::Call call;
+                     auto reply = call( manager::admin::service::name::state());
 
-                     vo::State serviceReply;
+                     vo::State result;
+                     reply >> CASUAL_MAKE_NVP( result);
 
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                     return serviceReply;
+                     return result;
                   }
 
                } // call

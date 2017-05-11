@@ -148,7 +148,6 @@ struct Settings
 
    void set_compile_link_directive( const std::vector< std::string>& value)
    {
-      // std::clog << "setCompileLinkDirective" << std::endl;
       append( compileLinkDirective, split( value));
    }
 
