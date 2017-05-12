@@ -58,7 +58,7 @@ namespace casual
 
             basic_reader( basic_reader&&) = default;
 
-            const implementation_type& implemenation() const
+            const implementation_type& implementation() const
             {
                return m_implementation;
             }

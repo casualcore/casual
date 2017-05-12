@@ -78,37 +78,8 @@ namespace casual
                   //
                   m_policy.configure( arguments);
 
-                  //
-                  // Call tpsrvinit
-                  //
-                  if( arguments.init && arguments.init( arguments.argc, arguments.argv) == -1)
-                  {
-                     throw exception::NotReallySureWhatToNameThisException( "service init failed");
-                  }
                }
 
-
-               ~basic_call() noexcept
-               {
-                  if( ! m_moved)
-                  {
-                     try
-                     {
-                        auto& state = server::Context::instance().state();
-
-                        //
-                        // Call tpsrvdone
-                        //
-                        if( state.server_done)
-                           state.server_done();
-                     }
-                     catch( ...)
-                     {
-                        error::handler();
-                     }
-                  }
-
-               }
 
                void operator () ( message_type& message)
                {

@@ -10,7 +10,7 @@
 #include "domain/transform.h"
 
 
-#include "sf/server.h"
+#include "sf/service/protocol.h"
 
 #include "xatmi.h"
 
@@ -18,13 +18,6 @@ namespace casual
 {
    using namespace common;
 
-   namespace local
-   {
-      namespace
-      {
-         sf::Server server;
-      }
-   }
 
    namespace domain
    {
@@ -33,205 +26,133 @@ namespace casual
       {
          namespace admin
          {
-
-            namespace service
+            namespace local
             {
-
-               namespace scale
+               namespace
                {
-                  std::vector< vo::scale::Instances> instances( manager::State& state, std::vector< vo::scale::Instances> instances)
+                  namespace scale
                   {
-                     std::vector< vo::scale::Instances> result;
-
-                     message::domain::scale::Executable message;
-
-                     auto extract = []( auto& instance, auto& entites, auto& output){
-
-                        auto found = range::find_if( entites, [&instance]( auto& e){
-                           return e.alias == instance.alias;
-                        });
-
-                        if( found)
-                        {
-                           message::domain::scale::Executable::Scale scale;
-                           scale.id = common::id::underlaying( found->id);
-                           scale.instances = instance.instances;
-                           output.push_back( std::move( scale));
-                           return true;
-                        }
-                        return false;
-                     };
-
-                     for( auto& instance : instances)
+                     std::vector< vo::scale::Instances> instances( manager::State& state, std::vector< vo::scale::Instances> instances)
                      {
-                        if( extract( instance, state.servers, message.servers) ||
-                           extract( instance, state.executables, message.executables))
+                        std::vector< vo::scale::Instances> result;
+
+                        message::domain::scale::Executable message;
+
+                        auto extract = []( auto& instance, auto& entites, auto& output){
+
+                           auto found = range::find_if( entites, [&instance]( auto& e){
+                              return e.alias == instance.alias;
+                           });
+
+                           if( found)
+                           {
+                              message::domain::scale::Executable::Scale scale;
+                              scale.id = common::id::underlaying( found->id);
+                              scale.instances = instance.instances;
+                              output.push_back( std::move( scale));
+                              return true;
+                           }
+                           return false;
+                        };
+
+                        for( auto& instance : instances)
                         {
-                           result.push_back( std::move( instance));
+                           if( extract( instance, state.servers, message.servers) ||
+                              extract( instance, state.executables, message.executables))
+                           {
+                              result.push_back( std::move( instance));
+                           }
                         }
+
+                        //
+                        // Push the work-task to our queue, and It'll be processed as soon
+                        // as possible
+                        //
+                        communication::ipc::inbound::device().push( std::move( message));
+
+                        return result;
                      }
 
-                     //
-                     // Push the work-task to our queue, and It'll be processed as soon
-                     // as possible
-                     //
-                     communication::ipc::inbound::device().push( std::move( message));
+                  } // scale
 
-                     return result;
-                  }
-
-               } // scale
-
-               extern "C"
-               {
-
-                  void get_state( TPSVCINFO* service_info, manager::State& state)
+                  namespace service
                   {
-                     casual::sf::service::reply::State reply;
-
-                     try
+                     common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto service_io = local::server.service( *service_info);
+                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
                         manager::admin::vo::State (*function)(const manager::State&) = casual::domain::transform::state;
 
-                        auto serviceReturn = service_io.call( function, state);
+                        auto result = sf::service::user( protocol, function, state);
 
+                        protocol << CASUAL_MAKE_NVP( result);
 
-                        service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                        reply = service_io.finalize();
-
-                     }
-                     catch( ...)
-                     {
-                        local::server.exception( *service_info, reply);
+                        return protocol.finalize();
                      }
 
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
-                  }
 
-
-
-                  void scale_instances( TPSVCINFO *service_info, manager::State& state)
-                  {
-                     casual::sf::service::reply::State reply;
-
-                     try
+                     common::service::invoke::Result scale( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto service_io = local::server.service( *service_info);
+                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
                         std::vector< vo::scale::Instances> instances;
-                        service_io >> CASUAL_MAKE_NVP( instances);
+                        protocol >> CASUAL_MAKE_NVP( instances);
 
-                        auto serviceReturn = service_io.call( &scale::instances, state, std::move( instances));
+                        auto result = sf::service::user( protocol, &scale::instances, state, instances);
 
-                        service_io << CASUAL_MAKE_NVP( serviceReturn);
-                        reply = service_io.finalize();
-
-                     }
-                     catch( ...)
-                     {
-                        local::server.exception( *service_info, reply);
+                        protocol << CASUAL_MAKE_NVP( result);
+                        return protocol.finalize();
                      }
 
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
-                  }
 
-
-                  void shutdown_domain( TPSVCINFO *service_info, manager::State& state)
-                  {
-                     casual::sf::service::reply::State reply;
-
-                     try
+                     common::service::invoke::Result shutdown( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto service_io = local::server.service( *service_info);
+                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
-                        service_io.call( &handle::shutdown, state);
+                        sf::service::user( protocol, &handle::shutdown, state);
 
-                        reply = service_io.finalize();
-
-                     }
-                     catch( ...)
-                     {
-                        local::server.exception( *service_info, reply);
+                        return protocol.finalize();
                      }
 
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
-                  }
-
-                  void persist_configuration( TPSVCINFO *service_info, manager::State& state)
-                  {
-                     casual::sf::service::reply::State reply;
-
-                     try
+                     common::service::invoke::Result persist( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto service_io = local::server.service( *service_info);
+                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
-                        service_io.call(
+                        sf::service::user( protocol,
                               static_cast< void(*)( const manager::State&)>( persistent::state::save),
                               state);
 
-                        reply = service_io.finalize();
-
-
-                     }
-                     catch( ...)
-                     {
-                        local::server.exception( *service_info, reply);
+                        return protocol.finalize();
                      }
 
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
-                  }
-
-               }
-            } // service
-
+                  } // service
+               } // <unnamed>
+            } // local
 
             common::server::Arguments services( manager::State& state)
             {
-               common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
-
-               result.services = {
-                     common::server::xatmi::service( service::name::state(),
-                        std::bind( &service::get_state, std::placeholders::_1, std::ref( state)),
+               return { {
+                     { service::name::state(),
+                        std::bind( &local::service::state, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
-                        common::service::category::admin),
-                     common::server::xatmi::service( service::name::scale::instances(),
-                           std::bind( &service::scale_instances, std::placeholders::_1, std::ref( state)),
+                        common::service::category::admin()
+                     },
+                     { service::name::scale::instances(),
+                           std::bind( &local::service::scale, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
-                           common::service::category::admin),
-                     common::server::xatmi::service( service::name::shutdown(),
-                           std::bind( &service::shutdown_domain, std::placeholders::_1, std::ref( state)),
+                           common::service::category::admin()
+                     },
+                     { service::name::shutdown(),
+                           std::bind( &local::service::shutdown, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
-                           common::service::category::admin),
-                     common::server::xatmi::service( service::name::configuration::persist(),
-                           std::bind( &service::persist_configuration, std::placeholders::_1, std::ref( state)),
+                           common::service::category::admin()
+                     },
+                     { service::name::configuration::persist(),
+                           std::bind( &local::service::persist, std::placeholders::_1, std::ref( state)),
                            common::service::transaction::Type::none,
-                           common::service::category::admin),
-               };
-
-               return result;
+                           common::service::category::admin()
+                     },
+               }};
             }
          } // admin
       } // manager

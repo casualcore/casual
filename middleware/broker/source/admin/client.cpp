@@ -3,10 +3,10 @@
 //!
 
 
-#include "sf/xatmi_call.h"
 #include "sf/namevaluepair.h"
 #include "sf/archive/log.h"
 #include "sf/archive/maker.h"
+#include "sf/service/protocol/call.h"
 
 #include "broker/admin/brokervo.h"
 #include "domain/manager/admin/vo.h"
@@ -55,12 +55,13 @@ namespace casual
       {
          admin::StateVO state()
          {
-            sf::xatmi::service::binary::Sync service( ".casual.broker.state");
-            auto reply = service();
+            sf::service::protocol::binary::Call call;
+
+            auto result = call( ".casual.broker.state");
 
             admin::StateVO serviceReply;
 
-            reply >> CASUAL_MAKE_NVP( serviceReply);
+            result >> CASUAL_MAKE_NVP( serviceReply);
 
             return serviceReply;
          }
@@ -73,15 +74,16 @@ namespace casual
 
          State instances()
          {
-            sf::xatmi::service::binary::Async service{ ".casual.domain.state"};
-            auto reply = service();
+            State state;
 
-            State result;
-            result.broker = call::state();
+            sf::service::protocol::binary::Call call;
+            auto result = call( ".casual.domain.state");
 
-            reply() >> CASUAL_MAKE_NVP( result.domain);
+            result >> CASUAL_MAKE_NVP( state.domain);
 
-            return result;
+            state.broker = call::state();
+
+            return state;
          }
 
 
@@ -578,7 +580,7 @@ namespace casual
             if( ! broker::global::admin_services)
             {
                services = std::get< 0>( range::partition( services, []( const admin::ServiceVO& s){
-                  return s.category != common::service::category::admin;}));
+                  return s.category != common::service::category::admin();}));
             }
 
             range::sort( services, []( const admin::ServiceVO& l, const admin::ServiceVO& r){ return l.name < r.name;});

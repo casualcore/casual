@@ -6,7 +6,6 @@
 #define ARCHIVE_JSON_H_
 
 
-#include "sf/reader_policy.h"
 #include "sf/archive/basic.h"
 #include "sf/platform.h"
 
@@ -178,9 +177,6 @@ namespace casual
                   void write( const double value);
                   void write( const std::string& value);
                   void write( const platform::binary::type& value);
-
-
-               private:
 
                   rapidjson::Document::AllocatorType& m_allocator;
                   std::vector< rapidjson::Value*> m_stack;

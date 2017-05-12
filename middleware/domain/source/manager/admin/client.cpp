@@ -2,15 +2,17 @@
 //! casual
 //!
 
-#include "../../../../common/include/common/event/listen.h"
+#include "common/event/listen.h"
 #include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/server.h"
 
 #include "common/arguments.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 
 #include "common/communication/ipc.h"
-#include "sf/xatmi_call.h"
+
+#include "sf/service/protocol/call.h"
 #include "sf/archive/maker.h"
 
 namespace casual
@@ -194,8 +196,8 @@ namespace casual
 
                   admin::vo::State state()
                   {
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.state");
-                     auto reply = service();
+                     sf::service::protocol::binary::Call call;
+                     auto reply = call( admin::service::name::state());
 
                      admin::vo::State serviceReply;
 
@@ -207,10 +209,10 @@ namespace casual
 
                   std::vector< admin::vo::scale::Instances> scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
+                     sf::service::protocol::binary::Call call;
+                     call << CASUAL_MAKE_NVP( instances);
 
-                     service << CASUAL_MAKE_NVP( instances);
-                     auto reply = service();
+                     auto reply = call( admin::service::name::scale::instances());
 
                      std::vector< admin::vo::scale::Instances> serviceReply;
 
@@ -293,8 +295,7 @@ namespace casual
 
                      event::Handler events{ get_alias_mapping()};
 
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.shutdown");
-                     auto reply = service();
+                     sf::service::protocol::binary::Call{}( admin::service::name::shutdown());
 
                      events();
                   }
@@ -417,7 +418,7 @@ namespace casual
                   {
                      void configuration()
                      {
-                        sf::xatmi::service::binary::Sync{ ".casual/domain/configuration/persist"}();
+                        sf::service::protocol::binary::Call{}( admin::service::name::configuration::persist());
                      }
                   } // persist
 

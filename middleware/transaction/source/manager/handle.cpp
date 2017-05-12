@@ -1641,7 +1641,7 @@ namespace casual
                handle::domain::Commit{ state},
                handle::domain::Rollback{ state},
                common::server::handle::admin::Call{
-                  admin::services( state),
+                  manager::admin::services( state),
                   ipc::device().error_handler()},
                common::message::handle::ping()
             );

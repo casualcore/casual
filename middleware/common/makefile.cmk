@@ -45,6 +45,7 @@ casual_common_objectfiles = [
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/service.cpp'),
     Compile( 'source/server/argument.cpp'),
+    Compile( 'source/server/start.cpp'),
     Compile( 'source/server/handle/service.cpp'),
     Compile( 'source/server/handle/conversation.cpp'),
     Compile( 'source/server/handle/policy.cpp'),

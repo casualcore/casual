@@ -10,7 +10,7 @@
 #include "queue/common/transform.h"
 
 
-#include "sf/server.h"
+#include "sf/service/protocol.h"
 
 #include "xatmi.h"
 
@@ -18,116 +18,57 @@ namespace casual
 {
    namespace queue
    {
-      namespace local
-      {
-         namespace
-         {
-            sf::Server server;
-
-         } // <unnamed>
-      } // local
-
-
       namespace broker
       {
          namespace admin
          {
 
-            namespace service
+            namespace local
             {
-               extern "C"
+               namespace
                {
-
-                  void state( TPSVCINFO *information, broker::State& state)
+                  common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, broker::State& state)
                   {
-                     casual::sf::service::reply::State reply;
+                     auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
-                     try
-                     {
-                        auto service_io = local::server.service( *information);
+                     auto result = sf::service::user( protocol, &admin::state, state);
 
-
-                        auto serviceReturn = service_io.call( &admin::state, state);
-
-                        service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                        reply = service_io.finalize();
-                     }
-                     catch( ...)
-                     {
-                        local::server.exception( *information, reply);
-                     }
-
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
+                     protocol << CASUAL_MAKE_NVP( result);
+                     return protocol.finalize();
                   }
 
-
-                  void list_messages( TPSVCINFO *information, broker::State& state)
+                  namespace list
                   {
-                     casual::sf::service::reply::State reply;
-
-                     try
+                     common::service::invoke::Result messages( common::service::invoke::Parameter&& parameter, broker::State& state)
                      {
-                        auto service_io = local::server.service( *information);
+                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
                         std::string queue;
-                        service_io >> CASUAL_MAKE_NVP( queue);
+                        protocol >> CASUAL_MAKE_NVP( queue);
 
-                        auto serviceReturn = service_io.call( &admin::list_messages, state, queue);
+                        auto result = sf::service::user( protocol, &admin::list_messages, state, queue);
 
-                        service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                        reply = service_io.finalize();
-                     }
-                     catch( ...)
-                     {
-                        local::server.exception( *information, reply);
+                        protocol << CASUAL_MAKE_NVP( result);
+                        return protocol.finalize();
                      }
 
-                     tpreturn(
-                        reply.value,
-                        reply.code,
-                        reply.data,
-                        reply.size,
-                        reply.flags);
-                  }
-               }
+                  } // list
 
-               void restore( TPSVCINFO *information, broker::State& state)
-               {
-                  casual::sf::service::reply::State reply;
-
-                  try
+                  common::service::invoke::Result restore( common::service::invoke::Parameter&& parameter, broker::State& state)
                   {
-                     auto service_io = local::server.service( *information);
+                     auto protocol = sf::service::protocol::deduce( std::move( parameter));
 
                      std::string queue;
-                     service_io >> CASUAL_MAKE_NVP( queue);
+                     protocol >> CASUAL_MAKE_NVP( queue);
 
-                     auto serviceReturn = service_io.call( &admin::restore, state, queue);
+                     auto result = sf::service::user( protocol, &admin::restore, state, queue);
 
-                     service_io << CASUAL_MAKE_NVP( serviceReturn);
-
-                     reply = service_io.finalize();
-                  }
-                  catch( ...)
-                  {
-                     local::server.exception( *information, reply);
+                     protocol << CASUAL_MAKE_NVP( result);
+                     return protocol.finalize();
                   }
 
-                  tpreturn(
-                     reply.value,
-                     reply.code,
-                     reply.data,
-                     reply.size,
-                     reply.flags);
-               }
-            } // service
+               } // <unnamed>
+            } // local
 
 
             admin::State state( broker::State& state)
@@ -180,24 +121,23 @@ namespace casual
 
             common::server::Arguments services( broker::State& state)
             {
-               common::server::Arguments result{ { common::process::path()}, nullptr, nullptr};
-
-               result.services = {
-                     common::server::xatmi::service( service::name::state(),
-                        std::bind( &service::state, std::placeholders::_1, std::ref( state)),
+               return { {
+                     { service::name::state(),
+                        std::bind( &local::state, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
-                        common::service::category::admin),
-                     common::server::xatmi::service( service::name::list_messages(),
-                        std::bind( &service::list_messages, std::placeholders::_1, std::ref( state)),
+                        common::service::category::admin()
+                     },
+                     { service::name::list_messages(),
+                        std::bind( &local::list::messages, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
-                        common::service::category::admin),
-                     common::server::xatmi::service( service::name::restore(),
-                        std::bind( &service::restore, std::placeholders::_1, std::ref( state)),
+                        common::service::category::admin()
+                     },
+                     { service::name::restore(),
+                        std::bind( &local::restore, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
-                        common::service::category::admin)
-               };
-
-               return result;
+                        common::service::category::admin()
+                     }
+               }};
             }
          } // admin
       } // broker
