@@ -527,6 +527,10 @@ namespace casual
 
       }
 
+      state::instance::Local& State::local( common::platform::pid::type pid)
+      {
+         return local::get( instances.local, pid);
+      }
 
       state::Service* State::find_service( const std::string& name)
       {

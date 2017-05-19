@@ -72,7 +72,7 @@ struct Settings
 
    }
 
-   std::string compiler = "gcc";
+   std::string compiler = "g++";
    bool verbose = false;
    bool keep = false;
 

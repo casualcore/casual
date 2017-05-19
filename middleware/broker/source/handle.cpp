@@ -394,14 +394,15 @@ namespace casual
             {
                auto now = platform::time::clock::type::now();
 
-
-               auto& service = m_state.service( message.service);
-
                //
                // This message can only come from a local instance
                //
-               auto& instance = service.local( message.process.pid);
+               auto& instance = m_state.local( message.process.pid);
                instance.unlock( now);
+
+
+               //auto& instance = service.local( message.process.pid);
+
 
                //
                // Check if there are pending request for services that this
@@ -434,7 +435,11 @@ namespace casual
                      //
                      // add pending metrics
                      //
-                     service.pending.add( now - pending->when);
+                     auto service = m_state.find_service( message.service);
+                     if( service)
+                     {
+                        service->pending.add( now - pending->when);
+                     }
 
                      //
                      // Remove pending

@@ -363,6 +363,8 @@ namespace casual
          //!
          state::Service* find_service( const std::string& name);
 
+         state::instance::Local& local( common::platform::pid::type pid);
+
          void connect_broker( std::vector< common::server::Service> services);
       };
 
