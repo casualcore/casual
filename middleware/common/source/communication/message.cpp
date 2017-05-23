@@ -27,8 +27,7 @@ namespace casual
                      {
                         auto type( const network::Header& value)
                         {
-                           return static_cast< common::message::Type>(
-                                 common::network::byteorder::decode<network::Header::host_type_type>( value.type));
+                           return static_cast< common::message::Type>( common::network::byteorder::decode<network::Header::host_type_type>( value.type));
                         }
 
                         auto size( const network::Header& value)
@@ -37,19 +36,18 @@ namespace casual
                         }
 
                      } // header
-                  }
+                  } // <unnamed>
                } // host
 
                namespace network
                {
                   std::ostream& operator << ( std::ostream& out, const Header& value)
                   {
-
-                     return out << "{ type: " << host::header::type( value)
-                           << ", correlation: " << uuid::string( value.correlation)
-                           << ", size: " << host::header::size( value)
-                           << '}';
-
+                     return out  <<
+                        "{ type: " << host::header::type( value) <<
+                        ", correlation: " << uuid::string( value.correlation) <<
+                        ", size: " << host::header::size( value) <<
+                        '}';
                   }
 
                } // network

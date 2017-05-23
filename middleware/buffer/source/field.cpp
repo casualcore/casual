@@ -1636,6 +1636,48 @@ int casual_field_plain_type_host_size( const int type, long* const count)
    return CASUAL_FIELD_SUCCESS;
 }
 
+int casual_field_minimum_need( long id, long* count)
+{
+   if( count)
+   {
+      const constexpr auto item_size = casual::common::network::byteorder::bytes<casual::buffer::field::item_type>();
+      const constexpr auto size_size = casual::common::network::byteorder::bytes<casual::buffer::field::size_type>();
+
+      switch( id / CASUAL_FIELD_TYPE_BASE)
+      {
+      case CASUAL_FIELD_SHORT:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<short>();
+         break;
+      case CASUAL_FIELD_LONG:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<long>();
+         break;
+      case CASUAL_FIELD_CHAR:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<char>();
+         break;
+      case CASUAL_FIELD_FLOAT:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<float>();
+         break;
+      case CASUAL_FIELD_DOUBLE:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<double>();
+         break;
+      case CASUAL_FIELD_STRING:
+         *count = item_size + size_size + 1; // a null-terminator is always added
+         break;
+      case CASUAL_FIELD_BINARY:
+         *count = item_size + size_size + 0; // can be empty
+         break;
+      default:
+         return CASUAL_FIELD_INVALID_ARGUMENT;
+      }
+   }
+   else
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
 int casual_field_remove_all( char* const buffer)
 {
    return casual::buffer::field::cut::all( buffer);

@@ -33,24 +33,30 @@ namespace casual
                      using host_type_type = platform::ipc::message::type;
                      using network_type_type = common::network::byteorder::type<host_type_type>;
 
-                     //using host_size_type = platform::binary::size::type;
+                     using host_uuid_type = Uuid::uuid_type;
+                     using network_uuid_type = host_uuid_type;
+
                      using host_size_type = common::network::byteorder::size::host::type;
                      using network_size_type = common::network::byteorder::type<host_size_type>;
 
                      network_type_type type = 0;
-                     Uuid::uuid_type correlation;
+                     network_uuid_type correlation;
                      network_size_type size = 0;
+
+                     static_assert( sizeof( network_type_type) ==  8, "Wrong size for type");
+                     static_assert( sizeof( network_uuid_type) == 16, "Wrong size for uuid");
+                     static_assert( sizeof( network_size_type) ==  8, "Wrong size for size");
 
                      friend std::ostream& operator << ( std::ostream& out, const Header& value);
 
                   };
+
                   static_assert( std::is_trivially_copyable< Header>::value, "Complete::Header needs to be trivially copyable" );
-                  static_assert( sizeof( Header::network_type_type) == 8, "Wrong size for type");
-                  static_assert( sizeof( Header::network_size_type) == 8, "Wrong size for size");
 
                   namespace header
                   {
                      constexpr auto size() { return sizeof( Header);}
+                     static_assert( size() == 32, "Wrong size for header");
                   } // header
 
                } // network

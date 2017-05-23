@@ -86,14 +86,13 @@ namespace casual
                         { typeid( int), "int"},
                         { typeid( long), "long"},
                         { typeid( long long), "long long"},
-                        //{ typeid( std::uint64_t), "uint64"},
-                        //{ typeid( std::int64_t), "int64"},
-                        //{ typeid( std::uint16_t), "uint16"},
-                        //{ typeid( std::size_t), "size"},
+                        { typeid( std::uint16_t), "uint16"},
+                        { typeid( std::uint32_t), "uint32"},
+                        { typeid( std::uint64_t), "uint64"},
                      };
 
 
-                     auto found = common::range::find( names, typeid( common::marshal::binary::network::detail::cast( value)));
+                     const auto found = common::range::find( names, typeid( common::marshal::binary::network::detail::cast( value)));
 
                      if( found)
                      {

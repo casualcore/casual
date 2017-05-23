@@ -26,7 +26,7 @@ role name          | native type | native size | network type | network size | d
 ------------------ | ----------- | ----------- | ------------ | ------------ | ---------------------------------------------
 header.type        | long        |           8 | uint64       |            8 | type of the message that the payload contains
 header.correlation | fixed array |          16 | fixed array  |           16 | correlation id of the message                
-header.size        | uint64      |           8 | uint64       |            8 | the size of the payload that follows         
+header.size        | long        |           8 | uint64       |            8 | the size of the payload that follows         
 
 ## Discovery messages
 
@@ -43,13 +43,13 @@ role name             | native type   | native size | network type  | network si
 --------------------- | ------------- | ----------- | ------------- | ------------ | -------------------------------------------------------------
 execution             | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                           
 domain.id             | fixed array   |          16 | fixed array   |           16 | uuid of the caller domain                                    
-domain.name.size      | size          |           8 | uint64        |            8 | size of the caller domain name                               
+domain.name.size      | long          |           8 | uint64        |            8 | size of the caller domain name                               
 domain.name.data      | dynamic array |           0 | dynamic array |            0 | dynamic byte array with the caller domain name               
-services.size         | size          |           8 | uint64        |            8 | number of requested services to follow (an array of services)
-services.element.size | size          |           8 | uint64        |            8 | size of the current service name                             
+services.size         | long          |           8 | uint64        |            8 | number of requested services to follow (an array of services)
+services.element.size | long          |           8 | uint64        |            8 | size of the current service name                             
 services.element.data | dynamic array |         128 | dynamic array |          128 | dynamic byte array of the current service name               
-queues.size           | size          |           8 | uint64        |            8 | number of requested queues to follow (an array of queues)    
-queues.element.size   | size          |           8 | uint64        |            8 | size of the current queue name                               
+queues.size           | long          |           8 | uint64        |            8 | number of requested queues to follow (an array of queues)    
+queues.element.size   | long          |           8 | uint64        |            8 | size of the current queue name                               
 queues.element.data   | dynamic array |         128 | dynamic array |          128 | dynamic byte array of the current queue name                 
 
 #### message::interdomain::domain::discovery::Reply
@@ -62,20 +62,20 @@ role name                      | native type   | native size | network type  | n
 ------------------------------ | ------------- | ----------- | ------------- | ------------ | ----------------------------------------------------------------
 execution                      | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                              
 domain.id                      | fixed array   |          16 | fixed array   |           16 | uuid of the caller domain                                       
-domain.name.size               | size          |           8 | uint64        |            8 | size of the caller domain name                                  
+domain.name.size               | long          |           8 | uint64        |            8 | size of the caller domain name                                  
 domain.name.data               | dynamic array |           0 | dynamic array |            0 | dynamic byte array with the caller domain name                  
-services.size                  | size          |           8 | uint64        |            8 | number of services to follow (an array of services)             
-services.element.name.size     | size          |           8 | uint64        |            8 | size of the current service name                                
+services.size                  | long          |           8 | uint64        |            8 | number of services to follow (an array of services)             
+services.element.name.size     | long          |           8 | uint64        |            8 | size of the current service name                                
 services.element.name.data     | dynamic array |         128 | dynamic array |          128 | dynamic byte array of the current service name                  
-services.element.category.size | size          |           8 | uint64        |            8 | size of the current service category                            
+services.element.category.size | long          |           8 | uint64        |            8 | size of the current service category                            
 services.element.category.data | dynamic array |           0 | dynamic array |            0 | dynamic byte array of the current service category              
-services.element.transaction   | uint16        |           2 | uint16        |            2 | service transaction mode (auto, atomic, join, none)             
-services.element.timeout       | int64         |           8 | uint64        |            8 | service timeout                                                 
-services.element.hops          | size          |           8 | uint64        |            8 | number of domain hops to the service (local services has 0 hops)
-queues.size                    | size          |           8 | uint64        |            8 | number of requested queues to follow (an array of queues)       
-queues.element.size            | size          |           8 | uint64        |            8 | size of the current queue name                                  
+services.element.transaction   | short         |           2 | uint16        |            2 | service transaction mode (auto, atomic, join, none)             
+services.element.timeout       | long          |           8 | uint64        |            8 | service timeout                                                 
+services.element.hops          | long          |           8 | uint64        |            8 | number of domain hops to the service (local services has 0 hops)
+queues.size                    | long          |           8 | uint64        |            8 | number of requested queues to follow (an array of queues)       
+queues.element.size            | long          |           8 | uint64        |            8 | size of the current queue name                                  
 queues.element.data            | dynamic array |         128 | dynamic array |          128 | dynamic byte array of the current queue name                    
-queues.element.retries         | size          |           8 | uint64        |            8 | how many 'retries' the queue has                                
+queues.element.retries         | long          |           8 | uint64        |            8 | how many 'retries' the queue has                                
 
 ## Service messages
 
@@ -91,21 +91,20 @@ message type: **8100**
 role name           | native type   | native size | network type  | network size | description                                                        
 ------------------- | ------------- | ----------- | ------------- | ------------ | -------------------------------------------------------------------
 execution           | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                                 
-call.descriptor     | int           |           4 | uint64        |            8 | descriptor of the call                                             
-service.name.size   | size          |           8 | uint64        |            8 | service name size                                                  
-service.name.data   | dynamic array |         128 | dynamic array |          128 | byte array with service name                                       
-service.timeout     | int64         |           8 | uint64        |            8 | timeout of the service in use                                      
-parent.name.size    | size          |           8 | uint64        |            8 | parent service name size                                           
-parent.name.data    | dynamic array |         128 | dynamic array |          128 | byte array with parent service name                                
+call.descriptor     | long          |           8 | uint64        |            8 | descriptor of the call                                             
+service.name.size   | dynamic array |         128 | dynamic array |          128 | service name size                                                  
+service.name.data   | long          |           8 | uint64        |            8 | byte array with service name                                       
+service.timeout     | long          |           8 | uint64        |            8 | timeout of the service in use                                      
+parent.name.size    | dynamic array |         128 | dynamic array |          128 | parent service name size                                           
+parent.name.data    | long          |           8 | uint64        |            8 | byte array with parent service name                                
 xid.format          | long          |           8 | uint64        |            8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length    | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
-xid.bqual_length    | long          |           8 | uint64        |            8 | length of the transaction branch part                              
-xid.payload         | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-flags               | int64         |           8 | uint64        |            8 | XATMI flags sent to the service                                    
-buffer.type.size    | size          |           8 | uint64        |            8 | buffer type name size                                              
-buffer.type.data    | dynamic array |          25 | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'             
-buffer.payload.size | size          |           8 | uint64        |            8 | buffer payload size (could be very big)                            
-buffer.payload.data | dynamic array |         128 | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)         
+xid.bqual_length    | dynamic array |          32 | dynamic array |           32 | length of the transaction branch part                              
+xid.payload         | long          |           8 | uint64        |            8 | byte array with the size of gtrid_length + bqual_length (max 128)  
+flags               | long          |           8 | uint64        |            8 | XATMI flags sent to the service                                    
+buffer.type.size    | dynamic array |          25 | dynamic array |           25 | buffer type name size                                              
+buffer.type.data    | long          |           8 | uint64        |            8 | byte array with buffer type in the form 'type/subtype'             
+buffer.payload.size | dynamic array |         128 | dynamic array |          128 | buffer payload size (could be very big)                            
 
 #### message::interdomain::service::call::receive::Reply
 
@@ -116,18 +115,17 @@ message type: **8101**
 role name                         | native type   | native size | network type  | network size | description                                                                   
 --------------------------------- | ------------- | ----------- | ------------- | ------------ | ------------------------------------------------------------------------------
 execution                         | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                                            
-call.descriptor                   | int           |           4 | uint64        |            8 | descriptor of the call                                                        
-call.error                        | int           |           4 | uint64        |            8 | XATMI error code, if any.                                                     
+call.descriptor                   | int           |           4 | uint32        |            4 | descriptor of the call                                                        
+call.error                        | long          |           8 | uint64        |            8 | XATMI error code, if any.                                                     
 call.code                         | long          |           8 | uint64        |            8 | XATMI user supplied code                                                      
 transaction.trid.xid.format       | long          |           8 | uint64        |            8 | xid format type. if 0 no more information of the xid is transported           
 transaction.trid.xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transactino gtrid part                                          
-transaction.trid.xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                                         
-transaction.trid.xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)             
-transaction.state                 | int64         |           8 | uint64        |            8 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
-buffer.type.size                  | size          |           8 | uint64        |            8 | buffer type name size                                                         
-buffer.type.data                  | dynamic array |          25 | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'                        
-buffer.payload.size               | size          |           8 | uint64        |            8 | buffer payload size (could be very big)                                       
-buffer.payload.data               | dynamic array |         128 | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)                    
+transaction.trid.xid.bqual_length | dynamic array |          32 | dynamic array |           32 | length of the transaction branch part                                         
+transaction.trid.xid.payload      | long          |           8 | uint64        |            8 | byte array with the size of gtrid_length + bqual_length (max 128)             
+transaction.state                 | long          |           8 | uint64        |            8 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
+buffer.type.size                  | dynamic array |          25 | dynamic array |           25 | buffer type name size                                                         
+buffer.type.data                  | long          |           8 | uint64        |            8 | byte array with buffer type in the form 'type/subtype'                        
+buffer.payload.size               | dynamic array |         128 | dynamic array |          128 | buffer payload size (could be very big)                                       
 
 ## Transaction messages
 
@@ -147,8 +145,8 @@ xid.format       | long          |           8 | uint64        |            8 | 
 xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource.id      | int           |           4 | uint64        |            8 | RM id of the resource - has to correlate with the reply            
-flags            | int           |           4 | uint64        |            8 | XA flags to be forward to the resource                             
+resource.id      | int           |           4 | uint32        |            4 | RM id of the resource - has to correlate with the reply            
+flags            | int           |           4 | uint32        |            4 | XA flags to be forward to the resource                             
 
 #### message::interdomain::transaction::resource::receive::prepare::Reply
 
@@ -163,8 +161,8 @@ xid.format       | long          |           8 | uint64        |            8 | 
 xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource.id      | int           |           4 | uint64        |            8 | RM id of the resource - has to correlate with the request          
-resource.state   | int           |           4 | uint64        |            8 | The state of the operation - If successful XA_OK ( 0)              
+resource.id      | int           |           4 | uint32        |            4 | RM id of the resource - has to correlate with the request          
+resource.state   | int           |           4 | uint32        |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 ### Resource commit
 
@@ -182,8 +180,8 @@ xid.format       | long          |           8 | uint64        |            8 | 
 xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource.id      | int           |           4 | uint64        |            8 | RM id of the resource - has to correlate with the reply            
-flags            | int           |           4 | uint64        |            8 | XA flags to be forward to the resource                             
+resource.id      | int           |           4 | uint32        |            4 | RM id of the resource - has to correlate with the reply            
+flags            | int           |           4 | uint32        |            4 | XA flags to be forward to the resource                             
 
 #### message::interdomain::transaction::resource::receive::commit::Reply
 
@@ -198,8 +196,8 @@ xid.format       | long          |           8 | uint64        |            8 | 
 xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource.id      | int           |           4 | uint64        |            8 | RM id of the resource - has to correlate with the request          
-resource.state   | int           |           4 | uint64        |            8 | The state of the operation - If successful XA_OK ( 0)              
+resource.id      | int           |           4 | uint32        |            4 | RM id of the resource - has to correlate with the request          
+resource.state   | int           |           4 | uint32        |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 ### Resource rollback
 
@@ -218,8 +216,8 @@ xid.format       | long          |           8 | uint64        |            8 | 
 xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource.id      | int           |           4 | uint64        |            8 | RM id of the resource - has to correlate with the reply            
-flags            | int           |           4 | uint64        |            8 | XA flags to be forward to the resource                             
+resource.id      | int           |           4 | uint32        |            4 | RM id of the resource - has to correlate with the reply            
+flags            | int           |           4 | uint32        |            4 | XA flags to be forward to the resource                             
 
 #### message::interdomain::transaction::resource::receive::rollback::Reply
 
@@ -234,5 +232,5 @@ xid.format       | long          |           8 | uint64        |            8 | 
 xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource.id      | int           |           4 | uint64        |            8 | RM id of the resource - has to correlate with the request          
-resource.state   | int           |           4 | uint64        |            8 | The state of the operation - If successful XA_OK ( 0)              
+resource.id      | int           |           4 | uint32        |            4 | RM id of the resource - has to correlate with the request          
+resource.state   | int           |           4 | uint32        |            4 | The state of the operation - If successful XA_OK ( 0)              
