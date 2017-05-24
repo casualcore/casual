@@ -1,14 +1,6 @@
 #!groovy
 
-//
-// Script for the backend builder
-//
-def backend_builder = '''#! /bin/sh
-CASUAL_VERSION="0.42"
-CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
-
-source scl_source enable devtoolset-4
-
+def common_backend_builder = '''
 umask 000
 cd /git/casual
 find . -name "*.gcda" -print | xargs rm
@@ -35,9 +27,32 @@ casual-make -d -a --use-valgrind make && \
    tar cvf casual-middleware.tar casual && \
    cp casual-middleware.tar /git/casual/. && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
-   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  && \
+   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
    cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. 
 '''
+
+//
+// Script for the backend builder centos
+//
+def backend_builder_centos = '''#! /bin/sh
+CASUAL_VERSION="0.42"
+CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
+DISTRIBUTION="centos"
+
+source scl_source enable devtoolset-4
+
+''' + common_backend_builder
+
+//
+// Script for the backend builder suse
+//
+def backend_builder_suse = '''#! /bin/sh
+CASUAL_VERSION="0.42"
+CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
+DISTRIBUTION="suse"
+
+''' + common_backend_builder
+
 
 //
 // Script for the frontend builder
@@ -113,7 +128,7 @@ def build( name, image, content)
 try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-   node( "frontend" && "cplusplus")
+   node( "frontend" && "cplusplus" && "suse")
    {
       try
       { 
@@ -133,7 +148,38 @@ try
 
          stage('Build backend - Unittest/CodeCoverage')
          {
-             build( 'centoscompile', 'casual/centos', backend_builder)
+             build( 'susecompile', 'casual/suse', backend_builder_suse)
+
+             archive includes: '**/casual-middleware*.rpm'
+          }
+      }
+      catch (Exception e)
+      {
+            archive includes: '**/casual.log'
+            throw e
+      }
+   }
+   node( "frontend" && "cplusplus" && "centos")
+   {
+      try
+      { 
+
+         stage('Checkout')
+         {
+            checkout scm
+         }  
+
+         stage('Build frontend')
+         {
+
+             build( 'casualfrontend', 'casual/frontend', frontend_builder)
+
+             archive includes: '**/casual-webapp.zip'
+         }
+
+         stage('Build backend - Unittest/CodeCoverage')
+         {
+             build( 'centoscompile', 'casual/centos', backend_builder_centos)
 
              step([$class: 'XUnitBuilder',
                 thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
