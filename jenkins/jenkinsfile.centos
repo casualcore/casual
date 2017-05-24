@@ -12,7 +12,7 @@ casual-make -d -a --use-valgrind make && \
    casual-make -d -a --use-valgrind link && \
    ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test && \
    mkdir -p /git/casual/coverage && \
-   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html && \
+   #gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html && \
    casual-make make && \
    casual-make clean && \
    casual-make compile && \
