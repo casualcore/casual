@@ -132,12 +132,12 @@ try
       try
       { 
 
-         stage('Checkout')
+         stage('Checkout - Suse')
          {
             checkout scm
          }  
 
-         stage('Build frontend')
+         stage('Build frontend - Suse')
          {
 
              build( 'casualfrontend', 'casual/frontend', frontend_builder)
@@ -145,7 +145,7 @@ try
              archive includes: '**/casual-webapp.zip'
          }
 
-         stage('Build backend - Unittest/CodeCoverage')
+         stage('Build backend - Unittest - Suse')
          {
              build( 'susecompile', 'casual/suse', backend_builder_suse)
 
@@ -163,12 +163,12 @@ try
       try
       { 
 
-         stage('Checkout')
+         stage('Checkout - Centos')
          {
             checkout scm
          }  
 
-         stage('Build frontend')
+         stage('Build frontend - Centos')
          {
 
              build( 'casualfrontend', 'casual/frontend', frontend_builder)
@@ -176,7 +176,7 @@ try
              archive includes: '**/casual-webapp.zip'
          }
 
-         stage('Build backend - Unittest/CodeCoverage')
+         stage('Build backend - Unittest/CodeCoverage - Centos')
          {
              build( 'centoscompile', 'casual/centos', backend_builder_centos)
 
@@ -199,7 +199,7 @@ try
 
           if ( "${env.BRANCH_NAME}" == "develop" )
           {
-             stage('Create container')
+             stage('Create container - Centos')
              {
                 // 
                 // Setup files
@@ -212,7 +212,7 @@ try
                 '''
              }
 
-             stage('Publishing to dockerhub')
+             stage('Publishing to dockerhub - Centos')
              {
                 sh """
                 docker tag casual/middleware-centos casual/middleware:latest
@@ -220,7 +220,7 @@ try
                 """
              }
 
-             stage('Deploy')
+             stage('Deploy - Centos')
              {
                 sh """
                 if [[ -d /var/lib/jenkins/git/casual/docker ]]
