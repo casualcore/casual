@@ -127,119 +127,128 @@ def build( name, image, content)
 try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-   node( "frontend" && "cplusplus" && "suse")
-   {
-      try
-      { 
 
-         stage('Checkout - Suse')
-         {
-            checkout scm
-         }  
+   parallel(
+	   "suse" :
+       {
+	      node( "frontend" && "cplusplus" && "suse")
+		  {
+			  try
+			  { 
+				 stage('Checkout - Suse')
+				 {
+					checkout scm
+			     }  
 
-         stage('Build frontend - Suse')
-         {
+				 stage('Build frontend - Suse')
+     			 {
 
-             build( 'casualfrontend', 'casual/frontend', frontend_builder)
+					 build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
-             archive includes: '**/casual-webapp.zip'
-         }
+					 archive includes: '**/casual-webapp.zip'
+	    		 }
 
-         stage('Build backend - Unittest - Suse')
-         {
-             build( 'susecompile', 'casual/suse', backend_builder_suse)
+				 stage('Build backend - Unittest - Suse')
+				 {
+					 build( 'susecompile', 'casual/suse', backend_builder_suse)
 
-             archive includes: '**/casual-middleware*.rpm'
-          }
-      }
-      catch (Exception e)
-      {
-            archive includes: '**/casual.log'
-            throw e
-      }
-   }
-   node( "frontend" && "cplusplus" && "centos")
-   {
-      try
-      { 
+					 archive includes: '**/casual-middleware*.rpm'
+		 		 }
+			  }
+			  catch (Exception e)
+			  {
+				 archive includes: '**/casual.log'
+		  	     throw e
+			  }
+		  }
+	   }
 
-         stage('Checkout - Centos')
-         {
-            checkout scm
-         }  
+       "centos" :
+       {
+           node( "frontend" && "cplusplus" && "centos")
+           {
+              try
+              { 
 
-         stage('Build frontend - Centos')
-         {
+                 stage('Checkout - Centos')
+                 {
+                    checkout scm
+                 }  
 
-             build( 'casualfrontend', 'casual/frontend', frontend_builder)
+                 stage('Build frontend - Centos')
+                 {
 
-             archive includes: '**/casual-webapp.zip'
-         }
+                    build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
-         stage('Build backend - Unittest/CodeCoverage - Centos')
-         {
-             build( 'centoscompile', 'casual/centos', backend_builder_centos)
+                    archive includes: '**/casual-webapp.zip'
+                 }
 
-             step([$class: 'XUnitBuilder',
-                thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
-                tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+                 stage('Build backend - Unittest/CodeCoverage - Centos')
+                 {
+                    build( 'centoscompile', 'casual/centos', backend_builder_centos)
 
-             archive includes: '**/casual-middleware*.rpm'
+                    step([$class: 'XUnitBuilder',
+                       thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
+                       tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
-             publishHTML (target: [
-                 allowMissing: false,
-                 alwaysLinkToLastBuild: false,
-                 keepAll: true,
-                 reportDir: 'coverage',
-                 reportFiles: '*.html',
-                 reportName: "GCOV Report"
-             ])
+                    archive includes: '**/casual-middleware*.rpm'
 
-          }
+                    publishHTML (target: [
+                       allowMissing: false,
+                       alwaysLinkToLastBuild: false,
+                       keepAll: true,
+                       reportDir: 'coverage',
+                       reportFiles: '*.html',
+                      reportName: "GCOV Report"
+                    ])
 
-          if ( "${env.BRANCH_NAME}" == "develop" )
-          {
-             stage('Create container - Centos')
-             {
-                // 
-                // Setup files
-                //
-                writeFile file: 'Dockerfile', text: dockerfile
-                writeFile file: 'start.sh', text: dockerstart
+                 }
 
-                sh '''
-                docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
-                '''
-             }
+                 if ( "${env.BRANCH_NAME}" == "develop" )
+                 {
+                     stage('Create container - Centos')
+                     {
+                        // 
+                        // Setup files
+                        //
+                       writeFile file: 'Dockerfile', text: dockerfile
+                       writeFile file: 'start.sh', text: dockerstart
 
-             stage('Publishing to dockerhub - Centos')
-             {
-                sh """
-                docker tag casual/middleware-centos casual/middleware:latest
-                docker push casual/middleware
-                """
-             }
+                       sh '''
+                       docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
+                       '''
+                     }
 
-             stage('Deploy - Centos')
-             {
-                sh """
-                if [[ -d /var/lib/jenkins/git/casual/docker ]]
-                then
-                    cd /var/lib/jenkins/git/casual/docker
-                    ./restart.sh
-                else
-                   echo "Mock deploy"
-                fi
-                """
-             }
-         }
-      }
-      catch (Exception e)
-      {
-            archive includes: '**/casual.log'
-            throw e
-      }
-   }
+                     stage('Publishing to dockerhub - Centos')
+                     {
+                        sh """
+                        docker tag casual/middleware-centos casual/middleware:latest
+                        docker push casual/middleware
+                        """
+                     }
+
+                     stage('Deploy - Centos')
+                     {
+                        sh """
+                        if [[ -d /var/lib/jenkins/git/casual/docker ]]
+                        then
+                           cd /var/lib/jenkins/git/casual/docker
+                           ./restart.sh
+                        else
+                           echo "Mock deploy"
+                        fi
+                        """
+                     } 
+                  }
+               }
+               catch (Exception e)
+               {
+                   archive includes: '**/casual.log'
+                   throw e
+               }
+           }
+       }
+   )
    node( "documentation")
    {
       stage('Documentation')
