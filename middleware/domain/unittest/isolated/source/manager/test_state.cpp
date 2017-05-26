@@ -15,6 +15,9 @@
 
 #include "common/mockup/file.h"
 
+
+#include "sf/log.h"
+
 namespace casual
 {
 
@@ -46,6 +49,100 @@ namespace casual
 
             } // <unnamed>
          } // local
+
+         TEST( domain_state_environemnt, no_default__no_explict__expect_0_variables)
+         {
+            common::unittest::Trace trace;
+            auto state = local::configure( R"(
+domain:
+
+  name: unittest-domain
+
+  executables:
+    - path: echo
+
+)" );
+
+            EXPECT_TRUE( state.variables( state.executables.at( 0)).empty());
+         }
+
+         TEST( domain_state_environemnt, no_default__2_explict__expect_2_variables)
+         {
+            common::unittest::Trace trace;
+            auto state = local::configure( R"(
+domain:
+
+  name: unittest-domain
+
+  executables:
+    - path: echo
+      environment:
+        variables:
+          - key: a
+            value: 1
+          - key: b
+            value: 2
+
+)" );
+
+            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2);
+         }
+
+         TEST( domain_state_environemnt, default_2___explict_0___expect_2_variables)
+         {
+            common::unittest::Trace trace;
+            auto state = local::configure( R"(
+domain:
+
+  name: unittest-domain
+
+  default:
+     environment:
+        variables:
+          - key: a
+            value: 1
+          - key: b
+            value: 2
+
+  executables:
+    - path: echo
+
+)" );
+
+            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_MAKE_NVP( state.environment);
+         }
+
+         TEST( domain_state_environemnt, default_2___explict_2___expect_4_variables)
+         {
+            common::unittest::Trace trace;
+            auto state = local::configure( R"(
+domain:
+
+  name: unittest-domain
+
+  default:
+     environment:
+        variables:
+          - key: a
+            value: 1
+          - key: b
+            value: 2
+
+  executables:
+    - path: echo
+      environment:
+        variables:
+          - { key: c, value: 3}
+          - key: d
+            value: 4
+
+)" );
+
+            auto result = state.variables( state.executables.at( 0));
+            ASSERT_TRUE( result.size() == 4) << CASUAL_MAKE_NVP( result);
+            EXPECT_TRUE( result.at( 0) == "a=1");
+            EXPECT_TRUE( result.at( 3) == "d=4");
+         }
 
          TEST( domain_state_boot_order, empty_state___expect_empty_boot_order)
          {

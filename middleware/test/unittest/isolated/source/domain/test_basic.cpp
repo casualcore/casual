@@ -86,7 +86,7 @@ namespace casual
 
          TEST( test_domain_basic, empty_configuration)
          {
-            common::unittest::Trace trace;
+            // common::unittest::Trace trace;
 
             const auto configuration = R"(
 domain:

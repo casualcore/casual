@@ -473,6 +473,14 @@ namespace casual
             return result_type{};
          }
 
+         std::vector< std::string> State::variables( const state::Process& process)
+         {
+            auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
+
+            range::append( process.environment.variables, result);
+
+            return result;
+         }
 
 
          state::Server* State::server( common::platform::pid::type pid)

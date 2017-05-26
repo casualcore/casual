@@ -16,6 +16,8 @@
 
 #include "common/event/dispatch.h"
 
+#include "configuration/environment.h"
+
 
 #include  "sf/namevaluepair.h"
 #include  "sf/archive/archive.h"
@@ -432,6 +434,10 @@ namespace casual
             > event;
 
 
+            //!
+            //! global/default environment variables
+            //!
+            casual::configuration::Environment environment;
 
             //!
             //! this domain's original configuration.
@@ -456,6 +462,11 @@ namespace casual
             //! @return pointer to Server and Executable which is not null if we gonna restart them.
             //!
             std::tuple< state::Server*, state::Executable*> exited( common::platform::pid::type pid);
+
+            //!
+            //! @return environment variables for the process, including global/default variables
+            //!
+            std::vector< std::string> variables( const state::Process& process);
 
 
 
@@ -497,6 +508,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( executables);
                archive & CASUAL_MAKE_NVP( group_id);
+               archive & CASUAL_MAKE_NVP( environment);
                archive & CASUAL_MAKE_NVP( configuration);
             )
 

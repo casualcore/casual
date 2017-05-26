@@ -85,9 +85,9 @@ namespace casual
 
                      try
                      {
-                        common::range::for_each( spawnable, [&executable]( auto& i){
+                        common::range::for_each( spawnable, [&]( auto& i){
                            i.spawned( common::process::spawn(
-                                 executable.path, executable.arguments, executable.environment.variables));
+                                 executable.path, executable.arguments, state.variables( executable)));
                         });
 
                         if( state.event.active< common::message::event::process::Spawn>())

@@ -321,6 +321,7 @@ namespace casual
             manager::State result;
 
             result.configuration = casual::configuration::transform::configuration( domain);
+            result.environment = domain.manager_default.environment;
 
 
 
