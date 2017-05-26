@@ -267,6 +267,7 @@ namespace casual
                               case S::exit: return manager::admin::vo::instance::State::exit;
                               case S::spawn_error: return manager::admin::vo::instance::State::spawn_error;
                            }
+                           return manager::admin::vo::instance::State::spawn_error;
                         }
                      };
 

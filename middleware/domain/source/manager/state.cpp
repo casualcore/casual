@@ -431,6 +431,8 @@ namespace casual
             }
 
 
+            using result_type = std::tuple< state::Server*, state::Executable*>;
+
             //
             // Check if it's a server
             //
@@ -447,7 +449,7 @@ namespace casual
 
                   if( found->restart && runlevel() == Runlevel::running)
                   {
-                     return { found, nullptr};
+                     return result_type{ found, nullptr};
                   }
                }
             }
@@ -464,11 +466,11 @@ namespace casual
 
                   if( found->restart && runlevel() == Runlevel::running)
                   {
-                     return { nullptr, found};
+                     return result_type{ nullptr, found};
                   }
                }
             }
-            return {};
+            return result_type{};
          }
 
 

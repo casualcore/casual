@@ -220,11 +220,11 @@ namespace casual
                         Trace trace{ "domain::manager::handle::task::Boot::start"};
 
                         range::for_each( m_batch.executables, [&]( auto id){
-                           scale::out( state(), state().executable( id));
+                           scale::out( this->state(), this->state().executable( id));
                         });
 
                         range::for_each( m_batch.servers, [&]( auto id){
-                           scale::out( state(), state().server( id));
+                           scale::out( this->state(), this->state().server( id));
                         });
 
 
@@ -265,12 +265,12 @@ namespace casual
                      bool done() const
                      {
                         return range::all_of( m_batch.servers, [&]( auto id){
-                           auto& server = state().server( id);
+                           auto& server = this->state().server( id);
                            return range::none_of( server.instances, []( auto& i){
                               return i.state == state::Server::state_type::scale_out;
                            });
                         }) && range::all_of( m_batch.executables, [&]( auto id){
-                           auto& server = state().executable( id);
+                           auto& server = this->state().executable( id);
                            return range::none_of( server.instances, []( auto& i){
                               return i.state == state::Server::state_type::scale_out;
                            });
@@ -318,11 +318,11 @@ namespace casual
                         Trace trace{ "domain::manager::handle::task::Shutdown::start"};
 
                         range::for_each( m_batch.executables, [&]( auto id){
-                           scale::in( state(), state().executable( id));
+                           scale::in( this->state(), this->state().executable( id));
                         });
 
                         range::for_each( m_batch.servers, [&]( auto id){
-                           scale::in( state(), state().server( id));
+                           scale::in( this->state(), this->state().server( id));
                         });
                         if( state().event.active< common::message::event::domain::Group>())
                         {
@@ -338,13 +338,13 @@ namespace casual
                      bool done() const
                      {
                         return range::all_of( m_batch.servers, [&]( auto id){
-                           auto& server = state().server( id);
+                           auto& server = this->state().server( id);
                            return range::all_of( server.instances, []( auto& i){
                               return i.state != state::Server::state_type::running
                                     && i.state != state::Server::state_type::scale_in;
                            });
                         }) && range::all_of( m_batch.executables, [&]( auto id){
-                           auto& server = state().executable( id);
+                           auto& server = this->state().executable( id);
                            return range::all_of( server.instances, []( auto& i){
                               return i.state != state::Server::state_type::running
                                     && i.state != state::Server::state_type::scale_in;
