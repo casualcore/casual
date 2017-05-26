@@ -36,9 +36,7 @@ namespace casual
                      {
                         std::vector< vo::scale::Instances> result;
 
-                        message::domain::scale::Executable message;
-
-                        auto extract = []( auto& instance, auto& entites, auto& output){
+                        auto scale_entites = [&]( auto& instance, auto& entites){
 
                            auto found = range::find_if( entites, [&instance]( auto& e){
                               return e.alias == instance.alias;
@@ -46,10 +44,9 @@ namespace casual
 
                            if( found)
                            {
-                              message::domain::scale::Executable::Scale scale;
-                              scale.id = common::id::underlaying( found->id);
-                              scale.instances = instance.instances;
-                              output.push_back( std::move( scale));
+                              found->scale( instance.instances);
+                              handle::scale::instances( state, *found);
+
                               return true;
                            }
                            return false;
@@ -57,18 +54,12 @@ namespace casual
 
                         for( auto& instance : instances)
                         {
-                           if( extract( instance, state.servers, message.servers) ||
-                              extract( instance, state.executables, message.executables))
+                           if( scale_entites( instance, state.servers) ||
+                                 scale_entites( instance, state.executables))
                            {
                               result.push_back( std::move( instance));
                            }
                         }
-
-                        //
-                        // Push the work-task to our queue, and It'll be processed as soon
-                        // as possible
-                        //
-                        communication::ipc::inbound::device().push( std::move( message));
 
                         return result;
                      }

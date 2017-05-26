@@ -21,8 +21,6 @@ namespace casual
 
          void Task::start()
          {
-            Trace trace{ "domain::manager::Task::start"};
-
             m_holder->start();
          }
 
@@ -33,8 +31,6 @@ namespace casual
 
          bool Task::done() const
          {
-            Trace trace{ "domain::manager::Task::done"};
-
             return m_holder->done();
          }
 

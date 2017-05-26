@@ -291,6 +291,7 @@ namespace casual
 
             namespace scale
             {
+               /*
                struct Executable : common::message::basic_message< common::message::Type::domain_scale_executable>
                {
                   using id_type = std::size_t;
@@ -327,6 +328,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Executable& value);
                };
                static_assert( traits::is_movable< Executable>::value, "not movable");
+               */
 
             } // scale
 

@@ -100,6 +100,7 @@ void run( Settings settings)
          send << CASUAL_MAKE_NVP( settings.argument);
 
          std::vector< Send::receive_type> receivers;
+         receivers.reserve( settings.calls);
 
          for( long index = 0; index < settings.calls; ++index )
          {

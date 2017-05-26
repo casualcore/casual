@@ -75,8 +75,8 @@ domain:
             auto& global = local::find_batch( state, bootorder, ".global");
 
             EXPECT_TRUE( global.executables.size() == 1) << ".global: " << global;
-            auto& executable = global.executables.at( 0);
-            EXPECT_TRUE( state.executable( executable.id).path == "echo" );
+            auto id = global.executables.at( 0);
+            EXPECT_TRUE( state.executable( id).path == "echo" );
          }
 
          TEST( domain_state_boot_order, group_1_exe1__global_exe2__expect__exe2_exe1)
@@ -105,12 +105,12 @@ domain:
             {
                auto& batch = local::find_batch( state, bootorder, ".global");
                ASSERT_TRUE( batch.executables.size() == 1) << "state: " << state << "\nbatch: " << batch;
-               EXPECT_TRUE( state.executable( batch.executables.at( 0).id).path == "exe2");
+               EXPECT_TRUE( state.executable( batch.executables.at( 0)).path == "exe2");
             }
             {
                auto& batch = local::find_batch( state, bootorder, "group_1");
                ASSERT_TRUE( batch.executables.size() == 1);
-               EXPECT_TRUE(state.executable( batch.executables.at( 0).id).path == "exe1");
+               EXPECT_TRUE(state.executable( batch.executables.at( 0)).path == "exe1");
             }
          }
 
@@ -198,6 +198,49 @@ domain:
             auto persisted = local::persistent::serialization( state);
 
             EXPECT_TRUE( local::equal( state, persisted));
+         }
+
+
+         TEST( domain_state_instances, executable_default)
+         {
+            common::unittest::Trace trace;
+
+            state::Executable executable;
+
+            EXPECT_TRUE( executable.spawnable().empty());
+            EXPECT_TRUE( executable.shutdownable().empty());
+         }
+
+         TEST( domain_state_instances, executable_instance_resize__expect_spawnable)
+         {
+            common::unittest::Trace trace;
+
+            state::Executable executable;
+            executable.instances.resize( 5);
+
+            EXPECT_TRUE( executable.spawnable().size() == 5);
+            EXPECT_TRUE( executable.shutdownable().empty()) << "executable: " << executable;
+         }
+
+         TEST( domain_state_instances, server_default)
+         {
+            common::unittest::Trace trace;
+
+            state::Server server;
+
+            EXPECT_TRUE( server.spawnable().empty());
+            EXPECT_TRUE( server.shutdownable().empty());
+         }
+
+         TEST( domain_state_instances, server_instance_resize__expect_spawnable)
+         {
+            common::unittest::Trace trace;
+
+            state::Server server;
+            server.instances.resize( 5);
+
+            EXPECT_TRUE( server.spawnable().size() == 5);
+            EXPECT_TRUE( server.shutdownable().empty()) << "server: " << server;
          }
 
       } // manager

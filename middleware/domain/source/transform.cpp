@@ -168,7 +168,7 @@ namespace casual
 
                      result.alias = value.alias.value_or( "");
                      result.arguments = value.arguments.value_or( result.arguments);
-                     result.configured_instances = value.instances.value_or( 0);
+                     result.instances.resize( value.instances.value_or( 0));
                      result.note = value.note.value_or( "");
                      result.path = value.path;
                      result.restart = value.restart.value_or( false);
@@ -236,6 +236,40 @@ namespace casual
 
                   private:
 
+                     struct Instance
+                     {
+                        manager::admin::vo::Executable::instance_type operator () ( const manager::state::Executable::instance_type& value)
+                        {
+                           manager::admin::vo::Executable::instance_type result;
+
+                           result.handle = value.handle;
+                           result.state = state( value.state);
+                           return result;
+                        }
+
+                        manager::admin::vo::Server::instance_type operator () ( const manager::state::Server::instance_type& value)
+                        {
+                           manager::admin::vo::Server::instance_type result;
+
+                           result.handle = value.handle;
+                           result.state = state( value.state);
+                           return result;
+                        }
+                     private:
+                        template< typename S>
+                        manager::admin::vo::instance::State state( S state)
+                        {
+                           switch( state)
+                           {
+                              case S::running: return manager::admin::vo::instance::State::running;
+                              case S::scale_out: return manager::admin::vo::instance::State::scale_out;
+                              case S::scale_in: return manager::admin::vo::instance::State::scale_in;
+                              case S::exit: return manager::admin::vo::instance::State::exit;
+                              case S::spawn_error: return manager::admin::vo::instance::State::spawn_error;
+                           }
+                        }
+                     };
+
                      template< typename R, typename T>
                      R transform( const T& value)
                      {
@@ -246,12 +280,11 @@ namespace casual
                         result.path = value.path;
                         result.arguments = value.arguments;
                         result.note = value.note;
-                        result.instances = value.instances;
+                        result.instances = range::transform( value.instances, Instance{});
                         result.memberships = range::transform( value.memberships, []( auto id){
                            return common::id::underlaying( id);
                         });
                         result.environment.variables = value.environment.variables;
-                        result.configured_instances = value.configured_instances;
                         result.restart = value.restart;
                         result.restarts = value.restarts;
 
@@ -364,11 +397,12 @@ namespace casual
                   result.manager_id = manager.id;
                   manager.alias = "casual-domain-manager";
                   manager.path = "casual-domain-manager";
-                  manager.configured_instances = 1;
                   manager.memberships.push_back( result.group_id.master);
                   manager.note = "responsible for all executables in this domain";
 
-                  manager.instances.push_back( common::process::handle());
+                  manager::state::Server::instance_type instance{ common::process::handle()};
+                  instance.state = manager::state::Server::state_type::running;
+                  manager.instances.push_back( std::move( instance));
 
                   result.servers.push_back( std::move( manager));
                }

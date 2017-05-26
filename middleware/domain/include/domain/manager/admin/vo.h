@@ -21,7 +21,7 @@ namespace casual
          {
             namespace vo
             {
-               inline namespace v1_0
+               inline namespace v1
                {
                   using id_type = std::size_t;
 
@@ -66,12 +66,8 @@ namespace casual
 
                      } environment;
 
-
-                     std::size_t configured_instances = 0;
-
                      bool restart = false;
                      std::size_t restarts = 0;
-
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         archive & CASUAL_MAKE_NVP( id);
@@ -81,7 +77,6 @@ namespace casual
                         archive & CASUAL_MAKE_NVP( note);
                         archive & CASUAL_MAKE_NVP( memberships);
                         archive & CASUAL_MAKE_NVP( environment);
-                        archive & CASUAL_MAKE_NVP( configured_instances);
                         archive & CASUAL_MAKE_NVP( restart);
                         archive & CASUAL_MAKE_NVP( restarts);
                      })
@@ -90,11 +85,36 @@ namespace casual
 
                   };
 
+                  namespace instance
+                  {
+                     enum class State : int
+                     {
+                        running,
+                        scale_out,
+                        scale_in,
+                        exit,
+                        spawn_error,
+                     };
+                  } // instance
+
+                  template< typename H>
+                  struct Instance
+                  {
+                     H handle;
+                     instance::State state = instance::State::scale_out;
+
+                     friend bool operator == ( const Instance& lhs, const H& rhs) { return common::process::id( lhs.handle) == common::process::id( rhs);}
+
+                     CASUAL_CONST_CORRECT_SERIALIZE({
+                        archive & CASUAL_MAKE_NVP( handle);
+                        archive & CASUAL_MAKE_NVP( state);
+                     })
+                  };
+
                   struct Executable : Process
                   {
-                     using pid_type = common::platform::pid::type;
-
-                     std::vector< pid_type> instances;
+                     using instance_type = Instance< common::platform::pid::type>;
+                     std::vector< instance_type> instances;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         Process::serialize( archive);
@@ -104,7 +124,8 @@ namespace casual
 
                   struct Server : Process
                   {
-                     std::vector< common::process::Handle> instances;
+                     using instance_type = Instance< common::process::Handle>;
+                     std::vector< instance_type> instances;
 
                      std::vector< std::string> resources;
                      std::vector< std::string> restriction;

@@ -193,6 +193,42 @@ domain:
          }
 
 
+         TEST( casual_domain_manager, non_existing_path___expect_boot)
+         {
+            common::unittest::Trace trace;
+
+            const auto configuration = R"(
+domain:
+   name: echo
+   executables:
+     - path: non-existing-e53ce069de5f49e6a2f546ad8e175093
+       instances: 1    
+
+)";
+
+            local::Manager manager{ { configuration}};
+            EXPECT_TRUE( process::ping( local::manager::ipc()) == manager.process.handle());
+         }
+
+         TEST( casual_domain_manager, non_existing_path__restart___expect_restart_ignored_during_boot)
+         {
+            common::unittest::Trace trace;
+
+            const auto configuration = R"(
+domain:
+   name: echo
+   executables:
+     - path: non-existing-e53ce069de5f49e6a2f546ad8e175093
+       instances: 1
+       restart: true
+
+)";
+
+            local::Manager manager{ { configuration}};
+            EXPECT_TRUE( process::ping( local::manager::ipc()) == manager.process.handle());
+         }
+
+
          TEST( casual_domain_manager, echo_restart_configuration__expect_boot)
          {
             common::unittest::Trace trace;
@@ -384,7 +420,6 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 10) << CASUAL_MAKE_NVP( state);
             EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
          }
 
@@ -408,7 +443,6 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 0) << CASUAL_MAKE_NVP( state);
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
@@ -655,8 +689,6 @@ domain:
 
 
             ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 1).configured_instances == 1) << CASUAL_MAKE_NVP( state);
-
 
             for( auto& instance : state.executables)
             {
@@ -667,7 +699,6 @@ domain:
 
             for( auto executable : range::remove_if( state.executables, local::predicate::Manager{}))
             {
-               EXPECT_TRUE( executable.configured_instances == 10);
                EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
             }
          }

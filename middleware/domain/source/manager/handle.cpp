@@ -71,26 +71,143 @@ namespace casual
 
                } // ipc
 
+               namespace scale
+               {
+                  template< typename E>
+                  void out( State& state, E& executable)
+                  {
+                     Trace trace{ "domain::manager::handle::scale::out"};
+
+                     auto spawnable = executable.spawnable();
+
+                     if( ! spawnable)
+                        return;
+
+                     try
+                     {
+                        common::range::for_each( spawnable, [&executable]( auto& i){
+                           i.spawned( common::process::spawn(
+                                 executable.path, executable.arguments, executable.environment.variables));
+                        });
+
+                        if( state.event.active< common::message::event::process::Spawn>())
+                        {
+                           common::message::event::process::Spawn message;
+                           message.path = executable.path;
+                           message.alias = executable.alias;
+
+                           common::range::transform( spawnable, message.pids, []( auto& i){
+                              return common::process::id( i.handle);
+                           });
+
+                           manager::local::ipc::send( state, state.event( message));
+                        }
+
+                     }
+                     catch( const exception::invalid::Argument& e)
+                     {
+                        log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
+
+                        common::range::for_each( executable.spawnable(), []( auto& i){
+                           i.state = state::instance::State::exit;
+                        });
+
+                        if( state.event.active< common::message::event::domain::Error>())
+                        {
+                           common::message::event::domain::Error message;
+                           message.severity = common::message::event::domain::Error::Severity::error;
+                           message.message = "failed to spawn '" + executable.path + "' - " + e.description();
+
+                           manager::local::ipc::send( state, state.event( message));
+                        }
+                     }
+
+                     log::debug << "executable: " << executable <<  '\n';
+
+                  }
+
+                  void in( const State& state, const state::Executable& executable)
+                  {
+                     Trace trace{ "domain::manager::handle::scale::in Executable"};
+
+                     auto shutdownable = executable.shutdownable();
+
+                     if( ! shutdownable)
+                        return;
+
+                     //
+                     // We only want child signals
+                     //
+                     signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+
+
+                     auto pids = range::transform( range::make_reverse( shutdownable), []( const auto& i){
+                        return i.handle;
+                     });
+
+                     common::process::terminate( pids);
+                  }
+
+                  void in( State& state, const state::Server& server)
+                  {
+                     Trace trace{ "domain::manager::handle::scale::in Server"};
+
+                     auto shutdownable = server.shutdownable();
+
+                     if( ! shutdownable)
+                        return;
+
+                     //
+                     // We only want child signals
+                     //
+                     signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+
+
+                     //
+                     // We need to correlate with the service-manager (broker), if it's up
+                     //
+
+                     common::message::domain::process::prepare::shutdown::Request prepare;
+                     prepare.process = common::process::handle();
+
+                     prepare.processes = range::transform( range::make_reverse( shutdownable), []( const auto& i){
+                        return i.handle;
+                     });
+
+                     auto broker = state.singleton( common::process::instance::identity::broker());
+
+                     try
+                     {
+                        manager::ipc::device().blocking_send( broker.queue, prepare);
+                     }
+                     catch( const exception::communication::Unavailable&)
+                     {
+                        //
+                        // broker is not online, we simulate the reply from the broker
+                        //
+
+                        auto reply = common::message::reverse::type( prepare);
+                        reply.processes = std::move( prepare.processes);
+
+                        handle::scale::prepare::Shutdown handle{ state};
+                        handle( reply);
+                     }
+                   }
+
+               } // scale
+
                namespace task
                {
                   struct base_batch
                   {
-                     base_batch( state::Batch batch) : m_batch{ std::move( batch)} {}
-
-                     void start()
-                     {
-                        Trace trace{ "domain::manager::handle::task::base_batch::start"};
-
-                        message::domain::scale::Executable message;
-                        using scale_type = message::domain::scale::Executable::Scale;
-                        range::transform( m_batch.servers, message.servers, []( auto& task){ return scale_type{ task.id.underlaying(), task.instances};});
-                        range::transform( m_batch.executables, message.executables, []( auto& task){ return scale_type{ task.id.underlaying(), task.instances};});
-
-                        communication::ipc::inbound::device().push( std::move( message));
-                     }
-
+                     base_batch( State& state, state::Batch batch) : m_state( state), m_batch{ std::move( batch)} {}
 
                   protected:
+
+                     State& state() { return m_state.get();}
+                     const State& state() const { return m_state.get();}
+
+                     std::reference_wrapper< State> m_state;
                      state::Batch m_batch;
                   };
 
@@ -100,16 +217,25 @@ namespace casual
 
                      void start()
                      {
-                        base_batch::start();
+                        Trace trace{ "domain::manager::handle::task::Boot::start"};
 
-                        if( m_batch.state().event.active< common::message::event::domain::Group>())
+                        range::for_each( m_batch.executables, [&]( auto id){
+                           scale::out( state(), state().executable( id));
+                        });
+
+                        range::for_each( m_batch.servers, [&]( auto id){
+                           scale::out( state(), state().server( id));
+                        });
+
+
+                        if( state().event.active< common::message::event::domain::Group>())
                         {
                            common::message::event::domain::Group event;
                            event.context = common::message::event::domain::Group::Context::boot_start;
                            event.id = m_batch.group.underlaying();
-                           event.name = m_batch.state().group( m_batch.group).name;
+                           event.name = state().group( m_batch.group).name;
 
-                           manager::local::ipc::send( m_batch.state(), m_batch.state().event( event));
+                           manager::local::ipc::send( state(), state().event( event));
                         }
                      }
 
@@ -120,14 +246,14 @@ namespace casual
                      {
                         try
                         {
-                           if( ! m_moved && m_batch.state().event.active< common::message::event::domain::Group>())
+                           if( ! m_moved && state().event.active< common::message::event::domain::Group>())
                            {
                               common::message::event::domain::Group event;
                               event.context = common::message::event::domain::Group::Context::boot_end;
                               event.id = m_batch.group.underlaying();
-                              event.name = m_batch.state().group( m_batch.group).name;
+                              event.name = state().group( m_batch.group).name;
 
-                              manager::local::ipc::send( m_batch.state(), m_batch.state().event( event));
+                              manager::local::ipc::send( state(), state().event( event));
                            }
                         }
                         catch( ...)
@@ -138,7 +264,17 @@ namespace casual
 
                      bool done() const
                      {
-                        return m_batch.online();
+                        return range::all_of( m_batch.servers, [&]( auto id){
+                           auto& server = state().server( id);
+                           return range::none_of( server.instances, []( auto& i){
+                              return i.state == state::Server::state_type::scale_out;
+                           });
+                        }) && range::all_of( m_batch.executables, [&]( auto id){
+                           auto& server = state().executable( id);
+                           return range::none_of( server.instances, []( auto& i){
+                              return i.state == state::Server::state_type::scale_out;
+                           });
+                        });
                      }
 
                      friend std::ostream& operator << ( std::ostream& out, const Boot& value)
@@ -161,14 +297,14 @@ namespace casual
                      {
                         try
                         {
-                           if( ! m_moved && m_batch.state().event.active< common::message::event::domain::Group>())
+                           if( ! m_moved && state().event.active< common::message::event::domain::Group>())
                            {
                               common::message::event::domain::Group event;
                               event.context = common::message::event::domain::Group::Context::shutdown_end;
                               event.id = m_batch.group.underlaying();
-                              event.name = m_batch.state().group( m_batch.group).name;
+                              event.name = state().group( m_batch.group).name;
 
-                              manager::local::ipc::send( m_batch.state(), m_batch.state().event( event));
+                              manager::local::ipc::send( state(), state().event( event));
                            }
                         }
                         catch( ...)
@@ -179,22 +315,41 @@ namespace casual
 
                      void start()
                      {
-                        base_batch::start();
+                        Trace trace{ "domain::manager::handle::task::Shutdown::start"};
 
-                        if( m_batch.state().event.active< common::message::event::domain::Group>())
+                        range::for_each( m_batch.executables, [&]( auto id){
+                           scale::in( state(), state().executable( id));
+                        });
+
+                        range::for_each( m_batch.servers, [&]( auto id){
+                           scale::in( state(), state().server( id));
+                        });
+                        if( state().event.active< common::message::event::domain::Group>())
                         {
                            common::message::event::domain::Group event;
                            event.context = common::message::event::domain::Group::Context::shutdown_start;
                            event.id = m_batch.group.underlaying();
-                           event.name = m_batch.state().group( m_batch.group).name;
+                           event.name = state().group( m_batch.group).name;
 
-                           manager::local::ipc::send( m_batch.state(), m_batch.state().event( event));
+                           manager::local::ipc::send( state(), state().event( event));
                         }
                      }
 
                      bool done() const
                      {
-                        return m_batch.offline();
+                        return range::all_of( m_batch.servers, [&]( auto id){
+                           auto& server = state().server( id);
+                           return range::all_of( server.instances, []( auto& i){
+                              return i.state != state::Server::state_type::running
+                                    && i.state != state::Server::state_type::scale_in;
+                           });
+                        }) && range::all_of( m_batch.executables, [&]( auto id){
+                           auto& server = state().executable( id);
+                           return range::all_of( server.instances, []( auto& i){
+                              return i.state != state::Server::state_type::running
+                                    && i.state != state::Server::state_type::scale_in;
+                           });
+                        });
                      }
 
                      friend std::ostream& operator << ( std::ostream& out, const Shutdown& value)
@@ -280,7 +435,7 @@ namespace casual
                         state::Server broker;
                         broker.alias = "casual-broker";
                         broker.path = "${CASUAL_HOME}/bin/casual-broker";
-                        broker.configured_instances = 1;
+                        broker.scale( 1);
                         broker.memberships.push_back( state.group_id.master);
                         broker.note = "service lookup and management";
 
@@ -291,7 +446,7 @@ namespace casual
                         state::Server tm;
                         tm.alias = "casual-transaction-manager";
                         tm.path = "${CASUAL_HOME}/bin/casual-transaction-manager";
-                        tm.configured_instances = 1;
+                        tm.scale( 1);
                         tm.memberships.push_back( state.group_id.transaction);
                         tm.note = "manage transaction in this domain";
                         tm.arguments = {
@@ -306,7 +461,7 @@ namespace casual
                         state::Server queue;
                         queue.alias = "casual-queue-broker";
                         queue.path = "${CASUAL_HOME}/bin/casual-queue-broker";
-                        queue.configured_instances = 1;
+                        queue.scale( 1);
                         queue.memberships.push_back( state.group_id.queue);
                         queue.note = "manage queues in this domain";
 
@@ -318,7 +473,7 @@ namespace casual
                         state::Server gateway;
                         gateway.alias = "casual-gateway-manager";
                         gateway.path = "${CASUAL_HOME}/bin/casual-gateway-manager";
-                        gateway.configured_instances = 1;
+                        gateway.scale( 1);
                         gateway.memberships.push_back( state.group_id.gateway);
                         gateway.note = "manage connections to and from other domains";
 
@@ -341,7 +496,7 @@ namespace casual
                }
 
                range::for_each( state.bootorder(), [&]( state::Batch& batch){
-                     state.tasks.add( manager::local::task::Boot{ batch});
+                     state.tasks.add( manager::local::task::Boot{ state, batch});
                   });
 
                if( state.event.active< message::event::domain::boot::End>())
@@ -383,15 +538,15 @@ namespace casual
 
 
                range::for_each( state.executables, []( auto& e){
-                  e.configured_instances = 0;
+                  e.scale( 0);
                });
 
                range::for_each( state.servers, []( auto& s){
-                  s.configured_instances = 0;
+                  s.scale( 0);
                });
 
                range::for_each( state.shutdownorder(), [&]( state::Batch& batch){
-                     state.tasks.add( manager::local::task::Shutdown{ batch});
+                     state.tasks.add( manager::local::task::Shutdown{ state, batch});
                   });
 
                if( state.event.active< message::event::domain::shutdown::End>())
@@ -414,152 +569,53 @@ namespace casual
             }
 
 
-            namespace scale
+            namespace local
             {
                namespace
                {
-                  template< typename E>
-                  void out( State& state, E& executable)
+                  namespace task
                   {
-                     Trace trace{ "domain::manager::handle::scale::out"};
-                     try
+                     struct Shutdown : handle::Base
                      {
-                        if( state.event.active< common::message::event::process::Spawn>())
+                        using handle::Base::Base;
+                        void start()
                         {
-                           common::message::event::process::Spawn message;
-                           message.path = executable.path;
-                           message.alias = executable.alias;
-
-                           while( executable.instances.size() < executable.configured_instances)
-                           {
-                              auto pid = common::process::spawn( executable.path, executable.arguments, executable.environment.variables);
-
-                              executable.instances.emplace_back( pid);
-                              message.pids.push_back( pid);
-                           }
-
-                           manager::local::ipc::send( state, state.event( message));
-
+                           handle::shutdown( state());
                         }
-                        else
+
+                        bool done() const { return true;}
+                        bool started() const { return true;}
+
+                        friend std::ostream& operator << ( std::ostream& out, const Shutdown& value)
                         {
-                           while( executable.instances.size() < executable.configured_instances)
-                           {
-                              auto pid = common::process::spawn( executable.path, executable.arguments, executable.environment.variables);
-
-                              executable.instances.emplace_back( pid);
-                           }
+                           return out << "{ shutdown task}";
                         }
-                     }
-                     catch( const exception::invalid::Argument& e)
-                     {
-                        log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
+                     };
 
-                        //
-                        // We can't spawn this executable, so we adjust the configured instances.
-                        //
-                        executable.configured_instances = executable.instances.size();
-                     }
-                  }
+                  } // task
+               } // <unnamed>
+            } // local
 
-                  void in( const State& state, const state::Executable& executable)
-                  {
-                     Trace trace{ "domain::manager::handle::scale::in Executable"};
+            void Shutdown::operator () ( common::message::shutdown::Request& message)
+            {
+               Trace trace{ "domain::manager::handle::Shutdown"};
 
-                     assert( executable.configured_instances <= executable.instances.size());
-
-                     //
-                     // We only want child signals
-                     //
-                     signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
-
-                     auto pids = range::make_reverse(
-                           range::make(
-                                 std::begin( executable.instances) + executable.configured_instances,
-                                 std::end( executable.instances)));
-
-                     common::process::terminate( common::range::to_vector( pids));
-                  }
-
-                  void in( State& state, const state::Server& server)
-                  {
-                     Trace trace{ "domain::manager::handle::scale::in Server"};
-
-                     assert( server.configured_instances <= server.instances.size());
-
-                     //
-                     // We only want child signals
-                     //
-                     signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+               state().tasks.add( local::task::Shutdown( state()));
+            }
 
 
-                     common::message::domain::process::prepare::shutdown::Request prepare;
-                     prepare.process = common::process::handle();
-
-                     auto handles = range::make_reverse(
-                           range::make(
-                                 std::begin( server.instances) + server.configured_instances,
-                                 std::end( server.instances)));
-
-                     prepare.processes = range::to_vector( handles);
-
-                     auto broker = state.singleton( common::process::instance::identity::broker());
-
-                     try
-                     {
-                        manager::ipc::device().blocking_send( broker.queue, prepare);
-                     }
-                     catch( const exception::communication::Unavailable&)
-                     {
-                        //
-                        // broker is not online, we simulate the reply from the broker
-                        //
-
-                        auto reply = common::message::reverse::type( prepare);
-                        reply.processes = std::move( prepare.processes);
-
-                        scale::prepare::Shutdown handle{ state};
-                        handle( reply);
-                     }
-                   }
-
-               } // scale
-
-               void Executable::operator () ( common::message::domain::scale::Executable& scale)
+            namespace scale
+            {
+               void instances( State& state, state::Server& server)
                {
-                  Trace trace{ "domain::manager::handle::scale::Executable"};
+                  manager::local::scale::in( state, server);
+                  manager::local::scale::out( state, server);
+               }
 
-                  log << "message: " << scale << '\n';
-
-                  auto scaler = [&]( auto& tasks, auto& entities){
-                       for( auto task : tasks)
-                       {
-                          using id_type = decltype( range::front( entities).id);
-
-                          auto found = range::find( entities, id_type{ task.id});
-
-                          if( found)
-                          {
-                             found->configured_instances = task.instances;
-
-                             if( found->instances.size() < found->configured_instances)
-                             {
-                                scale::out( state(), *found);
-                             }
-                             else if( found->instances.size() > found->configured_instances)
-                             {
-                                scale::in( state(), *found);
-                             }
-                          }
-                          else
-                          {
-                             log << "failed to locate id: " << task.id << '\n';
-                          }
-                       }
-                  };
-
-                  scaler( scale.servers, state().servers);
-                  scaler( scale.executables, state().executables);
+               void instances( State& state, state::Executable& executable)
+               {
+                  manager::local::scale::in( state, executable);
+                  manager::local::scale::out( state, executable);
                }
 
                namespace prepare
@@ -587,17 +643,11 @@ namespace casual
                         }
                      });
                   }
-
                } // prepare
-
-
             } // scale
 
             namespace event
             {
-
-
-
                namespace subscription
                {
                   void Begin::operator () ( const common::message::event::subscription::Begin& message)
@@ -663,7 +713,10 @@ namespace casual
                            }
                         }
 
-                        state().remove_process( message.state.pid);
+                        auto restarts = state().exited( message.state.pid);
+
+                        if( std::get< 0>( restarts)) scale::instances( state(), *std::get< 0>( restarts));
+                        if( std::get< 1>( restarts)) scale::instances( state(), *std::get< 1>( restarts));
 
 
                         //
@@ -720,7 +773,7 @@ namespace casual
 
                               if( server)
                               {
-                                 reply.process = server->process( message.pid);
+                                 reply.process = server->instance( message.pid).handle;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
                               else if( message.directive == Directive::direct)
@@ -825,7 +878,7 @@ namespace casual
 
                      if( found)
                      {
-                        log::category::error << "domain::manager only one instance is allowed for " << message.identification << '\n';
+                        log::category::error << "only one instance is allowed for " << message.identification << '\n';
                         //
                         // A "singleton" is trying to connect, while we already have one connected
                         //
@@ -841,7 +894,7 @@ namespace casual
                            if( server)
                            {
                               server->remove( message.process.pid);
-                              server->configured_instances = server->instances.size();
+                              server->scale( 1);
                            }
 
                            auto executable = state().executable( message.process.pid);
@@ -849,7 +902,7 @@ namespace casual
                            if( executable)
                            {
                               executable->remove( message.process.pid);
-                              executable->configured_instances = executable->instances.size();
+                              executable->scale( 1);
                            }
                         }
 
@@ -996,8 +1049,7 @@ namespace casual
 
             return {
                common::message::handle::ping(),
-               common::message::handle::Shutdown{},
-               manager::handle::scale::Executable{ state},
+               manager::handle::Shutdown{ state},
                manager::handle::scale::prepare::Shutdown{ state},
                manager::handle::event::process::Exit{ state},
                manager::handle::event::subscription::Begin{ state},
