@@ -48,10 +48,10 @@ namespace casual
          {
             Handle() = default;
             Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, platform::ipc::id::type queue) : queue( queue), pid( pid)  {}
+            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid),  queue( queue)  {}
 
-            platform::ipc::id::type queue = 0;
             platform::pid::type pid = 0;
+            platform::ipc::id::type queue = 0;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
