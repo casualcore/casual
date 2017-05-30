@@ -1,173 +1,291 @@
 domain:
-
-  name: domain1
+  name: domain.A42
   
-  transactionmanager:
-      path: /opt/casual/bin/casual-transaction-manager # development purpose only
-      database: "transaction-manager.db" #optional
-
   #
-  # Default configuriation.
-  # These will be assigned to every instance that doesn't have them defined
-  #
+  # Default values for some of the possible settings
   default:
-  
+    environment:
+      #
+      # includes other environment files, that has to have the
+      # same content as this block. That is:
+      # environment:
+      #    files: ...
+      #    variables ...
+      #
+      # You can of course use any of yaml, xml, json or ini format, as
+      # you could for this domain configuration file
+      #
+      files:
+        - /some/path/to/environment/file.yaml
+        - /some/other/file.json
+
+      
+      variables:
+        # analogt to 'export SOME_VARIABLE=42'
+        - key: SOME_VARIABLE
+          value: 42
+
+        - key: SOME_OTHER_VARIABLE
+          value: some value
+
+    # Default values for servers
     server:
       instances: 1
-      restart: false
-   
+      restart: true
+
+    # defualt values for executables (ie not casual servers)
+    executable:
+      instances: 1
+
+    # default values for services
     service:
-      timeout: 90s  
-   
+      timeout: 90s
 
-  groups: 
-      
-    - name: group1  # this name is used to bind servers (via membership) to one or more groups      
-      note: mockup-test
-      
-      #
-      # a group can bind to 0..* resources 
-      #
-      resources:
-        - key: rm-mockup  # this key have to be defined in resurces.(yaml|json|xml|ini) 
-          instances: 3    # how many resource-proxy instanses TM should spawn.
-          openinfo: "some openinfo string"  # the openinfo-string the resource needs
-          closeinfo: "some close info" # the closeinfo-string the resource needs (not very common)
+
+  # transaction related configuration
+  transaction:
+    # default values that is used if not specified/override explicitly by a resource
+    default:
+      resource:
         
-    - name: group2
-      note: some non rm group
+        # this key has to be 'defined' in ${CASUAL_HOME}/configuration/resources.(yaml|xml|...).
+        # that file is used by the transaction manager to know which resource proxy to use.
+        key: TMSUDB2
+        instances: 3
+
+
+    # Where the persistent transaction log will be stored.
+    # If not specified: defaults to ${CASUAL_DOMAIN_HOME}/transaction/log.db
+    log: /some/fast/disk/domain.A42/transaction.log
+    
+    #
+    # Here are the resources defined. This configuration is then used by servers that
+    # is built with one (or more) resources (keys) and eiter has a direct dependency in this
+    # configuration file to the resource name (customer-db for example) or indirect via
+    # a group.
+    # This configuration is also used by the transaction-manager to get the correct open-info
+    # and number of instances such for each resurce-proxy.
+    #
+    resources:
+      - instances: 5 # overrides from default
+        name: customer-db
+        openinfo: db=customer,uid=db2,pwd=db2 # this is not the actual syntax for db2 open-info...
+
+      - name: sales-db  # uses the default instances
+        openinfo: db=sales,uid=db2,pwd=db2
+
+      - key: mq_rm  # overrides and uses another rm-key
+        name: event-queue
+        openinfo: some-mq-specific-stuff
+        closeinfo: some-mq-specific-stuff
+
+  groups:
+    # you can specify any number of groups and relations between them
+    - name: common-group
+
+    - name: customer-group
+      note: group that logically groups 'customer' stuff
+      resources:
+        - customer-db  # this group 'uses' the 'customer-db' resource
       dependencies:
-        - group1  # groups can have dependencies to other groups. Affects the boot-order of servers.
+        - common-group  # and has dependency to the 'common-group'
 
-
-    - name: casual-queue
-      note: casual-queue resource group
+    - name: sales-group
+      note: group that logically groups 'customer' stuff
       resources:
-        - key: casual-queue-rm
-          instances: 1
-          openinfo: "bla bla bla"
+        - sales-db
+        - event-queue  #this group has two resources 
 
-    
-  servers: 
-    
-      #  
-      # path to the server. If servers path are in PATH environment variable
-      # one can omitt the path part, and only use the executable name
-      #  
-    - path: /opt/casual/bin/casual-traffic-monitor
-      
-      arguments: [ -db, monitor.db ]  # arbitary arguments that your server needs
-      instances: 1 # how many instances should be started
-      note: The monitor
-      memberships:  # which groups this server is member of [0..*]
-        - group1
-        
-    - path: /opt/casual/bin/casual-traffic-log
-      arguments: [ -f, statistics.log ]
-      instances: 1
-      note: The monitor
-      memberships:
-        - group1
- 
-    - alias: someServer # the name that the outside world refers to, ex: to change number of instances and such
-      note: Some testserver...
-      path: /opt/casual/bin/test
-      instances: 5 
-      
-      # if the server terminates/cores on it's own, casaul will continue to start instances to meet 
-      # the configured number of instances. [any other value than 'true' is treated as 'false']
-      restart: true 
-      memberships:
-        - group1
-        - casual-queue
-       
-    - alias: someOther
-      note: Some testserver...
-      path: /opt/casual/bin/test
-      instances: 0
-      memberships:
-        - group1
-        - casual-queue
-      restriction: # at most the following services will be advertised for this server.
-        - casual_test1
-        - casual_test2
-        
+      dependencies:
+        - customer-group # dependency to 'customer-group'
 
-    - alias: sf-server
-      note: Some testserver...
-      path: /opt/casual/bin/sf_test
-      instances: 0
-      memberships:
-        - group2 
 
-    - alias: casual-queue
-      path: casual-queue-broker
-      arguments: [ -c, configuration/queue.yaml ]
-      instances: 1
-      memberships: [ casual-queue]
-
-    - alias: casual-queue-server
-      path: casual-queue-server
-      instances: 2
-      memberships:
-        - casual-queue
-
-    - alias: forward-queue1-queue2
-      path: casual-queue-forward-queue
-      arguments: [ -f, queue1, queue2]
-      instances: 1
-      memberships: [ casual-queue]
-        
-   
-    - alias: service-forward-queue2-casual.echo
-      path: casual-queue-forward-service
-      arguments: [ -f, queue2, casual.echo, queue3]
-      instances: 1
-      memberships: [ casual-queue]
-      
-    - alias: forward-queue3-queueB1
-      path: casual-queue-forward-queue
-      arguments: [ -f, queue3, queueB1]
-      instances: 1
-      memberships: [ casual-queue]
-
-    - alias: service-forward-queueB1-casual.echo-B2
-      path: casual-queue-forward-service
-      arguments: [ -f, queueB1, casual.echo, queueB2]
-      instances: 1
-      memberships: [ casual-queue]
-      
-  # arbitrary executables that will be executed. On shutdown SIG_TERM will be signaled (if they're still alive)
-  executables:
-
-    
-    - alias: echo
-      note: echo, echo...
-      path: /bin/echo
-      arguments: [casual is the greatest thing since sliced bread]
-      instances: 0
 
   #
-  # specific configuration for services (if needed)
-  #  
+  # Here we define the servers that will run in this domain
+  servers:
+    
+    # PATH has to include path to find customer-server-1
+    - path: customer-server-1
+      memberships:
+        - customer-group # implicit dependency to resource 'customer-db'
+
+
+    - path: customer-server-2
+      memberships:
+        - customer-group
+
+
+    - path: sales-server
+      alias: sales-pre  # use an alias to distinguish this server from other (whith the same binary)
+      instances: 10
+      memberships:
+        - sales-group
+
+      # the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
+      restrictions:
+        - preSalesSaveService
+        - preSalesGetService
+
+
+    - path: sales-server
+      alias: sales-post # use an alias to distinguish this server from other (whith the same binary)
+      memberships:
+        - sales-group
+
+      # the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
+      restrictions:
+        - postSalesSaveService
+        - postSalesGetService
+
+    - path: sales-broker
+      memberships:
+        - sales-group
+
+      environment:
+        # Specific environment variable for this server
+        variables:
+          - key: SALES_BROKER_VARIABLE
+            value: 556
+            
+      # explicitly get configuration for a resource, note that this server also get
+      # implicit resource configuration from the group 'sales-group'
+      resources:
+        - event-queue  
+
+
+  #
+  # Here we define which executables that this domain should start. Executables
+  # are executable program that does not know about casual, hence does not 
+  # expose any xatmi-services and such.
+  #
+  executables:
+    - path: mq-server
+      arguments:
+        - --configuration
+        - /path/to/configuration
+
+      memberships:
+        - common-group
+
+
+
+  #
+  # Definition of attributes for specific services
   services:
-    - name: casual_test2  # the service this configuration is for.
+    # the name of the service
+    - name: postSalesSaveService
+      timeout: 2h # timeout. The unit can be: h (hours), min (minutes), s (seconds), ms (milliseconds) us (microseconds)
       
-      #
-      # The one and only timeout in casual. Dictates how long
-      # a caller should wait for a reply.
-      #
-      # following units can be used: us, ms, s, min, h.
-      #
-      timeout: 4s  # overridden timeout from the default
-      
-      #
-      # only the following services is allowed to call the service
-      # To enable a "protection" for a service. Could be helpfull to enforce
-      # some enterprise guidlines/policies
-      # 
-      authorized: 
-        - casual_test1  
+      # routes defines other names for the service.
+      # If you want to keep the original name you need to include in the route.
+      routes:
+        - postSalesSaveService
+        - sales/post/save
+
+
+    - timeout: 130ms
+      name: postSalesGetService
+
+
+  #
+  # 
+  gateway:
+    default:
+      connection:
+        type: tcp
+        restart: true
+
+
+    listeners:
+      - address: localhost:7779
+        note: local host
+
+      - address: some.host.org:7779
+        note: another listener that is bound to some 'external ip'
+
+
+    connections:
+      - address: a45.domain.host.org:7779
+        note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
+        services:
+          - s1
+          - s2
+
+        queues:
+          []
+
+
+      - address: a46.domain.host.org:7779
+        note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
+        services:
+          - s1
+
+        queues:
+          - q1
+          - q2
+
+
+      - restart: false
+        address: a99.domain.host.org:7780
+        note: connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection
+        services:
+          []
+
+        queues:
+          []
+
+
+
+
+  queue:
+    default:
+      queue:
+        retries: 0
+
+      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
+
+    groups:
+      - name: groupA
+        note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+        queues:
+          - name: q_A1
+            note: ""
+
+          - retries: 10
+            name: q_A2
+            note: after 10 rollbacked dequeues, message is moved to q_A2.error
+
+          - name: q_A3
+            note: ""
+
+          - name: q_A4
+            note: ""
+
+
+
+      - name: groupB
+        queuebase: /some/fast/disk/queue/groupB.qb
+        note: ""
+        queues:
+          - name: q_B1
+            note: ""
+
+          - retries: 10
+            name: q_B2
+            note: after 10 rollbacked dequeues, message is moved to q_B2.error
+
+
+
+      - name: groupC
+        queuebase: ":memory:"
+        note: group is an in-memory queue, hence no persistence
+        queues:
+          - name: q_C1
+            note: ""
+
+          - name: q_C2
+            note: ""
 
 
 
