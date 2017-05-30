@@ -1,14 +1,6 @@
 #!groovy
 
-//
-// Script for the backend builder
-//
-def backend_builder = '''#! /bin/sh
-CASUAL_VERSION="0.42"
-CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
-
-source scl_source enable devtoolset-4
-
+def common_backend_builder = '''
 umask 000
 cd /git/casual
 find . -name "*.gcda" -print | xargs rm
@@ -20,7 +12,6 @@ casual-make -d -a --use-valgrind make && \
    casual-make -d -a --use-valgrind link && \
    ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test && \
    mkdir -p /git/casual/coverage && \
-   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html && \
    casual-make make && \
    casual-make clean && \
    casual-make compile && \
@@ -35,9 +26,32 @@ casual-make -d -a --use-valgrind make && \
    tar cvf casual-middleware.tar casual && \
    cp casual-middleware.tar /git/casual/. && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
-   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" /root/rpmbuild/SPECS/casual-middleware.spec  && \
+   rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
    cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. 
 '''
+
+//
+// Script for the backend builder centos
+//
+def backend_builder_centos = '''#! /bin/sh
+CASUAL_VERSION="0.42"
+CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
+DISTRIBUTION="centos"
+
+source scl_source enable devtoolset-4
+
+''' + common_backend_builder
+
+//
+// Script for the backend builder suse
+//
+def backend_builder_suse = '''#! /bin/sh
+CASUAL_VERSION="0.42"
+CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
+DISTRIBUTION="suse"
+
+''' + common_backend_builder
+
 
 //
 // Script for the frontend builder
@@ -113,88 +127,128 @@ def build( name, image, content)
 try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-   node( "frontend" && "cplusplus")
-   {
-      try
-      { 
 
-         stage('Checkout')
-         {
-            checkout scm
-         }  
+   parallel(
+	   "suse" :
+       {
+	      node( "frontend" && "cplusplus" && "suse")
+		  {
+			  try
+			  { 
+				 stage('Checkout - Suse')
+				 {
+					checkout scm
+			     }  
 
-         stage('Build frontend')
-         {
+				 stage('Build frontend - Suse')
+     			 {
 
-             build( 'casualfrontend', 'casual/frontend', frontend_builder)
+					 build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
-             archive includes: '**/casual-webapp.zip'
-         }
+					 archive includes: '**/casual-webapp.zip'
+	    		 }
 
-         stage('Build backend - Unittest/CodeCoverage')
-         {
-             build( 'centoscompile', 'casual/centos', backend_builder)
+				 stage('Build backend - Unittest - Suse')
+				 {
+					 build( 'susecompile', 'casual/suse', backend_builder_suse)
 
-             step([$class: 'XUnitBuilder',
-                thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
-                tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+					 archive includes: '**/casual-middleware*.rpm'
+		 		 }
+			  }
+			  catch (Exception e)
+			  {
+				 archive includes: '**/casual.log'
+		  	     throw e
+			  }
+		  }
+	   },
 
-             archive includes: '**/casual-middleware*.rpm'
+       "centos" :
+       {
+           node( "frontend" && "cplusplus" && "centos")
+           {
+              try
+              { 
 
-             publishHTML (target: [
-                 allowMissing: false,
-                 alwaysLinkToLastBuild: false,
-                 keepAll: true,
-                 reportDir: 'coverage',
-                 reportFiles: '*.html',
-                 reportName: "GCOV Report"
-             ])
+                 stage('Checkout - Centos')
+                 {
+                    checkout scm
+                 }  
 
-          }
+                 stage('Build frontend - Centos')
+                 {
 
-          if ( "${env.BRANCH_NAME}" == "develop" )
-          {
-             stage('Create container')
-             {
-                // 
-                // Setup files
-                //
-                writeFile file: 'Dockerfile', text: dockerfile
-                writeFile file: 'start.sh', text: dockerstart
+                    build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
-                sh '''
-                docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
-                '''
-             }
+                    archive includes: '**/casual-webapp.zip'
+                 }
 
-             stage('Publishing to dockerhub')
-             {
-                sh """
-                docker tag casual/middleware-centos casual/middleware:latest
-                docker push casual/middleware
-                """
-             }
+                 stage('Build backend - Unittest/CodeCoverage - Centos')
+                 {
+                    build( 'centoscompile', 'casual/centos', backend_builder_centos)
 
-             stage('Deploy')
-             {
-                sh """
-                if [[ -d /var/lib/jenkins/git/casual/docker ]]
-                then
-                    cd /var/lib/jenkins/git/casual/docker
-                    ./restart.sh
-                else
-                   echo "Mock deploy"
-                fi
-                """
-             }
-         }
-      }
-      catch (Exception e)
-      {
-            archive includes: '**/casual.log'
-            throw e
-      }
-   }
+                    step([$class: 'XUnitBuilder',
+                       thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
+                       tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+
+                    archive includes: '**/casual-middleware*.rpm'
+
+                    publishHTML (target: [
+                       allowMissing: false,
+                       alwaysLinkToLastBuild: false,
+                       keepAll: true,
+                       reportDir: 'coverage',
+                       reportFiles: '*.html',
+                      reportName: "GCOV Report"
+                    ])
+
+                 }
+
+                 if ( "${env.BRANCH_NAME}" == "develop" )
+                 {
+                     stage('Create container - Centos')
+                     {
+                        // 
+                        // Setup files
+                        //
+                       writeFile file: 'Dockerfile', text: dockerfile
+                       writeFile file: 'start.sh', text: dockerstart
+
+                       sh '''
+                       docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
+                       '''
+                     }
+
+                     stage('Publishing to dockerhub - Centos')
+                     {
+                        sh """
+                        docker tag casual/middleware-centos casual/middleware:latest
+                        docker push casual/middleware
+                        """
+                     }
+
+                     stage('Deploy - Centos')
+                     {
+                        sh """
+                        if [[ -d /var/lib/jenkins/git/casual/docker ]]
+                        then
+                           cd /var/lib/jenkins/git/casual/docker
+                           ./restart.sh
+                        else
+                           echo "Mock deploy"
+                        fi
+                        """
+                     } 
+                  }
+               }
+               catch (Exception e)
+               {
+                   archive includes: '**/casual.log'
+                   throw e
+               }
+           }
+       }
+   )
    node( "documentation")
    {
       stage('Documentation')

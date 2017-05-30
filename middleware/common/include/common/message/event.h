@@ -88,6 +88,9 @@ namespace casual
                         archive & message;
                         archive & severity;
                      )
+
+                     friend std::ostream& operator << ( std::ostream& out, Severity value);
+                     friend std::ostream& operator << ( std::ostream& out, const Error& value);
                   };
 
 

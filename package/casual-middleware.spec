@@ -2,14 +2,14 @@
 # Spec for casual
 #
 Summary: Casual Middleware
-Name: casual-middleware
+Name: casual-middleware-%{distribution}
 Version: %{casual_version}
 Release: %{casual_release}
 License: GPL
 Group: Applications/System
 Source: -
 URL: https://bitbucket.org/casualcore/casual
-Distribution: Centos
+Distribution: %{distribution}
 
 Prefix: /opt/casual
 

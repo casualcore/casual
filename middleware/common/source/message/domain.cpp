@@ -14,6 +14,7 @@ namespace casual
          {
             namespace scale
             {
+               /*
 
                std::ostream& operator << ( std::ostream& out, const Executable::Scale& value)
                {
@@ -28,6 +29,7 @@ namespace casual
                         << ", executables: " << range::make( value.executables)
                         << '}';
                }
+               */
 
             } // scale
             namespace process

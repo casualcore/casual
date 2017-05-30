@@ -40,11 +40,6 @@ namespace casual
          //!
          void path( const std::string& path);
 
-         //!
-         //! @return process id (pid) for current process.
-         //!
-         platform::pid::type id();
-
 
          //!
          //! Holds pid and ipc-queue for a given process
@@ -53,10 +48,10 @@ namespace casual
          {
             Handle() = default;
             Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
+            Handle( platform::pid::type pid, platform::ipc::id::type queue) : queue( queue), pid( pid)  {}
 
-            platform::pid::type pid = 0;
             platform::ipc::id::type queue = 0;
+            platform::pid::type pid = 0;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
@@ -108,6 +103,14 @@ namespace casual
          //! @return the process handle for current process
          //!
          Handle handle();
+
+         //!
+         //! @return process id (pid) for current process.
+         //!
+         platform::pid::type id();
+
+         inline platform::pid::type id( const Handle& handle) { return handle.pid;}
+         inline platform::pid::type id( platform::pid::type pid) { return pid;}
 
          namespace instance
          {

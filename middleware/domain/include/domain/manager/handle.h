@@ -46,6 +46,7 @@ namespace casual
 
 
 
+
             struct Base
             {
                Base( State& state);
@@ -56,16 +57,19 @@ namespace casual
                std::reference_wrapper< State> m_state;
             };
 
+            struct Shutdown : Base
+            {
+               using Base::Base;
+               void operator () ( common::message::shutdown::Request& message);
+            };
+
 
             namespace scale
             {
 
-               struct Executable : Base
-               {
-                  using Base::Base;
+               void instances( State& state, state::Server& server);
+               void instances( State& state, state::Executable& executable);
 
-                  void operator () ( common::message::domain::scale::Executable& executable);
-               };
 
                namespace prepare
                {

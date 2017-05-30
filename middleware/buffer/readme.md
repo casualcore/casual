@@ -2,9 +2,7 @@
 
 ## Overview
 
-### Description
-
-Provides some abstractions to fill - and read data into and from XATMI-buffers allocated with `tpalloc()`
+Provides some C-abstractions to fill - and read data into and from XATMI-buffers allocated with `tpalloc()`
 
 ## Types
 
@@ -15,7 +13,7 @@ Current abstractions are
 - [order](documentation/order.md)
 - [string](documentation/string.md)
 
-## Implementation
+## Development
 
 ### Remarks
 

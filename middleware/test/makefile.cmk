@@ -43,16 +43,6 @@ archive_vo = LinkArchive( 'bin/sf-test-vo',
 
 
 
-target = LinkExecutable( 'bin/test_client',
-	[ 
-		Compile( 'source/template_client.cpp')
-	], 
-    ['casual-common', 'casual-xatmi', 'casual-buffer'])
-	
-
-install_bin.append( target)
-
-
 target = LinkExecutable( 'bin/test_multicall_client',
 	[
 		Compile( 'source/test_multicall.cpp')
