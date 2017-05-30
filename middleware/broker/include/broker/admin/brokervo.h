@@ -19,14 +19,10 @@ namespace casual
             struct Base
             {
                common::process::Handle process;
-               std::size_t invoked = 0;
-               sf::platform::time::point::type last;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( process);
-                  archive & CASUAL_MAKE_NVP( invoked);
-                  archive & CASUAL_MAKE_NVP( last);
                })
 
                friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
@@ -64,32 +60,15 @@ namespace casual
 
          namespace service
          {
-            namespace pending
-            {
-               struct Metric
-               {
-                  std::size_t count = 0;
-                  std::chrono::microseconds total;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     archive & CASUAL_MAKE_NVP( count);
-                     archive & CASUAL_MAKE_NVP( total);
-                  })
-               };
-
-            } // pending
 
             struct Metric
             {
-               std::size_t invoked = 0;
-               sf::platform::time::point::type last;
+               std::size_t count = 0;
                std::chrono::microseconds total;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
-                  archive & CASUAL_MAKE_NVP( invoked);
-                  archive & CASUAL_MAKE_NVP( last);
+                  archive & CASUAL_MAKE_NVP( count);
                   archive & CASUAL_MAKE_NVP( total);
                })
             };
@@ -100,28 +79,22 @@ namespace casual
                struct Local
                {
                   sf::platform::pid::type pid;
-                  Metric metrics;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      archive & CASUAL_MAKE_NVP( pid);
-                     archive & CASUAL_MAKE_NVP( metrics);
                   })
                };
 
                struct Remote
                {
                   sf::platform::pid::type pid;
-                  std::size_t invoked;
                   std::size_t hops;
-                  sf::platform::time::point::type last;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
                      archive & CASUAL_MAKE_NVP( pid);
-                     archive & CASUAL_MAKE_NVP( invoked);
                      archive & CASUAL_MAKE_NVP( hops);
-                     archive & CASUAL_MAKE_NVP( last);
                   })
                };
 
@@ -138,7 +111,10 @@ namespace casual
             std::size_t transaction = 0;
 
             service::Metric metrics;
-            service::pending::Metric pending;
+            service::Metric pending;
+
+            std::size_t remote_invocations = 0;
+            common::platform::time::point::type last;
 
 
             struct
@@ -161,6 +137,8 @@ namespace casual
                archive & CASUAL_MAKE_NVP( transaction);
                archive & CASUAL_MAKE_NVP( metrics);
                archive & CASUAL_MAKE_NVP( pending);
+               archive & CASUAL_MAKE_NVP( remote_invocations);
+               archive & CASUAL_MAKE_NVP( last);
                archive & CASUAL_MAKE_NVP( instances);
             })
          };

@@ -79,16 +79,12 @@ namespace casual
                base_instance( common::process::Handle process) : process( std::move( process)) {}
 
                common::process::Handle process;
-               std::size_t invoked = 0;
-
-               inline const common::platform::time::point::type& last() const { return m_last;}
 
                inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
                inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
-
-            protected:
-               common::platform::time::point::type m_last = common::platform::time::point::type::min();
             };
+
+
 
             struct Local : base_instance
             {
@@ -101,17 +97,20 @@ namespace casual
 
                using base_instance::base_instance;
 
-               void lock( const common::platform::time::point::type& when);
-               void unlock( const common::platform::time::point::type& when);
+               void reserve( const common::platform::time::point::type& when, state::Service* service);
+               state::Service* unreserve( const common::platform::time::point::type& now);
 
+
+               inline const common::platform::time::point::type& last() const { return m_last;}
 
                void exiting();
 
-               inline State state() const { return m_state;}
-               inline bool idle() const { return m_state == State::idle;}
+               State state() const;
+               inline bool idle() const { return m_service == nullptr;}
 
             private:
-               State m_state = State::idle;
+               common::platform::time::point::type m_last = common::platform::time::point::type::min();
+               state::Service* m_service = nullptr;
             };
 
             struct Remote : base_instance
@@ -119,8 +118,6 @@ namespace casual
                using base_instance::base_instance;
 
                std::size_t order;
-
-               void requested( const common::platform::time::point::type& when);
 
                friend bool operator < ( const Remote& lhs, const Remote& rhs);
             };
@@ -130,98 +127,19 @@ namespace casual
 
          namespace service
          {
-            namespace pending
-            {
-               struct Metric
-               {
-                  inline std::size_t count() const { return m_count;}
-                  inline std::chrono::microseconds total() const { return m_total;}
-
-                  void add( const common::platform::time::point::type::duration& duration);
-                  void reset();
-
-               private:
-                  std::size_t m_count = 0;
-                  std::chrono::microseconds m_total = std::chrono::microseconds::zero();
-
-               };
-            } // pending
             struct Metric
             {
-
-               inline std::size_t invoked() const { return m_invoked;}
+               inline std::size_t count() const { return m_count;}
                inline std::chrono::microseconds total() const { return m_total;}
 
-               void begin( const common::platform::time::point::type& time);
-               void end( const common::platform::time::point::type& time);
-
+               void add( const common::platform::time::point::type::duration& duration);
                void reset();
 
-               inline const common::platform::time::point::type& used() const { return m_begin;}
-
-               Metric& operator += ( const Metric& rhs);
-
             private:
-
-               std::size_t m_invoked = 0;
-               common::platform::time::point::type m_begin = common::platform::time::point::type::min();
-
+               std::size_t m_count = 0;
                std::chrono::microseconds m_total = std::chrono::microseconds::zero();
+
             };
-
-            namespace instance
-            {
-               struct base_instance
-               {
-                  virtual void lock( const common::platform::time::point::type& when) = 0;
-                  virtual const common::process::Handle& process() const = 0;
-
-                  friend inline bool operator == ( const base_instance& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
-
-               protected:
-                  ~base_instance() = default;
-               };
-
-               struct Local final : std::reference_wrapper< state::instance::Local>, base_instance
-               {
-                  using base_type = std::reference_wrapper< state::instance::Local>;
-                  using base_type::base_type;
-
-                  inline bool idle() const { return get().idle();}
-
-                  inline const common::process::Handle& process() const override { return get().process;}
-                  void lock( const common::platform::time::point::type& when) override;
-                  void unlock( const common::platform::time::point::type& when);
-                  inline void exiting() { get().exiting();}
-
-                  inline auto state() const { return get().state();}
-
-
-                  Metric metric;
-
-               };
-
-               struct Remote final : std::reference_wrapper< state::instance::Remote>, base_instance
-               {
-                  using base_type = std::reference_wrapper< state::instance::Remote>;
-
-                  Remote( state::instance::Remote& instance, std::size_t hops) : base_type{ instance}, m_hops{ hops} {}
-
-                  inline const common::process::Handle& process() const override { return get().process;}
-                  void lock( const common::platform::time::point::type& when) override;
-
-                  inline std::size_t hops() const { return m_hops;}
-
-                  std::size_t invoked = 0;
-
-                  friend bool operator < ( const Remote& lhs, const Remote& rhs);
-
-               private:
-                  std::size_t m_hops = 0;
-               };
-
-            } // instance
-
 
             struct Pending
             {
@@ -232,9 +150,54 @@ namespace casual
                common::platform::time::point::type when;
             };
 
+
+            namespace instance
+            {
+
+               using local_base = std::reference_wrapper< state::instance::Local>;
+
+               //!
+               //! Just a helper to simplify usage of the reference
+               //!
+               struct Local : local_base
+               {
+                  using local_base::local_base;
+
+                  inline bool idle() const { return get().idle();}
+
+                  inline void reserve( const common::platform::time::point::type& when, state::Service* service)
+                  {
+                     get().reserve( when, service);
+                  }
+
+                  inline const common::process::Handle& process() const { return get().process;}
+                  inline auto state() const { return get().state();}
+
+
+                  inline friend bool operator == ( const Local& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+               };
+
+               using remote_base = std::reference_wrapper< state::instance::Remote>;
+
+               //!
+               //! Just a helper to simplify usage of the reference
+               //!
+               struct Remote : remote_base
+               {
+                  Remote( state::instance::Remote& instance, std::size_t hops) : remote_base{ instance}, m_hops{ hops} {}
+
+                  inline const common::process::Handle& process() const { return get().process;}
+
+                  inline std::size_t hops() const { return m_hops;}
+
+                  inline friend bool operator == ( const Remote& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+                  friend bool operator < ( const Remote& lhs, const Remote& rhs);
+
+               private:
+                  std::size_t m_hops = 0;
+               };
+            } // instance
          } // service
-
-
 
          struct Service
          {
@@ -248,8 +211,8 @@ namespace casual
 
             struct Instances
             {
-               instances_type< service::instance::Local> local;
-               instances_type< service::instance::Remote> remote;
+               instances_type< state::service::instance::Local> local;
+               instances_type< state::service::instance::Remote> remote;
 
                inline bool empty() const { return local.empty() && remote.empty();}
 
@@ -266,7 +229,7 @@ namespace casual
             //!
             //! Keeps track of the pending metrics for this service
             //!
-            state::service::pending::Metric pending;
+            service::Metric pending;
 
             //!
             //! Resets the metrics
@@ -274,16 +237,17 @@ namespace casual
             void metric_reset();
 
             //!
-            //! @return an idle instance or nullptr if no one is found.
+            //! @return a reserved instance or 'null-handle' if no one is found.
             //!
-            service::instance::base_instance* idle();
+            common::process::Handle reserve( const common::platform::time::point::type& now);
+
 
             void add( state::instance::Local& instance);
             void add( state::instance::Remote& instance, std::size_t hops);
 
             void remove( common::platform::pid::type instance);
 
-            service::instance::Local& local( common::platform::pid::type instance);
+            state::instance::Local& local( common::platform::pid::type instance);
 
 
             friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
@@ -291,9 +255,21 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
+            inline std::size_t remote_invocations() const { return m_remote_invocations;}
+            inline const common::platform::time::point::type& last() const { return m_last;}
+
+
          private:
 
+            friend struct state::instance::Local;
+            void unreserve( const common::platform::time::point::type& now, const common::platform::time::point::type& then);
+
+
+
             void partition_remote_instances();
+
+            common::platform::time::point::type m_last = common::platform::time::point::type::min();
+            std::size_t m_remote_invocations = 0;
          };
       } // state
 

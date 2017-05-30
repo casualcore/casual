@@ -13,10 +13,12 @@
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/event/listen.h"
+
 
 #include <vector>
 #include <string>
-#include "../../common/include/common/event/listen.h"
+
 
 namespace casual
 {
@@ -152,23 +154,23 @@ namespace casual
                {
                   auto& service = m_state.service( message.requested);
 
-                  auto instance = service.idle();
+                  auto handle = service.reserve( now);
 
-                  if( instance)
+                  if( handle)
                   {
 
                      auto reply = common::message::reverse::type( message);
                      reply.service = service.information;
                      reply.service.event_subscribers = m_state.subscribers();
                      reply.state = decltype( reply.state)::idle;
-                     reply.process = instance->process();
+                     reply.process = handle;
 
                      if( local::optional::send( message.process.queue, reply))
                      {
                         //
                         // flag it as busy.
                         //
-                        instance->lock( now);
+                        //instance->lock( now);
                      }
                   }
                   else if( ! service.instances.active())
@@ -398,11 +400,7 @@ namespace casual
                // This message can only come from a local instance
                //
                auto& instance = m_state.local( message.process.pid);
-               instance.unlock( now);
-
-
-               //auto& instance = service.local( message.process.pid);
-
+               auto service = instance.unreserve( now);
 
                //
                // Check if there are pending request for services that this
@@ -435,11 +433,7 @@ namespace casual
                      //
                      // add pending metrics
                      //
-                     auto service = m_state.find_service( message.service);
-                     if( service)
-                     {
-                        service->pending.add( now - pending->when);
-                     }
+                     service->pending.add( now - pending->when);
 
                      //
                      // Remove pending

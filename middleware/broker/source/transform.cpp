@@ -50,8 +50,6 @@ namespace casual
                      admin::instance::LocalVO result;
 
                      result.process = instance.process;
-                     result.invoked = instance.invoked;
-                     result.last = instance.last();
                      result.state = static_cast< admin::instance::LocalVO::State>( instance.state());
 
                      return result;
@@ -62,8 +60,6 @@ namespace casual
                      admin::instance::RemoteVO result;
 
                      result.process = instance.process;
-                     result.invoked = instance.invoked;
-                     result.last = instance.last();
 
                      return result;
                   }
@@ -89,8 +85,7 @@ namespace casual
                      auto transform_metric = []( const state::service::Metric& value)
                            {
                               admin::service::Metric result;
-                              result.invoked = value.invoked();
-                              result.last = value.used();
+                              result.count = value.count();
                               result.total = value.total();
                               return result;
                            };
@@ -102,18 +97,17 @@ namespace casual
                      result.metrics = transform_metric( value.metric);
                      result.pending.count = value.pending.count();
                      result.pending.total = value.pending.total();
+                     result.remote_invocations = value.remote_invocations();
                      result.category = value.information.category;
                      result.transaction = common::cast::underlying( value.information.transaction);
-
+                     result.last = value.last();
 
 
                      auto transform_remote = []( const state::service::instance::Remote& value)
                            {
                               return admin::service::instance::Remote{
                                  value.process().pid,
-                                 value.invoked,
                                  value.hops(),
-                                 value.get().last()
                               };
                            };
 
@@ -122,7 +116,6 @@ namespace casual
                            {
                               return admin::service::instance::Local{
                                  value.process().pid,
-                                 transform_metric( value.metric)
                               };
                            };
 

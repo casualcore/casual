@@ -64,40 +64,52 @@ namespace casual
 
          namespace instance
          {
-            void Local::lock( const common::platform::time::point::type& when)
+            void Local::reserve( const common::platform::time::point::type& when, state::Service* service)
             {
-               assert( m_state != State::busy);
+               assert( m_service == nullptr);
 
-               if( m_state == State::idle)
-               {
-                  m_state = State::busy;
-               }
+               m_service = service;
 
-               ++invoked;
                m_last = when;
             }
 
-            void Local::unlock( const common::platform::time::point::type& when)
+            state::Service* Local::unreserve( const common::platform::time::point::type& now)
             {
-               assert( m_state != State::idle);
+               assert( m_service != nullptr);
 
-               if( m_state == State::busy)
+               auto result = m_service;
+               m_service = nullptr;
+
+               result->unreserve( now, m_last);
+
+               return result;
+            }
+
+            namespace local
+            {
+               namespace
                {
-                  m_state = State::idle;
-               }
 
-               m_last = when;
+                  Service global;
+
+                  Service* exiting_address()
+                  {
+                     return &global;
+                  }
+               } // <unnamed>
+            } // local
+
+            Local::State Local::state() const
+            {
+               if( m_service == nullptr)
+                  return State::idle;
+
+               return m_service == local::exiting_address() ? State::exiting : State::busy;
             }
 
             void Local::exiting()
             {
-               m_state = State::exiting;
-            }
-
-            void Remote::requested( const common::platform::time::point::type& when)
-            {
-               ++invoked;
-               m_last = when;
+               m_service = local::exiting_address();
             }
 
             bool operator < ( const Remote& lhs, const Remote& rhs)
@@ -109,74 +121,21 @@ namespace casual
 
          namespace service
          {
-            namespace pending
+            void Metric::add( const common::platform::time::point::type::duration& duration)
             {
-
-               void Metric::add( const common::platform::time::point::type::duration& duration)
-               {
-                  ++m_count;
-                  m_total += std::chrono::duration_cast< std::chrono::microseconds>( duration);
-               }
-
-               void Metric::reset()
-               {
-                  m_count = 0;
-                  m_total = std::chrono::microseconds::zero();
-               }
-
-            } // pending
-
-            void Metric::begin( const common::platform::time::point::type& time)
-            {
-               m_begin = time;
+               ++m_count;
+               m_total += std::chrono::duration_cast< std::chrono::microseconds>( duration);
             }
-            void Metric::end( const common::platform::time::point::type& time)
-            {
-               ++m_invoked;
-               m_total += std::chrono::duration_cast< std::chrono::microseconds>( time - m_begin);
-            }
-
 
             void Metric::reset()
             {
-               m_invoked = 0;
+               m_count = 0;
                m_total = std::chrono::microseconds::zero();
             }
 
-            Metric& Metric::operator += ( const Metric& rhs)
-            {
-               m_invoked += rhs.m_invoked;
-               m_total += rhs.m_total;
-
-               if( rhs.m_begin > m_begin)
-               {
-                  m_begin = rhs.m_begin;
-               }
-
-               return *this;
-            }
 
             namespace instance
             {
-               void Local::lock( const common::platform::time::point::type& when)
-               {
-                  get().lock( when);
-                  metric.begin( when);
-               }
-
-               void Local::unlock( const common::platform::time::point::type& when)
-               {
-                  get().unlock( when);
-                  metric.end( when);
-               }
-
-               void Remote::lock( const common::platform::time::point::type& when)
-               {
-                  get().requested( when);
-                  ++invoked;
-               }
-
-
                bool operator < ( const Remote& lhs, const Remote& rhs)
                {
                   return std::make_tuple( lhs.get(), lhs.hops()) < std::make_tuple( rhs.get(), rhs.hops());
@@ -193,7 +152,6 @@ namespace casual
 
                if( found)
                {
-                  metric += found->metric;
                   instances.local.erase( std::begin( found));
                }
 
@@ -210,7 +168,7 @@ namespace casual
             }
          }
 
-         service::instance::Local& Service::local( common::platform::pid::type instance)
+         state::instance::Local& Service::local( common::platform::pid::type instance)
          {
             return local::get( instances.local, instance);
          }
@@ -229,6 +187,12 @@ namespace casual
          }
 
 
+         void Service::unreserve( const common::platform::time::point::type& now, const common::platform::time::point::type& then)
+         {
+            m_last = now;
+            metric.add( now - then);
+         }
+
          void Service::partition_remote_instances()
          {
             range::stable_sort( instances.remote);
@@ -245,25 +209,26 @@ namespace casual
          void Service::metric_reset()
          {
             metric.reset();
-            range::for_each( instances.local, []( service::instance::Local& i){ i.metric.reset();});
-            range::for_each( instances.remote, []( service::instance::Remote& i){ i.invoked = 0;});
+            pending.reset();
          }
 
-         service::instance::base_instance* Service::idle()
+
+         common::process::Handle Service::reserve( const common::platform::time::point::type& now)
          {
             auto found = range::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
 
             if( found)
             {
-               return &(*found);
+               found->reserve( now, this);
+               return found->process();
             }
 
             if( instances.local.empty() && ! instances.remote.empty())
             {
-               return &instances.remote.front();
+               ++m_remote_invocations;
+               return instances.remote.front().process();
             }
-
-            return nullptr;
+            return {};
          }
 
          std::ostream& operator << ( std::ostream& out, const Service& service)
@@ -318,10 +283,8 @@ namespace casual
             }
 
 
-
-
             template< typename I>
-            auto find_or_add( I& instances, common::process::Handle process) -> decltype( instances.at( process.pid))
+            auto& find_or_add( I& instances, common::process::Handle process)
             {
                Trace trace{ "broker::local::find_or_add"};
 
@@ -337,7 +300,7 @@ namespace casual
             }
 
             template< typename Services, typename Service>
-            auto find_or_add_service( Services& services, Service&& service) -> decltype( services.at( service.name))
+            auto& find_or_add_service( Services& services, Service&& service)
             {
                Trace trace{ "broker::local::find_or_add service"};
 

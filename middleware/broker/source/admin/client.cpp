@@ -135,14 +135,8 @@ namespace casual
 
                common::process::Handle process;
 
-               struct
-               {
-                  std::size_t invoked = 0;
-                  std::size_t hops = 0;
+               std::size_t hops = 0;
 
-               } services;
-
-               std::size_t invoked = 0;
 
                std::reference_wrapper< const admin::ServiceVO> service;
 
@@ -184,22 +178,17 @@ namespace casual
                   {
                      auto local = range::find( state.broker.instances.local, i.pid);
                      Instance instance{ service};
-                     instance.invoked = local->invoked;
                      instance.state = local->state == admin::instance::LocalVO::State::idle ? Instance::State::idle : Instance::State::busy;
                      instance.process.pid = i.pid;
-                     instance.services.invoked = i.metrics.invoked;
                      instance.executable = local::lookup::executable( state, i.pid);
                      result.push_back( std::move( instance));
                   }
 
                   for( auto& i : service.instances.remote)
                   {
-                     auto remote = range::find( state.broker.instances.remote, i.pid);
                      Instance instance{ service};
-                     instance.invoked = remote->invoked;
                      instance.process.pid = i.pid;
-                     instance.services.invoked = i.invoked;
-                     instance.services.hops = i.hops;
+                     instance.hops = i.hops;
                      instance.executable = local::lookup::executable( state, i.pid);
                      result.push_back( std::move( instance));
                   }
@@ -375,34 +364,17 @@ namespace casual
 
 
             auto format_invoked = []( const admin::ServiceVO& value){
-               auto invoked = value.metrics.invoked;
-
-               range::for_each( value.instances.local, [&]( const admin::service::instance::Local& i){
-                  invoked += i.metrics.invoked;
-               });
-
-               range::for_each( value.instances.remote, [&]( const admin::service::instance::Remote& i){
-                  invoked += i.invoked;
-               });
-
-               return invoked;
+               return value.metrics.count;
             };
 
             auto format_avg_time = []( const admin::ServiceVO& value){
-               auto metrics = value.metrics;
-
-               range::for_each( value.instances.local, [&]( const admin::service::instance::Local& i){
-                  metrics.invoked += i.metrics.invoked;
-                  metrics.total += i.metrics.total;
-               });
-
-               if( metrics.invoked == 0)
+               if( value.metrics.count == 0)
                {
                   return 0.0;
                }
 
                using second_t = std::chrono::duration< double>;
-               return std::chrono::duration_cast< second_t>( metrics.total / metrics.invoked).count();
+               return std::chrono::duration_cast< second_t>( value.metrics.total / value.metrics.count).count();
             };
 
 
@@ -411,11 +383,7 @@ namespace casual
             };
 
             auto format_avg_pending_time = []( const admin::ServiceVO& value){
-               auto invoked = value.metrics.invoked;
-
-               range::for_each( value.instances.local, [&]( const admin::service::instance::Local& i){
-                  invoked += i.metrics.invoked;
-               });
+               auto invoked = value.metrics.count;
 
                if( invoked == 0)
                {
@@ -427,18 +395,7 @@ namespace casual
             };
 
             auto format_last = []( const admin::ServiceVO& value){
-               auto last = value.metrics.last;
-
-               for( auto& instance : value.instances.local)
-               {
-                  last = std::max( last, instance.metrics.last);
-               }
-
-               for( auto& instance : value.instances.remote)
-               {
-                  last = std::max( last, instance.last);
-               }
-               return common::chronology::local( last);
+               return common::chronology::local( value.last);
             };
 
             return {
@@ -447,13 +404,14 @@ namespace casual
                terminal::format::column( "category", std::mem_fn( &admin::ServiceVO::category), terminal::color::no_color, terminal::format::Align::left),
                terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "invoked", format_invoked, terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "local", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "LC", format_invoked, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "LI", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
                terminal::format::column( "load", format::instance::local::load{ state, instances}, terminal::color::white, terminal::format::Align::right),
-               terminal::format::column( "avg T", format_avg_time, terminal::color::white, terminal::format::Align::right),
-               terminal::format::column( "tot pending #", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
-               terminal::format::column( "avg pending T", format_avg_pending_time, terminal::color::white, terminal::format::Align::right),
-               terminal::format::column( "remote", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "LAT", format_avg_time, terminal::color::white, terminal::format::Align::right),
+               terminal::format::column( "TP", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+               terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
+               terminal::format::column( "RC", std::mem_fn( &admin::ServiceVO::remote_invocations), terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
                terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::right),
             };
          }
@@ -525,21 +483,9 @@ namespace casual
             };
 
             auto format_hops = []( const value_type& value){
-               return value.services.hops;
+               return value.hops;
             };
 
-            auto format_service_invoke = []( const value_type& value){
-               return value.services.invoked;
-            };
-
-            auto format_service_percent = []( const value_type& value){
-
-               if( value.invoked > 0)
-               {
-                  return value.services.invoked / static_cast< double>( value.invoked);
-               }
-               return 0.0;
-            };
 
             /*
             struct format_last
@@ -556,9 +502,7 @@ namespace casual
                //terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::custom_column( "state", format_state{}),
                terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
-               terminal::format::column( "invoked", format_service_invoke, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "total", std::mem_fn( &value_type::invoked), terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "ratio", format_service_percent, terminal::color::no_color, terminal::format::Align::right),
+
                //terminal::format::column( "last", format_last{}, terminal::color::blue, terminal::format::Align::right),
 
                terminal::format::column( "alias", format_process_alias, terminal::color::blue, terminal::format::Align::left),
@@ -639,6 +583,39 @@ namespace casual
             archive << CASUAL_MAKE_NVP( state);
          }
 
+         void list_service_legend()
+         {
+            std::cout << R"(legend for --list-services output: 
+                      
+       name:
+          the name of the service
+       category:
+          arbitrary category to help understand the 'purpose' with the service
+       mode: 
+          transaction mode - can be one of the following (auto, join, none, atomic)
+       timeout:
+          the timeout for the service (in seconds)
+       LC:
+          Local-Calls - number of calls to local instances
+       LI:
+          Local-Instances number of local instances
+       load:
+          the current load on the service. If concurrent request is greater than local instances the load is > 1.0
+       LAT:
+          Local-Average-Time - the average time of the service
+       TP
+          Total-Pending - total number of pending request, over time.
+       PAT
+          Pending-Average-Time - the average time request has waited for a service to be available, over time.
+       RC:
+          Remote-Calls - number of calls to remote instances
+       RI:
+          Remote-Instances - number of remote instances
+       last:
+          the last time the service was requested    
+)";
+
+         }
 
       } // action
 
@@ -656,6 +633,7 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", casual::broker::global::no_header),
          casual::common::argument::directive( {"--admin"}, "casual administration services will be included", casual::broker::global::admin_services),
          casual::common::argument::directive( {"-ls", "--list-services"}, "list services", &casual::broker::action::list_services),
+         casual::common::argument::directive( {"--legend-list-services"}, "legend for --list-services output", &casual::broker::action::list_service_legend),
          casual::common::argument::directive( {"-li", "--list-instances"}, "list instances", &casual::broker::action::list_instances),
          casual::common::argument::directive( {"-s", "--state"}, "prints the state on stdout in the provided format (json|yaml|xml|ini)", &casual::broker::action::output_state),
 
