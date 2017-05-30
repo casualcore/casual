@@ -128,9 +128,9 @@ try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-   parallel(
-	   "suse" :
-       {
+  // parallel(
+  //	   "suse" :
+  //     {
 	      node( "frontend" && "cplusplus" && "suse")
 		  {
 			  try
@@ -161,10 +161,10 @@ try
 		  	     throw e
 			  }
 		  }
-	   },
+  //  },
 
-       "centos" :
-       {
+  //     "centos" :
+  //     {
            node( "frontend" && "cplusplus" && "centos")
            {
               try
@@ -247,8 +247,8 @@ try
                    throw e
                }
            }
-       }
-   )
+   //  }
+   //)
    node( "documentation")
    {
       stage('Documentation')
