@@ -157,7 +157,7 @@ namespace casual
                   protocol.exception();
                }
             }
-            return decltype( function( std::forward< Args>( args)...))();
+            return decltype( common::invoke( function, std::forward< Args>( args)...))();
          }
 
 

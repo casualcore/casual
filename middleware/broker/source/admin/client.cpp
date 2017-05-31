@@ -9,6 +9,7 @@
 #include "sf/service/protocol/call.h"
 
 #include "broker/admin/brokervo.h"
+#include "broker/admin/server.h"
 #include "domain/manager/admin/vo.h"
 
 #include "common/file.h"
@@ -57,14 +58,33 @@ namespace casual
          {
             sf::service::protocol::binary::Call call;
 
-            auto result = call( ".casual.broker.state");
+            auto reply = call( admin::service::name::state());
 
-            admin::StateVO serviceReply;
+            admin::StateVO result;
 
-            result >> CASUAL_MAKE_NVP( serviceReply);
+            reply >> CASUAL_MAKE_NVP( result);
 
-            return serviceReply;
+            return result;
          }
+
+         namespace metric
+         {
+
+            std::vector< std::string> reset( const std::vector< std::string>& services)
+            {
+               sf::service::protocol::binary::Call call;
+               call << CASUAL_MAKE_NVP( services);
+
+               auto reply = call( admin::service::name::metric::reset());
+
+               std::vector< std::string> result;
+
+               reply >> CASUAL_MAKE_NVP( result);
+
+               return result;
+            }
+
+         } // metric
 
          struct State
          {
@@ -77,9 +97,9 @@ namespace casual
             State state;
 
             sf::service::protocol::binary::Call call;
-            auto result = call( ".casual.domain.state");
+            auto reply = call( ".casual.domain.state");
 
-            result >> CASUAL_MAKE_NVP( state.domain);
+            reply >> CASUAL_MAKE_NVP( state.domain);
 
             state.broker = call::state();
 
@@ -383,15 +403,13 @@ namespace casual
             };
 
             auto format_avg_pending_time = []( const admin::ServiceVO& value){
-               auto invoked = value.metrics.count;
-
-               if( invoked == 0)
+               if( value.metrics.count == 0)
                {
                   return 0.0;
                }
 
                using second_t = std::chrono::duration< double>;
-               return std::chrono::duration_cast< second_t>( value.pending.total / invoked).count();
+               return std::chrono::duration_cast< second_t>( value.pending.total / value.metrics.count).count();
             };
 
             auto format_last = []( const admin::ServiceVO& value){
@@ -617,6 +635,16 @@ namespace casual
 
          }
 
+         namespace metric
+         {
+
+            void reset( const std::vector< std::string>& services)
+            {
+               call::metric::reset( services);
+            }
+
+         } // metric
+
       } // action
 
    } // broker
@@ -627,6 +655,7 @@ namespace casual
 int main( int argc, char** argv)
 {
 
+
    casual::common::Arguments parser{ {
          casual::common::argument::directive( {"--porcelain"}, "easy to parse format", casual::broker::global::porcelain),
          casual::common::argument::directive( {"--no-color"}, "no color will be used", casual::broker::global::no_colors),
@@ -635,6 +664,8 @@ int main( int argc, char** argv)
          casual::common::argument::directive( {"-ls", "--list-services"}, "list services", &casual::broker::action::list_services),
          casual::common::argument::directive( {"--legend-list-services"}, "legend for --list-services output", &casual::broker::action::list_service_legend),
          casual::common::argument::directive( {"-li", "--list-instances"}, "list instances", &casual::broker::action::list_instances),
+         casual::common::argument::directive( casual::common::argument::cardinality::Any{},
+            {"-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reseet", &casual::broker::action::metric::reset),
          casual::common::argument::directive( {"-s", "--state"}, "prints the state on stdout in the provided format (json|yaml|xml|ini)", &casual::broker::action::output_state),
 
       }

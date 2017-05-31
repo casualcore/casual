@@ -487,7 +487,36 @@ namespace casual
                log::category::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
             }
          }
+      }
 
+      std::vector< std::string> State::metric_reset( std::vector< std::string> lookup)
+      {
+         Trace trace{ "broker::State::metric_reset"};
+
+         std::vector< std::string> result;
+
+         if( lookup.empty())
+         {
+            for( auto& service : services)
+            {
+               service.second.metric_reset();
+               result.push_back( service.first);
+            }
+         }
+         else
+         {
+            for( auto& name : lookup)
+            {
+               auto service = find_service( name);
+               if( service)
+               {
+                  service->metric_reset();
+                  result.push_back( std::move( name));
+               }
+            }
+         }
+
+         return result;
       }
 
       state::instance::Local& State::local( common::platform::pid::type pid)

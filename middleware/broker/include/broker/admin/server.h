@@ -24,6 +24,11 @@ namespace casual
             namespace name
             {
                constexpr auto state() { return ".casual.broker.state";}
+
+               namespace metric
+               {
+                  constexpr auto reset() { return ".casual/broker/metric/reset";}
+               } // metric
             } // name
          } // service
 

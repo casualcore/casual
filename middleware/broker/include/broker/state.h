@@ -332,6 +332,15 @@ namespace casual
 
 
          //!
+         //! Resets metrics for the provided services, if empty all metrics are reseted.
+         //! @param services
+         //!
+         //! @return the services that was reseted.
+         //!
+         std::vector< std::string> metric_reset( std::vector< std::string> services);
+
+
+         //!
          //! find a service from name
          //!
          //! @param name of the service wanted
@@ -342,6 +351,10 @@ namespace casual
          state::instance::Local& local( common::platform::pid::type pid);
 
          void connect_broker( std::vector< common::server::Service> services);
+
+
+
+
       };
 
 
