@@ -110,10 +110,14 @@ namespace casual
 
                if( common::file::exists( path))
                {
+                  auto content = singleton::read( {});
+
+                  log::debug << "domain: " << content << '\n';
+
                   //
                   // There is potentially a running casual-domain already - abort
                   //
-                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path);
+                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path, CASUAL_NIP( content));
                }
 
                //
@@ -130,6 +134,13 @@ namespace casual
                temp_file.release();
 
                return { std::move( path)};
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Result& value)
+            {
+               return out << "{ process: " << value.process
+                     << ", domain: " << value.identity
+                     << '}';
             }
 
             Result read()

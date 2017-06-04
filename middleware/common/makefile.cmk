@@ -249,6 +249,8 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/event/test_dispatch.cpp'),
     Compile( 'unittest/source/event/test_listen.cpp'),
+    
+    Compile( 'unittest/source/test_domain.cpp'),
 ]
 
 
