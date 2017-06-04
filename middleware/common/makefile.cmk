@@ -128,6 +128,7 @@ install_libs.append( common)
 
 install_headers += [ 
       ( 'include/common/log.h', 'common'),
+      ( 'include/common/platform.h', 'common'),
       ( 'include/common/traits.h', 'common'),
       ( 'include/common/log/stream.h', 'common/log'),
       ( 'include/common/log/trace.h', 'common/log'),
