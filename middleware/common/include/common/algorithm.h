@@ -1379,11 +1379,16 @@ namespace casual
 
          namespace sorted
          {
-
             template< typename R, typename T>
             bool search( R&& range, T&& value)
             {
                return std::binary_search( std::begin( range), std::end( range), std::forward< T>( value));
+            }
+
+            template< typename R, typename T, typename Compare>
+            bool search( R&& range, T&& value, Compare compare)
+            {
+               return std::binary_search( std::begin( range), std::end( range), std::forward< T>( value), compare);
             }
 
             template< typename R1, typename R2, typename Output>

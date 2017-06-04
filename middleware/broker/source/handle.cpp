@@ -408,15 +408,8 @@ namespace casual
                //
 
                {
-                  //
-                  // TODO: make this more efficient...
-                  //
-
-
-                  auto pending = common::range::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
-                     auto service = m_state.find_service( p.request.requested);
-
-                     return service && range::find( service->instances.local, message.process.pid);
+                  auto pending = common::range::find_if( m_state.pending.requests, [&]( const auto& p){
+                     return instance.service( p.request.requested);
                   });
 
                   if( pending)

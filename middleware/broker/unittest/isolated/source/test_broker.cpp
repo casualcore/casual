@@ -107,17 +107,6 @@ namespace casual
       } // local
 
 
-      TEST( casual_broker, admin_services)
-      {
-         common::unittest::Trace trace;
-
-         broker::State state;
-
-         auto arguments = broker::admin::services( state);
-
-         EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state());
-      }
-
       TEST( casual_broker, startup_shutdown__expect_no_throw)
       {
          common::unittest::Trace trace;
@@ -313,10 +302,6 @@ namespace casual
       }
 
 
-
-
-
-
       TEST( casual_broker, service_lookup_service1__expect__busy_reply__send_ack____expect__idle_reply)
       {
          common::unittest::Trace trace;
@@ -353,107 +338,32 @@ namespace casual
       }
 
 
-
-      /*
-       *
-      TEST( casual_broker, service_lookup_service1__forward_context___expect__forward_reply)
+      TEST( casual_broker, service_lookup_service1__service_lookup_service1_forward_context____expect_forward_reply)
       {
-         local::domain_4 domain;
-         domain.instance1().state = state::Server::Instance::State::busy;
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         mockup::domain::echo::Server server{ { "service1"}};
 
          {
-            local::Broker broker{ domain.state};
-
-            common::message::service::lookup::Request request;
-            request.process = domain.server2.process();
-            request.requested = "service1";
-            request.context =  common::message::service::lookup::Request::Context::no_reply;
-
-            auto correlation = communication::ipc::blocking::send( broker.queue_id, request);
-
-
-            common::message::service::lookup::Reply reply;
-            communication::ipc::blocking::receive( domain.server2.output(), reply);
-
-            EXPECT_TRUE( correlation == reply.correlation);
-            EXPECT_TRUE( reply.process == domain.state.forward) << "process: " <<  reply.process;
-            EXPECT_TRUE( reply.state == common::message::service::lookup::Reply::State::idle);
+            auto service = service::Lookup{ "service1"}();
+            EXPECT_TRUE( service.service.name == "service1");
+            EXPECT_TRUE( service.process == server.process());
+            EXPECT_TRUE( service.state == decltype( service)::State::idle);
          }
-         EXPECT_TRUE( domain.state.pending.requests.empty());
-      }
 
-
-      TEST( casual_broker, forward_connect)
-      {
-         local::domain_3 domain;
 
          {
-            local::Broker broker{ domain.state};
+            service::Lookup lookup{ "service1", common::message::service::lookup::Request::Context::forward};
+            auto service = lookup();
+            EXPECT_TRUE( service.service.name == "service1");
 
-            common::message::forward::connect::Request connect;
-            connect.process = domain.server2.process();
-
-            communication::ipc::blocking::send( broker.queue_id, connect);
+            // broker will let us think that the service is idle, and send us the queue to the forward-cache
+            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.process.queue != 0);
+            EXPECT_TRUE( service.process.queue != server.process().queue);
          }
-         EXPECT_TRUE( domain.state.forward == domain.server2.process());
       }
-
-
-		TEST( casual_broker, traffic_connect)
-      {
-         local::domain_6 domain;
-
-         {
-            local::Broker broker{ domain.state};
-
-            common::message::traffic::monitor::connect::Request connect;
-            connect.process = domain.traffic1.process();
-
-            communication::ipc::blocking::send( broker.queue_id, connect);
-         }
-         EXPECT_TRUE( domain.state.traffic.monitors.at( 0) == domain.traffic1.process().queue);
-      }
-
-      TEST( casual_broker, traffic_connect_x2__expect_2_traffic_monitors)
-      {
-         local::domain_6 domain;
-
-         {
-            local::Broker broker{ domain.state};
-
-            {
-               common::message::traffic::monitor::connect::Request connect;
-               connect.process = domain.traffic1.process();
-
-               communication::ipc::blocking::send( broker.queue_id, connect);
-            }
-            {
-               common::message::traffic::monitor::connect::Request connect;
-               connect.process = domain.traffic2.process();
-
-               communication::ipc::blocking::send( broker.queue_id, connect);
-            }
-
-         }
-         EXPECT_TRUE( domain.state.traffic.monitors.at( 0) == domain.traffic1.process().queue);
-         EXPECT_TRUE( domain.state.traffic.monitors.at( 1) == domain.traffic2.process().queue);
-      }
-
-		TEST( casual_broker, traffic_disconnect)
-      {
-         local::domain_3 domain;
-         domain.state.traffic.monitors.push_back( domain.server2.process().queue);
-
-         {
-            local::Broker broker{ domain.state};
-
-            common::message::traffic::monitor::Disconnect disconnect;
-            disconnect.process = domain.server2.process();
-
-            communication::ipc::blocking::send( broker.queue_id, disconnect);
-         }
-         EXPECT_TRUE( domain.state.traffic.monitors.empty());
-      }
-      */
 	}
 }
