@@ -32,15 +32,6 @@ namespace casual
          , exception::invalid::Process);
       }
 
-      TEST( common_domain, temp)
-      {
-         unittest::Trace trace;
-
-         auto path = domain::singleton::create( process::handle(), domain::identity());
-
-         domain::singleton::create( process::handle(), domain::identity());
-
-      }
 
    } // common
 
