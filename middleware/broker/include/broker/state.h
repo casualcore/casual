@@ -108,9 +108,22 @@ namespace casual
                State state() const;
                inline bool idle() const { return m_service == nullptr;}
 
+               //!
+               //! Return true if this instance exposes the service
+               //!
+               bool service( const std::string& name) const;
+
+
+               void add( const state::Service& service);
+               void remove( const std::string& service);
+
+
             private:
                common::platform::time::point::type m_last = common::platform::time::point::type::min();
                state::Service* m_service = nullptr;
+
+               using service_view = std::reference_wrapper< const std::string>;
+               std::vector< service_view> m_services;
             };
 
             struct Remote : base_instance

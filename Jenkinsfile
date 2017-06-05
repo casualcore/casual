@@ -1,1 +1,1 @@
-jenkins/jenkinsfile.centos
+jenkins/jenkinsfile.all

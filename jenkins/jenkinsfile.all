@@ -135,6 +135,9 @@ try
 		  {
 			  try
 			  { 
+
+                 deleteDir()
+
 				 stage('Checkout - Suse')
 				 {
 					checkout scm
@@ -169,6 +172,8 @@ try
            {
               try
               { 
+
+                 deleteDir()
 
                  stage('Checkout - Centos')
                  {

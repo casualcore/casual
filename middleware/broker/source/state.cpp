@@ -112,6 +112,28 @@ namespace casual
                m_service = local::exiting_address();
             }
 
+
+            bool Local::service( const std::string& name) const
+            {
+               return range::sorted::search( m_services, name, std::less< const std::string>());
+            }
+
+
+            void Local::add( const state::Service& service)
+            {
+               m_services.emplace_back( service.information.name);
+               range::sort( m_services, std::less< const std::string>());
+            }
+
+            void Local::remove( const std::string& service)
+            {
+               auto found = range::find_if( m_services, [&service]( auto& s){ return s.get() == service;});
+
+               if( found)
+                  m_services.erase( std::begin( found));
+            }
+
+
             bool operator < ( const Remote& lhs, const Remote& rhs)
             {
                return lhs.order < rhs.order;
@@ -152,9 +174,9 @@ namespace casual
 
                if( found)
                {
+                  found->get().remove( information.name);
                   instances.local.erase( std::begin( found));
                }
-
             }
 
             {
@@ -178,6 +200,7 @@ namespace casual
          void Service::add( state::instance::Local& instance)
          {
             instances.local.emplace_back( instance);
+            instance.add( *this);
          }
 
          void Service::add( state::instance::Remote& instance, std::size_t hops)
@@ -413,15 +436,17 @@ namespace casual
       {
          Trace trace{ "broker::State::update local"};
 
+         if( ! message.process)
+         {
+            common::log::category::error << "invalid process " << message.process << " tries to advertise services - action: ignore\n";
+            log << "message: " << message << '\n';
+            return;
+         }
+
          switch( message.directive)
          {
             case common::message::service::Advertise::Directive::add:
             {
-
-               //
-               // Local instance
-               //
-
                auto& instance = local::find_or_add( instances.local, message.process);
 
                for( auto& s : message.services)
@@ -454,6 +479,13 @@ namespace casual
       void State::update( common::message::gateway::domain::Advertise& message)
       {
          Trace trace{ "broker::State::update remote"};
+
+         if( ! message.process)
+         {
+            common::log::category::error << "invalid remote process " << message.process << " tries to advertise services - action: ignore\n";
+            log << "message: " << message << '\n';
+            return;
+         }
 
          switch( message.directive)
          {
