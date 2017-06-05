@@ -128,6 +128,21 @@ namespace casual
 
       }
 
+      namespace local
+      {
+         namespace
+         {
+            bool has_services( const std::vector< admin::ServiceVO>& services, std::initializer_list< const char*> wanted)
+            {
+               return range::all_of( wanted, [&services]( auto& s){
+                  return range::find_if( services, [&s]( auto& service){
+                     return service.name == s;
+                  });
+               });
+            }
+
+         } // <unnamed>
+      } // local
 
       TEST( casual_broker, startup___expect_1_service_in_state)
       {
@@ -137,9 +152,8 @@ namespace casual
 
          auto state = local::call::state();
 
-         ASSERT_TRUE( state.services.size() == 1);
-         EXPECT_TRUE( state.services.at( 0).name == admin::service::name::state());
-
+         EXPECT_TRUE( local::has_services( state.services, { admin::service::name::state()}));
+         EXPECT_FALSE( local::has_services( state.services, { "non/existent/service"}));
       }
 
 
@@ -153,7 +167,7 @@ namespace casual
 
          auto state = local::call::state();
 
-         ASSERT_TRUE( state.services.size() == 3);
+         ASSERT_TRUE( local::has_services( state.services, { admin::service::name::state(), "service1", "service2"}));
 
          {
             auto service = local::service::find( state, "service1");
