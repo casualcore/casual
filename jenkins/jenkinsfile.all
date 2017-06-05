@@ -28,6 +28,10 @@ casual-make -d -a --use-valgrind make && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
    rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
    cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. 
+   returncode=$?
+
+   find /git/casual -user root | xargs chmod 777   
+   exit $returncode
 '''
 
 //
