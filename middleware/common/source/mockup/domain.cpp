@@ -846,10 +846,9 @@ namespace casual
                   communication::ipc::blocking::send( communication::ipc::broker::device(), unadvertise);
                }
 
-               void Server::send_ack( std::string service) const
+               void Server::send_ack() const
                {
                   message::service::call::ACK message;
-                  message.service = std::move( service);
                   message.process = process();
 
                   communication::ipc::blocking::send( communication::ipc::broker::device(), message);

@@ -280,37 +280,8 @@ domain:
                namespace call
                {
 
-                  namespace service
-                  {
-                     namespace wait
-                     {
-                        void online( const std::string& service)
-                        {
-                           auto count = 100;
-
-                           while( count-- > 0)
-                           {
-                              auto reply = common::service::Lookup{ service}();
-
-                              if( reply.process)
-                              {
-                                 return;
-                              }
-                              process::sleep( std::chrono::microseconds{ 10});
-                           }
-                           throw exception::xatmi::service::no::Entry{ service};
-                        }
-                     } // wait
-
-
-
-                  } // service
-
-
                   admin::vo::State state()
                   {
-                     service::wait::online( admin::service::name::state());
-
                      sf::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::state());
 
@@ -324,8 +295,6 @@ domain:
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     service::wait::online( admin::service::name::scale::instances());
-
                      sf::service::protocol::binary::Call call;
 
                      call << CASUAL_MAKE_NVP( instances);
@@ -390,6 +359,9 @@ domain:
 
             mockup::domain::Broker broker;
 
+            // wait for broker to be up'n running
+            process::instance::fetch::handle( process::instance::identity::broker());
+
 
             auto state = local::call::state();
 
@@ -410,8 +382,8 @@ domain:
 
             mockup::domain::Broker broker;
 
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
+            // wait for broker to be up'n running
+            process::instance::fetch::handle( process::instance::identity::broker());
 
             auto instances = local::call::scale( "sleep", 10);
             EXPECT_TRUE( instances.size() == 1);
@@ -432,8 +404,8 @@ domain:
 
             mockup::domain::Broker broker;
 
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
+            // wait for broker to be up'n running
+            process::instance::fetch::handle( process::instance::identity::broker());
 
 
             auto instances = local::call::scale( "sleep", 0);
@@ -466,6 +438,8 @@ domain:
 
             mockup::domain::Broker broker;
 
+            // wait for broker to be up'n running
+            process::instance::fetch::handle( process::instance::identity::broker());
 
             auto state = local::call::state();
 
@@ -504,6 +478,9 @@ domain:
                   mockup::ipc::eventually::send( local_queue, m);
                }
             };
+
+            // wait for broker to be up'n running
+            process::instance::fetch::handle( process::instance::identity::broker());
 
             auto instances = local::call::scale( "test-simple-server", 1);
             ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_MAKE_NVP( instances);
