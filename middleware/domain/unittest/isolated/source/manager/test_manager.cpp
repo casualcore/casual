@@ -359,10 +359,6 @@ domain:
 
             mockup::domain::Broker broker;
 
-            // wait for broker to be up'n running
-            process::instance::fetch::handle( process::instance::identity::broker());
-
-
             auto state = local::call::state();
 
             ASSERT_TRUE( state.servers.size() == 1) << CASUAL_MAKE_NVP( state);
@@ -382,9 +378,6 @@ domain:
 
             mockup::domain::Broker broker;
 
-            // wait for broker to be up'n running
-            process::instance::fetch::handle( process::instance::identity::broker());
-
             auto instances = local::call::scale( "sleep", 10);
             EXPECT_TRUE( instances.size() == 1);
 
@@ -403,10 +396,6 @@ domain:
             process::ping( local::manager::ipc());
 
             mockup::domain::Broker broker;
-
-            // wait for broker to be up'n running
-            process::instance::fetch::handle( process::instance::identity::broker());
-
 
             auto instances = local::call::scale( "sleep", 0);
             EXPECT_TRUE( instances.size() == 1);
@@ -437,9 +426,6 @@ domain:
             local::Manager manager{ { configuration}};
 
             mockup::domain::Broker broker;
-
-            // wait for broker to be up'n running
-            process::instance::fetch::handle( process::instance::identity::broker());
 
             auto state = local::call::state();
 
@@ -478,9 +464,6 @@ domain:
                   mockup::ipc::eventually::send( local_queue, m);
                }
             };
-
-            // wait for broker to be up'n running
-            process::instance::fetch::handle( process::instance::identity::broker());
 
             auto instances = local::call::scale( "test-simple-server", 1);
             ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_MAKE_NVP( instances);
@@ -657,9 +640,6 @@ domain:
             process::ping( local::manager::ipc());
 
             mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
 
             auto state = local::call::state();
             state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));

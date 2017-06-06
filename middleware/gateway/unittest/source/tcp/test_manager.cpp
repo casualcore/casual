@@ -38,6 +38,10 @@ namespace casual
                 : process{ "./bin/casual-gateway-manager"}
                {
 
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  process::instance::fetch::handle( process::instance::identity::gateway::manager());
                }
 
                struct set_environment_t

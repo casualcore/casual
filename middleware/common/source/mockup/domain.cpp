@@ -496,6 +496,10 @@ namespace casual
                      common::environment::variable::name::ipc::broker(),
                      m_replier.process());
 
+               //
+               // Make sure we're up'n running before we let unittest-stuff interact with us...
+               //
+               process::instance::fetch::handle( process::instance::identity::broker());
 
             }
 
@@ -690,6 +694,11 @@ namespace casual
                   common::environment::variable::process::set(
                         common::environment::variable::name::ipc::transaction::manager(),
                         m_replier.process());
+
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  process::instance::fetch::handle( process::instance::identity::transaction::manager());
                }
 
             } // transaction
@@ -715,6 +724,11 @@ namespace casual
                   // reach this broker (should work any way...)
                   //
                   environment::variable::set( environment::variable::name::ipc::queue::broker(), m_replier.input());
+
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  process::instance::fetch::handle( process::instance::identity::queue::broker());
                }
 
                dispatch_type Broker::default_handler()

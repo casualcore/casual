@@ -27,43 +27,27 @@ namespace casual
 {
    namespace broker
    {
-
-		struct Settings
-		{
-		   std::string forward;
-		};
-
-		class Broker
-		{
-		public:
-
-		   Broker( Settings&& settings);
-			~Broker();
-
-			void start();
-
-
-
-			const State& state() const
-			{
-			   return m_state;
-			}
-
-
-		private:
-
-			State m_state;
-
-		};
-
-
-		namespace message
+      struct Settings
       {
-         void pump( State& state);
+         std::string forward;
+      };
 
-      } // message
+      class Broker
+      {
+      public:
 
-	} // broker
+         Broker( Settings&& settings);
+         ~Broker();
+
+         void start();
+
+         inline const State& state() const { return m_state; }
+
+      private:
+         State m_state;
+      };
+
+   } // broker
 } // casual
 
 

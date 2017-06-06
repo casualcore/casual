@@ -152,22 +152,6 @@ namespace casual
 			}
 
 
-			/*
-			namespace file
-			{
-
-
-			   //!
-			   //! @return domain configuration file path
-			   //!
-			   //! TODO: some of these should be in casual::domain
-			   std::string configuration();
-
-			}
-			*/
-
-
-
 			namespace domain
          {
 

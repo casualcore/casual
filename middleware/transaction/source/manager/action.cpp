@@ -70,7 +70,6 @@ namespace casual
                      instance.process.pid = process::spawn(
                            info.server,
                            {
-                                 "--tm-queue", std::to_string( ipc::device().id()),
                                  "--rm-key", info.key,
                                  "--rm-openinfo", proxy.openinfo,
                                  "--rm-closeinfo", proxy.closeinfo,
