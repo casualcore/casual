@@ -64,11 +64,25 @@ namespace casual
                {
                   struct Listener
                   {
+                     struct Limit
+                     {
+                        std::size_t size = 0;
+                        std::size_t messages = 0;
+
+                        CASUAL_CONST_CORRECT_MARSHAL
+                        (
+                           archive & size;
+                           archive & messages;
+                        )
+                     };
+
                      std::string address;
+                     Limit limit;
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
                         archive & address;
+                        archive & limit;
                      )
                   };
 
@@ -79,12 +93,16 @@ namespace casual
                         ipc,
                         tcp
                      };
+
+
+
                      Type type = Type::tcp;
                      bool restart = true;
                      std::string address;
                      std::string note;
                      std::vector< std::string> services;
                      std::vector< std::string> queues;
+
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (

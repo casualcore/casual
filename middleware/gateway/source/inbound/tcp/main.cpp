@@ -26,14 +26,26 @@ namespace casual
             {
                communication::tcp::socket::descriptor_type descriptor = 0;
 
+               struct
+               {
+                  std::size_t size = 0;
+                  std::size_t messages = 0;
+               } limit;
+
+
             };
 
             struct Policy
             {
 
+
                using outbound_device_type = communication::tcp::outbound::Device;
                using inbound_device_type = communication::tcp::inbound::Device;
 
+               static inbound::Cache::Limit limits( const Settings& settings)
+               {
+                  return { settings.limit.size, settings.limit.messages};
+               }
 
                struct configuration_type
                {
@@ -117,6 +129,8 @@ int main( int argc, char **argv)
       {
          casual::common::Arguments parser{{
             casual::common::argument::directive( { "--descriptor"}, "socket descriptor", settings.descriptor),
+            casual::common::argument::directive( { "--limit-messages"}, "# of concurrent messages", settings.limit.messages),
+            casual::common::argument::directive( { "--limit-size"}, "max size of concurrent messages", settings.limit.size),
          }};
          parser.parse( argc, argv);
       }

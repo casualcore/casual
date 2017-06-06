@@ -579,6 +579,8 @@ namespace casual
             } // domain
          } // handle
 
+
+
          template< typename Policy>
          struct Gateway
          {
@@ -591,6 +593,7 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
+              : m_cache{ policy_type::limits( settings)}
             {
                //
                // 'connect' to our local domain

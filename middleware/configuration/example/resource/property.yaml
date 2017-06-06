@@ -1,3 +1,4 @@
+---
 resources:
   - key: db2
     server: rm-proxy-db2-static

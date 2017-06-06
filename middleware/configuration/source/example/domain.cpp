@@ -178,13 +178,37 @@ namespace casual
                      {
                            []( gateway::Listener& v){
                               v.address = "localhost:7779";
-                              v.note = "local host";
+                              v.note = "local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below";
+
+                              gateway::listener::Limit limit;
+                              limit.size = 2 * 1024 * 1024;
+                              v.limit = limit;
+
                            }
                      },
                      {
                            []( gateway::Listener& v){
                               v.address = "some.host.org:7779";
-                              v.note = "another listener that is bound to some 'external ip'";
+                              v.note = "listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'";
+                              gateway::listener::Limit limit;
+                              limit.messages = 200;
+                              v.limit = limit;
+                           }
+                     },
+                     {
+                           []( gateway::Listener& v){
+                              v.address = "some.host.org:9999";
+                              v.note = "listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume";
+                              gateway::listener::Limit limit;
+                              limit.messages = 10;
+                              limit.size = 10 * 1024 * 1024;
+                              v.limit = limit;
+                           }
+                     },
+                     {
+                           []( gateway::Listener& v){
+                              v.address = "some.host.org:4242";
+                              v.note = "listener - no limits";
                            }
                      },
                };
