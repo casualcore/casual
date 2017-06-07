@@ -12,6 +12,7 @@
 #include "queue/broker/admin/queuevo.h"
 #include "queue/broker/admin/services.h"
 
+#include "common/process.h"
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
 #include "common/mockup/domain.h"
@@ -50,6 +51,10 @@ namespace casual
                       }}
                {
 
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  common::process::instance::fetch::handle( common::process::instance::identity::queue::broker());
                }
 
                common::process::Handle process() const { return m_process.handle();}
@@ -63,11 +68,6 @@ namespace casual
                Domain( config_domain configuration)
                : manager{ std::move( configuration)}
                {
-
-                  //
-                  // We make sure queue-broker is up'n running, we send ping
-                  //
-                  common::process::ping( queue_broker.process().queue);
                }
 
                common::mockup::domain::Manager manager;

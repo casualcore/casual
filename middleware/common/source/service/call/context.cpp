@@ -200,11 +200,6 @@ namespace casual
                //
                auto target = lookup();
 
-               if( target.state == message::service::lookup::Reply::State::absent)
-               {
-                  throw common::exception::xatmi::service::no::Entry( service);
-               }
-
                //
                // The service exists. Take care of reserving descriptor and determine timeout
                //
@@ -224,7 +219,6 @@ namespace casual
                   {
                      message::service::call::ACK ack;
                      ack.process = target.process;
-                     ack.service = target.service.name;
                      communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
                   });
 
@@ -235,7 +229,7 @@ namespace casual
                auto deadline = m_state.pending.deadline( std::get< 0>( prepared), start);
 
 
-               if( target.state == message::service::lookup::Reply::State::busy)
+               if( target.busy())
                {
                   //
                   // We wait for an instance to become idle.

@@ -211,6 +211,8 @@ namespace casual
 
                   State state = State::idle;
 
+                  inline bool busy() const { return state == State::busy;}
+
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
@@ -327,14 +329,11 @@ namespace casual
                //!
                struct ACK : basic_message< Type::service_acknowledge>
                {
-
-                  std::string service;
                   common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & service;
                      archive & process;
                   })
 

@@ -56,11 +56,7 @@ namespace casual
          State m_state;
       };
 
-      namespace message
-      {
-         void pump( State& state);
 
-      } // message
    } // transaction
 } // casual
 

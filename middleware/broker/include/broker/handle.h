@@ -213,7 +213,7 @@ namespace casual
 
             void reply( common::platform::ipc::id::type id, common::message::service::call::Reply& message);
 
-            void ack( const std::string& service);
+            void ack();
 
 
             void transaction(

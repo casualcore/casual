@@ -1,3 +1,4 @@
+---
 domain:
   name: ""
   default:
@@ -44,6 +45,9 @@ domain:
 
   gateway:
     default:
+      listener:
+        {}
+
       connection:
         type: tcp
         restart: true

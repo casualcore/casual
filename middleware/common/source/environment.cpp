@@ -261,13 +261,6 @@ namespace casual
 
          }
 
-         namespace file
-         {
-            std::string configuration()
-            {
-               return common::file::find(directory::domain() + "/configuration", std::regex("domain.(yaml|xml)"));
-            }
-         }
 
          namespace domain
          {

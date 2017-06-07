@@ -209,11 +209,10 @@ namespace casual
       {
          Trace trace( "queue::Broker::Broker");
 
-         //
-         // Connect to domain
-         //
-         common::process::instance::connect( common::process::instance::identity::queue::broker());
 
+         //
+         // Set environment variable so children can find us easy
+         //
          common::environment::variable::process::set(
                common::environment::variable::name::ipc::queue::broker(),
                common::process::handle());
@@ -264,7 +263,20 @@ namespace casual
       {
          log << "qeueue broker start" << std::endl;
 
-         broker::message::pump( m_state);
+         auto handler = broker::handlers( m_state);
+
+         //
+         // Connect to domain
+         //
+         common::process::instance::connect( common::process::instance::identity::queue::broker());
+
+         common::log::category::information << "casual-queue-broker is on-line" << std::endl;
+
+
+         while( true)
+         {
+            handler( broker::ipc::device().blocking_next());
+         }
       }
    } // queue
 

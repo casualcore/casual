@@ -31,7 +31,10 @@ namespace casual
                error,
             };
 
+            using Limit = message::tcp::connect::Limit;
+
             Listener( common::communication::tcp::Address address);
+            Listener( common::communication::tcp::Address address, Limit limit);
             ~Listener();
 
             Listener( Listener&&) noexcept;
@@ -64,6 +67,7 @@ namespace casual
             State m_state = State::absent;
             common::communication::tcp::Address m_address;
             std::thread m_thread;
+            Limit m_limit;
          };
 
       } // manager

@@ -89,9 +89,11 @@ namespace casual
                   State state;
 
                   //
-                  // Connect to domain
+                  // Set the process variables so children can communicate with us.
                   //
-                  process::instance::connect( process::instance::identity::broker());
+                  common::environment::variable::process::set(
+                        common::environment::variable::name::ipc::broker(),
+                        common::process::handle());
 
 
                   //
@@ -153,109 +155,99 @@ namespace casual
          }
 		}
 
+		namespace local
+		{
+		   namespace
+		   {
+		      namespace message
+		      {
+		         void pump( State& state)
+		         {
+		            //
+		            // Prepare message-pump handlers
+		            //
 
-      void Broker::start()
-      {
-         try
-         {
-            message::pump( m_state);
-         }
-         catch( const common::exception::signal::Terminate&)
-         {
-            // we do nothing, and let the dtor take care of business
-            log << "broker has been terminated\n";
-         }
-         catch( ...)
-         {
-            common::error::handler();
-         }
+		            log << "prepare message-pump handlers\n";
+
+
+		            auto handler = broker::handler( state);
+
+
+		            //
+		            // Connect to domain
+		            //
+		            process::instance::connect( process::instance::identity::broker());
+
+
+		            log << "start message pump\n";
+
+
+		            while( true)
+		            {
+		               if( state.pending.replies.empty())
+		               {
+		                  handler( ipc::device().blocking_next());
+		               }
+		               else
+		               {
+		                  signal::handle();
+		                  signal::thread::scope::Block block;
+
+		                  //
+		                  // Send pending replies
+		                  //
+		                  {
+
+		                     log << "pending replies: " << range::make( state.pending.replies) << '\n';
+
+		                     decltype( state.pending.replies) replies;
+		                     std::swap( replies, state.pending.replies);
+
+		                     auto remain = std::get< 1>( common::range::partition(
+		                           replies,
+		                           common::message::pending::sender(
+		                                 communication::ipc::policy::non::Blocking{},
+		                                 ipc::device().error_handler())));
+
+		                     range::move( remain, state.pending.replies);
+		                  }
+
+		                  //
+		                  // Take care of broker dispatch
+		                  //
+		                  {
+		                     //
+		                     // If we've got pending that is 'never' sent, we still want to
+		                     // do a lot of broker stuff. Hence, if we got into an 'error state'
+		                     // we'll still function...
+		                     //
+		                     // TODO: Should we have some sort of TTL for the pending?
+		                     //
+		                     auto count = common::platform::batch::transaction();
+
+		                     while( handler( ipc::device().non_blocking_next()) && count-- > 0)
+		                        ;
+		                  }
+
+		               }
+		            }
+		         }
+
+		      } // message
+		   } // <unnamed>
+		} // local
+
+		void Broker::start()
+		{
+		   try
+		   {
+		      local::message::pump( m_state);
+		   }
+		   catch( ...)
+		   {
+		      common::error::handler();
+		   }
 		}
-
-
-
-      namespace message
-      {
-         void pump( State& state)
-         {
-            try
-            {
-               //
-               // Prepare message-pump handlers
-               //
-
-               log << "prepare message-pump handlers\n";
-
-
-               auto handler = broker::handler( state);
-
-               log << "start message pump\n";
-
-
-               while( true)
-               {
-                  if( state.pending.replies.empty())
-                  {
-                     handler( ipc::device().blocking_next());
-                  }
-                  else
-                  {
-                     signal::handle();
-                     signal::thread::scope::Block block;
-
-                     //
-                     // Send pending replies
-                     //
-                     {
-
-                        log << "pending replies: " << range::make( state.pending.replies) << '\n';
-
-                        decltype( state.pending.replies) replies;
-                        std::swap( replies, state.pending.replies);
-
-                        auto remain = std::get< 1>( common::range::partition(
-                              replies,
-                              common::message::pending::sender(
-                                    communication::ipc::policy::non::Blocking{},
-                                    ipc::device().error_handler())));
-
-                        range::move( remain, state.pending.replies);
-                     }
-
-                     //
-                     // Take care of broker dispatch
-                     //
-                     {
-                        //
-                        // If we've got pending that is 'never' sent, we still want to
-                        // do a lot of broker stuff. Hence, if we got into an 'error state'
-                        // we'll still function...
-                        //
-                        // TODO: Should we have some sort of TTL for the pending?
-                        //
-                        auto count = common::platform::batch::transaction();
-
-                        while( handler( ipc::device().non_blocking_next()) && count-- > 0)
-                           ;
-                     }
-
-                  }
-               }
-
-
-            }
-            catch( const common::exception::signal::Terminate&)
-            {
-               // we do nothing, and let the dtor take care of business
-               log << "broker has been terminated\n";
-            }
-            catch( ...)
-            {
-               common::error::handler();
-            }
-         }
-
-      } // message
-
 	} // broker
 } // casual
 

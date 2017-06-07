@@ -52,7 +52,10 @@ namespace casual
             //!
             Limit size() const;
 
+
          private:
+
+            friend std::ostream& operator << ( std::ostream& out, const Cache& value);
 
             bool vacant( const lock_type&) const;
 
@@ -67,8 +70,8 @@ namespace casual
             mutable Limit m_limit;
             mutable std::condition_variable m_condition;
             mutable std::vector< complete_type> m_messages;
-            mutable State m_state = State::vacant;
             mutable std::size_t m_size = 0;
+            mutable State m_state = State::vacant;
 
          };
 

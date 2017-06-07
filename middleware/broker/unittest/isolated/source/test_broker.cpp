@@ -240,14 +240,13 @@ namespace casual
 
          }
 
-         {
+         EXPECT_THROW({
             auto service = service::Lookup{ "service1"}();
-            EXPECT_TRUE( service.state == decltype( service)::State::absent) << "service: " << service;
-         }
-         {
+         }, exception::xatmi::service::no::Entry);
+
+         EXPECT_THROW({
             auto service = service::Lookup{ "service2"}();
-            EXPECT_TRUE( service.state == decltype( service)::State::absent) << "service: " << service;
-         }
+         }, exception::xatmi::service::no::Entry);
       }
 
 		TEST( casual_broker, advertise_new_services_current_server)
@@ -285,17 +284,13 @@ namespace casual
 
          server.undadvertise( { { "service2"}});
 
-
-         {
+         //
+         // echo server has unadvertise this service. The service is
+         // still "present" in broker with no instances. Hence it's absent
+         //
+         EXPECT_THROW({
             auto service = service::Lookup{ "service2"}();
-            EXPECT_TRUE( service.service.name == "service2");
-
-            //
-            // echo server has unadvertise this service. The service is
-            // still "present" in broker with no instances. Hence it's absent
-            //
-            EXPECT_TRUE( service.state == decltype( service)::State::absent) << "service: " << service;
-         }
+         }, exception::xatmi::service::no::Entry);
       }
 
 
@@ -308,11 +303,9 @@ namespace casual
 
          mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
 
-         {
+         EXPECT_THROW({
             auto service = service::Lookup{ "non-existent-service"}();
-            EXPECT_TRUE( service.service.name == "non-existent-service");
-            EXPECT_TRUE( service.state == decltype( service)::State::absent);
-         }
+         }, exception::xatmi::service::no::Entry);
       }
 
 
@@ -342,7 +335,7 @@ namespace casual
 
          {
             // Send Ack
-            server.send_ack( "service1");
+            server.send_ack();
 
             // get next pending reply
             auto service = lookup();
@@ -369,7 +362,7 @@ namespace casual
 
 
          {
-            service::Lookup lookup{ "service1", common::message::service::lookup::Request::Context::forward};
+            service::Lookup lookup{ "service1", service::Lookup::Context::forward};
             auto service = lookup();
             EXPECT_TRUE( service.service.name == "service1");
 

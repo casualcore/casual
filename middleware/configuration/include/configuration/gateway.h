@@ -18,8 +18,33 @@ namespace casual
    {
       namespace gateway
       {
+         namespace listener
+         {
+            struct Limit
+            {
+               sf::optional< std::size_t> size;
+               sf::optional< std::size_t> messages;
 
-         struct Listener
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( size);
+                  archive & CASUAL_MAKE_NVP( messages);
+               )
+            };
+
+            struct Default
+            {
+               sf::optional< Limit> limit;
+
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
+                  archive & CASUAL_MAKE_NVP( limit);
+               )
+            };
+
+         } // listener
+
+         struct Listener : listener::Default
          {
             Listener() = default;
             Listener( std::function<void( Listener&)> foreign) { foreign( *this);}
@@ -27,18 +52,20 @@ namespace casual
             std::string address;
             std::string note;
 
-
             CASUAL_CONST_CORRECT_SERIALIZE
             (
+               listener::Default::serialize( archive);
                archive & CASUAL_MAKE_NVP( address);
                archive & CASUAL_MAKE_NVP( note);
             )
 
             friend bool operator == ( const Listener& lhs, const Listener& rhs);
+            friend Listener& operator += ( Listener& lhs, const listener::Default& rhs);
          };
 
          namespace connection
          {
+
             struct Default
             {
                sf::optional< std::string> type;
@@ -83,10 +110,12 @@ namespace casual
             {
                Default();
 
+               listener::Default listener;
                connection::Default connection;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
+                  archive & CASUAL_MAKE_NVP( listener);
                   archive & CASUAL_MAKE_NVP( connection);
                )
             };

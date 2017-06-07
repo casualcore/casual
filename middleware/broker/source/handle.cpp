@@ -453,12 +453,11 @@ namespace casual
             ipc::device().blocking_send( id, message);
          }
 
-         void Policy::ack( const std::string& service)
+         void Policy::ack()
          {
             common::message::service::call::ACK ack;
 
             ack.process = common::process::handle();
-            ack.service = service;
 
             ACK sendACK( m_state);
             sendACK( ack);

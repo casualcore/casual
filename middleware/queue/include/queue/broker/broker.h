@@ -28,12 +28,6 @@ namespace casual
          };
 
 
-         namespace message
-         {
-            void pump( State& state);
-
-         } // message
-
          std::vector< common::message::queue::information::queues::Reply> queues( State& state);
 
          common::message::queue::information::messages::Reply messages( State& state, const std::string& queue);

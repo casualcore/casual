@@ -495,6 +495,8 @@ namespace casual
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
                               {
                                     "--descriptor", std::to_string( socket.descriptor()),
+                                    "--limit-messages", std::to_string( message.limit.messages),
+                                    "--limit-size", std::to_string( message.limit.size),
                               });
 
                         state().connections.inbound.push_back( std::move( connection));

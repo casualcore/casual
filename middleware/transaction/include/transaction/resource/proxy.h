@@ -30,7 +30,6 @@ namespace casual
             std::string rm_closeinfo;
 
             casual_xa_switch_mapping* xa_switches = nullptr;
-            common::platform::ipc::id::type tm_queue = 0;
 
             template< typename A>
             void serialize( A& archive)
@@ -39,7 +38,6 @@ namespace casual
                archive & CASUAL_MAKE_NVP( rm_key);
                archive & CASUAL_MAKE_NVP( rm_openinfo);
                archive & CASUAL_MAKE_NVP( rm_closeinfo);
-               archive & CASUAL_MAKE_NVP( tm_queue);
             }
 
          };

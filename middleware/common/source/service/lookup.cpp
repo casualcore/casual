@@ -12,7 +12,7 @@ namespace casual
    {
       namespace service
       {
-         Lookup::Lookup( std::string service, message::service::lookup::Request::Context context) : m_service( std::move( service))
+         Lookup::Lookup( std::string service, Context context) : m_service( std::move( service))
          {
             message::service::lookup::Request request;
             request.requested = m_service;
@@ -22,36 +22,35 @@ namespace casual
             m_correlation = communication::ipc::blocking::send( communication::ipc::broker::device(), request);
          }
 
-         Lookup::Lookup( std::string service) : Lookup( std::move( service), message::service::lookup::Request::Context::regular) {}
+         Lookup::Lookup( std::string service) : Lookup( std::move( service), Context::regular) {}
 
          Lookup::~Lookup()
          {
-            if( ! m_service.empty())
-            {
-               //
-               //
-               //
-            }
-
             if( m_correlation != uuid::empty())
             {
                communication::ipc::inbound::device().discard( m_correlation);
             }
          }
 
-         message::service::lookup::Reply Lookup::operator () () const
+         Lookup::Reply Lookup::operator () () const
          {
             assert(  m_correlation != uuid::empty());
 
-            message::service::lookup::Reply result;
+            Reply result;
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
 
-            if( result.state != message::service::lookup::Reply::State::busy)
+            switch( result.state)
             {
-               //
-               // We're not expecting another message from broker
-               //
-               m_correlation = Uuid{};
+               case Reply::State::idle:
+                  m_correlation = Uuid{};
+                  break;
+               case Reply::State::absent:
+                  m_correlation = Uuid{};
+                  throw common::exception::xatmi::service::no::Entry{ m_service};
+                  break;
+               case Reply::State::busy:
+                  // no-op
+                  break;
             }
             return result;
          }
