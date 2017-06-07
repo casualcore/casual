@@ -27,7 +27,12 @@ casual-make -d -a --use-valgrind make && \
    cp casual-middleware.tar /git/casual/. && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
    rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
-   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. 
+   cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
+   performCoverageMeasuring 
+   returncode=$?
+
+   find /git/casual -user root | xargs chmod 777   
+   exit $returncode
 '''
 
 //
@@ -37,6 +42,13 @@ def backend_builder_centos = '''#! /bin/sh
 CASUAL_VERSION="0.42"
 CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 DISTRIBUTION="centos"
+
+performCoverageMeasuring()
+{
+   cd /git/casual && \
+   mkdir -p /git/casual/coverage && \
+   gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
+}
 
 source scl_source enable devtoolset-4
 
@@ -49,6 +61,12 @@ def backend_builder_suse = '''#! /bin/sh
 CASUAL_VERSION="0.42"
 CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 DISTRIBUTION="suse"
+
+performCoverageMeasuring()
+{
+   echo "Perform no coverage measuring"
+}
+
 
 ''' + common_backend_builder
 
@@ -128,9 +146,9 @@ try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-  // parallel(
-  //	   "suse" :
-  //     {
+   parallel(
+      "suse" :
+      {
 	      node( "frontend" && "cplusplus" && "suse")
 		  {
 			  try
@@ -164,10 +182,10 @@ try
 		  	     throw e
 			  }
 		  }
-  //  },
+      },
 
-  //     "centos" :
-  //     {
+      "centos" :
+      {
            node( "frontend" && "cplusplus" && "centos")
            {
               try
@@ -252,8 +270,8 @@ try
                    throw e
                }
            }
-   //  }
-   //)
+      }
+   )
    node( "documentation")
    {
       stage('Documentation')
