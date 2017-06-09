@@ -108,6 +108,11 @@ namespace casual
 
             } // without
 
+            //!
+            //! @return the path/name of what the link links to
+            //!
+            std::string link( const std::string& path);
+
          } // name
 
 

@@ -55,20 +55,26 @@ namespace casual
          {
             namespace
             {
+               constexpr const char* process_link()
+               {
+                  return "/proc/self/exe";
+               }
+
                std::string getProcessPath()
                {
-                  if( environment::variable::exists( "_"))
-                  {
-                     return environment::variable::get( "_");
-                  }
-
-                  return std::string{};
+                  return file::name::link( process_link());
                }
 
                std::string& path()
                {
                   static std::string path = getProcessPath();
                   return path;
+               }
+
+               std::string& basename()
+               {
+                  static std::string basename = file::name::base( local::path());
+                  return basename;
                }
 
                char* const * environment()
@@ -80,18 +86,24 @@ namespace casual
                   #endif
                }
 
+               namespace instanciated
+               {
+                  std::string& path = local::path();
+                  std::string& basename = local::basename();
+
+               } // instanciated
 
             } // <unnamed>
          } // local
 
          const std::string& path()
          {
-            return local::path();
+            return local::instanciated::path;
          }
 
-         void path( const std::string& path)
+         const std::string& basename()
          {
-            local::path() = path;
+            return local::instanciated::basename;
          }
 
 

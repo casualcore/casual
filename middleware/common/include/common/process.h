@@ -36,9 +36,9 @@ namespace casual
          const std::string& path();
 
          //!
-         //! Sets the path of the current process
+         //! @return the basename of the current process
          //!
-         void path( const std::string& path);
+         const std::string& basename();
 
 
          //!

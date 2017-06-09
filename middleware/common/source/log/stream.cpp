@@ -51,14 +51,12 @@ namespace casual
                   template< typename M>
                   void log( const std::string& category, M&& message)
                   {
-                     static const std::string basename{ file::name::base( process::path())};
-
                      m_output << std::chrono::duration_cast< std::chrono::microseconds>( platform::time::clock::type::now().time_since_epoch()).count()
                         << '|' << common::domain::identity().name
                         << '|' << execution::id()
                         << '|' << process::id()
                         << '|' << std::this_thread::get_id()
-                        << '|' << basename
+                        << '|' << process::basename()
                         << '|' << transaction::Context::instance().current().trid
                         << '|' << execution::service::parent::name()
                         << '|' << execution::service::name()

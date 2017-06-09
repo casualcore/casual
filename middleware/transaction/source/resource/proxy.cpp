@@ -53,14 +53,19 @@ namespace casual
                   reply.state = m_state.xa_switches->xa_switch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
 
 
-                  common::log::trace::Outcome log_connect{ "resource connect to transaction monitor", log};
+                  {
+                     common::log::trace::Outcome log_connect{ "resource connect to transaction monitor", log};
 
-                  common::communication::ipc::blocking::send(
-                        common::communication::ipc::transaction::manager::device(), reply);
+                     common::communication::ipc::blocking::send(
+                           common::communication::ipc::transaction::manager::device(), reply);
+                  }
+
+
 
                   if( reply.state != XA_OK)
                   {
-                     throw common::exception::tx::Error( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo);
+                     auto error = common::error::xa::error( reply.state);
+                     throw common::exception::tx::Error( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo, CASUAL_NIP( error));
                   }
                }
             };

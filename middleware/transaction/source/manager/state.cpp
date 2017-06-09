@@ -339,7 +339,7 @@ namespace casual
 
       bool State::ready() const
       {
-         return common::range::all_of( resources, []( const state::resource::Proxy& p){ return p.ready();});
+         return common::range::all_of( resources, []( const auto& p){ return p.ready();});
       }
 
       std::size_t State::instances() const

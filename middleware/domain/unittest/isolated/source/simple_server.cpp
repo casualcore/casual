@@ -15,8 +15,6 @@ namespace casual
          {
             try
             {
-               common::process::path( argv[ 0]);
-
                common::process::instance::connect();
 
                auto handler = common::communication::ipc::inbound::device().handler(
