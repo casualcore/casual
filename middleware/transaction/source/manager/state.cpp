@@ -84,9 +84,19 @@ namespace casual
                return m_state;
             }
 
-            bool Proxy::ready() const
+            bool Proxy::booted() const
             {
-               return common::range::all_of( instances, []( const Instance& i){ return i.state() == Instance::State::idle;});
+               return common::range::all_of( instances, []( const Instance& i){
+                  switch( i.state())
+                  {
+                     case Instance::State::idle:
+                     case Instance::State::error:
+                     case Instance::State::busy:
+                        return true;
+                     default:
+                        return false;
+                  }
+               });
             }
 
             std::ostream& operator << ( std::ostream& out, const Proxy& value)
@@ -337,9 +347,10 @@ namespace casual
          return ! persistent.replies.empty();
       }
 
-      bool State::ready() const
+
+      bool State::booted() const
       {
-         return common::range::all_of( resources, []( const auto& p){ return p.ready();});
+         return common::range::all_of( resources, []( const auto& p){ return p.booted();});
       }
 
       std::size_t State::instances() const

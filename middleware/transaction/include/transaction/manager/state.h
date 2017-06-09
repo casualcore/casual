@@ -131,9 +131,9 @@ namespace casual
                std::string note;
 
                //!
-               //! @return true if all instances is idle
+               //! @return true if all instances 'has connected'
                //!
-               bool ready() const;
+               bool booted() const;
 
 
                friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
@@ -542,10 +542,11 @@ namespace casual
          bool outstanding() const;
 
 
+
          //!
-         //! @return true if all resource proxies is booted and ready do work
+         //! @return true if all resource proxies is booted
          //!
-         bool ready() const;
+         bool booted() const;
 
 
          //!

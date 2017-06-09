@@ -84,11 +84,12 @@ namespace casual
             //
             auto handler = ipc::device().handler(
                common::message::handle::Shutdown{},
+               handle::process::Exit{ m_state},
                handle::resource::reply::Connect{ m_state});
 
 
 
-            while( ! m_state.ready())
+            while( ! m_state.booted())
             {
                handler( ipc::device().blocking_next( handler.types()));
             }
