@@ -41,6 +41,8 @@ namespace casual
 
                            log::debug << "advertise: " << advertise << '\n';
 
+                           signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+
                            communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
                         }
                      }

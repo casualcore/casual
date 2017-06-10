@@ -116,6 +116,14 @@ namespace casual
                      void operator () ( common::message::event::process::Exit& message);
                   };
                } // process
+
+               struct Error : Base
+               {
+                  using Base::Base;
+
+                  void operator () ( common::message::event::domain::Error& message);
+               };
+
             } // event
 
 

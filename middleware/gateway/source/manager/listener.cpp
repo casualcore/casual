@@ -24,7 +24,7 @@ namespace casual
                {
                   Trace trace{ "listener_thread"};
 
-                  signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::user})};
+                  signal::thread::scope::Mask block{ signal::set::filled( signal::Type::user)};
 
 
                   auto send_event = [=]( gateway::message::manager::listener::Event::State state){

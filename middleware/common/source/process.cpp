@@ -39,6 +39,7 @@
 
 #ifdef __APPLE__
    #include <crt_externs.h>
+   #include <mach-o/dyld.h>
 #else
    #include <unistd.h>
 #endif
@@ -55,14 +56,21 @@ namespace casual
          {
             namespace
             {
-               constexpr const char* process_link()
-               {
-                  return "/proc/self/exe";
-               }
 
                std::string getProcessPath()
                {
-                  return file::name::link( process_link());
+#ifdef __APPLE__
+                  std::uint32_t size = platform::size::max::path;
+                  std::vector< char> path( platform::size::max::path);
+                  if( ::_NSGetExecutablePath( path.data(), &size) != 0)
+                  {
+                     throw exception::invalid::Argument{ "failed to get the path to the current executable"};
+                  }
+                  if( path.data()) { return path.data();}
+                  return {};
+#else
+                  return file::name::link( "/proc/self/exe");
+#endif
                }
 
                std::string& path()
@@ -271,6 +279,14 @@ namespace casual
                      }
                   }
 
+                  template< typename M>
+                  void connect( M&& message)
+                  {
+                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+
+                     connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), message));
+                  }
+
                } // <unnamed>
             } // local
 
@@ -282,7 +298,7 @@ namespace casual
                request.identification = identity;
                request.process = process;
 
-               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+               local::connect( request);
             }
 
             void connect( const Uuid& identity)
@@ -297,7 +313,7 @@ namespace casual
                message::domain::process::connect::Request request;
                request.process = process;
 
-               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+               local::connect( request);
             }
 
             void connect()
@@ -877,7 +893,7 @@ namespace casual
                //
                // We'll only handle child signals.
                //
-               signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+               signal::thread::scope::Mask block{ signal::set::filled( signal::Type::child)};
 
                std::vector< lifetime::Exit> terminations;
 

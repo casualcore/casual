@@ -138,7 +138,7 @@ namespace casual
                      //
                      // We only want child signals
                      //
-                     signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+                     signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
 
                      auto pids = range::transform( range::make_reverse( shutdownable), []( const auto& i){
@@ -160,7 +160,7 @@ namespace casual
                      //
                      // We only want child signals
                      //
-                     signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+                     signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
 
                      //
@@ -729,6 +729,14 @@ namespace casual
                      }
                   }
                } // process
+
+               void Error::operator () ( common::message::event::domain::Error& message)
+               {
+                  Trace trace{ "domain::manager::handle::event::Error"};
+
+                  manager::local::ipc::send( state(), state().event( message));
+               }
+
             } // event
 
 
@@ -1054,6 +1062,7 @@ namespace casual
                manager::handle::event::process::Exit{ state},
                manager::handle::event::subscription::Begin{ state},
                manager::handle::event::subscription::End{ state},
+               manager::handle::event::Error{ state},
                manager::handle::process::Connect{ state},
                manager::handle::process::Lookup{ state},
                manager::handle::configuration::Domain{ state},

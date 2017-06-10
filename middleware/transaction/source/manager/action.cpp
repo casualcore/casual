@@ -10,6 +10,7 @@
 #include "common/process.h"
 #include "common/environment.h"
 #include "common/server/handle/call.h"
+#include "common/event/send.h"
 
 
 
@@ -64,22 +65,30 @@ namespace casual
                   {
                      auto& info = m_state.resource_properties.at( proxy.key);
 
-                     state::resource::Proxy::Instance instance;//( proxy.id);
+                     state::resource::Proxy::Instance instance;
                      instance.id = proxy.id;
 
-                     instance.process.pid = process::spawn(
-                           info.server,
-                           {
-                                 "--rm-key", info.key,
-                                 "--rm-openinfo", proxy.openinfo,
-                                 "--rm-closeinfo", proxy.closeinfo,
-                                 "--rm-id", std::to_string( proxy.id),
-                           }
-                        );
+                     try
+                     {
+                        instance.process.pid = process::spawn(
+                              info.server,
+                              {
+                                    "--rm-key", info.key,
+                                    "--rm-openinfo", proxy.openinfo,
+                                    "--rm-closeinfo", proxy.closeinfo,
+                                    "--rm-id", std::to_string( proxy.id),
+                              }
+                           );
 
-                     instance.state( state::resource::Proxy::Instance::State::started);
+                        instance.state( state::resource::Proxy::Instance::State::started);
 
-                     proxy.instances.push_back( std::move( instance));
+                        proxy.instances.push_back( std::move( instance));
+                     }
+                     catch( ...)
+                     {
+                        common::error::handler();
+                        common::event::error::send( "failed to spawn resource-proxy-instance: " + info.server);
+                     }
                   }
                }
                else

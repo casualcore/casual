@@ -124,6 +124,8 @@ namespace casual
                      if( log)
                      {
                         log << common::error::xa::error( result) << " commit rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
+
+                        /*
                         if( result != XA_OK)
                         {
                            std::array< XID, 12> xids;
@@ -136,6 +138,7 @@ namespace casual
                            }
 
                         }
+                        */
                      }
 
                      return result;

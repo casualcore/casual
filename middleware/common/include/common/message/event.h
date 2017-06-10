@@ -75,6 +75,8 @@ namespace casual
                   struct Error : base_error
                   {
                      std::string message;
+                     std::string executable;
+                     platform::pid::type pid;
 
                      enum class Severity : char
                      {
@@ -86,6 +88,8 @@ namespace casual
                      CASUAL_CONST_CORRECT_MARSHAL(
                         base_error::marshal( archive);
                         archive & message;
+                        archive & executable;
+                        archive & pid;
                         archive & severity;
                      )
 

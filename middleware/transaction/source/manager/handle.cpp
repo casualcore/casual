@@ -831,14 +831,17 @@ namespace casual
 
             void Exit::operator () ( message_type& message)
             {
-               apply( message.state);
-            }
 
-            void Exit::apply( const common::process::lifetime::Exit& exit)
-            {
                Trace trace{ "transaction::handle::process::Exit"};
 
-               // TODO: check if it's one of spawned resource proxies, if so, restart?
+               //
+               // Check if it's a resource proxy instance
+               //
+               if( m_state.remove_instance( message.state.pid))
+               {
+                  ipc::device().blocking_send( common::communication::ipc::domain::manager::device(), message);
+                  return;
+               }
 
                //
                // Check if the now dead process is owner to any transactions, if so, roll'em back...
@@ -847,7 +850,7 @@ namespace casual
 
                for( auto& trans : m_state.transactions)
                {
-                  if( trans.trid.owner().pid == exit.pid)
+                  if( trans.trid.owner().pid == message.state.pid)
                   {
                      trids.push_back( trans.trid);
                   }
@@ -950,6 +953,7 @@ namespace casual
                         //
                         // We found all the stuff, let the real handler handle the message
                         //
+                        resource->set_result( message.state);
                         if( m_handler( message, transaction, *resource))
                         {
                            //
@@ -1033,12 +1037,10 @@ namespace casual
 
                   log << "message: " << message << '\n';
 
-
                   //
                   // If the resource only did a read only, we 'promote' it to 'not involved'
                   //
                   {
-                     resource.result = Transaction::Resource::convert( message.state);
 
                      if( resource.result == Transaction::Resource::Result::xa_RDONLY)
                      {
@@ -1075,7 +1077,6 @@ namespace casual
 
                   resource.stage = Transaction::Resource::Stage::commit_replied;
 
-
                   //
                   // Are we in a committed state?
                   //
@@ -1101,11 +1102,10 @@ namespace casual
                   resource.stage = Transaction::Resource::Stage::rollback_replied;
 
                   //
-                  // Are we in a rolled back state?
+                  // Are we in a rolled back stage?
                   //
                   if( transaction.stage() < Transaction::Resource::Stage::rollback_replied)
                   {
-
                      return false;
                   }
 
@@ -1302,6 +1302,8 @@ namespace casual
             }
             else
             {
+               log << "resources involved - " << transaction << "\n";
+
                //
                // Keep the correlation so we can send correct reply
                //
@@ -1310,7 +1312,7 @@ namespace casual
                local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                   m_state,
                   transaction,
-                  Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                  []( auto& r){ return r.stage < Transaction::Resource::Stage::not_involved;},
                   Transaction::Resource::Stage::rollback_requested
                );
             }

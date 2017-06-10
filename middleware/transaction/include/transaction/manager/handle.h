@@ -67,9 +67,6 @@ namespace casual
                using message_type = common::message::event::process::Exit;
 
                void operator () ( message_type& message);
-
-
-               void apply( const common::process::lifetime::Exit& exit);
             };
 
          } // process

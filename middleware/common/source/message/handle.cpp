@@ -40,7 +40,7 @@ namespace casual
                //
                try
                {
-                  signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate, signal::Type::terminate})};
+                  signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
                   ipc.send( reply, communication::ipc::policy::Blocking{});
                }
                catch( common::exception::queue::Unavailable&)

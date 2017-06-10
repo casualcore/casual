@@ -69,9 +69,6 @@ namespace casual
 
          } // singleton
 
-
-
-
       } // domain
    } // common
 } // casual

@@ -91,6 +91,7 @@ casual_common_objectfiles = [
     
     Compile( 'source/event/listen.cpp'),
     Compile( 'source/event/dispatch.cpp'),
+    Compile( 'source/event/send.cpp'),
     
     Compile( 'source/log/stream.cpp'),
     Compile( 'source/log/trace.cpp'),

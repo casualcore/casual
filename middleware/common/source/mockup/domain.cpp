@@ -381,7 +381,13 @@ namespace casual
                      },
                      [&]( common::message::event::process::Exit& m)
                      {
-                        Trace trace{ "mockup domain process::termination::Event"};
+                        Trace trace{ "mockup common::message::event::process::Exit"};
+
+                        m_state.events( m);
+                     },
+                     [&]( common::message::event::domain::Error& m)
+                     {
+                        Trace trace{ "mockup common::message::event::domain::Error"};
 
                         m_state.events( m);
                      },

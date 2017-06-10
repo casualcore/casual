@@ -576,18 +576,6 @@ namespace casual
                return { signal::Set::filled_t{}};
             }
 
-            signal::Set filled( const std::vector< Type>& excluded)
-            {
-               auto mask = filled();
-
-               for( auto&& signal : excluded)
-               {
-                  mask.remove( signal);
-               }
-
-               return mask;
-            }
-
             signal::Set empty()
             {
                return {};

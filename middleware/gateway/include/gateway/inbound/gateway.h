@@ -796,7 +796,7 @@ namespace casual
                //
                // We're only interested in sig-user
                //
-               common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
+               common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
 
 
                Trace trace{ "gateway::inbound::Gateway::request_thread"};

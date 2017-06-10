@@ -54,6 +54,8 @@ namespace casual
                   {
                      return out << "{ severity: " << value.severity
                            << ", message: " << value.message
+                           << ", executable: " << value.executable
+                           << ", pid: " << value.pid
                            << '}';
                   }
 

@@ -108,23 +108,37 @@ namespace casual
                            },
                            []( message::event::domain::Error& m)
                            {
+
+                              auto print_error = []( const message::event::domain::Error& m){
+                                 std::cerr << terminal::color::yellow << m.executable << " "
+                                       << terminal::color::white << m.pid << ": "
+                                       << terminal::color::white << m.message
+                                       << '\n';
+                              };
+
                               switch( m.severity)
                               {
                                  case message::event::domain::Error::Severity::fatal:
                                  {
-                                    std::cerr << terminal::color::red << "fatal: " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::red << "fatal: ";
+                                    print_error( m);
                                     throw Done{};
                                  }
                                  case message::event::domain::Error::Severity::error:
                                  {
-                                    std::cerr << terminal::color::red << "error: " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::red << "error: ";
+                                    print_error( m);
                                     break;
                                  }
                                  default:
                                  {
-                                    std::cerr << terminal::color::magenta << "warning " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::magenta << "warning ";
+                                    print_error( m);
                                  }
                               }
+
+
+
                            },
                            [&]( message::event::domain::Group& m){
                               using context_type = message::event::domain::Group::Context;

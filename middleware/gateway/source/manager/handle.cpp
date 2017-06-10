@@ -75,7 +75,7 @@ namespace casual
                            //
                            // We only want to handle terminate during this
                            //
-                           common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate})};
+                           common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate)};
 
                            if( connection.running())
                            {
@@ -174,7 +174,7 @@ namespace casual
                //
                // We only want to handle child-signals during this stage
                //
-               common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+               common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
                state.runlevel = State::Runlevel::shutdown;
 
