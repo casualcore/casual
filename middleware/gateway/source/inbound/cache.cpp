@@ -70,7 +70,7 @@ namespace casual
             m_size += message.payload.size();
             m_messages.push_back( std::move( message));
 
-            log << "cache: " << *this << '\n';
+            //log << "cache: " << *this << '\n';
 
             if( ! vacant( lock))
             {
@@ -99,7 +99,7 @@ namespace casual
             m_messages.erase( std::begin( found));
             m_size -= result.payload.size();
 
-            log << "cache: " << *this << '\n';
+            //log << "cache: " << *this << '\n';
 
             if( m_state == State::limit && vacant( lock))
             {
