@@ -43,7 +43,7 @@ namespace casual
 
                            signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
 
-                           communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
+                           communication::ipc::blocking::send( communication::ipc::service::manager::device(), advertise);
                         }
                      }
 
@@ -156,7 +156,7 @@ namespace casual
                      message::service::call::ACK ack;
                      ack.process = process::handle();
 
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   }
 
                   void Default::statistics( platform::ipc::id::type id,  message::event::service::Call& event)
@@ -389,7 +389,7 @@ namespace casual
                      message::service::call::ACK ack;
                      ack.process = common::process::handle();
 
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack, m_error_handler);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack, m_error_handler);
                   }
 
 

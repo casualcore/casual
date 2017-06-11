@@ -20,11 +20,11 @@ namespace casual
             {
                namespace name
                {
-                  constexpr auto state() { return ".casual.transaction.state";}
+                  constexpr auto state() { return ".casual/transaction/state";}
 
                   namespace update
                   {
-                     constexpr auto instances() { return ".casual.transaction.update.instances";}
+                     constexpr auto instances() { return ".casual/transaction/update/instances";}
                   } // update
 
 

@@ -6,7 +6,7 @@
 #include "queue/common/log.h"
 #include "queue/common/queue.h"
 #include "queue/common/transform.h"
-#include "queue/broker/admin/services.h"
+#include "queue/manager/admin/services.h"
 
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
@@ -114,7 +114,7 @@ namespace casual
                      }
                      catch( const common::exception::communication::Unavailable&)
                      {
-                        // queue-broker is off-line
+                        // queue-manager is off-line
                      }
                   });
 
@@ -437,12 +437,12 @@ namespace casual
                   sf::service::protocol::binary::Call call;
                   call << CASUAL_MAKE_NVP( queue);
 
-                  auto reply = call( broker::admin::service::name::restore());
+                  auto reply = call( manager::admin::service::name::restore());
 
-                  std::vector< broker::admin::Affected> result;
+                  std::vector< manager::admin::Affected> result;
                   reply >> CASUAL_MAKE_NVP( result);
 
-                  common::range::transform( result, affected, []( const broker::admin::Affected& a){
+                  common::range::transform( result, affected, []( const manager::admin::Affected& a){
                      Affected result;
                      result.queue = a.queue.name;
                      result.restored = a.restored;

@@ -219,7 +219,7 @@ namespace casual
                   {
                      message::service::call::ACK ack;
                      ack.process = target.process;
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   });
 
 

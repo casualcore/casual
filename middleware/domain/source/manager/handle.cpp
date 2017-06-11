@@ -174,11 +174,11 @@ namespace casual
                         return i.handle;
                      });
 
-                     auto broker = state.singleton( common::process::instance::identity::broker());
+                     auto service_manager = state.singleton( common::process::instance::identity::service::manager());
 
                      try
                      {
-                        manager::ipc::device().blocking_send( broker.queue, prepare);
+                        manager::ipc::device().blocking_send( service_manager.queue, prepare);
                      }
                      catch( const exception::communication::Unavailable&)
                      {
@@ -432,14 +432,14 @@ namespace casual
                      Trace trace{ "domain::manager::handle::mandatory::boot::prepare"};
 
                      {
-                        state::Server broker;
-                        broker.alias = "casual-broker";
-                        broker.path = "${CASUAL_HOME}/bin/casual-broker";
-                        broker.scale( 1);
-                        broker.memberships.push_back( state.group_id.master);
-                        broker.note = "service lookup and management";
+                        state::Server manager;
+                        manager.alias = "casual-service-manager";
+                        manager.path = "${CASUAL_HOME}/bin/casual-service-manager";
+                        manager.scale( 1);
+                        manager.memberships.push_back( state.group_id.master);
+                        manager.note = "service lookup and management";
 
-                        state.servers.push_back( std::move( broker));
+                        state.servers.push_back( std::move( manager));
                      }
 
                      {
@@ -459,8 +459,8 @@ namespace casual
 
                      {
                         state::Server queue;
-                        queue.alias = "casual-queue-broker";
-                        queue.path = "${CASUAL_HOME}/bin/casual-queue-broker";
+                        queue.alias = "casual-queue-manager";
+                        queue.path = "${CASUAL_HOME}/bin/casual-queue-manager";
                         queue.scale( 1);
                         queue.memberships.push_back( state.group_id.queue);
                         queue.note = "manage queues in this domain";
@@ -825,7 +825,7 @@ namespace casual
 
                            manager::local::ipc::send( state, process, message);
 
-                           environment::variable::process::set( environment::variable::name::ipc::broker(), process);
+                           environment::variable::process::set( environment::variable::name::ipc::service::manager(), process);
                         }
 
                         void tm( State& state, const common::process::Handle& process)
@@ -840,7 +840,7 @@ namespace casual
                            Trace trace{ "domain::manager::handle::local::singleton::queue"};
 
                            environment::variable::process::set(
-                                 environment::variable::name::ipc::queue::broker(), process);
+                                 environment::variable::name::ipc::queue::manager(), process);
                         }
 
                         void connect( State& state, const common::message::domain::process::connect::Request& message)
@@ -848,9 +848,9 @@ namespace casual
                            Trace trace{ "domain::manager::handle::local::singleton::connect"};
 
                            static const std::map< Uuid, std::function< void(State&, const common::process::Handle&)>> tasks{
-                              { common::process::instance::identity::broker(), &broker},
+                              { common::process::instance::identity::service::manager(), &broker},
                               { common::process::instance::identity::transaction::manager(), &tm},
-                              { common::process::instance::identity::queue::broker(), &queue}
+                              { common::process::instance::identity::queue::manager(), &queue}
                            };
 
                            auto found = range::find( tasks, message.identification);

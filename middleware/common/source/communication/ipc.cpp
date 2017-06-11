@@ -467,19 +467,22 @@ namespace casual
 
 
 
-
-            namespace broker
+            namespace service
             {
-               outbound::instance::Device& device()
+               namespace manager
                {
-                  static outbound::instance::Device singelton{
-                     process::instance::identity::broker(),
-                     common::environment::variable::name::ipc::broker()};
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::service::manager(),
+                        common::environment::variable::name::ipc::service::manager()};
 
-                  return singelton;
-               }
+                     return singelton;
+                  }
 
-            } // broker
+               } // manager
+            } // service
+
 
             namespace transaction
             {
@@ -526,13 +529,13 @@ namespace casual
 
             namespace queue
             {
-               namespace broker
+               namespace manager
                {
                   outbound::instance::Device& device()
                   {
                      static outbound::instance::Device singelton{
-                        process::instance::identity::queue::broker(),
-                        environment::variable::name::ipc::queue::broker()};
+                        process::instance::identity::queue::manager(),
+                        environment::variable::name::ipc::queue::manager()};
 
                      return singelton;
                   }
@@ -542,13 +545,13 @@ namespace casual
                      outbound::instance::optional::Device& device()
                      {
                         static outbound::instance::optional::Device singelton{
-                           process::instance::identity::queue::broker(),
-                           environment::variable::name::ipc::queue::broker()};
+                           process::instance::identity::queue::manager(),
+                           environment::variable::name::ipc::queue::manager()};
 
                         return singelton;
                      }
                   } // optional
-               } // broker
+               } // manager
             } // queue
 
 

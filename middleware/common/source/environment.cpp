@@ -34,18 +34,18 @@ namespace casual
                         return singleton;
                      }
 
-                     bool exists( const std::string& name) const
+                     bool exists( const char* name) const
                      {
                         lock_type lock { m_mutex};
 
-                        return getenv(name.c_str()) != nullptr;
+                        return getenv( name) != nullptr;
                      }
 
-                     std::string get( const std::string& name) const
+                     std::string get( const char* name) const
                      {
                         lock_type lock { m_mutex};
 
-                        auto result = getenv(name.c_str());
+                        auto result = getenv( name);
 
                         //
                         // We need to return by value and copy the variable while
@@ -59,11 +59,11 @@ namespace casual
                         return {};
                      }
 
-                     void set( const std::string& name, const std::string& value) const
+                     void set( const char* name, const std::string& value) const
                      {
-
                         lock_type lock { m_mutex};
-                        if( setenv(name.c_str(), value.c_str(), 1) == -1)
+
+                        if( setenv( name, value.c_str(), 1) == -1)
                         {
                            throw std::system_error { error::last(), std::system_category()};
                         }
@@ -91,41 +91,40 @@ namespace casual
                return local::native::Variable::instance().mutex();
             }
 
-            bool exists( const std::string& name)
+            bool exists( const char* name)
             {
-               return local::native::Variable::instance().exists(name);
+               return local::native::Variable::instance().exists( name);
             }
 
-            std::string get( const std::string& name)
+            std::string get( const char* name)
             {
-               if( !exists(name))
+               if( ! exists( name))
                {
-                  throw exception::invalid::environment::Variable("failed to get variable", CASUAL_NIP(name));
+                  throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
                }
-               return local::native::Variable::instance().get(name);
+               return local::native::Variable::instance().get( name);
             }
 
-            std::string get( const std::string& name, std::string alternative)
+
+            std::string get( const char* name, std::string alternative)
             {
-               if( exists(name))
+               if( exists( name))
                {
-                  return get(name);
+                  return get( name);
                }
                return alternative;
             }
 
-            void set( const std::string& name, const std::string& value)
+            void set( const char* name, const std::string& value)
             {
-               local::native::Variable::instance().set(name, value);
-
-               //log::debug << "environment variable: " << name << " set to: " << value << std::endl;
+               local::native::Variable::instance().set( name, value);
             }
 
             namespace process
             {
-               common::process::Handle get( const std::string& variable)
+               common::process::Handle get( const char* variable)
                {
-                  auto value = common::environment::variable::get(variable);
+                  auto value = common::environment::variable::get( variable);
 
                   common::process::Handle result;
                   {
@@ -148,94 +147,13 @@ namespace casual
                   return result;
                }
 
-               void set( const std::string& variable, const common::process::Handle& process)
+               void set( const char* variable, const common::process::Handle& process)
                {
-                  variable::set(variable, std::to_string(process.pid) + '|' + std::to_string(process.queue));
+                  variable::set( variable, std::to_string(process.pid) + '|' + std::to_string(process.queue));
                }
 
             } // process
 
-            namespace name
-            {
-               const std::string& home()
-               {
-                  static const std::string name { "CASUAL_HOME"};
-                  return name;
-               }
-
-               namespace domain
-               {
-                  const std::string& home()
-                  {
-                     static const std::string name { "CASUAL_DOMAIN_HOME"};
-                     return name;
-                  }
-
-                  const std::string& id()
-                  {
-                     static const std::string name { "CASUAL_DOMAIN_ID"};
-                     return name;
-                  }
-                  const std::string& path()
-                  {
-                     static const std::string name { "CASUAL_DOMAIN_PATH"};
-                     return name;
-                  }
-                  const std::string& name()
-                  {
-                     static const std::string name { "CASUAL_DOMAIN_NAME"};
-                     return name;
-                  }
-
-               } // domain
-
-               namespace ipc
-               {
-
-                  namespace domain
-                  {
-                     const std::string& manager()
-                     {
-                        static const std::string name { "CASUAL_DOMAIN_PROCESS"};
-                        return name;
-                     }
-                  } // domain
-
-                  const std::string& broker()
-                  {
-                     static const std::string name { "CASUAL_BROKER_PROCESS"};
-                     return name;
-                  }
-
-                  namespace transaction
-                  {
-                     const std::string& manager()
-                     {
-                        static const std::string name { "CASUAL_TM_PROCESS"};
-                        return name;
-                     }
-                  } // transaction
-
-                  namespace queue
-                  {
-                     const std::string& broker()
-                     {
-                        static const std::string name { "CASUAL_QUEUE_BROKER_PROCESS"};
-                        return name;
-                     }
-                  } // queue
-
-                  namespace gateway
-                  {
-                     const std::string& manager()
-                     {
-                        static const std::string name { "CASUAL_GATEWAY_PROCESS"};
-                        return name;
-                     }
-                  } // gateway
-               } // ipc
-
-            } // name
 
          } // variable
 
@@ -243,7 +161,7 @@ namespace casual
          {
             const std::string& domain()
             {
-               static const std::string result = variable::get(variable::name::domain::home());
+               static const std::string result = variable::get( variable::name::domain::home());
                return result;
             }
 
@@ -255,7 +173,7 @@ namespace casual
 
             const std::string& casual()
             {
-               static const std::string result = variable::get(variable::name::home());
+               static const std::string result = variable::get( variable::name::home());
                return result;
             }
 

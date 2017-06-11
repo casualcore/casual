@@ -46,7 +46,7 @@ namespace casual
                         return type >= message_type::EVENT_SERVICE_BASE && type < message_type::EVENT_SERVICE_BASE_END;}))
                      {
                         communication::ipc::blocking::send(
-                              communication::ipc::broker::device(),
+                              communication::ipc::service::manager::device(),
                               request);
                      }
                   }

@@ -357,7 +357,7 @@ domain:
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
 
@@ -376,7 +376,7 @@ domain:
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
+            mockup::domain::service::Manager service;
 
             auto instances = local::call::scale( "sleep", 10);
             EXPECT_TRUE( instances.size() == 1);
@@ -395,7 +395,7 @@ domain:
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
+            mockup::domain::service::Manager service;
 
             auto instances = local::call::scale( "sleep", 0);
             EXPECT_TRUE( instances.size() == 1);
@@ -425,7 +425,7 @@ domain:
 
             local::Manager manager{ { configuration}};
 
-            mockup::domain::Broker broker;
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
 
@@ -457,7 +457,7 @@ domain:
             //
             auto local_queue = communication::ipc::inbound::id();
 
-            mockup::domain::Broker broker{
+            mockup::domain::service::Manager service{
                [local_queue]( message::domain::process::prepare::shutdown::Request& m)
                {
                   Trace trace{ "local forward"};
@@ -639,7 +639,7 @@ domain:
             local::Manager manager{ { configuration}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
             state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));

@@ -63,7 +63,7 @@ namespace casual
                }
 
                mockup::domain::Manager manager;
-               mockup::domain::Broker broker;
+               mockup::domain::service::Manager service;
                mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
@@ -81,7 +81,7 @@ namespace casual
                        domain1{ mockup::domain::echo::create::service( "remote1")} {}
 
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
 
                   mockup::domain::echo::Server domain1;
@@ -286,7 +286,7 @@ namespace casual
                   }
 
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
                   mockup::domain::queue::Broker queue;
 

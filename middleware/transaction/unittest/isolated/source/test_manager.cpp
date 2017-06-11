@@ -92,7 +92,7 @@ namespace casual
 
 
                common::mockup::domain::Manager manager;
-               common::mockup::domain::Broker broker;
+               common::mockup::domain::service::Manager service;
                Manager tm;
 
                static common::message::domain::configuration::Domain configuration()

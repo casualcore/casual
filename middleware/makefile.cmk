@@ -17,7 +17,7 @@ with Scope():
     Build( 'administration/makefile.cmk')
     Build( 'gateway/makefile.cmk')
 
-    Build( 'broker/makefile.cmk')
+    Build( 'service/makefile.cmk')
     Build( 'transaction/makefile.cmk')
     Build( 'queue/makefile.cmk')    
     

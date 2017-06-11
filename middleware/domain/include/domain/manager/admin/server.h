@@ -24,13 +24,13 @@ namespace casual
             {
                namespace name
                {
-                  constexpr auto state() { return ".casual.domain.state";}
+                  constexpr auto state() { return ".casual/domain/state";}
                   namespace scale
                   {
-                     constexpr auto instances() { return ".casual.domain.scale.instances";}
+                     constexpr auto instances() { return ".casual/domain/scale/instances";}
                   } // scale
 
-                  constexpr auto shutdown() { return ".casual.domain.shutdown";}
+                  constexpr auto shutdown() { return ".casual/domain/shutdown";}
 
                   namespace configuration
                   {

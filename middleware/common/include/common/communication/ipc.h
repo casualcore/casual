@@ -520,10 +520,14 @@ namespace casual
                return reply;
             }
 
-            namespace broker
+            namespace service
             {
-               outbound::instance::Device& device();
-            } // broker
+               namespace manager
+               {
+                  outbound::instance::Device& device();
+               } // manager
+            } // service
+
 
             namespace transaction
             {
@@ -555,7 +559,7 @@ namespace casual
 
             namespace queue
             {
-               namespace broker
+               namespace manager
                {
                   outbound::instance::Device& device();
 
@@ -565,12 +569,12 @@ namespace casual
                      //! Can be missing. That is, this will not block
                      //! until the device is found (the queue is online)
                      //!
-                     //! @return device to queue-broker
+                     //! @return device to queue-manager
                      //!
                      outbound::instance::optional::Device& device();
                   } // optional
 
-               } // broker
+               } // manager
             } // queue
 
 

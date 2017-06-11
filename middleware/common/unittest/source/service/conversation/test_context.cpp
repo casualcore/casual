@@ -27,7 +27,7 @@ namespace casual
                      {}
 
                      mockup::domain::Manager manager;
-                     mockup::domain::Broker broker;
+                     mockup::domain::service::Manager service;
                      mockup::domain::transaction::Manager tm;
                      mockup::domain::echo::Server server;
                   };

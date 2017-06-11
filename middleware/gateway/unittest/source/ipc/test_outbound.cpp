@@ -160,7 +160,7 @@ namespace casual
 
                } connect_gateway;
 
-               common::mockup::domain::Broker broker;
+               common::mockup::domain::service::Manager service;
                common::mockup::domain::transaction::Manager tm;
                common::mockup::ipc::Collector remote;
                Outbound outbound;

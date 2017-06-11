@@ -106,7 +106,7 @@ namespace casual
          common::unittest::Trace trace;
 
          mockup::domain::Manager manager;
-         mockup::domain::Broker broker;
+         mockup::domain::service::Manager service;
 
          EXPECT_NO_THROW({
             server::handle::Call callHandler( local::arguments());
@@ -152,7 +152,7 @@ namespace casual
                }
 
                mockup::domain::Manager manager;
-               mockup::domain::Broker broker;
+               mockup::domain::service::Manager service;
                mockup::domain::transaction::Manager tm;
 
 

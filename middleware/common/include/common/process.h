@@ -117,7 +117,10 @@ namespace casual
 
             namespace identity
             {
-               const Uuid& broker();
+               namespace service
+               {
+                  const Uuid& manager();
+               } // service
 
                namespace forward
                {
@@ -136,7 +139,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker();
+                  const Uuid& manager();
                } // queue
 
                namespace transaction

@@ -132,11 +132,14 @@ namespace casual
          {
             namespace identity
             {
-               const Uuid& broker()
+               namespace service
                {
-                  const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
-                  return singleton;
-               }
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
+                     return singleton;
+                  }
+               } // service
 
                namespace forward
                {
@@ -159,7 +162,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker()
+                  const Uuid& manager()
                   {
                      const static Uuid singleton{ "c0c5a19dfc27465299494ad7a5c229cd"};
                      return singleton;

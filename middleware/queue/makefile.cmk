@@ -75,24 +75,24 @@ queue_group = LinkExecutable( 'bin/casual-queue-group',
 install_bin.append( queue_group);
  
 #
-# Broker
+# Manager
 #
 
-broker_archive = LinkArchive( 'bin/casual-queue-broker-archive',
+manager_archive = LinkArchive( 'bin/casual-queue-manager-archive',
    [
-     Compile( 'source/broker/handle.cpp'),
-     Compile( 'source/broker/broker.cpp'),
-     Compile( 'source/broker/state.cpp'),
-     Compile( 'source/broker/admin/server.cpp'),
+     Compile( 'source/manager/handle.cpp'),
+     Compile( 'source/manager/manager.cpp'),
+     Compile( 'source/manager/state.cpp'),
+     Compile( 'source/manager/admin/server.cpp'),
    ])
 
 
-queue_broker = LinkExecutable( 'bin/casual-queue-broker', 
+queue_manager = LinkExecutable( 'bin/casual-queue-manager', 
     [
-      Compile( 'source/broker/main.cpp'),
+      Compile( 'source/manager/main.cpp'),
     ], 
     [ 
-     broker_archive,
+     manager_archive,
      common,
      'casual-common', 
      'casual-configuration', 
@@ -101,7 +101,7 @@ queue_broker = LinkExecutable( 'bin/casual-queue-broker',
      ]);
 
 
-install_bin.append( queue_broker);
+install_bin.append( queue_manager);
 
 
 
@@ -147,7 +147,7 @@ install_bin.append( forward_queue);
 #
 queue_client = LinkExecutable( 'bin/casual-queue-admin', 
     [
-        Compile( 'source/broker/admin/client.cpp'),
+        Compile( 'source/manager/admin/client.cpp'),
      ], 
    [common, queue_api, 'casual-common', 'casual-sf', 'casual-xatmi'])
  
@@ -165,7 +165,7 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
     [
      Compile( 'unittest/isolated/source/test_transform.cpp'),
      
-     Compile( 'unittest/isolated/source/broker/test_handle.cpp'),
+     Compile( 'unittest/isolated/source/manager/test_handle.cpp'),
      
      Compile( 'unittest/isolated/source/group/test_database.cpp'),
      Compile( 'unittest/isolated/source/group/test_pending.cpp'),
@@ -174,7 +174,7 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
     ],
     [
      group_archive,
-     broker_archive,
+     manager_archive,
      common,
      queue_api,
      'casual-mockup',
@@ -193,7 +193,7 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
 #
 # Make sure the executables is linked before unittest
 #
-Dependencies( test_casual_queue, [ queue_broker, queue_group])
+Dependencies( test_casual_queue, [ queue_manager, queue_group])
 
 
 

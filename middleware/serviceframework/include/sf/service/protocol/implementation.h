@@ -166,6 +166,9 @@ namespace casual
 
                   Describe( service::Protocol&& protocol);
 
+                  Describe( Describe&& other);
+                  Describe& operator = ( Describe&& other);
+
 
                   bool call() const;
                   protocol::result_type finalize();
@@ -177,6 +180,8 @@ namespace casual
                   inline io::Output& output() { return m_output;}
 
                private:
+
+                  void setup();
 
                   io::Input m_input;
                   io::Output m_output;

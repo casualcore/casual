@@ -23,7 +23,7 @@ namespace casual
                struct Domain
                {
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
 
                };

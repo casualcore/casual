@@ -38,45 +38,66 @@ namespace casual
 			   //! @return
 			   std::mutex& mutex();
 
-				bool exists( const std::string& name);
+			   bool exists( const char* name);
+				inline bool exists( const std::string& name) { return exists( name.c_str());}
+
 
 				//!
 				//! @return value of environment variable with @p name
 				//! @throws exception::EnvironmentVariableNotFound if not found
 				//!
-				std::string get( const std::string& name);
+				std::string get( const char* name);
+				inline std::string get( const std::string& name) { return get( name.c_str());}
 
             //!
             //! @return value of environment variable with @p name or value of alternative if
             //!   variable isn't found
             //!
-            std::string get( const std::string& name, std::string alternative);
+            std::string get( const char* name, std::string alternative);
+            inline std::string get( const std::string& name, std::string alternative) { return get( name.c_str(), std::move( alternative));}
+
+            template< typename T>
+            T get( const char* name)
+            {
+               std::istringstream converter( get( name));
+               T result;
+               converter >> result;
+               return result;
+            }
 
 				template< typename T>
 				T get( const std::string& name)
 				{
-					std::istringstream converter( get( name));
-					T result;
-					converter >> result;
-					return result;
+					return get< T>( name.c_str());
 				}
 
 
-				void set( const std::string& name, const std::string& value);
+				void set( const char* name, const std::string& value);
+				inline void set( const std::string& name, const std::string& value) { set( name.c_str(), value);}
+
+
+            template< typename T>
+            void set( const char* name, T&& value)
+            {
+               std::ostringstream converter;
+               converter << value;
+               const std::string& string = converter.str();
+               set( name, string);
+            }
 
 				template< typename T>
 				void set( const std::string& name, T&& value)
 				{
-				   std::ostringstream converter;
-				   converter << value;
-				   const std::string& string = converter.str();
-				   set( name, string);
+				   set( name.c_str(), std::forward< T>( value));
 				}
 
 				namespace process
             {
-				   common::process::Handle get( const std::string& name);
-				   void set( const std::string& name, const common::process::Handle& process);
+				   common::process::Handle get( const char* name);
+				   inline common::process::Handle get( const std::string& name) { return get( name.c_str());}
+
+				   void set( const char* name, const common::process::Handle& process);
+				   inline void set( const std::string& name, const common::process::Handle& process) { return set( name.c_str(), process);}
 
             } // process
 
@@ -85,17 +106,14 @@ namespace casual
 				   //!
 				   //! @return variable name representing casual home. Where casual is installed
 				   //!
-				   const std::string& home();
+				   constexpr auto home() { return "CASUAL_HOME";};
 
 				   namespace domain
                {
-				      const std::string& home();
-				      const std::string& id();
-				      const std::string& path();
-				      const std::string& name();
-
-
-
+				      constexpr auto home() { return "CASUAL_DOMAIN_HOME";}
+				      constexpr auto id() { return "CASUAL_DOMAIN_ID";}
+				      constexpr auto path() { return "CASUAL_DOMAIN_PATH";}
+				      constexpr auto name() { return "CASUAL_DOMAIN_NAME";}
                } // domain
 
 
@@ -104,27 +122,29 @@ namespace casual
                //! @{
 				   namespace ipc
                {
-
 				      namespace domain
                   {
-				         const std::string& manager();
+				         constexpr auto manager() { return "CASUAL_DOMAIN_MANAGER_PROCESS";}
                   } // domain
 
-				      const std::string& broker();
+				      namespace service
+                  {
+				         constexpr auto manager() { return "CASUAL_SERVICE_MANAGER_PROCESS";}
+                  } // service
 
 				      namespace transaction
                   {
-				         const std::string& manager();
+				         constexpr auto manager() { return "CASUAL_TRANSACTION_MANAGER_PROCESS";}
                   } // transaction
 
 				      namespace queue
                   {
-				         const std::string& broker();
+				         constexpr auto manager() { return "CASUAL_QUEUE_MANAGER_PROCESS";}
                   } // queue
 
 				      namespace gateway
                   {
-				         const std::string& manager();
+				         constexpr auto manager() { return "CASUAL_GATEWAY_MANAGER_PROCESS";}
                   } // gateway
                } // ipc
 				   //! @}
