@@ -55,15 +55,17 @@ namespace casual
                      unittest::domain::manager::wait( common::communication::ipc::inbound::device());
                   }
 
+                  /*
                   struct set_environment_variables_t
                   {
                      set_environment_variables_t()
                      {
                         environment::variable::set( "CASUAL_HOME", "./home");
-                        environment::variable::set( environment::variable::name::domain::home(), ".casual/test-domain");
+                        environment::variable::set( environment::variable::name::domain::home(),  ".casual/test-domain");
                      }
 
                   } set_environment_variables;
+                  */
 
                   struct remove_singleton_file_t
                   {

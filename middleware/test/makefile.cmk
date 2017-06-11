@@ -54,12 +54,13 @@ install_bin.append( target)
 # unittest
 #
 
-LinkUnittest( 'unittest/bin/test-casual-generation-isolated',
+LinkUnittest( 'unittest/bin/test-casual-basic',
     [
 	   Compile( 'unittest/isolated/source/domain/test_basic.cpp'),
 	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp'),
 	],
     [ 
+		'casual-mockup-unittest-environment',
 		'casual-common', 
 		'casual-sf', 
 		'casual-xatmi', 
