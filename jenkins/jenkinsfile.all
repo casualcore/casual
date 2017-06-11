@@ -10,7 +10,7 @@ casual-make --no-colors -d -a --use-valgrind make && \
    casual-make --no-colors clean && \
    casual-make --no-colors -d -a --use-valgrind compile && \
    casual-make --no-colors -d -a --use-valgrind link && \
-   ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make test && \
+   ISOLATED_UNITTEST_DIRECTIVES="--gtest_output='xml:report.xml'" casual-make --no-colors test && \
    mkdir -p /git/casual/coverage && \
    casual-make --no-colors make && \
    casual-make --no-colors clean && \
@@ -146,9 +146,9 @@ try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-   parallel(
-      "suse" :
-      {
+//   parallel(
+//      "suse" :
+//      {
 	      node( "frontend" && "cplusplus" && "suse")
 		  {
 			  try
@@ -182,10 +182,10 @@ try
 		  	     throw e
 			  }
 		  }
-      },
+//      },
 
-      "centos" :
-      {
+//      "centos" :
+//      {
            node( "frontend" && "cplusplus" && "centos")
            {
               try
@@ -270,8 +270,8 @@ try
                    throw e
                }
            }
-      }
-   )
+//       }
+//   )
    node( "documentation")
    {
       stage('Documentation')
