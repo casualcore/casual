@@ -14,6 +14,7 @@
 #include "common/exception.h"
 
 #include "common/message/domain.h"
+#include "common/event/send.h"
 
 
 
@@ -156,7 +157,10 @@ namespace casual
 
                   if( ! partition)
                   {
-                     throw exception::invalid::Argument( "missing configuration for linked RM: " + resource.key + " - check group memberships");
+                     auto message = "missing configuration for linked RM: " + resource.key + " - check group memberships";
+                     common::event::error::send( message);
+
+                     throw exception::invalid::Argument( message);
                   }
 
                   for( auto& rm : partition)
@@ -609,11 +613,6 @@ namespace casual
          {
             Trace trace{ "transaction::Context::open"};
 
-            std::vector< int> result;
-
-            auto open = std::bind( &Resource::open, std::placeholders::_1, TMNOFLAGS);
-
-            range::transform( m_resources.all, result, open);
 
             //
             // XA spec: if one, or more of resources opens ok, then it's not an error...
@@ -621,9 +620,13 @@ namespace casual
             //   failed to open...
             //
 
-            if( range::all_of( result, []( int value) { return value != XA_OK;}))
+            for( auto& resource :  m_resources.all)
             {
-               //throw exception::tx::Error( "failed to open all resources"); //, CASUAL_NIP( m_resources.all));
+               auto result = resource.open( TMNOFLAGS);
+               if( result != XA_OK)
+               {
+                  common::event::error::send( "failed to open resource: " + resource.key + " - error: " + common::error::xa::error( result));
+               }
             }
          }
 
