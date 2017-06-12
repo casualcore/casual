@@ -1634,6 +1634,7 @@ namespace casual
                handle::Commit{ state},
                handle::Rollback{ state},
                handle::resource::Involved{ state},
+               handle::resource::Lookup{ state},
                handle::resource::reply::Connect{ state},
                handle::resource::reply::Prepare{ state},
                handle::resource::reply::Commit{ state},

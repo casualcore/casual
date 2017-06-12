@@ -249,6 +249,24 @@ resources:
       }
 
 
+      TEST( casual_transaction_manager, resource_lookup_request)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         common::message::transaction::resource::lookup::Request request;
+         request.process = common::process::handle();
+         request.resources = { "rm2"};
+
+         auto reply = common::communication::ipc::call( common::communication::ipc::transaction::manager::device(), request);
+
+         ASSERT_TRUE( reply.resources.size() == 1);
+         EXPECT_TRUE( reply.resources.at( 0).name == "rm2");
+         EXPECT_TRUE( reply.resources.at( 0).openinfo == "openinfo2");
+      }
+
+
       TEST( casual_transaction_manager, begin_transaction)
       {
          common::unittest::Trace trace;
@@ -261,9 +279,7 @@ resources:
          auto state = local::admin::call::state();
 
          EXPECT_TRUE( state.transactions.empty());
-
          EXPECT_TRUE( tx_commit() == TX_OK);
-
       }
 
 
