@@ -41,7 +41,9 @@ namespace casual
 
                            log::debug << "advertise: " << advertise << '\n';
 
-                           communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
+                           signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+
+                           communication::ipc::blocking::send( communication::ipc::service::manager::device(), advertise);
                         }
                      }
 
@@ -147,15 +149,14 @@ namespace casual
                      communication::ipc::blocking::send( node.address, message);
                   }
 
-                  void Default::ack( const std::string& service)
+                  void Default::ack()
                   {
                      Trace trace{ "server::handle::policy::Default::ack"};
 
                      message::service::call::ACK ack;
                      ack.process = process::handle();
-                     ack.service = service;
 
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   }
 
                   void Default::statistics( platform::ipc::id::type id,  message::event::service::Call& event)
@@ -319,18 +320,14 @@ namespace casual
 
                            common::service::Lookup lookup{
                               forward.parameter.service.name,
-                              message::service::lookup::Request::Context::forward};
+                              common::service::Lookup::Context::forward};
 
 
                            auto request = message;
 
                            auto target = lookup();
 
-                           if( target.state == message::service::lookup::Reply::State::absent)
-                           {
-                              throw common::exception::xatmi::service::no::Entry( target.service.name);
-                           }
-                           else if( target.state ==  message::service::lookup::Reply::State::busy)
+                           if( target.busy())
                            {
                               //
                               // We wait for service to become idle
@@ -387,13 +384,12 @@ namespace casual
                      communication::ipc::blocking::send( id, message, m_error_handler);
                   }
 
-                  void Admin::ack( const std::string& service)
+                  void Admin::ack()
                   {
                      message::service::call::ACK ack;
                      ack.process = common::process::handle();
-                     ack.service = service;
 
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack, m_error_handler);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack, m_error_handler);
                   }
 
 

@@ -193,6 +193,42 @@ domain:
          }
 
 
+         TEST( casual_domain_manager, non_existing_path___expect_boot)
+         {
+            common::unittest::Trace trace;
+
+            const auto configuration = R"(
+domain:
+   name: echo
+   executables:
+     - path: non-existing-e53ce069de5f49e6a2f546ad8e175093
+       instances: 1    
+
+)";
+
+            local::Manager manager{ { configuration}};
+            EXPECT_TRUE( process::ping( local::manager::ipc()) == manager.process.handle());
+         }
+
+         TEST( casual_domain_manager, non_existing_path__restart___expect_restart_ignored_during_boot)
+         {
+            common::unittest::Trace trace;
+
+            const auto configuration = R"(
+domain:
+   name: echo
+   executables:
+     - path: non-existing-e53ce069de5f49e6a2f546ad8e175093
+       instances: 1
+       restart: true
+
+)";
+
+            local::Manager manager{ { configuration}};
+            EXPECT_TRUE( process::ping( local::manager::ipc()) == manager.process.handle());
+         }
+
+
          TEST( casual_domain_manager, echo_restart_configuration__expect_boot)
          {
             common::unittest::Trace trace;
@@ -244,37 +280,8 @@ domain:
                namespace call
                {
 
-                  namespace service
-                  {
-                     namespace wait
-                     {
-                        void online( const std::string& service)
-                        {
-                           auto count = 100;
-
-                           while( count-- > 0)
-                           {
-                              auto reply = common::service::Lookup{ service}();
-
-                              if( reply.process)
-                              {
-                                 return;
-                              }
-                              process::sleep( std::chrono::microseconds{ 10});
-                           }
-                           throw exception::xatmi::service::no::Entry{ service};
-                        }
-                     } // wait
-
-
-
-                  } // service
-
-
                   admin::vo::State state()
                   {
-                     service::wait::online( admin::service::name::state());
-
                      sf::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::state());
 
@@ -288,8 +295,6 @@ domain:
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     service::wait::online( admin::service::name::scale::instances());
-
                      sf::service::protocol::binary::Call call;
 
                      call << CASUAL_MAKE_NVP( instances);
@@ -352,8 +357,7 @@ domain:
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
 
@@ -372,10 +376,7 @@ domain:
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
+            mockup::domain::service::Manager service;
 
             auto instances = local::call::scale( "sleep", 10);
             EXPECT_TRUE( instances.size() == 1);
@@ -384,7 +385,6 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 10) << CASUAL_MAKE_NVP( state);
             EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
          }
 
@@ -395,11 +395,7 @@ domain:
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
-
+            mockup::domain::service::Manager service;
 
             auto instances = local::call::scale( "sleep", 0);
             EXPECT_TRUE( instances.size() == 1);
@@ -408,7 +404,6 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 0) << CASUAL_MAKE_NVP( state);
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
@@ -430,8 +425,7 @@ domain:
 
             local::Manager manager{ { configuration}};
 
-            mockup::domain::Broker broker;
-
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
 
@@ -463,7 +457,7 @@ domain:
             //
             auto local_queue = communication::ipc::inbound::id();
 
-            mockup::domain::Broker broker{
+            mockup::domain::service::Manager service{
                [local_queue]( message::domain::process::prepare::shutdown::Request& m)
                {
                   Trace trace{ "local forward"};
@@ -645,18 +639,13 @@ domain:
             local::Manager manager{ { configuration}};
             process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
             state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));
 
 
             ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 1).configured_instances == 1) << CASUAL_MAKE_NVP( state);
-
 
             for( auto& instance : state.executables)
             {
@@ -667,7 +656,6 @@ domain:
 
             for( auto executable : range::remove_if( state.executables, local::predicate::Manager{}))
             {
-               EXPECT_TRUE( executable.configured_instances == 10);
                EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
             }
          }

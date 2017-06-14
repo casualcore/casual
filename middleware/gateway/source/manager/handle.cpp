@@ -75,7 +75,7 @@ namespace casual
                            //
                            // We only want to handle terminate during this
                            //
-                           common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate})};
+                           common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate)};
 
                            if( connection.running())
                            {
@@ -174,7 +174,7 @@ namespace casual
                //
                // We only want to handle child-signals during this stage
                //
-               common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+               common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
                state.runlevel = State::Runlevel::shutdown;
 
@@ -495,6 +495,8 @@ namespace casual
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
                               {
                                     "--descriptor", std::to_string( socket.descriptor()),
+                                    "--limit-messages", std::to_string( message.limit.messages),
+                                    "--limit-size", std::to_string( message.limit.size),
                               });
 
                         state().connections.inbound.push_back( std::move( connection));

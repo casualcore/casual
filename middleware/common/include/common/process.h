@@ -36,14 +36,9 @@ namespace casual
          const std::string& path();
 
          //!
-         //! Sets the path of the current process
+         //! @return the basename of the current process
          //!
-         void path( const std::string& path);
-
-         //!
-         //! @return process id (pid) for current process.
-         //!
-         platform::pid::type id();
+         const std::string& basename();
 
 
          //!
@@ -53,7 +48,7 @@ namespace casual
          {
             Handle() = default;
             Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
+            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid),  queue( queue)  {}
 
             platform::pid::type pid = 0;
             platform::ipc::id::type queue = 0;
@@ -109,12 +104,23 @@ namespace casual
          //!
          Handle handle();
 
+         //!
+         //! @return process id (pid) for current process.
+         //!
+         platform::pid::type id();
+
+         inline platform::pid::type id( const Handle& handle) { return handle.pid;}
+         inline platform::pid::type id( platform::pid::type pid) { return pid;}
+
          namespace instance
          {
 
             namespace identity
             {
-               const Uuid& broker();
+               namespace service
+               {
+                  const Uuid& manager();
+               } // service
 
                namespace forward
                {
@@ -133,7 +139,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker();
+                  const Uuid& manager();
                } // queue
 
                namespace transaction

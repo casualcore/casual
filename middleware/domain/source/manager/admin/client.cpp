@@ -108,23 +108,37 @@ namespace casual
                            },
                            []( message::event::domain::Error& m)
                            {
+
+                              auto print_error = []( const message::event::domain::Error& m){
+                                 std::cerr << terminal::color::yellow << m.executable << " "
+                                       << terminal::color::white << m.pid << ": "
+                                       << terminal::color::white << m.message
+                                       << '\n';
+                              };
+
                               switch( m.severity)
                               {
                                  case message::event::domain::Error::Severity::fatal:
                                  {
-                                    std::cerr << terminal::color::red << "fatal: " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::red << "fatal: ";
+                                    print_error( m);
                                     throw Done{};
                                  }
                                  case message::event::domain::Error::Severity::error:
                                  {
-                                    std::cerr << terminal::color::red << "error: " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::red << "error: ";
+                                    print_error( m);
                                     break;
                                  }
                                  default:
                                  {
-                                    std::cerr << terminal::color::magenta << "warning " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::magenta << "warning ";
+                                    print_error( m);
                                  }
                               }
+
+
+
                            },
                            [&]( message::event::domain::Group& m){
                               using context_type = message::event::domain::Group::Context;
@@ -264,15 +278,15 @@ namespace casual
                      {
                         for( auto& i : s.instances)
                         {
-                           mapping[ i.pid] = s.alias;
+                           mapping[ i.handle.pid] = s.alias;
                         }
                      }
 
                      for( auto& e : state.executables)
                      {
-                        for( auto& pid : e.instances)
+                        for( auto& i : e.instances)
                         {
-                           mapping[ pid] = e.alias;
+                           mapping[ i.handle] = e.alias;
                         }
                      }
                      return mapping;
@@ -326,7 +340,7 @@ namespace casual
                         { global::porcelain, ! global::no_color, ! global::no_header},
                         terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "instances", format_no_of_instances, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "#c", std::mem_fn( &P::configured_instances), terminal::color::blue, terminal::format::Align::right),
+                        //terminal::format::column( "#c", std::mem_fn( &P::configured_instances), terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
                         terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left),

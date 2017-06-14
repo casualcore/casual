@@ -123,8 +123,6 @@ namespace casual
 
             int main( int argc, char **argv, std::function< void( int, char**)> local_main)
             {
-               casual::common::process::path( argv[ 0]);
-
                try
                {
                   local_main( argc, argv);

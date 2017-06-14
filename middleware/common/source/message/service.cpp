@@ -160,8 +160,7 @@ namespace casual
 
                std::ostream& operator << ( std::ostream& out, const ACK& message)
                {
-                  return out << "{ service: " << message.service
-                        << ", process: " << message.process
+                  return out << "{ process: " << message.process
                         << '}';
                }
 

@@ -41,7 +41,6 @@ namespace casual
                Service service;
                std::string parent;
                buffer::Payload payload;
-               std::vector< common::service::header::Field> header;
                platform::descriptor::type descriptor = 0;
             };
 

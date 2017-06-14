@@ -7,6 +7,7 @@
 #include "common/terminal.h"
 
 #include "sf/log.h"
+#include "sf/archive/maker.h"
 
 
 #include <iostream>
@@ -119,15 +120,7 @@ namespace casual
 
 
                   } // cli
-
-
-
-
-
-
-
                } // format
-
 
                void print( const Settings& settings)
                {
@@ -135,13 +128,21 @@ namespace casual
 
                   auto models = service::describe( settings.services);
 
+
                   for( auto& model : models)
                   {
-                     format::cli::print( std::cout, model);
+                     if( ! settings.protocol.empty())
+                     {
+                        auto archive = sf::archive::writer::from::name( std::cout, settings.protocol);
+
+                        archive << CASUAL_MAKE_NVP( model);
+                     }
+                     else
+                     {
+                        format::cli::print( std::cout, model);
+                     }
                   }
                }
-
-
             } // <unnamed>
          } // local
 
@@ -154,8 +155,8 @@ namespace casual
             {
                Arguments arguments{ "Describes a casual service",
                   {
+                     argument::directive( {"-f", "--format"}, "format to print (json|yaml|xml|ini), if absent CLI format is used ", settings.protocol),
                      argument::directive( {"-s", "--services"}, "services to describe ", settings.services),
-                     argument::directive( {"-f", "--format"}, "format to print [json,yaml,xml,ini,debug...] ", settings.protocol)
                   }};
 
                arguments.parse( argc, argv);

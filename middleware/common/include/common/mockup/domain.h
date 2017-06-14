@@ -59,6 +59,31 @@ namespace casual
                   dispatch_type echo();
 
                } // conversation
+
+
+               struct Manager
+               {
+                  Manager();
+                  Manager( dispatch_type&& handler);
+
+                  ~Manager();
+
+               private:
+
+                  struct State
+                  {
+                     std::map< std::string, common::message::service::lookup::Reply> services;
+                     std::vector< platform::ipc::id::type> traffic_monitors;
+                  };
+
+
+                  dispatch_type default_handler();
+
+                  State m_state;
+                  ipc::Replier m_replier;
+               };
+
+
             } // server
 
 
@@ -84,27 +109,7 @@ namespace casual
 
 
 
-            struct Broker
-            {
-               Broker();
-               Broker( dispatch_type&& handler);
 
-               ~Broker();
-
-            private:
-
-               struct State
-               {
-                  std::map< std::string, common::message::service::lookup::Reply> services;
-                  std::vector< platform::ipc::id::type> traffic_monitors;
-               };
-
-
-               dispatch_type default_handler();
-
-               State m_state;
-               ipc::Replier m_replier;
-            };
 
             namespace transaction
             {
@@ -161,7 +166,7 @@ namespace casual
                   void undadvertise( std::vector< std::string> services) const;
 
 
-                  void send_ack( std::string service) const;
+                  void send_ack() const;
 
                   process::Handle process() const;
 
@@ -185,7 +190,7 @@ namespace casual
                   Domain();
 
                   domain::Manager domain;
-                  Broker broker;
+                  service::Manager service;
                   transaction::Manager tm;
 
                   echo::Server server;

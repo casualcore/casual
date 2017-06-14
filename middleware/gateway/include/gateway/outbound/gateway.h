@@ -327,7 +327,7 @@ namespace casual
                               //
                               for( auto& service : advertise.services) { ++service.hops;}
 
-                              ipc::optional::send( common::communication::ipc::broker::device(), advertise);
+                              ipc::optional::send( common::communication::ipc::service::manager::device(), advertise);
                            }
 
                            if( ! advertise.queues.empty())
@@ -335,7 +335,7 @@ namespace casual
                               try
                               {
                                  common::communication::ipc::blocking::send(
-                                       common::communication::ipc::queue::broker::optional::device(),
+                                       common::communication::ipc::queue::manager::optional::device(),
                                        advertise);
                               }
                               catch( const common::exception::communication::Unavailable&)
@@ -639,7 +639,7 @@ namespace casual
                //
                // We're only interested in sig-user
                //
-               common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
+               common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
 
                Trace trace{ "gateway::outbound::Gateway::reply_thread"};
 

@@ -135,8 +135,6 @@ namespace casual
                      {
                         auto& state = server::context().state();
 
-                        common::service::header::fields( std::move( argument.header));
-
                         //
                         // Set destination for the coming jump...
                         // we can't wrap the jump in some abstraction since it's

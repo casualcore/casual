@@ -91,6 +91,18 @@ namespace casual
             return local::fetch( std::move( environment), paths);
          }
 
+         std::vector< std::string> transform( const std::vector< Variable>& variables)
+         {
+            std::vector< std::string> result;
+
+            for( auto& variable : variables)
+            {
+               result.push_back( variable.key + '=' + variable.value);
+            }
+
+            return result;
+         }
+
       } // environment
 
 

@@ -211,6 +211,19 @@ namespace casual
                {
                   sf::Trace trace{ "protocol::Describe::Describe"};
 
+                  setup();
+               }
+
+               Describe::Describe( Describe&& other)
+                  : m_model( std::move( other.m_model)), m_writer( m_model), m_protocol( std::move( other.m_protocol))
+               {
+                  sf::Trace trace{ "protocol::Describe move ctor"};
+
+                  setup();
+               }
+
+               void Describe::setup()
+               {
                   m_model.service = common::execution::service::name();
 
                   m_input.readers.push_back( &m_prepare);
@@ -218,8 +231,9 @@ namespace casual
 
                   m_output.readers.push_back( &m_prepare);
                   m_output.writers.push_back( &m_writer.output);
-
                }
+
+               //Describe& Describe::operator = ( Describe&& other);
 
 
                bool Describe::call() const

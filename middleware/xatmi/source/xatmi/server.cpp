@@ -74,8 +74,6 @@ int casual_start_server( casual_server_argument* arguments)
 {
    try
    {
-      common::process::path( arguments->argv[ 0]);
-
       common::server::start(
             local::transform::services( *arguments),
             local::transform::resources( *arguments),

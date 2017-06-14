@@ -85,7 +85,7 @@ target = LinkLibrary( 'bin/casual-resource-proxy-server',
 
 install_lib.append( target)
 
-install_headers.append( 'include/transaction/resource/proxy_server.h')
+install_headers.append( ( 'include/transaction/resource/proxy_server.h', 'transaction/resource'))
 
 
 #

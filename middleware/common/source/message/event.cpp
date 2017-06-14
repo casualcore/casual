@@ -36,6 +36,32 @@ namespace casual
                }
             } // subscription
 
+            namespace domain
+            {
+               inline namespace v1
+               {
+                  std::ostream& operator << ( std::ostream& out, Error::Severity value)
+                  {
+                     switch( value)
+                     {
+                        case Error::Severity::warning: return out << "warning";
+                        case Error::Severity::error: return out << "error";
+                        case Error::Severity::fatal: return out << "fatal";
+                     }
+                     return out << "unknown";
+                  }
+                  std::ostream& operator << ( std::ostream& out, const Error& value)
+                  {
+                     return out << "{ severity: " << value.severity
+                           << ", message: " << value.message
+                           << ", executable: " << value.executable
+                           << ", pid: " << value.pid
+                           << '}';
+                  }
+
+               }
+            }
+
             namespace process
             {
                inline namespace v1

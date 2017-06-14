@@ -145,7 +145,7 @@ namespace casual
                   m_state.physical_services.push_back( prospect);
                   m_state.services.emplace( prospect.name, m_state.physical_services.back());
                }
-               communication::ipc::blocking::send( communication::ipc::broker::device(), message);
+               communication::ipc::blocking::send( communication::ipc::service::manager::device(), message);
             }
          }
 
@@ -163,7 +163,7 @@ namespace casual
             message.process = process::handle();
             message.services.emplace_back( service);
 
-            communication::ipc::blocking::send( communication::ipc::broker::device(), message);
+            communication::ipc::blocking::send( communication::ipc::service::manager::device(), message);
          }
 
 

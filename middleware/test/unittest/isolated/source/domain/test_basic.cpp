@@ -59,8 +59,8 @@ namespace casual
                   {
                      set_environment_variables_t()
                      {
+                        // make sure we use our newly built stuff in the repo
                         environment::variable::set( "CASUAL_HOME", "./home");
-                        environment::variable::set( environment::variable::name::domain::home(), ".casual/test-domain");
                      }
 
                   } set_environment_variables;
@@ -86,7 +86,9 @@ namespace casual
 
          TEST( test_domain_basic, empty_configuration)
          {
-            const std::string configuration = R"(
+            // common::unittest::Trace trace;
+
+            const auto configuration = R"(
 domain:
   name: empty_configuration
 )";

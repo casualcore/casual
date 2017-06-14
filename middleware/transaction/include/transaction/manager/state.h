@@ -131,9 +131,11 @@ namespace casual
                std::string note;
 
                //!
-               //! @return true if all instances is idle
+               //! @return true if all instances 'has connected'
                //!
-               bool ready() const;
+               bool booted() const;
+
+               bool remove_instance( common::platform::pid::type pid);
 
 
                friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
@@ -542,10 +544,11 @@ namespace casual
          bool outstanding() const;
 
 
+
          //!
-         //! @return true if all resource proxies is booted and ready do work
+         //! @return true if all resource proxies is booted
          //!
-         bool ready() const;
+         bool booted() const;
 
 
          //!
@@ -559,6 +562,8 @@ namespace casual
 
          state::resource::Proxy& get_resource( state::resource::id::type rm);
          state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::platform::pid::type pid);
+
+         bool remove_instance( common::platform::pid::type pid);
 
 
          using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;

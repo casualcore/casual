@@ -42,6 +42,8 @@ namespace casual
                   )
                };
 
+               static inbound::Cache::Limit limits( const casual::gateway::inbound::ipc::Settings& settings) { return {};}
+
                struct internal_type
                {
                   internal_type( configuration_type configuration) : m_outbound{ configuration.id}

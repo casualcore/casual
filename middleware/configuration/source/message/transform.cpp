@@ -75,6 +75,12 @@ namespace casual
 
                   result.address = l.address;
 
+                  if( l.limit.has_value())
+                  {
+                     result.limit.messages = l.limit.value().messages.value_or( 0);
+                     result.limit.size = l.limit.value().size.value_or( 0);
+                  }
+
                   return result;
                });
 

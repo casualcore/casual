@@ -58,7 +58,7 @@ namespace casual
                } set_environment;
 
                mockup::domain::Manager manager;
-               mockup::domain::Broker broker;
+               mockup::domain::service::Manager service;
                mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
@@ -288,7 +288,7 @@ namespace casual
 
          common::message::service::call::callee::Request request;
          {
-            request.service.name = ".casual.gateway.state";
+            request.service.name = manager::admin::service::name::state();
             request.process = process::handle();
          }
 

@@ -128,7 +128,7 @@ namespace casual
                      []( const message::event::domain::Error& error){
                         if( error.severity == message::event::domain::Error::Severity::fatal)
                         {
-                           throw wait_done{};
+                           throw exception::Shutdown{ "fatal error", CASUAL_NIP( error)};
                         }
                      },
                      common::message::handle::Discard< common::message::event::domain::Group>{},

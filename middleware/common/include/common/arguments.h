@@ -573,11 +573,6 @@ namespace casual
 
          void parse( const std::string& process, const std::vector< std::string>& arguments);
 
-         //!
-         //! @return process name
-         //!
-         const std::string& process() const;
-
 
       };
 

@@ -16,6 +16,8 @@
 
 #include "common/event/dispatch.h"
 
+#include "configuration/environment.h"
+
 
 #include  "sf/namevaluepair.h"
 #include  "sf/archive/archive.h"
@@ -76,7 +78,10 @@ namespace casual
                private:
                };
 
+
             } // internal
+
+
 
             struct Group : internal::Id< Group>
             {
@@ -138,7 +143,6 @@ namespace casual
                   std::vector< std::string> variables;
                } environment;
 
-               std::size_t configured_instances = 0;
 
                bool restart = false;
 
@@ -160,27 +164,91 @@ namespace casual
 
                   archive & CASUAL_MAKE_NVP( memberships);
                   archive & sf::name::value::pair::make(  "environment_variables", environment.variables);
-                  archive & CASUAL_MAKE_NVP( configured_instances);
                   archive & CASUAL_MAKE_NVP( restart);
                   archive & CASUAL_MAKE_NVP( restarts);
                )
             };
 
+            namespace instance
+            {
+               enum class State : int
+               {
+                  running,
+                  scale_out,
+                  scale_in,
+                  exit,
+                  spawn_error,
+               };
+
+               std::ostream& operator << ( std::ostream& out, State value);
+
+            } // instance
+
+            template< typename P>
+            struct Instance
+            {
+               using policy_type = P;
+               using handle_type = typename policy_type::handle_type;
+               using state_type = typename policy_type::state_type;
+
+               handle_type handle;
+               state_type state = state_type::scale_out;
+
+               void spawned( common::platform::pid::type pid)
+               {
+                  policy_type::spawned( pid, *this);
+               }
+
+               friend bool operator == ( const Instance& lhs, const handle_type& rhs) { return lhs.handle == rhs;}
+               friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.state < rhs.state;}
+
+
+
+               friend std::ostream& operator << ( std::ostream& out, const Instance& value)
+               {
+                  return out << "{ handle: " << value.handle
+                        << ", state: " << value.state
+                        << '}';
+               }
+            };
+
 
             struct Executable : Process
             {
+               struct instance_policy
+               {
+                  using handle_type = common::platform::pid::type;
+                  using state_type = instance::State;
 
-               std::vector< pid_type> instances;
+                  template< typename I>
+                  static void spawned( common::platform::pid::type pid, I& instance)
+                  {
+                     instance.handle = pid;
+                     instance.state = state_type::running;
+                  }
+               };
 
+               using instance_type = Instance< instance_policy>;
+               using state_type = typename instance_type::state_type;
 
-               bool remove( pid_type instance);
-               bool offline() const;
-               bool online() const;
+               using instances_range = common::range::type_t< std::vector< instance_type>>;
+               using const_instances_range = common::range::type_t< const std::vector< instance_type>>;
+
+               std::vector< instance_type> instances;
+
+               instances_range spawnable();
+               const_instances_range spawnable() const;
+               const_instances_range shutdownable() const;
+
+               void scale( std::size_t instances);
+
+               void remove( pid_type instance);
+
 
                //!
                //! @return true if number of instances >= configured_instances
                //!
-               bool complete() const;
+               //bool complete() const;
 
                friend std::ostream& operator << ( std::ostream& out, const Executable& value);
 
@@ -188,7 +256,26 @@ namespace casual
 
             struct Server : Process
             {
-               std::vector< common::process::Handle> instances;
+               struct instance_policy
+               {
+                  using handle_type = common::process::Handle;
+                  using state_type = instance::State;
+
+                  template< typename I>
+                  static void spawned( common::platform::pid::type pid, I& instance)
+                  {
+                     instance.handle.pid = pid;
+                     instance.state = state_type::scale_out;
+                  }
+               };
+
+               using instance_type = Instance< instance_policy>;
+               using state_type = typename instance_type::state_type;
+
+               using instances_range = common::range::type_t< std::vector< instance_type>>;
+               using const_instances_range = common::range::type_t< const std::vector< instance_type>>;
+
+               std::vector< instance_type> instances;
 
                //!
                //! Resources bound explicitly to this executable (if it's a server)
@@ -200,19 +287,22 @@ namespace casual
                //!
                std::vector< std::string> restrictions;
 
+               instances_range spawnable();
+               const_instances_range spawnable() const;
+               const_instances_range shutdownable() const;
 
-               bool offline() const;
-               bool online() const;
+               void scale( std::size_t instances);
 
-               common::process::Handle process( common::platform::pid::type pid) const;
-               common::process::Handle remove( common::platform::pid::type pid);
+
+               instance_type instance( common::platform::pid::type pid) const;
+               instance_type remove( common::platform::pid::type pid);
 
                bool connect( common::process::Handle process);
 
                //!
                //! @return true if number of instances >= configured_instances
                //!
-               bool complete() const;
+               //bool complete() const;
 
                friend std::ostream& operator << ( std::ostream& out, const Server& value);
 
@@ -221,49 +311,45 @@ namespace casual
                //!
                //! For persistent state
                //!
-               CASUAL_CONST_CORRECT_SERIALIZE(
+               template< typename A>
+               void serialize( A& archive)
+               {
                   Process::serialize( archive);
 
                   archive & CASUAL_MAKE_NVP( resources);
                   archive & CASUAL_MAKE_NVP( restrictions);
 
-               )
+                  auto instances_count = instances.size();
+                  archive & CASUAL_MAKE_NVP( instances_count);
+                  instances.resize( instances_count);
+               }
+
+               template< typename A>
+               void serialize( A& archive) const
+               {
+                  Process::serialize( archive);
+
+                  archive & CASUAL_MAKE_NVP( resources);
+                  archive & CASUAL_MAKE_NVP( restrictions);
+
+                  auto instances_count = instances.size();
+                  archive & CASUAL_MAKE_NVP( instances_count);
+               }
             };
 
             struct Batch
             {
-               Batch( State& state, Group::id_type group);
-
-               template< typename ID>
-               struct Scale
-               {
-                  ID id;
-                  std::size_t instances;
-
-                  friend std::ostream& operator << ( std::ostream& out, const Scale& value)
-                  {
-                     return out << "{ id: " << value.id << ", instances: " << value.instances << '}';
-                  }
-               };
+               Batch( Group::id_type group);
 
                Group::id_type group;
 
-               std::vector< Scale< Executable::id_type>> executables;
-               std::vector< Scale< Server::id_type>> servers;
-
-               std::chrono::milliseconds timeout() const;
-
-               bool online() const;
-               bool offline() const;
-
-               const State& state() const;
-               State& state();
+               std::vector< Executable::id_type> executables;
+               std::vector< Server::id_type> servers;
 
                friend std::ostream& operator << ( std::ostream& out, const Batch& value);
-            private:
-               std::reference_wrapper< State> m_state;
             };
             static_assert( common::traits::is_movable< Batch>::value, "not movable");
+
 
          } // state
 
@@ -348,6 +434,10 @@ namespace casual
             > event;
 
 
+            //!
+            //! global/default environment variables
+            //!
+            casual::configuration::Environment environment;
 
             //!
             //! this domain's original configuration.
@@ -365,7 +455,18 @@ namespace casual
             std::vector< state::Batch> bootorder();
             std::vector< state::Batch> shutdownorder();
 
-            void remove_process( common::platform::pid::type pid);
+            //!
+            //! Cleans up an exit (server or executable).
+            //!
+            //! @param pid
+            //! @return pointer to Server and Executable which is not null if we gonna restart them.
+            //!
+            std::tuple< state::Server*, state::Executable*> exited( common::platform::pid::type pid);
+
+            //!
+            //! @return environment variables for the process, including global/default variables
+            //!
+            std::vector< std::string> variables( const state::Process& process);
 
 
 
@@ -373,9 +474,11 @@ namespace casual
             const state::Group& group( state::Group::id_type id) const;
 
             state::Server* server( common::platform::pid::type pid);
+            state::Server& server( state::Server::id_type id);
             const state::Server& server( state::Server::id_type id) const;
 
             state::Executable* executable( common::platform::pid::type pid);
+            state::Executable& executable( state::Executable::id_type id);
             const state::Executable& executable( state::Executable::id_type id) const;
 
 
@@ -405,6 +508,7 @@ namespace casual
                archive & CASUAL_MAKE_NVP( servers);
                archive & CASUAL_MAKE_NVP( executables);
                archive & CASUAL_MAKE_NVP( group_id);
+               archive & CASUAL_MAKE_NVP( environment);
                archive & CASUAL_MAKE_NVP( configuration);
             )
 

@@ -38,6 +38,10 @@ namespace casual
                 : process{ "./bin/casual-gateway-manager"}
                {
 
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  process::instance::fetch::handle( process::instance::identity::gateway::manager());
                }
 
                struct set_environment_t
@@ -59,7 +63,7 @@ namespace casual
                }
 
                mockup::domain::Manager manager;
-               mockup::domain::Broker broker;
+               mockup::domain::service::Manager service;
                mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
@@ -77,7 +81,7 @@ namespace casual
                        domain1{ mockup::domain::echo::create::service( "remote1")} {}
 
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
 
                   mockup::domain::echo::Server domain1;
@@ -282,7 +286,7 @@ namespace casual
                   }
 
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
                   mockup::domain::queue::Broker queue;
 

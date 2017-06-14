@@ -30,16 +30,8 @@ namespace casual
             {
                void SetUp() override
                {
-                  std::string domain_path;
+                  std::string domain_path = environment::directory::temporary() + "/casual/unittest";
 
-                  if( environment::variable::exists( "CASUAL_BUILD_HOME"))
-                  {
-                     domain_path =  environment::variable::get( "CASUAL_BUILD_HOME") + "/.casual/unittest" ;
-                  }
-                  else
-                  {
-                     domain_path =  environment::directory::temporary() + "/.casual/unittest" ;
-                  }
                   environment::variable::set( environment::variable::name::domain::home(), domain_path);
 
                   domain::identity( domain::Identity{ "unittest-domain"});

@@ -83,7 +83,6 @@ namespace casual
 
             void main( int argc, char **argv)
             {
-               common::process::path( argv[ 0]);
                //
                // get database from arguments
                //

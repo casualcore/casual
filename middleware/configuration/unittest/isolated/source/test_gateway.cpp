@@ -38,7 +38,7 @@ namespace casual
          // serialize and deserialize
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
-         ASSERT_TRUE( gateway.listeners.size() == 2);
+         ASSERT_TRUE( gateway.listeners.size() == 4);
          EXPECT_TRUE( gateway.listeners.at( 0).address == "localhost:7779") << CASUAL_MAKE_NVP( gateway);
          ASSERT_TRUE( gateway.connections.size() == 3) << CASUAL_MAKE_NVP( gateway);
 

@@ -18,6 +18,7 @@ LibraryPaths([
 
 
 install_lib = []
+install_headers = []
 
 lib_sf = LinkLibrary( 'bin/casual-sf',
     [
@@ -41,6 +42,12 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
     ['casual-common', 'casual-xatmi', 'yaml-cpp', 'pugixml'])
 
 install_lib.append( lib_sf)
+
+install_headers += [ 
+      ( 'include/sf/log.h', 'sf'),
+      ( 'include/sf/archive/log.h', 'sf/archive'),
+      ( 'include/sf/namevaluepair.h', 'sf'),
+]
 
 #
 # unittest
@@ -74,4 +81,6 @@ LinkUnittest( 'bin/test-casual-sf',
 # Install
 #
 Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_headers, '$(CASUAL_HOME)/include')
+
 

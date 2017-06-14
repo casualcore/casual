@@ -43,16 +43,6 @@ archive_vo = LinkArchive( 'bin/sf-test-vo',
 
 
 
-target = LinkExecutable( 'bin/test_client',
-	[ 
-		Compile( 'source/template_client.cpp')
-	], 
-    ['casual-common', 'casual-xatmi', 'casual-buffer'])
-	
-
-install_bin.append( target)
-
-
 target = LinkExecutable( 'bin/test_multicall_client',
 	[
 		Compile( 'source/test_multicall.cpp')
@@ -64,12 +54,13 @@ install_bin.append( target)
 # unittest
 #
 
-LinkUnittest( 'unittest/bin/test-casual-generation-isolated',
+LinkUnittest( 'unittest/bin/test-casual-basic',
     [
 	   Compile( 'unittest/isolated/source/domain/test_basic.cpp'),
 	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp'),
 	],
     [ 
+		'casual-mockup-unittest-environment',
 		'casual-common', 
 		'casual-sf', 
 		'casual-xatmi', 

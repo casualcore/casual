@@ -53,13 +53,15 @@ namespace casual
                   execution::service::name( message.service.name);
                   execution::service::parent::name( message.parent);
 
+                  common::service::header::fields() = std::move( message.header);
+
 
 
                   //
                   // Make sure we do some cleanup and send ACK to broker.
                   //
                   auto execute_finalize = scope::execute( [&](){
-                     policy.ack( message.service.name);
+                     policy.ack();
                      server::context().finalize();
                   });
 

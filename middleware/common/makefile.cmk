@@ -38,6 +38,7 @@ LibraryPaths( [ 'bin'] + platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBR
 
 
 install_libs = []
+install_headers = []
 
 
 casual_common_objectfiles = [
@@ -90,6 +91,7 @@ casual_common_objectfiles = [
     
     Compile( 'source/event/listen.cpp'),
     Compile( 'source/event/dispatch.cpp'),
+    Compile( 'source/event/send.cpp'),
     
     Compile( 'source/log/stream.cpp'),
     Compile( 'source/log/trace.cpp'),
@@ -115,8 +117,6 @@ casual_common_objectfiles = [
     
     Compile( 'source/arguments.cpp'),
     Compile( 'source/terminal.cpp'),
-
-    
 ]
 
 
@@ -126,6 +126,15 @@ common = LinkLibrary( 'bin/casual-common',
 
 install_libs.append( common)
 
+
+install_headers += [ 
+      ( 'include/common/log.h', 'common'),
+      ( 'include/common/platform.h', 'common'),
+      ( 'include/common/traits.h', 'common'),
+      ( 'include/common/log/stream.h', 'common/log'),
+      ( 'include/common/log/trace.h', 'common/log'),
+      ( 'include/common/log/category.h', 'common/log')
+]
 
 
 #
@@ -241,6 +250,8 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/event/test_dispatch.cpp'),
     Compile( 'unittest/source/event/test_listen.cpp'),
+    
+    Compile( 'unittest/source/test_domain.cpp'),
 ]
 
 
@@ -267,6 +278,7 @@ Dependencies( target_test_common, [ target_simple_process ]);
 # Install 
 #
 Install( install_libs, '$(CASUAL_HOME)/lib')
+Install( install_headers, '$(CASUAL_HOME)/include')
 
 
 

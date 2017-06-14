@@ -328,6 +328,7 @@ namespace casual
          using pointer = typename std::iterator_traits< iterator>::pointer;
          using reference = typename std::iterator_traits< iterator>::reference;
          using difference_type = typename std::iterator_traits< iterator>::difference_type;
+         using reverse_iterator = std::reverse_iterator< iterator>;
 
          Range() = default;
          Range( iterator first, iterator last) :  m_first( first), m_last( last) {}
@@ -362,8 +363,11 @@ namespace casual
 
          iterator begin() const { return m_first;}
          iterator end() const { return m_last;}
+         reverse_iterator rbegin() const { return reverse_iterator( end());}
+         reverse_iterator rend() const { return reverse_iterator( begin());}
 
-         void advance( difference_type value) { std::advance( m_first, value);}
+
+         Range& advance( difference_type value) { std::advance( m_first, value); return *this;}
 
          pointer data() const { return data( m_first, m_last);}
 
@@ -405,11 +409,14 @@ namespace casual
 
       namespace detail
       {
+         struct dummy {};
+
          template< typename T>
          struct negate
          {
 
-            negate( T&& functor) : m_functor{ std::move( functor)}
+            template< typename F>
+            negate( F&& functor, dummy) : m_functor( std::forward< F>( functor))
             {
 
             }
@@ -433,11 +440,10 @@ namespace casual
       } // detail
 
 
-
       template< typename T>
       detail::negate< T> negate( T&& functor)
       {
-         return detail::negate< T>{ std::forward< T>( functor)};
+         return detail::negate< T>{ std::forward< T>( functor), detail::dummy{}};
       }
 
 
@@ -994,6 +1000,19 @@ namespace casual
             return std::forward< R>( range);
          }
 
+         template< typename R, typename N, typename F>
+         auto for_each_n( R&& range, N n, F functor) -> decltype( range::make( std::forward< R>( range)))
+         {
+            if( range.size() <= n)
+            {
+               return for_each( range::make( std::forward< R>( range)), functor);
+            }
+            else
+            {
+               return for_each( range::make( std::begin( range), n), functor);
+            }
+         }
+
 
          //!
          //! associate container specialization
@@ -1360,11 +1379,16 @@ namespace casual
 
          namespace sorted
          {
-
             template< typename R, typename T>
             bool search( R&& range, T&& value)
             {
                return std::binary_search( std::begin( range), std::end( range), std::forward< T>( value));
+            }
+
+            template< typename R, typename T, typename Compare>
+            bool search( R&& range, T&& value, Compare compare)
+            {
+               return std::binary_search( std::begin( range), std::end( range), std::forward< T>( value), compare);
             }
 
             template< typename R1, typename R2, typename Output>
@@ -1451,6 +1475,19 @@ namespace casual
             auto group( R&& range)
             {
                return group( std::forward< R>( range), std::less< typename R::value_type>{});
+            }
+
+            //!
+            //! Returns a subrange that consists of (the first series of) values that fulfills the predicate
+            //!
+            //! @param range
+            //! @param predicate
+            //! @return
+            template< typename R, typename P>
+            auto subrange( R&& range, P&& predicate)
+            {
+               auto first = std::find_if( std::begin( range), std::end( range), predicate);
+               return range::make( first, std::find_if( first, std::end( range), negate( predicate)));
             }
 
          } // sorted
