@@ -16,6 +16,7 @@
 
 #include "sf/service/protocol/call.h"
 #include "sf/archive/log.h"
+#include "sf/archive/maker.h"
 
 
 namespace casual
@@ -132,58 +133,6 @@ namespace casual
 
                common::terminal::format::formatter< vo::resource::Proxy> resource_proxy()
                {
-                  struct format_state
-                  {
-
-                     std::size_t width( const vo::resource::Proxy& value, const std::ostream&) const
-                     {
-                        return value.instances.size();
-                     }
-
-                     void print( std::ostream& out, const vo::resource::Proxy& value, std::size_t width, bool color) const
-                     {
-                        if( color)
-                        {
-                           for( auto& instance : value.instances)
-                           {
-                              switch( instance.state)
-                              {
-                                 case vo::resource::Instance::State::absent:
-                                 case vo::resource::Instance::State::started: out << terminal::color::cyan.start() << '^'; break;
-                                 case vo::resource::Instance::State::idle: out << terminal::color::green.start() << '+'; break;
-                                 case vo::resource::Instance::State::busy: out << terminal::color::yellow.start() << '*'; break;
-                                 case vo::resource::Instance::State::shutdown: out << terminal::color::red.start() << 'x'; break;
-                                 default: out << terminal::color::red.start() <<  '-'; break;
-                              }
-                           }
-                           out << terminal::color::green.end();
-                        }
-                        else
-                        {
-                           for( auto& instance : value.instances)
-                           {
-                              switch( instance.state)
-                              {
-                                 case vo::resource::Instance::State::absent:
-                                 case vo::resource::Instance::State::started: out << '^'; break;
-                                 case vo::resource::Instance::State::idle: out << '+'; break;
-                                 case vo::resource::Instance::State::busy: out << '*'; break;
-                                 case vo::resource::Instance::State::shutdown: out << 'x'; break;
-                                 default: out << '-'; break;
-                              }
-                           }
-                        }
-
-                        //
-                        // Pad manually
-                        //
-
-                        if( width != 0 )
-                        {
-                           out << std::string( width - value.instances.size(), ' ');
-                        }
-                     }
-                  };
 
                   struct format_number_of_instances
                   {
@@ -248,8 +197,6 @@ namespace casual
                      terminal::format::column( "max (us)", format_max{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "avg (us)", format_avg{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right),
-                     terminal::format::custom_column( "state", format_state{}),
-
                   };
 
                }
@@ -272,48 +219,6 @@ namespace casual
                      }
                   };
 
-                  struct format_state
-                  {
-                     using State = vo::resource::Instance::State;
-
-                     std::size_t width( const vo::resource::Instance& value, const std::ostream&) const
-                     {
-                        switch( value.state)
-                        {
-                           case State::absent: return 6;
-                           case State::shutdown: return 8;
-                           default: return 4;
-                        }
-                     }
-
-                     void print( std::ostream& out, const vo::resource::Instance& value, std::size_t width, bool color) const
-                     {
-                        out << std::setfill( ' ');
-
-                        if( color)
-                        {
-                           switch( value.state)
-                           {
-                              case State::absent: out << std::right << std::setw( width) << terminal::color::red << "absent"; break;
-                              case State::idle: out << std::right << std::setw( width) << terminal::color::green << "idle"; break;
-                              case State::busy: out << std::right << std::setw( width) << terminal::color::yellow << "busy"; break;
-                              case State::shutdown: out << std::right << std::setw( width) << terminal::color::red << "shutdown"; break;
-                              default: out << std::right << std::setw( width) << terminal::color::red << "error"; break;
-                           }
-                        }
-                        else
-                        {
-                           switch( value.state)
-                           {
-                              case State::absent: out << std::right << std::setw( width)  << "absent"; break;
-                              case State::idle: out << std::right << std::setw( width) << "idle"; break;
-                              case State::busy: out << std::right << std::setw( width) << "busy"; break;
-                              case State::shutdown: out << std::right << std::setw( width) << "shutdown"; break;
-                              default: out << std::right << std::setw( width) << "error"; break;
-                           }
-                        }
-                     }
-                  };
 
                   struct format_invoked
                   {
@@ -398,7 +303,6 @@ namespace casual
                      terminal::format::column( "rm-min (us)", format_rm_min{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "rm-max (us)", format_rm_max{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "rm-avg (us)", format_rm_avg{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::custom_column( "state", format_state{}),
                   };
 
                }
@@ -510,15 +414,31 @@ namespace casual
                   formatter.print( std::cout, range::sort( resources));
                }
 
+               void state( const std::vector< std::string>& values)
+               {
+                  auto state = call::state();
+
+                  if( values.empty())
+                  {
+                     sf::archive::log::Writer archive( std::cout);
+                     archive << CASUAL_MAKE_NVP( state);
+                  }
+                  else
+                  {
+                     auto archive = sf::archive::writer::from::name( std::cout, values.front());
+
+                     archive << CASUAL_MAKE_NVP( state);
+
+                  }
+               }
+
             } // dispatch
 
 
             int main( int argc, char **argv)
             {
-               common::Arguments arguments{ R"(
-   usage: 
-     
-   )",
+
+               common::Arguments arguments{
                {
                   common::argument::directive( {"--no-header"}, "do not print headers", global::no_header),
                   common::argument::directive( {"--no-color"}, "do not use color", global::no_color),
@@ -527,7 +447,8 @@ namespace casual
                   common::argument::directive( { "-lr", "--list-resources" }, "list current transactions", &dispatch::list_resources),
                   common::argument::directive( { "-li", "--list-instances" }, "list current transactions", &dispatch::list_instances),
                   common::argument::directive( { "-ui", "--update-instances" }, "update instances - -ui [<rm-id> <# instances>]+", &dispatch::update_instances),
-                  common::argument::directive( { "-lp", "--list-pending" }, "list pending tasks", &dispatch::list_pending)
+                  common::argument::directive( { "-lp", "--list-pending" }, "list pending tasks", &dispatch::list_pending),
+                  common::argument::directive( common::argument::cardinality::Any{}, { "--state" }, "view current state in supplied format: --state (yaml|json|xml|ini)", &dispatch::state)
                }};
 
 
