@@ -290,12 +290,17 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::service::remote::Metric"};
 
+                     auto now = platform::time::clock::type::now();
+
                      for( auto& s : message.services)
                      {
                         auto service = m_state.find_service( s.name);
                         if( service)
                         {
                            service->metric.add( s.duration);
+
+                           // TODO: do we need more accuracy?
+                           service->last( now);
                         }
                      }
                   }

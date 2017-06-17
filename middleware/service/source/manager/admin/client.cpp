@@ -602,10 +602,10 @@ namespace casual
              the timeout for the service (in seconds)
           LI:
              Local-Instances number of local instances
-          LC:
-             Local-Calls - number of calls to local instances
-          LAT:
-             Local-Average-Time - the average time of the service
+          C:
+             calls - number of calls to the service
+          AT:
+             average-time - the average time of the service
           P
              Pending - total number of pending request, over time.
           PAT
@@ -613,7 +613,7 @@ namespace casual
           RI:
              Remote-Instances - number of remote instances
           RC:
-             Remote-Calls - number of calls to remote instances, which is a subset of LC
+             Remote-Calls - number of calls to remote instances (a subset of C)
           last:
              the last time the service was requested    
    )";

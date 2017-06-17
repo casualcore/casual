@@ -7,7 +7,7 @@ server:
       # transation characteristics
       # Can be one of the following
       # - auto : if a transaction is present join it, else start a new one (default)
-      # - join : if a transaction is present join it, 
+      # - join : if a transaction is present join it,
       # - none : don't join any transaction
       # - atomic : start a new transaction regardless.
       #
@@ -16,21 +16,25 @@ server:
   # A list of services that a server has
   #
   services:
-      
+
       # name of the service
-    - name: casual.example.echo
+    - name: casual/example/echo
       # name of the function the service should bind to
       function: casual_example_echo
       category: example
-      
 
-    - name: casual.example.sink
+
+    - name: casual/example/sink
       function: casual_example_sink
       transaction: join
       category: example
 
-      
-    - name: casual.example.rollback
+    - name: casual/example/rollback
       function: casual_example_rollback
+      transaction: join
+      category: example
+
+    - name: casual/example/conversation
+      function: casual_example_conversation
       transaction: join
       category: example

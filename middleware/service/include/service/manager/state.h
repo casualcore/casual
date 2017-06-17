@@ -278,7 +278,9 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
                inline std::size_t remote_invocations() const { return m_remote_invocations;}
+
                inline const common::platform::time::point::type& last() const { return m_last;}
+               inline void last( common::platform::time::point::type now) { m_last = now;}
 
 
             private:
