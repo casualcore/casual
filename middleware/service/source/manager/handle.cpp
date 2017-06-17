@@ -284,6 +284,23 @@ namespace casual
                   }
                }
 
+               namespace remote
+               {
+                  void Metric::operator () ( common::message::service::remote::Metric& message)
+                  {
+                     Trace trace{ "service::manager::handle::service::remote::Metric"};
+
+                     for( auto& s : message.services)
+                     {
+                        auto service = m_state.find_service( s.name);
+                        if( service)
+                        {
+                           service->metric.add( s.duration);
+                        }
+                     }
+                  }
+               } // remote
+
             } // service
 
 
@@ -502,6 +519,7 @@ namespace casual
                handle::process::prepare::Shutdown{ state},
                handle::service::Advertise{ state},
                handle::service::Lookup{ state},
+               handle::service::remote::Metric{ state},
                handle::ACK{ state},
                handle::event::subscription::Begin{ state},
                handle::event::subscription::End{ state},
