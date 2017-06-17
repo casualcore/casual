@@ -11,6 +11,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/communication/ipc.h"
+#include "common/event/send.h"
 
 #include "sf/log.h"
 
@@ -65,6 +66,9 @@ namespace casual
                   if( reply.state != XA_OK)
                   {
                      auto error = common::error::xa::error( reply.state);
+
+                     common::event::error::send( "failed to open xa resurce " + m_state.rm_key + " - error: " + error + " - action: shutdown resource proxy");
+
                      throw common::exception::tx::Error( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo, CASUAL_NIP( error));
                   }
                }

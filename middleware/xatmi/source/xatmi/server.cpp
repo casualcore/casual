@@ -5,14 +5,13 @@
 #include "xatmi/server.h"
 
 
-
-
 #include "common/server/start.h"
 
 
 #include "common/error.h"
 #include "common/functional.h"
 #include "common/process.h"
+#include "common/event/send.h"
 
 
 #include <vector>
@@ -82,7 +81,8 @@ int casual_start_server( casual_server_argument* arguments)
                {
                   if( common::invoke( arguments->server_init, arguments->argc, arguments->argv) == -1)
                   {
-                     throw common::exception::xatmi::invalid::Argument{ "server init failed"};
+                     common::event::error::send( "server initialize failed - action: exit");
+                     throw common::exception::xatmi::invalid::Argument{ "server initialize failed"};
                   }
                }
       });
