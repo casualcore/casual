@@ -1,6 +1,6 @@
 # field maintenance
 
-## Implemtation
+## implementation
 
 The main idea is to keep the buffer "ready to go" without the need for extra marshalling when transported and thus data is stored in network byteorder etc from start
 
@@ -15,7 +15,7 @@ repository and that has to be improved and many other things can be improved as 
 
 The repository-implementation is a bit comme ci comme ca and to provide something like 'mkfldhdr32' the functionality has to be accessible from there (or vice versa)
 
-## ToDo:s
+## todo:s
 
 - casual\_field\_match (and such) need to be better
 

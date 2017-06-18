@@ -1,6 +1,6 @@
 # field operation
 
-## Environment
+## environment
 
 If the application is using a casual-field-repository, the environment-variable CASUAL\_FIELD\_TABLE needs to be present and its value should be the repository-file e.g.
 
