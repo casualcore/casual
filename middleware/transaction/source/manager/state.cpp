@@ -331,6 +331,17 @@ namespace casual
          result = convert( value);
       }
 
+      bool Transaction::Resource::done() const
+      {
+         switch( result)
+         {
+         case Result::xa_RDONLY:
+         case Result::xaer_NOTA:
+            return true;
+         default:
+            return false;
+         }
+      }
 
       Transaction::Resource::Stage Transaction::stage() const
       {

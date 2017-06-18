@@ -309,7 +309,7 @@ namespace casual
                xaer_ASYNC,
                xa_RETRY,
                xaer_DUPID,
-               xaer_NOTA,
+               xaer_NOTA,  //! nothing to do?
                xa_OK,      //! Went as expected
                xa_RDONLY,  //! Went "better" than expected
             };
@@ -327,6 +327,11 @@ namespace casual
 
             void set_result( int value);
 
+            //!
+            //! @return true if there's nothing more to do, hence this resource can be removed
+            //!    from the transaction
+            //!
+            bool done() const;
 
             struct update
             {

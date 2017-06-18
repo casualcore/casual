@@ -84,6 +84,15 @@ namespace casual
 	         //!
 	         constexpr std::size_t flush() { return 20;}
 
+	         namespace gateway
+            {
+	            //!
+	            //! Max number of batched metrics before force
+	            //! send to service-manager
+	            //!
+	            constexpr std::size_t metrics() { return 20;}
+            } // gateway
+
          } // batch
 
 

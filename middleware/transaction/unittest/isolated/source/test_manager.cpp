@@ -387,6 +387,39 @@ resources:
       }
 
 
+      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__XAER_NOTA___expect__TX_OK)
+      {
+         common::unittest::Trace trace;
+
+         auto configuration = local::Domain::configuration();
+         configuration.transaction.resources.resize( 1);
+         configuration.transaction.resources.at( 0).openinfo = "--commit " + std::to_string( XAER_NOTA);
+
+         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         //
+         // Make sure we make the transaction distributed
+         //
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         // involved
+         {
+            common::message::transaction::resource::Involved message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.resources = { 1};
+
+            local::send::tm( message);
+         }
+
+         auto result = tx_commit();
+         EXPECT_TRUE( result == TX_OK) << "result: " << common::error::tx::error( result);
+      }
+
       TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
          common::unittest::Trace trace;
@@ -608,8 +641,6 @@ resources:
             EXPECT_TRUE( message.state == TX_OK);
 
          }
-
-
       }
 
 

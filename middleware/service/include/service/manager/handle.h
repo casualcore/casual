@@ -132,6 +132,16 @@ namespace casual
 
                };
 
+               namespace remote
+               {
+                  struct Metric : Base
+                  {
+                     using Base::Base;
+                     void operator () ( common::message::service::remote::Metric& message);
+                  };
+
+               } // remote
+
             } // service
 
             namespace domain

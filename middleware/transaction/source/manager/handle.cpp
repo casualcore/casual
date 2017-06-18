@@ -951,10 +951,24 @@ namespace casual
                      if( resource)
                      {
                         //
-                        // We found all the stuff, let the real handler handle the message
+                        // We found all the stuff
                         //
+
+                        // check if we
                         resource->set_result( message.state);
-                        if( m_handler( message, transaction, *resource))
+
+                        if( resource->done())
+                        {
+                           transaction.resources.erase( std::begin( resource));
+                        }
+                        else
+                        {
+                           resource->stage = handler_type::stage();
+                        }
+
+
+                        //  let the real handler handle the message
+                        if( m_handler( message, transaction))
                         {
                            //
                            // We remove the transaction from our state
@@ -1031,26 +1045,11 @@ namespace casual
                   }
                }
 
-               bool basic_prepare::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_prepare::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::prepare reply"};
 
                   log << "message: " << message << '\n';
-
-                  //
-                  // If the resource only did a read only, we 'promote' it to 'not involved'
-                  //
-                  {
-
-                     if( resource.result == Transaction::Resource::Result::xa_RDONLY)
-                     {
-                        resource.stage = Transaction::Resource::Stage::not_involved;
-                     }
-                     else
-                     {
-                        resource.stage = Transaction::Resource::Stage::prepare_replied;
-                     }
-                  }
 
                   //
                   // Are we in a prepared state?
@@ -1069,13 +1068,11 @@ namespace casual
 
 
 
-               bool basic_commit::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_commit::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::commit reply"};
 
                   log << "message: " << message << '\n';
-
-                  resource.stage = Transaction::Resource::Stage::commit_replied;
 
                   //
                   // Are we in a committed state?
@@ -1092,14 +1089,11 @@ namespace casual
                }
 
 
-
-               bool basic_rollback::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_rollback::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::rollback reply"};
 
                   log << "message: " << message << '\n';
-
-                  resource.stage = Transaction::Resource::Stage::rollback_replied;
 
                   //
                   // Are we in a rolled back stage?
@@ -1238,14 +1232,14 @@ namespace casual
                default:
                {
                   //
-                  // More than one resource involved, we do the prepare stage
-                  //
-                  log << "prepare " << transaction << "\n";
-
-                  //
                   // Keep the correlation so we can send correct reply
                   //
                   transaction.correlation = message.correlation;
+
+                  //
+                  // More than one resource involved, we do the prepare stage
+                  //
+                  log << "prepare " << transaction << "\n";
 
                   local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                      m_state,
@@ -1583,6 +1577,9 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
+
+                  transaction.correlation = message.correlation;
+
                   log << "transaction: " << transaction << '\n';
 
                   local::send::resource::request< common::message::transaction::resource::rollback::Request>(
