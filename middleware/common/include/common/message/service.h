@@ -343,6 +343,40 @@ namespace casual
 
             } // call
 
+            namespace remote
+            {
+               struct Metric : basic_message< Type::service_remote_metrics>
+               {
+                  struct Service
+                  {
+                     Service() = default;
+                     Service( std::string name, std::chrono::microseconds duration)
+                      : name( std::move( name)), duration( std::move( duration)) {}
+
+                     std::string name;
+                     std::chrono::microseconds duration;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & name;
+                        archive & duration;
+                     })
+                  };
+
+                  common::process::Handle process;
+                  std::vector< Service> services;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & process;
+                     archive & services;
+                  })
+
+               };
+               static_assert( traits::is_movable< Metric>::value, "not movable");
+            } // remote
+
          } // service
 
          namespace reverse

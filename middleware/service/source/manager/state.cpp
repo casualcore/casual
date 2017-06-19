@@ -146,10 +146,11 @@ namespace casual
 
             namespace service
             {
-               void Metric::add( const common::platform::time::point::type::duration& duration)
+
+               void Metric::add( const std::chrono::microseconds& duration)
                {
                   ++m_count;
-                  m_total += std::chrono::duration_cast< std::chrono::microseconds>( duration);
+                  m_total += duration;
                }
 
                void Metric::reset()

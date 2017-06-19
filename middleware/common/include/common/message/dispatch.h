@@ -239,7 +239,6 @@ namespace casual
                      handler( device.next( typename device_type::blocking_policy{}));
                   }
                }
-
             } // blocking
 
          } // dispatch

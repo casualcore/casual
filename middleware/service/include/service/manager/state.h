@@ -147,7 +147,14 @@ namespace casual
                   inline std::size_t count() const { return m_count;}
                   inline std::chrono::microseconds total() const { return m_total;}
 
-                  void add( const common::platform::time::point::type::duration& duration);
+                  void add( const std::chrono::microseconds& duration);
+
+                  template< typename R, typename P>
+                  void add( const std::chrono::duration< R, P>& duration)
+                  {
+                     add( std::chrono::duration_cast< std::chrono::microseconds>( duration));
+                  }
+
                   void reset();
 
                private:
@@ -271,7 +278,9 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
                inline std::size_t remote_invocations() const { return m_remote_invocations;}
+
                inline const common::platform::time::point::type& last() const { return m_last;}
+               inline void last( common::platform::time::point::type now) { m_last = now;}
 
 
             private:

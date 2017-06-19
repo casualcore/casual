@@ -74,6 +74,7 @@ namespace casual
             service_call = SERVICE_BASE + 100,
             service_reply,
             service_acknowledge,
+            service_remote_metrics,
 
             service_conversation_connect_request = SERVICE_BASE + 200,
             service_conversation_connect_reply,

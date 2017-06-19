@@ -314,26 +314,6 @@ namespace casual
                      }
                   };
 
-                  struct load : pending_base, base_instances
-                  {
-                     load( const admin::StateVO& state, std::vector< normalized::Instance>& instances)
-                      : pending_base{ state}, base_instances{ instances} {}
-
-                     double operator () ( const admin::ServiceVO& value) const
-                     {
-                        auto total = instance::local::total{}( value);
-                        double load = instance::local::busy{ m_instances}( value) +
-                              range::count_if( get().pending, [&]( const admin::PendingVO& p){
-                                 return p.requested == value.name;
-                              });
-
-                        if( total > 0)
-                        {
-                           return load / total;
-                        }
-                        return load;
-                     }
-                  };
 
                } // local
 
@@ -430,14 +410,13 @@ namespace casual
                   terminal::format::column( "category", std::mem_fn( &admin::ServiceVO::category), terminal::color::no_color, terminal::format::Align::left),
                   terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
-                  terminal::format::column( "LC", format_invoked, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "LI", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
-                  terminal::format::column( "load", format::instance::local::load{ state, instances}, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "LC", format_invoked, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "LAT", format_avg_time, terminal::color::white, terminal::format::Align::right),
-                  terminal::format::column( "TP", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+                  terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
-                  terminal::format::column( "RC", std::mem_fn( &admin::ServiceVO::remote_invocations), terminal::color::cyan, terminal::format::Align::right),
                   terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
+                  terminal::format::column( "RC", std::mem_fn( &admin::ServiceVO::remote_invocations), terminal::color::cyan, terminal::format::Align::right),
                   terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::right),
                };
             }
@@ -621,22 +600,20 @@ namespace casual
              transaction mode - can be one of the following (auto, join, none, atomic)
           timeout:
              the timeout for the service (in seconds)
-          LC:
-             Local-Calls - number of calls to local instances
           LI:
              Local-Instances number of local instances
-          load:
-             the current load on the service. If concurrent request is greater than local instances the load is > 1.0
-          LAT:
-             Local-Average-Time - the average time of the service
-          TP
-             Total-Pending - total number of pending request, over time.
+          C:
+             calls - number of calls to the service
+          AT:
+             average-time - the average time of the service
+          P
+             Pending - total number of pending request, over time.
           PAT
              Pending-Average-Time - the average time request has waited for a service to be available, over time.
-          RC:
-             Remote-Calls - number of calls to remote instances
           RI:
              Remote-Instances - number of remote instances
+          RC:
+             Remote-Calls - number of calls to remote instances (a subset of C)
           last:
              the last time the service was requested    
    )";
