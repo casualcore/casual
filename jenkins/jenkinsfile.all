@@ -150,6 +150,8 @@ try
    {
       stage('Build frontend')
       {
+         checkout scm
+         
          build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
          stash includes: '**/casual-webapp.zip', name: 'frontend'
