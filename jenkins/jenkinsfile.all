@@ -146,19 +146,41 @@ try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
-   node("frontend")
-   {
-      stage('Build frontend')
-      {
-         checkout scm
-         
-         build( 'casualfrontend', 'casual/frontend', frontend_builder)
-
-         stash includes: '**/casual-webapp.zip', name: 'frontend'
-      }
-   }
-
    parallel(
+   
+      "frontend":
+      {
+         node("frontend")
+         {
+            stage('Build frontend')
+            {
+               checkout scm
+               
+               build( 'casualfrontend', 'casual/frontend', frontend_builder)
+
+               stash includes: '**/casual-webapp.zip', name: 'frontend'
+            }
+         }
+      },
+      
+      "documentation":
+      {
+         node( "documentation")
+         {
+            stage('Documentation')
+            {
+               checkout scm          
+               sh """
+                 gitbook init .
+                 gitbook build .
+                """
+            }
+         }
+      }
+   )    
+   
+   parallel(
+   
       "suse" :
       {
          node( "cplusplus" && "suse")
@@ -168,13 +190,10 @@ try
 
                deleteDir()
 
-               stage('Checkout - Suse')
-               {
-                  checkout scm
-               }  
-
                stage('Build backend - Unittest - Suse')
                {
+                  checkout scm
+                  
                   unstash 'frontend'
                   
                   build( 'susecompile', 'casual/suse', backend_builder_suse)
@@ -197,13 +216,11 @@ try
             try
             { 
                deleteDir()
-               stage('Checkout - Centos')
-               {
-                  checkout scm
-               }  
 
                stage('Build backend - Unittest/CodeCoverage - Centos')
                {
+                  checkout scm
+                  
                   unstash 'frontend'
                   
                   build( 'centoscompile', 'casual/centos', backend_builder_centos)
@@ -269,24 +286,13 @@ try
          }
       }
    )
-   node( "documentation")
-   {
-      stage('Documentation')
-      {
-         checkout scm          
-         sh """
-           gitbook init .
-           gitbook build .
-          """
-       }
-    }
 
-    slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-    currentBuild.result = 'SUCCESS'
+   slackSend color: "good", message: "Build finished: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+   currentBuild.result = 'SUCCESS'
 }
 catch (Exception e)
 {
-    slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
-    currentBuild.result = 'FAILURE'
+   slackSend color: "danger", message: "Build failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
+   currentBuild.result = 'FAILURE'
 }
 
