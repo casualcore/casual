@@ -1,35 +1,10 @@
-# log
+# log operation
 
-## objectives
+## environment
 
-We are confident that a hierarchic log system doesn't really work on most systems in practice. Either you don't get the logs you want, or you get way to much logs.
+An arbitrary category model is used and can be activated with regular expression selection
 
-Our experience shows that a category model works much better. For example:
-
-* error
-* warning
-* debug
-* information
-
-There is no levels involved, and no category implicitly brings in another category, hence one can be very specific what should log.
-
-Sometimes you still might need some levels of log granularity. For example:
-
-* casual.transaction
-* casual.transaction.verbose
-
-So you can log basic transaction stuff to `casual.transaction` and keep the nitty gritty low level stuff to `casual.transaction.verbose`   
-
-## solution
-
-We use the arbitrary category model with regular expression selection.
-
-This gives us, in our opinion, the great benefit of category semantics, but still gives possibilities to create hierarchic relations between categories, if one wants.    
-
-
-## casual log
-
-casual has the following categories for internal logging today.
+casual has of today the following categories for internal logging:
 
 category             | description
 ---------------------|----------------------------------
@@ -45,8 +20,7 @@ casual.queue         | logs details about casual-queue
 casual.debug         | logs general debug stuff.
 
 
-This is all based on just the category model, before the insight with regular expression selection, and we'll most likely start to introduce levels of verbosity.
-
+This is all based on just the category model, before the insight with regular expression selection, and we'll most likely start to introduce levels of verbosity
 
 ### example
 
@@ -71,41 +45,7 @@ Gateway and transaction:
 ```
 
 
-## create new categories
-
-
-```c++
-
-// header file
-
-namespace log
-{
-   extern casual::log::Category gateway;
-
-   namespace verbose
-   {
-      extern casual::log::Category gateway;
-   }
-}
-
-// TU
-
-namespace log
-{
-   casual::log::Category gateway{ "casual.gateway"};
-
-   namespace verbose
-   {
-      casual::log::Category gateway{ "casual.gateway.verbose"};
-   }
-}
-
-```
-
-Then just start logging to that ostream.
-
-
-## logfile format
+## format
 
 Each row has the following parts, separated by the delimiter `|`
 
@@ -123,9 +63,5 @@ service        | name of the current invoked service
 log category   | category of the logged line, described above
 message        | the actual logged message  
 
-
-
-
-
-
+## tools
 
