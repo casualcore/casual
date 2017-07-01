@@ -19,6 +19,7 @@ namespace casual
 
          using device_type = common::communication::ipc::inbound::Device;
          using handler_type = device_type::handler_type;
+         using message_type = common::message::Type;
 
          namespace detail
          {
@@ -28,6 +29,9 @@ namespace casual
             void listen( device_type& device, std::function< void()> empty, handler_type&& handler);
 
          } // detail
+
+         void unsubscribe( const process::Handle& process, std::vector< message_type> types);
+
 
          //!
          //! Register and start listening on events.

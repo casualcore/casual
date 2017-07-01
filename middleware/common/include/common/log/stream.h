@@ -38,7 +38,9 @@ namespace casual
                   template< typename T>
                   Safe& operator << ( T&& value)
                   {
-                     m_stream << std::forward< T>( value);
+                     //if( m_stream)
+                        m_stream << std::forward< T>( value);
+
                      return *this;
                   }
 
@@ -51,7 +53,9 @@ namespace casual
                   //!
                   Safe& operator << ( omanip_t value)
                   {
-                     m_stream << value;
+                     //if( m_stream)
+                        m_stream << value;
+
                      return *this;
                   }
 

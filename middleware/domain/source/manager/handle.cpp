@@ -318,11 +318,15 @@ namespace casual
                         Trace trace{ "domain::manager::handle::task::Shutdown::start"};
 
                         range::for_each( m_batch.executables, [&]( auto id){
-                           scale::in( this->state(), this->state().executable( id));
+                           state::Executable& e = this->state().executable( id);
+                           e.scale( 0);
+                           scale::in( this->state(), e);
                         });
 
                         range::for_each( m_batch.servers, [&]( auto id){
-                           scale::in( this->state(), this->state().server( id));
+                           state::Server& s = this->state().server( id);
+                           s.scale( 0);
+                           scale::in( this->state(), s);
                         });
                         if( state().event.active< common::message::event::domain::Group>())
                         {
@@ -398,6 +402,8 @@ namespace casual
 
                         void start()
                         {
+                           state().runlevel( State::Runlevel::shutdown);
+
                            if( state().event.active< message::event::domain::shutdown::End>())
                            {
                               message::event::domain::shutdown::End event;
@@ -536,23 +542,12 @@ namespace casual
                   }
                });
 
-
-               range::for_each( state.executables, []( auto& e){
-                  e.scale( 0);
-               });
-
-               range::for_each( state.servers, []( auto& s){
-                  s.scale( 0);
-               });
-
                range::for_each( state.shutdownorder(), [&]( state::Batch& batch){
                      state.tasks.add( manager::local::task::Shutdown{ state, batch});
                   });
 
-               if( state.event.active< message::event::domain::shutdown::End>())
-               {
-                  state.tasks.add( manager::local::task::shutdown::Done{ state});
-               }
+               state.tasks.add( manager::local::task::shutdown::Done{ state});
+
             }
 
 

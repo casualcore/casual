@@ -18,8 +18,6 @@ namespace casual
          {
             namespace
             {
-               using message_type = common::message::Type;
-
 
                namespace location
                {
@@ -67,16 +65,6 @@ namespace casual
 
                }
 
-               void unsubscribe( const process::Handle& process, std::vector< message_type> types)
-               {
-                  message::event::subscription::End request;
-                  request.process = process;
-
-                  location::domain( request, types);
-                  location::service( request, types);
-
-               }
-
 
                auto subscription( platform::ipc::id::type ipc, std::vector< message_type> types)
                {
@@ -85,7 +73,7 @@ namespace casual
                   local::subscribe( process, types);
 
                   return scope::execute( [&](){
-                     local::unsubscribe( process, types);
+                     event::unsubscribe( process, types);
                   });
                }
 
@@ -157,6 +145,15 @@ namespace casual
 
             }
          } // detail
+
+         void unsubscribe( const process::Handle& process, std::vector< message_type> types)
+         {
+            message::event::subscription::End request;
+            request.process = process;
+
+            local::location::domain( request, types);
+            local::location::service( request, types);
+         }
 
          namespace no
          {

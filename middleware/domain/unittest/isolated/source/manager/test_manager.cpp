@@ -18,6 +18,7 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/service/lookup.h"
+#include "common/event/listen.h"
 #include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
@@ -63,10 +64,26 @@ namespace casual
                         "--bare",
                      }}
                   {
+
+                     //
+                     // Make sure we unregister the event subscription
+                     //
+                     auto unsubscribe = common::scope::execute( [](){
+                        common::event::unsubscribe( common::process::handle(), {});
+                     });
+
                      //
                      // Wait for the domain to boot
                      //
                      unittest::domain::manager::wait( common::communication::ipc::inbound::device());
+
+                     //
+                     // Set environment variable to make it easier for other processes to
+                     // reach domain-manager (should work any way...)
+                     //
+                     common::environment::variable::process::set(
+                           common::environment::variable::name::ipc::domain::manager(),
+                           process.handle());
 
                   }
 
@@ -374,7 +391,6 @@ domain:
             common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
-            process::ping( local::manager::ipc());
 
             mockup::domain::service::Manager service;
 
@@ -393,7 +409,6 @@ domain:
             common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
-            process::ping( local::manager::ipc());
 
             mockup::domain::service::Manager service;
 

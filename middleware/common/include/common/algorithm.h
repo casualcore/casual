@@ -31,10 +31,6 @@ namespace casual
 {
    namespace common
    {
-
-
-
-
       namespace scope
       {
 

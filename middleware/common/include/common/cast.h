@@ -16,7 +16,7 @@ namespace casual
 
 
          template< typename E>
-         constexpr auto underlying( E value) -> typename std::enable_if< std::is_enum< E>::value, traits::underlying_type_t< E>>::type
+         constexpr auto underlying( E value) -> std::enable_if_t< std::is_enum< E>::value, traits::underlying_type_t< E>>
          {
             return static_cast< traits::underlying_type_t< E>>( value);
          }

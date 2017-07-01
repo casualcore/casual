@@ -6,6 +6,8 @@
 .cproject
 .project
 
+# vs code
+.vscode/
 
 casual.env
 
