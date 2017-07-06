@@ -9,26 +9,29 @@ BUILDSRV=$(CASUAL_HOME)/bin/casual-build-server
 
 CC=gcc
 CPP=g++
-CFLAGS=-I/usr/local/casual/include
-CPPFLAGS=-Wall -Wextra -I/usr/local/casual/include
-LDFLAGS=-L/usr/local/casual/lib -lcasual-xatmi
-# COBFLAGS=`cob-config --cflags --libs`
-COBFLAGS=$(shell cob-config --cflags --libs)
+CFLAGS=-I$(CASUAL_HOME)/include
+CPPFLAGS=-Wall -Wextra -I$(CASUAL_HOME)/include
+LDFLAGS=-L$(CASUAL_HOME)/lib -lcasual-xatmi
+
+COB=cob
+COBFLAGS=-xg -std=cobol85
+#COBFLAGS=-x -Wall -std=cobol85 $(shell cob-config --cflags --libs) $(CFLAGS)
+COBCPY=.
 
 all:	simpserv simpcl CSIMPCL
 
 CSIMPCL:  CSIMPCL.cbl xatmi_cobol.o
-	cobc -x -Wall -std=cobol85 CSIMPCL.cbl xatmi_cobol.o $(COBFLAGS) $(CFLAGS) $(LDFLAGS)
+	$(COB) CSIMPCL.cbl xatmi_cobol.o $(COBFLAGS) $(LDFLAGS)
 
 xatmi_cobol.o:  xatmi_cobol.c xatmi_cobol.h
 	$(CPP) $(CPPFLAGS) -c xatmi_cobol.c
 
 simpcl:  simpcl.c
-	$(CPP) -I/usr/local/casual/include -o simpcl simpcl.c $(LDFLAGS)
+	$(CPP) $(CPPFLAGS) -o simpcl simpcl.c $(LDFLAGS)
 
 simpserv: simpserv.c
-	$(BUILDSRV) -v -c g++ -f simpserv.c -o simpserv -s TOUPPER
+	$(BUILDSRV) -v -c $(CPP) -f simpserv.c -o simpserv -s TOUPPER
 
 clean:
-	- rm *.o simpserv simpcl CSIMPCL
+	- rm *.o *.int *.idy simpserv simpcl CSIMPCL
 
