@@ -1,3 +1,7 @@
+//!
+//! casual
+//!
+
 /*
  * X/Open CAE Specification
  * Distributed Transaction Processing:
@@ -6,82 +10,110 @@
  * X/Open Document Number: C506
 */
 
-/*
- * xatmi_cobol.c
-*/
 
-#include "../xatmi/xatmi_cobol.h"
+#include "cobol/xatmi.h"
+#include "xatmi.h"
+
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <xatmi.h>
-
-/*
- * Internal support functions
-*/
-void cobstr_to_cstr(char *, const char *, int);
 
 
-extern "C" void TPACALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
-                        struct TPTYPE_REC_s *TPTYPE_REC,
+namespace local
+{
+   namespace
+   {
+
+      /*
+       * Copy string (COBOL) and terminate it with null character
+      */
+      constexpr auto ascii_space() { return 0x20;}
+
+      void cobstr_to_cstr( char* destination, const char* source, const int size) {
+
+         int i = 0;
+
+         while( ( source[i] > ascii_space()) && i < size)
+         {
+            destination[i] = source[i];
+            i++;
+         }
+         destination[i] = '\0';
+      }
+
+   } // <unnamed>
+} // local
+
+
+
+void TPACALL(struct TPSVCDEF_REC_s* service,
+                        struct TPTYPE_REC_s* buffer_type,
                         struct DATA_REC_s *DATA_REC,
-                        struct TPSTATUS_REC_s *TPSTATUS_REC) {
+                        struct TPSTATUS_REC_s* status)
+{
 
    char service_name[SERVICE_NAME_LEN +1];
    char rec_type[REC_TYPE_LEN + 1];
    char sub_type[SUB_TYPE_LEN + 1];
-   char *data_rec;
    int i;
    int rv;
    long flags;
 
    /* Copy COBOL string to C string and null terminate C string */
-   cobstr_to_cstr(service_name, TPSVCDEF_REC->SERVICE_NAME, SERVICE_NAME_LEN);
-   cobstr_to_cstr(rec_type, TPTYPE_REC->REC_TYPE, REC_TYPE_LEN);
-   cobstr_to_cstr(sub_type, TPTYPE_REC->SUB_TYPE, SUB_TYPE_LEN);
+   local::cobstr_to_cstr(service_name, service->SERVICE_NAME, SERVICE_NAME_LEN);
+   local::cobstr_to_cstr(rec_type, buffer_type->REC_TYPE, REC_TYPE_LEN);
+   local::cobstr_to_cstr(sub_type, buffer_type->SUB_TYPE, SUB_TYPE_LEN);
 
-   /* Allocate typed buffers */
-   if ((data_rec = (char *)tpalloc(rec_type,
-                                   sub_type,
-                                   TPTYPE_REC->LEN)) == NULL) {
-      TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
+   //
+   // Allocate typed buffers
+   //
+   auto buffer = tpalloc(rec_type,
+         sub_type,
+         buffer_type->LEN);
+
+   if( buffer == nullptr)
+   {
+      status->TP_STATUS = tperrno;
       /* printf("error TPACALL --> tpalloc: %d\n", tperrno); */
       return;
    }
 
    /* Copy data from COBOL record to buffer allocated with tpalloc */
-   for (i = 0; i < TPTYPE_REC->LEN; i++)
-      data_rec[i] = DATA_REC->DATA[i];
+   for (i = 0; i < buffer_type->LEN; i++)
+      buffer[i] = DATA_REC->DATA[i];
 
    /* Convert COBOL flags (record) to C flags (bit map) */
    flags = 0;
-   if (TPSVCDEF_REC->TPTRAN_FLAG)
+   if (service->TPTRAN_FLAG)
       flags = flags | TPNOTRAN;
    else
       flags = flags | TPTRAN;
-   if (TPSVCDEF_REC->TPREPLY_FLAG)
+   if (service->TPREPLY_FLAG)
       flags = flags | TPNOREPLY;
-   if (TPSVCDEF_REC->TPBLOCK_FLAG)
+   if (service->TPBLOCK_FLAG)
       flags = flags | TPNOBLOCK;
-   if (TPSVCDEF_REC->TPTIME_FLAG)
+   if (service->TPTIME_FLAG)
       flags = flags | TPNOTIME;
-   if (TPSVCDEF_REC->TPSIGRSTRT_FLAG)
+   if (service->TPSIGRSTRT_FLAG)
       flags = flags | TPSIGRSTRT;
  
-   if ((rv = tpacall(service_name,
-                     data_rec,
-                     TPTYPE_REC->LEN,
-                     flags)) == -1) {
-      TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
+   if( (rv = tpacall(service_name,
+         buffer,
+                     buffer_type->LEN,
+                     flags)) == -1)
+   {
+      status->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPACALL --> tpacall: %d\n", tperrno); */
-   } else {
-      TPSTATUS_REC->TP_STATUS = (int32_t)TPOK;
-      if (TPSVCDEF_REC->TPREPLY_FLAG ==  TPREPLY)
-         TPSVCDEF_REC->COMM_HANDLE = (int32_t)rv;
+   } else
+   {
+      status->TP_STATUS = (int32_t)TPOK;
+      if (service->TPREPLY_FLAG ==  TPREPLY)
+         service->COMM_HANDLE = (int32_t)rv;
    }
 
-   tpfree(data_rec);
+   tpfree( buffer);
    return;
 }
 
@@ -104,7 +136,7 @@ Only used by server/service
 #endif /* #if 0 */
 
 
-extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                        struct TPTYPE_REC_s *ITPTYPE_REC,
                        struct DATA_REC_s *IDATA_REC,
                        struct TPTYPE_REC_s *OTPTYPE_REC,
@@ -122,9 +154,9 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    long flags;
 
    /* Copy COBOL string to C string and null terminate C string */
-   cobstr_to_cstr(service_name, TPSVCDEF_REC->SERVICE_NAME, SERVICE_NAME_LEN);
-   cobstr_to_cstr(rec_type, ITPTYPE_REC->REC_TYPE, REC_TYPE_LEN);
-   cobstr_to_cstr(sub_type, ITPTYPE_REC->SUB_TYPE, SUB_TYPE_LEN);
+   local::cobstr_to_cstr(service_name, TPSVCDEF_REC->SERVICE_NAME, SERVICE_NAME_LEN);
+   local::cobstr_to_cstr(rec_type, ITPTYPE_REC->REC_TYPE, REC_TYPE_LEN);
+   local::cobstr_to_cstr(sub_type, ITPTYPE_REC->SUB_TYPE, SUB_TYPE_LEN);
 
    /* Allocate typed buffers */
    if ((idata_rec = (char *)tpalloc(rec_type,
@@ -192,7 +224,7 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
 }
 
 
-extern "C" void TPCANSEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+void TPCANSEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                          struct TPSTATUS_REC_s *TPSTATUS_REC) {
 
    int rv;
@@ -293,7 +325,7 @@ extern "C" void TPDISCON(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
 #endif /* #if 0 */
 
 
-extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                         struct TPTYPE_REC_s *TPTYPE_REC,
                         struct DATA_REC_s *DATA_REC,
                         struct TPSTATUS_REC_s *TPSTATUS_REC) {
@@ -308,9 +340,9 @@ extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    long len;
 
    /* Copy COBOL string to C string and null terminate C string */
-   cobstr_to_cstr(service_name, TPSVCDEF_REC->SERVICE_NAME, SERVICE_NAME_LEN);
-   cobstr_to_cstr(rec_type, TPTYPE_REC->REC_TYPE, REC_TYPE_LEN);
-   cobstr_to_cstr(sub_type, TPTYPE_REC->SUB_TYPE, SUB_TYPE_LEN);
+   local::cobstr_to_cstr(service_name, TPSVCDEF_REC->SERVICE_NAME, SERVICE_NAME_LEN);
+   local::cobstr_to_cstr(rec_type, TPTYPE_REC->REC_TYPE, REC_TYPE_LEN);
+   local::cobstr_to_cstr(sub_type, TPTYPE_REC->SUB_TYPE, SUB_TYPE_LEN);
 
    /* Allocate typed buffers */
    if ((data_rec = (char *)tpalloc(rec_type,
@@ -381,20 +413,5 @@ Only used by server/service
 #endif /* #if 0 */
 
 
-/*
- * Copy string (COBOL) and terminate it with null character
-*/
-#define ASCII_SPACE 0x20
-void cobstr_to_cstr(char *dest, const char *src, int len) {
-   int i;
 
-   i = 0;
-   while ((src[i] > ASCII_SPACE) && (i < len)) {
-      dest[i] = src[i];
-      i++;
-   }
-   dest[i] = '\0';
-
-   return;
-}
 

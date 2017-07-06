@@ -6,12 +6,15 @@
  * X/Open Document Number: C506
 */
 
-/*
- * xatmi_cobol.h
-*/
 
-#ifndef XATMI_COBOL_H
-#define XATMI_COBOL_H
+#ifndef CASUAL_BINDING_COBOL_XATMI_H_
+#define CASUAL_BINDING_COBOL_XATMI_H_
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Map COBOL record to C struct
@@ -122,7 +125,8 @@ struct TPTYPE_REC_s {
  *  05 SERVICE-NAME         PIC X(15).
 */
 #define TPREPLY 0
-#define SERVICE_NAME_LEN 15
+
+#define SERVICE_NAME_LEN 127
 struct TPSVCDEF_REC_s {
   int32_t COMM_HANDLE;
   int32_t TPBLOCK_FLAG;
@@ -134,7 +138,7 @@ struct TPSVCDEF_REC_s {
   int32_t TPSENDRECV_FLAG;
   int32_t TPNOCHANGE_FLAG;
   int32_t TPSERVICETYPE_FLAG;
-  char    SERVICE_NAME[SERVICE_NAME_LEN];
+  char    SERVICE_NAME[ SERVICE_NAME_LEN];
 };
 
 
@@ -153,25 +157,26 @@ struct TPSVCRET_REC_s {
 };
 
 
-extern "C" void TPACALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
-                        struct TPTYPE_REC_s *TPTYPE_REC,
-                        struct DATA_REC_s *DATA_REC,
-                        struct TPSTATUS_REC_s *TPSTATUS_REC);
+extern void TPACALL(struct TPSVCDEF_REC_s*, struct TPTYPE_REC_s*, struct DATA_REC_s*, struct TPSTATUS_REC_s*);
 
-extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+extern void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                        struct TPTYPE_REC_s *ITPTYPE_REC,
                        struct DATA_REC_s *IDATA_REC,
                        struct TPTYPE_REC_s *OTPTYPE_REC,
                        struct DATA_REC_s *ODATA_REC,
                        struct TPSTATUS_REC_s *TPSTATUS_REC);
 
-extern "C" void TPCANSEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+extern void TPCANSEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                          struct TPSTATUS_REC_s *TPSTATUS_REC);
 
-extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+extern void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                         struct TPTYPE_REC_s *TPTYPE_REC,
                         struct DATA_REC_s *DATA_REC,
                         struct TPSTATUS_REC_s *TPSTATUS_REC);
 
-#endif /* XATMI_COBOL_H */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CASUAL_BINDING_COBOL_XATMI_H_ */
 

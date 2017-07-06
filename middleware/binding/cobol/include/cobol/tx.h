@@ -6,12 +6,11 @@
  * X/Open Document Number: C504
 */
 
-/*
- * tx_cobol.h
-*/
 
-#ifndef TX_COBOL_H
-#define TX_COBOL_H
+#ifndef CASUAL_BINDING_COBOAL_TX_H
+#define CASUAL_BINDING_COBOAL_TX_H
+
+#include <stdint.h>
 
 /*
  * Map COBOL record to C struct
@@ -58,19 +57,23 @@ struct TXINFDEF_REC_s {
   int32_t          TRANSACTION_STATE;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern "C" void TXBEGIN(struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXCLOSE(struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXCOMMIT(struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXINFORM(struct TXINFDEF_REC_s *TXINFDEF_REC,
-                         struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXOPEN(struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXROLLBACK(struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXSETCOMMITRET(struct TXINFDEF_REC_s *TXINFDEF_REC,
-                               struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXSETTIMEOUT(struct TXINFDEF_REC_s *TXINFDEF_REC,
-                             struct TXSTATUS_REC_s *TXSTATUS_REC);
-extern "C" void TXSETTRANCTL(struct TXINFDEF_REC_s *TXINFDEF_REC,
-                             struct TXSTATUS_REC_s *TXSTATUS_REC);
-#endif /* TX_COBOL_H */
+   extern void TXBEGIN(struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXCLOSE(struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXCOMMIT(struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXINFORM(struct TXINFDEF_REC_s *TXINFDEF_REC, struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXOPEN(struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXROLLBACK(struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXSETCOMMITRET(struct TXINFDEF_REC_s *TXINFDEF_REC, struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXSETTIMEOUT(struct TXINFDEF_REC_s *TXINFDEF_REC, struct TXSTATUS_REC_s *TXSTATUS_REC);
+   extern void TXSETTRANCTL(struct TXINFDEF_REC_s *TXINFDEF_REC, struct TXSTATUS_REC_s *TXSTATUS_REC);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CASUAL_BINDING_COBOAL_TX_H */
 
