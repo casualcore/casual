@@ -13,14 +13,19 @@
 #ifndef XATMI_COBOL_H
 #define XATMI_COBOL_H
 
+#include <stdlib.h>
+
 /*
  * Map COBOL record to C struct
  * Application specific data record
 */
+/* Not needed. Use char * or void * for buffers from COBOL */ 
+#if 0
 struct DATA_REC_s {
-  /* char    *DATA; */
-  char    DATA[];
+  char    *DATA;
+  // char    DATA[];
 };
+#endif /* #if 0 */
 
 /*
  * Map COBOL record to C struct
@@ -79,6 +84,8 @@ struct TPSTATUS_REC_s {
 */
 #define REC_TYPE_LEN 8
 #define SUB_TYPE_LEN 16
+#define TPTYPEOK     0
+#define TPTRUNCATE   1
 struct TPTYPE_REC_s {
   char    REC_TYPE[REC_TYPE_LEN];
   char    SUB_TYPE[SUB_TYPE_LEN];
@@ -122,7 +129,7 @@ struct TPTYPE_REC_s {
  *  05 SERVICE-NAME         PIC X(15).
 */
 #define TPREPLY 0
-#define SERVICE_NAME_LEN 15
+#define SERVICE_NAME_LEN 127
 struct TPSVCDEF_REC_s {
   int32_t COMM_HANDLE;
   int32_t TPBLOCK_FLAG;
@@ -155,23 +162,46 @@ struct TPSVCRET_REC_s {
 
 extern "C" void TPACALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                         struct TPTYPE_REC_s *TPTYPE_REC,
-                        struct DATA_REC_s *DATA_REC,
+                        const char *DATA_REC,
                         struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                        struct TPTYPE_REC_s *ITPTYPE_REC,
-                       struct DATA_REC_s *IDATA_REC,
+                       const char* ITYPE_REC,
                        struct TPTYPE_REC_s *OTPTYPE_REC,
-                       struct DATA_REC_s *ODATA_REC,
+                       char* OTYPE_REC,
                        struct TPSTATUS_REC_s *TPSTATUS_REC);
 
-extern "C" void TPCANSEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+extern "C" void TPCANCEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                          struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                         struct TPTYPE_REC_s *TPTYPE_REC,
-                        struct DATA_REC_s *DATA_REC,
+                        char *DATA_REC,
                         struct TPSTATUS_REC_s *TPSTATUS_REC);
+
+extern "C" void TPCONNECT(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+                          struct TPTYPE_REC_s *TPTYPE_REC,
+                          char *DATA_REC,
+                          struct TPSTATUS_REC_s *TPSTATUS_REC);
+
+extern "C" void TPDISCON(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+                         struct TPSTATUS_REC_s *TPSTATUS_REC);
+
+extern "C" void TPRECV(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+                       struct TPTYPE_REC_s *TPTYPE_REC,
+                       char *DATA_REC,
+                       struct TPSTATUS_REC_s *TPSTATUS_REC);
+
+extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
+			 struct TPTYPE_REC_s *TPTYPE_REC,
+			 char *DATA_REC,
+			 struct TPSTATUS_REC_s *TPSTATUS_REC);
+
+extern "C" void TPSVCSTART(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
+			   struct TPTYPE_REC_s *TPTYPE_REC,
+			   char* DATA_REC,
+			   struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 #endif /* XATMI_COBOL_H */
 
