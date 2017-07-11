@@ -1,13 +1,12 @@
 # casual.gateway
 
-
 ## .casual.gateway.state
 
-Gets the current state of the gateway for a given domain
+Gets the current state of the gateway for a given domain.
 
-### definition
+### Definition
 
-```bash
+```yaml
 service: .casual.gateway.state
 input
 output
@@ -39,7 +38,7 @@ output
           integer runlevel
 ```
 
-### example
+### Example
 
 ```json
 {
@@ -85,5 +84,4 @@ output
         }
     }
 }
-
 ```

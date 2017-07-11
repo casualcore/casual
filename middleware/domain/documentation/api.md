@@ -2,9 +2,9 @@
 
 ## .casual.domain.state
 
-### definition
+### Definition
 
-```bash
+```yaml
 service: .casual.domain.state
 input
 output
@@ -48,7 +48,7 @@ output
 
 ```
 
-### example
+### Example
 
 ```json
 {
@@ -112,12 +112,11 @@ output
 
 ```
 
-
 ## .casual.domain.scale.instances
 
-### definition
+### Definition
 
-```bash
+```yaml
 service: .casual.domain.scale.instances
 input
   container instances
@@ -131,7 +130,7 @@ output
       integer instances
 ```
 
-### example
+### Example
 
 ```json
 {
@@ -152,25 +151,22 @@ output
         ]
     }
 }
-``
+```
 
 ## .casual.domain.shutdown
 
-### definition
+### Definition
 
-```bash
+```yaml
 service: .casual.domain.shutdown
 input
 output
 ```
 
-### example
+### Example
 ```json
 {
     "input": {},
     "output": {}
 }
-``
-
-
-
+```

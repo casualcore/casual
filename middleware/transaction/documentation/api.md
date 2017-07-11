@@ -1,11 +1,11 @@
 
 ## .casual.transaction.state
 
-Gets the current state of the transaction manager in a given domain
+Gets the current state of the transaction manager in a given domain.
 
-### definition
+### Definition
 
-```bash
+```yaml
 service: .casual.transaction.state
 input
 output
@@ -85,10 +85,11 @@ output
 
 ## .casual.transaction.update.instances
 
-Updates insstances of 0..* resource proxies
+Updates instances of `0..*` resource proxies.
 
-### definition
-```bash
+### Definition
+
+```yaml
 service: .casual.transaction.update.instances
 input
   container instances
@@ -132,6 +133,4 @@ output
               integer max
               integer total
               integer invoked
-
-
 ```

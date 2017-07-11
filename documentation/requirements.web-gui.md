@@ -1,19 +1,16 @@
-
-
 # Requirements for casual middleware UI
 
 This document tries to define the requirements for what is useful and paramount
-for a user of casual middleware
+for a user of casual middleware.
 
 ## What we think users wants
 
 There are several *views* that the user wants to se. Some of these can maybe 
 be combined.
 
+### Groups
 
-### groups
-
-View and manage group information
+View and manage group information:
 
 * name
 * note
@@ -24,11 +21,11 @@ View and manage group information
 
 **source: domain-manager**
 
-### executables
+### Executables
 
 We might want to split **servers** and **executables** into two different views.
 
-View and manage exacutable information
+View and manage exacutable information.
 
 List of executables with:
 
@@ -44,7 +41,7 @@ List of executables with:
     
 **source: domain-manager**
     
-### instances
+### Instances
 
 List of instances with:
 
@@ -55,9 +52,9 @@ List of instances with:
 
 **source: domain-manager**
 
-### services
+### Services
 
-View and manage exacutable information
+View and manage exacutable information.
 
 List of services with:
 
@@ -67,16 +64,14 @@ List of services with:
 * instances
     * "expand" to instance view?
     * if an instance is a outbound-connection (gateway) show info about this.
-
     
 Should be easy to manage instanses from this view, since services should be what's interesting 
 
 **source: broker**
  
- 
-### pending services
+### Pending services
 
-view information about pending requests
+View information about pending requests.
 
 List of pending services with:
 
@@ -91,21 +86,10 @@ This is so operation can easy see which executable is a candidate to scale out.
 
 **this is not completed on serverside yet, everything is prepared though**
 
-
-
-### transactions
+### Transactions
 
 TODO
 
-
-### casual queue
+### Queue
 
 TODO
-
-
-
-
-
-
-
-

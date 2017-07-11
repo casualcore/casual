@@ -1,13 +1,12 @@
 # casual-service-manager
 
-
 ## .casual/service/state
 
-Gets the current state of the broker for a given domain
+Gets the current state of the broker for a given domain.
 
-### definition
+### Definition
 
-```bash
+```yaml
 service: .casual/service/state
 input
 output
@@ -57,13 +56,11 @@ output
 
 ## .casual/service/metric/reset
 
-resets the metric for provided services.
+Resets the metric for provided services, if no specific service is specified all services will be reset.
 
-resets all services if non is provided.
+### Definition
 
-### definition
-
-```bash
+```yaml
 service: .casual/service/metric/reset
 input
   container services
