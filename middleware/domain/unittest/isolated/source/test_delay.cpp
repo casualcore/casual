@@ -7,6 +7,8 @@
 
 #include "domain/delay/message.h"
 
+#include "common/message/domain.h"
+
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"
 
@@ -64,7 +66,7 @@ namespace casual
 
             auto id = common::uuid::make();
 
-            auto start = common::platform::clock_type::now();
+            auto start = common::platform::time::clock::type::now();
 
             {
                common::message::domain::process::lookup::Request message;
@@ -77,7 +79,7 @@ namespace casual
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
-               EXPECT_TRUE( common::platform::clock_type::now() - start > std::chrono::milliseconds{ 10});
+               EXPECT_TRUE( common::platform::time::clock::type::now() - start > std::chrono::milliseconds{ 10});
 
             }
 
@@ -94,7 +96,6 @@ namespace casual
 
             auto id = common::uuid::make();
 
-            auto start = common::platform::clock_type::now();
 
             {
                common::message::domain::process::lookup::Request message;
@@ -102,12 +103,14 @@ namespace casual
                message::send( message, ipc.id(), std::chrono::milliseconds{ 0});
             }
 
+            auto start = common::platform::time::clock::type::now();
+
             {
                common::message::domain::process::lookup::Request message;
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
-               EXPECT_TRUE( common::platform::clock_type::now() - start < std::chrono::milliseconds{ 10});
+               EXPECT_TRUE( common::platform::time::clock::type::now() - start < std::chrono::milliseconds{ 10});
 
             }
 

@@ -8,7 +8,7 @@
 #include "common.h"
 
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 
 
 #include "common/service/header.h"
@@ -32,8 +32,8 @@ namespace casual
                {
                   sf::service::Model operator() ( const std::string& service) const
                   {
-                     sf::xatmi::service::binary::Sync caller( service);
-                     auto reply = caller();
+                     sf::service::protocol::binary::Call call;
+                     auto reply = call( service);
 
                      sf::service::Model model;
 

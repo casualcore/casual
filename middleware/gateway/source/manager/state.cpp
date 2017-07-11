@@ -9,9 +9,6 @@
 #include "gateway/common.h"
 
 
-
-#include "common/trace.h"
-
 namespace casual
 {
    using namespace common;

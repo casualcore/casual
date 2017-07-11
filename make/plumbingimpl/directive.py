@@ -38,8 +38,6 @@ _platform = casual.make.platform.platform.platform()
 #
 def_casual_make='casual-make-generate'
 
-def_Deploy='make.deploy.ksh'
-
 
 global_build_targets = [ 
           'link',
@@ -48,12 +46,12 @@ global_build_targets = [
           'clean_object',
           'clean_dependency', 
           'compile', 
-          'deploy', 
           'install',
           'test', 
           'print_include_paths' ];
 
 global_targets = [ 
+          'all',
           'make', 
           'clean',
            ] + global_build_targets;
@@ -80,8 +78,11 @@ class State:
         
         self.pre_make_statements = list()
         
-        
         self.make_files_to_build = list()
+        
+        self.post_actions = dict()
+        
+        self.targets = dict()
         
         if old_state:
             self.pre_make_statements = list( old_state.pre_make_statements) 
@@ -139,8 +140,135 @@ def scope( inherit, name):
 def add_pre_make_statement( statement):
     
     state().pre_make_statements.append( statement)
-     
 
+
+def add_comment( comments, indent = ''):
+    if( comments):
+        print( indent + '#')
+        print( indent + '# ' + ( '\n' + indent + '# ').join( comments.splitlines()))
+        print( indent + '#')
+
+
+def add_local_variable( dependencies, name = 'dependencies', comments = None):
+    
+    add_comment( comments, '  ')
+    
+    variable_name = unique_target_name( name)
+
+    print( '  ' + variable_name + ' = ' + '\\\n     '.join( dependencies))
+    print( '')
+    
+    return variable_name
+
+def add_dependency( targets, prerequisites = [], comments = None, prefix = None, ordered_prerequisites = None):
+    
+    if( not targets):
+        return
+    
+    add_comment(comments)
+    
+    
+    prereq = ''
+    
+    if( len( prerequisites) > 3):
+        prereq = '$(' + add_local_variable( internal.targets_name( prerequisites)) + ')'
+    else:
+        prereq = ' '.join( internal.targets_name( prerequisites))
+    
+    if( ordered_prerequisites):
+         prereq += ' | ' + ' '.join( internal.targets_name( ordered_prerequisites))
+    
+    for target in internal.targets_name( targets):
+        print( ( prefix or '') +  target + ': ' + prereq)
+
+    print( '\n')
+
+
+def add_includes( includes):
+    
+    if( isinstance( includes, basestring)):
+        print( '-include ' + includes)
+    else:
+        for include in includes:
+            print( '-include ' + include)
+      
+
+def add_rule( targets, prerequisites = None, recipes = None, ordered_prerequisites = None, comments = None):
+  
+        
+    add_comment( comments)
+    
+    
+    if( isinstance( targets, list) and len( targets) > 1 and prerequisites and recipes):
+        return __add_multi_target_rule( targets, prerequisites, recipes, ordered_prerequisites)
+    
+    prereq = ' '.join( prerequisites or [])
+    
+    if( ordered_prerequisites):
+        prereq += ' | ' + ' '.join( ordered_prerequisites)
+        
+    if( not prereq):
+        if( isinstance( targets, list)):
+            print( '.PNONY: ' + ' '.join( targets));  
+        else:
+             print( '.PNONY: ' + str( targets)); 
+    
+    if( isinstance( targets, list)):
+        target = ' '.join( targets)
+    else:
+        target = targets
+        
+
+    print( target + ': ' + prereq) 
+    
+    for recipe in recipes:
+       print( '\t' + str( recipe)); 
+         
+    print( '')
+
+
+def add_sequential_ordering( targets, parents = None, comments = None):
+    '''
+    
+    ''' 
+    add_comment( comments)
+    
+    if( parents):
+        
+        prefix = 'dependency_'
+        
+        #
+        # We only want sequentual ordering for some parents, we 
+        # need to construct surregate names for the targets
+        #
+        for target, prerequisit in internal.pairwise( targets):
+            add_dependency( targets = [ prefix + target], 
+                            prerequisites = [ target, prefix + prerequisit])
+        
+        add_dependency( targets = [ prefix + targets[ -1]], 
+                    prerequisites = [ targets[ -1]])
+        
+        add_dependency( targets = parents, 
+                            prerequisites = [ prefix + targets[ 0]])
+    
+    else:
+        
+        for target, prerequisit in internal.pairwise( targets):
+            add_dependency( targets = [target], 
+                            ordered_prerequisites = [prerequisit])
+    
+    
+    
+    
+def add_environment( name, value = '', export = True):
+    if( export):
+        print 'export ' + name + ' := ' + value
+    else:
+        print name + ' := ' + value
+        
+
+
+            
 #
 # Normalize name 
 #
@@ -158,21 +286,13 @@ def pre_make_rules():
     #
     # Default targets and such
     #
+    #add_dependency( [ 'all'], [], 'If no target is given we assume \'all\'')
     
-    print
-    print '#'
-    print '# If no target is given we assume \'all\''
-    print '#'
-    print 'all:'
     
-    print
-    print '#'
-    print '# Dummy targets to make sure they will run, even if there is a corresponding file'
-    print '# with the same name'
-    print '#'
-    for target in global_targets:
-        print '.PHONY ' + target + ':' 
-    
+    add_dependency( targets = global_targets, 
+                    prefix='.PHONY ', 
+                    comments = ("Dummy targets to make sure they will run, even if there is a\n" 
+                                "corresponding file with the same name"))
     
     #
     # Platform specific prolog
@@ -202,66 +322,60 @@ def produce_build_targets():
             
             if not scoped_build:
                 
-                print
-                print "#"
-                print '# targets to handle recursive stuff for ' + casual_make_file
-                print '#'
-                print make_file + ": " + casual_make_file
-                print "\t@echo generates makefile from " + casual_make_file
-                print "\t@" + _platform.change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
-            
-                print 
-                print build_target_name + ": " + make_file
-                print "\t@echo " + casual_make_file + '  $(MAKECMDGOALS)'
-                print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+                add_rule( comments='targets to handle recursive stuff for ' + casual_make_file,
+                          targets=make_file, 
+                          prerequisites = [ casual_make_file], 
+                          recipes=[
+                              '@echo generates makefile from ' + casual_make_file,
+                              '@' + _platform.change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
+                          ])
+
+                add_rule( targets = build_target_name, 
+                          prerequisites = [ make_file], 
+                          recipes=[
+                              '@echo ' + casual_make_file + '  $(MAKECMDGOALS)',
+                              '@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+                          ])
 
                 casual_build_targets.append( build_target_name);
-                        
-                print
-                print make_target_name + ":"
-                print "\t@echo generates makefile from " + casual_make_file
-                print "\t@" + _platform.change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file
-                print '\t@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+
+                add_rule( targets = make_target_name, 
+                          recipes=[
+                              '@echo generates makefile from ' + casual_make_file,
+                              '@' + _platform.change_directory( casual_make_directory) + ' && ' + def_casual_make + " " + casual_make_file,
+                              '@$(MAKE) -C "' + casual_make_directory + '" $(MAKECMDGOALS) -f ' + make_file
+                          ])
 
                 casual_make_targets.append( make_target_name)
                 
             else:
-            
-                print
-                print '#'
-                print '# targets to handle scope build for ' + casual_make_file
-                print '#'
-                print build_target_name + ':' 
-                print '\t@$(MAKE) $(MAKECMDGOALS) -f ' + make_file
+                add_rule( comments='targets to handle scope build for ' + casual_make_file,
+                          targets = build_target_name, 
+                          recipes=[
+                              '@$(MAKE) $(MAKECMDGOALS) -f ' + make_file
+                          ])
+                
                 
                 casual_build_targets.append( build_target_name);
                 casual_make_targets.append( build_target_name);
                 
-                
-
-
             print
         
-        casual_build_targets_name = unique_target_name( 'casual_build_targets')
-        
-        print
-        print '#'
-        print '# set up dependences to build-targets'
-        print '#'
-        print casual_build_targets_name + ' = ' + internal.multiline( casual_build_targets)
-        print 
-        
-        for target in global_build_targets:
-            print target + ': $(' + casual_build_targets_name + ')'
-       
-        casual_make_targets_name = unique_target_name( 'casual_make_targets')
-        
-        print 
-        print casual_make_targets_name + ' = ' + internal.multiline( casual_make_targets)
-        print
-        print 'make: $(' + casual_make_targets_name + ')' 
-        print
+        add_sequential_ordering( casual_build_targets, [ 'test'], 'force sequential ordering for test')
+
+        add_dependency( global_build_targets, casual_build_targets, 'set up dependences to build-targets');
          
+        add_dependency( [ 'make'], casual_make_targets, 'set up dependences to make-targets');
+         
+
+
+def __post_actions():
+    
+    for key, action in state().post_actions.items():
+        print( '\n# ' + key)
+        action()
+
+
 
 #
 # colled by engine after casual-make-file has been parsed.
@@ -274,19 +388,8 @@ def post_make_rules():
     # Platform specific epilogue
     #
     _platform.post_make();
-
-    print
-    print '#'
-    print '# Make sure recursive makefiles get the linker'
-    print '#'
-    print 'export EXECUTABLE_LINKER'
     
-    print
-    print '#'
-    print '# de facto target \"all\"'
-    print '#'
-    print 'all: link'
-    print
+    add_dependency( [ 'all'], [ 'link'], 'de facto target \"all\"')
     
  
     if state().parallel_make is None or state().parallel_make:
@@ -316,44 +419,45 @@ def post_make_rules():
     
     produce_build_targets()
        
-    
+    print( '#\n# postactions \n#')  
+    __post_actions()
        
     #
     # Targets for creating directories
     #
     for path in state().paths_to_create:
-        print
-        print path + ":"        
-        print "\t" + _platform.make_directory( path)
-        print
+        add_rule( targets=path, recipes= [ _platform.make_directory( path)])
+    
+    #
+    # Targets for clean
+    #
+    
+    add_dependency( ['clean'], [ 'clean_object', 'clean_dependency', 'clean_exe'])
+    
+    add_rule( targets='clean_object', 
+              recipes= map(lambda p: _platform.remove( p + "/*.o" ), [p for p in state().object_paths_to_clean]))
 
+    add_rule( targets='clean_dependency', 
+          recipes= map(lambda p: _platform.remove( p + "/*.d" ), [p for p in state().object_paths_to_clean]))
     
-    #
-    # Target for clean
-    #
-    
-    
-    print
-    print "clean: clean_object clean_dependency clean_exe"
-    
-    print "clean_object:"
-    for objectpath in state().object_paths_to_clean:
-        print "\t-" + _platform.remove( objectpath + "/*.o")
-        
-    print "clean_dependency:"
-    for objectpath in state().object_paths_to_clean:  
-        print "\t-" + _platform.remove( objectpath + "/*.d")
-    
-    #
-    # Remove all other known files.
-    #
-    print "clean_exe:"
-    for filename in state().files_to_Remove:
-        print "\t-" + _platform.remove( filename)
+    add_rule( targets='clean_exe', 
+              recipes= map(  _platform.remove, state().files_to_Remove))
 
 #
 # Registration of files that will be removed with clean
 #
+
+def register_target( category, target):
+    ''' '''
+    state().targets.setdefault( category, []).append( target)
+
+def targets( category):
+    return state().targets.get( category, [])
+
+
+def register_post_action( name, action):
+    state().post_actions.setdefault( name, action)
+
 
 def register_object_path_for_clean( objectpath):
     ''' '''
@@ -368,9 +472,6 @@ def register_file_for_clean( filename):
 def register_path_for_create( path):
     ''' '''
     state().paths_to_create.add( path)
-
-
-
 
 
 #
@@ -419,13 +520,16 @@ def bind_name_path( path):
 
     return normalize_path( path, _platform.bind_name)
 
+def unique_name(name):
+
+    unique_name.sequence += 1
+    return name + "_" + str( unique_name.sequence)
+
+unique_name.sequence = 0
 
 def unique_target_name(name):
+    return unique_name( internal.target_name( name))
 
-    unique_target_name.targetSequence += 1
-    return internal.target_name( name) + "_" + str( unique_target_name.targetSequence)
-
-unique_target_name.targetSequence = 0
 
 def object_name_list( objects):
     
@@ -445,14 +549,6 @@ def normalize_string( string):
 def target(output, source = '', name = None, operation = None):
     
     return internal.Target( output, source, name, operation)
-
-
-def cross_object_name(name):
-
-    #
-    # Ta bort '.o' och lagg till _crosscompile.o
-    #
-    return normalize_path( name.replace( '.o', '_crosscompile.o' ))
 
 
 
@@ -479,17 +575,6 @@ def set_ld_path():
 
 set_ld_path.is_set = False;
     
-
-def deploy( target, directive):
-    
-    targetname = 'deploy_' + target.name
-    
-    print
-    print 'deploy: ' + targetname
-    print
-    print targetname + ": " + target.name
-    print "\t-@" + def_Deploy + " " + target.file + ' ' + directive
-    print
 
 
 def build( casual_make_file):
@@ -534,18 +619,16 @@ def library_targets( libs):
         else:
             targets.append( lib.name)
 
+            
 
-    print "#"
-    print "# This is the only way I've got it to work. We got to have a INTERMEDIATE target"
-    print "# even if the target exist and have dependency to a file that is older. Don't really get make..." 
-    print "#";
-    for target in targets:    
-        print ".INTERMEDIATE: " + target
-    print
-    print "#";
-    print "# dummy targets, that will be used if the real target is absent";
-    for target in dummy_targets:    
-        print target + ":"
+    add_dependency( [ '.INTERMEDIATE'],
+                    prerequisites = targets, 
+                    comments = ("This is the only way I've got it to work. We got to have a INTERMEDIATE target\n"
+                           "even if the target exist and have dependency to a file that is older. Don't really get make...")
+                   )
+
+    add_dependency( targets = dummy_targets, 
+                    comments = 'dummy targets, that will be used if the real target is absent')
     
     return targets
 
@@ -564,6 +647,7 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
                 
     print "#"
     print "# Links: " + os.path.basename( filename)
+    print 
      
     #
     # extract file if some is targets
@@ -580,21 +664,18 @@ def link( operation, target, objectfiles, libraries, linkdirectives = '', prefix
 
     destination_path = os.path.dirname( filename)
     
-    print
-    print "link: " + target.name
-    print 
-    print target.name + ': ' + filename
-    print
-    print '   objects_' + target.name + ' = ' + internal.multiline( object_name_list( objectfiles))
-    print
-    print '   libs_'  + target.name + ' = ' + internal.multiline( platform().link_directive( libraries))
-    print
-    print '   #'
-    print '   # possible dependencies to other targets (in this makefile)'
-    print '   depenency_' + target.name + ' = ' + internal.multiline( dependent_targets)
-    print 
-    print filename + ': $(objects_' + target.name + ') $(depenency_' + target.name + ')' + " $(USER_CASUAL_MAKE_FILE) | " + destination_path
-    print '\t' + prefix + operation( filename, '$(objects_' + target.name + ')', '$(libs_' + target.name + ')', linkdirectives)
+    add_dependency( [ 'link'], [ target.name], comments='link: ' + target.name)
+    add_dependency( [ target.name], [ filename])
+    
+    objects_variable = add_local_variable( object_name_list( objectfiles), 'objects');
+    libraries_variable = add_local_variable( platform().link_directive( libraries), 'libraries');
+    dependency_variable = add_local_variable( dependent_targets, 'dependency', 'possible dependencies to other targets (in this makefile)');
+    
+    
+    add_rule( filename, 
+              prerequisites = [ '$(' + objects_variable + ')', '$(' + dependency_variable + ')', '$(USER_CASUAL_MAKE_FILE)'],
+              ordered_prerequisites = [ destination_path],
+              recipes = [ prefix + operation( filename, '$(' + objects_variable + ')', '$(' + libraries_variable + ')', linkdirectives)])
     
     if target.output:
         soname_fullpath = target.stem + '.' + target.output.version.soname_version()
@@ -617,7 +698,10 @@ def install(target, destination):
     if isinstance( target, list):
         for t in target:
             install( t, destination)
-    
+            
+    elif isinstance( target, tuple):
+        install( target[ 0], destination + '/' + target[ 1])
+        
     elif isinstance( target, basestring):
         install( internal.Target( target), destination)
     else:

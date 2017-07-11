@@ -8,11 +8,12 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
 
-#include "common/message/domain.h"
 #include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/transaction.h"
 #include "common/message/queue.h"
+#include "common/message/conversation.h"
+
 
 #include "common/file.h"
 #include "common/domain.h"
@@ -24,6 +25,17 @@ namespace casual
 {
    namespace common
    {
+      namespace message
+      {
+         namespace domain
+         {
+            namespace configuration
+            {
+               struct Domain;
+            } // configuration
+         } // domain
+      } // message
+
       namespace mockup
       {
 
@@ -40,6 +52,38 @@ namespace casual
                {
                   void operator()( message::service::call::callee::Request& reqeust);
                };
+
+               namespace conversation
+               {
+
+                  dispatch_type echo();
+
+               } // conversation
+
+
+               struct Manager
+               {
+                  Manager();
+                  Manager( dispatch_type&& handler);
+
+                  ~Manager();
+
+               private:
+
+                  struct State
+                  {
+                     std::map< std::string, common::message::service::lookup::Reply> services;
+                     std::vector< platform::ipc::id::type> traffic_monitors;
+                  };
+
+
+                  dispatch_type default_handler();
+
+                  State m_state;
+                  ipc::Replier m_replier;
+               };
+
+
             } // server
 
 
@@ -47,54 +91,25 @@ namespace casual
             {
                Manager();
                Manager( dispatch_type&& handler, const common::domain::Identity& identity = common::domain::Identity{ "unittest-domain"});
+               Manager( message::domain::configuration::Domain domain);
 
 
                ~Manager();
 
-               inline process::Handle process() const { return m_replier.process();}
+               process::Handle process() const;
+
 
             private:
-               struct State
-               {
 
-                  std::map< common::Uuid, common::process::Handle> singeltons;
-                  std::vector< common::message::domain::process::lookup::Request> pending;
-                  std::vector< common::process::Handle> executables;
-                  std::vector< common::process::Handle> event_listeners;
-               };
-
-               dispatch_type default_handler();
-
-               State m_state;
-               ipc::Replier m_replier;
-               common::file::scoped::Path m_singlton;
+               struct Implementation;
+               common::move::basic_pimpl< Implementation> m_implementation;
             };
 
 
 
 
 
-            struct Broker
-            {
-               Broker();
-               Broker( dispatch_type&& handler);
 
-               ~Broker();
-
-            private:
-
-               struct State
-               {
-                  std::map< std::string, common::message::service::lookup::Reply> services;
-                  std::vector< platform::ipc::id::type> traffic_monitors;
-               };
-
-
-               dispatch_type default_handler();
-
-               State m_state;
-               ipc::Replier m_replier;
-            };
 
             namespace transaction
             {
@@ -133,14 +148,13 @@ namespace casual
 
             } // queue
 
+
             namespace echo
             {
 
                namespace create
                {
-                  message::service::advertise::Service service(
-                        std::string name,
-                        std::chrono::microseconds timeout = std::chrono::microseconds::zero());
+                  message::service::advertise::Service service( std::string name);
                } // create
 
                struct Server
@@ -152,7 +166,7 @@ namespace casual
                   void undadvertise( std::vector< std::string> services) const;
 
 
-                  void send_ack( std::string service) const;
+                  void send_ack() const;
 
                   process::Handle process() const;
 
@@ -169,7 +183,6 @@ namespace casual
                //!
                //! - service1
                //! - service2
-               //! - service3_2ms_timout
                //! - removed_ipc_queue <- corresponds to an ipc-queue that does not exists
                //!
                struct Domain
@@ -177,7 +190,7 @@ namespace casual
                   Domain();
 
                   domain::Manager domain;
-                  Broker broker;
+                  service::Manager service;
                   transaction::Manager tm;
 
                   echo::Server server;

@@ -12,6 +12,7 @@
 #include "sf/archive/xml.h"
 #include "sf/archive/ini.h"
 #include "sf/archive/binary.h"
+#include "sf/log.h"
 
 #include "common/log.h"
 
@@ -23,6 +24,7 @@
 #include <set>
 #include <vector>
 #include <deque>
+#include <fstream>
 
 
 namespace casual
@@ -66,6 +68,43 @@ namespace casual
          };
 
          template< typename P>
+         struct json_file
+         {
+            using policy_type = P;
+
+            template< typename T>
+            static T write_read( const T& value)
+            {
+               common::file::scoped::Path path{
+                  common::file::name::unique( common::directory::temporary() + '/', "json" )};
+
+
+               {
+                  sf::archive::json::Save save;
+
+                  sf::archive::json::Writer writer( save());
+
+                  writer << CASUAL_MAKE_NVP( value);
+
+                  std::ofstream file{ path};
+                  save( file);
+
+               }
+
+               {
+                  std::ifstream file{ path};
+                  sf::archive::json::Load load;
+                  load( file);
+
+                  archive::json::basic_reader< policy_type> reader( load());
+                  T value;
+                  reader >> CASUAL_MAKE_NVP( value);
+                  return value;
+               }
+            }
+         };
+
+         template< typename P>
          struct yaml
          {
             using policy_type = P;
@@ -93,6 +132,45 @@ namespace casual
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
                }
+            }
+         };
+
+         template< typename P>
+         struct yaml_file
+         {
+            using policy_type = P;
+
+            template< typename T>
+            static T write_read( const T& value)
+            {
+               common::file::scoped::Path path{
+                  common::file::name::unique( common::directory::temporary() + '/', ".yaml" )};
+
+
+
+               {
+                  archive::yaml::Save save;
+                  archive::yaml::Writer writer( save());
+                  writer << CASUAL_MAKE_NVP( value);
+
+                  std::ofstream file{ path};
+                  save( file);
+               }
+
+
+
+               {
+                  std::ifstream file{ path};
+                  archive::yaml::Load load;
+                  load( file);
+
+                  sf::archive::yaml::basic_reader< policy_type> reader( load());
+                  T value;
+                  reader >> CASUAL_MAKE_NVP( value);
+                  return value;
+               }
+
+
             }
          };
 
@@ -168,7 +246,7 @@ namespace casual
             template< typename T>
             static T write_read( const T& value)
             {
-               sf::buffer::binary::Stream buffer;
+               sf::platform::binary::type buffer;
                {
                   sf::archive::binary::Writer writer( buffer);
                   writer << CASUAL_MAKE_NVP( value);
@@ -196,8 +274,12 @@ namespace casual
       typedef ::testing::Types<
             holder::json< archive::policy::Strict>,
             holder::json< archive::policy::Relaxed>,
+            holder::json_file< archive::policy::Strict>,
+            holder::json_file< archive::policy::Relaxed>,
             holder::yaml< archive::policy::Strict>,
             holder::yaml< archive::policy::Relaxed>,
+            holder::yaml_file< archive::policy::Strict>,
+            holder::yaml_file< archive::policy::Relaxed>,
             holder::xml< archive::policy::Strict>,
             holder::xml< archive::policy::Relaxed>,
             //holder::ini< archive::policy::Strict>,  // cannot handle nested containers yet
@@ -259,7 +341,8 @@ namespace casual
       TYPED_TEST( casual_sf_archive_write_read, type_string)
       {
          std::string value = "value 42";
-         EXPECT_TRUE( TestFixture::write_read( value) == "value 42");
+         auto result = TestFixture::write_read( value);
+         EXPECT_TRUE( result == "value 42") << "result: " << result;
       }
 
       TYPED_TEST( casual_sf_archive_write_read, type_string_with_new_line)
@@ -285,7 +368,7 @@ namespace casual
 
       TYPED_TEST( casual_sf_archive_write_read, type_binary)
       {
-         common::platform::binary_type value{ 0, 42, -123, 23, 43, 11, 124};
+         common::platform::binary::type value{ 0, 42, -123, 23, 43, 11, 124};
          EXPECT_TRUE( TestFixture::write_read( value) == value);
       }
 
@@ -334,7 +417,8 @@ namespace casual
       TYPED_TEST( casual_sf_archive_write_read, type_tuple)
       {
          std::tuple< int, std::string, char, long, float> value{ 23, "charlie", 'Q', 343534323434, 1.42};
-         EXPECT_TRUE( TestFixture::write_read( value) == value);
+         auto result = TestFixture::write_read( value);
+         EXPECT_TRUE( result == value) << CASUAL_MAKE_NVP( value) << CASUAL_MAKE_NVP( result);
       }
 
       TYPED_TEST( casual_sf_archive_write_read, type_vector_tuple)

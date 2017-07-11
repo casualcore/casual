@@ -5,7 +5,7 @@
 #include "common/domain.h"
 
 #include "common/environment.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include <fstream>
 
@@ -84,7 +84,7 @@ namespace casual
          {
             file::scoped::Path create( const process::Handle& process, const Identity& identity)
             {
-               trace::internal::Scope trace{ "common::domain::singleton::create"};
+               Trace trace{ "common::domain::singleton::create"};
 
 
                auto path = environment::domain::singleton::file();
@@ -100,7 +100,7 @@ namespace casual
                   output << identity.name << '\n';
                   output << identity.id << std::endl;
 
-                  log::internal::debug << "domain information - id: " << identity << " - process: " << process << '\n';
+                  log::debug << "domain information - id: " << identity << " - process: " << process << '\n';
                }
                else
                {
@@ -110,10 +110,14 @@ namespace casual
 
                if( common::file::exists( path))
                {
+                  auto content = singleton::read( {});
+
+                  log::debug << "domain: " << content << '\n';
+
                   //
                   // There is potentially a running casual-domain already - abort
                   //
-                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain");
+                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path, CASUAL_NIP( content));
                }
 
                //
@@ -132,33 +136,55 @@ namespace casual
                return { std::move( path)};
             }
 
+            std::ostream& operator << ( std::ostream& out, const Result& value)
+            {
+               return out << "{ process: " << value.process
+                     << ", domain: " << value.identity
+                     << '}';
+            }
+
             Result read()
             {
-               trace::internal::Scope trace{ "common::domain::singleton::read"};
+               return read( process::pattern::Sleep{
+                  { std::chrono::milliseconds{ 10}, 10},
+                  { std::chrono::milliseconds{ 100}, 10},
+                  { std::chrono::seconds{ 1}, 60}
+               });
+            }
 
-               std::ifstream file{ common::environment::domain::singleton::file()};
+            Result read( process::pattern::Sleep retries)
+            {
+               Trace trace{ "common::domain::singleton::read"};
 
-               if( file)
+               log::debug << "retries: " << retries << '\n';
+
+               do
                {
-                  Result result;
+                  std::ifstream file{ common::environment::domain::singleton::file()};
+
+                  if( file)
                   {
-                     file >> result.process.queue;
-                     file >> result.process.pid;
-                     file >> result.identity.name;
-                     std::string uuid;
-                     file >> uuid;
-                     result.identity.id = Uuid{ uuid};
+                     Result result;
+                     {
+                        file >> result.process.queue;
+                        file >> result.process.pid;
+                        file >> result.identity.name;
+                        std::string uuid;
+                        file >> uuid;
+                        result.identity.id = Uuid{ uuid};
+                     }
+
+                     environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
+                     common::domain::identity( result.identity);
+
+                     log::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
+
+                     return result;
                   }
-
-                  environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
-                  common::domain::identity( result.identity);
-
-                  log::internal::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
-
-                  return result;
                }
-               return {};
+               while( retries());
 
+               return {};
             }
 
          } // singleton

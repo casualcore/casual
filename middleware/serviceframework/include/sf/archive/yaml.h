@@ -1,8 +1,5 @@
 //!
-//! casual_archive_yaml_policy.h
-//!
-//! Created on: Oct 31, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_ARCHIVE_YAML_POLICY_H_
@@ -38,6 +35,7 @@ namespace casual
                const YAML::Node& operator() () const noexcept;
 
                const YAML::Node& operator() ( std::istream& stream);
+               const YAML::Node& operator() ( const platform::binary::type& yaml);
                const YAML::Node& operator() ( const std::string& yaml);
                const YAML::Node& operator() ( const char* yaml, std::size_t size);
                const YAML::Node& operator() ( const char* yaml);
@@ -69,27 +67,18 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     const bool result = start( name);
-
-                     if( result)
+                     if( start( name))
                      {
-                        if( m_stack.back()->Type() == YAML::NodeType::Null)
-                        {
-                           //
-                           // Act (somehow) relaxed
-                           //
-
-                           value = T{};
-                        }
-                        else
+                        if( m_stack.back()->Type() != YAML::NodeType::Null)
                         {
                            read( value);
                         }
+
+                        end( name);
+                        return true;
                      }
 
-                     end( name);
-
-                     return result;
+                     return false;
                   }
 
                private:
@@ -105,7 +94,7 @@ namespace casual
                   void read( double& value) const;
                   void read( char& value) const;
                   void read( std::string& value) const;
-                  void read( platform::binary_type& value) const;
+                  void read( platform::binary::type& value) const;
 
                private:
 
@@ -128,6 +117,7 @@ namespace casual
                YAML::Emitter& operator() () noexcept;
 
                void operator() ( std::ostream& yaml) const;
+               void operator() ( platform::binary::type& yaml) const;
                void operator() ( std::string& yaml) const;
 
 
@@ -183,7 +173,7 @@ namespace casual
 
                   void write( const char& value);
                   void write( const std::string& value);
-                  void write( const platform::binary_type& value);
+                  void write( const platform::binary::type& value);
 
 
                private:

@@ -13,6 +13,8 @@
 #include "common/message/gateway.h"
 #include "common/message/coordinate.h"
 
+#include "common/message/event.h"
+
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -64,7 +66,7 @@ namespace casual
                struct Exit : Base
                {
                   using Base::Base;
-                  using message_type = common::message::domain::process::termination::Event;
+                  using message_type = common::message::event::process::Exit;
 
                   void operator () ( message_type& message);
 

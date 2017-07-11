@@ -1,63 +1,29 @@
 //!
-//! manager_state.cpp
-//!
-//! Created on: Aug 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "transaction/manager/state.h"
+#include "transaction/common.h"
+
+#include "configuration/domain.h"
+
 
 #include "common/exception.h"
 #include "common/algorithm.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 #include "common/environment.h"
+#include "common/event/send.h"
 
 
-#include "config/domain.h"
-#include "config/xa_switch.h"
 
 
 namespace casual
 {
-   using namespace common;
 
    namespace transaction
    {
       namespace state
       {
-         namespace local
-         {
-            namespace
-            {
-               namespace transform
-               {
-                  struct Resource
-                  {
-                     state::resource::Proxy operator () ( const message::domain::configuration::transaction::Resource& value) const
-                     {
 
-                        Trace trace{ "transform::Resource", log::internal::transaction};
-
-                        state::resource::Proxy result;
-
-                        result.id = value.id;
-                        result.key = value.key;
-                        result.openinfo = value.openinfo;
-                        result.closeinfo = value.closeinfo;
-                        result.concurency = value.instances;
-
-                        log::internal::debug << "resource.openinfo: " << result.openinfo << std::endl;
-                        log::internal::debug << "resource.concurency: " << result.concurency << std::endl;
-
-                        return result;
-                     }
-                  };
-
-               } // transform
-
-            }
-         } // local
 
 
          Statistics::Statistics() :  min{ std::chrono::microseconds::max()}, max{ 0}, total{ 0}, invoked{ 0}
@@ -65,16 +31,16 @@ namespace casual
 
          }
 
-         void Statistics::start( const common::platform::time_point& start)
+         void Statistics::start( const common::platform::time::point::type& start)
          {
             m_start = start;
          }
-         void Statistics::end( const common::platform::time_point& end)
+         void Statistics::end( const common::platform::time::point::type& end)
          {
             time( m_start, end);
          }
 
-         void Statistics::time( const common::platform::time_point& start, const common::platform::time_point& end)
+         void Statistics::time( const common::platform::time::point::type& start, const common::platform::time::point::type& end)
          {
             auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
             total += time;
@@ -119,9 +85,34 @@ namespace casual
                return m_state;
             }
 
-            bool Proxy::ready() const
+            bool Proxy::booted() const
             {
-               return common::range::all_of( instances, []( const Instance& i){ return i.state() == Instance::State::idle;});
+               return common::range::all_of( instances, []( const Instance& i){
+                  switch( i.state())
+                  {
+                     case Instance::State::idle:
+                     case Instance::State::error:
+                     case Instance::State::busy:
+                        return true;
+                     default:
+                        return false;
+                  }
+               });
+            }
+
+            bool Proxy::remove_instance( common::platform::pid::type pid)
+            {
+               auto found = common::range::find_if( instances, [pid]( auto& i){
+                  return i.process.pid == pid;
+               });
+
+               if( found)
+               {
+                  statistics += found->statistics;
+                  instances.erase( std::begin( found));
+                  return true;
+               }
+               return false;
             }
 
             std::ostream& operator << ( std::ostream& out, const Proxy& value)
@@ -179,7 +170,7 @@ namespace casual
                {
                   id::type id( State& state, const common::process::Handle& process)
                   {
-                     auto found = range::find( state.externals, process);
+                     auto found = common::range::find( state.externals, process);
 
                      if( found)
                      {
@@ -198,19 +189,19 @@ namespace casual
 
          } // resource
 
-         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file)
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration)
          {
 
             {
-               Trace trace( "transaction manager xa-switch configuration", log::internal::transaction);
+               Trace trace{ "transaction manager xa-switch configuration"};
 
-               auto resources = config::xa::switches::get( resource_file);
+               auto resources = configuration::resource::property::get();
 
                for( auto& resource : resources)
                {
-                  if( ! state.xa_switch_configuration.emplace( resource.key, std::move( resource)).second)
+                  if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
                   {
-                     throw exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
+                     throw common::exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
                }
             }
@@ -219,13 +210,40 @@ namespace casual
             // configure resources
             //
             {
-               Trace trace( "transaction manager resource configuration", log::internal::transaction);
+               Trace trace{ "transaction manager resource configuration"};
 
-               std::transform(
-                     std::begin( configuration.resources),
-                     std::end( configuration.resources),
-                     std::back_inserter( state.resources),
-                     local::transform::Resource{});
+
+               auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
+
+                  state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
+
+                  proxy.name = r.name;
+                  proxy.concurency = r.instances;
+                  proxy.key = r.key;
+                  proxy.openinfo = r.openinfo;
+                  proxy.closeinfo = r.closeinfo;
+                  proxy.note = r.note;
+
+                  return proxy;
+               };
+
+               auto validate = [&state]( const common::message::domain::configuration::transaction::Resource& r) {
+                  if( ! common::range::find( state.resource_properties, r.key))
+                  {
+                     common::log::category::error << "failed to correlate resource key '" << r.key << "' - action: skip resource\n";
+
+                     common::event::error::send( "failed to correlate resource key '" + r.key + "'");
+                     return false;
+                  }
+                  return true;
+               };
+
+               common::range::transform_if(
+                     configuration.domain.transaction.resources,
+                     state.resources,
+                     transform_resource,
+                     validate);
+
             }
 
          }
@@ -313,6 +331,17 @@ namespace casual
          result = convert( value);
       }
 
+      bool Transaction::Resource::done() const
+      {
+         switch( result)
+         {
+         case Result::xa_RDONLY:
+         case Result::xaer_NOTA:
+            return true;
+         default:
+            return false;
+         }
+      }
 
       Transaction::Resource::Stage Transaction::stage() const
       {
@@ -358,9 +387,10 @@ namespace casual
          return ! persistent.replies.empty();
       }
 
-      bool State::ready() const
+
+      bool State::booted() const
       {
-         return range::all_of( resources, []( const state::resource::Proxy& p){ return p.ready();});
+         return common::range::all_of( resources, []( const auto& p){ return p.booted();});
       }
 
       std::size_t State::instances() const
@@ -401,18 +431,18 @@ namespace casual
             {
                if( found->state() != state::resource::Proxy::Instance::State::shutdown)
                {
-                  log::error << "resource proxy instance died - " << *found << std::endl;
+                  common::log::category::error << "resource proxy instance died - " << *found << std::endl;
                }
 
                resource.statistics += found->statistics;
                resource.instances.erase( std::begin( found));
 
-               log::internal::transaction << "remove dead process: " << death << std::endl;
+               transaction::log << "remove dead process: " << death << std::endl;
                return;
             }
          }
 
-         log::warning << "failed to find and remove dead instance: " << death << std::endl;
+         common::log::category::warning << "failed to find and remove dead instance: " << death << std::endl;
       }
 
       state::resource::Proxy& State::get_resource( state::resource::id::type rm)
@@ -441,6 +471,13 @@ namespace casual
          return *found;
       }
 
+      bool State::remove_instance( common::platform::pid::type pid)
+      {
+         return common::range::find_if( resources, [pid]( auto& r){
+            return r.remove_instance( pid);
+         });
+      }
+
       State::instance_range State::idle_instance( state::resource::id::type rm)
       {
          auto& resource = get_resource( rm);
@@ -450,7 +487,7 @@ namespace casual
 
       const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
       {
-         auto found = range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
+         auto found = common::range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
             return p.id == rm;
          });
 

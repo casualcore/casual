@@ -23,8 +23,6 @@
 #include "common/message/coordinate.h"
 #include "common/message/handle.h"
 
-#include "common/trace.h"
-
 namespace casual
 {
    namespace gateway
@@ -124,7 +122,7 @@ namespace casual
                      //
                      // Send lookup
                      //
-                     blocking::send( common::communication::ipc::broker::device(), request);
+                     blocking::send( common::communication::ipc::service::manager::device(), request);
                   }
                };
 
@@ -153,20 +151,20 @@ namespace casual
                               }
                               catch( const common::exception::queue::Unavailable&)
                               {
-                                 common::log::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
+                                 common::log::category::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
                                  send_error_reply( message);
                               }
                               break;
                            }
                            case message_type::State::absent:
                            {
-                              common::log::error << "service: " << message.service << " is not handled by this domain (any more) - action: reply with TPESVCERR\n";
+                              common::log::category::error << "service: " << message.service << " is not handled by this domain (any more) - action: reply with TPESVCERR\n";
                               send_error_reply( message);
                               break;
                            }
                            default:
                            {
-                              common::log::error << "unexpected state on lookup reply: " << message << " - action: drop message\n";
+                              common::log::category::error << "unexpected state on lookup reply: " << message << " - action: drop message\n";
                               break;
                            }
                         }
@@ -177,7 +175,7 @@ namespace casual
                      {
                         common::message::service::call::Reply reply;
                         reply.correlation = message.correlation;
-                        reply.error = TPESVCERR;
+                        reply.status = TPESVCERR;
                         common::communication::ipc::inbound::device().push( reply);
                      }
                   };
@@ -222,7 +220,7 @@ namespace casual
                      // Send lookup
                      //
 
-                     blocking::send( common::communication::ipc::queue::broker::optional::device(), request);
+                     blocking::send( common::communication::ipc::queue::manager::optional::device(), request);
 
                      //
                      // We could send the lookup, so we won't remove the message from the cache
@@ -280,7 +278,7 @@ namespace casual
                            }
                            default:
                            {
-                              common::log::error << "unexpected message type for queue request: " << message << " - action: drop message\n";
+                              common::log::category::error << "unexpected message type for queue request: " << message << " - action: drop message\n";
                            }
                         }
                      }
@@ -310,7 +308,7 @@ namespace casual
                         }
                         catch( const common::exception::communication::Unavailable&)
                         {
-                           common::log::error << "failed to lookup queue - action: send error reply\n";
+                           common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
                            common::message::queue::enqueue::Reply reply;
                            reply.correlation = message.correlation;
@@ -348,7 +346,7 @@ namespace casual
                         }
                         catch( const common::exception::communication::Unavailable&)
                         {
-                           common::log::error << "failed to lookup queue - action: send error reply\n";
+                           common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
                            common::message::queue::enqueue::Reply reply;
                            reply.correlation = message.correlation;
@@ -508,14 +506,14 @@ namespace casual
                         {
                            if( ! message.services.empty())
                            {
-                              blocking::send( common::communication::ipc::broker::device(), message.get());
-                              coordinate.pids.push_back( common::communication::ipc::broker::device().connector().process().pid);
+                              blocking::send( common::communication::ipc::service::manager::device(), message.get());
+                              coordinate.pids.push_back( common::communication::ipc::service::manager::device().connector().process().pid);
                            }
 
                            if( ! message.queues.empty() &&
-                                 blocking::optional::send( common::communication::ipc::queue::broker::optional::device(), message.get()))
+                                 blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message.get()))
                            {
-                              coordinate.pids.push_back( common::communication::ipc::queue::broker::optional::device().connector().process().pid);
+                              coordinate.pids.push_back( common::communication::ipc::queue::manager::optional::device().connector().process().pid);
                            }
                         }
                      }
@@ -581,6 +579,8 @@ namespace casual
             } // domain
          } // handle
 
+
+
          template< typename Policy>
          struct Gateway
          {
@@ -593,6 +593,7 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
+              : m_cache{ policy_type::limits( settings)}
             {
                //
                // 'connect' to our local domain
@@ -795,7 +796,7 @@ namespace casual
                //
                // We're only interested in sig-user
                //
-               common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
+               common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
 
 
                Trace trace{ "gateway::inbound::Gateway::request_thread"};
@@ -846,7 +847,7 @@ namespace casual
                      common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
                   }
 
-                  common::log::information << "connection established - policy: " << policy << "\n";
+                  common::log::category::information << "connection established - policy: " << policy << "\n";
 
 
                   //

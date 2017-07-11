@@ -1,8 +1,5 @@
 //!
-//! test_multicall.cpp
-//!
-//! Created on: Jul 12, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -20,7 +17,7 @@
 
 #include "common/arguments.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 
 void help()
 {
@@ -32,7 +29,7 @@ void help()
 struct Timeoint
 {
 
-   using time_point = decltype( casual::common::platform::clock_type::now());
+   using time_point = decltype( casual::common::platform::time::clock::type::now());
 
    Timeoint( time_point time, std::string info) : time( std::move( time)), info( std::move( info)) {}
 
@@ -59,7 +56,7 @@ struct Transaction
       if( settings.transaction)
       {
          tx_begin();
-         m_timepoint.emplace_back( casual::common::platform::clock_type::now(), "tx_begin");
+         m_timepoint.emplace_back( casual::common::platform::time::clock::type::now(), "tx_begin");
       }
    }
 
@@ -70,13 +67,13 @@ struct Transaction
          if( m_settings.rollback || std::uncaught_exception())
          {
             tx_rollback();
-            m_timepoint.emplace_back( casual::common::platform::clock_type::now(), "tx_rollback");
+            m_timepoint.emplace_back( casual::common::platform::time::clock::type::now(), "tx_rollback");
 
          }
          else
          {
             tx_commit();
-            m_timepoint.emplace_back( casual::common::platform::clock_type::now(), "tx_commit");
+            m_timepoint.emplace_back( casual::common::platform::time::clock::type::now(), "tx_commit");
          }
       }
    }
@@ -92,23 +89,25 @@ void run( Settings settings)
       std::vector< Timeoint> timepoints;
 
       {
-         timepoints.emplace_back( casual::common::platform::clock_type::now(), "start");
+         timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "start");
 
          Transaction transaction( settings, timepoints);
 
 
-         using Async = casual::sf::xatmi::service::binary::Async;
-         Async caller{ settings.service};
+         using Send = casual::sf::service::protocol::binary::Send;
+         Send send;
 
-         std::vector< Async::receive_type> receivers;
+         send << CASUAL_MAKE_NVP( settings.argument);
+
+         std::vector< Send::receive_type> receivers;
+         receivers.reserve( settings.calls);
 
          for( long index = 0; index < settings.calls; ++index )
          {
-            caller << CASUAL_MAKE_NVP( settings.argument);
-            receivers.push_back( caller());
+            receivers.push_back( send( settings.service));
          }
 
-         timepoints.emplace_back( casual::common::platform::clock_type::now(), "call");
+         timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "call");
 
 
          for( auto& recive : receivers)
@@ -127,13 +126,13 @@ void run( Settings settings)
             }
          }
 
-         timepoints.emplace_back( casual::common::platform::clock_type::now(), "receive");
+         timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "receive");
 
 
       }
 
 
-      //timepoints.emplace_back( casual::common::platform::clock_type::now(), "end");
+      //timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "end");
 
       typedef std::chrono::microseconds us;
 

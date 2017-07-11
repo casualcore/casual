@@ -1,8 +1,5 @@
 //!
-//! message.cpp
-//!
-//! Created on: Jan 6, 2016
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -19,9 +16,67 @@ namespace casual
 
          namespace message
          {
+            namespace complete
+            {
+
+               namespace host
+               {
+                  namespace
+                  {
+                     namespace header
+                     {
+                        common::message::Type type( const network::Header& value)
+                        {
+                           return static_cast< common::message::Type>(
+                                 common::network::byteorder::decode<
+                                    traits::underlying_type_t< common::message::Type>>( value.type));
+                        }
+
+                        std::size_t size( const network::Header& value)
+                        {
+                           return common::network::byteorder::decode< std::size_t>( value.size);
+                        }
+
+                     } // header
+                  }
+               } // host
+
+               namespace network
+               {
+                  std::ostream& operator << ( std::ostream& out, const Header& value)
+                  {
+
+                     return out << "{ type: " << host::header::type( value)
+                           << ", correlation: " << uuid::string( value.correlation)
+                           << ", size: " << host::header::size( value)
+                           << '}';
+
+                  }
+
+               } // network
+
+            } // complete
+
             Complete::Complete() = default;
 
             Complete::Complete( message_type_type type, const Uuid& correlation) : type{ type}, correlation{ correlation} {}
+
+            Complete::Complete( const complete::network::Header& header)
+              : type{ complete::host::header::type( header)}, correlation{ header.correlation}
+            {
+               payload.resize( complete::host::header::size( header));
+            }
+
+            complete::network::Header Complete::header() const
+            {
+               complete::network::Header header;
+
+               correlation.copy( header.correlation);
+               header.type = network::byteorder::encode( cast::underlying( type));
+               header.size = network::byteorder::encode( payload.size());
+
+               return header;
+            }
 
 
             Complete::Complete( Complete&& rhs) noexcept
@@ -36,9 +91,6 @@ namespace casual
                return *this;
             }
 
-
-            //Complete::Complete( Complete&& rhs) noexcept = default;
-            //Complete& Complete::operator = ( Complete&& rhs) noexcept = default;
 
             Complete::operator bool() const
             {

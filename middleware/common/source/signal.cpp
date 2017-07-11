@@ -7,7 +7,6 @@
 #include "common/exception.h"
 #include "common/log.h"
 #include "common/flag.h"
-#include "common/internal/trace.h"
 #include "common/process.h"
 #include "common/chronology.h"
 #include "common/memory.h"
@@ -41,17 +40,17 @@ namespace casual
                bool send( platform::pid::type pid, platform::signal::type signal)
                {
 
-                  log::internal::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
+                  log::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
 
-                  if( ::kill( pid, signal) == -1)
+                  if( ::kill( pid, signal) != 0)
                   {
                      switch( errno)
                      {
                         case ESRCH:
-                           log::internal::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                           log::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
                            break;
                         default:
-                           log::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                           log::category::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
                            break;
                      }
                      return false;
@@ -243,7 +242,7 @@ namespace casual
                                     //
                                     // Signal is not blocked
                                     //
-                                    log::internal::debug << "signal: handling signal: " << Signal << '\n';
+                                    log::debug << "signal: handling signal: " << Signal << '\n';
 
                                     //
                                     // We've consumed the signal
@@ -357,7 +356,7 @@ namespace casual
                         throw exception::invalid::Argument{ "timer::set - " + error::string()};
                      }
 
-                     log::internal::debug << "timer set: "
+                     log::debug << "timer set: "
                            << value.it_value.tv_sec << "." << std::setw( 6) << std::setfill( '0') << value.it_value.tv_usec << "s - was: "
                            << old.it_value.tv_sec << "." <<  std::setw( 6) << std::setfill( '0') << old.it_value.tv_usec << "s\n";
 
@@ -383,7 +382,7 @@ namespace casual
                   //
                   // We send the signal directly
                   //
-                  log::internal::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << std::endl;
+                  log::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << std::endl;
                   signal::send( process::id(), signal::Type::alarm);
                   return local::get();
                }
@@ -414,23 +413,23 @@ namespace casual
 
 
 
-            Scoped::Scoped( std::chrono::microseconds timeout, const platform::time_point& now)
+            Scoped::Scoped( std::chrono::microseconds timeout, const platform::time::point::type& now)
             {
                auto old = timer::set( timeout);
 
                if( old != std::chrono::microseconds::min())
                {
                   m_old = now + old;
-                  log::internal::debug << "old timepoint: " << chronology::local( m_old) << std::endl;
+                  log::debug << "old timepoint: " << chronology::local( m_old) << std::endl;
                }
                else
                {
-                  m_old = platform::time_point::min();
+                  m_old = platform::time::point::type::min();
                }
             }
 
             Scoped::Scoped( std::chrono::microseconds timeout)
-               : Scoped( timeout, platform::clock_type::now())
+               : Scoped( timeout, platform::time::clock::type::now())
             {
             }
 
@@ -438,21 +437,21 @@ namespace casual
             {
                if( ! m_moved)
                {
-                  if( m_old == platform::time_point::min())
+                  if( m_old == platform::time::point::type::min())
                   {
                      timer::unset();
                   }
                   else
                   {
-                     timer::set( m_old - platform::clock_type::now());
+                     timer::set( m_old - platform::time::clock::type::now());
                   }
                }
             }
 
 
-            Deadline::Deadline( const platform::time_point& deadline, const platform::time_point& now)
+            Deadline::Deadline( const platform::time::point::type& deadline, const platform::time::point::type& now)
             {
-               if( deadline != platform::time_point::max())
+               if( deadline != platform::time::point::type::max())
                {
                   timer::set( deadline - now);
                }
@@ -462,15 +461,15 @@ namespace casual
                }
             }
 
-            Deadline::Deadline( const platform::time_point& deadline)
-             : Deadline( deadline, platform::clock_type::now()) {}
+            Deadline::Deadline( const platform::time::point::type& deadline)
+             : Deadline( deadline, platform::time::clock::type::now()) {}
 
 
-            Deadline::Deadline( std::chrono::microseconds timeout, const platform::time_point& now)
+            Deadline::Deadline( std::chrono::microseconds timeout, const platform::time::point::type& now)
              : Deadline( now + timeout, now) {}
 
             Deadline::Deadline( std::chrono::microseconds timeout)
-             : Deadline( timeout, platform::clock_type::now()) {}
+             : Deadline( timeout, platform::time::clock::type::now()) {}
 
 
             Deadline::~Deadline()
@@ -577,18 +576,6 @@ namespace casual
                return { signal::Set::filled_t{}};
             }
 
-            signal::Set filled( const std::vector< Type>& excluded)
-            {
-               auto mask = filled();
-
-               for( auto&& signal : excluded)
-               {
-                  mask.remove( signal);
-               }
-
-               return mask;
-            }
-
             signal::Set empty()
             {
                return {};
@@ -636,7 +623,7 @@ namespace casual
 
             void send( std::thread& thread, Type signal)
             {
-               log::internal::debug << "signal::thread::send thread: " << thread.get_id() << " signal: " << signal << std::endl;
+               log::debug << "signal::thread::send thread: " << thread.get_id() << " signal: " << signal << std::endl;
 
                send( thread.native_handle(), signal);
 
@@ -645,15 +632,22 @@ namespace casual
 
             void send( common::thread::native::type thread, Type signal)
             {
-               if( pthread_kill( thread, cast::underlying( signal)) != 0)
-               {
-                  log::error << "failed to send signal (" << type::string( signal) << ") to thread - errno: " << errno << " - "<< error::string() << std::endl;
+               if( pthread_kill( thread, 0) == 0)
+	       {
+                  if( pthread_kill( thread, cast::underlying( signal)) != 0)
+                  {
+                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - errno: " << errno << " - "<< error::string() << std::endl;
+                  } 
+               }
+               else
+               {     
+                  log::category::error << "thread-handle is not valid - action: ignore"  << std::endl;
                }
             }
 
             void send( Type signal)
             {
-               log::internal::debug << "signal::thread::send current thread - signal: " << signal << std::endl;
+               log::debug << "signal::thread::send current thread - signal: " << signal << std::endl;
 
                send( common::thread::native::current(), signal);
             }
@@ -670,6 +664,13 @@ namespace casual
                      mask::set( m_mask);
                   }
                }
+
+               const signal::Set& Reset::previous() const
+               {
+                  return m_mask;
+               }
+
+
 
                Mask::Mask( signal::Set mask) : Reset( mask::set( mask)) {}
 

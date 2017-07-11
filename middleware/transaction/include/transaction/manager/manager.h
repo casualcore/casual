@@ -1,12 +1,9 @@
 //!
-//! monitor.h
-//!
-//! Created on: Jul 13, 2013
-//!     Author: Lazan
+//! casual
 //!
 
-#ifndef MONITOR_H_
-#define MONITOR_H_
+#ifndef TRANSACTION_MANAGER_MANAGER_H_
+#define TRANSACTION_MANAGER_MANAGER_H_
 
 #include "transaction/manager/state.h"
 
@@ -38,41 +35,26 @@ namespace casual
          Settings();
 
          std::string log;
-         std::string configuration;
       };
-
-
-
 
 
       class Manager
       {
       public:
 
-
          Manager( const Settings& settings);
-
          ~Manager();
 
          void start();
-
 
          const State& state() const;
 
       private:
 
-
-         void handlePending();
+         void handle_pending();
 
          State m_state;
       };
-
-      namespace message
-      {
-         void pump( State& state);
-
-      } // message
-
 
 
    } // transaction

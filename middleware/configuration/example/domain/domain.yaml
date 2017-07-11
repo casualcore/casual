@@ -1,0 +1,275 @@
+---
+domain:
+  name: domain.A42
+  default:
+    environment:
+      files:
+        - /some/path/to/environment/file
+        - /some/other/file
+
+      variables:
+        - key: SOME_VARIABLE
+          value: 42
+
+        - key: SOME_OTHER_VARIABLE
+          value: some value
+
+
+
+    server:
+      instances: 1
+      restart: true
+
+    executable:
+      instances: 1
+
+    service:
+      timeout: 90s
+
+
+  transaction:
+    default:
+      resource:
+        key: db2_rm
+        instances: 3
+
+
+    log: /some/fast/disk/domain.A42/transaction.log
+    resources:
+      - instances: 5
+        name: customer-db
+        note: this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5
+        openinfo: db=customer,uid=db2,pwd=db2
+
+      - name: sales-db
+        note: this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances
+        openinfo: db=sales,uid=db2,pwd=db2
+
+      - key: mq_rm
+        name: event-queue
+        note: this resource is named 'event-queue' - overrides rm-key - using default rm-instances
+        openinfo: some-mq-specific-stuff
+        closeinfo: some-mq-specific-stuff
+
+
+
+  groups:
+    - name: common-group
+      note: group that logically groups 'common' stuff
+
+    - name: customer-group
+      note: group that logically groups 'customer' stuff
+      resources:
+        - customer-db
+
+      dependencies:
+        - common-group
+
+
+    - name: sales-group
+      note: group that logically groups 'customer' stuff
+      resources:
+        - sales-db
+        - event-queue
+
+      dependencies:
+        - customer-group
+
+
+
+  servers:
+    - path: customer-server-1
+      memberships:
+        - customer-group
+
+
+    - path: customer-server-2
+      memberships:
+        - customer-group
+
+
+    - path: sales-server
+      alias: sales-pre
+      instances: 10
+      memberships:
+        - sales-group
+
+      note: the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
+      restrictions:
+        - preSalesSaveService
+        - preSalesGetService
+
+
+    - path: sales-server
+      alias: sales-post
+      memberships:
+        - sales-group
+
+      note: the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
+      restrictions:
+        - postSalesSaveService
+        - postSalesGetService
+
+
+    - path: sales-broker
+      memberships:
+        - sales-group
+
+      environment:
+        files:
+          []
+
+        variables:
+          - key: SALES_BROKER_VARIABLE
+            value: 556
+
+
+
+      resources:
+        - event-queue
+
+
+
+  executables:
+    - path: mq-server
+      arguments:
+        - --configuration
+        - /path/to/configuration
+
+      memberships:
+        - common-group
+
+
+
+  services:
+    - timeout: 2h
+      name: postSalesSaveService
+      routes:
+        - postSalesSaveService
+        - sales/post/save
+
+
+    - timeout: 130ms
+      name: postSalesGetService
+
+
+  gateway:
+    default:
+      listener:
+        {}
+
+      connection:
+        type: tcp
+        restart: true
+
+
+    listeners:
+      - limit:
+          size: 2097152
+
+        address: localhost:7779
+        note: local host - if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
+
+      - limit:
+          messages: 200
+
+        address: some.host.org:7779
+        note: listener that is bound to some 'external ip' - limit to max 200 calls 'in flight'
+
+      - limit:
+          size: 10485760
+          messages: 10
+
+        address: some.host.org:9999
+        note: listener - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+
+      - address: some.host.org:4242
+        note: listener - no limits
+
+
+    connections:
+      - address: a45.domain.host.org:7779
+        note: connection to domain 'a45' - we expect to find service 's1' and 's2' there.
+        services:
+          - s1
+          - s2
+
+        queues:
+          []
+
+
+      - address: a46.domain.host.org:7779
+        note: connection to domain 'a46' - we expect to find queues 'q1' and 'q2' and service 's1' - casual will only route 's1' to a46 if it's not accessible in a45 (or local)
+        services:
+          - s1
+
+        queues:
+          - q1
+          - q2
+
+
+      - restart: false
+        address: a99.domain.host.org:7780
+        note: connection to domain 'a99' - if the connection is closed from a99, casual will not try to reestablish the connection
+        services:
+          []
+
+        queues:
+          []
+
+
+
+
+  queue:
+    default:
+      queue:
+        retries: 0
+
+      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
+
+    groups:
+      - name: groupA
+        note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+        queues:
+          - name: q_A1
+            note: ""
+
+          - retries: 10
+            name: q_A2
+            note: after 10 rollbacked dequeues, message is moved to q_A2.error
+
+          - name: q_A3
+            note: ""
+
+          - name: q_A4
+            note: ""
+
+
+
+      - name: groupB
+        queuebase: /some/fast/disk/queue/groupB.qb
+        note: ""
+        queues:
+          - name: q_B1
+            note: ""
+
+          - retries: 10
+            name: q_B2
+            note: after 10 rollbacked dequeues, message is moved to q_B2.error
+
+
+
+      - name: groupC
+        queuebase: ":memory:"
+        note: group is an in-memory queue, hence no persistence
+        queues:
+          - name: q_C1
+            note: ""
+
+          - name: q_C2
+            note: ""
+
+
+
+
+

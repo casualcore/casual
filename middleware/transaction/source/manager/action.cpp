@@ -8,10 +8,10 @@
 #include "transaction/common.h"
 
 #include "common/process.h"
-#include "common/internal/log.h"
 #include "common/environment.h"
-#include "common/internal/trace.h"
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
+#include "common/event/send.h"
+
 
 
 #include "sf/log.h"
@@ -27,17 +27,14 @@ namespace casual
    {
       namespace action
       {
-         void configure( State& state, const std::string& resource_file)
+         void configure( State& state)
          {
-
             {
 
                Trace trace( "configure");
 
-               message::domain::configuration::transaction::resource::Request request;
-               request.scope = message::domain::configuration::transaction::resource::Request::Scope::all;
+               common::message::domain::configuration::Request request;
                request.process = process::handle();
-
 
                auto configuration = communication::ipc::call( communication::ipc::domain::manager::device(), request);
 
@@ -45,15 +42,8 @@ namespace casual
                //
                // configure state
                //
-               state::configure( state, configuration, resource_file);
+               state::configure( state, configuration);
             }
-
-            {
-               Trace trace( "event registration");
-
-               common::process::instance::termination::registration( common::process::handle());
-            }
-
          }
 
 
@@ -73,25 +63,32 @@ namespace casual
                {
                   while( count-- > 0)
                   {
-                     auto& info = m_state.xa_switch_configuration.at( proxy.key);
+                     auto& info = m_state.resource_properties.at( proxy.key);
 
-                     state::resource::Proxy::Instance instance;//( proxy.id);
+                     state::resource::Proxy::Instance instance;
                      instance.id = proxy.id;
 
-                     instance.process.pid = process::spawn(
-                           info.server,
-                           {
-                                 "--tm-queue", std::to_string( ipc::device().id()),
-                                 "--rm-key", info.key,
-                                 "--rm-openinfo", proxy.openinfo,
-                                 "--rm-closeinfo", proxy.closeinfo,
-                                 "--rm-id", std::to_string( proxy.id),
-                           }
-                        );
+                     try
+                     {
+                        instance.process.pid = process::spawn(
+                              info.server,
+                              {
+                                    "--rm-key", info.key,
+                                    "--rm-openinfo", proxy.openinfo,
+                                    "--rm-closeinfo", proxy.closeinfo,
+                                    "--rm-id", std::to_string( proxy.id),
+                              }
+                           );
 
-                     instance.state( state::resource::Proxy::Instance::State::started);
+                        instance.state( state::resource::Proxy::Instance::State::started);
 
-                     proxy.instances.push_back( std::move( instance));
+                        proxy.instances.push_back( std::move( instance));
+                     }
+                     catch( ...)
+                     {
+                        common::error::handler();
+                        common::event::error::send( "failed to spawn resource-proxy-instance: " + info.server);
+                     }
                   }
                }
                else
@@ -130,7 +127,7 @@ namespace casual
                               // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
                               // hope to send it later...
                               //
-                              log::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
+                              log::category::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
 
                               m_state.persistent.replies.emplace_back( instance.process.queue, message::shutdown::Request{});
                            }
@@ -187,7 +184,7 @@ namespace casual
                         if( ipc::device().non_blocking_push( instance.process.queue, message))
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
-                           instance.statistics.roundtrip.start( common::platform::clock_type::now());
+                           instance.statistics.roundtrip.start( common::platform::time::clock::type::now());
                            return true;
                         }
                         return false;
@@ -250,10 +247,10 @@ namespace casual
                }
                catch( const exception::queue::Unavailable&)
                {
-                  common::log::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
+                  common::log::category::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
                   //
                   // ipc-queue has been removed...
-                  // TODO: deduce from message.message.type what we should do
+                  // TODO attention: deduce from message.message.type what we should do
                   //  We should rollback if we are in a prepare stage?
                   //
                }

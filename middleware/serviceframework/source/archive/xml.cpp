@@ -70,6 +70,17 @@ namespace casual
                return m_document;
             }
 
+            const pugi::xml_document& Load::operator() ( const platform::binary::type& xml)
+            {
+               if( xml.empty())
+               {
+                  return operator()( local::empty::document());
+               }
+
+               local::check( m_document.load_buffer( xml.data(), xml.size()));
+               return m_document;
+            }
+
             const pugi::xml_document& Load::operator() ( const char* const xml, const std::size_t size)
             {
                if( ! size || ! xml)
@@ -143,14 +154,18 @@ namespace casual
                {
                   if( name)
                   {
-                     m_stack.push_back( m_stack.back().child( name));
-                  }
-                  else
-                  {
-                     return true;
-                  }
+                     auto node =  m_stack.back().child( name);
 
-                  return m_stack.back();
+                     if( node)
+                     {
+                        m_stack.push_back( m_stack.back().child( name));
+                     }
+                     else
+                     {
+                        return false;
+                     }
+                  }
+                  return true;
                }
 
                void Implementation::end( const char* name)
@@ -258,6 +273,14 @@ namespace casual
                std::ostringstream stream;
                m_document.save( stream, " ");
                xml.assign( stream.str());
+            }
+
+            void Save::operator() ( platform::binary::type& xml) const
+            {
+               std::ostringstream stream;
+               m_document.save( stream, " ");
+               auto temp = stream.str();
+               xml.assign( std::begin( temp), std::end( temp));
             }
 
             namespace writer

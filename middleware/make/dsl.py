@@ -74,23 +74,21 @@ def LinkServer( name, objectfiles, libraries, serverdefinition, resources=None, 
     directive = "";
  
     if resources:
-        directive += " -r " + ' '.join( resources)
+        directive += " --resource-keys " + ' '.join( resources)
         
     if configuration:
-        directive += " -xa " + configuration
+        directive += " --properties-file " + configuration
      
     if isinstance( serverdefinition, basestring):
         # We assume it is a path to a server-definition-file
-        directive += ' -p ' + serverdefinition
-         
-        print '# dependency to server definition file'
-        print path + ': ' + serverdefinition
-        print
+        directive += ' --server-definition ' + serverdefinition
         
+        _plumbing.add_dependency( [ path], [ serverdefinition], comments='dependency to server definition file') 
     else:
         directive += ' -s ' + ' '.join( serverdefinition)
  
     _plumbing.set_ld_path()
+    
     return _plumbing.link( _plumbing.platform().link_server, target, objectfiles, libraries, directive, 'LD_LIBRARY_PATH=$(LOCAL_LD_LIBRARY_PATH) ')    
  
 def LinkClient( name, objectfiles, libraries, resources=None):

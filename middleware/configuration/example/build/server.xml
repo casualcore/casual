@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<server>
+ <default>
+  <service>
+   <transaction>join</transaction>
+   <category>some.category</category>
+  </service>
+ </default>
+ <services>
+  <element>
+   <name>s1</name>
+  </element>
+  <element>
+   <name>s2</name>
+   <transaction>auto</transaction>
+  </element>
+  <element>
+   <name>s3</name>
+   <function>f3</function>
+  </element>
+  <element>
+   <name>s4</name>
+   <function>f4</function>
+   <category>some.other.category</category>
+  </element>
+ </services>
+</server>

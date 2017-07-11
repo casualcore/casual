@@ -5,8 +5,9 @@
 #ifndef CASUAL_MIDDLEWARE_TOOLS_INCLUDE_COMMON_H_
 #define CASUAL_MIDDLEWARE_TOOLS_INCLUDE_COMMON_H_
 
-#include "common/log.h"
-#include "common/trace.h"
+#include "common/log/stream.h"
+#include "common/log/trace.h"
+
 
 namespace casual
 {
@@ -15,10 +16,10 @@ namespace casual
       extern common::log::Stream log;
 
 
-      struct Trace : common::Trace
+      struct Trace : common::log::Trace
       {
          template< typename T>
-         Trace( T&& value) : common::Trace( std::forward< T>( value), log) {}
+         Trace( T&& value) : common::log::Trace( std::forward< T>( value), log) {}
       };
 
 

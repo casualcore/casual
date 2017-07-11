@@ -12,7 +12,7 @@
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
 
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 
 
@@ -77,8 +77,11 @@ namespace casual
 
          } // error
 
+
          namespace inbound
          {
+            using cache_type = std::vector< message::Complete>;
+            using cache_range_type =  range::type_t< cache_type>;
 
             template< typename Connector, typename Unmarshal = marshal::binary::create::Input>
             struct Device
@@ -87,7 +90,6 @@ namespace casual
                using connector_type = Connector;
                using complete_type = message::Complete;
                using message_type = typename complete_type::message_type_type;
-               using transport_type = typename connector_type::transport_type;
 
                using blocking_policy = typename connector_type::blocking_policy;
                using non_blocking_policy = typename connector_type::non_blocking_policy;
@@ -100,9 +102,26 @@ namespace casual
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
+               ~Device()
+               {
+                  if( ! m_cache.empty() && log::category::warning)
+                  {
+                     log::Stream warning{ "warning"};
+                     warning << "pending messages in cache - " << *this << '\n';
+                  }
+                  else if( log::debug)
+                  {
+                     log::Stream debug{ "casual.debug"};
+                     debug  << "device: " << *this << '\n';
+                  }
+               }
+
+
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
+               blocking_policy policy_blocking() const { return blocking_policy{};}
+               non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
 
 
                //!
@@ -178,6 +197,22 @@ namespace casual
 
 
                //!
+               //! Tries to find a logic complete message a specific type and correlation
+               //!
+               //! @return a logical complete message if there is one,
+               //!         otherwise the message has absent_message as type
+               //!
+               template< typename P>
+               complete_type next( message_type type, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
+               {
+                  return find_complete(
+                        std::forward< P>( policy),
+                        handler,
+                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;});
+               }
+
+
+               //!
                //! Tries to find a message whith the same type as @p message
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
@@ -195,7 +230,7 @@ namespace casual
                }
 
                //!
-               //! Tries to find a message that has @p correlation
+               //! Tries to find a message that has the same type and @p correlation
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
@@ -205,6 +240,7 @@ namespace casual
                {
                   return unmarshal(
                         this->next(
+                              common::message::type( message),
                               correlation,
                               std::forward< P>( policy),
                               handler),
@@ -219,7 +255,9 @@ namespace casual
                //!
                void discard( const Uuid& correlation)
                {
-                  auto complete = range::find_if( m_cache, [&]( const complete_type& m){ return m.correlation == correlation;});
+                  flush();
+
+                  auto complete = range::find_if( m_cache, [&]( const auto& m){ return m.correlation == correlation;});
 
                   if( complete)
                   {
@@ -275,7 +313,9 @@ namespace casual
                   //
                   signal::thread::scope::Block block;
 
-                  while( next( message_type::flush_ipc, non_blocking_policy{}))
+                  auto count = platform::batch::flush();
+
+                  while( next( message_type::flush_ipc, non_blocking_policy{}) && --count > 0)
                   {
                      ;
                   }
@@ -303,9 +343,6 @@ namespace casual
 
             private:
 
-               using cache_type = std::vector< complete_type>;
-               using range_type =  range::type_t< cache_type>;
-
                template< typename C, typename M>
                bool unmarshal( C&& complete, M& message)
                {
@@ -319,27 +356,30 @@ namespace casual
 
 
                template< typename Policy, typename Predicate>
-               range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
+               cache_range_type find( Policy&& policy, const error_type& handler, Predicate&& predicate)
                {
 
                   while( true)
                   {
                      try
                      {
-                        transport_type transport;
-
                         auto found = range::find_if( m_cache, predicate);
 
-                        while( ! found && policy.receive( m_connector, transport))
+                        while( ! found && ( found = policy.receive( m_connector, m_cache)))
                         {
+
                            //
-                           // Check if the message should be discarded
+                           // Check if should discard the message
                            //
-                           if( ! discard( transport))
+                           if( discard( *found))
                            {
-                              cache( transport);
-                              found = range::find_if( m_cache, predicate);
+                              m_cache.erase( std::begin( found));
                            }
+
+                           //
+                           // Try to find a massage that matches the predicate
+                           //
+                           found = range::find_if( m_cache, predicate);
                         }
                         return found;
                      }
@@ -365,7 +405,7 @@ namespace casual
                         std::forward< Policy>( policy),
                         handler,
                         chain::And::link(
-                              []( const message::Complete& m){ return m.complete();},
+                              []( const auto& m){ return m.complete();},
                               std::forward< Predicates>( predicates)...));
 
                   if( found)
@@ -378,43 +418,13 @@ namespace casual
                }
 
 
-               void cache( transport_type& transport)
+               bool discard( const communication::message::Complete& complete)
                {
+                  auto found = range::find( m_discarded, complete.correlation);
 
-                  auto found = range::find_if( m_cache,
-                        [&]( const complete_type& m)
-                        {
-                           return transport.type() == m.type && transport.message.header.correlation == m.correlation;
-                        });
-
-                  if( found)
+                  if( found && complete.complete())
                   {
-                     found->add( transport);
-                  }
-                  else
-                  {
-                     m_cache.emplace_back( transport);
-                  }
-               }
-
-               bool discard( transport_type& transport)
-               {
-                  auto found = range::find( m_discarded, transport.message.header.correlation);
-
-                  if( found)
-                  {
-                     //
-                     // If transport is the last part in the message, we don't need to
-                     // discard any more transports...
-                     // we can't really be sure since messages could come out of order
-                     // (although, on ipc-queue order is guaranteed)
-                     //
-                     // TODO: figure out if there is a way to determine this for all possible devices.
-                     //
-                     if( transport.last())
-                     {
-                        m_discarded.erase( std::begin( found));
-                     }
+                     m_discarded.erase( std::begin( found));
                      return true;
                   }
                   return false;
@@ -437,9 +447,7 @@ namespace casual
             struct Device
             {
                using connector_type = Connector;
-               using complete_type = message::Complete;
-               using message_type = typename complete_type::message_type_type;
-               using transport_type = typename connector_type::transport_type;
+
                using blocking_policy = typename connector_type::blocking_policy;
                using non_blocking_policy = typename connector_type::non_blocking_policy;
 
@@ -456,37 +464,9 @@ namespace casual
 
 
                template< typename Policy>
-               Uuid put( const message::Complete& message, Policy&& policy, const error_type& handler = nullptr)
+               Uuid put( const message::Complete& complete, Policy&& policy, const error_type& handler = nullptr)
                {
-                  using transport_type = typename Device::transport_type;
-                  transport_type transport{ message.type, message.payload.size()};
-
-                  message.correlation.copy( transport.correlation());
-
-
-                  auto part_begin = std::begin( message.payload);
-
-                  do
-                  {
-                     auto part_end = std::distance( part_begin, std::end( message.payload)) > transport.max_payload_size() ?
-                           part_begin + transport.max_payload_size() : std::end( message.payload);
-
-                     transport.assign( part_begin, part_end);
-                     transport.message.header.offset = std::distance( std::begin( message.payload), part_begin);
-
-                     //
-                     // send the physical message
-                     //
-                     if( ! apply( policy, transport, handler))
-                     {
-                        return uuid::empty();
-                     }
-
-                     part_begin = part_end;
-                  }
-                  while( part_begin != std::end( message.payload));
-
-                  return message.correlation;
+                  return apply( policy, complete, handler);
                }
 
                //!
@@ -508,9 +488,9 @@ namespace casual
                   auto marshal = marshal_type()( complete.payload);
                   marshal << message;
 
-                  return put(
-                        complete,
+                  return apply(
                         std::forward< P>( policy),
+                        complete,
                         handler);
                }
 
@@ -534,7 +514,7 @@ namespace casual
             private:
 
                template< typename Policy>
-               bool apply( Policy&& policy, const transport_type& transport, const error_type& handler)
+               Uuid apply( Policy&& policy, const message::Complete& complete, const error_type& handler)
                {
                   while( true)
                   {
@@ -543,7 +523,7 @@ namespace casual
                         //
                         // Delegate the invocation to the policy
                         //
-                        return policy.send( m_connector, transport);
+                        return policy.send( m_connector, complete);
                      }
                      catch( const exception::communication::Unavailable&)
                      {

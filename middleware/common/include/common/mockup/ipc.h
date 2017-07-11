@@ -26,6 +26,12 @@ namespace casual
          {
             using Disconnect =  common::message::basic_message< common::message::Type::mockup_disconnect>;
             using Clear =  common::message::basic_message< common::message::Type::mockup_clear>;
+
+            namespace thread
+            {
+               using Process = common::message::basic_request< common::message::Type::mockup_need_worker_process>;
+            } // thread
+
          }
       }
 
@@ -139,6 +145,8 @@ namespace casual
 
                Replier( Replier&&) noexcept;
                Replier& operator = ( Replier&&) noexcept;
+
+               void add( communication::ipc::dispatch::Handler&& handler);
 
                //!
                //! input-queue is owned by the Replier

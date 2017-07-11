@@ -20,8 +20,12 @@ namespace casual
          {
 
             std::vector< std::string> configurationfiles;
-            bool boot = false;
+
+            common::platform::ipc::id::type event_queue = 0;
+            std::vector< std::string> events;
+
             bool bare = false;
+            bool no_auto_persist = false;
 
          };
 

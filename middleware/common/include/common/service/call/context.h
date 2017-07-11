@@ -6,6 +6,7 @@
 #define CASUAL_CALLING_CONTEXT_H_
 
 #include "common/service/call/state.h"
+#include "common/service/call/flags.h"
 
 #include "common/message/service.h"
 
@@ -29,25 +30,48 @@ namespace casual
       {
          namespace call
          {
+            namespace reply
+            {
+               enum class State : int
+               {
+                  service_success = 0,
+                  service_fail = TPESVCFAIL
+               };
+
+               struct Result
+               {
+                  common::buffer::Payload buffer;
+                  long user = 0;
+                  descriptor_type descriptor;
+                  State state;
+               };
+            } // reply
+
+            namespace sync
+            {
+               using State = reply::State;
+               struct Result
+               {
+                  common::buffer::Payload buffer;
+                  long user = 0;
+                  State state;
+               };
+            } // sync
+
             class Context
             {
             public:
                static Context& instance();
 
+               descriptor_type async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags);
 
-               descriptor_type async( const std::string& service, char* idata, long ilen, long flags);
+               reply::Result reply( descriptor_type descriptor, reply::Flags flags);
 
+               sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags);
 
-               void reply( descriptor_type& descriptor, char** odata, long& olen, long flags);
-
-               void sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags);
-
-               void cancel( descriptor_type cd);
+               void cancel( descriptor_type descriptor);
 
                void clean();
-
-               long user_code() const;
-               void user_code( long code);
 
                //!
                //! @returns true if there are pending replies or associated transactions.
@@ -56,15 +80,15 @@ namespace casual
                bool pending() const;
 
             private:
-
-
                Context();
-
-               bool receive( message::service::call::Reply& reply, descriptor_type descriptor, long flags);
+               bool receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flags);
 
                State m_state;
 
             };
+
+            inline Context& context() { return Context::instance();}
+
          } // call
       } // service
 	} // common

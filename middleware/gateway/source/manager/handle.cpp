@@ -9,11 +9,10 @@
 
 
 
-#include "common/server/handle.h"
+#include "common/server/handle/call.h"
 #include "common/message/handle.h"
 
 
-#include "common/trace.h"
 #include "common/environment.h"
 #include "common/process.h"
 #include "common/cast.h"
@@ -76,7 +75,7 @@ namespace casual
                            //
                            // We only want to handle terminate during this
                            //
-                           common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate})};
+                           common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate)};
 
                            if( connection.running())
                            {
@@ -158,7 +157,7 @@ namespace casual
                         }
                         else
                         {
-                           log::error << "boot connection: " << connection << " - wrong runlevel - action: ignore\n";
+                           log::category::error << "boot connection: " << connection << " - wrong runlevel - action: ignore\n";
                         }
                      }
 
@@ -175,7 +174,7 @@ namespace casual
                //
                // We only want to handle child-signals during this stage
                //
-               common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+               common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
                state.runlevel = State::Runlevel::shutdown;
 
@@ -236,8 +235,7 @@ namespace casual
                   // We put a dead process event on our own ipc device, that
                   // will be handled later on.
                   //
-                  common::message::domain::process::termination::Event event{ exit};
-
+                  common::message::event::process::Exit event{ exit};
                   communication::ipc::inbound::device().push( std::move( event));
                }
 
@@ -250,18 +248,18 @@ namespace casual
                   //
                   ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
 
-                  auto inbound_found = range::find( state().connections.inbound, message.death.pid);
-                  auto outbound_found = range::find( state().connections.outbound, message.death.pid);
+                  auto inbound_found = range::find( state().connections.inbound, message.state.pid);
+                  auto outbound_found = range::find( state().connections.outbound, message.state.pid);
 
                   if( inbound_found)
                   {
-                     log::information << "inbound connection terminated - connection: " << *inbound_found << std::endl;
+                     log::category::information << "inbound connection terminated - connection: " << *inbound_found << std::endl;
 
                      state().connections.inbound.erase( std::begin( inbound_found));
                   }
                   else if( outbound_found)
                   {
-                     log::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
+                     log::category::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
 
                      if( outbound_found->restart && state().runlevel == State::Runlevel::online)
                      {
@@ -276,12 +274,12 @@ namespace casual
                      //
                      // remove discover coordination, if any.
                      //
-                     state().discover.remove( message.death.pid);
+                     state().discover.remove( message.state.pid);
 
                   }
                   else
                   {
-                     log::error << "failed to correlate child termination - death: " << message.death << " - action: discard\n";
+                     log::category::error << "failed to correlate child termination - state: " << message.state << " - action: discard\n";
                   }
                }
 
@@ -375,7 +373,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
+                        common::log::category::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
                      }
                   }
 
@@ -402,12 +400,12 @@ namespace casual
                      }
                      else
                      {
-                        log::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
+                        log::category::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
                      }
                   }
                   else
                   {
-                     log::error << "unknown outbound connected " << message << " - action: discard\n";
+                     log::category::error << "unknown outbound connected " << message << " - action: discard\n";
                   }
                }
             } // outbound
@@ -435,7 +433,7 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "unknown inbound connected " << message << " - action: discard\n";
+                     log::category::error << "unknown inbound connected " << message << " - action: discard\n";
                   }
                }
 
@@ -497,6 +495,8 @@ namespace casual
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
                               {
                                     "--descriptor", std::to_string( socket.descriptor()),
+                                    "--limit-messages", std::to_string( message.limit.messages),
+                                    "--limit-size", std::to_string( message.limit.size),
                               });
 
                         state().connections.inbound.push_back( std::move( connection));
@@ -511,7 +511,7 @@ namespace casual
 
          common::communication::ipc::dispatch::Handler handler( State& state)
          {
-            static common::server::handle::basic_admin_call admin{
+            static common::server::handle::admin::Call admin{
                manager::admin::services( state),
                ipc::device().error_handler()};
 

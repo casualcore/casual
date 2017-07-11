@@ -3,8 +3,9 @@
 //!
 
 #include "common/buffer/type.h"
-
 #include "common/exception.h"
+
+#include "xatmi/extended.h"
 
 namespace casual
 {
@@ -43,10 +44,12 @@ namespace casual
 
          Payload::Payload( std::nullptr_t) : Payload{ "NULL", 0} {}
 
-         Payload::Payload( std::string type, platform::binary_type buffer)
+         Payload::Payload( std::string type) : type( std::move( type)) {}
+
+         Payload::Payload( std::string type, platform::binary::type buffer)
           : type( std::move( type)), memory( std::move( buffer)) {}
 
-         Payload::Payload( std::string type, platform::binary_type::size_type size)
+         Payload::Payload( std::string type, platform::binary::size::type size)
           : type( std::move( type)), memory( size)
          {
             if( ! memory.data())
@@ -94,14 +97,14 @@ namespace casual
 
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 
-         Buffer::Buffer( std::string type, platform::binary_type::size_type size)
+         Buffer::Buffer( std::string type, platform::binary::size::type size)
              : payload( std::move( type), size) {}
 
 
          Buffer::Buffer( Buffer&&) noexcept = default;
          Buffer& Buffer::operator = ( Buffer&&) noexcept = default;
 
-         platform::binary_type::size_type Buffer::transport( platform::binary_type::size_type user_size) const
+         platform::binary::size::type Buffer::transport( platform::binary::size::type user_size) const
          {
             if( user_size > payload.memory.size())
             {
@@ -111,7 +114,7 @@ namespace casual
             return user_size;
          }
 
-         platform::binary_type::size_type Buffer::reserved() const
+         platform::binary::size::type Buffer::reserved() const
          {
             return payload.memory.size();
          }

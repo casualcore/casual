@@ -7,7 +7,7 @@
 
 #include "common/process.h"
 #include "common/communication/ipc.h"
-#include "common/trace.h"
+
 
 namespace casual
 {

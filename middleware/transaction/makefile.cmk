@@ -66,9 +66,7 @@ target = LinkExecutable( 'bin/casual-transaction-admin',
     [ 
       manager_archive, 
      'casual-sf', 
-     'casual-common', 
-     #'casual-configuration', 
-     #'casual-xatmi',
+     'casual-common',
      ])
 
 
@@ -83,18 +81,18 @@ target = LinkLibrary( 'bin/casual-resource-proxy-server',
     Compile( 'source/resource/proxy_server.cpp'),
     Compile( 'source/resource/proxy.cpp'),
    ],
-   ['casual-common', 'casual-sf'])
+   [ manager_archive, 'casual-common', 'casual-sf'])
 
 install_lib.append( target)
 
-install_headers.append( 'include/transaction/resource/proxy_server.h')
+install_headers.append( ( 'include/transaction/resource/proxy_server.h', 'transaction/resource'))
 
 
 #
 # Mockup resource proxy
 #
 target = LinkExecutable( 'bin/rm-proxy-casual-mockup',
-    [ Compile( 'source/resource/template_build_resource_proxy.c')],
+    [ Compile( 'source/resource/template_build_resource_proxy.cpp')],
     [ 'casual-mockup-rm', 'casual-resource-proxy-server'])
 
 

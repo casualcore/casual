@@ -2,7 +2,7 @@
 
 The main product in the casual suite.
 
-## What is casual-middleware?
+## what is casual-middleware?
 
 * In short: 
     * SOA platform and Distributed transaction manager
@@ -12,7 +12,7 @@ The main product in the casual suite.
     * [TX specification](http://pubs.opengroup.org/onlinepubs/9694999599/toc.pdf)
 
 
-## Objectives
+## objectives
 * As little configuration as possible, since we believe that enterprises are in desperate need of reduced complexity.
 * Performance should be good enough, hence make casual a viable choice when migrating from other XATMI implementations.
 * Keep the cold cold, and the hot hot. To enable over provisioning, hence let the OS take care of scheduling.
@@ -28,6 +28,59 @@ The main product in the casual suite.
 * Built on specifications that is proven to work for large scale applications with high performance demand
 
 \*) If the service is implemented via the C++ abstraction layer.
+
+
+
+## structure
+
+There are a few main modules 
+
+
+### domain
+
+Responsible for a casual-domain. Boots all the other managers and user provided servers and such.
+
+[documentation](./domain/readme.md)
+
+
+### transaction
+
+Responsible for distrubuted transactions.
+
+[documentation](./transaction/readme.md)
+
+
+### service
+
+Responsible for service lookup and management.
+
+[documentation](./service/readme.md)
+
+
+### gateway
+
+Responsible for communications with other domains
+
+[documentation](./gateway/readme.md)
+
+
+### queue
+
+A queue implementation.
+
+[documentation](./queue/readme.md)
+
+### common
+
+Functionality that is common and in some way shared with other modules. 
+
+[documentation](./queue/readme.md)
+
+### serviceframework
+
+Service abstraction layer, to hide transportation details.
+
+[documentation](./serviceframework/readme.md)
 
 
 

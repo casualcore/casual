@@ -8,7 +8,7 @@ The following packages need to be installed:
 
  * git
  * python
- * gcc (4.8.3 or higher)
+ * gcc (5.3 or higher)
  * g++
  * puppet
  * gtest (included, see below)
@@ -23,8 +23,8 @@ the examples correspond exactly to your setup.
 
 Latest version is on `develop` branch (default)
 
-    host$Â git clone https://bitbucket.org/casualcore/casual.git
-    host$Â cd casual
+    host$ git clone https://bitbucket.org/casualcore/casual.git
+    host$ cd casual
 
 
 ### Install dependencies with puppet
@@ -36,7 +36,7 @@ Latest version is on `develop` branch (default)
 
 Use templatefile to setup environment
 
-    host$Â cp middleware/example/env/casual.env .
+    host$ cp middleware/example/env/casual.env .
 
 
 Edit `casual.env`, to set correct paths that correspond to your setup. It

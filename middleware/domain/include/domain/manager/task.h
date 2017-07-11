@@ -31,19 +31,17 @@ namespace casual
             template< typename T>
             Task( T&& task) : m_holder{ make( std::forward< T>( task))} {}
 
-           ~Task();
+            ~Task();
 
-           Task( Task&&) noexcept = default;
-           Task& operator = ( Task&&) noexcept = default;
+            Task( Task&&) noexcept = default;
+            Task& operator = ( Task&&) noexcept = default;
 
             void start();
 
             bool started() const;
             bool done() const;
 
-
             friend std::ostream& operator << ( std::ostream& out, const Task& task);
-
 
          private:
 
@@ -88,6 +86,8 @@ namespace casual
                   }
                   return m_state == State::done;
                }
+
+
                void print( std::ostream& out) const override { out << m_task;}
 
                T m_task;
@@ -97,7 +97,7 @@ namespace casual
             template< typename T>
             static std::unique_ptr< base_task> make( T&& task)
             {
-               return common::make::unique< basic_task< T>>( std::forward< T>( task));
+               return std::make_unique< basic_task< T>>( std::forward< T>( task));
             }
 
             std::unique_ptr< base_task> m_holder;

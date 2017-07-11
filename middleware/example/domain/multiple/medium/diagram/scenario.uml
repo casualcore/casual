@@ -19,7 +19,7 @@ end box
 
 activate AA
 
-group in transaction
+group #eeeeee in transaction 
 AA -> GA: enqueue to queueB1
 GA -> GB:
 GB -> QB: enqueue to queueB1
@@ -31,7 +31,7 @@ GA -> AA: message id
 deactivate AA
 end
 
-group in transaction
+group #eeeeee in transaction
 QB -> SFB: dequeue B1
 activate SFB
 SFB -> GB: call casual.example.echo 
@@ -46,7 +46,7 @@ SFB -> QB: enqueue B2
 deactivate SFB
 end
 
-group in transaction
+group #eeeeee in transaction
 QB -> QFB: dequeue B2
 activate QFB
 QFB -> GB: enqueue queueA1
@@ -61,7 +61,7 @@ GB -> QFB: message id
 deactivate QFB
 end
 
-group in transaction
+group #eeeeee in transaction
 
 QA -> SFA: dequeue A1
 activate SFA

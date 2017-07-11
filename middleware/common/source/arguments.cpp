@@ -315,8 +315,6 @@ namespace casual
 
       void Arguments::parse( const std::string& process, const std::vector< std::string>& arguments)
       {
-         process::path( process);
-
 
          //
          // start divide and conquer the arguments and try to find handlers for'em
@@ -364,12 +362,6 @@ namespace casual
 
          dispatch();
       }
-
-      const std::string& Arguments::process() const
-      {
-         return process::path();
-      }
-
 
 
    } // common

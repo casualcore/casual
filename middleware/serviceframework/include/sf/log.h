@@ -5,8 +5,8 @@
 #ifndef SF_LOG_H_
 #define SF_LOG_H_
 
-#include "common/log.h"
-#include "common/trace.h"
+#include "common/log/category.h"
+#include "common/traits.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/log.h"
@@ -25,11 +25,10 @@ namespace casual
       namespace log
       {
          using common::log::debug;
-         using common::log::trace;
-         using common::log::parameter;
-         using common::log::information;
-         using common::log::warning;
-         using common::log::error;
+         using common::log::category::parameter;
+         using common::log::category::information;
+         using common::log::category::warning;
+         using common::log::category::error;
 
          extern common::log::Stream sf;
 
@@ -39,7 +38,7 @@ namespace casual
       {
          namespace detail
          {
-            class Scope : common::trace::basic::Scope
+            class Scope : common::log::trace::basic::Scope
             {
             public:
                ~Scope();
@@ -58,34 +57,24 @@ namespace casual
             : trace::detail::Scope( information, log) {}
       };
 
-
-      template <typename T, typename R>
-      std::ostream& operator << ( std::ostream& out, const NameValuePair< T, R>& value)
+      namespace name
       {
-         if( out.good())
+         namespace value
          {
-            sf::archive::log::Writer writer( out);
-            writer << value;
-         }
-         return out;
-      }
+            template <typename NVP>
+            auto operator << ( std::ostream& out, NVP&& value) -> common::traits::enable_if_t< sf::traits::is_nvp< NVP>::value, std::ostream&>
+            {
+               if( out.good())
+               {
+                  sf::archive::log::Writer writer( out);
+                  writer << value;
+               }
+               return out;
+            }
 
-      template <typename T, typename R>
-      std::ostream& operator << ( std::ostream& out, NameValuePair< T, R>&& value)
-      {
-         if( out.good())
-         {
-            sf::archive::log::Writer writer( out);
-            writer << value;
-         }
-         return out;
-      }
-
-
-
+         } // value
+      } // name
    } // sf
-
-
 } // casual
 
 #endif // SF_LOG_H_

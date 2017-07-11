@@ -1,9 +1,7 @@
-/*
- * archive_logger.h
- *
- *  Created on: 4 maj 2013
- *      Author: kristian
- */
+//!
+//! casual
+//!
+
 
 #ifndef CASUAL_SF_ARCHIVE_LOG_H_
 #define CASUAL_SF_ARCHIVE_LOG_H_
@@ -53,7 +51,7 @@ namespace casual
                void write( const bool& value, const char* name);
                void write( const std::string& value, const char* name);
                void write( const std::wstring& value, const char* name);
-               void write( const platform::binary_type& value, const char* name);
+               void write( const platform::binary::type& value, const char* name);
 
 
             private:

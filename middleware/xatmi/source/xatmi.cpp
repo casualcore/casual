@@ -5,7 +5,6 @@
 #include "xatmi.h"
 
 #include "common/buffer/pool.h"
-#include "common/service/call/context.h"
 #include "common/server/context.h"
 #include "common/platform.h"
 #include "common/log.h"
@@ -19,47 +18,25 @@
 #include <stdarg.h>
 
 
-//
-// Define globals
-//
+#include "xatmi/internal.h"
 
-namespace local
-{
-   namespace
-   {
-      int tperrno_value = 0;
-   } // <unnamed>
-} // local
 
-int casual_get_tperrno(void)
+
+int casual_get_tperrno()
 {
-   return local::tperrno_value;
+   return casual::xatmi::internal::error::get();
 }
 
-void casual_set_tperrno( int value)
+long casual_get_tpurcode()
 {
-   local::tperrno_value = value;
+   return casual::xatmi::internal::user::code::get();
 }
-
-
-
-long casual_get_tpurcode(void)
-{
-   return casual::common::service::call::Context::instance().user_code();
-}
-
-void casual_set_tpurcode( long value)
-{
-   casual::common::service::call::Context::instance().user_code( value);
-}
-
-
 
 
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-   casual_set_tperrno( 0);
+   casual::xatmi::internal::error::set( 0);
 
    try
    {
@@ -70,14 +47,14 @@ char* tpalloc( const char* type, const char* subtype, long size)
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::error::handler());
       return nullptr;
    }
 }
 
 char* tprealloc( const char* ptr, long size)
 {
-   casual_set_tperrno( 0);
+   casual::xatmi::internal::error::set( 0);
 
    try
    {
@@ -88,7 +65,7 @@ char* tprealloc( const char* ptr, long size)
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::error::handler());
       return nullptr;
    }
 
@@ -97,7 +74,7 @@ char* tprealloc( const char* ptr, long size)
 
 long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
-   casual_set_tperrno( 0);
+   casual::xatmi::internal::error::set( 0);
 
    try
    {
@@ -130,7 +107,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
    }
    catch( ...)
    {
-      casual_set_tperrno( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::error::handler());
       return -1;
    }
 
@@ -138,134 +115,45 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
 
 void tpfree( const char* const ptr)
 {
-   casual::common::buffer::pool::Holder::instance().deallocate( ptr);
+   try
+   {
+      casual::common::buffer::pool::Holder::instance().deallocate( ptr);
+   }
+   catch( ...)
+   {
+      casual::xatmi::internal::error::set( casual::common::error::handler());
+   }
 }
 
 void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
 {
-   casual_set_tperrno( 0);
-
-
-   try
-   {
-
-      casual::common::server::Context::instance().long_jump_return( rval, rcode, data, len, flags);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-   }
+   casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::Context::instance().jump_return( rval, rcode, data, len, flags);
+   });
 }
 
-int tpcall( const char* const svc, char* idata, const long ilen, char** odata, long* olen, const long flags)
+
+
+
+
+
+int tpadvertise( const char* service, void (*function)( TPSVCINFO *))
 {
-   casual_set_tperrno( 0);
-   casual_set_tpurcode( 0);
-
-   if( svc == nullptr)
-   {
-      casual_set_tperrno( TPEINVAL);
-      return -1;
-   }
-
-   try
-   {
-      casual::common::service::call::Context::instance().sync( svc, idata, ilen, *odata, *olen, flags);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
+   return casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::Context::instance().advertise( service, function);
+   });
 }
 
-int tpacall( const char* const svc, char* idata, const long ilen, const long flags)
+int tpunadvertise( const char* const service)
 {
-   casual_set_tperrno( 0);
-   casual_set_tpurcode( 0);
-
-   if( svc == nullptr)
-   {
-      casual_set_tperrno( TPEINVAL);
-      return -1;
-   }
-
-   try
-   {
-      return casual::common::service::call::Context::instance().async( svc, idata, ilen, flags);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-}
-
-int tpgetrply( int *const idPtr, char ** odata, long *olen, const long flags)
-{
-   casual_set_tperrno( 0);
-
-   try
-   {
-      casual::common::service::call::Context::instance().reply( *idPtr, odata, *olen, flags);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
-}
-
-int tpcancel( int id)
-{
-   casual_set_tperrno( 0);
-
-   try
-   {
-      casual::common::service::call::Context::instance().cancel( id);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
+   return casual::xatmi::internal::error::wrap( [&](){
+      casual::common::server::Context::instance().unadvertise( service);
+   });
 }
 
 
-int tpadvertise( const char* const svcname, void (*func)( TPSVCINFO *))
-{
-   casual_set_tperrno( 0);
 
-   try
-   {
-      casual::common::server::Context::instance().advertise( svcname, func);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
-}
 
-int tpunadvertise( const char* const svcname)
-{
-   casual_set_tperrno( 0);
-
-   try
-   {
-      casual::common::server::Context::instance().unadvertise( svcname);
-   }
-   catch( ...)
-   {
-      casual_set_tperrno( casual::common::error::handler());
-      return -1;
-   }
-   return 0;
-}
 
 const char* tperrnostring( int error)
 {
@@ -275,13 +163,13 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
-   casual_set_tperrno( 0);
+   casual::xatmi::internal::error::set( 0);
    return tx_open() == TX_OK ? 0 : -1;
 }
 
 void tpsvrdone()
 {
-   casual_set_tperrno( 0);
+   casual::xatmi::internal::error::set( 0);
    tx_close();
 }
 
@@ -333,16 +221,16 @@ int casual_vlog( casual_log_category_t category, const char* const format, va_li
       switch( category)
       {
       case casual_log_category_t::c_log_debug:
-         casual::common::log::write( "debug", data);
+         casual::common::log::stream::write( "debug", data);
          break;
       case casual_log_category_t::c_log_information:
-         casual::common::log::write( "information", data);
+         casual::common::log::stream::write( "information", data);
          break;
       case casual_log_category_t::c_log_warning:
-         casual::common::log::write( "warning", data);
+         casual::common::log::stream::write( "warning", data);
          break;
       default:
-         casual::common::log::write( "error", data);
+         casual::common::log::stream::write( "error", data);
          break;
       }
    };
@@ -353,7 +241,7 @@ int casual_vlog( casual_log_category_t category, const char* const format, va_li
 int casual_user_vlog( const char* category, const char* const format, va_list arglist)
 {
    auto user_logger = [=]( const char* data){
-      casual::common::log::write( category, data);
+      casual::common::log::stream::write( category, data);
    };
 
    return local::vlog( user_logger, format, arglist);
@@ -361,7 +249,7 @@ int casual_user_vlog( const char* category, const char* const format, va_list ar
 
 int casual_user_log( const char* category, const char* const message)
 {
-   casual::common::log::write( category, message);
+   casual::common::log::stream::write( category, message);
 
    return 0;
 }

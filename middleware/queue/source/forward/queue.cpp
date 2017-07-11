@@ -8,7 +8,6 @@
 
 #include "common/arguments.h"
 #include "common/exception.h"
-#include "common/trace.h"
 
 #include "common/buffer/pool.h"
 

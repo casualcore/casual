@@ -7,9 +7,9 @@
 
 #include "queue/common/environment.h"
 
-#include "common/internal/log.h"
 #include "common/message/handle.h"
-#include "common/trace.h"
+
+#include "../../../common/include/common/event/listen.h"
 #include "common/error.h"
 
 namespace casual
@@ -135,14 +135,14 @@ namespace casual
 
             namespace dead
             {
-               void Process::operator() ( const common::message::domain::process::termination::Event& message)
+               void Process::operator() ( const common::message::event::process::Exit& message)
                {
                   Trace trace{ "queue::handle::dead::Process"};
 
                   //
                   // We check and do some clean up, if the dead process has any pending replies.
                   //
-                  m_state.pending.erase( message.death.pid);
+                  m_state.pending.erase( message.state.pid);
                }
 
             } // dead
@@ -229,7 +229,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::error << exception.what() << std::endl;
+                     common::log::category::error << exception.what() << std::endl;
                   }
                }
 
@@ -270,7 +270,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::error << exception.what() << std::endl;
+                     common::log::category::error << exception.what() << std::endl;
                   }
                   return false;
                }
@@ -356,7 +356,7 @@ namespace casual
                      try
                      {
                         m_state.queuebase.commit( message.trid);
-                        common::log::internal::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        common::log::category::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
 
                         //
                         // Will try to dequeue pending requests
@@ -407,7 +407,7 @@ namespace casual
                      try
                      {
                         m_state.queuebase.rollback( message.trid);
-                        common::log::internal::transaction << "rollback trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        common::log::category::transaction << "rollback trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
 
                         //
                         // Removes any associated enqueues with this trid
@@ -458,7 +458,7 @@ namespace casual
          handle::dispatch_type handler( State& state)
          {
             return {
-               handle::dead::Process{ state},
+               common::event::listener( handle::dead::Process{ state}),
                handle::enqueue::Request{ state},
                handle::dequeue::Request{ state},
                handle::dequeue::forget::Request{ state},

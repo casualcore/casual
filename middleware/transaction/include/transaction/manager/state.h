@@ -11,15 +11,16 @@
 #include "common/algorithm.h"
 #include "common/marshal/complete.h"
 
-#include "config/xa_switch.h"
-
 #include "transaction/manager/log.h"
+
+#include "configuration/resource/property.h"
 
 
 
 #include <map>
 #include <deque>
 #include <vector>
+
 
 namespace casual
 {
@@ -47,16 +48,16 @@ namespace casual
             std::chrono::microseconds total;
             std::size_t invoked;
 
-            void start( const common::platform::time_point& start);
-            void end( const common::platform::time_point& end);
+            void start( const common::platform::time::point::type& start);
+            void end( const common::platform::time::point::type& end);
 
-            void time( const common::platform::time_point& start, const common::platform::time_point& end);
+            void time( const common::platform::time::point::type& start, const common::platform::time::point::type& end);
 
 
             friend Statistics& operator += ( Statistics& lhs, const Statistics& rhs);
 
          private:
-            common::platform::time_point m_start;
+            common::platform::time::point::type m_start;
          };
 
          struct Stats
@@ -106,8 +107,10 @@ namespace casual
 
                };
 
+               struct generate_id {};
+
                Proxy() = default;
-               Proxy( id::type id) : id( id) {}
+               inline Proxy( generate_id) : id( next_id()) {}
 
                id::type id = 0;
 
@@ -124,10 +127,15 @@ namespace casual
 
                std::vector< Instance> instances;
 
+               std::string name;
+               std::string note;
+
                //!
-               //! @return true if all instances is idle
+               //! @return true if all instances 'has connected'
                //!
-               bool ready() const;
+               bool booted() const;
+
+               bool remove_instance( common::platform::pid::type pid);
 
 
                friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
@@ -141,6 +149,14 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Proxy& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value);
+
+            private:
+
+               inline static std::size_t next_id()
+               {
+                  static std::size_t id = 1;
+                  return id++;
+               }
 
             };
 
@@ -199,7 +215,7 @@ namespace casual
                base_message& operator = ( base_message&&) noexcept = default;
 
                common::communication::message::Complete message;
-               common::platform::time_point created;
+               common::platform::time::point::type created;
             };
 
             struct Reply : base_message
@@ -293,7 +309,7 @@ namespace casual
                xaer_ASYNC,
                xa_RETRY,
                xaer_DUPID,
-               xaer_NOTA,
+               xaer_NOTA,  //! nothing to do?
                xa_OK,      //! Went as expected
                xa_RDONLY,  //! Went "better" than expected
             };
@@ -311,6 +327,11 @@ namespace casual
 
             void set_result( int value);
 
+            //!
+            //! @return true if there's nothing more to do, hence this resource can be removed
+            //!    from the transaction
+            //!
+            bool done() const;
 
             struct update
             {
@@ -388,8 +409,8 @@ namespace casual
          common::transaction::ID trid;
          std::vector< Resource> resources;
 
-         common::platform::time_point started;
-         common::platform::time_point deadline;
+         common::platform::time::point::type started;
+         common::platform::time::point::type deadline;
 
 
          //!
@@ -518,7 +539,7 @@ namespace casual
          transaction::Log log;
 
 
-         std::map< std::string, config::xa::Switch> xa_switch_configuration;
+         std::map< std::string, configuration::resource::Property> resource_properties;
 
 
          //!
@@ -528,10 +549,11 @@ namespace casual
          bool outstanding() const;
 
 
+
          //!
-         //! @return true if all resource proxies is booted and ready do work
+         //! @return true if all resource proxies is booted
          //!
-         bool ready() const;
+         bool booted() const;
 
 
          //!
@@ -545,6 +567,8 @@ namespace casual
 
          state::resource::Proxy& get_resource( state::resource::id::type rm);
          state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::platform::pid::type pid);
+
+         bool remove_instance( common::platform::pid::type pid);
 
 
          using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;
@@ -626,7 +650,7 @@ namespace casual
 
          };
 
-         void configure( State& state, const common::message::domain::configuration::transaction::resource::Reply& configuration, const std::string& resource_file);
+         void configure( State& state, const common::message::domain::configuration::Reply& configuration);
 
 
 

@@ -26,7 +26,7 @@ namespace casual
 
          state::Statistics statistics;
 
-         auto now = common::platform::clock_type::now();
+         auto now = common::platform::time::clock::type::now();
 
          auto us100 = std::chrono::microseconds{ 100};
 
@@ -46,7 +46,7 @@ namespace casual
 
          state::Statistics statistics;
 
-         auto now = common::platform::clock_type::now();
+         auto now = common::platform::time::clock::type::now();
 
          auto us100 = std::chrono::microseconds{ 100};
 
@@ -68,7 +68,7 @@ namespace casual
 
          state::Statistics statistics;
 
-         auto now = common::platform::clock_type::now();
+         auto now = common::platform::time::clock::type::now();
 
          auto us100 = std::chrono::microseconds{ 100};
 
@@ -91,7 +91,7 @@ namespace casual
 
          state::Statistics statistics;
 
-         auto now = common::platform::clock_type::now();
+         auto now = common::platform::time::clock::type::now();
 
          auto us100 = std::chrono::microseconds{ 100};
 

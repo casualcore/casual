@@ -1,9 +1,6 @@
-//
-// transcoding.h
-//
-//  Created on: Dec 26, 2013
-//      Author: Kristone
-//
+//!
+//! casual
+//!
 
 #ifndef CASUAL_COMMON_TRANSCODE_H_
 #define CASUAL_COMMON_TRANSCODE_H_
@@ -60,7 +57,7 @@ namespace casual
             //!
             //! @throw exception::Casual on failure
             //!
-            platform::binary_type decode( const std::string& value);
+            platform::binary::type decode( const std::string& value);
 
          } // base64
 
@@ -168,7 +165,7 @@ namespace casual
             //! @param value hex-string
             //! @return binary representation of @p value
             //!
-            platform::binary_type decode( const std::string& value);
+            platform::binary::type decode( const std::string& value);
 
 
             //!

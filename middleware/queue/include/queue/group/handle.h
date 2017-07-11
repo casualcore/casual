@@ -10,7 +10,7 @@
 #include "common/message/queue.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
-#include "common/message/domain.h"
+#include "common/message/event.h"
 
 namespace casual
 {
@@ -44,7 +44,7 @@ namespace casual
                {
                   using Base::Base;
 
-                  void operator() ( const common::message::domain::process::termination::Event& message);
+                  void operator() ( const common::message::event::process::Exit& message);
                };
             } // dead
 

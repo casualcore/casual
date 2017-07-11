@@ -1,8 +1,5 @@
 //!
-//! transaction.cpp
-//!
-//! Created on: Feb 14, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/transaction/transaction.h"

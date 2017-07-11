@@ -9,7 +9,7 @@ namespace casual
 {
    namespace transaction
    {
-      common::log::Stream& log = common::log::internal::transaction;
+      common::log::Stream& log = common::log::category::transaction;
 
    } // transaction
 

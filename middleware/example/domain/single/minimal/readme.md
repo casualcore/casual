@@ -3,7 +3,7 @@
 
 ## pre requirements
 
-see [domain example]( ../../domain.md)
+see [domain example]( ../../readme.md)
 
 
 ## create domain
@@ -23,7 +23,7 @@ source the env file:
 
 ## start domain
 
-    >$ casual-admin domain --boot 
+    >$ casual-admin domain --boot configuration/domain.yaml
 
 
 

@@ -11,7 +11,6 @@
 #include "common/buffer/type.h"
 #include "common/log.h"
 #include "common/platform.h"
-#include "common/internal/trace.h"
 #include "common/algorithm.h"
 
 
@@ -42,9 +41,9 @@ namespace casual
          namespace
          {
 
-            typedef common::platform::binary_type::size_type size_type;
-            typedef common::platform::binary_type::const_pointer const_data_type;
-            typedef common::platform::binary_type::pointer data_type;
+            typedef common::platform::binary::type::size_type size_type;
+            typedef common::platform::binary::type::const_pointer const_data_type;
+            typedef common::platform::binary::type::pointer data_type;
 
 
             struct compare_first
@@ -197,7 +196,7 @@ namespace casual
                   return result;
                }
 
-               common::platform::raw_buffer_type allocate( const std::string& type, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
                {
                   m_pool.emplace_back( type, 0);
 
@@ -207,7 +206,7 @@ namespace casual
                   return m_pool.back().handle();
                }
 
-               common::platform::raw_buffer_type reallocate( const common::platform::const_raw_buffer_type handle, const common::platform::binary_size_type size)
+               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
                {
                   const auto result = find( handle);
 
@@ -1380,13 +1379,13 @@ namespace casual
                            else
                            {
                               // TODO: Much better
-                              common::log::warning << "id for " << field.name << " is invalid" << std::endl;
+                              common::log::category::warning << "id for " << field.name << " is invalid" << std::endl;
                            }
                         }
                         catch( const std::out_of_range&)
                         {
                            // TODO: Much better
-                           common::log::warning << "type for " << field.name << " is invalid" << std::endl;
+                           common::log::category::warning << "type for " << field.name << " is invalid" << std::endl;
                         }
                      }
                   }
@@ -1408,7 +1407,7 @@ namespace casual
                   if( ! result.emplace( field.name, field.id).second)
                   {
                      // TODO: Much better
-                     common::log::warning << "name for " << field.name << " is not unique" << std::endl;
+                     common::log::category::warning << "name for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1426,7 +1425,7 @@ namespace casual
                   if( ! result.emplace( field.id, field.name).second)
                   {
                      // TODO: Much better
-                     common::log::warning << "id for " << field.name << " is not unique" << std::endl;
+                     common::log::category::warning << "id for " << field.name << " is not unique" << std::endl;
                   }
                }
 
@@ -1599,7 +1598,6 @@ int casual_field_type_of_name( const char* const name, int* const type)
 
 int casual_field_plain_type_host_size( const int type, long* const count)
 {
-
    if( count)
    {
       switch( type)
@@ -1630,6 +1628,49 @@ int casual_field_plain_type_host_size( const int type, long* const count)
 
    return CASUAL_FIELD_SUCCESS;
 }
+
+int casual_field_minimum_need( long id, long* count)
+{
+   if( count)
+   {
+      const auto item_size = casual::common::network::byteorder::bytes<long>();
+      const auto size_size = casual::common::network::byteorder::bytes<long>();
+
+      switch( id / CASUAL_FIELD_TYPE_BASE)
+      {
+      case CASUAL_FIELD_SHORT:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<short>();
+         break;
+      case CASUAL_FIELD_LONG:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<long>();
+         break;
+      case CASUAL_FIELD_CHAR:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<char>();
+         break;
+      case CASUAL_FIELD_FLOAT:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<float>();
+         break;
+      case CASUAL_FIELD_DOUBLE:
+         *count = item_size + size_size + casual::common::network::byteorder::bytes<double>();
+         break;
+      case CASUAL_FIELD_STRING:
+         *count = item_size + size_size + 1; // a null-terminator is always added
+         break;
+      case CASUAL_FIELD_BINARY:
+         *count = item_size + size_size + 0; // can be empty
+         break;
+      default:
+         return CASUAL_FIELD_INVALID_ARGUMENT;
+      }
+   }
+   else
+   {
+      return CASUAL_FIELD_INVALID_ARGUMENT;
+   }
+
+   return CASUAL_FIELD_SUCCESS;
+}
+
 
 int casual_field_remove_all( char* const buffer)
 {

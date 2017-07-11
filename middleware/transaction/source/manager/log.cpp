@@ -6,8 +6,6 @@
 #include "transaction/manager/state.h"
 
 #include "common/algorithm.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
 
 #include <chrono>
 
@@ -102,7 +100,7 @@ namespace casual
                   common::transaction::ID result;
 
                   {
-                     auto gtrid = row.get< common::platform::binary_type>( index);
+                     auto gtrid = row.get< common::platform::binary::type>( index);
 
                      common::range::copy( common::range::make( gtrid), std::begin( result.xid.data));
 
@@ -110,7 +108,7 @@ namespace casual
                   }
 
                   {
-                     auto bqual = row.get< common::platform::binary_type>( index + 1);
+                     auto bqual = row.get< common::platform::binary::type>( index + 1);
 
                      common::range::copy(
                            common::range::make( bqual),
@@ -134,8 +132,8 @@ namespace casual
                   result.pid = row.get< common::platform::pid::type>( 3);
                   result.state = static_cast< Log::State>( row.get< long>( 4));
 
-                  result.started = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 5)}};
-                  result.updated = common::platform::time_point{ std::chrono::microseconds{ row.get< common::platform::time_point::rep>( 6)}};
+                  result.started = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( 5)}};
+                  result.updated = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( 6)}};
 
                   return result;
                }

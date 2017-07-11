@@ -42,13 +42,13 @@ namespace casual
             {
 
                template< typename T>
-               static void write( const T& value, platform::binary_type& buffer)
+               static void write( const T& value, platform::binary::type& buffer)
                {
                   memory::append( value, buffer);
                }
 
                template< typename T>
-               static std::size_t read( const platform::binary_type& buffer, std::size_t offset, T& value)
+               static std::size_t read( const platform::binary::type& buffer, std::size_t offset, T& value)
                {
                   return memory::copy( buffer, offset, value);
                }
@@ -60,7 +60,7 @@ namespace casual
             {
                using policy_type = P;
 
-               basic_output( platform::binary_type& buffer)
+               basic_output( platform::binary::type& buffer)
                   : m_buffer(  buffer)
                {
                   m_buffer.reserve( 128);
@@ -99,14 +99,15 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
                write( T& value)
                {
+                  using casual::casual_marshal_value;
                   casual_marshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   write_pod( value);
@@ -139,7 +140,7 @@ namespace casual
                      std::end( value));
                }
 
-               void write( const platform::binary_type& value)
+               void write( const platform::binary::type& value)
                {
                   write_pod( value.size());
 
@@ -148,7 +149,7 @@ namespace casual
                      std::end( value));
                }
 
-               platform::binary_type& m_buffer;
+               platform::binary::type& m_buffer;
             };
 
 
@@ -159,7 +160,7 @@ namespace casual
             {
                using policy_type = P;
 
-               basic_input( platform::binary_type& buffer)
+               basic_input( platform::binary::type& buffer)
                   : m_buffer( buffer), m_offset( 0)
                {
 
@@ -167,13 +168,13 @@ namespace casual
 
 
                template< typename T>
-               basic_input& operator & ( T& value)
+               basic_input& operator & ( T&& value)
                {
                   return *this >> value;
                }
 
                template< typename T>
-               basic_input& operator >> ( T& value)
+               basic_input& operator >> ( T&& value)
                {
                   read( value);
                   return *this;
@@ -198,14 +199,15 @@ namespace casual
             private:
 
                template< typename T>
-               typename std::enable_if< ! detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
                read( T& value)
                {
+                  using casual::casual_unmarshal_value;
                   casual_unmarshal_value( value, *this);
                }
 
                template< typename T>
-               typename std::enable_if< detail::is_native_marshable< T>::value>::type
+               traits::enable_if_t< detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   read_pod( value);
@@ -236,7 +238,7 @@ namespace casual
                   consume( std::begin( value), size);
                }
 
-               void read( platform::binary_type& value)
+               void read( platform::binary::type& value)
                {
                   std::string::size_type size;
                   *this >> size;
@@ -252,8 +254,8 @@ namespace casual
                   m_offset = policy_type::read( m_buffer, m_offset, value);
                }
 
-               platform::binary_type& m_buffer;
-               platform::binary_type::size_type m_offset;
+               platform::binary::type& m_buffer;
+               platform::binary::type::size_type m_offset;
             };
 
             using Input = basic_input< Policy>;
@@ -263,7 +265,7 @@ namespace casual
             {
                struct Output
                {
-                  binary::Output operator () ( platform::binary_type& buffer) const
+                  binary::Output operator () ( platform::binary::type& buffer) const
                   {
                      return binary::Output{ buffer};
                   }
@@ -271,7 +273,7 @@ namespace casual
 
                struct Input
                {
-                  binary::Input operator () ( platform::binary_type& buffer) const
+                  binary::Input operator () ( platform::binary::type& buffer) const
                   {
                      return binary::Input{ buffer};
                   }

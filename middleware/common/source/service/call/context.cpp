@@ -7,8 +7,7 @@
 
 
 #include "common/communication/ipc.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include "common/buffer/pool.h"
 #include "common/buffer/transport.h"
@@ -65,16 +64,16 @@ namespace casual
                   namespace validate
                   {
 
-                     inline message::service::lookup::Request::Context input( const char* buffer, long size, long flags)
+                     inline message::service::lookup::Request::Context flags( call::async::Flags flags)
                      {
-                        Trace trace( "call::validate::input", log::internal::transaction);
-
-                        if( flag< TPNOREPLY>( flags) && ! flag< TPNOTRAN>( flags) && common::transaction::Context::instance().current())
+                        if( flags.exist( call::async::Flag::no_reply)  && ! flags.exist( call::async::Flag::no_transaction)
+                              && common::transaction::Context::instance().current())
                         {
                            throw exception::xatmi::invalid::Argument{ "TPNOREPLY can only be used with TPNOTRAN"};
                         }
 
-                        return flag< TPNOREPLY>( flags) ? message::service::lookup::Request::Context::no_reply : message::service::lookup::Request::Context::regular;
+                        return flags.exist( call::async::Flag::no_reply) ?
+                              message::service::lookup::Request::Context::no_reply : message::service::lookup::Request::Context::regular;
                      }
 
                   } // validate
@@ -99,43 +98,56 @@ namespace casual
                {
                   namespace prepare
                   {
-                     inline message::service::call::caller::Request message(
+
+                     inline std::tuple< platform::descriptor::type, message::service::call::caller::Request> message(
                            State& state,
-                           const platform::time_point& start,
-                           char* idata,
-                           long ilen,
-                           long flags,
+                           const platform::time::point::type& start,
+                           common::buffer::payload::Send&& buffer,
+                           async::Flags flags,
                            const message::service::call::Service& service)
                      {
-                        message::service::call::caller::Request message( buffer::pool::Holder::instance().get( idata, ilen));
+                        Trace trace( "service::call::local::prepare::message");
+
+                        using return_type = std::tuple< platform::descriptor::type, message::service::call::caller::Request>;
+
+                        message::service::call::caller::Request message( std::move( buffer));
 
                         message.correlation = uuid::make();
                         message.service = service;
 
+                        message.process = process::handle();
+                        message.parent = execution::service::name();
+
+                        constexpr auto request_flags = ~message::service::call::request::Flags{};
+                        message.flags = request_flags.convert( flags);
+                        message.header = service::header::fields();
+
                         //
                         // Check if we should associate descriptor with message-correlation and transaction
                         //
-                        if( flag< TPNOREPLY>( flags))
+                        if( flags.exist( async::Flag::no_reply))
                         {
+                           log::debug << "no_reply - no descriptor reservation\n";
+
                            //
                            // No reply, hence no descriptor and no transaction (we validated this before)
                            //
-                           message.descriptor = 0;
+                           return return_type{ 0, std::move( message) };
                         }
                         else
                         {
+                           log::debug << "descriptor reservation - flags: " << flags << '\n';
+
                            auto& descriptor = state.pending.reserve( message.correlation);
 
-                           if( ! flag< TPNOTIME>( flags))
+                           if( ! flags.exist( async::Flag::no_time))
                            {
                               descriptor.timeout.set( start, service.timeout);
                            }
 
-                           message.descriptor = descriptor.descriptor;
+                           auto& transaction = common::transaction::context().current();
 
-                           auto& transaction = common::transaction::Context::instance().current();
-
-                           if( ! flag< TPNOTRAN>( flags) && transaction)
+                           if( ! flags.exist( async::Flag::no_transaction) && transaction)
                            {
                               message.trid = transaction.trid;
                               transaction.associate( message.correlation);
@@ -150,15 +162,11 @@ namespace casual
                            }
 
                            message.service.timeout = descriptor.timeout.timeout;
+
+                           return return_type{ descriptor.descriptor, std::move( message) };
                         }
-
-                        message.process = process::handle();
-                        message.parent = execution::service::name();
-                        message.flags = flags;
-                        message.header = service::header::fields();
-
-                        return message;
                      }
+
 
                   } // prepare
 
@@ -166,26 +174,24 @@ namespace casual
             } // local
 
 
-            descriptor_type Context::async( const std::string& service, char* idata, long ilen, long flags)
+            descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags)
             {
-               trace::internal::Scope trace( "calling::Context::async");
+               Trace trace( "service::call::Context::async");
 
-               log::internal::debug << "input - service: " << service << " data: @" << static_cast< void*>( idata) << " len: " << ilen << " flags: " << flags << std::endl;
+               log::debug << "service: " << service << ", buffer: " << buffer << " flags: " << flags << '\n';
 
-               auto context = local::validate::input( idata, ilen, flags);
-
-               service::Lookup lookup( service, context);
+               service::Lookup lookup( service, local::validate::flags( flags));
 
                //
                // We do as much as possible while we wait for the broker reply
                //
 
-               auto start = platform::clock_type::now();
+               auto start = platform::time::clock::type::now();
 
                //
-               // Invoke pre-transport buffer modifiers
+               // TODO: Invoke pre-transport buffer modifiers
                //
-               buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
+               //buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
 
 
@@ -194,20 +200,15 @@ namespace casual
                //
                auto target = lookup();
 
-               if( target.state == message::service::lookup::Reply::State::absent)
-               {
-                  throw common::exception::xatmi::service::no::Entry( service);
-               }
-
                //
                // The service exists. Take care of reserving descriptor and determine timeout
                //
-               auto message = local::prepare::message( m_state, start, idata, ilen, flags, target.service);
+               auto prepared = local::prepare::message( m_state, start, std::move( buffer), flags, target.service);
 
                //
                // If some thing goes wrong we unreserve the descriptor
                //
-               auto unreserve = common::scope::execute( [&](){ m_state.pending.unreserve( message.descriptor);});
+               auto unreserve = common::scope::execute( [&](){ m_state.pending.unreserve( std::get< 0>( prepared));});
 
 
                //
@@ -218,18 +219,17 @@ namespace casual
                   {
                      message::service::call::ACK ack;
                      ack.process = target.process;
-                     ack.service = target.service.name;
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   });
 
 
                //
                // Make sure we timeout if we don't keep our deadline
                //
-               auto deadline = m_state.pending.deadline( message.descriptor, start);
+               auto deadline = m_state.pending.deadline( std::get< 0>( prepared), start);
 
 
-               if( target.state == message::service::lookup::Reply::State::busy)
+               if( target.busy())
                {
                   //
                   // We wait for an instance to become idle.
@@ -240,62 +240,103 @@ namespace casual
                //
                // Call the service
                //
-               message.service = target.service;
+               {
+                  std::get< 1>( prepared).service = target.service;
 
-               log::internal::debug << "async - message: " << message << std::endl;
+                  log::debug << "async - message: " << std::get< 1>( prepared) << std::endl;
 
-
-               communication::ipc::blocking::send( target.process.queue, message);
+                  communication::ipc::blocking::send( target.process.queue, std::get< 1>( prepared));
+               }
 
                unreserve.release();
                send_ack.release();
-               return message.descriptor;
+               return std::get< 0>( prepared);
             }
 
-
-
-            void Context::reply( descriptor_type& descriptor, char** odata, long& olen, long flags)
+            namespace local
             {
-               trace::internal::Scope trace( "calling::Context::reply");
+               namespace
+               {
+                  template< typename... Args>
+                  bool receive( message::service::call::Reply& reply, reply::Flags flags, Args&... args)
+                  {
+                     return communication::ipc::receive::message(
+                           communication::ipc::inbound::device(),
+                           reply,
+                           flags.exist( reply::Flag::no_block) ?
+                                 communication::ipc::receive::Flag::non_blocking :
+                                 communication::ipc::receive::Flag::blocking,
+                           args...);
+                  }
+               } // <unnamed>
+            } // local
 
-               log::internal::debug << "descriptor: " << descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
+            reply::Result Context::reply( descriptor_type descriptor, reply::Flags flags)
+            {
+               Trace trace( "calling::Context::reply");
+
+               log::debug << "descriptor: " << descriptor << " flags: " << flags << '\n';
 
                //
                // TODO: validate input...
 
 
-               auto start = platform::clock_type::now();
+               auto start = platform::time::clock::type::now();
 
-               if( common::flag< TPGETANY>( flags))
-               {
-                  descriptor = 0;
-               }
+               auto get_reply = [&](){
+                  message::service::call::Reply reply;
 
-               //
-               // Make sure we timeout if we don't keep our deadline
-               //
-               auto deadline = m_state.pending.deadline( descriptor, start);
+                  if( flags.exist( reply::Flag::any))
+                  {
+                     //
+                     // We fetch any
+                     //
+                    if( ! local::receive( reply, flags))
+                    {
+                       throw common::exception::xatmi::no::Message();
+                    }
+
+                    return std::make_pair(
+                          std::move( reply),
+                          m_state.pending.get( reply.correlation).descriptor);
+                  }
+                  else
+                  {
+                     auto& pending = m_state.pending.get( descriptor);
+
+                     //
+                     // Make sure we timeout if we don't keep our deadline
+                     //
+                     signal::timer::Deadline deadline{ pending.timeout.deadline(), start};
+
+                     if( ! local::receive( reply, flags, pending.correlation))
+                     {
+                        throw common::exception::xatmi::no::Message();
+                     }
+
+                     return std::make_pair(
+                           std::move( reply),
+                           pending.descriptor);
+                  }
+               };
 
 
-               //
-               // We fetch, and if TPNOBLOCK is not set, we block
-               //
-               message::service::call::Reply reply;
+               reply::Result result;
 
-               if( ! receive( reply, descriptor, flags))
-               {
-                  throw common::exception::xatmi::no::Message();
-               }
+               auto prepared = get_reply();
+               auto& reply = std::get< 0>( prepared);
+               result.descriptor = std::get< 1>( prepared);
+               result.user = reply.code;
 
-               descriptor = reply.descriptor;
+               result.buffer = std::move( reply.buffer);
+               result.state = reply.status == TPESVCFAIL ? reply::State::service_fail : reply::State::service_success;
 
-               user_code( reply.code);
 
 
                //
                // We unreserve pending (at end of scope, regardless of outcome)
                //
-               auto discard = scope::execute( [&](){ m_state.pending.unreserve( descriptor);});
+               auto discard = scope::execute( [&](){ m_state.pending.unreserve( result.descriptor);});
 
                //
                // Update transaction state
@@ -306,72 +347,30 @@ namespace casual
                //
                // Check any errors
                //
-               if( reply.error != 0 && reply.error != TPESVCFAIL)
+               if( reply.status != 0 && reply.status != TPESVCFAIL)
                {
-                  exception::xatmi::propagate( reply.error);
+                  exception::xatmi::propagate( reply.status);
                }
 
-
-               //
-               // Check buffer types
-               //
-               if( *odata != nullptr && common::flag< TPNOCHANGE>( flags))
-               {
-                  auto output = buffer::pool::Holder::instance().get( *odata);
-
-                  if( output.payload().type != reply.buffer.type)
-                  {
-                     throw exception::xatmi::buffer::type::Output{};
-                  }
-               }
-
-               //
-               // We always deallocate user output buffer
-               //
-               {
-                  buffer::pool::Holder::instance().deallocate( *odata);
-                  *odata = nullptr;
-               }
-
-               //
-               // We prepare the output buffer
-               //
-               {
-                  *odata = reply.buffer.memory.data();
-                  olen = reply.buffer.memory.size();
-
-                  //
-                  // Apply post transport buffer manipulation
-                  // TODO: get service-name
-                  //
-                  buffer::transport::Context::instance().dispatch(
-                        *odata, olen, "", buffer::transport::Lifecycle::post_call, reply.buffer.type);
-
-                  //
-                  // Add the buffer to the pool
-                  //
-                  buffer::pool::Holder::instance().insert( std::move( reply.buffer));
-               }
-
-               log::internal::debug << "descriptor: " << reply.descriptor << " data: @" << static_cast< void*>( *odata) << " len: " << olen << " flags: " << flags << std::endl;
-
-               if( reply.error == TPESVCFAIL)
-               {
-                  throw exception::xatmi::service::Fail{};
-               }
-
+               return result;
             }
 
 
-            void Context::sync( const std::string& service, char* idata, const long ilen, char*& odata, long& olen, const long flags)
+            sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags)
             {
                //
-               // casual always has 'block-semantics' in sync call. We remove possible no-block
+               // We can't have no-block when getting the reply
                //
-               auto supported_flags = ( ~TPNOBLOCK) & flags;
+               flags -= sync::Flag::no_block;
 
-               auto descriptor = async( service, idata, ilen, supported_flags);
-               reply( descriptor, &odata, olen, supported_flags);
+               constexpr auto async_flags = ~async::Flags{};
+
+               auto descriptor = async( service, buffer, async_flags.convert( flags));
+
+               constexpr auto reply_flags = ~reply::Flags{};
+               auto result = reply( descriptor, reply_flags.convert( flags));
+
+               return { std::move( result.buffer), result.user, result.state};
             }
 
 
@@ -390,15 +389,6 @@ namespace casual
 
             }
 
-            long Context::user_code() const
-            {
-               return m_state.user_code;
-            }
-            void Context::user_code( long code)
-            {
-               m_state.user_code = code;
-            }
-
             Context::Context()
             {
 
@@ -407,31 +397,14 @@ namespace casual
             bool Context::pending() const
             {
                return ! m_state.pending.empty();
+
             }
 
-            namespace local
-            {
-               namespace
-               {
-                  template< typename... Args>
-                  bool receive( message::service::call::Reply& reply, long flags, Args&... args)
-                  {
-                     if( common::flag< TPNOBLOCK>( flags))
-                     {
-                        return communication::ipc::non::blocking::receive( communication::ipc::inbound::device(), reply, args...);
-                     }
-                     else
-                     {
-                        communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, args...);
-                     }
-                     return true;
-                  }
-               } // <unnamed>
-            } // local
 
-            bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, long flags)
+
+            bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flags flags)
             {
-               if( descriptor == 0)
+               if( flags.exist( reply::Flag::any))
                {
                   //
                   // We fetch any

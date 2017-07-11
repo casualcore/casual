@@ -8,7 +8,7 @@
 
 #include "common/message/server.h"
 #include "common/process.h"
-#include "common/internal/log.h"
+#include "common/log.h"
 
 namespace casual
 {
@@ -30,7 +30,7 @@ namespace casual
 
                void operator () ( message_type& message)
                {
-                  log::internal::debug << "discard message: " << message.type() << '\n';
+                  log::debug << "discard message: " << message.type() << '\n';
                }
             };
 

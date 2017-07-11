@@ -1,0 +1,73 @@
+---
+domain:
+  name: ""
+  default:
+    environment:
+      files:
+        []
+
+      variables:
+        []
+
+
+    server:
+      instances: 1
+
+    executable:
+      instances: 1
+
+    service:
+      timeout: 0s
+
+
+  transaction:
+    default:
+      resource:
+        instances: 1
+
+
+    log: ${CASUAL_DOMAIN_HOME}/transaction/log.db
+    resources:
+      []
+
+
+  groups:
+    []
+
+  servers:
+    []
+
+  executables:
+    []
+
+  services:
+    []
+
+  gateway:
+    default:
+      listener:
+        {}
+
+      connection:
+        type: tcp
+        restart: true
+
+
+    listeners:
+      []
+
+    connections:
+      []
+
+
+  queue:
+    default:
+      queue:
+        retries: 0
+
+      directory: ${CASUAL_DOMAIN_HOME}/queue/groups
+
+    groups:
+      []
+
+

@@ -29,7 +29,15 @@ namespace casual
          {
             Trace trace{ "domain::Manager ctor"};
 
-            if( ! settings.bare)
+            //
+            // Set the process variables so children can communicate with us.
+            //
+            common::environment::variable::process::set(
+                  common::environment::variable::name::ipc::domain::manager(),
+                  common::process::handle());
+
+
+            if( m_state.mandatory_prepare)
             {
                handle::mandatory::boot::prepare( m_state);
             }
@@ -43,7 +51,6 @@ namespace casual
 
             try
             {
-               //handle::shutdown( m_state);
 
 
             }
@@ -111,9 +118,6 @@ namespace casual
                                     ;
                               }
                            }
-
-                           //log << "state: " << state << '\n';
-
                         }
                         catch( const exception::Shutdown&)
                         {

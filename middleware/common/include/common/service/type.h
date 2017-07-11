@@ -17,15 +17,11 @@ namespace casual
    {
       namespace service
       {
-         namespace Type
+         namespace category
          {
-            enum
-            {
-               xatmi = 0,
-               casual_admin = 10,
-            };
-         } // Type
-
+            constexpr auto none() { return "";}
+            constexpr auto admin() { return ".admin";}
+         } // category
 
          namespace transaction
          {

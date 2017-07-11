@@ -18,7 +18,7 @@ namespace casual
          //! memberfunction
          //!
          template< typename Base, typename R, typename Derived, typename... Args>
-         auto invoke( R Base::*pmf, Derived&& derived, Args&&... args) -> decltype((std::forward<Derived>( derived).*pmf)(std::forward<Args>(args)...))
+         decltype( auto) invoke( R Base::*pmf, Derived&& derived, Args&&... args)
          {
             return (std::forward<Derived>( derived).*pmf)(std::forward<Args>(args)...);
          }
@@ -27,7 +27,7 @@ namespace casual
          //! free function/functor
          //!
          template< typename F, typename... Args>
-         auto invoke( F&& function, Args&&... args) -> decltype(std::forward<F>( function)(std::forward<Args>(args)...))
+         decltype( auto) invoke( F&& function, Args&&... args)
          {
             return std::forward<F>( function)(std::forward<Args>(args)...);
          }
@@ -36,7 +36,7 @@ namespace casual
 
 
       template< typename F, typename... Args>
-      auto invoke( F&& function, Args&&... args) -> decltype( details::invoke( std::forward< F>( function), std::forward<Args>(args)...))
+      decltype( auto) invoke( F&& function, Args&&... args)
       {
          return details::invoke( std::forward< F>( function), std::forward<Args>(args)...);
       }

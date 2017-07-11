@@ -1,8 +1,5 @@
 //!
-//! json.cpp
-//!
-//! Created on: Jan 18, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/archive/json.h"
@@ -69,9 +66,12 @@ namespace casual
 
             const rapidjson::Document& Load::operator() ( std::istream& stream)
             {
+               //
+               // note: istreambuf_iterator does not skip whitespace, which is what we want.
+               //
                const std::string buffer{
-                  std::istream_iterator< char>( stream),
-                  std::istream_iterator< char>()};
+                  std::istreambuf_iterator<char>(stream),
+                  {}};
 
                return local::parse( m_document, buffer.c_str());
             }
@@ -79,6 +79,15 @@ namespace casual
             const rapidjson::Document& Load::operator() ( const std::string& json)
             {
                return local::parse( m_document, json.c_str());
+            }
+
+            const rapidjson::Document& Load::operator() ( const platform::binary::type& json)
+            {
+               if( ! json.empty() && json.back() == '\0')
+               {
+                  return local::parse( m_document, json.data());
+               }
+               return operator() ( json.data(), json.size());
             }
 
             const rapidjson::Document& Load::operator() ( const char* const json, const std::size_t size)
@@ -164,29 +173,24 @@ namespace casual
                {
                   if( name)
                   {
-                     //
-                     // TODO: Remove this check whenever archive is fixed
-                     //
-                     if( m_stack.back())
-                     {
-                        const auto result = m_stack.back()->FindMember( name);
+                     const auto result = m_stack.back()->FindMember( name);
 
-                        if( result != m_stack.back()->MemberEnd())
-                        {
-                           m_stack.push_back( &result->value);
-                        }
-                        else
-                        {
-                           m_stack.push_back( nullptr);
-                        }
+                     if( result != m_stack.back()->MemberEnd())
+                     {
+                        m_stack.push_back( &result->value);
                      }
                      else
                      {
-                        m_stack.push_back( nullptr);
+                        return false;
                      }
                   }
 
-                  return m_stack.back() != nullptr;
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
+
+                  return true;
                }
 
                void Implementation::end( const char* const name)
@@ -232,7 +236,7 @@ namespace casual
                { value = *common::transcode::utf8::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
                void Implementation::read( std::string& value) const
                { value = common::transcode::utf8::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
-               void Implementation::read( platform::binary_type& value) const
+               void Implementation::read( platform::binary::type& value) const
                { value = common::transcode::base64::decode( local::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
 
             } // reader
@@ -285,7 +289,25 @@ namespace casual
 
                   throw exception::archive::invalid::Document{ "Failed to write document"};
                }
+            }
 
+            void Save::operator() ( platform::binary::type& json) const
+            {
+               rapidjson::StringBuffer buffer;
+               rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
+
+               if( m_document.Accept( writer))
+               {
+                  json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
+               }
+               else
+               {
+                  //
+                  // TODO: Better
+                  //
+
+                  throw exception::archive::invalid::Document{ "Failed to write document"};
+               }
             }
 
             namespace writer
@@ -385,7 +407,7 @@ namespace casual
                { m_stack.back()->SetDouble( value); }
                void Implementation::write( const std::string& value)
                { m_stack.back()->SetString( common::transcode::utf8::encode( value), m_allocator); }
-               void Implementation::write( const platform::binary_type& value)
+               void Implementation::write( const platform::binary::type& value)
                { m_stack.back()->SetString( common::transcode::base64::encode( value), m_allocator); }
 
             } // writer

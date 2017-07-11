@@ -43,16 +43,20 @@ namespace casual
             domain_scale_executable,
             domain_process_connect_request,
             domain_process_connect_reply,
-            domain_process_termination_registration,
-            domain_process_termination_event,
+
+
             domain_process_lookup_request,
             domain_process_lookup_reply,
-            domain_configuration_transaction_resource_request = DOMAIN_BASE + 100,
-            domain_configuration_transaction_resource_reply,
-            domain_configuration_gateway_request,
-            domain_configuration_gateway_reply,
-            domain_configuration_queue_request,
-            domain_configuration_queue_reply,
+
+            domain_process_prepare_shutdown_request,
+            domain_process_prepare_shutdown_reply,
+
+            domain_configuration_request = DOMAIN_BASE + 200,
+            domain_configuration_reply,
+            domain_server_configuration_request,
+            domain_server_configuration_reply,
+
+
 
             // Server
             SERVER_BASE = 2000,
@@ -70,13 +74,37 @@ namespace casual
             service_call = SERVICE_BASE + 100,
             service_reply,
             service_acknowledge,
+            service_remote_metrics,
 
-            // Monitor
-            TRAFFICMONITOR_BASE = 4000,
-            traffic_monitor_connect_request,
-            traffic_monitor_connect_reply,
-            traffic_monitor_disconnect,
-            traffic_event,
+            service_conversation_connect_request = SERVICE_BASE + 200,
+            service_conversation_connect_reply,
+            service_conversation_send,
+            service_conversation_disconnect,
+
+
+            // event messages
+            EVENT_BASE = 4000,
+            event_subscription_begin,
+            event_subscription_end,
+
+            EVENT_DOMAIN_BASE = 4100,
+            event_domain_boot_begin = EVENT_DOMAIN_BASE,
+            event_domain_boot_end,
+            event_domain_shutdown_begin,
+            event_domain_shutdown_end,
+            event_domain_error,
+            event_domain_server_connect,
+            event_domain_group,
+
+            event_process_spawn,
+            event_process_exit,
+            EVENT_DOMAIN_BASE_END,
+
+            EVENT_SERVICE_BASE = 4200,
+            event_service_call = EVENT_SERVICE_BASE,
+            EVENT_SERVICE_BASE_END,
+
+
 
             // Transaction
             TRANSACTION_BASE = 5000,
@@ -102,6 +130,8 @@ namespace casual
             transaction_resource_rollback_request,
             transaction_resource_rollback_reply,
 
+            transaction_resource_lookup_request = TRANSACTION_BASE + 300,
+            transaction_resource_lookup_reply,
 
             transaction_resource_involved = TRANSACTION_BASE + 400,
             transaction_external_resource_involved,
@@ -161,6 +191,10 @@ namespace casual
             interdomain_domain_discover_reply,
             interdomain_service_call = INTERDOMAIN_BASE + 100,
             interdomain_service_reply,
+            interdomain_conversation_connect_request = INTERDOMAIN_BASE + 200,
+            interdomain_conversation_connect_reply,
+            interdomain_conversation_send,
+            interdomain_conversation_disconnect,
             interdomain_transaction_resource_prepare_request = INTERDOMAIN_BASE + 300,
             interdomain_transaction_resource_prepare_reply,
             interdomain_transaction_resource_commit_request,
@@ -175,9 +209,12 @@ namespace casual
 
 
 
+
+
             MOCKUP_BASE = 10000000, // avoid conflict with real messages
             mockup_disconnect,
             mockup_clear,
+            mockup_need_worker_process,
          };
 
          //!
@@ -192,7 +229,7 @@ namespace casual
 
          namespace convert
          {
-            using underlying_type = typename std::underlying_type< Type>::type;
+            using underlying_type = typename std::underlying_type_t< message::Type>;
 
             constexpr Type type( underlying_type type) { return static_cast< Type>( type);}
             constexpr underlying_type type( Type type) { return static_cast< underlying_type>( type);}
@@ -228,6 +265,19 @@ namespace casual
             })
          };
 
+         //!
+         //! Wraps a message with basic_message
+         //!
+         template< typename Message, message::Type message_type>
+         struct type_wrapper : Message, basic_message< message_type>
+         {
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< message_type>::marshal( archive);
+               Message::marshal( archive);
+            })
+         };
+
 
          namespace flush
          {
@@ -238,8 +288,8 @@ namespace casual
 
          struct Statistics
          {
-            platform::time_point start;
-            platform::time_point end;
+            platform::time::point::type start;
+            platform::time::point::type end;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -290,20 +340,37 @@ namespace casual
          // Below, some basic message related types that is used by others
          //
 
+         template< message::Type type>
+         struct basic_request : basic_message< type>
+         {
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< type>::marshal( archive);
+               archive & process;
+            })
+         };
+
+         template< message::Type type>
+         struct basic_reply : basic_message< type>
+         {
+            common::process::Handle process;
+
+            CASUAL_CONST_CORRECT_MARSHAL(
+            {
+               basic_message< type>::marshal( archive);
+               archive & process;
+            })
+         };
+
 
          namespace server
          {
 
             template< message::Type type>
-            struct basic_id : basic_message< type>
+            struct basic_id : basic_request< type>
             {
-               common::process::Handle process;
-
-               CASUAL_CONST_CORRECT_MARSHAL(
-               {
-                  basic_message< type>::marshal( archive);
-                  archive & process;
-               })
             };
 
             namespace connect

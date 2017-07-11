@@ -6,8 +6,7 @@
 #include "common/exception.h"
 #include "common/error.h"
 #include "common/file.h"
-#include "common/internal/log.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 #include "common/signal.h"
 #include "common/string.h"
 #include "common/environment.h"
@@ -40,6 +39,7 @@
 
 #ifdef __APPLE__
    #include <crt_externs.h>
+   #include <mach-o/dyld.h>
 #else
    #include <unistd.h>
 #endif
@@ -56,20 +56,33 @@ namespace casual
          {
             namespace
             {
+
                std::string getProcessPath()
                {
-                  if( environment::variable::exists( "_"))
+#ifdef __APPLE__
+                  std::uint32_t size = platform::size::max::path;
+                  std::vector< char> path( platform::size::max::path);
+                  if( ::_NSGetExecutablePath( path.data(), &size) != 0)
                   {
-                     return environment::variable::get( "_");
+                     throw exception::invalid::Argument{ "failed to get the path to the current executable"};
                   }
-
-                  return std::string{};
+                  if( path.data()) { return path.data();}
+                  return {};
+#else
+                  return file::name::link( "/proc/self/exe");
+#endif
                }
 
                std::string& path()
                {
                   static std::string path = getProcessPath();
                   return path;
+               }
+
+               std::string& basename()
+               {
+                  static std::string basename = file::name::base( local::path());
+                  return basename;
                }
 
                char* const * environment()
@@ -81,18 +94,24 @@ namespace casual
                   #endif
                }
 
+               namespace instanciated
+               {
+                  std::string& path = local::path();
+                  std::string& basename = local::basename();
+
+               } // instanciated
 
             } // <unnamed>
          } // local
 
          const std::string& path()
          {
-            return local::path();
+            return local::instanciated::path;
          }
 
-         void path( const std::string& path)
+         const std::string& basename()
          {
-            local::path() = path;
+            return local::instanciated::basename;
          }
 
 
@@ -111,29 +130,16 @@ namespace casual
 
          namespace instance
          {
-            namespace termination
-            {
-               void registration( const Handle& process)
-               {
-                  Trace trace{ "common::process::instance::termination::registration"};
-
-                  message::domain::process::termination::Registration message;
-                  message.process = common::process::handle();
-
-                  signal::thread::scope::Block block{ { signal::Type::child}};
-
-                  communication::ipc::blocking::send( communication::ipc::domain::manager::device(), message);
-               }
-
-            } // termination
-
             namespace identity
             {
-               const Uuid& broker()
+               namespace service
                {
-                  const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
-                  return singleton;
-               }
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
+                     return singleton;
+                  }
+               } // service
 
                namespace forward
                {
@@ -156,7 +162,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker()
+                  const Uuid& manager()
                   {
                      const static Uuid singleton{ "c0c5a19dfc27465299494ad7a5c229cd"};
                      return singleton;
@@ -224,9 +230,9 @@ namespace casual
 
                Handle handle( const Uuid& identity, Directive directive)
                {
-                  trace::Scope trace{ "instance::handle::fetch", log::internal::trace};
+                  Trace trace{ "instance::handle::fetch"};
 
-                  log::internal::debug << "identity: " << identity << ", directive: " << directive << '\n';
+                  log::debug << "identity: " << identity << ", directive: " << directive << '\n';
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -237,9 +243,9 @@ namespace casual
 
                Handle handle( platform::pid::type pid , Directive directive)
                {
-                  trace::Scope trace{ "instance::handle::fetch (pid)", log::internal::trace};
+                  Trace trace{ "instance::handle::fetch (pid)"};
 
-                  log::internal::debug << "pid: " << pid << ", directive: " << directive << '\n';
+                  log::debug << "pid: " << pid << ", directive: " << directive << '\n';
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -261,12 +267,12 @@ namespace casual
                      {
                         case M::Directive::singleton:
                         {
-                           log::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
+                           log::category::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
                            throw exception::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
                         }
                         case M::Directive::shutdown:
                         {
-                           log::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
+                           log::category::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
                            throw exception::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
                         }
                         default:
@@ -276,18 +282,26 @@ namespace casual
                      }
                   }
 
+                  template< typename M>
+                  void connect( M&& message)
+                  {
+                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+
+                     connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), message));
+                  }
+
                } // <unnamed>
             } // local
 
             void connect( const Uuid& identity, const Handle& process)
             {
-               trace::Scope trace{ "process::instance::connect identity", log::internal::trace};
+               Trace trace{ "process::instance::connect identity"};
 
                message::domain::process::connect::Request request;
                request.identification = identity;
                request.process = process;
 
-               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+               local::connect( request);
             }
 
             void connect( const Uuid& identity)
@@ -297,12 +311,12 @@ namespace casual
 
             void connect( const Handle& process)
             {
-               trace::Scope trace{ "process::instance::connect process", log::internal::trace};
+               Trace trace{ "process::instance::connect process"};
 
                message::domain::process::connect::Request request;
                request.process = process;
 
-               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+               local::connect( request);
             }
 
             void connect()
@@ -333,7 +347,7 @@ namespace casual
 
          void sleep( std::chrono::microseconds time)
          {
-            log::internal::debug << "process::sleep time: " << time.count() << "us\n";
+            log::debug << "process::sleep time: " << time.count() << "us\n";
 
             //
             // We check signals before we sleep
@@ -370,40 +384,65 @@ namespace casual
 
          namespace pattern
          {
+            namespace local
+            {
+               namespace
+               {
+                  std::size_t check_infinity( std::size_t quantity)
+                  {
+                     return quantity ==  0 ? std::numeric_limits< std::size_t>::max() : quantity;
+                  }
+               } // <unnamed>
+            } // local
+
+
             Sleep::Pattern::Pattern( std::chrono::microseconds time, std::size_t quantity)
-               : time{ time}, quantity{ quantity}
+               : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
-            Sleep::Pattern::Pattern() = default;
-
-
-            Sleep::Sleep( std::vector< Pattern> pattern) : m_pattern( std::move( pattern)) {}
-
-            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern{ std::move( pattern)} {}
-
-            void Sleep::operator () ()
+            bool Sleep::Pattern::done()
             {
-               if( m_offset < m_pattern.size())
-               {
-                  if( m_offset + 1 == m_pattern.size())
-                  {
-                     //
-                     // We're at the last pattern, we keep sleeping
-                     //
-                     sleep( m_pattern[ m_offset].time);
-                  }
-                  else
-                  {
-                     auto& pattern = m_pattern[ m_offset];
-                     sleep( pattern.time);
+               sleep( m_time);
 
-                     if( pattern.quantity == 0 || --pattern.quantity == 0)
-                     {
-                        ++m_offset;
-                     }
-                  }
+               if( m_quantity == std::numeric_limits< std::size_t>::max())
+               {
+                  return false;
                }
+               return --m_quantity == 0;
             }
+
+            std::ostream& operator << ( std::ostream& out, const Sleep::Pattern& value)
+            {
+               return out << "{ duration: " << value.m_time.count() << "us, quantity: " << value.m_quantity
+                     << '}';
+            }
+
+
+            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern( std::move( pattern))
+            {
+               //
+               // We reverse the patterns so we can go from the back
+               //
+               range::reverse( m_pattern);
+            }
+            bool Sleep::operator () ()
+            {
+               if( ! m_pattern.empty())
+               {
+                  if( m_pattern.back().done())
+                  {
+                     m_pattern.pop_back();
+                  }
+                  return true;
+               }
+               return false;
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Sleep& value)
+            {
+               return out << "{ pattern: " << range::make( value.m_pattern) << '}';
+            }
+
          } // pattern
 
          namespace local
@@ -431,9 +470,10 @@ namespace casual
                      }
                   } // internal
 
-                  // we need to force lvalue parameter
-                  std::vector< const char*> environment( const std::vector< std::string>& environment)
+
+                  std::vector< const char*> environment( std::vector< std::string>& environment)
                   {
+
                      auto result = internal::environment();
 
                      std::transform(
@@ -448,6 +488,60 @@ namespace casual
 
                } // current
 
+               std::vector< const char*> arguments( const std::string& path, std::vector< std::string>& arguments)
+               {
+                  std::vector< const char*> c_arguments;
+
+                  //
+                  // think we must add application-name as first argument...
+                  //
+                  c_arguments.push_back( path.c_str());
+
+
+                  range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
+
+                  //
+                  // Null end
+                  //
+                  c_arguments.push_back( nullptr);
+
+                  return c_arguments;
+               }
+
+               namespace spawn
+               {
+                  struct Attributes : traits::uncopyable
+                  {
+                     Attributes()
+                     {
+                        check_error( posix_spawnattr_init( &m_attributes), "posix_spawnattr_init");
+
+                        //
+                        // We try to eliminate signals to propagate to children by it self...
+                        // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
+                        //
+                        check_error( posix_spawnattr_setflags( &m_attributes, POSIX_SPAWN_SETPGROUP), "posix_spawnattr_setflags");
+                     }
+
+                     ~Attributes()
+                     {
+                        posix_spawnattr_destroy( &m_attributes);
+                     }
+
+                     posix_spawnattr_t* get() { return &m_attributes;}
+
+                  private:
+
+                     void check_error( int code, const char* message)
+                     {
+                        if( code != 0)
+                           throw exception::invalid::Argument{ message, CASUAL_NIP( error::string( code))};
+                     };
+
+                     posix_spawnattr_t m_attributes;
+                  };
+               } // spawn
+
             } // <unnamed>
          } // local
 
@@ -457,10 +551,7 @@ namespace casual
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
          {
-            trace::Scope trace{ "process::spawn", log::internal::trace};
-
-            signal::thread::scope::Block block;
-
+            Trace trace{ "process::spawn"};
 
             path = environment::string( path);
 
@@ -477,91 +568,45 @@ namespace casual
             }
 
             //
-            // prepare arguments
-            //
-            std::vector< const char*> c_arguments;
-
-            //
-            // think we must add application-name as first argument...
+            // We need to expand environment and arguments
             //
             {
-               c_arguments.push_back( path.data());
-
-               //
-               // We need to expand environment
-               //
                for( auto& argument : arguments)
                {
                   argument = environment::string( argument);
                }
-
-
-               std::transform(
-                     std::begin( arguments),
-                     std::end( arguments),
-                     std::back_inserter( c_arguments),
-                     std::mem_fn( &std::string::data));
-
-               c_arguments.push_back( nullptr);
+               for( auto& variable : environment)
+               {
+                  variable = environment::string( variable);
+               }
             }
-
-            //
-            // We need to expand environment
-            //
-            for( auto& variable : environment)
-            {
-               variable = environment::string( variable);
-            }
-
-
-            struct attribute_t
-            {
-               attribute_t()
-               {
-                  check_error( posix_spawnattr_init( &attributes), "posix_spawnattr_init");
-                  check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
-                  auto mask = signal::set::empty();
-                  check_error( posix_spawnattr_setsigmask( &attributes, &mask.set), "posix_spawnattr_setsigmask");
-                  //check_error( posix_spawnattr_setflags( &attributes, POSIX_SPAWN_SETSIGDEF), "posix_spawnattr_setflags: POSIX_SPAWN_SETSIGDEF");
-               }
-               ~attribute_t()
-               {
-                  check_error( posix_spawnattr_destroy( &attributes), "posix_spawnattr_destroy");
-               }
-
-               posix_spawnattr_t attributes;
-
-            private:
-               void check_error( int code, const char* message)
-               {
-                  if( code != 0)
-                  {
-                     log::error << "failed to " << message << " - " << error::string( code) << '\n';
-                  }
-               }
-            } spawn;
-
-
 
 
 
             platform::pid::type pid = 0;
 
-            log::internal::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+            log::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
             {
+               local::spawn::Attributes attributes;
+
                //
                // Since we're reading environment variables we need to lock
                //
                std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
 
+
+               //
+               // prepare c-style arguments and environment
+               //
+               auto c_arguments = local::arguments( path, arguments);
                auto c_environment = local::current::environment( environment);
 
                auto status =  posix_spawnp(
                      &pid,
                      path.c_str(),
                      nullptr,
-                     &spawn.attributes,
+                     attributes.get(),
                      const_cast< char* const*>( c_arguments.data()),
                      const_cast< char* const*>( c_environment.data())
                      );
@@ -579,11 +624,14 @@ namespace casual
 
             //
             // We try to minimize the glitch where the spawned process does not
-            // get signals for a short period of time.
+            // get signals for a short period of time. We need to block so we don't
+            // get child-terminate signals (or other signals for that matter...)
             //
+            signal::thread::scope::Block block;
+
             process::sleep( std::chrono::microseconds{ 200});
 
-            log::internal::debug << "process::spawned pid: " << pid << '\n';
+            log::debug << "process::spawned pid: " << pid << '\n';
 
             //
             // Try to figure out if the process started correctly..
@@ -605,7 +653,6 @@ namespace casual
             }
             */
             // TODO: try something else to detect if the process started correct or not.
-
 
             return pid;
          }
@@ -671,7 +718,7 @@ namespace casual
                            }
                            default:
                            {
-                              log::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
+                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
                               throw std::system_error{ error::last(), std::system_category()};
                            }
                         }
@@ -715,7 +762,7 @@ namespace casual
 
                   while( loop());
 
-                  //log::internal::debug << "wait exit: " << exit << '\n';
+                  //log::debug << "wait exit: " << exit << '\n';
 
                   return exit;
                }
@@ -759,7 +806,7 @@ namespace casual
 
          std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids)
          {
-            log::internal::debug << "process::terminate pids: " << range::make( pids) << '\n';
+            log::debug << "process::terminate pids: " << range::make( pids) << '\n';
 
             std::vector< platform::pid::type> result;
             for( auto pid : pids)
@@ -802,7 +849,7 @@ namespace casual
 
          Handle ping( platform::ipc::id::type queue)
          {
-            trace::Scope trace{ "process::ping", log::internal::trace};
+            Trace trace{ "process::ping"};
 
             message::server::ping::Request request;
             request.process = process::handle();
@@ -844,12 +891,12 @@ namespace casual
 
             std::vector< lifetime::Exit> ended()
             {
-               trace::internal::Scope trace{ "process::lifetime::ended"};
+               Trace trace{ "process::lifetime::ended"};
 
                //
                // We'll only handle child signals.
                //
-               signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+               signal::thread::scope::Mask block{ signal::set::filled( signal::Type::child)};
 
                std::vector< lifetime::Exit> terminations;
 
@@ -862,7 +909,7 @@ namespace casual
                   }
                   else
                   {
-                     log::internal::debug << "terminations: " << range::make( terminations) << '\n';
+                     log::debug << "terminations: " << range::make( terminations) << '\n';
                      return terminations;
                   }
                }
@@ -872,7 +919,7 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< platform::pid::type>& pids)
             {
-               log::internal::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
+               log::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
 
                std::vector< Exit> result;
 
@@ -883,10 +930,10 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout)
             {
-               trace::internal::Scope trace{ "common::process::lifetime::wait"};
+               Trace trace{ "common::process::lifetime::wait"};
 
 
-               log::internal::debug << "wait for pids: " << range::make( pids) << std::endl;
+               log::debug << "wait for pids: " << range::make( pids) << std::endl;
 
                if( pids.empty())
                   return {};

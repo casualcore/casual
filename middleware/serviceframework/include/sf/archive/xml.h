@@ -49,6 +49,7 @@ namespace casual
 
                const pugi::xml_document& operator() ( std::istream& stream);
                const pugi::xml_document& operator() ( const std::string& xml);
+               const pugi::xml_document& operator() ( const platform::binary::type& xml);
                const pugi::xml_document& operator() ( const char* xml, std::size_t size);
                const pugi::xml_document& operator() ( const char* xml);
 
@@ -85,16 +86,13 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     const bool result = start( name);
+                     if( ! start( name))
+                        return false;
 
-                     if( result)
-                     {
-                        read( value);
-                     }
-
+                     read( value);
                      end( name);
 
-                     return result;
+                     return true;
                   }
 
                private:
@@ -136,6 +134,7 @@ namespace casual
 
                void operator() ( std::ostream& xml) const;
                void operator() ( std::string& xml) const;
+               void operator() ( platform::binary::type& xml) const;
 
 
             private:

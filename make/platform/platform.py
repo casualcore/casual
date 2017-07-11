@@ -22,7 +22,6 @@ class Platform:
     
     def header_dependency(self, sourcefile, objectfiles, dependencyfile): pass
     def compile(self, sourcefile, objectfile, directive): pass
-    def cross_compile(self, sourcefile, objectfile, directive): pass
     
     def link_generic(self, linker, output, objectfiles, libs, directive, extraDirective): pass
     def link_library(self, output, objectfiles, libs, directive): pass

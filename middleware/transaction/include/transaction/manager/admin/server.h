@@ -12,12 +12,31 @@ namespace casual
    {
       class State;
 
-      namespace admin
+      namespace manager
       {
+         namespace admin
+         {
+            namespace service
+            {
+               namespace name
+               {
+                  constexpr auto state() { return ".casual/transaction/state";}
 
-         common::server::Arguments services( State& state);
+                  namespace update
+                  {
+                     constexpr auto instances() { return ".casual/transaction/update/instances";}
+                  } // update
 
 
+
+
+
+               } // name
+            } // service
+
+            common::server::Arguments services( State& state);
+
+         } // manager
       } // admin
    } // transaction
 } // casual

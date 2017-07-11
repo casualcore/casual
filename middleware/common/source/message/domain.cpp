@@ -14,23 +14,35 @@ namespace casual
          {
             namespace scale
             {
+               /*
+
+               std::ostream& operator << ( std::ostream& out, const Executable::Scale& value)
+               {
+                  return out << "{ id: " << value.id
+                        << ", instances: " << value.instances
+                        << '}';
+               }
 
                std::ostream& operator << ( std::ostream& out, const Executable& value)
                {
-                  return out << "{ executables: " << range::make( value.executables)
+                  return out << "{ servers: " << range::make( value.servers)
+                        << ", executables: " << range::make( value.executables)
                         << '}';
                }
+               */
 
             } // scale
             namespace process
             {
-               namespace termination
+               namespace connect
                {
-                  std::ostream& operator << ( std::ostream& out, const Event& value)
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
                   {
-                     return out << "{ death: " << value.death << '}';
+                     return out << "{ identification: " << value.identification
+                           << ", process: " << value.process
+                           << '}';
                   }
-               } // termination
+               } // connect
 
                namespace lookup
                {
@@ -51,102 +63,27 @@ namespace casual
 
                } // lookup
 
-            } // process
-
-            namespace configuration
-            {
-               namespace transaction
+               namespace prepare
                {
-                  std::ostream& operator << ( std::ostream& out, const Resource& value)
+                  namespace shutdown
                   {
-                     return out << "{ id: " << value.id
-                           << ", key: " << value.key
-                           << ", openinfo: " << value.openinfo
-                           << ", closeinfo: " << value.closeinfo
-                           << ", instances: " << value.instances
-                           << '}';
-                  }
-
-                  namespace resource
-                  {
+                     std::ostream& operator << ( std::ostream& out, const Request& value)
+                     {
+                        return out << "{ process: " << value.process
+                              << ", processes: " << range::make( value.processes)
+                              << '}';
+                     }
 
                      std::ostream& operator << ( std::ostream& out, const Reply& value)
                      {
                         return out << "{ process: " << value.process
-                              << ", resources: " << range::make( value.resources)
+                              << ", processes: " << range::make( value.processes)
                               << '}';
                      }
-                  } // resource
+                  } // shutdown
+               } // prepare
 
-               } // transaction
-
-               namespace gateway
-               {
-
-                  std::ostream& operator << ( std::ostream& out, const Listener& value)
-                  {
-                     return out << "{ adress: " << value.address
-                           << '}';
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, Connection::Type value)
-                  {
-                     switch( value)
-                     {
-                        case Connection::Type::ipc: return out << "ipc";
-                        case Connection::Type::tcp: return out << "tcp";
-                        default: return out << "unknown";
-                     }
-
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, const Connection& value)
-                  {
-                     return out << "{ name: " << value.name
-                           << ", address: " << value.address
-                           << ", type: " << value.type
-                           << ", restart: " << value.restart
-                           << ", services: " << range::make( value.services)
-                           << '}';
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, const Reply& value)
-                  {
-                     return out << "{ listeners: " << range::make( value.listeners)
-                           << ", connections: " << range::make( value.connections)
-                           << '}';
-                  }
-               } // gateway
-
-               namespace queue
-               {
-                  std::ostream& operator << ( std::ostream& out, const Queue& value)
-                  {
-                     return out << "{ name: " << value.name
-                           << ", retries: " << value.retries
-                           //<< ", note: " << value.note
-                           << '}';
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, const Group& value)
-                  {
-                     return out << "{ name: " << value.name
-                           << ", queuebase: " << value.queuebase
-                           //<< ", note: " << value.note
-                           << ", queues: " << range::make( value.queues)
-                           << '}';
-                  }
-
-                  std::ostream& operator << ( std::ostream& out, const Reply& value)
-                  {
-                     return out << "{ groups: " << range::make( value.groups)
-                           << '}';
-                  }
-
-               } // queue
-
-            } // configuration
-
+            } // process
 
          } // domain
 

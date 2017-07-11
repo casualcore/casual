@@ -6,7 +6,6 @@
 #define ARCHIVE_JSON_H_
 
 
-#include "sf/reader_policy.h"
 #include "sf/archive/basic.h"
 #include "sf/platform.h"
 
@@ -42,6 +41,7 @@ namespace casual
 
                const rapidjson::Document& operator() ( std::istream& stream);
                const rapidjson::Document& operator() ( const std::string& json);
+               const rapidjson::Document& operator() ( const platform::binary::type& json);
                const rapidjson::Document& operator() ( const char* json, std::size_t size);
                const rapidjson::Document& operator() ( const char* json);
 
@@ -73,9 +73,7 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* name)
                   {
-                     const bool result = start( name);
-
-                     if( result)
+                     if( start( name))
                      {
                         if( m_stack.back()->IsNull())
                         {
@@ -89,11 +87,12 @@ namespace casual
                         {
                            read( value);
                         }
+                        end( name);
+
+                        return true;
                      }
 
-                     end( name);
-
-                     return result;
+                     return false;
                   }
 
                private:
@@ -109,7 +108,7 @@ namespace casual
                   void read( double& value) const;
                   void read( std::string& value) const;
                   void read( char& value) const;
-                  void read( platform::binary_type& value) const;
+                  void read( platform::binary::type& value) const;
 
                private:
 
@@ -128,6 +127,7 @@ namespace casual
                rapidjson::Document& operator() () noexcept;
 
                void operator() ( std::ostream& json) const;
+               void operator() ( platform::binary::type& json) const;
                void operator() ( std::string& json) const;
 
 
@@ -176,10 +176,7 @@ namespace casual
                   void write( const float value);
                   void write( const double value);
                   void write( const std::string& value);
-                  void write( const platform::binary_type& value);
-
-
-               private:
+                  void write( const platform::binary::type& value);
 
                   rapidjson::Document::AllocatorType& m_allocator;
                   std::vector< rapidjson::Value*> m_stack;

@@ -10,7 +10,6 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
-#include "common/trace.h"
 
 
 namespace casual
@@ -167,7 +166,7 @@ namespace casual
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
             //
-            // Talk to queue-broker to get configuration
+            // Talk to queue-manager to get configuration
             //
 
 
@@ -175,18 +174,7 @@ namespace casual
                common::message::queue::connect::Request request;
                request.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), request);
-            }
-
-            //
-            // Make sure we'll get notify when processes dies
-            // TODO: we could wait until we know there's a blocking dequeue
-            //
-            {
-               common::message::domain::process::termination::Registration registration;
-               registration.process = common::process::handle();
-
-               common::communication::ipc::blocking::send( common::communication::ipc::domain::manager::device(), registration);
+               common::communication::ipc::blocking::send( common::communication::ipc::queue::manager::device(), request);
             }
 
             {
@@ -224,21 +212,21 @@ namespace casual
 
 
                //
-               // Send all our queues to queue-broker
+               // Send all our queues to queue-manager
                //
                {
                   common::message::queue::Information information;
                   information.process = common::process::handle();
                   information.queues = m_state.queuebase.queues();
 
-                  common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+                  common::communication::ipc::blocking::send( common::communication::ipc::queue::manager::device(), information);
                }
             }
          }
 
          Server::~Server()
          {
-            common::trace::Scope trace{ "queue::server::Server dtor"};
+            Trace trace{ "queue::server::Server dtor"};
 
             try
             {

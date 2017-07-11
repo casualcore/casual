@@ -4,10 +4,10 @@
 
 #include "common/mockup/rm.h"
 #include "common/mockup/log.h"
+#include "common/arguments.h"
 
 #include "common/transaction/id.h"
 #include "common/transaction/transaction.h"
-#include "common/internal/log.h"
 #include "common/flag.h"
 
 #include "xa.h"
@@ -24,14 +24,27 @@ namespace casual
             namespace
             {
 
-               struct Transactions
+
+               struct State
                {
-                  transaction::ID current;
-                  std::vector< transaction::ID> all;
+                  struct Transactions
+                  {
+                     transaction::ID current;
+                     std::vector< transaction::ID> all;
+
+                  } transactions;
+
+                  int xa_open_return = XA_OK;
+                  int xa_close_return = XA_OK;
+                  int xa_start_return = XA_OK;
+                  int xa_end_return = XA_OK;
+                  int xa_prepare_return = XA_OK;
+                  int xa_commit_return = XA_OK;
+                  int xa_rollback_return = XA_OK;
 
                };
 
-               std::map< int, Transactions> rms;
+               std::map< int, State> state;
 
 
                struct Active
@@ -46,63 +59,86 @@ namespace casual
             } // <unnamed>
          } // local
 
-         int xa_open_entry( const char* openinfo, int rmid, long flags)
+         int xa_open_entry( const char* c_openinfo, int rmid, long flags)
          {
-            auto& transactions = local::rms[ rmid];
+            auto& state = local::state[ rmid];
 
-            if( ! transactions.all.empty())
+            std::string openinfo( c_openinfo);
+
+            try
             {
-               log::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
+               Arguments arguments{{
+                  argument::directive( { "--open"}, "", state.xa_open_return),
+                  argument::directive( { "--close"}, "", state.xa_close_return),
+                  argument::directive( { "--start"}, "", state.xa_start_return),
+                  argument::directive( { "--end"}, "", state.xa_end_return),
+                  argument::directive( { "--prepare"}, "", state.xa_prepare_return),
+                  argument::directive( { "--commit"}, "", state.xa_commit_return),
+                  argument::directive( { "--rollback"}, "", state.xa_rollback_return),
+               }};
+
+               arguments.parse( common::string::split( openinfo));
+            }
+            catch( ...)
+            {
+               log << "failed to parse mockup openinfo: " << openinfo << '\n';
+               error::handler();
+            }
+
+
+            if( ! state.transactions.all.empty())
+            {
+               log::category::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( state.transactions.all) << std::endl;
                return XAER_PROTO;
             }
 
             log << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
-            return XA_OK;
+            return state.xa_open_return;
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
          {
-            auto& transactions = local::rms[ rmid];
+            auto& state = local::state[ rmid];
 
-            if( ! transactions.all.empty())
+            if( ! state.transactions.all.empty())
             {
-               log::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( transactions.all) << std::endl;
+               log::category::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( state.transactions.all) << std::endl;
                return XAER_PROTO;
             }
             log << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << std::endl;
 
-            return XA_OK;
+            return state.xa_close_return;
          }
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID trid{ *xid};
             log << "xa_start_entry - trid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
 
-            auto& transactions = local::rms[ rmid];
+            auto& state = local::state[ rmid];
 
-            if( transactions.current)
+            if( state.transactions.current)
             {
-               log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << transactions.current << std::endl;
+               log::category::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << state.transactions.current << std::endl;
                return XAER_PROTO;
             }
 
-            auto found = range::find( transactions.all, trid);
+            auto found = range::find( state.transactions.all, trid);
 
             if( ! found)
             {
-               transactions.all.emplace_back( trid);
+               state.transactions.all.emplace_back( trid);
             }
             else
             {
                if( ! common::flag< TMRESUME>( flags))
                {
-                  log::error << error::xa::error( XAER_PROTO) << " xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << transactions.current << std::endl;
+                  log::category::error << error::xa::error( XAER_PROTO) << " xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << state.transactions.current << std::endl;
                   return XAER_PROTO;
                }
             }
 
-            transactions.current = trid;
+            state.transactions.current = trid;
 
-            return XA_OK;
+            return state.xa_start_return;
          }
 
          int xa_end_entry( XID* xid, int rmid, long flags)
@@ -110,40 +146,46 @@ namespace casual
             transaction::ID trid{ *xid};
             log << "xa_end_entry - xid: " << trid << " rmid: " << rmid << " flags: " << flags << std::endl;
 
-            auto& transactions = local::rms[ rmid];
+            auto& state = local::state[ rmid];
 
-            if( transactions.current != trid)
+            if( state.transactions.current != trid)
             {
-               log::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not current with RM" << std::endl;
+               log::category::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not current with RM" << std::endl;
                return XAER_INVAL;
             }
 
-            transactions.current = transaction::ID{};
+            state.transactions.current = transaction::ID{};
 
             if( ! common::flag< TMSUSPEND>( flags))
             {
-               auto found = range::find( transactions.all, trid);
+               auto found = range::find( state.transactions.all, trid);
 
                if( found)
                {
-                  transactions.all.erase( std::begin( found));
+                  state.transactions.all.erase( std::begin( found));
                }
             }
-            return XA_OK;
+            return state.xa_end_return;
          }
 
          int xa_rollback_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
             log << "xa_rollback_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
-            return XA_OK;
+
+            auto& state = local::state[ rmid];
+
+            return state.xa_rollback_return;
          }
 
          int xa_prepare_entry( XID* xid, int rmid, long flags)
          {
             transaction::ID transaction{ *xid};
             log << "xa_prepare_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
-            return XA_OK;
+
+            auto& state = local::state[ rmid];
+
+            return state.xa_prepare_return;
          }
 
          int xa_commit_entry( XID* xid, int rmid, long flags)
@@ -151,7 +193,22 @@ namespace casual
             transaction::ID transaction{ *xid};
             log << "xa_commit_entry - xid: " << transaction << " rmid: " << rmid << " flags: " << flags << std::endl;
 
-            return XA_OK;
+            auto& state = local::state[ rmid];
+
+            if( state.xa_commit_return == XA_OK)
+            {
+               if( state.transactions.current == transaction)
+                  state.transactions.current = transaction::ID{};
+
+               auto found = range::find( state.transactions.all, transaction);
+
+               if( found)
+               {
+                  state.transactions.all.erase( std::begin( found));
+               }
+            }
+
+            return state.xa_commit_return;
          }
 
          int xa_recover_entry( XID* xid, long count, int rmid, long flags)
@@ -159,7 +216,8 @@ namespace casual
             transaction::ID transaction{ *xid};
             log << "xa_recover_entry - xid: " << transaction << " count: " << count << " rmid: " << rmid << " flags: " << flags << std::endl;
 
-            return XA_OK;
+
+            return 0;
          }
 
          int xa_forget_entry( XID* xid, int rmid, long flags)

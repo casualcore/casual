@@ -9,6 +9,7 @@
 #include "common/exception.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
+#include "common/memory.h"
 
 #include <cstdio>
 
@@ -35,11 +36,11 @@ namespace casual
             {
                if( std::remove( path.c_str()))
                {
-                  log::error << "failed to remove file: " << path << '\n';
+                  log::category::error << "failed to remove file: " << path << '\n';
                }
                else
                {
-                  log::internal::debug << "removed file: " << path << '\n';
+                  log::debug << "removed file: " << path << '\n';
                }
             }
          }
@@ -51,7 +52,7 @@ namespace casual
                throw exception::invalid::File{ "failed to move file", CASUAL_NIP( source), CASUAL_NIP( destination), CASUAL_NIP( error::string())};
             }
 
-            log::internal::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
+            log::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
          }
 
 
@@ -114,12 +115,12 @@ namespace casual
          {
             std::string result;
 
-            DIR* directory = opendir( path.c_str());
+            auto directory = memory::guard( opendir( path.c_str()), &closedir);
 
             if( directory)
             {
                struct dirent* element = nullptr;
-               while( ( element = readdir( directory)) != nullptr)
+               while( ( element = readdir( directory.get())) != nullptr)
                {
 
                   if( std::regex_match( element->d_name, search))
@@ -133,11 +134,19 @@ namespace casual
                      break;
                   }
                }
-
-               closedir( directory);
             }
-
             return result;
+         }
+
+         std::string absolute( const std::string& path)
+         {
+            auto absolut = memory::guard( realpath( path.c_str(), nullptr), &free);
+
+            if( absolut)
+            {
+               return absolut.get();
+            }
+            throw exception::invalid::File{ "invalid path", error::string(), CASUAL_NIP( path)};
          }
 
          namespace name
@@ -186,6 +195,22 @@ namespace casual
                }
 
             } // without
+
+            std::string link( const std::string& path)
+            {
+               std::vector< char> link_name( PATH_MAX);
+
+               if( ::readlink( path.c_str(), link_name.data(), link_name.size()) == -1)
+               {
+                  throw std::system_error{ errno, std::system_category(), "file::name::link"};
+               }
+
+               if( link_name.data())
+               {
+                  return link_name.data();
+               }
+               return {};
+            }
 
          } // name
 
@@ -294,6 +319,10 @@ namespace casual
 
          } // name
 
+         bool exists( const std::string& path)
+         {
+            return memory::guard( opendir( path.c_str()), &closedir).get() != nullptr;
+         }
 
          bool create( const std::string& path)
          {
@@ -310,7 +339,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::error << "failed to create " << path << " - " << error::string() << std::endl;
+               log::category::error << "failed to create " << path << " - " << error::string() << std::endl;
                return false;
             }
 
@@ -321,7 +350,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::error << "failed to remove " << path << " - " << error::string() << std::endl;
+               log::category::error << "failed to remove " << path << " - " << error::string() << std::endl;
                return false;
             }
             return true;

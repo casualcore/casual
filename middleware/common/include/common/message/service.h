@@ -6,11 +6,13 @@
 #define CASUAL_COMMON_MESSAGE_SERVICE_H_
 
 #include "common/message/type.h"
+#include "common/message/buffer.h"
 
 #include "common/transaction/id.h"
 #include "common/service/type.h"
 #include "common/buffer/type.h"
 #include "common/uuid.h"
+#include "common/flag.h"
 
 #include "common/service/header.h"
 
@@ -20,29 +22,45 @@ namespace casual
    {
       namespace message
       {
-         struct Service
+         namespace service
          {
-            Service() = default;
+            struct Base
+            {
+               Base() = default;
 
-            explicit Service( std::string name, std::uint64_t type, common::service::transaction::Type transaction)
-               : name( std::move( name)), type( type), transaction( transaction)
-            {}
+               explicit Base( std::string name, std::string category, common::service::transaction::Type transaction)
+                  : name( std::move( name)), category( std::move( category)), transaction( transaction)
+               {}
 
-            Service( std::string name)
-               : Service( std::move( name), 0, common::service::transaction::Type::automatic)
-            {}
+               Base( std::string name)
+                  : name( std::move( name))
+               {}
 
-            std::string name;
-            std::uint64_t type = common::service::Type::xatmi;
+               std::string name;
+               std::string category;
+               common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+               {
+                  archive & name;
+                  archive & category;
+                  archive & transaction;
+               })
+            };
+            static_assert( traits::is_movable< Base>::value, "not movable");
+
+         } // service
+
+         struct Service : service::Base
+         {
+            using service::Base::Base;
+
             std::chrono::microseconds timeout = std::chrono::microseconds::zero();
-            common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
-               archive & name;
-               archive & type;
+               service::Base::marshal( archive);
                archive & timeout;
-               archive & transaction;
             })
 
             friend std::ostream& operator << ( std::ostream& out, const Service& value);
@@ -61,21 +79,32 @@ namespace casual
                {
                   using message::Service::Service;
 
-                  std::vector< platform::ipc::id::type> traffic_monitors;
+                  std::vector< platform::ipc::id::type> event_subscribers;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      message::Service::marshal( archive);
-                     archive & traffic_monitors;
+                     archive & event_subscribers;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const call::Service& value);
                };
                static_assert( traits::is_movable< Service>::value, "not movable");
             } // call
 
             struct Transaction
             {
+               enum class State : char
+               {
+                  absent,
+                  active = absent,
+                  rollback,
+                  timeout,
+                  error,
+               };
+
                common::transaction::ID trid;
-               std::int64_t state = 0;
+               State state = State::active;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -83,6 +112,7 @@ namespace casual
                   archive & state;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, State value);
                friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
             static_assert( traits::is_movable< Transaction>::value, "not movable");
@@ -92,7 +122,7 @@ namespace casual
                //!
                //! Represent service information in a 'advertise context'
                //!
-               using Service = message::Service;
+               using Service = message::service::Base;
 
                static_assert( traits::is_movable< Service>::value, "not movable");
 
@@ -181,6 +211,8 @@ namespace casual
 
                   State state = State::idle;
 
+                  inline bool busy() const { return state == State::busy;}
+
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
@@ -197,26 +229,32 @@ namespace casual
 
             namespace call
             {
-
-               struct base_call : basic_message< Type::service_call>
+               namespace request
                {
+                  enum class Flag : long
+                  {
+                     no_transaction = TPNOTRAN,
+                     no_reply = TPNOREPLY,
+                     no_time = TPNOTIME,
+                  };
+                  using Flags = common::Flags< Flag>;
 
-                  platform::descriptor_type descriptor = 0;
+               } // request
+               struct common_request
+               {
                   common::process::Handle process;
 
                   Service service;
                   std::string parent;
 
                   common::transaction::ID trid;
-                  std::int64_t flags = 0;
+                  request::Flags flags;
 
                   std::vector< common::service::header::Field> header;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     base_type::marshal( archive);
-                     archive & descriptor;
                      archive & process;
                      archive & service;
                      archive & parent;
@@ -225,80 +263,57 @@ namespace casual
                      archive & header;
                   })
 
-                  friend std::ostream& operator << ( std::ostream& out, const base_call& value);
+                  friend std::ostream& operator << ( std::ostream& out, const common_request& value);
                };
-               static_assert( traits::is_movable< base_call>::value, "not movable");
 
-               namespace callee
+               using base_request = type_wrapper< common_request, Type::service_call>;
+               struct basic_request : base_request
                {
+                  request::Flags flags;
 
-                  //!
-                  //! Represents a service call. via tp(a)call, from the callee's perspective
-                  //!
-                  struct Request : public base_call
-                  {
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                     base_request::marshal( archive);
+                     archive & flags;
+                  )
+               };
 
-                     buffer::Payload buffer;
-
-                     CASUAL_CONST_CORRECT_MARSHAL(
-                     {
-                        base_call::marshal( archive);
-                        archive & buffer;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
-                  };
-                  static_assert( traits::is_movable< Request>::value, "not movable");
-
-               } // callee
 
                namespace caller
                {
                   //!
                   //! Represents a service call. via tp(a)call, from the callers perspective
                   //!
-                  struct Request : public base_call
-                  {
+                  using Request = message::buffer::caller::basic_request< call::basic_request>;
 
-                     Request( buffer::payload::Send&& buffer)
-                           : buffer( std::move( buffer))
-                     {
-                     }
+                  static_assert( traits::is_movable< Request>::value, "not movable");
+               } // caller
 
+               namespace callee
+               {
+                  //!
+                  //! Represents a service call. via tp(a)call, from the callee's perspective
+                  //!
+                  using Request = message::buffer::callee::basic_request< call::basic_request>;
 
-                     buffer::payload::Send buffer;
-
-                     //
-                     // Only for output
-                     //
-                     template< typename A>
-                     void marshal( A& archive) const
-                     {
-                        base_call::marshal( archive);
-                        archive << buffer;
-                     }
-                  };
                   static_assert( traits::is_movable< Request>::value, "not movable");
 
-               }
+               } // callee
+
 
                //!
                //! Represent service reply.
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-
-                  int descriptor = 0;
-                  int error = 0;
+                  int status = 0;
                   long code = 0;
                   Transaction transaction;
-                  buffer::Payload buffer;
+                  common::buffer::Payload buffer;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & descriptor;
-                     archive & error;
+                     archive & status;
                      archive & code;
                      archive & transaction;
                      archive & buffer;
@@ -314,20 +329,53 @@ namespace casual
                //!
                struct ACK : basic_message< Type::service_acknowledge>
                {
-
-                  std::string service;
                   common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & service;
                      archive & process;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const ACK& message);
                };
                static_assert( traits::is_movable< ACK>::value, "not movable");
 
             } // call
+
+            namespace remote
+            {
+               struct Metric : basic_message< Type::service_remote_metrics>
+               {
+                  struct Service
+                  {
+                     Service() = default;
+                     Service( std::string name, std::chrono::microseconds duration)
+                      : name( std::move( name)), duration( std::move( duration)) {}
+
+                     std::string name;
+                     std::chrono::microseconds duration;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & name;
+                        archive & duration;
+                     })
+                  };
+
+                  common::process::Handle process;
+                  std::vector< Service> services;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & process;
+                     archive & services;
+                  })
+
+               };
+               static_assert( traits::is_movable< Metric>::value, "not movable");
+            } // remote
 
          } // service
 

@@ -6,7 +6,6 @@
 #include "gateway/common.h"
 
 #include "common/algorithm.h"
-#include "common/trace.h"
 #include "common/environment.h"
 
 namespace casual
@@ -54,9 +53,17 @@ namespace casual
                struct Listener
                {
 
-                  communication::tcp::Address operator () ( const common::message::domain::configuration::gateway::Listener& value) const
+
+
+                  manager::Listener operator () ( const common::message::domain::configuration::gateway::Listener& value) const
                   {
-                     return { value.address};
+                     manager::Listener::Limit limit;
+                     {
+                        limit.messages = value.limit.messages;
+                        limit.size = value.limit.size;
+                     }
+
+                     return { value.address, limit};
                   }
 
                };
@@ -104,14 +111,14 @@ namespace casual
             } // <unnamed>
          } // local
 
-         manager::State state( const common::message::domain::configuration::gateway::Reply& configuration)
+         manager::State state( const common::message::domain::configuration::Domain& configuration)
          {
             Trace trace{ "gateway::transform::state"};
 
             manager::State state;
 
-            range::transform( configuration.listeners, state.listeners, local::Listener{});
-            range::transform( configuration.connections, state.connections.outbound, local::Connection{});
+            range::transform( configuration.gateway.listeners, state.listeners, local::Listener{});
+            range::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
 
             //
             // Define the order, hence the priority

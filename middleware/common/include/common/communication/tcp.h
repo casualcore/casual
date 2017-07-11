@@ -25,6 +25,8 @@ namespace casual
       {
          namespace tcp
          {
+            class Socket;
+
 
             struct Address
             {
@@ -61,11 +63,13 @@ namespace casual
                   //! @return The address to which the socket is bound to on local host
                   //!
                   Address host( descriptor_type descriptor);
+                  Address host( const Socket& socket);
 
                   //!
                   //! @return The address of the peer connected to the socket
                   //!
                   Address peer( descriptor_type descriptor);
+                  Address peer( const Socket& socket);
 
                } // address
 
@@ -76,6 +80,12 @@ namespace casual
             public:
 
                using descriptor_type = socket::descriptor_type;
+
+               enum class Option : int
+               {
+                  reuse_address = SO_REUSEADDR,
+                  linger = SO_LINGER,
+               };
 
                Socket() noexcept;
                ~Socket() noexcept;
@@ -97,12 +107,23 @@ namespace casual
 
                descriptor_type descriptor() const noexcept;
 
+               void linger( std::chrono::seconds time);
+
+
+               template< typename V>
+               void option( Option option, V&& value)
+               {
+                  return Socket::option( cast::underlying( option), &value, sizeof( V));
+               }
+
                friend Socket adopt( socket::descriptor_type descriptor);
                friend std::ostream& operator << ( std::ostream& out, const Socket& value);
 
 
             private:
                Socket( descriptor_type descriptor) noexcept;
+
+               void option( int optname, const void *optval, std::size_t optlen);
 
                descriptor_type m_descriptor = -1;
                move::Moved m_moved;
@@ -170,8 +191,6 @@ namespace casual
                   static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size + type_size;}
                };
 
-               using Transport = communication::message::basic_transport< Policy>;
-
             } // message
 
 
@@ -182,18 +201,22 @@ namespace casual
                   non_blocking = platform::flag::value( platform::flag::tcp::no_wait)
                };
 
-               bool send( const Socket& socket, const message::Transport& transport, common::Flags< Flag> flags);
-               bool receive( const Socket& socket, message::Transport& transport, common::Flags< Flag> flags);
+               Uuid send( const Socket& socket, const communication::message::Complete& complete, common::Flags< Flag> flags);
+               communication::message::Complete receive( const Socket& socket, common::Flags< Flag> flags);
 
             } // native
 
 
             namespace policy
             {
+               using cache_type = communication::inbound::cache_type;
+               using cache_range_type =  communication::inbound::cache_range_type;
+
+
                struct basic_blocking
                {
-                  bool receive( const inbound::Connector& ipc, message::Transport& transport);
-                  bool send( const outbound::Connector& tcp, const message::Transport& transport);
+                  cache_range_type receive( const inbound::Connector& tcp, cache_type& cache);
+                  Uuid send( const outbound::Connector& tcp, const communication::message::Complete& complete);
                };
 
                using Blocking = basic_blocking;
@@ -202,8 +225,8 @@ namespace casual
                {
                   struct basic_blocking
                   {
-                     bool receive( const inbound::Connector& ipc, message::Transport& transport);
-                     bool send( const outbound::Connector& tcp, const message::Transport& transport);
+                     cache_range_type receive( const inbound::Connector& tcp, cache_type& cache);
+                     Uuid send( const outbound::Connector& tcp, const communication::message::Complete& complete);
                   };
 
                   using Blocking = basic_blocking;
@@ -214,7 +237,6 @@ namespace casual
             struct base_connector
             {
                using handle_type = tcp::Socket;
-               using transport_type = tcp::message::Transport;
                using blocking_policy = policy::Blocking;
                using non_blocking_policy = policy::non::Blocking;
 

@@ -45,6 +45,7 @@ namespace casual
 
                const tree& operator() ( std::istream& stream);
                const tree& operator() ( const std::string& ini);
+               const tree& operator() ( const platform::binary::type& ini);
                const tree& operator() ( const char* ini, std::size_t size);
 
             private:
@@ -73,15 +74,12 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char* const name)
                   {
-                     if( value_start( name))
-                     {
-                        read( value);
-                     }
-                     else
+                     if( ! value_start( name))
                      {
                         return false;
                      }
 
+                     read( value);
                      value_end( name);
 
                      return true;
@@ -125,6 +123,7 @@ namespace casual
 
                void operator() ( std::ostream& ini) const;
                void operator() ( std::string& ini) const;
+               void operator() ( platform::binary::type& ini) const;
 
             private:
 

@@ -31,7 +31,7 @@ namespace casual
       Lookup::Lookup( std::string queue)
          : m_name( std::move( queue)), m_correlation{
             common::communication::ipc::blocking::send(
-                  common::communication::ipc::queue::broker::optional::device(),
+                  common::communication::ipc::queue::manager::optional::device(),
                   local::request( m_name))}
       {
       }

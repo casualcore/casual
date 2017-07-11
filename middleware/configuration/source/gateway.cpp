@@ -2,9 +2,9 @@
 //! casual 
 //!
 
-#include "config/gateway.h"
-#include "config/file.h"
-#include "config/common.h"
+#include "configuration/gateway.h"
+#include "configuration/common.h"
+#include "configuration/file.h"
 
 #include "common/algorithm.h"
 
@@ -15,7 +15,7 @@
 namespace casual
 {
    using namespace common;
-   namespace config
+   namespace configuration
    {
       namespace gateway
       {
@@ -27,52 +27,21 @@ namespace casual
 
                namespace complement
                {
-                  struct Default
+                  template< typename R, typename V>
+                  void default_values( R& range, V&& value)
                   {
-                     Default( const gateway::Default& casual_default)
-                           : m_default( casual_default)
-                     {
-                     }
+                     for( auto& element : range) { element += value;}
+                  }
 
-                     void operator ()( gateway::Connection& connection) const
-                     {
-                        assign_if_empty( connection.address, m_default.connection.address);
-                        assign_if_empty( connection.name, m_default.connection.name);
-                        assign_if_empty( connection.restart, m_default.connection.restart);
-                        assign_if_empty( connection.type, m_default.connection.type);
-                     }
-
-                     void operator ()( gateway::Listener& listener) const
-                     {
-                        assign_if_empty( listener.address, m_default.listener.address);
-                     }
-
-                     void operator ()( gateway::Gateway& gateway) const
-                     {
-                        common::range::for_each( gateway.listeners, *this);
-                        common::range::for_each( gateway.connections, *this);
-                     }
-
-                  private:
-
-                     inline void assign_if_empty( std::string& value, const std::string& def) const
-                     {
-                        if( value.empty() || value == "~")
-                           value = def;
-                     }
-
-                     const gateway::Default& m_default;
-                  };
-
-                  inline void default_values( gateway::Gateway& gateway)
+                  inline void default_values( gateway::Manager& gateway)
                   {
-                     Default defaults( gateway.casual_default);
-                     defaults( gateway);
+                     default_values( gateway.listeners, gateway.manager_default.listener);
+                     default_values( gateway.connections, gateway.manager_default.connection);
                   }
 
                } // complement
 
-               void validate( const gateway::Gateway& value)
+               void validate( const gateway::Manager& value)
                {
 
                }
@@ -97,7 +66,7 @@ namespace casual
                }
 
                template< typename G>
-               Gateway& append( Gateway& lhs, G&& rhs)
+               Manager& append( Manager& lhs, G&& rhs)
                {
                   local::replace_or_add( lhs.listeners, std::move( rhs.listeners));
                   local::replace_or_add( lhs.connections, std::move( rhs.connections));
@@ -114,30 +83,54 @@ namespace casual
             return lhs.address == rhs.address;
          }
 
+         Listener& operator += ( Listener& lhs, const listener::Default& rhs)
+         {
+            lhs.limit = common::coalesce( lhs.limit, rhs.limit);
+            return lhs;
+         }
+
          bool operator == ( const Connection& lhs, const Connection& rhs)
          {
             return lhs.address == rhs.address;
          }
 
+         Connection& operator += ( Connection& lhs, const connection::Default& rhs)
+         {
+            lhs.restart = common::coalesce( lhs.restart, rhs.restart);
+            lhs.type = common::coalesce( lhs.type, rhs.type);
+            lhs.address = common::coalesce( lhs.address, rhs.address);
 
-         Gateway& Gateway::operator += ( const Gateway& rhs)
+            return lhs;
+         }
+
+         namespace manager
+         {
+            Default::Default()
+            {
+               connection.type = std::string( "tcp");
+               connection.restart = true;
+            }
+         } // manager
+
+
+         Manager& Manager::operator += ( const Manager& rhs)
          {
             return local::append( *this, rhs);
          }
 
-         Gateway& Gateway::operator += ( Gateway&& rhs)
+         Manager& Manager::operator += ( Manager&& rhs)
          {
             return local::append( *this, std::move( rhs));
          }
 
-         Gateway operator + ( const Gateway& lhs, const Gateway& rhs)
+         Manager operator + ( const Manager& lhs, const Manager& rhs)
          {
             auto result = lhs;
             result += rhs;
             return result;
          }
 
-         void Gateway::finalize()
+         void Manager::finalize()
          {
             //
             // Complement with default values
@@ -150,65 +143,6 @@ namespace casual
             local::validate( *this);
          }
 
-         Gateway get( const std::string& file)
-         {
-            Trace trace{ "config::gateway::get"};
-
-            //
-            // Create the reader and deserialize configuration
-            //
-            auto reader = sf::archive::reader::from::file( file);
-
-            Gateway gateway;
-            reader >> CASUAL_MAKE_NVP( gateway);
-
-            gateway.finalize();
-
-            log << CASUAL_MAKE_NVP( gateway);
-
-            return gateway;
-
-         }
-
-         Gateway get()
-         {
-            return get( config::file::gateway());
-         }
-
-         namespace transform
-         {
-            common::message::domain::configuration::gateway::Reply gateway( const Gateway& gateway)
-            {
-               common::message::domain::configuration::gateway::Reply result;
-
-
-               range::transform( gateway.listeners, result.listeners, []( const config::gateway::Listener& l){
-                  common::message::domain::configuration::gateway::Listener result;
-
-                  result.address = l.address;
-
-                  return result;
-               });
-
-
-               range::transform( gateway.connections, result.connections, []( const config::gateway::Connection& c){
-                  using result_type = common::message::domain::configuration::gateway::Connection;
-                  result_type result;
-
-                  result.name = c.name;
-                  result.address = c.address;
-                  result.type = c.type == "ipc" ?  result_type::Type::ipc : result_type::Type::tcp;
-                  result.restart = c.restart == "true" ? true : false;
-                  result.services = c.services;
-
-                  return result;
-               });
-
-               return result;
-
-            }
-
-         } // transform
 
       } // gateway
    } // config

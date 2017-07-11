@@ -13,9 +13,15 @@ namespace casual
    {
       namespace mockup
       {
+
          namespace file
          {
-            common::file::scoped::Path temporary( const std::string& extension, const std::string& content);
+            namespace temporary
+            {
+               common::file::scoped::Path content( const std::string& extension, const std::string& content);
+
+               common::file::scoped::Path name( const std::string& extension);
+            } // temporary
          } // file
 
       } // mockup

@@ -34,55 +34,47 @@ namespace casual
 
                template< typename M>
                Message( M&& message, targets_type targets, Targets task)
-                  : targets{ std::move( targets)}, complete{ marshal::complete( std::forward< M>( message))}, task{ task}
+                  : Message{ marshal::complete( std::forward< M>( message)), std::move( targets), task}
                {
                }
 
                template< typename M>
                Message( M&& message, targets_type targets)
-                  : Message( std::forward< M>( message), std::move( targets), Targets::all)
+                  : Message{ marshal::complete( std::forward< M>( message)), std::move( targets), Targets::all}
                {
                }
 
                template< typename M>
                Message( M&& message, target_type target)
-                  : Message( std::forward< M>( message), { target}, Targets::first)
+                  : Message{ marshal::complete( std::forward< M>( message)), { target}, Targets::first}
                {
                }
 
-               Message( Message&&) = default;
-               Message& operator = ( Message&&) = default;
+               Message( communication::message::Complete&& complete, targets_type&& targets, Targets task);
+               Message( communication::message::Complete&& complete, targets_type&& targets);
 
-               bool sent() const
-               {
-                  return targets.empty();
-               }
+               Message( Message&&);
+               Message& operator = ( Message&&);
 
-               friend std::ostream& operator << ( std::ostream& out, const Message& value)
-               {
-                  return out << "{ targets: " << range::make( value.targets) << ", complete: " << value.complete << "}";
-               }
+               bool sent() const;
+               explicit operator bool () const;
+
+
+               friend std::ostream& operator << ( std::ostream& out, const Message& value);
 
                targets_type targets;
                communication::message::Complete complete;
                Targets task;
+
+            private:
+
             };
 
             namespace policy
             {
                struct consume_unavalibe
                {
-                  bool operator () () const
-                  {
-                     try
-                     {
-                        throw;
-                     }
-                     catch( const exception::queue::Unavailable&)
-                     {
-                        return true;
-                     }
-                  }
+                  bool operator () () const;
                };
 
             } // policy
@@ -118,6 +110,15 @@ namespace casual
 
                return message.sent();
             }
+
+            namespace non
+            {
+               namespace blocking
+               {
+                  bool send( Message& message, const communication::error::type& handler = nullptr);
+
+               } // blocking
+            } // non
 
             //!
             //! Tries to send a message to targets.

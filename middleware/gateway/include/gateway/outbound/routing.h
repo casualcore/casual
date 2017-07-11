@@ -22,18 +22,92 @@ namespace casual
    {
       namespace outbound
       {
-         struct Routing
+
+         template< typename P>
+         struct basic_routing
          {
+            using point_type = P;
+            using container_type = std::vector< point_type>;
             using lock_type = std::lock_guard< std::mutex>;
 
-            Routing();
+            basic_routing() = default;
 
-            Routing( Routing&& lhs);
-            Routing& operator = ( Routing&& lhs);
+            basic_routing( basic_routing&& rhs)
+            {
+               lock_type lock{ rhs.m_mutex};
+               m_points = std::move( rhs.m_points);
+            }
 
-            Routing( const Routing&) = delete;
-            Routing& operator = ( const Routing&) = delete;
+            basic_routing& operator = ( basic_routing&& rhs)
+            {
+               std::lock( m_mutex, rhs.m_mutex);
+               lock_type lock_this{ m_mutex, std::adopt_lock};
+               lock_type lock_rhs{ rhs.m_mutex, std::adopt_lock};
 
+               m_points = std::move( rhs.m_points);
+
+               return *this;
+            }
+
+            basic_routing( const basic_routing&) = delete;
+            basic_routing& operator = ( const basic_routing&) = delete;
+
+
+            template< typename... Args>
+            void emplace( Args&&... args) const
+            {
+               lock_type lock{ m_mutex};
+               m_points.emplace_back( std::forward< Args>( args)...);
+            }
+
+            template< typename M>
+            void add( const M& message) const
+            {
+               emplace( message.correlation, message.process, common::message::type( message));
+            }
+
+
+            point_type get( const common::Uuid& correlation) const
+            {
+               lock_type lock{ m_mutex};
+               auto found = common::range::find_if( m_points, [&]( const auto& p){
+                  return correlation == p.correlation;
+               });
+
+               if( ! found)
+               {
+                  throw common::exception::invalid::Argument{ "failed to find correlation - Routing::get", CASUAL_NIP( correlation)};
+               }
+
+               auto result = std::move( *found);
+               m_points.erase( std::begin( found));
+               return result;
+            }
+
+            //!
+            //!
+            //! @return all current routing points
+            //!
+            container_type extract() const
+            {
+               container_type result;
+
+               {
+                  lock_type lock{ m_mutex};
+                  std::swap( result, m_points);
+               }
+
+               return result;
+            }
+
+         private:
+            mutable std::mutex m_mutex;
+            mutable container_type m_points;
+
+         };
+
+         namespace routing
+         {
             struct Point
             {
                //Point();
@@ -46,27 +120,37 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Point& value);
             };
 
-            void add( const common::Uuid& correlation, common::process::Handle destination, common::message::Type type) const;
+         } // routing
 
-            template< typename M>
-            void add( M&& message) const
+         using Routing = basic_routing< routing::Point>;
+
+
+         namespace service
+         {
+            namespace routing
             {
-               add( message.correlation, message.process, common::message::type( message));
-            }
+               struct Point
+               {
+                  //Point();
+                  Point( const common::Uuid& correlation,
+                        common::process::Handle destination,
+                        std::string service,
+                        common::platform::time::point::type start);
 
-            Point get( const common::Uuid& correlation) const;
+                  common::Uuid correlation;
+                  common::process::Handle destination;
+                  std::string service;
+                  common::platform::time::point::type start;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Point& value);
+               };
+            } // routing
+
+            using Routing = basic_routing< routing::Point>;
+
+         } // service
 
 
-            //!
-            //!
-            //! @return all current routing points
-            //!
-            std::vector< Point> extract() const;
-
-         private:
-            mutable std::mutex m_mutex;
-            mutable std::vector< Point> m_points;
-         };
       } // outbound
    } // gateway
 

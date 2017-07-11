@@ -5,7 +5,13 @@
 #ifndef CASUAL_COMMON_FLAG_H_
 #define CASUAL_COMMON_FLAG_H_
 
-#include <cstdlib>
+#include "common/marshal/marshal.h"
+#include "common/exception.h"
+
+#include <initializer_list>
+#include <type_traits>
+//#include <cstdlib>
+
 
 namespace casual
 {
@@ -27,59 +33,90 @@ namespace casual
 
          using underlaying_type = typename std::underlying_type< enum_type>::type;
 
-         Flags() = default;
-         Flags( enum_type e) : m_flags{ static_cast< underlaying_type>( e)} {}
+         constexpr Flags() = default;
 
-         Flags( std::initializer_list< enum_type> enums)
+         template< typename... Enums>
+         constexpr Flags( enum_type e, Enums... enums) : Flags( bitmask( e, enums...)) {}
+
+
+
+         constexpr Flags convert( underlaying_type flags) const
          {
-            for( auto e : enums) { binary_or( e);}
+            if( flags & ~underlaying())
+            {
+               throw exception::invalid::Flags{ "invalid flags", CASUAL_NIP( flags), exception::make_nip( "limit", *this)};
+            }
+            return { flags};
          }
 
-         explicit operator bool() const noexcept
+         template< typename E2>
+         constexpr Flags convert( Flags< E2> flags) const
          {
-            return m_flags != underlaying_type{};
+            return convert( flags.underlaying());
          }
 
-         underlaying_type underlaying() const noexcept { return m_flags;}
+         constexpr bool empty() const noexcept { return m_flags == underlaying_type{};}
+
+         constexpr explicit operator bool() const noexcept { return ! empty();}
+
+         constexpr bool exist( enum_type flag) const
+         {
+            return ( m_flags & underlaying( flag)) == underlaying( flag);
+         };
 
 
-         friend Flags& operator |= ( Flags& lhs, enum_type rhs) { lhs.binary_or( rhs); return lhs;}
-         friend Flags operator | ( Flags lhs, enum_type rhs) { lhs.binary_or( rhs); return lhs;}
-         friend Flags operator | ( enum_type lhs, Flags rhs) { rhs.binary_or( rhs); return rhs;}
-
-         friend Flags& operator &= ( Flags& lhs, enum_type rhs) { lhs.binary_and( rhs); return lhs;}
-         friend Flags operator & ( Flags lhs, enum_type rhs) { lhs.binary_and( rhs); return lhs;}
-         friend Flags operator & ( enum_type lhs, Flags rhs) { rhs.binary_and( rhs); return rhs;}
+         constexpr underlaying_type underlaying() const noexcept { return m_flags;}
 
 
-         friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
-         friend bool operator == ( Flags lhs, enum_type rhs) { return lhs.m_flags == static_cast< underlaying_type>( rhs);}
-         friend bool operator == ( enum_type lhs, Flags rhs) { return rhs == lhs;}
+         constexpr friend Flags& operator |= ( Flags& lhs, Flags rhs) { lhs.m_flags |= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator | ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags | rhs.m_flags};}
+
+         constexpr friend Flags& operator &= ( Flags& lhs, Flags rhs) { lhs.m_flags &= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator & ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & rhs.m_flags};}
+
+         constexpr friend Flags& operator ^= ( Flags& lhs, Flags rhs) { lhs.m_flags ^= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator ^ ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags ^ rhs.m_flags};}
+
+         constexpr friend Flags operator ~ ( Flags lhs) { return Flags{ ~lhs.m_flags};}
+
+         constexpr friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
+         constexpr friend bool operator != ( Flags lhs, Flags rhs) { return ! ( lhs == rhs);}
+
+         constexpr friend Flags operator - ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & ~rhs.m_flags};}
+         constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) { lhs.m_flags &= ~rhs.m_flags; return lhs;}
+
 
          friend std::ostream& operator << ( std::ostream& out, Flags flags)
          {
-            return out << std::ios::hex << flags.m_flags;
+            return out << "0x" << std::hex << flags.m_flags << std::dec;
          }
+
+         CASUAL_CONST_CORRECT_MARSHAL(
+            archive & m_flags;
+         )
 
 
       private:
 
-         void binary_or( enum_type e)
+         constexpr Flags( underlaying_type bitmask) : m_flags( bitmask) {}
+
+         static constexpr underlaying_type bitmask( enum_type e) { return underlaying( e);}
+
+         template< typename... Enums>
+         static constexpr underlaying_type bitmask( enum_type e, Enums... enums)
          {
-            m_flags |= static_cast< underlaying_type>( e);
+            static_assert( traits::is_same< enum_type, Enums...>::value, "wrong enum type");
+
+            return underlaying( e) | bitmask( enums...);
          }
 
-         void binary_and( enum_type e)
-         {
-            m_flags &= static_cast< underlaying_type>( e);
-         }
+         static constexpr underlaying_type underlaying( enum_type e) { return static_cast< underlaying_type>( e);}
 
 
          underlaying_type m_flags = underlaying_type{};
       };
 
-
-	} // comon
+	} // common
 } // casual
 
 

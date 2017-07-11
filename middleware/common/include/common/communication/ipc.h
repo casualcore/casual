@@ -38,13 +38,155 @@ namespace casual
 
             namespace message
             {
-               struct Policy
+               namespace transport
                {
-                  static constexpr std::size_t message_size() { return platform::ipc::message::size;}
-                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size;}
+                  struct Header
+                  {
+                     using correalation_type = Uuid::uuid_type;
+
+                     //!
+                     //! The message correlation id
+                     //!
+                     correalation_type correlation;
+
+                     //!
+                     //! which offset this transport message represent of the complete message
+                     //!
+                     std::int64_t offset;
+
+                     //!
+                     //! Size of payload in this transport message
+                     //!
+                     std::int64_t count;
+
+                     //!
+                     //! size of the logical complete message
+                     //!
+                     std::int64_t complete_size;
+                  };
+
+                  constexpr std::int64_t max_message_size() { return platform::ipc::message::size;}
+                  constexpr std::int64_t header_size() { return sizeof( Header);}
+                  constexpr std::int64_t max_payload_size() { return max_message_size() - header_size();}
+
+               } // transport
+
+               struct Transport
+               {
+                  using correalation_type = Uuid::uuid_type;
+
+                  using payload_type = std::array< char, transport::max_payload_size()>;
+                  using range_type = range::type_t< payload_type>;
+                  using const_range_type = range::const_type_t< payload_type>;
+
+                  struct message_t
+                  {
+                     //!
+                     //! Which logical type of message this transport is carrying
+                     //!
+                     //! @attention has to be the first bytes in the message
+                     //!
+                     platform::ipc::message::type type;
+
+                     transport::Header header;
+                     payload_type payload;
+
+                  } message;
+
+
+                  static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
+                  static_assert( std::is_pod< message_t>::value, "Message has be a POD");
+                  //static_assert( sizeof( message_t) - header_size() == max_payload_size(), "something is wrong with padding");
+
+
+                  inline Transport() { memory::set( message);}
+
+                  inline Transport( common::message::Type type, std::size_t complete_size) : Transport()
+                  {
+                     Transport::type( type);
+                     message.header.complete_size = complete_size;
+                  }
+
+                  inline Transport( common::message::Type type) : Transport() { Transport::type( type);}
+
+
+
+                  //!
+                  //! @return the message type
+                  //!
+                  inline common::message::Type type() const { return static_cast< common::message::Type>( message.type);}
+
+                  //!
+                  //! Sets the message type
+                  //!
+                  //! @param type type to set
+                  //!
+                  inline void type( common::message::Type type) { message.type = static_cast< platform::ipc::message::type>( type);}
+
+
+                  inline const_range_type payload() const
+                  {
+                     return range::make( std::begin( message.payload), message.header.count);
+                  }
+
+
+                  inline const correalation_type& correlation() const { return message.header.correlation;}
+                  inline correalation_type& correlation() { return message.header.correlation;}
+
+                  //!
+                  //! @return payload size
+                  //!
+                  inline std::size_t pyaload_size() const { return message.header.count;}
+
+                  //!
+                  //! @return the offset of the logical complete message this transport
+                  //!    message represent.
+                  //!
+                  inline std::size_t pyaload_offset() const { return message.header.offset;}
+
+
+                  //!
+                  //! @return the size of the complete logical message
+                  //!
+                  inline std::size_t complete_size() const { return message.header.complete_size;}
+
+
+                  //!
+                  //! @return the total size of the transport message including header.
+                  //!
+                  inline std::size_t size() const { return transport::header_size() + pyaload_size();}
+
+
+                  //!
+                  //! Indication if this transport message is the last of the logical message.
+                  //!
+                  //! @return true if this transport message is the last of the logical message.
+                  //!
+                  //! @attention this does not give any guarantees that no more transport messages will arrive...
+                  //!
+                  inline bool last() const { return message.header.offset + message.header.count == message.header.complete_size;}
+
+
+                  auto begin() { return std::begin( message.payload);}
+                  inline auto begin() const { return std::begin( message.payload);}
+                  auto end() { return begin() + message.header.count;}
+                  auto end() const { return begin() + message.header.count;}
+
+                  template< typename Iter>
+                  void assign( Iter first, Iter last)
+                  {
+                     message.header.count = std::distance( first, last);
+                     assert( first <= last && message.header.count <=  transport::max_payload_size());
+
+                     std::copy( first, last, std::begin( message.payload));
+                  }
+
+                  friend std::ostream& operator << ( std::ostream& out, const Transport& value);
                };
 
-               using Transport = communication::message::basic_transport< Policy>;
+
+               inline std::size_t offset( const Transport& value) { return value.message.header.offset;}
+
             } // message
 
 
@@ -64,25 +206,34 @@ namespace casual
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags);
                bool receive( handle_type id, message::Transport& transport, common::Flags< Flag> flags);
 
+
+
             } // native
 
 
             namespace policy
             {
+               using cache_type = communication::inbound::cache_type;
+               using cache_range_type =  communication::inbound::cache_range_type;
+
+               cache_range_type receive( handle_type id, cache_type& cache, common::Flags< native::Flag> flags);
+               Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags);
 
                struct Blocking
                {
+
                   template< typename Connector>
-                  bool receive( Connector&& ipc, message::Transport& transport)
+                  cache_range_type receive( Connector&& connector, cache_type& cache)
                   {
-                     return native::receive( ipc.id(), transport, {});
+                     return policy::receive( connector.id(), cache, {});
                   }
 
                   template< typename Connector>
-                  bool send( Connector&& connector, const message::Transport& transport)
+                  Uuid send( Connector&& connector, const communication::message::Complete& complete)
                   {
-                     return native::send( std::forward< Connector>( connector), transport, {});
+                     return policy::send( std::forward< Connector>( connector), complete, {});
                   }
+
 
                };
 
@@ -91,17 +242,16 @@ namespace casual
                   struct Blocking
                   {
                      template< typename Connector>
-                     bool receive( Connector&& connector, message::Transport& transport)
+                     cache_range_type receive( Connector&& connector, cache_type& cache)
                      {
-                        return native::receive( connector.id(), transport, native::Flag::non_blocking);
+                        return policy::receive( connector.id(), cache, native::Flag::non_blocking);
                      }
 
                      template< typename Connector>
-                     bool send( Connector&& connector, const message::Transport& transport)
+                     Uuid send( Connector&& connector, const communication::message::Complete& complete)
                      {
-                        return native::send( connector, transport, native::Flag::non_blocking);
+                        return policy::send( std::forward< Connector>( connector), complete, native::Flag::non_blocking);
                      }
-
                   };
 
                } // non
@@ -231,6 +381,22 @@ namespace casual
                      void reconnect();
                   };
                   using Device = communication::outbound::Device< Connector>;
+
+                  namespace optional
+                  {
+
+                     struct Connector : outbound::Connector
+                     {
+                        Connector();
+                        void reconnect();
+                     };
+
+                     //!
+                     //! Will not wait and try to connect to domain
+                     //!
+                     using Device = communication::outbound::Device< Connector>;
+
+                  } // optional
                } // domain
 
             } // outbound
@@ -240,7 +406,7 @@ namespace casual
 
             template< typename D, typename M, typename P>
             auto send( D& ipc, M&& message, P&& policy, const error_type& handler = nullptr)
-             -> typename std::enable_if< ! std::is_same< D, platform::ipc::id::type>::value, Uuid>::type
+             -> std::enable_if_t< ! std::is_same< D, platform::ipc::id::type>::value, Uuid>
             {
                return ipc.send( message, policy, handler);
             }
@@ -252,14 +418,15 @@ namespace casual
             }
 
 
+
             namespace blocking
             {
                using error_type = typename inbound::Device::error_type;
 
                template< typename S, typename M>
-               void receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
+               bool receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
                {
-                  ipc.receive( message, policy::Blocking{}, handler);
+                  return ipc.receive( message, policy::Blocking{}, handler);
                }
 
                template< typename S, typename M>
@@ -314,6 +481,29 @@ namespace casual
                } // blocking
             } // non
 
+            namespace receive
+            {
+               enum class Flag : char
+               {
+                  blocking,
+                  non_blocking
+               };
+
+               template< typename D, typename M, typename... Args>
+               bool message( D& device, M& message, Flag flag, Args&&... args)
+               {
+                  if( flag == Flag::blocking)
+                  {
+                     return blocking::receive( device, message, std::forward< Args>( args)...);
+                  }
+                  else
+                  {
+                     return non::blocking::receive( device, message, std::forward< Args>( args)...);
+                  }
+               }
+
+            } // receive
+
             template< typename D, typename M, typename Policy = policy::Blocking>
             auto call(
                   D&& destination,
@@ -321,7 +511,6 @@ namespace casual
                   Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
                   inbound::Device& device = ipc::inbound::device())
-               -> decltype( common::message::reverse::type( std::forward< M>( message)))
             {
                auto correlation = ipc::send( std::forward< D>( destination), message, policy, handler);
 
@@ -331,10 +520,14 @@ namespace casual
                return reply;
             }
 
-            namespace broker
+            namespace service
             {
-               outbound::instance::Device& device();
-            } // broker
+               namespace manager
+               {
+                  outbound::instance::Device& device();
+               } // manager
+            } // service
+
 
             namespace transaction
             {
@@ -366,7 +559,7 @@ namespace casual
 
             namespace queue
             {
-               namespace broker
+               namespace manager
                {
                   outbound::instance::Device& device();
 
@@ -376,12 +569,12 @@ namespace casual
                      //! Can be missing. That is, this will not block
                      //! until the device is found (the queue is online)
                      //!
-                     //! @return device to queue-broker
+                     //! @return device to queue-manager
                      //!
                      outbound::instance::optional::Device& device();
                   } // optional
 
-               } // broker
+               } // manager
             } // queue
 
 
@@ -390,7 +583,15 @@ namespace casual
                namespace manager
                {
                   outbound::domain::Device& device();
+
+                  namespace optional
+                  {
+                     outbound::domain::optional::Device& device();
+                  } // optional
                } // manager
+
+
+
             } // domain
 
             bool exists( handle_type id);
@@ -423,22 +624,18 @@ namespace casual
 
                template< typename D, typename M>
                auto blocking_send( D&& device, M&& message) const
-                -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
                {
                   return common::communication::ipc::blocking::send( std::forward< D>( device), message, m_error_handler);
                }
 
                template< typename D, typename M>
                auto non_blocking_send( D&& device, M&& message) const
-                -> decltype( common::communication::ipc::blocking::send( device, message, nullptr))
                {
                   return common::communication::ipc::non::blocking::send( std::forward< D>( device), message, m_error_handler);
                }
 
                template< typename M, typename... Args>
                auto blocking_receive( M& message, Args&&... args) const
-                -> decltype( common::communication::ipc::blocking::receive(
-                      common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., nullptr))
                {
                   return common::communication::ipc::blocking::receive(
                         common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);
@@ -446,8 +643,6 @@ namespace casual
 
                template< typename M, typename... Args>
                auto non_blocking_receive( M& message, Args&&... args) const
-                -> decltype( common::communication::ipc::non::blocking::receive(
-                      common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., nullptr))
                {
                   return common::communication::ipc::non::blocking::receive(
                         common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);

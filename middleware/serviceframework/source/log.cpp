@@ -23,7 +23,7 @@ namespace casual
                Scope::~Scope() = default;
 
                Scope::Scope( const char* information, std::ostream& log)
-                  : common::trace::basic::Scope( information, log) {}
+                  : common::log::trace::basic::Scope( information, log) {}
 
          } // detail
 

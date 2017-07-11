@@ -6,7 +6,7 @@
 #include "common/communication/log.h"
 #include "common/environment.h"
 #include "common/error.h"
-#include "common/trace.h"
+#include "common/log.h"
 #include "common/domain.h"
 
 
@@ -23,6 +23,20 @@ namespace casual
       {
          namespace ipc
          {
+            namespace message
+            {
+               std::ostream& operator << ( std::ostream& out, const Transport& value)
+               {
+                  return out << "{ type: " << value.type()
+                        << ", correlation: " << uuid::string( value.correlation())
+                        << ", offset: " << value.pyaload_offset()
+                        << ", payload.size: " << value.pyaload_size()
+                        << ", complete_size: " << value.complete_size()
+                        << ", header-size: " << transport::header_size()
+                        << ", transport-size: " <<  value.size()
+                        << ", max-size: " << transport::max_message_size() << "}";
+               }
+            } // message
 
             namespace native
             {
@@ -98,7 +112,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, transport.max_message_size(), 0, flags.underlaying());
+                  auto result = msgrcv( id, &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -144,6 +158,78 @@ namespace casual
                }
 
             } // native
+
+            namespace policy
+            {
+               cache_range_type receive( handle_type id, cache_type& cache, common::Flags< native::Flag> flags)
+               {
+                  message::Transport transport;
+
+
+                  if( native::receive( id, transport, flags))
+                  {
+                     auto found = range::find_if( cache,
+                           [&]( const auto& m)
+                           {
+                              return transport.type() == m.type
+                                    && ! m.complete()
+                                    && transport.message.header.correlation == m.correlation;
+                           });
+
+                     if( found)
+                     {
+                        found->add( transport);
+                        return found;
+                     }
+                     else
+                     {
+                        cache.emplace_back(
+                              transport.type(),
+                              transport.correlation(),
+                              transport.complete_size(),
+                              transport);
+
+                        return { std::end( cache) - 1, std::end( cache)};
+                     }
+                  }
+
+                  return {};
+               }
+
+               Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags)
+               {
+                  message::Transport transport{ complete.type, complete.payload.size()};
+
+                  complete.correlation.copy( transport.correlation());
+
+
+                  auto part_begin = std::begin( complete.payload);
+
+                  do
+                  {
+                     auto part_end = std::distance( part_begin, std::end( complete.payload)) > message::transport::max_payload_size() ?
+                           part_begin + message::transport::max_payload_size() : std::end( complete.payload);
+
+                     transport.assign( part_begin, part_end);
+                     transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
+
+                     //
+                     // send the physical message
+                     //
+                     if( ! native::send(  id, transport, flags))
+                     {
+                        return uuid::empty();
+                     }
+
+                     part_begin = part_end;
+                  }
+                  while( part_begin != std::end( complete.payload));
+
+                  return complete.correlation;
+
+               }
+
+            } // policy
 
             namespace inbound
             {
@@ -304,7 +390,8 @@ namespace casual
                      namespace
                      {
 
-                        platform::ipc::id::type reconnect()
+                        template< typename R>
+                        platform::ipc::id::type reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -327,7 +414,7 @@ namespace casual
 
                            log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
 
-                           process = common::domain::singleton::read().process;
+                           process = singleton_policy();
 
                            if( ! ipc::exists( process.queue))
                            {
@@ -340,7 +427,7 @@ namespace casual
                      } // <unnamed>
                   } // local
 
-                  Connector::Connector() : outbound::Connector{ local::reconnect()}
+                  Connector::Connector() : outbound::Connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
                   {
 
                   }
@@ -349,27 +436,53 @@ namespace casual
                   {
                      Trace trace{ "ipc::outbound::domain::Connector::reconnect"};
 
-                     m_id = local::reconnect();
+                     m_id = local::reconnect( [](){ return common::domain::singleton::read().process;});
                   }
+
+                  namespace optional
+                  {
+                     Connector::Connector()
+                      : outbound::Connector{ local::reconnect( [](){
+                         return common::domain::singleton::read(
+                               process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
+                         ).process;
+                      })}
+                     {
+
+                     }
+
+                     void Connector::reconnect()
+                     {
+                        m_id = local::reconnect( [](){
+                           return common::domain::singleton::read(
+                                 process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
+                           ).process;
+                        });
+                     }
+                  } // optional
+
                } // domain
 
             } // outbound
 
 
 
-
-            namespace broker
+            namespace service
             {
-               outbound::instance::Device& device()
+               namespace manager
                {
-                  static outbound::instance::Device singelton{
-                     process::instance::identity::broker(),
-                     common::environment::variable::name::ipc::broker()};
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::service::manager(),
+                        common::environment::variable::name::ipc::service::manager()};
 
-                  return singelton;
-               }
+                     return singelton;
+                  }
 
-            } // broker
+               } // manager
+            } // service
+
 
             namespace transaction
             {
@@ -416,13 +529,13 @@ namespace casual
 
             namespace queue
             {
-               namespace broker
+               namespace manager
                {
                   outbound::instance::Device& device()
                   {
                      static outbound::instance::Device singelton{
-                        process::instance::identity::queue::broker(),
-                        environment::variable::name::ipc::queue::broker()};
+                        process::instance::identity::queue::manager(),
+                        environment::variable::name::ipc::queue::manager()};
 
                      return singelton;
                   }
@@ -432,13 +545,13 @@ namespace casual
                      outbound::instance::optional::Device& device()
                      {
                         static outbound::instance::optional::Device singelton{
-                           process::instance::identity::queue::broker(),
-                           environment::variable::name::ipc::queue::broker()};
+                           process::instance::identity::queue::manager(),
+                           environment::variable::name::ipc::queue::manager()};
 
                         return singelton;
                      }
                   } // optional
-               } // broker
+               } // manager
             } // queue
 
 
@@ -451,6 +564,15 @@ namespace casual
                      static outbound::domain::Device singelton;
                      return singelton;
                   }
+
+                  namespace optional
+                  {
+                     outbound::domain::optional::Device& device()
+                     {
+                        static outbound::domain::optional::Device singelton;
+                        return singelton;
+                     }
+                  } // optional
 
                } // manager
             } // domain
@@ -476,7 +598,7 @@ namespace casual
                   }
                   else
                   {
-                     log::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
+                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
                   }
                }
                return false;

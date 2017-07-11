@@ -1,8 +1,5 @@
 //!
-//! casual_server_context.h
-//!
-//! Created on: Apr 1, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_SERVER_CONTEXT_H_
@@ -13,12 +10,13 @@
 #include "common/server/service.h"
 
 
-#include "common/message/traffic.h"
-
 #include "common/platform.h"
 
+#include "common/message/event.h"
 
-#include "xatmi.h"
+
+
+#include "xatmi/defines.h"
 
 
 //
@@ -34,40 +32,57 @@ namespace casual
    {
       namespace server
       {
+         struct Arguments;
 
-         struct State
+         namespace state
          {
-            struct jump_t
+            struct Jump
             {
-               enum From
+               enum Location : int
                {
                   c_no_jump = 0,
                   c_return = 10,
-                  c_forward = 20,
+                  c_forward = 20
                };
 
-               struct buffer_t
+               platform::jump::buffer environment;
+
+               struct Buffer
                {
-                  platform::raw_buffer_type data = nullptr;
-                  long len = 0;
+                  platform::buffer::raw::type data = nullptr;
+                  platform::buffer::raw::size::type size = 0;
 
                } buffer;
 
-               struct state_t
+               struct State
                {
                   int value = 0;
                   long code = 0;
                } state;
 
-               struct forward_t
+               struct Forward
                {
                   std::string service;
 
                } forward;
 
-               friend std::ostream& operator << ( std::ostream& out, const jump_t& value);
 
-            } jump;
+               friend std::ostream& operator << ( std::ostream& out, const Jump& value);
+            };
+         } // state
+
+         namespace xatmi
+         {
+            struct Service
+            {
+
+            };
+
+         } // xatmi
+
+         struct State
+         {
+            state::Jump jump;
 
 
             State() = default;
@@ -77,14 +92,11 @@ namespace casual
 
             std::deque< Service> physical_services;
 
-            typedef std::unordered_map< std::string, std::reference_wrapper< Service>> service_mapping_type;
-
+            using service_mapping_type = std::unordered_map< std::string, std::reference_wrapper< Service>>;
             service_mapping_type services;
-            common::platform::long_jump_buffer_type long_jump_buffer;
 
-            message::traffic::Event traffic;
 
-            std::function<void()> server_done;
+            message::event::service::Call event;
 
          };
 
@@ -101,7 +113,7 @@ namespace casual
             //!
             //! Being called from tpreturn
             //!
-            void long_jump_return( int rval, long rcode, char* data, long len, long flags);
+            void jump_return( int rval, long rcode, char* data, long len, long flags);
 
             //!
             //! called from extern casual_service_forward
@@ -121,6 +133,29 @@ namespace casual
             void unadvertise( const std::string& service);
 
             //!
+            //! Basic configuration for a server
+            //!
+            //! @param services
+            void configure( const server::Arguments& arguments);
+
+
+            //!
+            //! Tries to find the physical service from it's original name
+            //!
+            //! @param name
+            //! @return a pointer to the service if found, nullptr otherwise.
+            server::Service* physical( const std::string& name);
+
+
+            //!
+            //! Tries to find the physical service from the associated callback function
+            //!
+            //! @param name
+            //! @return a pointer to the service if found, nullptr otherwise.
+            server::Service* physical( const server::xatmi::function_type& function);
+
+
+            //!
             //! Share state with callee::handle::basic_call for now...
             //! if this "design" feels good, we should expose needed functionality
             //! to callee::handle::basic_call
@@ -136,6 +171,8 @@ namespace casual
 
             State m_state;
          };
+
+         inline Context& context() { return Context::instance();}
 
       } // server
 	} // common

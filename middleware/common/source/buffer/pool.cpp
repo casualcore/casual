@@ -5,7 +5,7 @@
 #include "common/buffer/pool.h"
 #include "common/algorithm.h"
 #include "common/exception.h"
-#include "common/internal/trace.h"
+#include "common/log.h"
 
 #include <functional>
 
@@ -33,7 +33,7 @@ namespace casual
                return **pool;
             }
 
-            Holder::Base& Holder::find( platform::const_raw_buffer_type handle)
+            Holder::Base& Holder::find( platform::buffer::raw::immutable::type handle)
             {
                auto pool = range::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
                   return b->manage( handle);
@@ -53,24 +53,24 @@ namespace casual
             }
 
 
-            platform::raw_buffer_type Holder::allocate( const std::string& type, platform::binary_size_type size)
+            platform::buffer::raw::type Holder::allocate( const std::string& type, platform::binary::size::type size)
             {
                auto buffer = find( type).allocate( type, size);
 
-               if( log::internal::buffer)
+               if( log::category::buffer)
                {
-                  log::internal::buffer << "allocate type: " << type << " size: " << size << " @" << static_cast< const void*>( buffer) << '\n';
+                  log::category::buffer << "allocate type: " << type << " size: " << size << " @" << static_cast< const void*>( buffer) << '\n';
                }
                return buffer;
             }
 
-            platform::raw_buffer_type Holder::reallocate( platform::const_raw_buffer_type handle, platform::binary_size_type size)
+            platform::buffer::raw::type Holder::reallocate( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
                auto buffer = find( handle).reallocate( handle, size);
 
-               if( log::internal::buffer)
+               if( log::category::buffer)
                {
-                  log::internal::buffer << "reallocate size: " << size
+                  log::category::buffer << "reallocate size: " << size
                         << " from @" << static_cast< const void*>( handle) << " to " << static_cast< const void*>( buffer) << '\n';
                }
 
@@ -82,27 +82,29 @@ namespace casual
                return buffer;
             }
 
-            const std::string& Holder::type( platform::const_raw_buffer_type handle)
+            const std::string& Holder::type( platform::buffer::raw::immutable::type handle)
             {
                return get( handle).payload().type;
             }
 
-            void Holder::deallocate( platform::const_raw_buffer_type handle)
+            void Holder::deallocate( platform::buffer::raw::immutable::type handle)
             {
+               Trace trace{ "buffer::pool::deallocate"};
+
+               log::category::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
+
                //
                // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
                //
                if( handle != m_inbound && handle != nullptr)
                {
                   find( handle).deallocate( handle);
-
-                  log::internal::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
                }
             }
 
-            platform::raw_buffer_type Holder::adopt( Payload&& payload)
+            platform::buffer::raw::type Holder::adopt( Payload&& payload)
             {
-               common::trace::internal::Scope trace{ "buffer::pool::adopt"};
+               Trace trace{ "buffer::pool::adopt"};
 
                //
                // This is the only place where a buffer is consumed by the pool, hence can only happen
@@ -111,25 +113,34 @@ namespace casual
                // Keep track of the inbound buffer given to the user. This is a
                // 'special' buffer according to the XATMI-spec.
                //
-               m_inbound = insert( std::move( payload));
+               m_inbound = std::get< 0>( insert( std::move( payload)));
 
                return m_inbound;
             }
 
-            platform::raw_buffer_type Holder::insert( Payload&& payload)
+            std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type> Holder::insert( Payload&& payload)
             {
-               log::internal::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
+               Trace trace{ "buffer::pool::insert"};
+
+               using return_type = std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type>;
+
+               log::category::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
                      << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
 
                if( payload.null())
                {
-                  return nullptr;
+                  // This should work - doesn't on g++ 5.4
+                  //return { nullptr, 0};
+                  return return_type{ nullptr, 0}; 
                }
+               auto size = payload.memory.size();
 
-               return find( payload.type).insert( std::move( payload));
+               // This should work - doesn't on g++ 5.4
+               //return { find( payload.type).insert( std::move( payload)), size};
+               return return_type{ find( payload.type).insert( std::move( payload)), size};
             }
 
-            payload::Send Holder::get( platform::const_raw_buffer_type handle, platform::binary_size_type user_size)
+            payload::Send Holder::get( platform::buffer::raw::immutable::type handle, platform::binary::size::type user_size)
             {
                if( handle == nullptr)
                {
@@ -138,7 +149,7 @@ namespace casual
                return find( handle).get( handle, user_size);
             }
 
-            payload::Send Holder::get( platform::const_raw_buffer_type handle)
+            payload::Send Holder::get( platform::buffer::raw::immutable::type handle)
             {
                if( handle == nullptr)
                {
@@ -149,7 +160,7 @@ namespace casual
             }
 
 
-            Payload Holder::release( platform::const_raw_buffer_type handle)
+            Payload Holder::release( platform::buffer::raw::immutable::type handle)
             {
                if( handle == nullptr)
                {
@@ -160,12 +171,12 @@ namespace casual
 
                if( m_inbound == handle) m_inbound = nullptr;
 
-               log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+               log::category::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
             }
 
-            Payload Holder::release( platform::const_raw_buffer_type handle, platform::binary_size_type size)
+            Payload Holder::release( platform::buffer::raw::immutable::type handle, platform::binary::size::type size)
             {
                if( handle == nullptr)
                {
@@ -176,7 +187,7 @@ namespace casual
 
                if( m_inbound == handle) m_inbound = nullptr;
 
-               log::internal::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+               log::category::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
 
                return result;
             }
@@ -193,7 +204,7 @@ namespace casual
                   }
                   catch( const exception::base& exception)
                   {
-                     log::error << "failed to deallocate inbound buffer - " << exception << std::endl;
+                     log::category::error << "failed to deallocate inbound buffer - " << exception << std::endl;
                   }
                }
                range::for_each( m_pools, std::mem_fn( &Base::clear));

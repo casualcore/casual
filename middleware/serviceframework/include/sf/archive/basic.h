@@ -1,8 +1,5 @@
 //!
-//! casual_basic_writer.h
-//!
-//! Created on: Oct 14, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_BASIC_WRITER_H_
@@ -24,13 +21,11 @@ namespace casual
          {
             struct Strict
             {
-               inline static constexpr bool check() { return true;}
                inline static bool apply( bool exist, const char* role)
                {
                   if( ! exist)
                   {
-                     // TODO: Fix better exception
-                     throw exception::archive::invalid::Node{ "failed to find role in document" /*, CASUAL_NIP( role)*/};
+                     throw exception::archive::invalid::Node{ "failed to find role in document", CASUAL_NIP( role)};
                   }
                   return exist;
                }
@@ -38,8 +33,7 @@ namespace casual
 
             struct Relaxed
             {
-               inline static constexpr bool check() { return false;}
-               inline static constexpr bool apply( bool exist, const char* role) { return true;}
+               inline static constexpr bool apply( bool exist, const char* role) { return exist;}
             };
 
          } // policy
@@ -64,20 +58,18 @@ namespace casual
 
             basic_reader( basic_reader&&) = default;
 
-            const implementation_type& implemenation() const
+            const implementation_type& implementation() const
             {
                return m_implementation;
             }
 
-
          private:
 
-
-            std::size_t dispatch_container_start( std::size_t size, const char* name) override
+            std::tuple< std::size_t, bool> dispatch_container_start( std::size_t size, const char* name) override
             {
                auto result = m_implementation.container_start( size, name);
                policy_type::apply( std::get< 1>( result), name);
-               return std::get< 0>( result);
+               return result;
             }
 
             void dispatch_container_end( const char* name) override
@@ -99,20 +91,20 @@ namespace casual
 
 
             template< typename T>
-            void handle_pod( T& value, const char* name)
+            bool handle_pod( T& value, const char* name)
             {
-               policy_type::apply( m_implementation.read( value, name), name);
+               return policy_type::apply( m_implementation.read( value, name), name);
             }
 
-            void pod( bool& value, const char* name) override { handle_pod( value, name);}
-            void pod( char& value, const char* name) override { handle_pod( value, name);}
-            void pod( short& value, const char* name) override { handle_pod( value, name);}
-            void pod( long& value, const char* name) override { handle_pod( value, name);}
-            void pod( long long& value, const char* name) override { handle_pod( value, name);}
-            void pod( float& value, const char* name) override { handle_pod( value, name);}
-            void pod( double& value, const char* name) override { handle_pod( value, name);}
-            void pod( std::string& value, const char* name) override { handle_pod( value, name);}
-            void pod( platform::binary_type& value, const char* name) override { handle_pod( value, name);}
+            bool pod( bool& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( char& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( short& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( long& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( long long& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( float& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( double& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( std::string& value, const char* name) override { return handle_pod( value, name);}
+            bool pod( platform::binary::type& value, const char* name) override { return handle_pod( value, name);}
 
             implementation_type m_implementation;
          };
@@ -142,9 +134,9 @@ namespace casual
 
          private:
 
-            std::size_t dispatch_container_start( std::size_t size, const char* name) override
+            void dispatch_container_start( std::size_t size, const char* name) override
             {
-               return m_implementation.container_start( size, name);
+               m_implementation.container_start( size, name);
             }
 
             void dispatch_container_end( const char* name) override
@@ -152,10 +144,9 @@ namespace casual
                m_implementation.container_end( name);
             }
 
-            bool dispatch_serialtype_start( const char* name) override
+            void dispatch_serialtype_start( const char* name) override
             {
                m_implementation.serialtype_start( name);
-               return true;
             }
 
             void dispatch_serialtype_end( const char* name) override
@@ -178,7 +169,7 @@ namespace casual
             void pod( const float value, const char* name) override { handle_pod( value, name);}
             void pod( const double value, const char* name) override { handle_pod( value, name);}
             void pod( const std::string& value, const char* name) override { handle_pod( value, name);}
-            void pod( const platform::binary_type& value, const char* name) override { handle_pod( value, name);}
+            void pod( const platform::binary::type& value, const char* name) override { handle_pod( value, name);}
 
             implementation_type m_implementation;
 

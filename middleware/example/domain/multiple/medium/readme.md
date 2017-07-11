@@ -14,13 +14,13 @@ to the corresponding error queue.
 
 A simplified sequence diagram on what's going on (discovery and transaction related activity is omitted)
 
-![scenario](diagram/scenario.png)
+![scenario](diagram/scenario.svg)
 
 
 
 ## pre requirements
 
-see [domain example]( ../../domain.md)
+see [domain example]( ../../readme.md)
 
 
 ## create domains
@@ -65,20 +65,42 @@ If you chose another base directore for this example, please update the followin
 
 In terminal A    
 
+### prepare
+
+Make sure we have the _few_ requered environment settings sourced.
+
+You only have to do this once, of course.
+ 
 ```bash
 host$ cd $HOME/casual/example/domain/multiple/medium/domainA
 host:domainA$ source domain.env
-host:domainA$ casual-admin domain --boot 
 ```
+
+### boot
+
+We privide our configuration for the domain
+
+```bash
+host:domainA$ casual-admin domain --boot configuration/domain.yaml
+``` 
+
     
 ## start domainB
 
 In terminal B
 
+### prepare
+
 ```bash
 host$ cd $HOME/casual/example/domain/multiple/medium/domainB
 host:domainB$ source domain.env
-host:domainB$ casual-admin domain --boot
+```
+### boot
+
+We privide our configuration for the domain
+
+```bash
+host:domainB$ casual-admin domain --boot configuration/domain.yaml
 ```
 
 

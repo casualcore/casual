@@ -1,0 +1,134 @@
+@startuml
+
+title gateway startup
+
+
+box "domain A" #LightBlue
+   actor "client" as CA
+   participant "domain manager" as DMA
+   participant "broker" as BA
+   participant "Server A" as SA
+   participant "gateway" as GA
+   participant "outbound" as OA
+   
+end box
+
+box "domain B"
+   participant "inbound" as IB
+   participant "gateway" as GB 
+   participant "Server B" as SB
+   participant "broker" as BB
+   participant "domain manager" as DMB
+   actor "client" as CB
+end box
+
+
+group startup
+CA -> DMA: boot
+
+activate DMA
+
+DMA -> BA: spawn broker
+activate BA
+BA -> DMA: domain connect
+BA -> DMA: get configuration
+deactivate BA
+
+DMA -> SA: spawn Server A
+activate SA
+SA -> DMA: domain connect
+deactivate SA
+DMA -> GA: spawn gateway A
+
+activate GA
+GA -> DMA: domain connect
+
+deactivate DMA
+
+GA -> DMA: get configuration
+GA -> OA: spawn outbound (B)
+OA -> OA: try connect to B
+
+deactivate GA
+
+deactivate DMA
+end
+
+
+group startup
+CB -> DMB: boot
+
+activate DMB
+
+DMB -> SB: spawn Server A
+activate SB
+SB -> DMB: domain connect
+deactivate SB
+DMB -> GB: spawn gateway A
+
+activate GB
+GB -> DMB: domain connect
+
+deactivate DMB
+
+GB -> DMB: get configuration
+GB -> GB: spawn listener (thread)
+activate GB
+
+deactivate DMB
+
+
+
+OA -> GB: connect (socket X)
+activate OA
+
+
+
+GB -> IB: spawn inbound (A socket X)
+activate IB
+deactivate GB
+
+
+
+OA -> IB: message::interdomain::domain::discovery::Request
+note left
+outbound asks the other domain 
+if it got some of the provided 
+services and queues.
+During startup, this is the configured 
+services and queues. During runtime this is
+absent services and queues.
+end note
+
+
+IB -> GB: common::message::gateway::discover::Request
+GB -> BB: common::message::gateway::discover::Request
+activate BB
+BB -> GB: common::message::gateway::discover::Reply
+deactivate BB
+
+GB ->IB: common::message::gateway::discover::accumulated::Reply
+
+IB -> OA: message::interdomain::domain::discovery::Reply
+
+deactivate IB
+
+OA -> BA: common::message::gateway::domain::Advertise
+note right 
+	outbound advertises the services that the
+	other domain replied with
+end note
+
+deactivate OA
+
+deactivate DMB
+
+deactivate GB
+end
+
+
+deactivate BB
+
+
+
+@enduml

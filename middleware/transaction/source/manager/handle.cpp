@@ -5,6 +5,12 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
 #include "transaction/common.h"
+#include "transaction/manager/admin/server.h"
+
+
+#include "common/message/handle.h"
+#include "common/event/listen.h"
+#include "common/server/handle/call.h"
 
 
 namespace casual
@@ -25,7 +31,7 @@ namespace casual
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
                      //
-                     common::message::domain::process::termination::Event event{ exit};
+                     common::message::event::process::Exit event{ exit};
                      common::communication::ipc::inbound::device().push( std::move( event));
                   }
                }
@@ -34,6 +40,26 @@ namespace casual
 
          }
 
+         namespace
+         {
+            namespace optional
+            {
+               template< typename D, typename M>
+               void send( D&& device, M&& message)
+               {
+                  try
+                  {
+                     ipc::device().blocking_send( device, message);
+                  }
+                  catch( const common::exception::communication::Unavailable&)
+                  {
+                     log << "failed to send message to queue: " << device << '\n';
+                  }
+               }
+
+         } // optional
+
+         } //
       } // ipc
 
       namespace handle
@@ -262,13 +288,13 @@ namespace casual
                         }
                         else
                         {
-                           common::log::error << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
+                           common::log::category::error << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
                         }
                      }
                   }
 
                   template< typename M>
-                  void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time_point& now)
+                  void statistics( state::resource::Proxy::Instance& instance, M&& message, const common::platform::time::point::type& now)
                   {
                      instance.statistics.resource.time( message.statistics.start, message.statistics.end);
                      instance.statistics.roundtrip.end( now);
@@ -290,7 +316,7 @@ namespace casual
                         }
                         else
                         {
-                           common::log::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                           common::log::category::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
                         }
                      }
 
@@ -418,7 +444,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                              common::log::category::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
 
                               local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                  state,
@@ -486,7 +512,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::error << "TODO: something has gone wrong...\n";
+                              common::log::category::error << "TODO: something has gone wrong...\n";
 
                               //
                               // prepare send reply. Will be sent after persistent write to file.
@@ -549,7 +575,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::error << "TODO: resource rollback - something has gone wrong...\n";
+                              common::log::category::error << "TODO: resource rollback - something has gone wrong...\n";
 
                               //
                               // prepare send reply. Will be sent after persistent write to file
@@ -753,7 +779,7 @@ namespace casual
                                        //
                                        // Something has gone wrong.
                                        //
-                                       common::log::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                                       common::log::category::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
 
                                        local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                           state,
@@ -805,14 +831,17 @@ namespace casual
 
             void Exit::operator () ( message_type& message)
             {
-               apply( message.death);
-            }
 
-            void Exit::apply( const common::process::lifetime::Exit& exit)
-            {
-               Trace trace{ "transaction::handle::dead::Process"};
+               Trace trace{ "transaction::handle::process::Exit"};
 
-               // TODO: check if it's one of spawned resource proxies, if so, restart?
+               //
+               // Check if it's a resource proxy instance
+               //
+               if( m_state.remove_instance( message.state.pid))
+               {
+                  ipc::device().blocking_send( common::communication::ipc::domain::manager::device(), message);
+                  return;
+               }
 
                //
                // Check if the now dead process is owner to any transactions, if so, roll'em back...
@@ -821,7 +850,7 @@ namespace casual
 
                for( auto& trans : m_state.transactions)
                {
-                  if( trans.trid.owner().pid == exit.pid)
+                  if( trans.trid.owner().pid == message.state.pid)
                   {
                      trids.push_back( trans.trid);
                   }
@@ -843,6 +872,34 @@ namespace casual
 
          namespace resource
          {
+
+            void Lookup::operator () ( common::message::transaction::resource::lookup::Request& message)
+            {
+               Trace trace{ "transaction::handle::resource::Lookup"};
+
+               auto reply = common::message::reverse::type( message);
+
+
+               for( auto& proxy : m_state.resources)
+               {
+                  if( common::range::find( message.resources, proxy.name))
+                  {
+                     common::message::transaction::resource::Resource resource;
+
+                     resource.id = proxy.id;
+                     resource.key = proxy.key;
+                     resource.name = proxy.name;
+                     resource.openinfo = proxy.openinfo;
+                     resource.closeinfo = proxy.closeinfo;
+
+                     reply.resources.push_back( std::move( resource));
+                  }
+               }
+
+               ipc::optional::send( message.process.queue, reply);
+            }
+
+
             void Involved::operator () ( common::message::transaction::resource::Involved& message)
             {
                Trace trace{ "transaction::handle::resource::Involved"};
@@ -872,7 +929,7 @@ namespace casual
 
                      {
                         local::instance::done( this->m_state, instance);
-                        local::instance::statistics( instance, message, common::platform::clock_type::now());
+                        local::instance::statistics( instance, message, common::platform::time::clock::type::now());
                      }
 
                   }
@@ -894,9 +951,24 @@ namespace casual
                      if( resource)
                      {
                         //
-                        // We found all the stuff, let the real handler handle the message
+                        // We found all the stuff
                         //
-                        if( m_handler( message, transaction, *resource))
+
+                        // check if we
+                        resource->set_result( message.state);
+
+                        if( resource->done())
+                        {
+                           transaction.resources.erase( std::begin( resource));
+                        }
+                        else
+                        {
+                           resource->stage = handler_type::stage();
+                        }
+
+
+                        //  let the real handler handle the message
+                        if( m_handler( message, transaction))
                         {
                            //
                            // We remove the transaction from our state
@@ -907,14 +979,14 @@ namespace casual
                      else
                      {
                         // TODO: what to do? We have previously sent a prepare request, why do we not find the resource?
-                        common::log::error << "failed to locate resource: " <<  message.resource  << " for trid: " << message.trid << " - action: discard?\n";
+                        common::log::category::error << "failed to locate resource: " <<  message.resource  << " for trid: " << message.trid << " - action: discard?\n";
                      }
 
                   }
                   else
                   {
                      // TODO: what to do? We have previously sent a prepare request, why do we not find the trid?
-                     common::log::error << "failed to locate trid: " << message.trid << " - action: discard?\n";
+                     common::log::category::error << "failed to locate trid: " << message.trid << " - action: discard?\n";
                   }
                }
 
@@ -939,7 +1011,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
+                        common::log::category::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
                         instance.state( state::resource::Proxy::Instance::State::error);
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
@@ -948,7 +1020,7 @@ namespace casual
                   }
                   catch( common::exception::invalid::Argument&)
                   {
-                     common::log::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
+                     common::log::category::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
 
                      log << "resources: " << common::range::make( m_state.resources) << std::endl;
                   }
@@ -973,28 +1045,11 @@ namespace casual
                   }
                }
 
-               bool basic_prepare::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_prepare::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::prepare reply"};
 
                   log << "message: " << message << '\n';
-
-
-                  //
-                  // If the resource only did a read only, we 'promote' it to 'not involved'
-                  //
-                  {
-                     resource.result = Transaction::Resource::convert( message.state);
-
-                     if( resource.result == Transaction::Resource::Result::xa_RDONLY)
-                     {
-                        resource.stage = Transaction::Resource::Stage::not_involved;
-                     }
-                     else
-                     {
-                        resource.stage = Transaction::Resource::Stage::prepare_replied;
-                     }
-                  }
 
                   //
                   // Are we in a prepared state?
@@ -1013,14 +1068,11 @@ namespace casual
 
 
 
-               bool basic_commit::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_commit::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::commit reply"};
 
                   log << "message: " << message << '\n';
-
-                  resource.stage = Transaction::Resource::Stage::commit_replied;
-
 
                   //
                   // Are we in a committed state?
@@ -1037,21 +1089,17 @@ namespace casual
                }
 
 
-
-               bool basic_rollback::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_rollback::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::rollback reply"};
 
                   log << "message: " << message << '\n';
 
-                  resource.stage = Transaction::Resource::Stage::rollback_replied;
-
                   //
-                  // Are we in a rolled back state?
+                  // Are we in a rolled back stage?
                   //
                   if( transaction.stage() < Transaction::Resource::Stage::rollback_replied)
                   {
-
                      return false;
                   }
 
@@ -1084,7 +1132,7 @@ namespace casual
             }
             catch( ...)
             {
-               common::log::error << "unexpected error - action: send reply XAER_RMERR\n";
+               common::log::category::error << "unexpected error - action: send reply XAER_RMERR\n";
 
                common::error::handler();
 
@@ -1184,14 +1232,14 @@ namespace casual
                default:
                {
                   //
-                  // More than one resource involved, we do the prepare stage
-                  //
-                  log << "prepare " << transaction << "\n";
-
-                  //
                   // Keep the correlation so we can send correct reply
                   //
                   transaction.correlation = message.correlation;
+
+                  //
+                  // More than one resource involved, we do the prepare stage
+                  //
+                  log << "prepare " << transaction << "\n";
 
                   local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                      m_state,
@@ -1248,6 +1296,8 @@ namespace casual
             }
             else
             {
+               log << "resources involved - " << transaction << "\n";
+
                //
                // Keep the correlation so we can send correct reply
                //
@@ -1256,7 +1306,7 @@ namespace casual
                local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                   m_state,
                   transaction,
-                  Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                  []( auto& r){ return r.stage < Transaction::Resource::Stage::not_involved;},
                   Transaction::Resource::Stage::rollback_requested
                );
             }
@@ -1400,7 +1450,7 @@ namespace casual
                      }
                      default:
                      {
-                        common::log::error << "unexpected transaction stage: " << transaction << '\n';
+                        common::log::category::error << "unexpected transaction stage: " << transaction << '\n';
                         break;
                      }
                   }
@@ -1527,6 +1577,9 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
+
+                  transaction.correlation = message.correlation;
+
                   log << "transaction: " << transaction << '\n';
 
                   local::send::resource::request< common::message::transaction::resource::rollback::Request>(
@@ -1566,6 +1619,32 @@ namespace casual
                template struct Wrapper< basic_rollback>;
 
             } // reply
+
+         }
+
+
+         dispatch_type handlers( State& state)
+         {
+            return ipc::device().handler(
+               common::event::listener( handle::process::Exit{ state}),
+               common::message::handle::Shutdown{},
+               handle::Commit{ state},
+               handle::Rollback{ state},
+               handle::resource::Involved{ state},
+               handle::resource::Lookup{ state},
+               handle::resource::reply::Connect{ state},
+               handle::resource::reply::Prepare{ state},
+               handle::resource::reply::Commit{ state},
+               handle::resource::reply::Rollback{ state},
+               handle::external::Involved{ state},
+               handle::domain::Prepare{ state},
+               handle::domain::Commit{ state},
+               handle::domain::Rollback{ state},
+               common::server::handle::admin::Call{
+                  manager::admin::services( state),
+                  ipc::device().error_handler()},
+               common::message::handle::ping()
+            );
 
          }
 

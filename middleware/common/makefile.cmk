@@ -1,14 +1,26 @@
 import sys
+import os
 from casual.middleware.make.dsl import *
 
+
+platform_specific_lib_paths = []
+platform_specific_include_paths = []
+    
 if sys.platform.startswith('darwin'):
+    
+    #(sysname, nodename, release, version, machine) = os.uname()
+    
+    release = os.uname()[ 2]
+    print( '# release: ' + str( release))
+    
     platform_specific_libs = [ 'c', 'iconv', 'resolv']
-    platform_specific_lib_paths = [ '/opt/local/lib' ]
-    platform_specific_include_paths = [ '/opt/local/include' ]
+    
+    if release < '16.3.0':
+        platform_specific_lib_paths = [ '/opt/local/lib' ]
+        platform_specific_include_paths = [ '/opt/local/include' ]
+        
 else:
     platform_specific_libs = ['uuid', 'resolv']
-    platform_specific_lib_paths = []
-    platform_specific_include_paths = []
 
 
 IncludePaths( [ 
@@ -22,23 +34,32 @@ IncludePaths( [
     ]
     + platform_specific_include_paths)
 
-LibraryPaths( platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
+LibraryPaths( [ 'bin'] + platform_specific_lib_paths + [ '$(CASUAL_OPTIONAL_LIBRARY_PATHS)'])
 
 
 install_libs = []
+install_headers = []
 
 
 casual_common_objectfiles = [
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
-    Compile( 'source/server/handle.cpp'),
     Compile( 'source/server/service.cpp'),
+    Compile( 'source/server/argument.cpp'),
+    Compile( 'source/server/start.cpp'),
+    Compile( 'source/server/handle/service.cpp'),
+    Compile( 'source/server/handle/conversation.cpp'),
+    Compile( 'source/server/handle/policy.cpp'),
     
     Compile( 'source/service/call/context.cpp'),
     Compile( 'source/service/call/state.cpp'),
+    Compile( 'source/service/conversation/context.cpp'),
+    Compile( 'source/service/conversation/state.cpp'),
+    
     Compile( 'source/service/lookup.cpp'),
     Compile( 'source/service/header.cpp'),
     Compile( 'source/service/type.cpp'),
+    Compile( 'source/service/invoke.cpp'),
     
     Compile( 'source/buffer/x_octet.cpp'),
     Compile( 'source/buffer/pool.cpp'),
@@ -60,11 +81,22 @@ casual_common_objectfiles = [
     Compile( 'source/message/handle.cpp'),
     Compile( 'source/message/service.cpp'),
     Compile( 'source/message/server.cpp'),
-    Compile( 'source/message/traffic.cpp'),
     Compile( 'source/message/queue.cpp'),
     Compile( 'source/message/transaction.cpp'),
     Compile( 'source/message/domain.cpp'),
     Compile( 'source/message/gateway.cpp'),
+    Compile( 'source/message/conversation.cpp'),
+    Compile( 'source/message/pending.cpp'),
+    Compile( 'source/message/event.cpp'),
+    
+    Compile( 'source/event/listen.cpp'),
+    Compile( 'source/event/dispatch.cpp'),
+    Compile( 'source/event/send.cpp'),
+    
+    Compile( 'source/log/stream.cpp'),
+    Compile( 'source/log/trace.cpp'),
+    Compile( 'source/log/category.cpp'),
+    Compile( 'source/log.cpp'),
     
     Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),
@@ -72,8 +104,7 @@ casual_common_objectfiles = [
     Compile( 'source/file.cpp'),
     Compile( 'source/string.cpp'),
     Compile( 'source/signal.cpp'),
-    Compile( 'source/log.cpp'),
-    Compile( 'source/trace.cpp'),
+    
     Compile( 'source/error.cpp'),
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
@@ -86,8 +117,6 @@ casual_common_objectfiles = [
     
     Compile( 'source/arguments.cpp'),
     Compile( 'source/terminal.cpp'),
-
-    
 ]
 
 
@@ -97,16 +126,19 @@ common = LinkLibrary( 'bin/casual-common',
 
 install_libs.append( common)
 
-# lib_terminal = LinkLibrary( 
-#    'bin/casual-common-terminal', 
-#    [ Compile( 'source/terminal.cpp'),], 
-#    [ common])
-# 
-# install_libs.append( lib_terminal)
+
+install_headers += [ 
+      ( 'include/common/log.h', 'common'),
+      ( 'include/common/platform.h', 'common'),
+      ( 'include/common/traits.h', 'common'),
+      ( 'include/common/log/stream.h', 'common/log'),
+      ( 'include/common/log/trace.h', 'common/log'),
+      ( 'include/common/log/category.h', 'common/log')
+]
 
 
 #
-# The mockup-rm, only for testing
+# Some help for unittest tracing
 #
 target_unittest = LinkLibrary( 'bin/casual-unittest', 
      [
@@ -117,6 +149,9 @@ target_unittest = LinkLibrary( 'bin/casual-unittest',
 #
 # Mockup stuff, only for unittest
 #
+
+mockup_log = Compile( 'source/mockup/log.cpp')
+
 mockup = LinkLibrary( 'bin/casual-mockup', 
      [
        Compile( 'source/mockup/ipc.cpp'),
@@ -124,35 +159,36 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/process.cpp'),
        Compile( 'source/mockup/file.cpp'),
        Compile( 'source/mockup/thread.cpp'),
-       Compile( 'source/mockup/log.cpp'),
+       mockup_log
      ],
      [ common, target_unittest])
 
-install_libs.append( mockup)
-
 #
-# The mockup-rm, only for testing
+# The mockup-rm, only for testing.
 #
-target = LinkLibrary( 'bin/casual-mockup-rm', 
+lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
      [
-       Compile( 'source/mockup/rm.cpp')
+       Compile( 'source/mockup/rm.cpp'),
+       mockup_log
      ],
-     [ common, mockup])
+     [ common])
 
-install_libs.append( target)
+#
+# Since we use this in our example-servers we "install it"
+#
+install_libs.append( lib_mockup_rm)
+
 
 mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
     [ 
-      Compile( 'source/mockup/unittest/envrionment.cpp'),  
+      Compile( 'source/mockup/unittest/environment.cpp'),  
     ],
     [ common, mockup, 'gtest'])
-
-install_libs.append( mockup_unittest)
 
 
 target_simple_process = LinkExecutable( 'bin/simple_process',
     [
-     Compile( 'unittest/isolated/source/simple_process.cpp')
+     Compile( 'unittest/source/simple_process.cpp')
     ], 
     [ common]
     )	
@@ -162,53 +198,60 @@ target_simple_process = LinkExecutable( 'bin/simple_process',
 # unittest
 #
 unittest_objectfiles = [
-    Compile( 'unittest/isolated/source/test_conformance.cpp'),  
+    Compile( 'unittest/source/test_conformance.cpp'),  
     
-    Compile( 'unittest/isolated/source/test_algorithm.cpp'),      
-    Compile( 'unittest/isolated/source/test_memory.cpp'),
-    Compile( 'unittest/isolated/source/test_pimpl.cpp'),
+    Compile( 'unittest/source/test_algorithm.cpp'),      
+    Compile( 'unittest/source/test_memory.cpp'),
+    Compile( 'unittest/source/test_pimpl.cpp'),
     
-    Compile( 'unittest/isolated/source/test_flag.cpp'),  
+    Compile( 'unittest/source/test_flag.cpp'),  
             
-    Compile( 'unittest/isolated/source/test_signal.cpp'),
+    Compile( 'unittest/source/test_signal.cpp'),
                          
-    Compile( 'unittest/isolated/source/test_buffer.cpp'),
-    Compile( 'unittest/isolated/source/test_marshal.cpp'),
+    Compile( 'unittest/source/test_buffer.cpp'),
+    Compile( 'unittest/source/test_marshal.cpp'),
  
-    Compile( 'unittest/isolated/source/test_uuid.cpp'),
-    Compile( 'unittest/isolated/source/test_arguments.cpp'),
-    Compile( 'unittest/isolated/source/test_file.cpp'),
-    Compile( 'unittest/isolated/source/test_process.cpp'),
-    Compile( 'unittest/isolated/source/test_string.cpp'),
-    Compile( 'unittest/isolated/source/test_environment.cpp'),
-    Compile( 'unittest/isolated/source/test_error.cpp'),
+    Compile( 'unittest/source/test_uuid.cpp'),
+    Compile( 'unittest/source/test_arguments.cpp'),
+    Compile( 'unittest/source/test_file.cpp'),
+    Compile( 'unittest/source/test_process.cpp'),
+    Compile( 'unittest/source/test_string.cpp'),
+    Compile( 'unittest/source/test_environment.cpp'),
+    Compile( 'unittest/source/test_error.cpp'),
     
-    Compile( 'unittest/isolated/source/network/test_byteorder.cpp'),
+    Compile( 'unittest/source/network/test_byteorder.cpp'),
     
-    Compile( 'unittest/isolated/source/test_traits.cpp'),
-    Compile( 'unittest/isolated/source/test_chronology.cpp'),
-    Compile( 'unittest/isolated/source/test_transcode.cpp'),
+    Compile( 'unittest/source/test_traits.cpp'),
+    Compile( 'unittest/source/test_chronology.cpp'),
+    Compile( 'unittest/source/test_transcode.cpp'),
     
     
-    Compile( 'unittest/isolated/source/communication/test_tcp.cpp'),
-    Compile( 'unittest/isolated/source/communication/test_ipc.cpp'),
+    Compile( 'unittest/source/communication/test_tcp.cpp'),
+    Compile( 'unittest/source/communication/test_ipc.cpp'),
     
 
     
-    Compile( 'unittest/isolated/source/message/test_dispatch.cpp'),
-    Compile( 'unittest/isolated/source/message/test_coordinate.cpp'),
+    Compile( 'unittest/source/message/test_dispatch.cpp'),
+    Compile( 'unittest/source/message/test_coordinate.cpp'),
     
     
-    Compile( 'unittest/isolated/source/server/test_context.cpp'),
-    Compile( 'unittest/isolated/source/server/test_service.cpp'),
-    Compile( 'unittest/isolated/source/server/test_arguments.cpp'),
+    Compile( 'unittest/source/server/test_context.cpp'),
+    Compile( 'unittest/source/server/test_service.cpp'),
+    Compile( 'unittest/source/server/test_arguments.cpp'),
     
-    Compile( 'unittest/isolated/source/service/test_header.cpp'),
+    Compile( 'unittest/source/service/test_header.cpp'),
+    Compile( 'unittest/source/service/conversation/test_context.cpp'),
 
-    Compile( 'unittest/isolated/source/test_mockup.cpp'),
+    Compile( 'unittest/source/test_mockup.cpp'),
     
-    Compile( 'unittest/isolated/source/transaction/test_id.cpp'),
-    Compile( 'unittest/isolated/source/transaction/test_context.cpp'),
+    Compile( 'unittest/source/transaction/test_id.cpp'),
+    Compile( 'unittest/source/transaction/test_context.cpp'),
+    
+    
+    Compile( 'unittest/source/event/test_dispatch.cpp'),
+    Compile( 'unittest/source/event/test_listen.cpp'),
+    
+    Compile( 'unittest/source/test_domain.cpp'),
 ]
 
 
@@ -221,7 +264,8 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
      common,
      mockup,
      mockup_unittest,
-    target_unittest,
+     target_unittest,
+     lib_mockup_rm
     ])		
 
 #
@@ -234,6 +278,7 @@ Dependencies( target_test_common, [ target_simple_process ]);
 # Install 
 #
 Install( install_libs, '$(CASUAL_HOME)/lib')
+Install( install_headers, '$(CASUAL_HOME)/include')
 
 
 

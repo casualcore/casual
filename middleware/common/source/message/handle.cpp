@@ -1,8 +1,5 @@
 //!
-//! handle.cpp
-//!
-//! Created on: Oct 13, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/message/handle.h"
@@ -18,16 +15,18 @@ namespace casual
          namespace handle
          {
 
+
+
             void Shutdown::operator () ( message_type& message)
             {
-               log::internal::debug << "shutdown received from: " << message.process << '\n';
+               log::debug << "shutdown received from: " << message.process << '\n';
 
                throw exception::Shutdown{ "shutdown " + common::process::path()};
             }
 
             void Ping::operator () ( server::ping::Request& message)
             {
-               log::internal::debug << "pinged by process: " << message.process << '\n';
+               log::debug << "pinged by process: " << message.process << '\n';
 
                server::ping::Reply reply;
                reply.correlation = message.correlation;
@@ -41,12 +40,12 @@ namespace casual
                //
                try
                {
-                  signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate, signal::Type::terminate})};
+                  signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
                   ipc.send( reply, communication::ipc::policy::Blocking{});
                }
                catch( common::exception::queue::Unavailable&)
                {
-                  log::internal::debug << "queue unavailable: " << message.process << " - action: ignore\n";
+                  log::debug << "queue unavailable: " << message.process << " - action: ignore\n";
                }
             }
 

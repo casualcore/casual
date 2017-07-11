@@ -1,8 +1,5 @@
 //!
-//! queue.h
-//!
-//! Created on: Jun 14, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef COMMON_MESSAGE_QUEUE_H_
@@ -29,7 +26,7 @@ namespace casual
                std::string properties;
                std::string reply;
 
-               common::platform::time_point avalible;
+               common::platform::time::point::type avalible;
                std::string type;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -45,7 +42,7 @@ namespace casual
 
             struct base_message : base_message_information
             {
-               common::platform::binary_type payload;
+               common::platform::binary::type payload;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -191,7 +188,7 @@ namespace casual
 
 
                      std::size_t redelivered = 0;
-                     common::platform::time_point timestamp;
+                     common::platform::time::point::type timestamp;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -302,7 +299,7 @@ namespace casual
                   std::size_t count;
                   std::size_t size;
                   std::size_t uncommitted;
-                  platform::time_point timestamp;
+                  platform::time::point::type timestamp;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -336,10 +333,10 @@ namespace casual
                {
                   std::size_t queue;
                   std::size_t origin;
-                  platform::binary_type trid;
+                  platform::binary::type trid;
                   std::size_t state;
                   std::size_t redelivered;
-                  platform::time_point timestamp;
+                  platform::time::point::type timestamp;
 
                   std::size_t size;
 

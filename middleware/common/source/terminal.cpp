@@ -79,7 +79,7 @@ namespace casual
 
             namespace color
             {
-               color_t no_color{ ""};
+               color_t no_color{ "\033[0m"};
                color_t grey{ "\033[0;30m"};
                color_t red{ "\033[0;31m"};
                color_t green{ "\033[0;32m"};

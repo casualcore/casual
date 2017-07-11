@@ -273,6 +273,11 @@ namespace casual
                return m_document;
             }
 
+            const tree& Load::operator() ( const platform::binary::type& ini)
+            {
+               return operator() ( ini.data(), ini.size());
+            }
+
             const tree& Load::operator() ( const char* ini, std::size_t size)
             {
                std::istringstream stream( std::string( ini, size));
@@ -336,10 +341,10 @@ namespace casual
 
 
                   //
-                  // Note that we return 'true' anyway
+                  // Note that we return 'true' anyway - Why?
                   //
 
-                  return std::make_tuple( 0, true);
+                  return std::make_tuple( 0, false);
 
                }
 
@@ -363,12 +368,11 @@ namespace casual
                         return false;
                      }
                   }
-                  else
-                  {
-                     //
-                     // It must have been a container-content and thus already found
-                     //
-                  }
+
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
 
                   return true;
 
@@ -394,12 +398,11 @@ namespace casual
                         return false;
                      }
                   }
-                  else
-                  {
-                     //
-                     // It must have been a container-content and thus already found
-                     //
-                  }
+
+                  //
+                  // Either we found the node or we assume it's an 'unnamed' container
+                  // element that is already pushed to the stack
+                  //
 
                   return true;
 
@@ -571,7 +574,14 @@ namespace casual
             {
                std::ostringstream stream;
                local::write_flat( m_document, stream);
-               ini.assign( stream.str());
+               ini = stream.str();
+            }
+
+            void Save::operator() ( platform::binary::type& ini) const
+            {
+               std::string buffer;
+               operator()( buffer);
+               ini.assign( std::begin( buffer), std::end( buffer));
             }
 
             namespace writer

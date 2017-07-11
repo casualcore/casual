@@ -1,8 +1,5 @@
 //!
-//! platform
-//!
-//! Created on: Dec 23, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "sf/platform.h"
@@ -22,36 +19,36 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name)
          {
-            platform::binary_type uuid;
-            archive >> sf::makeNameValuePair( name, uuid);
+            platform::binary::type uuid;
+            archive >> name::value::pair::make( name, uuid);
 
             common::range::copy_max( uuid, value.get());
          }
 
          void serialize( Writer& archive, const platform::Uuid& value, const char* name)
          {
-            platform::binary_type uuid( sizeof( value.get()));
+            platform::binary::type uuid( sizeof( value.get()));
             common::range::copy( value.get(), std::begin( uuid));
 
-            archive << sf::makeNameValuePair( name, uuid);
+            archive << name::value::pair::make( name, uuid);
          }
 
          void serialize( Reader& archive, common::process::Handle& value, const char* name)
          {
             if( archive.serialtype_start( name))
             {
-               archive >> sf::makeNameValuePair( "pid", value.pid);
-               archive >> sf::makeNameValuePair( "queue", value.queue);
+               archive >> name::value::pair::make( "pid", value.pid);
+               archive >> name::value::pair::make( "queue", value.queue);
             }
             archive.serialtype_end( name);
          }
          void serialize( Writer& archive, const common::process::Handle& value, const char* name)
          {
-            if( archive.serialtype_start( name))
-            {
-               archive << sf::makeNameValuePair( "pid", value.pid);
-               archive << sf::makeNameValuePair( "queue", value.queue);
-            }
+            archive.serialtype_start( name);
+
+            archive << name::value::pair::make( "pid", value.pid);
+            archive << name::value::pair::make( "queue", value.queue);
+
             archive.serialtype_end( name);
          }
 
@@ -59,8 +56,8 @@ namespace casual
          {
             if( archive.serialtype_start( name))
             {
-               archive >> sf::makeNameValuePair( "name", value.name);
-               archive >> sf::makeNameValuePair( "id", value.id);
+               archive >> name::value::pair::make( "name", value.name);
+               archive >> name::value::pair::make( "id", value.id);
             }
             archive.serialtype_end( name);
 
@@ -68,37 +65,37 @@ namespace casual
 
          void serialize( Writer& archive, const common::domain::Identity& value, const char* name)
          {
-            if( archive.serialtype_start( name))
-            {
-               archive << sf::makeNameValuePair( "name", value.name);
-               archive << sf::makeNameValuePair( "id", value.id);
-            }
+            archive.serialtype_start( name);
+
+            archive << name::value::pair::make( "name", value.name);
+            archive << name::value::pair::make( "id", value.id);
+
             archive.serialtype_end( name);
          }
 
 
-         void serialize( Reader& archive, platform::time_point& value, const char* name)
+         void serialize( Reader& archive, platform::time::point::type& value, const char* name)
          {
-            platform::time_point::rep representation;
-            archive >> sf::makeNameValuePair( name, representation);
-            value = platform::time_point( platform::time_point::duration( representation));
+            platform::time::point::type::rep representation;
+            archive >> name::value::pair::make( name, representation);
+            value = platform::time::point::type( platform::time::point::type::duration( representation));
          }
 
-         void serialize( Writer& archive, const platform::time_point& value, const char* name)
+         void serialize( Writer& archive, const platform::time::point::type& value, const char* name)
          {
-            archive << sf::makeNameValuePair( name, value.time_since_epoch().count());
+            archive << name::value::pair::make( name, value.time_since_epoch().count());
          }
 
          void serialize( Reader& archive, std::chrono::nanoseconds& value, const char* name)
          {
             decltype( value.count()) count;
-            archive >> sf::makeNameValuePair( name, count);
+            archive >> name::value::pair::make( name, count);
             value = std::chrono::nanoseconds( count);
          }
 
          void serialize( Writer& archive, const std::chrono::nanoseconds& value, const char* name)
          {
-            archive << sf::makeNameValuePair( name, value.count());
+            archive << name::value::pair::make( name, value.count());
          }
 
       } // archive

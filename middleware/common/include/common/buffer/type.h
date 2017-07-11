@@ -36,7 +36,7 @@ namespace casual
 
             std::string combine( const char* type, const char* subtype = nullptr);
 
-            inline auto dismantle( const std::string& type) -> decltype( range::split( type, '/'))
+            inline auto dismantle( const std::string& type)
             {
                return range::split( type, '/');
             }
@@ -49,8 +49,9 @@ namespace casual
          {
             Payload();
             Payload( std::nullptr_t);
-            Payload( std::string type, platform::binary_type buffer);
-            Payload( std::string type, platform::binary_type::size_type size);
+            Payload( std::string type);
+            Payload( std::string type, platform::binary::type buffer);
+            Payload( std::string type, platform::binary::size::type size);
 
             //!
             //! g++ does not generate noexecpt move ctor/assignment
@@ -66,7 +67,7 @@ namespace casual
             bool null() const;
 
             std::string type;
-            platform::binary_type memory;
+            platform::binary::type memory;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -81,16 +82,16 @@ namespace casual
          {
             struct Send
             {
-               Send( const Payload& payload, platform::binary_size_type transport, platform::binary_size_type reserved)
-                  :  transport( transport), reserved( reserved), m_payload( &payload) {}
+               Send( const Payload& payload, platform::binary::size::type transport, platform::binary::size::type reserved)
+                  :  transport( transport), reserved( reserved), m_payload( payload) {}
 
                Send( const Payload& payload)
-                  : m_payload( &payload) {}
+                  : transport( payload.memory.size()), m_payload( payload) {}
 
 
-               inline const Payload& payload() const { return *m_payload;};
-               platform::binary_size_type transport = 0;
-               platform::binary_size_type reserved = 0;
+               inline const Payload& payload() const { return m_payload.get();};
+               platform::binary::size::type transport = 0;
+               platform::binary::size::type reserved = 0;
 
 
 
@@ -106,8 +107,9 @@ namespace casual
 
             private:
                // gcc 4.9.4 requires Payload to be defined, switch to pointer untill we can use a better compiler
-               //std::reference_wrapper< const Payload> m_payload;
-               const Payload* m_payload;
+               //const Payload* m_payload;
+               std::reference_wrapper< const Payload> m_payload;
+
             };
 
          } // payload
@@ -115,7 +117,7 @@ namespace casual
          struct Buffer
          {
             Buffer( Payload payload);
-            Buffer( std::string type, platform::binary_type::size_type size);
+            Buffer( std::string type, platform::binary::size::type size);
 
             Buffer( Buffer&&) noexcept;
             Buffer& operator = ( Buffer&&) noexcept;
@@ -123,9 +125,9 @@ namespace casual
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
-            platform::binary_type::size_type transport( platform::binary_type::size_type user_size) const;
+            platform::binary::size::type transport(  platform::binary::size::type user_size) const;
 
-            platform::binary_type::size_type reserved() const;
+            platform::binary::size::type reserved() const;
 
             Payload payload;
          };

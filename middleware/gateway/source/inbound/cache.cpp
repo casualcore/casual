@@ -6,7 +6,6 @@
 #include "gateway/common.h"
 
 #include "common/algorithm.h"
-#include "common/trace.h"
 
 namespace casual
 {
@@ -68,8 +67,10 @@ namespace casual
                throw exception::Shutdown{ "conditional variable wants to shutdown..."};
             }
 
-            m_messages.push_back( std::move( message));
             m_size += message.payload.size();
+            m_messages.push_back( std::move( message));
+
+            //log << "cache: " << *this << '\n';
 
             if( ! vacant( lock))
             {
@@ -97,6 +98,8 @@ namespace casual
             auto result = std::move( *found);
             m_messages.erase( std::begin( found));
             m_size -= result.payload.size();
+
+            //log << "cache: " << *this << '\n';
 
             if( m_state == State::limit && vacant( lock))
             {
@@ -135,6 +138,25 @@ namespace casual
          {
             lock_type lock{ m_mutex};
             return { m_size, m_messages.size()};
+         }
+
+         std::ostream& operator << ( std::ostream& out, const Cache& value)
+         {
+            auto get_state = []( Cache::State state){
+               switch( state)
+               {
+                  case Cache::State::limit: return "limit";
+                  case Cache::State::terminate: return "terminate";
+                  case Cache::State::vacant: return "vacant";
+               }
+               return "?";
+            };
+
+            return out << "{ size: " << value.m_size
+                  << ", messages: " << value.m_messages.size()
+                  << ", state: " << get_state( value.m_state)
+                  << ", limit: { messages: " << value.m_limit.messages << ", size: " << value.m_limit.size << '}'
+                  << '}';
          }
 
 

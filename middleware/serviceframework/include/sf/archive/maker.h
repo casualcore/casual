@@ -1,8 +1,5 @@
 //!
-//! casual_sf_archivebuffer.h
-//!
-//! Created on: Nov 19, 2012
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_SF_ARCHIVE_MAKER_H_
@@ -10,6 +7,8 @@
 
 
 #include <memory>
+#include <string>
+#include <iosfwd>
 
 #include "sf/archive/archive.h"
 
@@ -24,43 +23,39 @@ namespace casual
          {
 
             template<typename A>
-            class Base
+            class Interface
             {
             public:
                typedef A archive_type;
 
-               virtual ~Base() = default;
+               virtual ~Interface() = default;
                virtual archive_type& archive() = 0;
                virtual void serialize() = 0;
             };
 
 
-            namespace holder
+            template<typename T>
+            class Holder
             {
+            public:
+               typedef std::unique_ptr<T> base_type;
 
-               template<typename T>
-               class Base
-               {
-               public:
-                  typedef std::unique_ptr<maker::Base<T>> base_type;
+               Holder( base_type&& base) : m_base( std::move( base)) {}
+               Holder( Holder&& rhs) = default;
+               ~Holder() = default;
 
-                  Base( base_type&& base) : m_base( std::move( base)) {}
-                  Base( Base&& rhs) = default;
-                  ~Base() = default;
-
-               protected:
-                  base_type m_base;
-               };
-
-            } // holder
-
+            protected:
+               base_type m_base;
+            };
 
          } // maker
 
 
          namespace reader
          {
-            typedef maker::holder::Base<Reader> Base;
+            using Interface = maker::Interface<Reader>;
+
+            using Base = maker::Holder<Interface>;
 
             class Holder : public Base
             {
@@ -87,7 +82,25 @@ namespace casual
 
             namespace from
             {
-               Holder file( const std::string& name);
+               //! @{
+               Holder data();
+               Holder data( std::istream& stream);
+               //! @}
+
+
+               //! @{
+               Holder file( std::string name);
+               //! @}
+
+               //! @{
+               Holder name( std::string name);
+               Holder name( std::istream& stream, std::string name);
+               //! @}
+
+               Holder buffer( const platform::binary::type& data, std::string type);
+
+
+
             } // from
 
          } // reader
@@ -95,7 +108,8 @@ namespace casual
 
          namespace writer
          {
-            typedef maker::holder::Base<Writer> Base;
+            using Interface = maker::Interface<sf::archive::Writer>;
+            using Base = maker::Holder<Interface>;
 
             class Holder : public Base
             {
@@ -118,12 +132,21 @@ namespace casual
                   m_base->serialize();
                   return *this;
                }
-
             };
 
             namespace from
             {
-               Holder file( const std::string& name);
+               //! @{
+               Holder file( std::string name);
+               //! @}
+
+               //! @{
+               Holder name( std::string name);
+               Holder name( std::ostream& stream, std::string name);
+               //! @}
+
+               Holder buffer( platform::binary::type& data, std::string type);
+
             } // from
 
          } // writer

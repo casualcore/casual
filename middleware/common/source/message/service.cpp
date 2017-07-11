@@ -10,17 +10,63 @@ namespace casual
    {
       namespace message
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace output
+               {
+                  void base_service( std::ostream& out, const service::Base& value)
+                  {
+                     out << "name: " << value.name
+                           << ", category: " << value.category
+                           << ", mode: " << value.transaction;
+                  }
+               } // output
+            } // <unnamed>
+         } // local
+
+         namespace service
+         {
+            std::ostream& operator << ( std::ostream& out, const Base& value)
+            {
+               out << "{ ";
+               local::output::base_service( out, value);
+               return out << '}';
+            }
+         } // service
          std::ostream& operator << ( std::ostream& out, const Service& value)
          {
-            return out << "{ name: " << value.name
-                  << ", type: " << value.type
-                  << ", timeout: " << value.timeout.count()
-                  << ", mode: " << value.transaction
-                  << '}';
+            out << "{ ";
+            local::output::base_service( out, value);
+            return out << ", timeout: " << value.timeout.count() << '}';
          }
 
          namespace service
          {
+            namespace call
+            {
+               std::ostream& operator << ( std::ostream& out, const call::Service& value)
+               {
+                  out << "{ ";
+                  local::output::base_service( out, value);
+                  return out << ", timeout: " << value.timeout.count()
+                        << ", event_subscribers: " << range::make( value.event_subscribers)
+                        << '}';
+               }
+            } // call
+
+            std::ostream& operator << ( std::ostream& out, Transaction::State value)
+            {
+               switch( value)
+               {
+                  case Transaction::State::error: return out << "error";
+                  case Transaction::State::active: return out << "active";
+                  case Transaction::State::rollback: return out << "rollback";
+                  case Transaction::State::timeout: return out << "timeout";
+                  default: return out << "unknown";
+               }
+            }
 
             std::ostream& operator << ( std::ostream& out, const Transaction& message)
             {
@@ -90,7 +136,7 @@ namespace casual
             namespace call
             {
 
-               std::ostream& operator << ( std::ostream& out, const base_call& value)
+               std::ostream& operator << ( std::ostream& out, const common_request& value)
                {
                   auto& header = common::service::header::fields();
 
@@ -102,22 +148,19 @@ namespace casual
                      << '}';
                }
 
-               namespace callee
-               {
-                  std::ostream& operator << ( std::ostream& out, const Request& value)
-                  {
-                     return out << "{ base: " << static_cast< const base_call&>( value) << ", buffer: " << value.buffer << '}';
-                  }
-
-               } // caller
 
                std::ostream& operator << ( std::ostream& out, const Reply& message)
                {
-                  return out << "{ descriptor: " << message.descriptor
-                        << ", transaction: " << message.transaction
-                        << ", error: " << message.error
+                  return out << "{ transaction: " << message.transaction
+                        << ", status: " << message.status
                         << ", code: " << message.code
                         << ", buffer: " << message.buffer
+                        << '}';
+               }
+
+               std::ostream& operator << ( std::ostream& out, const ACK& message)
+               {
+                  return out << "{ process: " << message.process
                         << '}';
                }
 

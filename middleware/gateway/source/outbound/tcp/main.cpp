@@ -12,9 +12,6 @@
 #include "common/domain.h"
 #include "common/arguments.h"
 
-#include "common/trace.h"
-
-
 namespace casual
 {
    using namespace common;

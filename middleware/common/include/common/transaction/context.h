@@ -82,7 +82,7 @@ namespace casual
             //!
             //! Start a new transaction
             //!
-            void start( const platform::time_point& start);
+            void start( const platform::time::point::type& start);
 
             //!
             //! trid server is invoked with
@@ -97,7 +97,7 @@ namespace casual
             //!
             //! commits or rollback transaction created from this server
             //!
-            void finalize( message::service::call::Reply& message, int return_state);
+            message::service::Transaction finalize( bool commit);
 
 
             //!
@@ -112,7 +112,7 @@ namespace casual
             bool associated( const Uuid& correlation);
 
 
-            void set( const std::vector< Resource>& resources);
+            void configure( const std::vector< Resource>& resources, std::vector< std::string> names);
 
 
             //!
@@ -150,7 +150,7 @@ namespace casual
             {
                std::vector< Resource> all;
 
-               using range_type = typename common::range::traits< std::vector< Resource>>::type;
+               using range_type = common::range::type_t< std::vector< Resource>>;
                range_type fixed;
                range_type dynamic;
 

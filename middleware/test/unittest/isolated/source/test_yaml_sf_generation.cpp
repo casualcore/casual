@@ -1,8 +1,5 @@
 //!
-//! test_yaml_sf_generation.cpp
-//!
-//! Created on: Feb 3, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
@@ -117,7 +114,7 @@ proxy:
          archive & CASUAL_MAKE_NVP( name);
          archive & CASUAL_MAKE_NVP( documentation);
          archive & CASUAL_MAKE_NVP( language);
-         archive & sf::makeNameValuePair( "namespace", name_space);
+         archive & sf::name::value::pair::make( "namespace", name_space);
          archive & CASUAL_MAKE_NVP( output_headers);
          archive & CASUAL_MAKE_NVP( output_source);
 
@@ -151,7 +148,7 @@ proxy:
       {
          archive & CASUAL_MAKE_NVP( name);
          archive & CASUAL_MAKE_NVP( documentation);
-         archive & sf::makeNameValuePair( "return", return_type);
+         archive & sf::name::value::pair::make( "return", return_type);
          archive & CASUAL_MAKE_NVP( arguments);
       }
 

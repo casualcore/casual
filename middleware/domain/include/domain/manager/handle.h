@@ -12,6 +12,7 @@
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
 
+
 namespace casual
 {
    namespace domain
@@ -45,6 +46,7 @@ namespace casual
 
 
 
+
             struct Base
             {
                Base( State& state);
@@ -55,45 +57,78 @@ namespace casual
                std::reference_wrapper< State> m_state;
             };
 
+            struct Shutdown : Base
+            {
+               using Base::Base;
+               void operator () ( common::message::shutdown::Request& message);
+            };
+
 
             namespace scale
             {
 
-               struct Executable : Base
-               {
-                  using Base::Base;
+               void instances( State& state, state::Server& server);
+               void instances( State& state, state::Executable& executable);
 
-                  void operator () ( common::message::domain::scale::Executable& executable);
-               };
+
+               namespace prepare
+               {
+                  struct Shutdown : Base
+                  {
+                     using Base::Base;
+                     void operator () ( common::message::domain::process::prepare::shutdown::Reply& message);
+                  };
+               } // prepare
 
             } // scale
 
 
 
+            namespace event
+            {
+               namespace subscription
+               {
+                  struct Begin : Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( const common::message::event::subscription::Begin& message);
+                  };
+
+                  struct End : Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( const common::message::event::subscription::End& message);
+                  };
+
+               } // subscription
+
+
+               namespace process
+               {
+                  void exit( const common::process::lifetime::Exit& exit);
+
+                  struct Exit : Base
+                  {
+                     using Base::Base;
+
+                     void operator () ( common::message::event::process::Exit& message);
+                  };
+               } // process
+
+               struct Error : Base
+               {
+                  using Base::Base;
+
+                  void operator () ( common::message::event::domain::Error& message);
+               };
+
+            } // event
 
 
             namespace process
             {
-               namespace termination
-               {
-                  struct Registration : Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( const common::message::domain::process::termination::Registration& message);
-                  };
-
-
-                  void event( const common::process::lifetime::Exit& exit);
-
-                  struct Event : Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( common::message::domain::process::termination::Event& message);
-                  };
-               } // termination
-
                struct Connect : public Base
                {
                   using Base::Base;
@@ -112,29 +147,20 @@ namespace casual
 
             namespace configuration
             {
-               namespace transaction
-               {
-                  struct Resource : public Base
-                  {
-                     using Base::Base;
-
-                     void operator () ( const common::message::domain::configuration::transaction::resource::Request& message);
-                  };
-
-               } // transaction
-
-               struct Gateway : public Base
+               struct Domain : public Base
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::domain::configuration::gateway::Request& message);
+                  void operator () ( const common::message::domain::configuration::Request& message);
                };
 
-               struct Queue : public Base
+
+               struct Server : public Base
                {
                   using Base::Base;
 
-                  void operator () ( const common::message::domain::configuration::queue::Request& message);
+                  void operator () ( const common::message::domain::configuration::server::Request& message);
+
                };
 
             } // configuration

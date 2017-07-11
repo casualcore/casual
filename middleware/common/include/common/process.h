@@ -9,7 +9,6 @@
 #include "common/exception.h"
 #include "common/file.h"
 
-#include "common/internal/log.h"
 #include "common/algorithm.h"
 
 #include "common/marshal/marshal.h"
@@ -37,14 +36,9 @@ namespace casual
          const std::string& path();
 
          //!
-         //! Sets the path of the current process
+         //! @return the basename of the current process
          //!
-         void path( const std::string& path);
-
-         //!
-         //! @return process id (pid) for current process.
-         //!
-         platform::pid::type id();
+         const std::string& basename();
 
 
          //!
@@ -54,7 +48,7 @@ namespace casual
          {
             Handle() = default;
             Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
+            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid),  queue( queue)  {}
 
             platform::pid::type pid = 0;
             platform::ipc::id::type queue = 0;
@@ -110,23 +104,23 @@ namespace casual
          //!
          Handle handle();
 
+         //!
+         //! @return process id (pid) for current process.
+         //!
+         platform::pid::type id();
+
+         inline platform::pid::type id( const Handle& handle) { return handle.pid;}
+         inline platform::pid::type id( platform::pid::type pid) { return pid;}
+
          namespace instance
          {
-            namespace termination
-            {
-               //!
-               //! Register interest to get notified when a process
-               //! terminates
-               //!
-               //! @param process handle to send the notification to
-               //!
-               void registration( const Handle& process);
-
-            } // termination
 
             namespace identity
             {
-               const Uuid& broker();
+               namespace service
+               {
+                  const Uuid& manager();
+               } // service
 
                namespace forward
                {
@@ -145,7 +139,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker();
+                  const Uuid& manager();
                } // queue
 
                namespace transaction
@@ -241,24 +235,27 @@ namespace casual
                   template< typename R, typename P>
                   Pattern( std::chrono::duration< R, P> time, std::size_t quantity)
                    : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
-                   {}
+                  {}
 
-                   Pattern();
 
-                  std::chrono::microseconds time;
-                  std::size_t quantity = 0;
+                  bool done();
+
+                  friend std::ostream& operator << ( std::ostream& out, const Pattern& value);
+
+               private:
+                  std::chrono::microseconds m_time;
+                  std::size_t m_quantity = 0;
                };
 
-               Sleep( std::vector< Pattern> pattern);
+               //Sleep( std::vector< Pattern> pattern);
                Sleep( std::initializer_list< Pattern> pattern);
 
-               void operator () ();
+               bool operator () ();
 
+               friend std::ostream& operator << ( std::ostream& out, const Sleep& value);
 
             private:
-
                std::vector< Pattern> m_pattern;
-               std::size_t m_offset = 0;
             };
 
          } // pattern

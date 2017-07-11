@@ -1,0 +1,30 @@
+
+domain:
+
+  # name of this domain
+  name: domainA
+      
+  servers: 
+         
+      #  
+      # path to the server. If servers path are in PATH environment variable
+      # one can omitt the path part, and only use the executable name
+      #  
+    - path: ${CASUAL_HOME}/example/bin/casual-example-server
+      instances: 1 # how many instances should be started
+      note: Arbitary information of this server
+      
+    - alias: nginx
+      note: nginx casual style
+      path: ${CASUAL_HOME}/nginx/sbin/nginx
+      arguments: [-p,"${CASUAL_HOME}/nginx"]
+      instances: 1
+
+  #
+  # gateway configuration
+  #
+  gateway:
+    listeners:
+      # which adress this domain should listen on
+      - address: domainA:7771
+ 

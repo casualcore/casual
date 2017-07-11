@@ -35,10 +35,12 @@ namespace casual
                   {
                      Service() = default;
                      Service( std::string name,
-                           std::uint64_t type = 0,
+                           std::string category = {},
                            common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
                            std::size_t hops = 0)
-                      : message::Service{ std::move( name), type, transaction}, hops{ hops} {}
+                      : message::Service{ std::move( name), std::move( category), transaction}, hops{ hops} {}
+
+                      Service( std::function<void(Service&)> foreign) { foreign( *this);}
 
                      std::size_t hops = 0;
 
@@ -58,6 +60,8 @@ namespace casual
 
                      Queue( std::string name, std::size_t retries) : name{ std::move( name)}, retries{ retries} {}
                      Queue( std::string name) : name{ std::move( name)} {}
+
+                     Queue( std::function<void(Queue&)> foreign) { foreign( *this);}
 
                      std::string name;
                      std::size_t retries = 0;

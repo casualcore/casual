@@ -9,6 +9,7 @@
 #include "common/communication/message.h"
 #include "common/traits.h"
 #include "common/marshal/complete.h"
+#include "common/log/category.h"
 
 
 #include <map>
@@ -83,10 +84,7 @@ namespace casual
 
                basic_handler& operator += ( basic_handler&& other)
                {
-                  for( auto&& handler : other.m_handlers)
-                  {
-                     m_handlers.insert( std::move( handler));
-                  }
+                  add( m_handlers, std::move( other));
                   return *this;
                }
 
@@ -94,6 +92,17 @@ namespace casual
                {
                   lhs += std::move( rhs);
                   return std::move( lhs);
+               }
+
+               friend std::ostream& operator << ( std::ostream& out, const basic_handler& value)
+               {
+                  if( out)
+                  {
+                     auto types = value.types();
+                     return out << "{ types: " << range::make( types)
+                           << '}';
+                  }
+                  return out;
                }
 
             private:
@@ -111,7 +120,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
+                        log::category::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
                      }
                   }
                   return false;
@@ -139,7 +148,7 @@ namespace casual
                         std::is_same< typename traits_type::result_type, void>::value
                         || std::is_same< typename traits_type::result_type, bool>::value , "handlers has to have this signature: void|bool( <some message>), can be declared const");
 
-                  using message_type = typename std::decay< typename traits_type::template argument< 0>::type>::type;
+                  using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;
 
 
                   handle_holder( handle_holder&&) = default;
@@ -168,27 +177,30 @@ namespace casual
                typedef std::map< message_type, std::unique_ptr< base_handler> > handlers_type;
 
 
-               static void assign( handlers_type& result)
+               template< typename H>
+               static void add( handlers_type& result, H&& handler)
                {
+                  using handle_type = handle_holder< typename std::decay< H>::type>;
 
+                  auto holder = std::make_unique< handle_type>( std::forward< H>( handler));
+
+                  result[ handle_type::message_type::type()] = std::move( holder);
                }
+
+               static void add( handlers_type& result, basic_handler&& holder)
+               {
+                  for( auto&& handler : holder.m_handlers)
+                  {
+                     result[ handler.first] = std::move( handler.second);
+                  }
+               }
+
+               static void assign( handlers_type& result) { }
 
                template< typename H, typename... Args>
                static void assign( handlers_type& result, H&& handler, Args&& ...handlers)
                {
-                  using handle_type = handle_holder< typename std::decay< H>::type>;
-
-                  //
-                  //  We need to override handlers in unittest.
-                  //
-                  // assert( result.count( handle_type::message_type::type()) == 0);
-
-                  auto holder = make::unique< handle_type>( std::forward< H>( handler));
-
-                  result.emplace(
-                        handle_type::message_type::type(),
-                        std::move( holder));
-
+                  add( result, std::forward< H>( handler));
                   assign( result, std::forward< Args>( handlers)...);
                }
 
@@ -227,7 +239,6 @@ namespace casual
                      handler( device.next( typename device_type::blocking_policy{}));
                   }
                }
-
             } // blocking
 
          } // dispatch
