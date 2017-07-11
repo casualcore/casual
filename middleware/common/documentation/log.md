@@ -2,8 +2,6 @@
 
 ## Table of Contents
 
-<!-- toc -->
-
 - [Overview](#markdown-header-overview)
 - [Implementation](#markdown-header-implementation)
   * [TODO](#markdown-header-todo)
@@ -13,8 +11,6 @@
   * [Environment](#markdown-header-environment)
     + [Example](#markdown-header-example)
   * [Format](#markdown-header-format)
-
-<!-- tocstop -->
 
 ## Overview
 

@@ -5,8 +5,6 @@ experience how this stuff works*
 
 ## Table of Contents
 
-<!-- toc -->
-
 - [Products](#markdown-header-products)
   * [Make](#markdown-header-make)
   * [Middleware](#markdown-header-middleware)
@@ -24,8 +22,6 @@ experience how this stuff works*
 - [Contact](#markdown-header-contact)
 - [License](#markdown-header-license)
 - [Summary](#markdown-header-summary)
-
-<!-- tocstop -->
 
 ## Products
 

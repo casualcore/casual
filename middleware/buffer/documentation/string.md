@@ -2,15 +2,11 @@
 
 ## Table of Contents
 
-<!-- toc -->
-
 - [Overview](#markdown-header-overview)
 - [Implementation](#markdown-header-implementation)
 - [Development](#markdown-header-development)
   * [Sample](#markdown-header-sample)
   * [Remarks](#markdown-header-remarks)
-
-<!-- tocstop -->
 
 ## Overview
 

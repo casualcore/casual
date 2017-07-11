@@ -4,8 +4,6 @@ Defines what messages is sent between domains and exactly what they contain.
 
 ## Table of Contents
 
-<!-- toc -->
-
 - [Definitions](#markdown-header-definitions)
   * [common::communication::message::complete::network::Header](#markdown-header-commoncommunicationmessagecompletenetworkheader)
 - [Discovery messages](#markdown-header-discovery-messages)
@@ -27,8 +25,6 @@ Defines what messages is sent between domains and exactly what they contain.
     + [message::interdomain::transaction::resource::receive::rollback::Request](#markdown-header-messageinterdomaintransactionresourcereceiverollbackrequest)
     + [message::interdomain::transaction::resource::receive::rollback::Reply](#markdown-header-messageinterdomaintransactionresourcereceiverollbackreply)
 - [Binary examples](#markdown-header-binary-examples)
-
-<!-- tocstop -->
 
 ## Definitions
 

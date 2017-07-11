@@ -2,8 +2,6 @@
 
 ## Table of Contents
 
-<!-- toc -->
-
 - [Objective](#markdown-header-objective)
 - [Create domains](#markdown-header-create-domains)
   * [Configuration](#markdown-header-configuration)
@@ -15,8 +13,6 @@
     + [Domain A](#markdown-header-domain-a-1)
     + [Domain B](#markdown-header-domain-b-1)
   * [Enqueue a message](#markdown-header-enqueue-a-message)
-
-<!-- tocstop -->
 
 ## Objective
 

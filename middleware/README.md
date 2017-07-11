@@ -4,8 +4,6 @@ The main product in the casual suite.
 
 ## Table of Contents
 
-<!-- toc -->
-
 - [What is casual-middleware?](#markdown-header-what-is-casual-middleware)
 - [Objectives](#markdown-header-objectives)
 - [Why casual?](#markdown-header-why-casual)
@@ -32,8 +30,6 @@ The main product in the casual suite.
   * [Serviceframework](#markdown-header-serviceframework)
   * [Transaction](#markdown-header-transaction)
     + [Two domains with one resource each](#markdown-header-two-domains-with-one-resource-each)
-
-<!-- tocstop -->
 
 ## What is casual-middleware?
 
