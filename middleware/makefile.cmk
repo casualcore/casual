@@ -19,7 +19,9 @@ with Scope():
 
     Build( 'service/makefile.cmk')
     Build( 'transaction/makefile.cmk')
-    Build( 'queue/makefile.cmk')    
+    Build( 'queue/makefile.cmk')  
+
+    Build( 'binding/makefile.cmk')  
     
 
 

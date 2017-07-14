@@ -1,10 +1,10 @@
 # field development
 
-## Sample
+## sample
 
 - [client](./../sample/client/source/field.cpp)
 
-## Remarks
+## remarks
 
 - No encoding of strings occurs
 
@@ -14,7 +14,7 @@
 
 - A field-repository might be needed for certain functionality
 
-## Tools
+## tools
 
 ### casual\_field\_make\_header
 

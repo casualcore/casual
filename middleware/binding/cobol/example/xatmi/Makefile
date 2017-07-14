@@ -7,29 +7,22 @@ export COBCPY
 
 BUILDSRV=$(CASUAL_HOME)/bin/casual-build-server
 
-LOCAL_ROOT=../..
-
-COPY_INCLUDE=$(LOCAL_ROOT)/copy
-
 CC=gcc
 CPP=g++
-CFLAGS=-I$(CASUAL_HOME)/include -I$(LOCAL_ROOT)/include
-CPPFLAGS=-Wall -Wextra -I$(LOCAL_ROOT)/include -I$(CASUAL_HOME)/include
+CFLAGS=-I$(CASUAL_HOME)/include
+CPPFLAGS=-Wall -Wextra -I$(CASUAL_HOME)/include
 LDFLAGS=-L$(CASUAL_HOME)/lib -lcasual-cobol-binding
-# COBFLAGS=`cob-config --cflags --libs`
-COBFLAGS=$(shell cob-config --cflags --libs) -I$(COPY_INCLUDE)
+
+COB=cob
+COBFLAGS=-xg -std=cobol85
+#COBFLAGS=-x -Wall -std=cobol85 $(shell cob-config --cflags --libs) $(CFLAGS)
+COBCPY=.
 
 all:	simpserv simpcl CSIMPCL
 
 CSIMPCL:  CSIMPCL.cbl
-	cobc -x -Wall -std=cobol85 CSIMPCL.cbl $(COBFLAGS) $(CFLAGS) $(LDFLAGS)
-
-simpcl:  simpcl.c
-	$(CPP) -I/usr/local/casual/include -o simpcl simpcl.c $(LDFLAGS)
-
-simpserv: simpserv.c
-	$(BUILDSRV) -v -c g++ -f simpserv.c -o simpserv -s TOUPPER
+	$(COB) CSIMPCL.cbl $(COBFLAGS) $(LDFLAGS)
 
 clean:
-	- rm *.o simpserv simpcl CSIMPCL
+	- rm *.o *.int *.idy CSIMPCL
 

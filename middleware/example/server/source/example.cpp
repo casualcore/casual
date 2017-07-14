@@ -4,8 +4,9 @@
 
 #include "xatmi.h"
 
+#include "common/algorithm.h"
 
-#include <array>
+#include <locale>
 
 namespace casual
 {
@@ -34,6 +35,15 @@ namespace casual
 
             void casual_example_rollback( TPSVCINFO* info)
             {
+               tpreturn( TPFAIL, 0, info->data, info->len, 0);
+            }
+
+            void casual_example_uppercase( TPSVCINFO* info)
+            {
+               auto buffer = common::range::make( info->data, info->len);
+
+               common::range::transform( buffer, buffer, ::toupper);
+
                tpreturn( TPFAIL, 0, info->data, info->len, 0);
             }
 

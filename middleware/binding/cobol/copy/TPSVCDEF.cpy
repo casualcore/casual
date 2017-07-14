@@ -35,5 +35,6 @@
        05 TPSERVICETYPE-FLAG        PIC S9(9) COMP-5.
                88 TPREQRSP                  VALUE IS 0.
                88 TPCONV                    VALUE IS 1.
-       05 SERVICE-NAME              PIC X(15).
+      * 05 SERVICE-NAME              PIC X(15).
+       05 SERVICE-NAME              PIC X(127).
 

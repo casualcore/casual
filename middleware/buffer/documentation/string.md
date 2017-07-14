@@ -1,6 +1,6 @@
 # string
 
-## Overview
+## overview
 
 This implementation contain a C-interface that offers functionality to set and get a null-terminated string, with some safety, into and from a buffer
 

@@ -1,6 +1,6 @@
 # order maintenance
 
-## Implementation
+## implementation
 
 The main idea is to keep the buffer "ready to go" without the need for extra marshalling when transported and thus data is stored in network byteorder etc from start
 
@@ -12,6 +12,6 @@ String is stored with null-termination
 
 Binary is stored with a size (network-long) and then it's data
 
-## ToDo:s
+## todo:s
 
 

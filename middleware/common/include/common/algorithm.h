@@ -450,37 +450,68 @@ namespace casual
       //!
       namespace range
       {
+         namespace category
+         {
+            struct fixed {};
+            struct output_iterator {};
+            struct container {};
 
-         template< typename Iter>
+            template< typename T, class Enable = void>
+            struct tag {};
+
+            template< typename T>
+            struct tag< T, std::enable_if_t< traits::container::is_sequence< T>::value>>
+            {
+               using type = category::container;
+            };
+
+            template< typename T>
+            struct tag< T, std::enable_if_t< traits::iterator::is_output< T>::value>>
+            {
+               using type = category::output_iterator;
+            };
+
+            template< typename T>
+            struct tag< T, std::enable_if_t< 
+               traits::is::iterable< T>::value
+               && ! traits::has::push_back< T>::value>>
+            {
+               using type = category::fixed;
+            };            
+
+
+
+            template< typename T>
+            using tag_t = typename tag< T>::type; 
+
+
+         }
+
+         template< typename Iter, typename = std::enable_if_t< common::traits::is::iterator< Iter>::value>>
          Range< Iter> make( Iter first, Iter last)
          {
             return Range< Iter>( first, last);
          }
 
-         template< typename Iter>
+         template< typename Iter, typename = std::enable_if_t< common::traits::is::iterator< Iter>::value>>
          Range< Iter> make( Iter first, std::size_t count)
          {
             return Range< Iter>( first, first + count);
          }
 
-         template< typename C, typename = std::enable_if_t<std::is_lvalue_reference< C>::value>>
+         template< typename C, typename = std::enable_if_t<std::is_lvalue_reference< C>::value && common::traits::is::iterable< C>::value>>
          auto make( C&& container)
          {
             return make( std::begin( container), std::end( container));
          }
 
 
-         template< typename C, typename = std::enable_if_t<std::is_lvalue_reference< C>::value>>
+         template< typename C, typename = std::enable_if_t<std::is_lvalue_reference< C>::value && common::traits::is::reverse::iterable< C>::value>>
          auto make_reverse( C&& container)
          {
             return make( container.rbegin(), container.rend());
          }
 
-         template< typename Iter>
-         auto make_reverse( Range< Iter> range)
-         {
-            return make( std::reverse_iterator< Iter>( range.end()), std::reverse_iterator< Iter>( range.begin()));
-         }
 
          template< typename Iter>
          constexpr Range< Iter> make( Range< Iter> range)
@@ -510,7 +541,7 @@ namespace casual
          template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dymmy = nullptr>
          constexpr auto size( R&& range) { return sizeof( R) / sizeof( *range);}
 
-         template< typename R, std::enable_if_t< ! std::is_array< std::remove_reference_t< R>>::value>* dymmy = nullptr>
+         template< typename R, std::enable_if_t< common::traits::has::size< R>::value>* dymmy = nullptr>
          constexpr auto size( R&& range) { return range.size();}
 
 
@@ -609,9 +640,9 @@ namespace casual
          }
 
          template< typename R>
-         auto to_reference( R&& range) -> std::vector< std::reference_wrapper< common::traits::remove_reference_t< decltype( *std::begin( range))>>>
+         auto to_reference( R&& range)
          {
-            std::vector< std::reference_wrapper< common::traits::remove_reference_t< decltype( *std::begin( range))>>> result;
+            std::vector< std::reference_wrapper< std::remove_reference_t< decltype( *std::begin( range))>>> result;
             result.reserve( size( range));
 
             std::copy( std::begin( range), std::end( range), std::back_inserter( result));
@@ -658,7 +689,7 @@ namespace casual
 
 
 
-         template< typename R>
+         template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          decltype( auto) reverse( R&& range)
          {
             std::reverse( std::begin( range), std::end( range));
@@ -666,35 +697,35 @@ namespace casual
          }
 
 
-         template< typename R, typename C>
+         template< typename R, typename C, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          decltype( auto) sort( R&& range, C compare)
          {
             std::sort( std::begin( range), std::end( range), compare);
             return std::forward< R>( range);
          }
 
-         template< typename R>
+         template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          decltype( auto) sort( R&& range)
          {
             std::sort( std::begin( range), std::end( range));
             return std::forward< R>( range);
          }
 
-         template< typename R, typename C>
+         template< typename R, typename C, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          decltype( auto) stable_sort( R&& range, C compare)
          {
             std::stable_sort( std::begin( range), std::end( range), compare);
             return std::forward< R>( range);
          }
 
-         template< typename R>
+         template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          decltype( auto) stable_sort( R&& range)
          {
             std::stable_sort( std::begin( range), std::end( range));
             return std::forward< R>( range);
          }
 
-         template< typename R, typename P>
+         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          auto partition( R&& range, P predicate)
          {
             auto middle = std::partition( std::begin( range), std::end( range), predicate);
@@ -702,7 +733,7 @@ namespace casual
          }
 
 
-         template< typename R, typename P>
+         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          auto stable_partition( R&& range, P predicate)
          {
             auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
@@ -710,29 +741,34 @@ namespace casual
          }
 
 
-         template< typename R, typename OutIter,
-            std::enable_if_t< common::traits::iterator::is_output< OutIter>::value>* dummy = nullptr>
+         template< typename R, typename OutIter, typename = std::enable_if_t< 
+            common::traits::iterator::is_output< OutIter>::value
+            && common::traits::is::iterable< R>::value>>
          auto copy( R&& range, OutIter output)
          {
             return std::copy( std::begin( range), std::end( range), output);
          }
-/*
-         template< typename R, typename Out,
-            std::enable_if_t< common::traits::container::is_sequence< Out>::value> = 0>
-         auto copy( R&& range, Out&& output)
+
+         template< typename R, typename Out, typename = std::enable_if_t< 
+            common::traits::has::push_back< Out>::value
+            && common::traits::is::iterable< R>::value>>
+         decltype( auto) copy( R&& range, Out&& output)
          {
             std::copy( std::begin( range), std::end( range), std::back_inserter( output));
             return std::forward< Out>( output);
          }
-*/
-         template< typename R, typename OutIter, typename P,
-            std::enable_if_t< common::traits::iterator::is_output< OutIter>::value>* dummy = nullptr>
+
+         template< typename R, typename OutIter, typename P, typename = std::enable_if_t< 
+            common::traits::iterator::is_output< OutIter>::value
+            && common::traits::is::iterable< R>::value>>
          auto copy_if( R&& range, OutIter output, P predicate)
          {
             return std::copy_if( std::begin( range), std::end( range), output, predicate);
          }
 
-         template< typename Range, typename Container>
+         template< typename Range, typename Container, typename = std::enable_if_t< 
+            common::traits::has::insert< Container>::value
+            && common::traits::is::iterable< Range>::value>>
          Container& append( Range&& source, Container& destination)
          {
             destination.insert( std::end( destination), std::begin( source), std::end( source));
@@ -801,6 +837,31 @@ namespace casual
             return container;
          }
 
+         namespace detail
+         {
+            template< typename R, typename C, typename T>
+            auto transform( R&& range, C& container, T transform, category::container)
+            {
+               container.reserve( range.size() + container.size());
+               std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
+               return make( std::end( container) - range.size(), std::end( container));
+            }
+
+            template< typename R, typename O, typename T>
+            decltype( auto) transform( R&& range, O&& output, T transform, category::fixed)
+            {
+               assert( range::size( output) >= range::size( range));
+               std::transform( std::begin( range), std::end( range), std::begin( output), transform);
+               return std::forward< O>( output);
+            }
+
+            template< typename R, typename O, typename T>
+            auto transform( R&& range, O&& output, T transform, category::output_iterator)
+            {
+               auto last = std::transform( std::begin( range), std::end( range), output, transform);
+               return range::make( last - range::size( range), last);;
+            }
+         }
 
          //!
          //! Transform @p range to @p container, using @p transform
@@ -810,11 +871,10 @@ namespace casual
          //!
          //! @return range containing the inserted transformed values, previous values in @p container is excluded.
          //!
-         template< typename R, typename C, typename T>
-         auto transform( R&& range, C& container, T transform)
+         template< typename R, typename O, typename T>
+         decltype( auto) transform( R&& range, O&& output, T&& transform)
          {
-            std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
-            return make( std::end( container) - range.size(), std::end( container));
+            return detail::transform( std::forward< R>( range), std::forward< O>( output), std::forward< T>( transform), category::tag_t< O>{} );
          }
 
          //!
@@ -858,7 +918,7 @@ namespace casual
          template< typename R, typename T, typename P>
          auto transform_if( R&& range, T transformer, P predicate)
          {
-            std::vector< typename std::remove_reference< decltype( transformer( *std::begin( range)))>::type> result;
+            std::vector< std::remove_reference_t< decltype( transformer( *std::begin( range)))>> result;
             transform_if( range, result, transformer, predicate);
             return result;
          }
@@ -1014,7 +1074,7 @@ namespace casual
          //! associate container specialization
          //!
          template< typename R, typename T,
-            std::enable_if_t< common::traits::container::is_associative< common::traits::decay_t< R>>::value>* dummy = nullptr>
+            std::enable_if_t< common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
          auto find( R&& range, T&& value)
          {
             return make( range.find( value), std::end( range));
@@ -1024,7 +1084,7 @@ namespace casual
          //! non associate container specialization
          //!
          template< typename R, typename T,
-            std::enable_if_t< ! common::traits::container::is_associative< common::traits::decay_t< R>>::value>* dummy = nullptr>
+            std::enable_if_t< ! common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
          auto find( R&& range, T&& value)
          {
             return make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));
@@ -1507,14 +1567,14 @@ namespace casual
       }
 
       template< typename Iter, typename C,
-         std::enable_if_t< common::traits::container::is_container< common::traits::remove_reference_t< C>>::value>* dummy = nullptr>
+         std::enable_if_t< common::traits::container::is_container< std::remove_reference_t< C>>::value>* dummy = nullptr>
       bool operator == ( const Range< Iter>& lhs, const C& rhs)
       {
          return range::equal( lhs, rhs);
       }
 
       template< typename C, typename Iter,
-         std::enable_if_t< common::traits::container::is_container< common::traits::remove_reference_t< C>>::value>* dummy = nullptr>
+         std::enable_if_t< common::traits::container::is_container< std::remove_reference_t< C>>::value>* dummy = nullptr>
       bool operator == ( C& lhs, const Range< Iter>& rhs)
       {
          return range::equal( lhs, rhs);

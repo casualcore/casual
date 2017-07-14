@@ -49,6 +49,10 @@
            PERFORM DO-TPGETRPLY. 
            DISPLAY "RECV-STRING: |" RECV-STRING "|".
 
+      *     DISPLAY "Call TPCONNECT"
+      *     MOVE SPACE TO RECV-STRING
+      *     PERFORM DO-TPCONNECT
+
            DISPLAY "End".
            PERFORM EXIT-PROGRAM. 
 
@@ -59,7 +63,7 @@
       *    MOVE 2 TO LEN.
            MOVE "X_OCTET" TO REC-TYPE.
       
-           MOVE "TOUPPER" TO SERVICE-NAME.
+           MOVE "casual/example/uppercase" TO SERVICE-NAME.
            SET TPBLOCK TO TRUE.
            SET TPNOTRAN TO TRUE.
            SET TPREPLY TO TRUE.
@@ -72,8 +76,11 @@
                 TPSTATUS-REC. 
       
            IF NOT TPOK
-                DISPLAY "TPCALL Failed"
+                DISPLAY "TPACALL Failed TP-STATUS=" TP-STATUS
            END-IF.
+           DISPLAY "Ret buffer TPTYPE-STATUS=" 
+                   TPTYPE-STATUS OF TPTYPE-REC 
+           .
       
       *****************************************************
       *  Issue a TPGETRPLY
@@ -82,7 +89,7 @@
       *    MOVE 2 TO LEN.
            MOVE "X_OCTET" TO REC-TYPE.
       
-           MOVE "TOUPPER" TO SERVICE-NAME.
+           MOVE "casual/example/uppercase" TO SERVICE-NAME.
            SET TPBLOCK TO TRUE.
            SET TPNOTRAN TO TRUE.
            SET TPGETHANDLE TO TRUE.
@@ -98,7 +105,9 @@
            IF NOT TPOK
                 DISPLAY "TPCALL Failed"
            END-IF.
-      
+           DISPLAY "Ret buffer TPTYPE-STATUS=" 
+                   TPTYPE-STATUS OF TPTYPE-REC 
+           .
       *****************************************************
       *  Issue a TPCALL
       *****************************************************
@@ -106,7 +115,7 @@
       *    MOVE 2 TO LEN.
            MOVE "X_OCTET" TO REC-TYPE.
       
-           MOVE "TOUPPER" TO SERVICE-NAME.
+           MOVE "casual/example/uppercase" TO SERVICE-NAME.
            SET TPBLOCK TO TRUE.
            SET TPNOTRAN TO TRUE.
            SET TPNOTIME TO TRUE.
@@ -123,7 +132,35 @@
            IF NOT TPOK
                 DISPLAY "TPCALL Failed"
            END-IF.
+           DISPLAY "Ret buffer TPTYPE-STATUS=" 
+                   TPTYPE-STATUS OF TPTYPE-REC 
+           .
+      *****************************************************
+      *  Issue a TPCONNECT, not finished...
+      *****************************************************
+        DO-TPCONNECT.
+      *    MOVE 2 TO LEN.
+           MOVE "X_OCTET" TO REC-TYPE.
       
+           MOVE "casual/example/uppercase" TO SERVICE-NAME.
+           SET TPBLOCK TO TRUE.
+           SET TPNOTRAN TO TRUE.
+           SET TPNOTIME TO TRUE.
+           SET TPSIGRSTRT TO TRUE.
+           SET TPCHANGE TO TRUE.
+       
+           CALL "TPCONNECT" USING TPSVCDEF-REC 
+                TPTYPE-REC 
+                SEND-STRING
+                TPSTATUS-REC. 
+      
+           IF NOT TPOK
+                DISPLAY "TPCALL Failed"
+           END-IF.
+           DISPLAY "Ret buffer TPTYPE-STATUS=" 
+                   TPTYPE-STATUS OF TPTYPE-REC 
+           .
+
       *****************************************************
       *Leave Application
       *****************************************************
