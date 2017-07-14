@@ -135,7 +135,7 @@ namespace casual
                   // Check unique queues
                   //
                   {
-                     using queue_type = common::traits::remove_reference_t< decltype( manager.groups.front().queues.front())>;
+                     using queue_type = std::remove_reference_t< decltype( manager.groups.front().queues.front())>;
                      std::vector< std::reference_wrapper< queue_type>> queues;
 
                      for( auto& group : manager.groups)

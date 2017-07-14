@@ -568,9 +568,9 @@ namespace casual
                   namespace coordinate
                   {
                      template< typename C>
-                     auto make( C&& cooordintate) -> Coordinate< common::traits::remove_reference_t< C>>
+                     auto make( C&& coordinate) -> Coordinate< std::remove_reference_t< C>>
                      {
-                        return { std::forward< C>( cooordintate)};
+                        return { std::forward< C>( coordinate)};
                      }
                   } // coordinate
 
