@@ -291,31 +291,38 @@ namespace casual
 
 
                template< typename O>
-               cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
+               constexpr cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
 
-               cardinality::Zero cardinality( void (*)(void)) { return cardinality::Zero();}
+               constexpr cardinality::Zero cardinality( void (*)(void)) { return cardinality::Zero();}
 
                cardinality::Zero cardinality( std::function<void()>) { return cardinality::Zero();}
 
 
 
                template< typename O, typename T>
-               auto cardinality( O&, void (O::*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               constexpr auto cardinality( O&, void (O::*)( T))
                {
-                  return typename helper< typename std::decay< T>::type>::cardinality();
+                  return typename helper< std::decay_t< T>>::cardinality();
                }
 
                template< typename T>
-               auto cardinality( void (*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               constexpr auto cardinality( void (*)( T))
                {
-                  return typename helper< typename std::decay< T>::type>::cardinality();
+                  return typename helper< std::decay_t< T>>::cardinality();
                }
 
                template< typename T>
-               auto cardinality( T& value ) -> typename helper< typename std::decay< T>::type>::cardinality
+               constexpr auto cardinality( T& value )
                {
-                  return typename helper< typename std::decay< T>::type>::cardinality();
+                  return typename helper< std::decay_t< T>>::cardinality();
                }
+
+               template< typename F, std::enable_if_t< traits::function< F>::arguments() == 1>* dummy = nullptr>
+               constexpr auto cardinality( F&& function)
+               {
+                  return typename helper< typename std::decay< F>::type>::cardinality();
+               }
+
             } // deduce
 
 
@@ -342,13 +349,13 @@ namespace casual
             {
 
                template< typename O, typename T>
-               auto static make( O& object, void (O::*member)( T)) -> std::function<void( T)>
+               auto static make( O& object, void (O::*member)( T))
                {
                   return [=,&object]( const T& value){ common::invoke( member, object, value);};
                }
 
                template< typename T>
-               auto static make( void (*function)( T)) -> std::function<void( T)>
+               auto static make( void (*function)( T))
                {
                   return [=]( const T& value){ common::invoke( function, value);};
                }
@@ -357,13 +364,23 @@ namespace casual
                // For variables
                //
                template< typename T>
-               auto static make( T& variable) -> std::function<void( T)>
+               auto static make( T& variable)
                {
                   //
                   // We bind directly to the variable
                   //
                   return [&variable]( const T& values){ value::assign( variable, values);};
                }
+
+               //
+               // for callables
+               //
+               template< typename T, std::enable_if_t< traits::function< T>::arguments() == 1>* dummy = nullptr>
+               decltype( auto) static make( T&& function)
+               {
+                  return std::forward< T>( function);
+               }
+
             };
 
 
@@ -400,7 +417,7 @@ namespace casual
 
 
             template< typename C, typename ...Args>
-            auto make( C cardinality, Args&&... args) -> decltype( maker< C>::make( std::forward< Args>( args)...))
+            auto make( C cardinality, Args&&... args)
             {
                return maker< C>::make( std::forward< Args>( args)...);
             }
@@ -451,7 +468,7 @@ namespace casual
                }
 
                bool consumed() const { return false;}
-               void dispatch() const
+               void dispatch()
                {
                   if( m_assigned)
                      internal::call( m_dispatch, m_values, cardinality_type{});
@@ -526,7 +543,7 @@ namespace casual
          option::Holder directive( std::vector< std::string> options, std::string description, Args&&... args)
          {
             auto cardinality = internal::deduce::cardinality( std::forward< Args>( args)...);
-            return option::Holder{ directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...)};
+            return directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...);
          }
 
          /*

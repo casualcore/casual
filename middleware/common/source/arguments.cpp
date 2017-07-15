@@ -1,5 +1,5 @@
 //!
-//! casaul
+//! casual
 //!
 
 #include "common/arguments.h"
@@ -271,6 +271,52 @@ namespace casual
                   std::ostream& m_out;
                };
 
+               class Completion: public visitor::Base
+               {
+               public:
+                  Completion( const Group* group, std::ostream& out = std::cout)
+                     : m_group( group), m_out( out)
+                  {
+                  }
+
+   
+                  void operator () ( const std::vector< std::string>& context)
+                  {
+                     m_group->visit( *this);
+
+                     for( auto& option : m_options)
+                     {
+                        m_out << option << '\n';
+                     }
+                  }                  
+
+               private:
+                  void do_visit( const Group& group) override
+                  {
+                  }
+
+                  void do_visit( const internal::base_directive& option) override
+                  {
+                     m_options.push_back( Option{ option.options().back(), option.cardinality()});
+                  }
+
+                  struct Option
+                  {  
+                     std::string name;
+                     internal::value_cardinality cardinality;
+
+                     inline friend std::ostream& operator << ( std::ostream& out, const Option& value)
+                     {
+                        return out << value.name << ' ' << value.cardinality.min << ' ' << value.cardinality.max;
+                     }
+                  };
+                  // we use a flat structure for now... 
+                  std::vector< Option> m_options;
+
+                  const Group* m_group = nullptr;
+                  std::ostream& m_out;
+               };
+
             } // <unnamed>
          } // local
 
@@ -291,6 +337,9 @@ namespace casual
       {
          m_options.push_back(
                argument::directive( std::move( help_option), "Shows this help", argument::local::Help{ this, std::move( description)}));
+
+         m_options.push_back(
+            argument::directive( argument::cardinality::Any{}, { "casual-bash-completion"}, "prints easy to parse bash completion information", argument::local::Completion{ this}));
       }
 
       Arguments::Arguments( argument::no::Help, options_type options)

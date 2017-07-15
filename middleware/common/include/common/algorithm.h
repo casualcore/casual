@@ -538,10 +538,10 @@ namespace casual
          template< typename C>
          using const_type_t = typename type_traits< const C>::type;
 
-         template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dymmy = nullptr>
+         template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dummy = nullptr>
          constexpr auto size( R&& range) { return sizeof( R) / sizeof( *range);}
 
-         template< typename R, std::enable_if_t< common::traits::has::size< R>::value>* dymmy = nullptr>
+         template< typename R, std::enable_if_t< common::traits::has::size< R>::value>* dummy = nullptr>
          constexpr auto size( R&& range) { return range.size();}
 
 

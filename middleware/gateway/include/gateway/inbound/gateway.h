@@ -783,7 +783,7 @@ namespace casual
                }
 
                //
-               // Handle the message, so the remote oubound gets what it wants.
+               // Handle the message, so the remote outbound gets what it wants.
                //
                {
                   handle::domain::discover::coordinate::make( discover)( message);

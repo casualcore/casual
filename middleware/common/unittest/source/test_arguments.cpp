@@ -329,6 +329,103 @@ namespace casual
 
       }
 
+      namespace local
+      {
+         namespace 
+         {
+
+
+            auto bind_to_stdout( std::ostream& out)
+            {
+               auto origin = std::cout.rdbuf( out.rdbuf());
+
+               return scope::execute( [=](){
+                  std::cout.rdbuf( origin);
+               });
+            }
+
+            std::vector< std::string> consume( std::istream& in)
+            {
+               std::vector< std::string> result;
+
+               std::string line;
+               while( std::getline( in, line))
+               {
+                  result.push_back( line);
+               }
+               return result;
+            }
+         }
+      } // local
+
+
+      TEST( casual_common_arguments_bash_completion, empty__expect_2_lines)
+      {
+         std::stringstream stream;
+         auto guard = local::bind_to_stdout( stream);
+
+         {
+            Arguments arguments{{}};
+            arguments.parse( { "casual-bash-completion"});      
+         }
+
+         auto lines = local::consume( stream);
+
+         ASSERT_TRUE( lines.size() == 2) << range::make( lines);
+         EXPECT_TRUE( lines.at( 0) == "--help 0 0") << range::make( lines);
+      }
+
+
+      TEST( casual_common_arguments_bash_completion, one_directive_one_many__expect_3_lines)
+      {
+         std::stringstream stream;
+         auto guard = local::bind_to_stdout( stream);
+
+         {
+         Arguments arguments{ {
+            argument::directive( { "-f", "--foo"}, "some foo stuff", &local::freeFunctionOneToMany)}};
+            arguments.parse( { "casual-bash-completion"});      
+         }
+
+         auto lines = local::consume( stream);
+
+         ASSERT_TRUE( lines.size() == 3) << range::make( lines);
+         EXPECT_TRUE( lines.at( 0) == "--foo 1 " + std::to_string( std::numeric_limits< std::size_t>::max())) << range::make( lines);
+      }
+
+      TEST( casual_common_arguments_bash_completion, one_directive_any__expect_3_lines)
+      {
+         std::stringstream stream;
+         auto guard = local::bind_to_stdout( stream);
+
+         {
+         Arguments arguments{ {
+            argument::directive( argument::cardinality::Any{}, { "-f", "--foo"}, "some foo stuff", []( const std::vector< std::string>&){})}};
+            arguments.parse( { "casual-bash-completion"});      
+         }
+
+         auto lines = local::consume( stream);
+
+         ASSERT_TRUE( lines.size() == 3) << range::make( lines);
+         EXPECT_TRUE( lines.at( 0) == "--foo 0 " + std::to_string( std::numeric_limits< std::size_t>::max())) << range::make( lines);
+      }
+
+      TEST( casual_common_arguments_bash_completion, one_directive_cardinality_3__expect_3_lines)
+      {
+         std::stringstream stream;
+         auto guard = local::bind_to_stdout( stream);
+
+         {
+         Arguments arguments{ {
+            argument::directive( argument::cardinality::Fixed< 3>{}, { "-f", "--foo"}, "some foo stuff", []( const std::vector< std::string>&){})}};
+            arguments.parse( { "casual-bash-completion"});      
+         }
+
+         auto lines = local::consume( stream);
+
+         ASSERT_TRUE( lines.size() == 3) << range::make( lines);
+         EXPECT_TRUE( lines.at( 0) == "--foo 3 3" ) << range::make( lines);
+      }
    }
 }
 
