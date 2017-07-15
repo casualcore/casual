@@ -585,10 +585,7 @@ namespace casual
          //!
          void parse( int argc, char** argv);
 
-         void parse( const std::vector< std::string>& arguments);
-
-
-         void parse( const std::string& process, const std::vector< std::string>& arguments);
+         void parse( std::vector< std::string> arguments);
 
 
       };

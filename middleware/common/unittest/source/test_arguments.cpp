@@ -359,7 +359,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_common_arguments_bash_completion, empty__expect_2_lines)
+      TEST( casual_common_arguments_bash_completion, empty__expect_1_lines)
       {
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
@@ -371,12 +371,12 @@ namespace casual
 
          auto lines = local::consume( stream);
 
-         ASSERT_TRUE( lines.size() == 2) << range::make( lines);
+         ASSERT_TRUE( lines.size() == 1) << range::make( lines);
          EXPECT_TRUE( lines.at( 0) == "--help 0 0") << range::make( lines);
       }
 
 
-      TEST( casual_common_arguments_bash_completion, one_directive_one_many__expect_3_lines)
+      TEST( casual_common_arguments_bash_completion, one_directive_one_many__expect_2_lines)
       {
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
@@ -389,11 +389,11 @@ namespace casual
 
          auto lines = local::consume( stream);
 
-         ASSERT_TRUE( lines.size() == 3) << range::make( lines);
+         ASSERT_TRUE( lines.size() == 2) << range::make( lines);
          EXPECT_TRUE( lines.at( 0) == "--foo 1 " + std::to_string( std::numeric_limits< std::size_t>::max())) << range::make( lines);
       }
 
-      TEST( casual_common_arguments_bash_completion, one_directive_any__expect_3_lines)
+      TEST( casual_common_arguments_bash_completion, one_directive_any__expect_2_lines)
       {
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
@@ -406,11 +406,11 @@ namespace casual
 
          auto lines = local::consume( stream);
 
-         ASSERT_TRUE( lines.size() == 3) << range::make( lines);
+         ASSERT_TRUE( lines.size() == 2) << range::make( lines);
          EXPECT_TRUE( lines.at( 0) == "--foo 0 " + std::to_string( std::numeric_limits< std::size_t>::max())) << range::make( lines);
       }
 
-      TEST( casual_common_arguments_bash_completion, one_directive_cardinality_3__expect_3_lines)
+      TEST( casual_common_arguments_bash_completion, one_directive_cardinality_3__expect_2_lines)
       {
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
@@ -423,7 +423,7 @@ namespace casual
 
          auto lines = local::consume( stream);
 
-         ASSERT_TRUE( lines.size() == 3) << range::make( lines);
+         ASSERT_TRUE( lines.size() == 2) << range::make( lines);
          EXPECT_TRUE( lines.at( 0) == "--foo 3 3" ) << range::make( lines);
       }
    }

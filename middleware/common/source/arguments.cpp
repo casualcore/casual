@@ -274,15 +274,16 @@ namespace casual
                class Completion: public visitor::Base
                {
                public:
-                  Completion( const Group* group, std::ostream& out = std::cout)
+                  Completion( const Group& group, std::ostream& out = std::cout)
                      : m_group( group), m_out( out)
                   {
                   }
 
    
-                  void operator () ( const std::vector< std::string>& context)
+                  template< typename R>
+                  void operator () ( R&& context)
                   {
-                     m_group->visit( *this);
+                     m_group.visit( *this);
 
                      for( auto& option : m_options)
                      {
@@ -313,9 +314,27 @@ namespace casual
                   // we use a flat structure for now... 
                   std::vector< Option> m_options;
 
-                  const Group* m_group = nullptr;
+                  const Group& m_group;
                   std::ostream& m_out;
                };
+
+               template< typename Range>
+               bool completion( const Group& group, Range&& arguments)
+               {
+                  auto found = range::find( arguments, "casual-bash-completion");
+
+                  if( found && std::begin( found) == std::begin( arguments))
+                  {
+                     arguments = range::remove( arguments, range::make( std::begin( found), 1));
+
+                     Completion visitor{ group};
+
+                     visitor( arguments);
+
+                     return true;
+                  }
+                  return false;
+               }
 
             } // <unnamed>
          } // local
@@ -337,9 +356,6 @@ namespace casual
       {
          m_options.push_back(
                argument::directive( std::move( help_option), "Shows this help", argument::local::Help{ this, std::move( description)}));
-
-         m_options.push_back(
-            argument::directive( argument::cardinality::Any{}, { "casual-bash-completion"}, "prints easy to parse bash completion information", argument::local::Completion{ this}));
       }
 
       Arguments::Arguments( argument::no::Help, options_type options)
@@ -352,17 +368,12 @@ namespace casual
          if( argc > 0)
          {
             std::vector< std::string> arguments{ argv + 1, argv + argc};
-            parse( argv[ 0], arguments);
+            parse( arguments);
          }
       }
 
-      void Arguments::parse( const std::vector< std::string>& arguments)
-      {
-         parse( process::path(), arguments);
-      }
 
-
-      void Arguments::parse( const std::string& process, const std::vector< std::string>& arguments)
+      void Arguments::parse( std::vector< std::string> arguments)
       {
 
          //
@@ -370,6 +381,12 @@ namespace casual
          //
 
          auto argumentRange = range::make( arguments);
+
+         //
+         // check special completion case
+         //
+         if( argument::local::completion( *this, argumentRange))
+            return;
 
          while( argumentRange)
          {
