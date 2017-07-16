@@ -49,7 +49,7 @@ struct Settings
 
    std::vector< Service> services;
 
-   std::vector< std::string> compileLinkDirective;
+   std::vector< std::string> compileLinkDirective = { "-O3"};
 
    void set_server_definition_path( const std::string& file)
    {
@@ -82,7 +82,7 @@ struct Settings
 
 
 
-   const std::vector< configuration::resource::Property>& get_resurces() const
+   const std::vector< configuration::resource::Property>& get_resources() const
    {
       auto initialize = [&](){
 
@@ -162,8 +162,18 @@ struct Settings
       archive & CASUAL_MAKE_NVP( resources);
       archive & CASUAL_MAKE_NVP( verbose);
       archive & CASUAL_MAKE_NVP( compiler);
-
    }
+
+   friend void validate( const Settings& settings)
+   {
+      auto throw_error = []( auto error){
+         throw common::exception::invalid::Argument{ error};
+      };
+
+      if( settings.compiler.empty()) throw_error( "compiler not set");
+      if( settings.output.empty()) throw_error( "no ouput set");
+   }
+
 private:
 
    void append( std::vector< std::string>& target, const std::vector< std::string>& source)
@@ -185,6 +195,7 @@ private:
    }
 
 };
+
 
 
 
@@ -219,7 +230,7 @@ extern "C" {
    //
    // Declare the xa_struts
    //
-   for( auto& resource : settings.get_resurces())
+   for( auto& resource : settings.get_resources())
    {
       out << "extern struct xa_switch_t " << resource.xa_struct_name << ";" << std::endl;
    }
@@ -248,7 +259,7 @@ int main( int argc, char** argv)
 
    struct casual_xa_switch_mapping xa_mapping[] = {)";
 
-   for( auto& resource : settings.get_resurces())
+   for( auto& resource : settings.get_resources())
    {
       out << R"(
       { ")" << resource.key << R"(", &)" << resource.xa_struct_name << "},";
@@ -321,7 +332,7 @@ namespace trace
 } // trace
 
 
-int build( const std::string& c_file, const Settings& settings)
+void build( const std::string& c_file, const Settings& settings)
 {
    trace::Exit log( "build server", settings.verbose);
    //
@@ -330,7 +341,7 @@ int build( const std::string& c_file, const Settings& settings)
 
    std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
-   for( auto& resource : settings.get_resurces())
+   for( auto& resource : settings.get_resources())
    {
       for( auto& lib : resource.libraries)
       {
@@ -371,7 +382,9 @@ int build( const std::string& c_file, const Settings& settings)
 
    {
       trace::Exit log( "execute " + settings.compiler, settings.verbose);
-      return common::process::execute( settings.compiler, arguments);
+      
+      if( common::process::execute( settings.compiler, arguments) != 0)
+         throw common::exception::invalid::Semantic{ "failed to compile"};
 
    }
 
@@ -402,6 +415,8 @@ int main( int argc, char **argv)
          }};
 
          handler.parse( argc, argv);
+
+         validate( settings);
       }
 
       if( settings.verbose) std::cout << "";
@@ -426,8 +441,7 @@ int main( int argc, char **argv)
          path.release();
       }
 
-      return build( path, settings);
-
+      build( path, settings);
    }
    catch( const std::exception& exception)
    {

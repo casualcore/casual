@@ -3,7 +3,7 @@
 Since the configuration in casual is represented by an object model (data structures) we
 fill the object model with some representable example configuration and generate to all
 format that casual knows. Hence, the information is exactly the same in the different 
-formats, and you can use whichever you prefere as a reference. 
+formats, and you can use whichever you prefer as a reference. 
 
 These examples are generated during build, hence shows the true configuration representation that
 casual has.
@@ -11,11 +11,11 @@ casual has.
 
 There are three configuration parts:
 
- name                   | description
-------------------------|--------------------------
-**domain**              | _casual domain configuration_
-**resource propertes**  | _defines machine global configuration on resources_
-**build server**        | _defines user configuration when building a casual server_
+ name                    | description
+-------------------------|--------------------------
+**domain**               | _casual domain configuration_
+**resource properties**  | _defines machine global configuration on resources_
+**build server**         | _defines user configuration when building a casual server_
 
 Every part has a generated default to help understand what can be set default and what 
 the default values are.
@@ -38,11 +38,11 @@ We're trying to show all configuration options that is possible in casual.
 ## resource properties
 
 Defines machine global configuration of resources. It's used when building casual servers 
-and also by `casual-transaction-manager` to deduce which xa-resource-proxy-server it should start.
+and also by `casual-transaction-manager` to deduce which _xa-resource-proxy-server_ it should start.
 
 
- example                            | default
-------------------------------------|--------------------------
+ example                          | default
+----------------------------------|--------------------------
  [yaml](resource/property.yaml)   | _no default values_
  [json](resource/property.json)   | _no default values_
  [xml](resource/property.xml)     | _no default values_

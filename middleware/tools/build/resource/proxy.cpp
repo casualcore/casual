@@ -107,7 +107,7 @@ int main( int argc, char** argv)
             struct
             {
                std::string link;
-               std::string compile;
+               std::string compile = "-O3";
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -169,7 +169,7 @@ int main( int argc, char** argv)
 
          int build( const std::string& c_file, const configuration::resource::Property& resource, const Settings& settings)
          {
-            trace::Exit log( "build resurce proxy", settings.verbose);
+            trace::Exit log( "build resource proxy", settings.verbose);
             //
             // Compile and link
             //
@@ -221,10 +221,10 @@ int main( int argc, char** argv)
          {
             trace::Exit log( "read resource properties configuration", settings.verbose);
 
-            auto swithces = settings.properties_file.empty() ?
+            auto switches = settings.properties_file.empty() ?
                   configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
 
-            auto found = common::range::find_if( swithces,
+            auto found = common::range::find_if( switches,
                [&]( const configuration::resource::Property& value){ return value.key == settings.key;});
 
             if( ! found)
@@ -289,7 +289,7 @@ int main( int argc, char **argv)
       //
       // Generate file
       //
-      common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".c"));
+      common::file::scoped::Path path( common::file::name::unique( "rm_proxy_", ".cpp"));
 
       {
          local::trace::Exit log( "generate file:  " + path.path(), settings.verbose);
