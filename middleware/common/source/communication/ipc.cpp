@@ -277,8 +277,8 @@ namespace casual
 
                Device& device()
                {
-                  static Device singlton;
-                  return singlton;
+                  static Device singleton;
+                  return singleton;
                }
 
                handle_type id()
@@ -365,7 +365,8 @@ namespace casual
 
                      if( ! communication::ipc::exists( m_process.queue))
                      {
-                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue for instance", CASUAL_NIP( m_identity), CASUAL_NIP( m_environment), CASUAL_NIP( m_process)};
+                        auto& instance = *this;
+                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue - is there a domain running?", CASUAL_NIP( instance)};
                      }
                   }
 
@@ -373,8 +374,8 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Connector< directive>& rhs)
                   {
                      return out << "{ process: " << rhs.m_process
-                           << ", identity:" << rhs.m_identity
-                           << ", environment:" << rhs.m_environment
+                           << ", identity: " << rhs.m_identity
+                           << ", environment: " << rhs.m_environment
                            << '}';
                   }
 

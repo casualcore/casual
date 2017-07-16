@@ -14,6 +14,8 @@ namespace casual
       {
          Lookup::Lookup( std::string service, Context context) : m_service( std::move( service))
          {
+            Trace trace{ "common::service::Lookup"};
+
             message::service::lookup::Request request;
             request.requested = m_service;
             request.process = process::handle();
@@ -34,6 +36,8 @@ namespace casual
 
          Lookup::Reply Lookup::operator () () const
          {
+            Trace trace{ "common::service::Lookup::operator()"};
+
             assert(  m_correlation != uuid::empty());
 
             Reply result;

@@ -94,24 +94,24 @@ namespace casual
                   #endif
                }
 
-               namespace instanciated
+               namespace instantiated
                {
                   std::string& path = local::path();
                   std::string& basename = local::basename();
 
-               } // instanciated
+               } // instantiated
 
             } // <unnamed>
          } // local
 
          const std::string& path()
          {
-            return local::instanciated::path;
+            return local::instantiated::path;
          }
 
          const std::string& basename()
          {
-            return local::instanciated::basename;
+            return local::instantiated::basename;
          }
 
 

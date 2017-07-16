@@ -146,9 +146,7 @@ namespace casual
             Result read()
             {
                return read( process::pattern::Sleep{
-                  { std::chrono::milliseconds{ 10}, 10},
-                  { std::chrono::milliseconds{ 100}, 10},
-                  { std::chrono::seconds{ 1}, 60}
+                  { std::chrono::milliseconds{ 100}, 10}
                });
             }
 

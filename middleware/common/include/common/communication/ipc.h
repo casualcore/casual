@@ -42,12 +42,12 @@ namespace casual
                {
                   struct Header
                   {
-                     using correalation_type = Uuid::uuid_type;
+                     using correlation_type = Uuid::uuid_type;
 
                      //!
                      //! The message correlation id
                      //!
-                     correalation_type correlation;
+                     correlation_type correlation;
 
                      //!
                      //! which offset this transport message represent of the complete message
@@ -73,7 +73,7 @@ namespace casual
 
                struct Transport
                {
-                  using correalation_type = Uuid::uuid_type;
+                  using correlation_type = Uuid::uuid_type;
 
                   using payload_type = std::array< char, transport::max_payload_size()>;
                   using range_type = range::type_t< payload_type>;
@@ -130,8 +130,8 @@ namespace casual
                   }
 
 
-                  inline const correalation_type& correlation() const { return message.header.correlation;}
-                  inline correalation_type& correlation() { return message.header.correlation;}
+                  inline const correlation_type& correlation() const { return message.header.correlation;}
+                  inline correlation_type& correlation() { return message.header.correlation;}
 
                   //!
                   //! @return payload size
