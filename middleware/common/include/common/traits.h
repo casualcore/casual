@@ -92,8 +92,21 @@ namespace casual
 
          }
 
+         namespace has
+         {
+            template< typename T> 
+            using call_operator_exists = decltype( &T::operator());
+
+            template< typename T>
+            using call_operator = detect::is_detected< call_operator_exists, T>;
+         }
+
+         template<typename T, typename Enable = void>
+         struct function {};
+
          template<typename T>
-         struct function : public function< decltype( &T::operator())>
+         struct function< T, std::enable_if_t< has::call_operator< T>::value>> 
+            : public function< decltype( &T::operator())>
          {
 
          };

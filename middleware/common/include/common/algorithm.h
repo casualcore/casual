@@ -538,10 +538,10 @@ namespace casual
          template< typename C>
          using const_type_t = typename type_traits< const C>::type;
 
-         template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dymmy = nullptr>
+         template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dummy = nullptr>
          constexpr auto size( R&& range) { return sizeof( R) / sizeof( *range);}
 
-         template< typename R, std::enable_if_t< common::traits::has::size< R>::value>* dymmy = nullptr>
+         template< typename R, std::enable_if_t< common::traits::has::size< R>::value>* dummy = nullptr>
          constexpr auto size( R&& range) { return range.size();}
 
 
@@ -982,12 +982,31 @@ namespace casual
             return container;
          }
 
-         template< typename R, typename T>
+         namespace detail
+         {
+            template< typename R, typename T>
+            using iterator_value_compare = decltype( *std::begin( std::declval< R&>()) == std::declval< T&>());
+
+            template< typename R1, typename R2>
+            using iterator_iterator_swap = decltype( std::swap( *std::begin( std::declval< R1&>()), *std::begin( std::declval< R2&>())));
+         }
+
+         template< typename R, typename T, std::enable_if_t< common::traits::detect::is_detected< detail::iterator_value_compare, R, T>::value>* dummy = nullptr>
          auto remove( R&& range, const T& value)
          {
             return make( std::begin( range), std::remove( std::begin( range), std::end( range), value));
          }
 
+         //!
+         //! Removes the unwanted range from the source
+         //! 
+         template< typename R1, typename R2, std::enable_if_t< common::traits::detect::is_detected< detail::iterator_iterator_swap, R1, R2>::value>* dummy = nullptr>
+         auto remove( R1&& source, R2&& unwanted)
+         {
+            auto last = std::rotate( std::begin( unwanted), std::end( unwanted), std::end( source));
+            
+            return make( std::begin( source), last);
+         }
 
          template< typename R, typename P>
          auto remove_if( R&& range, P predicate)
