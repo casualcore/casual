@@ -303,6 +303,30 @@ namespace casual
 
       }
 
+      TEST( casual_common_arguments, lambda)
+      {
+         std::string value;
+
+         Arguments arguments{ {
+            argument::directive( { "-f", "--foo"}, "some foo stuff", [&]( const std::string& v){ value = v;})}};
+
+         arguments.parse( { "-f" ,"bla bla"});
+
+         EXPECT_TRUE( value == "bla bla");
+      }
+
+      TEST( casual_common_arguments, lambda_long)
+      {
+         long value;
+
+         Arguments arguments{ {
+            argument::directive( { "-f", "--foo"}, "some foo stuff", [&]( long v){ value = v;})}};
+
+         arguments.parse( { "-f" ,"42"});
+
+         EXPECT_TRUE( value == 42);
+      }
+
       TEST( casual_common_arguments, group)
       {
 
