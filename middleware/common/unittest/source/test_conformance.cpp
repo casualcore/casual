@@ -107,7 +107,7 @@ namespace casual
 
       TEST( casual_common_conformance, get_free_function_argument_type)
       {
-         using traits_type = traits::function< decltype( some_function)>;
+         using traits_type = traits::function< decltype( &some_function)>;
 
          EXPECT_TRUE( traits_type::arguments() == 1);
 

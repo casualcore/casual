@@ -115,7 +115,7 @@ namespace casual
 
                {
                   common::Arguments parser{ {
-                     common::argument::directive( {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]", settings, &Settings::setForward)
+                     common::argument::directive( {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]", &Settings::setForward, settings)
                   }};
 
                   parser.parse( argc, argv);

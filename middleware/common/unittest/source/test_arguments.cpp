@@ -116,23 +116,24 @@ namespace casual
          local::Conf conf;
 
 
-         auto dispatch0 = argument::internal::make( argument::cardinality::Zero(), conf, &local::Conf::flag);
+         auto dispatch0 = argument::internal::make( argument::cardinality::Zero(), &local::Conf::flag, conf);
 
 
          dispatch0();
 
          EXPECT_TRUE( conf.called);
 
+/*
          using namespace std::placeholders;
 
-         auto dispatch1 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::setString);
+         auto dispatch1 = argument::internal::make( argument::cardinality::One(), &local::Conf::setString, conf);
 
          dispatch1( "234");
 
 
          EXPECT_TRUE( conf.string_value == "234");
 
-         auto dispatch2 = argument::internal::make( argument::cardinality::One(), conf, &local::Conf::setLong);
+         auto dispatch2 = argument::internal::make( argument::cardinality::One(), &local::Conf::setLong, conf);
 
          dispatch2( 234);
 
@@ -145,6 +146,7 @@ namespace casual
             dispatch3( 666);
             EXPECT_TRUE( long_value == 666);
          }
+         */
       }
 
 
@@ -155,7 +157,7 @@ namespace casual
 
 
          Arguments arguments{
-            { argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::flag)}
+            { argument::directive( { "-f", "--foo"}, "some foo stuff", &local::Conf::flag, conf)}
          };
 
          EXPECT_FALSE( conf.called );
@@ -171,7 +173,7 @@ namespace casual
 
          local::Conf conf;
 
-         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setString)}};
+         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", &local::Conf::setString, conf)}};
 
          arguments.parse( { "-f" ,"someValue"});
 
@@ -185,7 +187,7 @@ namespace casual
 
          local::Conf conf;
 
-         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setLong)}};
+         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", &local::Conf::setLong, conf)}};
 
          arguments.parse( { "-f" ,"42"});
 
@@ -199,11 +201,11 @@ namespace casual
 
          local::Conf conf;
 
-         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorString)}};
+         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", &local::Conf::setVectorString, conf)}};
 
          arguments.parse( { "-f" ,"42", "666", "777"});
 
-         EXPECT_TRUE( conf.vector_string_value.size() == 3);
+         EXPECT_TRUE( conf.vector_string_value.size() == 3) << " conf.vector_string_value: " << range::make(  conf.vector_string_value);
 
       }
 
@@ -212,7 +214,7 @@ namespace casual
 
          local::Conf conf;
 
-         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)}};
+         Arguments arguments{ { argument::directive( { "-f", "--foo"}, "some foo stuff", &local::Conf::setVectorLong, conf)}};
 
          arguments.parse( { "-f" ,"42", "666", "777"});
 
@@ -226,7 +228,7 @@ namespace casual
          local::Conf conf;
 
          Arguments arguments{ {
-            argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)}};
+            argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", &local::Conf::setVectorLong, conf)}};
 
          arguments.parse(  { "-f" ,"42", "666", "777"});
 
@@ -240,7 +242,7 @@ namespace casual
          local::Conf conf;
 
          Arguments arguments{ {
-            argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)}};
+            argument::directive( argument::cardinality::Any(), { "-f", "--foo"}, "some foo stuff", &local::Conf::setVectorLong, conf)}};
 
          arguments.parse(  { "-f" });
 
@@ -254,7 +256,7 @@ namespace casual
          local::Conf conf;
 
          Arguments arguments{ {
-            argument::directive( argument::cardinality::Fixed< 3>(), { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong)}};
+            argument::directive( argument::cardinality::Fixed< 3>(), { "-f", "--foo"}, "some foo stuff", &local::Conf::setVectorLong, conf)}};
 
          arguments.parse( { "-f" ,"42", "666", "777"});
 
@@ -268,8 +270,8 @@ namespace casual
          local::Conf conf;
 
          Arguments arguments{ {
-            argument::directive( { "-f", "--foo"}, "some foo stuff", conf, &local::Conf::setVectorLong),
-            argument::directive( { "-b", "--bar"}, "some bar stuff", conf, &local::Conf::setVectorString)}};
+            argument::directive( { "-f", "--foo"}, "some foo stuff", &local::Conf::setVectorLong, conf),
+            argument::directive( { "-b", "--bar"}, "some bar stuff", &local::Conf::setVectorString, conf)}};
 
          arguments.parse( { "-b" ,"1", "2", "3", "-f" ,"42", "666", "777"});
 

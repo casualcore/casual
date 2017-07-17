@@ -137,7 +137,7 @@ namespace casual
          //! free function specialization
          //!
          template< typename R, typename ...Args>
-         struct function< R(Args...)> : public detail::function< R, Args...>
+         struct function< R(*)(Args...)> : public detail::function< R, Args...>
          {
          };
 
@@ -449,6 +449,9 @@ namespace casual
 
             template< typename T>
             using has_push_back = decltype( std::declval< T&>().push_back( *std::begin( std::declval< T&>())));
+
+            template< typename T, typename A>
+            using has_serialize = decltype( std::declval< T&>().serialize( std::declval< A&>()));
          }
 
          namespace has
@@ -462,6 +465,10 @@ namespace casual
 
             template< typename T>
             using push_back = detect::is_detected< member::has_push_back, T>;
+
+            template< typename T, typename A>
+            using serialize = detect::is_detected< member::has_serialize, T, A>;
+
          }
 
       } // traits

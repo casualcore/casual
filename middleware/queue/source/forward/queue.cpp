@@ -85,7 +85,7 @@ namespace casual
 
                {
                   common::Arguments parser{ {
-                        common::argument::directive( {"-f", "--forward"}, "--forward  <from-queue> <to-queue>", settings, &Settings::setForward)
+                        common::argument::directive( {"-f", "--forward"}, "--forward  <from-queue> <to-queue>", &Settings::setForward, settings)
                   }};
 
                   parser.parse( argc, argv);

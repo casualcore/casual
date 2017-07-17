@@ -5,6 +5,7 @@
 #ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_BUFFER_FUNCTIONAL_H_
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_BUFFER_FUNCTIONAL_H_
 
+#include <utility>
 
 namespace casual
 {
@@ -18,9 +19,9 @@ namespace casual
          //! memberfunction
          //!
          template< typename Base, typename R, typename Derived, typename... Args>
-         decltype( auto) invoke( R Base::*pmf, Derived&& derived, Args&&... args)
+         decltype( auto) invoke( R Base::*pmf, Derived& derived, Args&&... args)
          {
-            return (std::forward<Derived>( derived).*pmf)(std::forward<Args>(args)...);
+            return ( derived.*pmf)( std::forward<Args>(args)...);
          }
 
          //!
@@ -29,7 +30,7 @@ namespace casual
          template< typename F, typename... Args>
          decltype( auto) invoke( F&& function, Args&&... args)
          {
-            return std::forward<F>( function)(std::forward<Args>(args)...);
+            return std::forward<F>( function)( std::forward<Args>(args)...);
          }
 
       } // details

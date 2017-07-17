@@ -404,11 +404,11 @@ int main( int argc, char **argv)
 
          Arguments handler{{
             argument::directive( {"-o", "--output"}, "name of server to be built", settings.output),
-            argument::directive( {"-s", "--service"}, "service names", settings, &Settings::set_services),
-            argument::directive( {"-d", "--server-definition"}, "path to server definition file", settings, &Settings::set_server_definition_path),
-            argument::directive( {"-r", "--resource-keys"}, "key of the resource", settings, &Settings::set_resources),
+            argument::directive( {"-s", "--service"}, "service names", &Settings::set_services, settings),
+            argument::directive( {"-d", "--server-definition"}, "path to server definition file", &Settings::set_server_definition_path, settings),
+            argument::directive( {"-r", "--resource-keys"}, "key of the resource", &Settings::set_resources, settings),
             argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
-            argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", settings, &Settings::set_compile_link_directive),
+            argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", &Settings::set_compile_link_directive, settings),
             argument::directive( {"-p", "--properties-file"}, "path to resource properties file", settings.properties_file),
             argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
             argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep)

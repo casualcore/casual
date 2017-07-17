@@ -207,15 +207,7 @@ namespace casual
                template< typename T>
                operator std::vector< T>() const
                {
-                  std::vector< T> result;
-
-                  std::transform(
-                     std::begin( m_values),
-                     std::end( m_values),
-                     std::back_inserter( result),
-                     convert< T>{});
-
-                  return result;
+                  return range::transform( m_values, convert< T>{});
                }
 
                operator const std::string&() const
@@ -289,27 +281,12 @@ namespace casual
                   using type = bool;
                };
 
-
-               template< typename O>
-               constexpr cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
-
-               constexpr cardinality::Zero cardinality( void (*)(void)) { return cardinality::Zero();}
-
-               cardinality::Zero cardinality( std::function<void()>) { return cardinality::Zero();}
-
-
-
-               template< typename O, typename T>
-               constexpr auto cardinality( O&, void (O::*)( T))
+               template< typename F, typename... Args, std::enable_if_t< traits::function< F>::arguments() == 0>* dummy = nullptr>
+               constexpr auto cardinality( F&& function, Args&&... args)
                {
-                  return typename helper< std::decay_t< T>>::cardinality();
+                  return cardinality::Zero{};
                }
 
-               template< typename T>
-               constexpr auto cardinality( void (*)( T))
-               {
-                  return typename helper< std::decay_t< T>>::cardinality();
-               }
 
                template< typename T>
                constexpr auto cardinality( T& value )
@@ -317,10 +294,11 @@ namespace casual
                   return typename helper< std::decay_t< T>>::cardinality();
                }
 
-               template< typename F, std::enable_if_t< traits::function< F>::arguments() == 1>* dummy = nullptr>
-               constexpr auto cardinality( F&& function)
+               template< typename F, typename... Args, std::enable_if_t< traits::function< F>::arguments() == 1>* dummy = nullptr>
+               constexpr auto cardinality( F&& function, Args&&... args)
                {
-                  return typename helper< typename std::decay< F>::type>::cardinality();
+                  using type = typename traits::function< F>::template argument< 0>::type;
+                  return typename helper< std::decay_t< type>>::cardinality();
                }
 
             } // deduce
@@ -342,43 +320,29 @@ namespace casual
             } // value
 
 
-            using namespace std::placeholders;
-
             template< typename C>
             struct maker
             {
-
-               template< typename O, typename T>
-               auto static make( O& object, void (O::*member)( T))
+               //
+               // for callables
+               //
+               template< typename T, typename... Args, std::enable_if_t< traits::function< T>::arguments() == 1>* dummy = nullptr>
+               static decltype( auto) make( T&& function, Args&&... args)
                {
-                  return [=,&object]( const T& value){ common::invoke( member, object, value);};
-               }
-
-               template< typename T>
-               auto static make( void (*function)( T))
-               {
-                  return [=]( const T& value){ common::invoke( function, value);};
+                  return [function,&args...]( auto&& value){ common::invoke( function, std::forward< Args>( args)..., std::forward<decltype( value)>( value));};
+                  //return std::forward< T>( function);
                }
 
                //
                // For variables
                //
                template< typename T>
-               auto static make( T& variable)
+               static auto make( T& variable)
                {
                   //
                   // We bind directly to the variable
                   //
                   return [&variable]( const T& values){ value::assign( variable, values);};
-               }
-
-               //
-               // for callables
-               //
-               template< typename T, std::enable_if_t< traits::function< T>::arguments() == 1>* dummy = nullptr>
-               decltype( auto) static make( T&& function)
-               {
-                  return std::forward< T>( function);
                }
 
             };
@@ -387,28 +351,17 @@ namespace casual
             template<>
             struct maker< cardinality::Zero>
             {
-               using zero_result_type = std::function<void()>;
-
-               template< typename O>
-               static zero_result_type make( O& object, void (O::*function)(void))
+               template< typename T, typename... Args, std::enable_if_t< traits::function< T>::arguments() == 0>* dummy = nullptr>
+               static decltype( auto) make( T&& function, Args&&... args)
                {
-                  return [=,&object](){ common::invoke( function, object);};
-               }
-
-               static zero_result_type make( void (*function)(void))
-               {
-                  return { function};
-               }
-
-               static zero_result_type make( std::function<void()> function)
-               {
-                  return function;
+                  return [function,&args...]() mutable { common::invoke( function, std::forward< Args>( args)...);};
+                  //return std::forward< T>( function);
                }
 
                //
                // For variable bool
                //
-               static zero_result_type make( bool& value)
+               static auto make( bool& value)
                {
                   return [&value](){ value = true;};
                }

@@ -157,28 +157,30 @@ namespace casual
          EXPECT_TRUE( ( std::is_same< typename traits::function< decltype( &Functor::function)>::result_type, bool>::value));
       }
 
-
-      template< typename T, typename... Args>
-      struct has_serializible
+      namespace local
       {
-      private:
-         using one = char;
-         struct two { char m[ 2];};
+         namespace
+         {
+            bool free_function_void_long( long value)
+            {
+               return true;
+            }
+         } // <unnamed>
+      } // local
 
-         template< typename C, typename... A> static auto test( C&& c, A&&... a) -> decltype( (void)( c.serialize( a...)), one());
-         static two test(...);
-      public:
-         enum { value = sizeof( test( std::declval< T>(), std::declval< Args>()...)) == sizeof(one) };
-      };
-
-
-      template< typename T>
-      struct test_1 : std::integral_constant< bool, std::is_same< decltype( std::declval< T>().serialize( long())), void>::value > {};
-
+      TEST( casual_common_traits_function, free_function_void__long)
+      {
+         common::unittest::Trace trace;
 
 
+         EXPECT_TRUE( traits::function< decltype( &local::free_function_void_long)>::arguments() == 1);
+         EXPECT_TRUE( ( std::is_same< typename traits::function< decltype( &local::free_function_void_long)>::argument< 0>::type, long>::value));
+         EXPECT_TRUE( ( std::is_same< typename traits::function< decltype( &local::free_function_void_long)>::result_type, bool>::value));
+         EXPECT_TRUE( local::free_function_void_long( 42));
+      }
 
-      TEST( casual_common_traits_function, member_has_serializible__false)
+
+      TEST( casual_common_traits_function, has_serialize__false)
       {
          common::unittest::Trace trace;
 
@@ -186,7 +188,7 @@ namespace casual
          {
          };
 
-         EXPECT_FALSE( ( has_serializible< A, long>::value));
+         EXPECT_FALSE( ( traits::has::serialize< A, long>::value));
          //EXPECT_FALSE( test_1< A>::value);
       }
 
@@ -198,21 +200,16 @@ namespace casual
             {
                template< typename A>
                void serialize( A& archive) {}
-
-               void serialize( long) {}
             };
          } // <unnamed>
       } // local
 
-      TEST( casual_common_traits_function, member_has_serializible__true)
+      TEST( casual_common_traits_function, has_serialize__true)
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( ( has_serializible< local::A, long>::value));
+         EXPECT_TRUE( ( traits::has::serialize< local::A, long>::value));
       }
-
-
-
 
 
 
