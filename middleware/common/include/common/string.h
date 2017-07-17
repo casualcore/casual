@@ -116,18 +116,29 @@ namespace casual
 
 		namespace internal
       {
-		   template< typename R>
+		   template< typename R, typename Enable = void>
 		   struct from_string;
 
-		   template<>
-		   struct from_string< std::string> { static const std::string& get( const std::string& value) { return value;} };
+         template< typename T >
+		   struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
+         { 
+            static T get( const std::string& value) { return std::stol( value);} 
+         };
+
+         template< typename T >
+		   struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
+         { 
+            static T get( const std::string& value) { return std::stoul( value);} 
+         };
+
+         template< typename T >
+		   struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
+         { 
+            static T get( const std::string& value) { return std::stod( value);} 
+         };
 
 		   template<>
-		   struct from_string< int> { static int get( const std::string& value) { return std::stoi( value);} };
-
-		   template<>
-		   struct from_string< long> { static long get( const std::string& value) { return std::stol( value);} };
-
+		   struct from_string< std::string, void> { static const std::string& get( const std::string& value) { return value;} };
 
 
          //inline std::string to_string( std::string value) { return value;}
@@ -146,13 +157,13 @@ namespace casual
       } // internal
 
 		template< typename R>
-		R from_string( const std::string& value)
+		decltype( auto) from_string( const std::string& value)
 		{
 		   return internal::from_string< typename std::decay< R>::type>::get( value);
 		}
 
 		template< typename T>
-		auto to_string( T&& value) -> decltype( internal::to_string( std::forward< T>( value)))
+		decltype( auto) to_string( T&& value)
 		{
 		   return internal::to_string( std::forward< T>( value));
 		}

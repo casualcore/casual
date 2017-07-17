@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "common/unittest.h"
 #include "common/arguments.h"
 
 
@@ -84,7 +85,7 @@ namespace casual
       {
          std::vector< std::string> vector_string_value;
 
-         auto dispatch = argument::internal::make( argument::cardinality::Any{}, vector_string_value);
+         auto dispatch = argument::internal::caller::make( vector_string_value);
 
          std::vector< std::string> values{ "1", "2", "3"};
 
@@ -93,11 +94,12 @@ namespace casual
          EXPECT_TRUE( vector_string_value == values);
       }
 
+
       TEST( casual_common_arguments, test_bind__vector_string_variable_append)
       {
          std::vector< std::string> vector_string_value;
 
-         auto dispatch = argument::internal::make( argument::cardinality::Any{}, vector_string_value);
+         auto dispatch = argument::internal::caller::make( vector_string_value);
 
          const std::vector< std::string> values{ "1", "2", "3"};
 
@@ -116,24 +118,24 @@ namespace casual
          local::Conf conf;
 
 
-         auto dispatch0 = argument::internal::make( argument::cardinality::Zero(), &local::Conf::flag, conf);
+         auto dispatch0 = argument::internal::caller::make( &local::Conf::flag, conf);
 
 
          dispatch0();
 
          EXPECT_TRUE( conf.called);
 
-/*
+
          using namespace std::placeholders;
 
-         auto dispatch1 = argument::internal::make( argument::cardinality::One(), &local::Conf::setString, conf);
+         auto dispatch1 = argument::internal::caller::make( &local::Conf::setString, conf);
 
          dispatch1( "234");
 
 
          EXPECT_TRUE( conf.string_value == "234");
 
-         auto dispatch2 = argument::internal::make( argument::cardinality::One(), &local::Conf::setLong, conf);
+         auto dispatch2 = argument::internal::caller::make( &local::Conf::setLong, conf);
 
          dispatch2( 234);
 
@@ -142,11 +144,11 @@ namespace casual
          {
             long long_value = 0;
             // bind to value
-            auto dispatch3 = argument::internal::make( argument::cardinality::One(), long_value);
+            auto dispatch3 = argument::internal::caller::make( long_value);
             dispatch3( 666);
             EXPECT_TRUE( long_value == 666);
          }
-         */
+         
       }
 
 
@@ -305,6 +307,21 @@ namespace casual
 
       }
 
+      TEST( casual_common_arguments, vector_double_variable)
+      {
+         std::vector< double> vector_double_value;
+
+         Arguments arguments{ {
+            argument::directive( { "-f", "--foo"}, "some foo stuff", vector_double_value)}};
+
+         arguments.parse( { "-f" ,"1.42", "1.42", "3.33"});
+
+
+         EXPECT_DOUBLE_EQ( vector_double_value.at( 0), 1.42);
+         EXPECT_DOUBLE_EQ( vector_double_value.at( 1), 1.42);
+         EXPECT_DOUBLE_EQ( vector_double_value.at( 2), 3.33);
+      }
+
       TEST( casual_common_arguments, lambda)
       {
          std::string value;
@@ -329,30 +346,144 @@ namespace casual
          EXPECT_TRUE( value == 42);
       }
 
-      TEST( casual_common_arguments, group)
+
+      template <typename T>
+      struct casual_common_arguments_integrals : public ::testing::Test
       {
+         using type = T;
 
-         /*
-         std::vector< int> local_ints;
+         type random() const
+         {
+            type result;
 
-         argument::Group group;
-         group.add(
-            argument::directive( { "-f", "--foo"}, "some foo stuff", local_ints)
-         );
+            auto range = range::make( reinterpret_cast< char*>( &result), sizeof( type));
+            unittest::random::range( range);
 
-         Arguments arguments;
-         arguments.add(
-               argument::directive( { "group"}, "some group", group)
-         );
+            return result;
+         }
+
+      };
 
 
-         //arguments.parse( { "group" ,"-f", "2", "3"});
+      typedef ::testing::Types<
+            char16_t, 
+            char32_t, 
+            wchar_t,
+            char,
+            signed char,
+            short,
+            int,
+            long,
+            long long,
+            unsigned char,
+            unsigned short,
+            unsigned int,
+            unsigned long,
+            unsigned long long
+      > pod_types;
 
-         arguments.parse( { "--help"});
+      TYPED_TEST_CASE( casual_common_arguments_integrals, pod_types);
 
-         EXPECT_TRUE( local_ints.size() == 2);
-         */
 
+
+      TYPED_TEST( casual_common_arguments_integrals, single_variable_0)
+      {
+         using type = typename TestFixture::type;
+
+         type variable = 0;
+
+         Arguments arguments{ {
+            argument::directive( { "-f"}, "", variable)}};
+
+         arguments.parse( { "-f" ,"0"});
+
+         EXPECT_TRUE( variable == 0);
+      }
+
+
+      TYPED_TEST( casual_common_arguments_integrals, single_variable_max)
+      {
+         using type = typename TestFixture::type;
+
+         type variable = 0;
+
+         auto max = std::numeric_limits< type>::max();
+
+         Arguments arguments{ {
+            argument::directive( { "-f"}, "", variable)}};
+
+         arguments.parse( { "-f" , std::to_string( max)});
+
+         EXPECT_TRUE( variable == max);
+      }
+
+      TYPED_TEST( casual_common_arguments_integrals, single_variable_min)
+      {
+         using type = typename TestFixture::type;
+
+         type variable = 0;
+
+         auto min = std::numeric_limits< type>::min();
+
+         Arguments arguments{ {
+            argument::directive( { "-f"}, "", variable)}};
+
+         arguments.parse( { "-f" , std::to_string( min)});
+
+         EXPECT_TRUE( variable == min);
+      }
+
+      TYPED_TEST( casual_common_arguments_integrals, single_variable_random)
+      {
+         using type = typename TestFixture::type;
+
+         type variable = 0;
+
+         auto random = TestFixture::random();
+
+         Arguments arguments{ {
+            argument::directive( { "-f"}, "", variable)}};
+
+         arguments.parse( { "-f" , std::to_string( random)});
+
+         EXPECT_TRUE( variable == random);
+      }
+
+      TYPED_TEST( casual_common_arguments_integrals, single_variable_random__lambda)
+      {
+         using type = typename TestFixture::type;
+
+         type variable = 0;
+
+         auto random = TestFixture::random();
+
+         Arguments arguments{ {
+            argument::directive( { "-f"}, "", [&]( type v){ variable = v;})
+         }};
+
+         arguments.parse( { "-f" , std::to_string( random)});
+
+         EXPECT_TRUE( variable == random);
+      }
+
+      TYPED_TEST( casual_common_arguments_integrals, vector_10_variable_random)
+      {
+         using type = typename TestFixture::type;
+
+         std::vector< type> variable;
+
+         std::vector< type> random( 10);
+         for( auto& v : random) { v = TestFixture::random();}
+
+         Arguments arguments{ {
+            argument::directive( { "-f"}, "", variable)}};
+         
+         std::vector< std::string> text{ "-f"};
+         range::transform( random, text, []( auto v){ return std::to_string( v);});
+
+         arguments.parse( std::move( text));
+
+         EXPECT_TRUE( variable == random);
       }
 
       namespace local

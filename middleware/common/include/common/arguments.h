@@ -228,10 +228,7 @@ namespace casual
                {
                   T operator () ( const std::string& value) const
                   {
-                     std::istringstream converter( value);
-                     T result{};
-                     converter >> result;
-                     return result;
+                     return common::from_string< T>( value);
                   }
                };
 
@@ -306,74 +303,54 @@ namespace casual
 
             namespace value
             {
-               template< typename V, typename T>
-               void assign( V& variable, T&& value)
+               template< typename T, typename V>
+               void assign( T&& value, V& variable)
                {
                   variable = std::forward< T>( value);
                }
 
-               template< typename V, typename T>
-               void assign( std::vector< V>& variable, T&& value)
+               template< typename T, typename V>
+               void assign( T&& value, std::vector< V>& variable)
                {
                   range::copy( value, std::back_inserter( variable));
                }
             } // value
 
 
-            template< typename C>
-            struct maker
+            namespace caller
             {
                //
                // for callables
                //
-               template< typename T, typename... Args, std::enable_if_t< traits::function< T>::arguments() == 1>* dummy = nullptr>
-               static decltype( auto) make( T&& function, Args&&... args)
+               template< typename T, typename... Args, std::enable_if_t< traits::function< T>::arguments() >= 0>* dummy = nullptr>
+               decltype( auto) make( T&& function, Args&&... args)
                {
-                  return [function,&args...]( auto&& value){ common::invoke( function, std::forward< Args>( args)..., std::forward<decltype( value)>( value));};
-                  //return std::forward< T>( function);
+                  return [function,&args...]( auto&&... value) mutable { 
+                     common::invoke( function, std::forward< Args>( args)..., std::forward<decltype( value)>( value)...);
+                  };
                }
 
                //
                // For variables
                //
                template< typename T>
-               static auto make( T& variable)
+               auto make( T& variable)
                {
                   //
                   // We bind directly to the variable
                   //
-                  return [&variable]( const T& values){ value::assign( variable, values);};
-               }
-
-            };
-
-
-            template<>
-            struct maker< cardinality::Zero>
-            {
-               template< typename T, typename... Args, std::enable_if_t< traits::function< T>::arguments() == 0>* dummy = nullptr>
-               static decltype( auto) make( T&& function, Args&&... args)
-               {
-                  return [function,&args...]() mutable { common::invoke( function, std::forward< Args>( args)...);};
-                  //return std::forward< T>( function);
+                  return [&variable]( const T& values){ value::assign( values, variable);};
                }
 
                //
                // For variable bool
                //
-               static auto make( bool& value)
+               auto make( bool& value)
                {
                   return [&value](){ value = true;};
                }
-            };
 
-
-
-            template< typename C, typename ...Args>
-            auto make( C cardinality, Args&&... args)
-            {
-               return maker< C>::make( std::forward< Args>( args)...);
-            }
+            } // caller
 
 
             struct base_directive
@@ -488,7 +465,7 @@ namespace casual
          template< typename C, typename... Args>
          option::Holder directive( C cardinality, std::vector< std::string> options, std::string description, Args&&... args)
          {
-            auto caller = internal::make( cardinality, std::forward< Args>( args)...);
+            auto caller = internal::caller::make( std::forward< Args>( args)...);
             return option::Holder{ internal::basic_directive< decltype( caller), C>{ std::move( options), std::move( description), std::move( caller)}};
          }
 

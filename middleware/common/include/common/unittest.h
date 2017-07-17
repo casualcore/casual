@@ -98,7 +98,7 @@ namespace casual
             platform::binary::type::value_type byte();
 
             template< typename R>
-            auto range( R&& range) -> decltype( std::forward< R>( range))
+            decltype( auto) range( R&& range)
             {
                for( auto& value : range)
                {
