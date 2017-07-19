@@ -20,4 +20,4 @@ domain:
       # We connect to domainA
       - address: domainA:7771
         # we "know" that domainA has an echo-service
-        services: [ casual.example.echo]
+        services: [ casual/example/echo]

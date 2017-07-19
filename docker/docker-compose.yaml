@@ -4,29 +4,23 @@ services:
     domainA:
         hostname: domainA
         image: casual/middleware:latest
-        build:
-            context: ./
-            dockerfile: Dockerfile
         networks:
             - isolated_nw
         volumes:
             - ./config/domainA-web-config.json:/opt/casual/webapp/build/unbundled/src/config.json
             - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
-            - ./config/domainA-config.yaml:/srv/domain/casual/configuration/domain.yaml
+            - ./config/domainA-config.yaml:/test/casual/configuration/domain.yaml
         tty: true
 
     domainB:
         hostname: domainB
         image: casual/middleware:latest
-        build:
-            context: ./
-            dockerfile: Dockerfile
         networks:
             - isolated_nw
         volumes:
             - ./config/domainB-web-config.json:/opt/casual/webapp/build/unbundled/src/config.json
             - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
-            - ./config/domainB-config.yaml:/srv/domain/casual/configuration/domain.yaml
+            - ./config/domainB-config.yaml:/test/casual/configuration/domain.yaml
         tty: true
 
 networks:
