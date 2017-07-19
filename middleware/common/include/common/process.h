@@ -11,7 +11,10 @@
 
 #include "common/algorithm.h"
 
+#include "common/communication/ipc/handle.h"
+
 #include "common/marshal/marshal.h"
+
 
 
 //
@@ -46,12 +49,14 @@ namespace casual
          //!
          struct Handle
          {
+            using queue_handle = communication::ipc::Handle;
+
             Handle() = default;
             Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid),  queue( queue)  {}
+            Handle( platform::pid::type pid, queue_handle queue) : pid( pid),  queue( queue)  {}
 
             platform::pid::type pid = 0;
-            platform::ipc::id::type queue = -1;
+            queue_handle queue;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
@@ -84,7 +89,7 @@ namespace casual
 
             inline explicit operator bool() const
             {
-               return pid != 0 && queue >= 0;
+               return pid != 0 && queue;
             }
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -322,7 +327,7 @@ namespace casual
          //!
          //! @return the process handle
          //!
-         Handle ping( platform::ipc::id::type queue);
+         Handle ping( communication::ipc::Handle queue);
 
          namespace lifetime
          {

@@ -256,7 +256,7 @@ namespace casual
                         }
 
                         arguments.emplace_back( "--event-queue");
-                        arguments.emplace_back( std::to_string( common::communication::ipc::inbound::id()));
+                        arguments.emplace_back( common::string::compose( common::communication::ipc::inbound::id()));
 
                         return arguments;
                      };

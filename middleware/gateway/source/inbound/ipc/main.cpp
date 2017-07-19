@@ -22,7 +22,7 @@ namespace casual
          {
             struct Settings
             {
-               platform::ipc::id::type ipc = 0;
+               platform::ipc::handle::type ipc = -1;
                std::string correlation;
             };
 
@@ -35,7 +35,7 @@ namespace casual
 
                struct configuration_type
                {
-                  platform::ipc::id::type id;
+                  communication::ipc::Handle id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -54,7 +54,7 @@ namespace casual
 
                   static std::vector< std::string> address( const outbound_device_type& device)
                   {
-                     return { std::to_string( device.connector().id())};
+                     return { common::string::compose( device.connector().id())};
                   }
 
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
@@ -65,7 +65,7 @@ namespace casual
 
                private:
 
-                  platform::ipc::id::type m_outbound;
+                  communication::ipc::Handle m_outbound;
                };
 
                struct external_type
@@ -74,7 +74,7 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::external_type ctor"};
 
-                     m_process.queue = settings.ipc;
+                     m_process.queue = communication::ipc::Handle{ settings.ipc};
 
                      //
                      // Send the reply
@@ -129,7 +129,7 @@ int main( int argc, char **argv)
       casual::gateway::inbound::ipc::Settings settings;
       {
          casual::common::Arguments parser{{
-            casual::common::argument::directive( { "--remote-ipc-queue"}, "romote domain ipc queue", settings.ipc),
+            casual::common::argument::directive( { "--remote-ipc-queue"}, "remote domain ipc queue", settings.ipc),
             casual::common::argument::directive( { "--correlation"}, "message connect correlation", settings.correlation),
          }};
          parser.parse( argc, argv);

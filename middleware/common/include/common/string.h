@@ -112,6 +112,28 @@ namespace casual
 			   return result;
 			}
 
+         namespace detail
+         {
+            inline void composer( std::ostream& out) {}
+
+            template< typename Part, typename... Parts>
+            inline void composer( std::ostream& out, Part&& part, Parts&&... parts)
+            {
+               out << std::forward< Part>( part);
+               composer( out, std::forward< Parts>( parts)...);
+            }
+         } // detail
+
+         //!
+         //! composes a string from several parts, using the stream operator
+         //!
+         template< typename... Parts>
+         inline std::string compose( Parts&&... parts)
+         {
+            std::ostringstream out;
+            detail::composer( out, std::forward< Parts>( parts)...);
+            return out.str();
+         }
 		} // string
 
 		namespace internal

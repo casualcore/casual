@@ -23,8 +23,8 @@ namespace casual
             //!
             struct Message
             {
-               using targets_type = std::vector< platform::ipc::id::type>;
-               using target_type = platform::ipc::id::type;
+               using targets_type = std::vector< communication::ipc::Handle>;
+               using target_type = communication::ipc::Handle;
 
                enum class Targets
                {
@@ -72,7 +72,7 @@ namespace casual
 
             namespace policy
             {
-               struct consume_unavalibe
+               struct consume_unavailable
                {
                   bool operator () () const;
                };
@@ -82,7 +82,7 @@ namespace casual
             template< typename P>
             bool send( Message& message, P&& policy, const communication::error::type& handler = nullptr)
             {
-               auto send = [&]( platform::ipc::id::type ipc)
+               auto send = [&]( communication::ipc::Handle ipc)
                      {
                         try
                         {

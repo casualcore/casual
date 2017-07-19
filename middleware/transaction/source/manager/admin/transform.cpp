@@ -13,19 +13,6 @@ namespace casual
    {
       namespace transform
       {
-         struct Process
-         {
-            vo::Process operator () ( const common::process::Handle& process) const
-            {
-               vo::Process result;
-
-               result.pid = process.pid;
-               result.queue = process.queue;
-
-               return result;
-            }
-         };
-
 
          vo::Statistics Statistics::operator () ( const state::Statistics& value) const
          {
@@ -60,7 +47,7 @@ namespace casual
                {
                   vo::Transaction::ID result;
 
-                  result.owner = Process{}( id.owner());
+                  result.owner = id.owner();
                   result.type = id.xid.formatID;
                   result.global = common::transcode::hex::encode( common::transaction::global( id));
                   result.branch = common::transcode::hex::encode( common::transaction::branch( id));
@@ -93,7 +80,7 @@ namespace casual
                vo::resource::Instance result;
 
                result.id = value.id;
-               result.process = transform::Process{}( value.process);
+               result.process = value.process;
                result.state = static_cast< vo::resource::Instance::State>( value.state());
                result.statistics = transform::Stats{}( value.statistics);
 
@@ -120,7 +107,7 @@ namespace casual
 
          namespace pending
          {
-            struct Reqeust
+            struct Request
             {
                vo::pending::Request operator () ( const state::pending::Request& value) const
                {
@@ -140,7 +127,7 @@ namespace casual
                {
                   vo::pending::Reply result;
 
-                  result.queue = value.target;
+                  result.queue = value.target.native();
                   result.type = common::message::convert::type( value.message.type);
                   result.correlation = value.message.correlation;
 
@@ -171,8 +158,8 @@ namespace casual
             common::range::transform( state.resources, result.resources, transform::resource::Proxy{});
             common::range::transform( state.transactions, result.transactions, transform::Transaction{});
 
-            common::range::transform( state.pending.requests, result.pending.requests, transform::pending::Reqeust{});
-            common::range::transform( state.persistent.requests, result.persistent.requests, transform::pending::Reqeust{});
+            common::range::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
+            common::range::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
             common::range::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
 
             result.log = transform::log( state.log.stats());

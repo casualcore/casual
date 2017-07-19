@@ -49,7 +49,7 @@ namespace casual
 
                   log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
-                  auto result = ::msgsnd( id, &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
+                  auto result = ::msgsnd( id.native(), &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
                   if( result == -1)
                   {
@@ -74,11 +74,11 @@ namespace casual
                         }
                         case EIDRM:
                         {
-                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                           throw exception::queue::Unavailable{ string::compose( "queue unavailable - id: ", id, " - ",  common::error::string())};
                         }
                         case ENOMEM:
                         {
-                           throw exception::limit::Memory{ "id: " + std::to_string( id) + " - " + common::error::string()};
+                           throw exception::limit::Memory{ string::compose(  "id: ", id, " - ", common::error::string())};
                         }
                         case EINVAL:
                         {
@@ -88,7 +88,7 @@ namespace casual
                               //
                               // The problem is with queue-id. We guess that it has been removed.
                               //
-                              throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                              throw exception::queue::Unavailable{ string::compose( "queue unavailable - id: ", id, " - ", common::error::string())};
                            }
                            // we let it fall through to default
                         }
@@ -96,7 +96,7 @@ namespace casual
                         case EFAULT:
                         default:
                         {
-                           throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
+                           throw common::exception::invalid::Argument{ string::compose(  "invalid queue arguments - id: ", id, " - ", common::error::string())};
                         }
                      }
                   }
@@ -112,7 +112,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
+                  auto result = msgrcv( id.native(), &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -139,14 +139,13 @@ namespace casual
                         }
                         case EIDRM:
                         {
-                           throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( id) + " - " + common::error::string()};
+                           throw exception::queue::Unavailable{ string::compose( "queue removed - id: ", id, " - ", common::error::string())};
                         }
                         default:
                         {
-                           std::ostringstream msg;
-                           msg << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: " << flags << " - " << common::error::string();
-                           log << msg.str() << std::endl;
-                           throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
+                           auto msg = string::compose( "ipc < [", id, "] receive failed - transport: ", transport, " - flags: ", flags, " - ", common::error::string());
+                           log << msg << std::endl;
+                           throw exception::invalid::Argument( msg, __FILE__, __LINE__);
                         }
                      }
                   }
@@ -237,7 +236,7 @@ namespace casual
                Connector::Connector()
                 : m_id( msgget( IPC_PRIVATE, IPC_CREAT | 0660))
                {
-                  if( m_id  == cInvalid)
+                  if( ! m_id)
                   {
                      throw exception::invalid::Argument( "ipc queue create failed - " + common::error::string(), __FILE__, __LINE__);
                   }
@@ -392,7 +391,7 @@ namespace casual
                      {
 
                         template< typename R>
-                        platform::ipc::id::type reconnect( R&& singleton_policy)
+                        communication::ipc::Handle reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -585,14 +584,14 @@ namespace casual
             {
                struct msqid_ds info;
 
-               return msgctl( id, IPC_STAT, &info) == 0;
+               return msgctl( id.native(), IPC_STAT, &info) == 0;
             }
 
             bool remove( handle_type id)
             {
-               if( id != -1)
+               if( id)
                {
-                  if( msgctl( id, IPC_RMID, nullptr) == 0)
+                  if( msgctl( id.native(), IPC_RMID, nullptr) == 0)
                   {
                      log << "queue id: " << id << " removed\n";
                      return true;
@@ -609,7 +608,7 @@ namespace casual
             {
                struct msqid_ds info;
 
-               if( msgctl( owner.queue, IPC_STAT, &info) != 0)
+               if( msgctl( owner.queue.native(), IPC_STAT, &info) != 0)
                {
                   return false;
                }

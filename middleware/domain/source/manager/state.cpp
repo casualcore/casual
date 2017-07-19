@@ -22,7 +22,7 @@ namespace casual
             {
                namespace remove
                {
-                  void ipc( platform::ipc::id::type ipc)
+                  void ipc( communication::ipc::Handle ipc)
                   {
                      if( communication::ipc::exists( ipc))
                      {

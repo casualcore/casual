@@ -73,7 +73,7 @@ namespace casual
                   struct State
                   {
                      std::map< std::string, common::message::service::lookup::Reply> services;
-                     std::vector< platform::ipc::id::type> traffic_monitors;
+                     std::vector< communication::ipc::Handle> traffic_monitors;
                   };
 
 

@@ -104,7 +104,7 @@ namespace casual
                      message.replies.push_back( std::move( reply));
                   }
 
-                  void Policy::send( common::platform::ipc::id::type queue, message_type& message)
+                  void Policy::send( common::communication::ipc::Handle queue, message_type& message)
                   {
                      Trace trace{ "manager::state::coordinate::outbound::Policy send"};
 

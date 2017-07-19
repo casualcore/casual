@@ -26,7 +26,7 @@ namespace casual
                struct
                {
                   sf::platform::pid::type pid;
-                  sf::platform::ipc::id::type queue;
+                  sf::platform::ipc::handle::type queue;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {

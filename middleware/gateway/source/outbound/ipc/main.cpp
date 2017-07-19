@@ -37,7 +37,7 @@ namespace casual
                namespace
                {
 
-                  process::Handle lookup_gateway( communication::ipc::inbound::Device& ipc, platform::ipc::id::type broker)
+                  process::Handle lookup_gateway( communication::ipc::inbound::Device& ipc, common::communication::ipc::Handle broker)
                   {
                      Trace trace{ "outbound::ipc::local::lookup_gateway"};
 
@@ -53,7 +53,7 @@ namespace casual
                            ipc).process;
                   }
 
-                  message::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, platform::ipc::id::type gateway)
+                  message::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, common::communication::ipc::Handle gateway)
                   {
                      Trace trace{ "outbound::ipc::local::lookup_inbound"};
 
@@ -78,16 +78,11 @@ namespace casual
                   {
                      Trace trace{ "outbound::ipc::local::connect_domain"};
 
-                     std::ifstream domain_file{ path};
+                     auto result = common::domain::singleton::read( path);
 
-                     if( domain_file)
+                     if( result.process.queue)
                      {
-                        platform::ipc::id::type domain_qid{ 0};
-                        domain_file >> domain_qid;
-
-                        log << "domain file: " << path << " - qid: " << domain_qid << '\n';
-
-                        auto gateway = lookup_gateway( ipc, domain_qid);
+                        auto gateway = lookup_gateway( ipc, result.process.queue);
 
                         return lookup_inbound( ipc, gateway.queue);
                      }
@@ -116,7 +111,7 @@ namespace casual
 
                struct configuration_type
                {
-                  platform::ipc::id::type id;
+                  communication::ipc::Handle id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -135,7 +130,7 @@ namespace casual
 
                   static std::vector< std::string> address( const outbound_device_type& device)
                   {
-                     return { std::to_string( device.connector().id())};
+                     return { common::string::compose( device.connector().id())};
                   }
 
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
@@ -146,7 +141,7 @@ namespace casual
 
                private:
 
-                  platform::ipc::id::type m_outbound;
+                  communication::ipc::Handle m_outbound;
                };
 
                struct external_type

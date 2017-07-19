@@ -6,6 +6,7 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_IPC_H_
 
 
+#include "common/communication/ipc/handle.h"
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 
@@ -22,6 +23,7 @@ namespace casual
       {
          namespace ipc
          {
+
             //
             // Forwards
             //
@@ -190,7 +192,7 @@ namespace casual
             } // message
 
 
-            using handle_type = platform::ipc::id::type;
+            using handle_type = ipc::Handle;
 
 
 
@@ -285,13 +287,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
 
                private:
-
-                  enum
-                  {
-                     cInvalid = -1
-                  };
-
-                  handle_type m_id = cInvalid;
+                  handle_type m_id;
                };
 
                template< typename S>
@@ -406,13 +402,13 @@ namespace casual
 
             template< typename D, typename M, typename P>
             auto send( D& ipc, M&& message, P&& policy, const error_type& handler = nullptr)
-             -> std::enable_if_t< ! std::is_same< D, platform::ipc::id::type>::value, Uuid>
+             -> std::enable_if_t< ! std::is_same< D, ipc::handle_type>::value, Uuid>
             {
                return ipc.send( message, policy, handler);
             }
 
             template< typename M, typename P>
-            Uuid send( platform::ipc::id::type ipc, M&& message, P&& policy, const error_type& handler = nullptr)
+            Uuid send( ipc::handle_type ipc, M&& message, P&& policy, const error_type& handler = nullptr)
             {
                return outbound::Device{ ipc}.send( message, policy, handler);
             }
@@ -700,7 +696,7 @@ namespace casual
 
 
                inbound::Device& device() const { return inbound::device();}
-               platform::ipc::id::type id() const { return inbound::device().connector().id();}
+               auto id() const { return inbound::device().connector().id();}
 
                inline const std::function<void()>& error_handler() const { return m_error_handler;}
 

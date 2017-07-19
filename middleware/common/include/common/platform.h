@@ -112,10 +112,10 @@ namespace casual
 
 		   namespace ipc
          {
-		      namespace id
+		      namespace handle
             {
                using type = long;
-            } // id
+            } // handle
 
             namespace message
             {

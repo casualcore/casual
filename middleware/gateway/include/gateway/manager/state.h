@@ -114,7 +114,7 @@ namespace casual
 
                      void accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply);
 
-                     void send( common::platform::ipc::id::type queue, message_type& message);
+                     void send( common::communication::ipc::Handle queue, message_type& message);
                   };
 
                   using Discover = common::message::Coordinate< Policy>;

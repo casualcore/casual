@@ -32,7 +32,7 @@ namespace casual
 
             std::vector< common::process::Handle> m_subscribers;
 
-            bool exists( platform::ipc::id::type queue) const;
+            bool exists( communication::ipc::Handle queue) const;
          };
 
          template< typename Event>
@@ -63,7 +63,7 @@ namespace casual
                }));
             }
 
-            void subscription( platform::ipc::id::type queue)
+            void subscription( communication::ipc::Handle queue)
             {
                if( ! exists( queue))
                {

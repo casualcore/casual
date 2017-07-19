@@ -220,7 +220,7 @@ namespace casual
 
             struct Reply : base_message
             {
-               typedef common::platform::ipc::id::type queue_id_type;
+               using queue_id_type = common::communication::ipc::Handle;
 
                template< typename M>
                Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}

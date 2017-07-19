@@ -852,7 +852,7 @@ namespace casual
 
 
 
-         Handle ping( platform::ipc::id::type queue)
+         Handle ping( communication::ipc::Handle queue)
          {
             Trace trace{ "process::ping"};
 

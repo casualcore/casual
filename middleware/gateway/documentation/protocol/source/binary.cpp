@@ -52,7 +52,7 @@ namespace casual
                   return {
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0851"},
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0852"},
-                     common::process::Handle{ 42, 42}
+                     common::process::Handle{ 42, common::communication::ipc::Handle{ 42}}
                   };
                }
 

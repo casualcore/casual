@@ -457,7 +457,7 @@ namespace casual
                         connection.process.pid = common::process::spawn(
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
                               {
-                                    "--remote-ipc-queue", std::to_string( message.process.queue),
+                                    "--remote-ipc-queue", common::string::compose( message.process.queue),
                                     "--correlation", uuid::string( message.correlation),
                               });
 

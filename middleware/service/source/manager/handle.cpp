@@ -473,7 +473,7 @@ namespace casual
             }
 
 
-            void Policy::reply( platform::ipc::id::type id, common::message::service::call::Reply& message)
+            void Policy::reply( common::communication::ipc::Handle id, common::message::service::call::Reply& message)
             {
                ipc::device().blocking_send( id, message);
             }
@@ -508,7 +508,7 @@ namespace casual
                throw common::exception::xatmi::System{ "can't forward within service-manager"};
             }
 
-            void Policy::statistics( platform::ipc::id::type, common::message::event::service::Call&)
+            void Policy::statistics( common::communication::ipc::Handle, common::message::event::service::Call&)
             {
                //
                // We don't collect statistics for the service-manager

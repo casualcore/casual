@@ -337,7 +337,7 @@ namespace casual
             common::event::dispatch::Collection<
                common::message::event::service::Call> events;
 
-            std::vector< common::platform::ipc::id::type> subscribers() const;
+            std::vector< common::communication::ipc::Handle> subscribers() const;
 
 
             common::process::Handle forward;

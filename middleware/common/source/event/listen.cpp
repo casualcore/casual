@@ -66,7 +66,7 @@ namespace casual
                }
 
 
-               auto subscription( platform::ipc::id::type ipc, std::vector< message_type> types)
+               auto subscription( communication::ipc::Handle ipc, std::vector< message_type> types)
                {
                   process::Handle process{ process::id(), ipc};
 

@@ -44,7 +44,7 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./home/bin/casual-domain-manager", {
-                        "--event-queue", std::to_string( common::communication::ipc::inbound::id()),
+                        "--event-queue", common::string::compose( common::communication::ipc::inbound::id()),
                         "--configuration-files", configuration::names( files),
                         "--no-auto-persist"
                      }}

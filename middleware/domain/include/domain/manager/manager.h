@@ -21,7 +21,7 @@ namespace casual
 
             std::vector< std::string> configurationfiles;
 
-            common::platform::ipc::id::type event_queue = 0;
+            common::platform::ipc::handle::type event_queue = 0;
             std::vector< std::string> events;
 
             bool bare = false;

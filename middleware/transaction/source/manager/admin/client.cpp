@@ -213,7 +213,7 @@ namespace casual
 
                   struct format_queue
                   {
-                     platform::pid::type operator() ( const vo::resource::Instance& value) const
+                     auto operator() ( const vo::resource::Instance& value) const
                      {
                         return value.process.queue;
                      }

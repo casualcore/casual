@@ -43,11 +43,11 @@ namespace casual
             };
 
 
-            file::scoped::Path create_domain_file( platform::ipc::id::type queue)
+            file::scoped::Path create_domain_file( communication::ipc::Handle queue)
             {
                Trace trace{ "create_domain_file"};
 
-               auto file = mockup::file::temporary::content( "", std::to_string( queue));
+               auto file = mockup::file::temporary::content( "", common::string::compose( queue));
 
                log << "created domain file: " << file << " - qid: " << queue << '\n';
 
@@ -111,7 +111,7 @@ namespace casual
                      }
 
                      //
-                     // Act as the reomte domain
+                     // Act as the remote domain
                      //
                      {
                         Trace trace{ "remote - wait for discovery from outbound to 'local' inbound"};
@@ -192,7 +192,7 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            local::Domain doman;
+            local::Domain domain;
          });
       }
 

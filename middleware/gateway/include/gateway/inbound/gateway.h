@@ -430,7 +430,7 @@ namespace casual
 
                         }
 
-                        inline void send( common::platform::ipc::id::type queue, message_type& message)
+                        inline void send( common::communication::ipc::Handle queue, message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
 
@@ -558,7 +558,7 @@ namespace casual
                      {
                         Trace trace{ "gateway::inbound::handle::domain::discover::Coordinate::operator()"};
 
-                        m_discover.add( message.correlation, 0, message.pids);
+                        m_discover.add( message.correlation, {}, message.pids);
                      }
 
                   private:

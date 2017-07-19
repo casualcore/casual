@@ -19,7 +19,7 @@ namespace casual
 
          const Uuid gtrid = uuid::make();
 
-         transaction::ID id{ gtrid, gtrid, { 0, 0}};
+         transaction::ID id{ gtrid, gtrid, { 0, communication::ipc::Handle{ 0}}};
 
          std::ostringstream stream;
          stream << id;
@@ -35,7 +35,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         transaction::ID id{ uuid::make(), uuid::make(), { 0, 0}};
+         transaction::ID id{ uuid::make(), uuid::make(), { 0, communication::ipc::Handle{ 0}}};
 
          std::ostringstream stream;
          stream << id;

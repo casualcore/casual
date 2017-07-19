@@ -365,7 +365,7 @@ namespace casual
 
             // service-manager will let us think that the service is idle, and send us the queue to the forward-cache
             EXPECT_TRUE( service.state == decltype( service)::State::idle);
-            EXPECT_TRUE( service.process.queue != 0);
+            EXPECT_TRUE( service.process.queue);
             EXPECT_TRUE( service.process.queue != server.process().queue);
          }
       }

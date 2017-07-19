@@ -1,20 +1,17 @@
 //!
-//! queue.h
+//! casual
 //!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
-//!
+#ifndef CASUAL_QUEUE_GROUP_GROUP_H_
+#define CASUAL_QUEUE_GROUP_GROUP_H_
 
-#ifndef CASUALQUEUESERVER_H_
-#define CASUALQUEUESERVER_H_
-
-#include <string>
 
 #include "queue/group/database.h"
 
 #include "common/platform.h"
 #include "common/message/pending.h"
+#include "common/communication/ipc/handle.h"
 
+#include <string>
 
 namespace casual
 {
@@ -43,7 +40,7 @@ namespace casual
 
 
             template< typename M>
-            void persist( M&& message, std::vector< common::platform::ipc::id::type> destinations)
+            void persist( M&& message, std::vector< common::communication::ipc::Handle> destinations)
             {
                persistent.emplace_back( std::forward< M>( message), std::move( destinations));
             }

@@ -38,7 +38,11 @@ namespace casual
             if( archive.serialtype_start( name))
             {
                archive >> name::value::pair::make( "pid", value.pid);
-               archive >> name::value::pair::make( "queue", value.queue);
+               
+               auto queue = value.queue.native();
+               archive >> CASUAL_MAKE_NVP( queue);
+               value.queue = common::communication::ipc::Handle{ queue};
+               
             }
             archive.serialtype_end( name);
          }
@@ -47,7 +51,7 @@ namespace casual
             archive.serialtype_start( name);
 
             archive << name::value::pair::make( "pid", value.pid);
-            archive << name::value::pair::make( "queue", value.queue);
+            archive << name::value::pair::make( "queue", value.queue.native());
 
             archive.serialtype_end( name);
          }

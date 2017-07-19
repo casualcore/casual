@@ -133,14 +133,15 @@ namespace casual
                      auto& pid = std::get < 0 > ( split);
                      if( !pid.empty())
                      {
-                        result.pid = std::stoi(std::string(std::begin(pid), std::end(pid)));
+                        result.pid = std::stoi( std::string( std::begin(pid), std::end(pid)));
                      }
 
-                     auto& queue = std::get < 1 > ( split);
-                     if( !queue.empty())
+                     auto queue = std::get < 1 > ( split);
+                     if( ! queue.empty())
                      {
                         ++queue;
-                        result.queue = std::stol(std::string(std::begin(queue), std::end(queue)));
+                        result.queue = communication::ipc::Handle{ 
+                           common::from_string< decltype( result.queue.native())>( std::string( std::begin(queue), std::end(queue)))};
                      }
                   }
 
@@ -149,7 +150,7 @@ namespace casual
 
                void set( const char* variable, const common::process::Handle& process)
                {
-                  variable::set( variable, std::to_string(process.pid) + '|' + std::to_string(process.queue));
+                  variable::set( variable, string::compose( process.pid, '|', process.queue));
                }
 
             } // process

@@ -62,7 +62,7 @@ namespace casual
 
                   auto group = lookup();
 
-                  if( group.process.queue == 0)
+                  if( ! group.process.queue)
                   {
                      throw common::exception::invalid::Argument{ "failed to look up queue"};
                   }

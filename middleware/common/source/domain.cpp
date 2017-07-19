@@ -110,7 +110,7 @@ namespace casual
 
                if( common::file::exists( path))
                {
-                  auto content = singleton::read( {});
+                  auto content = singleton::read( path);
 
                   log::debug << "domain: " << content << '\n';
 
@@ -143,28 +143,25 @@ namespace casual
                      << '}';
             }
 
-            Result read()
-            {
-               return read( process::pattern::Sleep{
-                  { std::chrono::milliseconds{ 100}, 10}
-               });
-            }
 
-            Result read( process::pattern::Sleep retries)
+            Result read( const std::string& path, process::pattern::Sleep retries)
             {
                Trace trace{ "common::domain::singleton::read"};
 
-               log::debug << "retries: " << retries << '\n';
+               log::debug << "path: " << path << "retries: " << retries << '\n';
 
                do
                {
-                  std::ifstream file{ common::environment::domain::singleton::file()};
+                  std::ifstream file{ path};
 
                   if( file)
                   {
                      Result result;
                      {
-                        file >> result.process.queue;
+                        auto queue = result.process.queue.native();
+                        file >> queue;
+                        result.process.queue = communication::ipc::Handle{ queue};
+
                         file >> result.process.pid;
                         file >> result.identity.name;
                         std::string uuid;
@@ -183,6 +180,22 @@ namespace casual
                while( retries());
 
                return {};
+            }
+            Result read( process::pattern::Sleep retries)
+            {
+               return read( common::environment::domain::singleton::file(), std::move( retries));
+            }
+            
+            Result read( const std::string& path)
+            {
+               return read( path, process::pattern::Sleep{
+                  { std::chrono::milliseconds{ 100}, 10}
+               });
+            }
+
+            Result read()
+            {
+               return read( common::environment::domain::singleton::file());
             }
 
          } // singleton

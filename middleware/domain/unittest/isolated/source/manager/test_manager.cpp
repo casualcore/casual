@@ -59,7 +59,7 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./bin/casual-domain-manager", {
-                        "--event-queue", std::to_string( common::communication::ipc::inbound::id()),
+                        "--event-queue", common::string::compose( common::communication::ipc::inbound::id()),
                         "--configuration-files", configuration::names( files),
                         "--bare",
                      }}
@@ -102,29 +102,6 @@ namespace casual
                   mockup::Process process;
                };
 
-               namespace manager
-               {
-
-                  platform::ipc::id::type ipc()
-                  {
-                     std::ifstream file{ environment::domain::singleton::file()};
-
-                     while( ! file.is_open())
-                     {
-                        process::sleep( std::chrono::milliseconds{ 10});
-                        file.open( environment::domain::singleton::file());
-                     }
-
-                     platform::ipc::id::type result = 0;
-
-                     file >> result;
-
-                     log::debug << "manager ipc: " << result << '\n';
-
-                     return result;
-                  }
-
-               } // manager
 
 
                namespace configuration
@@ -193,8 +170,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::empty()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -204,8 +179,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -223,8 +196,9 @@ domain:
 
 )";
 
-            local::Manager manager{ { configuration}};
-            EXPECT_TRUE( process::ping( local::manager::ipc()) == manager.process.handle());
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { configuration}};
+            });
          }
 
          TEST( casual_domain_manager, non_existing_path__restart___expect_restart_ignored_during_boot)
@@ -241,8 +215,9 @@ domain:
 
 )";
 
-            local::Manager manager{ { configuration}};
-            EXPECT_TRUE( process::ping( local::manager::ipc()) == manager.process.handle());
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { configuration}};
+            });
          }
 
 
@@ -252,8 +227,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo_restart()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -264,8 +237,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::sleep()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -284,8 +255,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { configuration}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -372,7 +341,6 @@ domain:
             common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
-            process::ping( local::manager::ipc());
 
             mockup::domain::service::Manager service;
 
@@ -514,7 +482,6 @@ domain:
 )"};
 
             local::Manager manager{ { configuration}};
-            process::ping( local::manager::ipc());
 
             mockup::ipc::Collector server;
             // We need to register this process to the manager
@@ -652,7 +619,6 @@ domain:
 )"};
 
             local::Manager manager{ { configuration}};
-            process::ping( local::manager::ipc());
 
             mockup::domain::service::Manager service;
 

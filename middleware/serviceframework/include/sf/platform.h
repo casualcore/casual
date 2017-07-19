@@ -80,9 +80,9 @@ namespace casual
 
          namespace ipc
          {
-            namespace id
+            namespace handle
             {
-               using type = common::platform::ipc::id::type;
+               using type = common::platform::ipc::handle::type;
             } // id
          } // ipc
 

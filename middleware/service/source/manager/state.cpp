@@ -276,7 +276,7 @@ namespace casual
             return local::get( services, name);
          }
 
-         std::vector< common::platform::ipc::id::type> State::subscribers() const
+         std::vector< common::communication::ipc::Handle> State::subscribers() const
          {
             return range::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
                return v.queue;
