@@ -7,10 +7,12 @@ services:
         networks:
             - isolated_nw
         volumes:
-            - ./config/domainA-web-config.json:/opt/casual/webapp/build/unbundled/src/config.json
+            - ./config/domainA-web-config.json:/opt/casual/webapp/src/config.json
             - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
             - ./config/domainA-config.yaml:/test/casual/configuration/domain.yaml
-        tty: true
+        tty: false
+        #environment:
+        #    - CASUAL_LOG=.*
 
     domainB:
         hostname: domainB
@@ -18,10 +20,12 @@ services:
         networks:
             - isolated_nw
         volumes:
-            - ./config/domainB-web-config.json:/opt/casual/webapp/build/unbundled/src/config.json
+            - ./config/domainB-web-config.json:/opt/casual/webapp/src/config.json
             - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
             - ./config/domainB-config.yaml:/test/casual/configuration/domain.yaml
-        tty: true
+        tty: false
+        #environment:
+        #    - CASUAL_LOG=.*
 
 networks:
     isolated_nw:
