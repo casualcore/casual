@@ -1,25 +1,7 @@
 # do not load, if casual-admin is not in $PATH
 which casual-admin &> /dev/null || return 0
 
-__array_index_of() {
-    local needle="${1}"; shift
-    local haystack=($@)
-    local i
-
-    for ((i=0; i<${#haystack[@]}; i++)) {
-        local straw="${haystack[$i]}"
-        [[ "${straw}" == "${needle}" ]] || continue
-        echo "${i}"
-        return 0
-    }
-
-    echo "-1"
-
-    return 1
-}
-
-# shellcheck disable=SC2178,SC2128
-__string_index_of() {
+__index_of() {
     local needle="${1}"
     local haystack="${2}"
     local match="${haystack%%${needle}*}"
@@ -37,9 +19,10 @@ _casual_admin() {
     # insert `casual-bash-completion` before any arguments starting with "--"
     # XXX: when context is used, this might not result in expected behavior
     cmd="${parameters[*]}"
-    index="$(__string_index_of "--" "${cmd}")"
+    cmd="${cmd/help/}" # abit ugly, but needed so there's no errors
+    index="$(__index_of "--" "${cmd}")"
     cmd="${cmd%%--*} casual-bash-completion ${cmd:${index}:${#cmd}}"
-    unset index
+    index=-1
 
     arguments=($(${cmd}))
 
@@ -48,11 +31,9 @@ _casual_admin() {
 
     # only actual arguments (i.e. excluding cardinality)
     for ((i=0; i<${#arguments[@]}; i+=3)) {
+        [[ -n "${previous}" && "${arguments[$i]}" == "${previous}" ]] && index=$i
         options+=(${arguments[$i]})
     }
-
-    # look up the index of the argument, so we can find cardinality later
-    [[ -n "${previous}" ]] && index=$(__array_index_of "${previous}" "${arguments[@]}")
 
     # previous completed word was found, let's see what we can do with it
     if (( index > -1 )); then
@@ -64,11 +45,11 @@ _casual_admin() {
         if (( cardinality_min == 0 && cardinality_max == 0 )) && [[ "${previous}" != *"help" ]]; then
             for ((i=1; i<${#arguments[@]}; i+=3)) {
                 local option="${arguments[$i-1]}"
-                #(( ${arguments[$i]} > 0 || ${arguments[$i+1]} > 0 )) && continue
 
                 # if the option already has been included in the current context, don't suggest it again
                 # and don't suggest any help options either
                 [[ "${COMP_WORDS[*]}" == *"${option}"* || "${option}" == "--help" ]] && continue
+
                 options+=("${option}")
             }
         fi
