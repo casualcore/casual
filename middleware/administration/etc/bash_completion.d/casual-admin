@@ -43,8 +43,8 @@ _casual_admin() {
 
         # assume cardinality of (0, 0) means you can stack other arguments after it
         if (( cardinality_min == 0 && cardinality_max == 0 )) && [[ "${previous}" != *"help" ]]; then
-            for ((i=1; i<${#arguments[@]}; i+=3)) {
-                local option="${arguments[$i-1]}"
+            for ((i=0; i<${#arguments[@]}; i+=3)) {
+                local option="${arguments[$i]}"
 
                 # if the option already has been included in the current context, don't suggest it again
                 # and don't suggest any help options either
