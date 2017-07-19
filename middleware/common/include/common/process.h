@@ -51,17 +51,12 @@ namespace casual
             Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid),  queue( queue)  {}
 
             platform::pid::type pid = 0;
-            platform::ipc::id::type queue = 0;
+            platform::ipc::id::type queue = -1;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
             inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
-            inline friend bool operator < ( const Handle& lhs, const Handle& rhs)
-            {
-               if( lhs.pid == rhs.pid)
-                  return lhs.queue < rhs.queue;
-               return lhs.pid < rhs.pid;
-            }
+            friend bool operator < ( const Handle& lhs, const Handle& rhs);
 
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
 
@@ -87,9 +82,9 @@ namespace casual
                };
             };
 
-            explicit operator bool() const
+            inline explicit operator bool() const
             {
-               return pid != 0 && queue != 0;
+               return pid != 0 && queue >= 0;
             }
 
             CASUAL_CONST_CORRECT_MARSHAL(

@@ -57,7 +57,7 @@ namespace casual
             namespace
             {
 
-               std::string getProcessPath()
+               std::string get_process_path()
                {
 #ifdef __APPLE__
                   std::uint32_t size = platform::size::max::path;
@@ -75,7 +75,7 @@ namespace casual
 
                std::string& path()
                {
-                  static std::string path = getProcessPath();
+                  static std::string path = get_process_path();
                   return path;
                }
 
@@ -330,6 +330,11 @@ namespace casual
          bool operator == ( const Handle& lhs, const Handle& rhs)
          {
             return lhs.pid == rhs.pid && lhs.queue == rhs.queue;
+         }
+
+         bool operator < ( const Handle& lhs, const Handle& rhs)
+         {
+            return std::tie( lhs.pid, lhs.queue) < std::tie( rhs.pid, rhs.queue);
          }
 
          std::ostream& operator << ( std::ostream& out, const Handle& value)
