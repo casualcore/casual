@@ -28,10 +28,10 @@ casual-make --no-colors -d -a --use-valgrind make && \
    cp /git/casual/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
    rpmbuild -bb  --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
    cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm /git/casual/. && \
-   performCoverageMeasuring
+   performCoverageMeasuring 
    returncode=$?
 
-   find /git/casual -user root | xargs chmod 777
+   find /git/casual -user root | xargs chmod 777   
    exit $returncode
 '''
 
@@ -91,8 +91,10 @@ chmod a+w -R .
 def dockerfile = '''FROM centos:latest
 MAINTAINER flurig <flurig@localhost>
 
-RUN yum -y install epel-release && \
-    yum -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build pugixml yaml-cpp03
+RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
+RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
+RUN rpm -Uvh epel-release*rpm
+RUN yum -y install pugixml yaml-cpp03
 
 ARG CASUAL_RPM
 COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
@@ -109,18 +111,15 @@ ENV CASUAL_DOMAIN_HOME /test/casual
 ENV CASUAL_LOG '(error|warning|information)'
 
 RUN mkdir -p $CASUAL_DOMAIN_HOME
-RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/. && \
-    cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/. && \
-    rm $CASUAL_DOMAIN_HOME/*.md
-RUN chown -R casual $CASUAL_DOMAIN_HOME && \
-    chown -R casual $CASUAL_HOME/nginx
+RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
+RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
+RUN chown -R casual $CASUAL_DOMAIN_HOME
+RUN chown -R casual $CASUAL_HOME/nginx
+RUN ln -s /dev/stdout /test/casual/casual.log
 
 EXPOSE 8080 7771
 USER casual
 WORKDIR $CASUAL_DOMAIN_HOME
-RUN ln -sf /dev/stdout ${CASUAL_DOMAIN_HOME}/casual.log && \
-    ln -sf /dev/stderr ${CASUAL_HOME}/nginx/logs/error.log && \
-    ln -sf /dev/stderr ${CASUAL_HOME}/nginx/logs/debug.log
 
 ENTRYPOINT ["/opt/casual/start.sh"]
 '''
@@ -149,7 +148,7 @@ try
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
    parallel(
-
+   
       "frontend":
       {
          node("frontend")
@@ -157,21 +156,21 @@ try
             stage('Build frontend')
             {
                checkout scm
-
+               
                build( 'casualfrontend', 'casual/frontend', frontend_builder)
 
                stash includes: '**/casual-webapp.zip', name: 'frontend'
             }
          }
       },
-
+      
       "documentation":
       {
          node( "documentation")
          {
             stage('Documentation')
             {
-               checkout scm
+               checkout scm          
                sh """
                  gitbook init .
                  gitbook build .
@@ -179,25 +178,25 @@ try
             }
          }
       }
-   )
-
+   )    
+   
    parallel(
-
+   
       "suse" :
       {
          node( "cplusplus" && "suse")
          {
             try
-            {
+            { 
 
                deleteDir()
 
                stage('Build backend - Unittest - Suse')
                {
                   checkout scm
-
+                  
                   unstash 'frontend'
-
+                  
                   build( 'susecompile', 'casual/suse', backend_builder_suse)
 
                   archive includes: '**/casual-middleware*.rpm'
@@ -216,15 +215,15 @@ try
          node( "cplusplus" && "centos")
          {
             try
-            {
+            { 
                deleteDir()
 
                stage('Build backend - Unittest/CodeCoverage - Centos')
                {
                   checkout scm
-
+                  
                   unstash 'frontend'
-
+                  
                   build( 'centoscompile', 'casual/centos', backend_builder_centos)
 
                   step([$class: 'XUnitBuilder',
@@ -247,7 +246,7 @@ try
                {
                   stage('Create container - Centos')
                   {
-                     //
+                     // 
                      // Setup files
                      //
                      writeFile file: 'Dockerfile', text: dockerfile
@@ -277,7 +276,7 @@ try
                         echo "Mock deploy"
                      fi
                      """
-                  }
+                  } 
                }
             }
             catch (Exception e)
