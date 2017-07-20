@@ -10,7 +10,6 @@ services:
             - ./config/domainA-web-config.json:/opt/casual/webapp/src/config.json
             - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
             - ./config/domainA-config.yaml:/test/casual/configuration/domain.yaml
-        tty: false
         #environment:
         #    - CASUAL_LOG=.*
 
@@ -23,7 +22,6 @@ services:
             - ./config/domainB-web-config.json:/opt/casual/webapp/src/config.json
             - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
             - ./config/domainB-config.yaml:/test/casual/configuration/domain.yaml
-        tty: false
         #environment:
         #    - CASUAL_LOG=.*
 
