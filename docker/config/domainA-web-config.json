@@ -17,21 +17,21 @@
 		"url" : "?service=",
 
 		"domain" : {
-			"state" : ".casual.domain.state"
+			"state" : ".casual/domain/state"
 		},
 
 		"broker" : {
-			"state" : ".casual.broker.state",
+			"state" : ".casual/broker/state",
 			"scale" : {
-				"instances" : ".casual.broker.scale.instances"
+				"instances" : ".casual/broker/scale/instances"
 			},
-			"shutdown" : ".casual.domain.shutdown" 
+			"shutdown" : ".casual/domain/shutdown" 
 		}, 
 
 		"transaction" : {
-			"state" : ".casual.transaction.state",
+			"state" : ".casual/transaction/state",
 			"update" : {
-				"instances" : ".casual.broker.update.instances"
+				"instances" : ".casual/broker/update/instances"
 			}
 		}
 	}

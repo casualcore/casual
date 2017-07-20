@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+    domainA:
+        hostname: domainA
+        image: casual/middleware:latest
+        networks:
+            - isolated_nw
+        volumes:
+            - ./config/domainA-web-config.json:/opt/casual/webapp/src/config.json
+            - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
+            - ./config/domainA-config.yaml:/test/casual/configuration/domain.yaml
+        #environment:
+        #    - CASUAL_LOG=.*
+
+    domainB:
+        hostname: domainB
+        image: casual/middleware:latest
+        networks:
+            - isolated_nw
+        volumes:
+            - ./config/domainB-web-config.json:/opt/casual/webapp/src/config.json
+            - ./config/nginx.conf:/opt/casual/nginx/conf/nginx.conf
+            - ./config/domainB-config.yaml:/test/casual/configuration/domain.yaml
+        #environment:
+        #    - CASUAL_LOG=.*
+
+networks:
+    isolated_nw:
