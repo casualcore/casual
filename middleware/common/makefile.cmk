@@ -97,6 +97,12 @@ casual_common_objectfiles = [
     Compile( 'source/log/trace.cpp'),
     Compile( 'source/log/category.cpp'),
     Compile( 'source/log.cpp'),
+
+    Compile( 'source/error/code/xatmi.cpp'),
+    Compile( 'source/error/code/tx.cpp'),
+    Compile( 'source/error/code/xa.cpp'),
+    Compile( 'source/error/code/convert.cpp'),
+    Compile( 'source/error.cpp'),
     
     Compile( 'source/exception.cpp'),
     Compile( 'source/uuid.cpp'),
@@ -105,7 +111,7 @@ casual_common_objectfiles = [
     Compile( 'source/string.cpp'),
     Compile( 'source/signal.cpp'),
     
-    Compile( 'source/error.cpp'),
+    
     Compile( 'source/chronology.cpp'),
     Compile( 'source/process.cpp'),
     Compile( 'source/thread.cpp'),

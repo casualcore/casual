@@ -49,7 +49,7 @@ namespace casual
                            reply.correlation = message.correlation;
                            reply.execution = message.execution;
                            reply.transaction.trid = message.trid;
-                           reply.status = TPESVCERR;
+                           reply.status = common::error::code::xatmi::service_error;
                            reply.buffer = buffer::Payload{ nullptr};
 
                            try

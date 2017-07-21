@@ -9,6 +9,7 @@
 #include "common/platform.h"
 #include "common/algorithm.h"
 #include "common/exception.h"
+#include "common/exception/xatmi.h"
 
 #include "common/log.h"
 

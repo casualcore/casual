@@ -9,6 +9,7 @@
 #include "tx.h"
 
 #include "common/platform.h"
+#include "common/error/code/xa.h"
 
 #include <string>
 #include <ostream>
@@ -25,19 +26,20 @@ namespace casual
          {
 
             using id_type = common::platform::resource::id::type;
+            using code = error::code::xa;
 
             Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
             Resource( std::string key, xa_switch_t* xa);
 
 
-            int start( const Transaction& transaction, long flags);
-            int end( const Transaction& transaction, long flags);
+            code start( const Transaction& transaction, long flags);
+            code end( const Transaction& transaction, long flags);
 
-            int open( long flags);
-            int close( long flags);
+            code open( long flags);
+            code close( long flags);
 
-            int commit( const Transaction& transaction, long flags);
-            int rollback( const Transaction& transaction, long flags);
+            code commit( const Transaction& transaction, long flags);
+            code rollback( const Transaction& transaction, long flags);
 
             bool dynamic() const;
 

@@ -10,6 +10,7 @@
 
 #include "common/buffer/type.h"
 #include "common/flag.h"
+#include "common/exception/xatmi.h"
 
 #include "xatmi/defines.h"
 
@@ -22,7 +23,7 @@ namespace casual
       {
          namespace conversation
          {
-            using base_exception = xatmi::basic_xatmi< TPEEVENT, code::log::Category::error>;
+            using base_exception = xatmi::conversational::Event;
             struct Event : base_exception
             {
                Event( service::conversation::Events event) :

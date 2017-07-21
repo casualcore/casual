@@ -6,6 +6,8 @@
 #define TRANSACTION_H_
 
 #include "common/message/type.h"
+#include "common/error/code/xa.h"
+#include "common/error/code/tx.h"
 
 
 namespace casual
@@ -43,10 +45,10 @@ namespace casual
 
             };
 
-            template< message::Type type>
+            template< typename State, message::Type type>
             struct basic_reply : basic_transaction< type>
             {
-               int state = 0;
+               State state = State::ok;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -75,8 +77,7 @@ namespace casual
                };
                static_assert( traits::is_movable< Request>::value, "not movable");
 
-               using base_reply = basic_reply< Type::transaction_commit_reply>;
-
+               using base_reply = basic_reply< error::code::tx, Type::transaction_commit_reply>;
                struct Reply : base_reply
                {
                   enum class Stage : char
@@ -120,7 +121,7 @@ namespace casual
                static_assert( traits::is_movable< Request>::value, "not movable");
 
 
-               using base_reply = basic_reply< Type::transaction_rollback_reply>;
+               using base_reply = basic_reply< error::code::tx, Type::transaction_rollback_reply>;
 
                struct Reply : base_reply
                {
@@ -201,17 +202,17 @@ namespace casual
 
                } // lookup
 
-
                template< message::Type type>
-               struct basic_reply : transaction::basic_reply< type>
+               struct basic_reply : transaction::basic_reply< error::code::xa, type>
                {
+                  using base_type = transaction::basic_reply< error::code::xa, type>;
                   id::type resource = 0;
                   Statistics statistics;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     transaction::basic_reply< type>::marshal( archive);
+                     base_type::marshal( archive);
                      archive & resource;
                      archive & statistics;
                   })
@@ -276,7 +277,7 @@ namespace casual
                   {
                      common::process::Handle process;
                      id::type resource = 0;
-                     int state = 0;
+                     error::code::xa state = error::code::xa::ok;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

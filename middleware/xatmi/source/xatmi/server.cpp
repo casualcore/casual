@@ -10,6 +10,7 @@
 
 #include "common/error.h"
 #include "common/functional.h"
+#include "common/exception/xatmi.h"
 #include "common/process.h"
 #include "common/event/send.h"
 

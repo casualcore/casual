@@ -6,7 +6,7 @@
 #include "transaction/common.h"
 
 #include "common/message/transaction.h"
-#include "common/exception.h"
+#include "common/exception/xa.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -27,6 +27,16 @@ namespace casual
 
          namespace handle
          {
+            namespace local
+            {
+               namespace
+               {
+                  common::error::code::xa convert( int value)
+                  {
+                     return static_cast< common::error::code::xa>( value);
+                  }
+               } // <unnamed>
+            } // local
 
             struct Base
             {
@@ -51,7 +61,7 @@ namespace casual
                   reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
 
-                  reply.state = m_state.xa_switches->xa_switch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
+                  reply.state = local::convert( m_state.xa_switches->xa_switch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS));
 
 
                   {
@@ -61,15 +71,13 @@ namespace casual
                            common::communication::ipc::transaction::manager::device(), reply);
                   }
 
-
-
-                  if( reply.state != XA_OK)
+                  if( reply.state != common::error::code::xa::ok)
                   {
-                     auto error = common::error::xa::error( reply.state);
+                     auto message = common::string::compose( reply.state, " failed to open xa resource ", m_state.rm_key);
 
-                     common::event::error::send( "failed to open xa resurce " + m_state.rm_key + " - error: " + error + " - action: shutdown resource proxy");
+                     common::event::error::send( message);
 
-                     throw common::exception::tx::Error( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo, CASUAL_NIP( error));
+                     throw common::exception::xa::exception{ reply.state, message};
                   }
                }
             };
@@ -110,10 +118,10 @@ namespace casual
                struct Prepare
                {
                   template< typename M>
-                  int operator() ( State& state, M& message) const
+                  common::error::code::xa operator() ( State& state, M& message) const
                   {
-                     auto result = state.xa_switches->xa_switch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags);
-                     log << common::error::xa::error( result) << " prepare rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
+                     auto result = local::convert( state.xa_switches->xa_switch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags));
+                     log << result << " prepare rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
                };
@@ -121,13 +129,13 @@ namespace casual
                struct Commit
                {
                   template< typename M>
-                  int operator() ( State& state, M& message) const
+                  common::error::code::xa operator() ( State& state, M& message) const
                   {
-                     auto result =  state.xa_switches->xa_switch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags);
+                     auto result = local::convert( state.xa_switches->xa_switch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags));
 
                      if( log)
                      {
-                        log << common::error::xa::error( result) << " commit rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
+                        log << result << " commit rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
 
                         /*
                         if( result != XA_OK)
@@ -152,10 +160,10 @@ namespace casual
                struct Rollback
                {
                   template< typename M>
-                  int operator() ( State& state, M& message) const
+                  common::error::code::xa operator() ( State& state, M& message) const
                   {
-                     auto result =  state.xa_switches->xa_switch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags);
-                     log << common::error::xa::error( result) << " rollback rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
+                     auto result = local::convert( state.xa_switches->xa_switch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags));
+                     log << result << " rollback rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
                };
@@ -210,11 +218,11 @@ namespace casual
 
         Proxy::~Proxy()
         {
-           auto result = m_state.xa_switches->xa_switch->xa_close_entry( m_state.rm_closeinfo.c_str(), m_state.rm_id, TMNOFLAGS);
+           auto result = common::error::code::xa( m_state.xa_switches->xa_switch->xa_close_entry( m_state.rm_closeinfo.c_str(), m_state.rm_id, TMNOFLAGS));
 
-           if( result != XA_OK)
+           if( result != common::error::code::xa::ok)
            {
-              common::log::category::error << common::error::xa::error( result) << " - failed to close resource" << std::endl;
+              common::error::code::stream( result) << result << " - failed to close resource\n";
               log << CASUAL_MAKE_NVP( m_state);
            }
         }

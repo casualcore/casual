@@ -5,7 +5,8 @@
 #include <gtest/gtest.h>
 
 #include "common/exception.h"
-
+#include "common/error/code/xatmi.h"
+#include "common/exception/xatmi.h"
 
 
 
@@ -37,7 +38,7 @@ namespace casual
       });
    }
 
-
+/*
    template< typename E, long code, common::exception::code::log::Category category>
    struct holder
    {
@@ -111,6 +112,7 @@ namespace casual
    {
 
    };
+   */
 
    /*
    typedef ::testing::Types<
@@ -151,5 +153,31 @@ namespace casual
 
    }
    */
+
+   namespace common
+   {
+      TEST( casual_common_error_xatmi, error_code)
+      {
+         std::error_code code = error::code::xatmi::no_entry;
+
+         EXPECT_TRUE( code) << "code: " << code.message();
+         EXPECT_TRUE( code.value() == static_cast< int>( error::code::xatmi::no_entry)) << "code: " << code;
+
+      }
+
+      TEST( casual_common_error_xatmi, throw_no_entry)
+      {
+         try
+         {
+            throw exception::xatmi::service::no::Entry{};
+         }
+         catch( const exception::xatmi::service::no::Entry& e)
+         {
+            EXPECT_TRUE( e.code()) << "code: " << e.code().message();
+            EXPECT_TRUE( e.code().value() == static_cast< int>( error::code::xatmi::no_entry));
+         }
+      }
+   } // common
+
 
 } // casual

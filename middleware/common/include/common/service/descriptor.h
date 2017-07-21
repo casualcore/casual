@@ -10,6 +10,8 @@
 #include "common/algorithm.h"
 #include "common/transaction/id.h"
 
+#include "common/exception/xatmi.h"
+
 #include <vector>
 
 namespace casual
@@ -120,7 +122,7 @@ namespace casual
                }
                else
                {
-                  throw exception::xatmi::invalid::Descriptor{ "invalid descriptor", CASUAL_NIP( descriptor)};
+                  throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid descriptor: ", descriptor)};
                }
             }
 
@@ -132,7 +134,7 @@ namespace casual
                {
                   return *found;
                }
-               throw exception::xatmi::invalid::Descriptor{ "invalid call descriptor", CASUAL_NIP( descriptor)};
+               throw exception::xatmi::invalid::Descriptor{ string::compose( "invalid call descriptor: ", descriptor)};
             }
 
 

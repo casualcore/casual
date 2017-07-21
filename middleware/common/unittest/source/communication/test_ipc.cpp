@@ -311,7 +311,7 @@ namespace casual
                message.transaction.trid = transaction::ID::create( process::handle());
                message.transaction.state = common::message::service::Transaction::State::rollback;
                message.buffer.type = ".binary";
-               message.status = 0;
+               message.status = common::error::code::xatmi::ok;
                message.code = 0;
                message.buffer.memory = unittest::random::binary( 1200);
             }

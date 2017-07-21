@@ -13,7 +13,7 @@
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/log.h"
-#include "common/exception.h"
+#include "common/exception/tx.h"
 #include "common/process.h"
 #include "common/algorithm.h"
 #include "common/communication/ipc.h"
@@ -38,7 +38,7 @@ namespace casual
       namespace user
       {
 
-         using error = common::exception::code::category::error;
+         using error = common::exception::tx::exception;
 
       } // transaction
 

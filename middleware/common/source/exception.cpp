@@ -66,26 +66,6 @@ namespace casual
             return out << exception.description();
          }
 
-         namespace xatmi
-         {
-            void propagate( int error)
-            {
-               switch( error)
-               {
-                  case 0: break;
-                  case TPEOS: throw os::Error{};
-                  case TPEPROTO: throw Protocoll{};
-                  case TPESVCERR: throw service::Error{};
-                  case TPESYSTEM: throw System{};
-                  default:
-                  {
-                     throw Protocoll{ "unexpected error", CASUAL_NIP( error)};
-                  }
-               }
-
-            }
-
-         } // xatmi
 
       } // exception
    } // common

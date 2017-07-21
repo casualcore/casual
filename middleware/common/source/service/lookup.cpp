@@ -5,6 +5,7 @@
 #include "common/service/lookup.h"
 
 #include "common/communication/ipc.h"
+#include "common/exception/xatmi.h"
 
 namespace casual
 {

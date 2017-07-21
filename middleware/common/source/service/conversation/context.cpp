@@ -117,7 +117,7 @@ namespace casual
 
                         if( ( flags & duplex) == duplex || ! ( flags & duplex))
                         {
-                           throw exception::xatmi::invalid::Argument{ "send or receive intention must be provided", CASUAL_NIP( flags)};
+                           throw exception::xatmi::invalid::Argument{ string::compose( "send or receive intention must be provided - flags: ", flags)};
                         }
                      }
 

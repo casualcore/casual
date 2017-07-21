@@ -3,7 +3,7 @@
 //!
 
 #include "common/buffer/type.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
 
 #include "xatmi/extended.h"
 

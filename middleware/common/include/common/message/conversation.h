@@ -98,7 +98,7 @@ namespace casual
                {
                   Route route;
                   Route recording;
-                  int status;
+                  error::code::xatmi status;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -119,7 +119,7 @@ namespace casual
                common::service::conversation::send::Flags flags;
                common::service::conversation::Events events;
                service::Transaction transaction;
-               int status;
+               error::code::xatmi status = error::code::xatmi::ok;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {

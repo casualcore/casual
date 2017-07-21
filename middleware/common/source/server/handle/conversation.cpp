@@ -28,7 +28,7 @@ namespace casual
                {
                   auto reply = message::reverse::type( message);
                   // We set the worst we got until proven otherwise.
-                  reply.status = TPEPROTO;
+                  reply.status = error::code::xatmi::protocol;
 
                   auto send_reply = scope::execute( [&](){
                      reply.process = process::handle();
@@ -42,7 +42,7 @@ namespace casual
                      auto& descriptor = common::service::conversation::context().descriptors().reserve( message.correlation);
                      descriptor.route = message.recording;
 
-                     reply.status = 0;
+                     reply.status = error::code::xatmi::ok;
 
                   }
                   send_reply();

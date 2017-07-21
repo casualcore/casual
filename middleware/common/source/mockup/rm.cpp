@@ -117,7 +117,7 @@ namespace casual
 
             if( state.transactions.current)
             {
-               log::category::error << error::xa::error( XAER_PROTO) << " xa_start_entry - a transaction is active - " << state.transactions.current << std::endl;
+               log::category::error  << "XAER_PROTO: xa_start_entry - a transaction is active - " << state.transactions.current << std::endl;
                return XAER_PROTO;
             }
 
@@ -131,7 +131,7 @@ namespace casual
             {
                if( ! common::flag< TMRESUME>( flags))
                {
-                  log::category::error << error::xa::error( XAER_PROTO) << " xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << state.transactions.current << std::endl;
+                  log::category::error << "XAER_PROTO: xa_start_entry - the transaction is suspended, but no TMRESUME in flags - " << state.transactions.current << std::endl;
                   return XAER_PROTO;
                }
             }
@@ -150,7 +150,7 @@ namespace casual
 
             if( state.transactions.current != trid)
             {
-               log::category::error << error::xa::error( XAER_INVAL) << " xa_end_entry - transaction not current with RM" << std::endl;
+               log::category::error << "XAER_INVAL: xa_end_entry - transaction not current with RM" << std::endl;
                return XAER_INVAL;
             }
 

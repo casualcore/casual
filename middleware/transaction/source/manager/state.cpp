@@ -262,71 +262,75 @@ namespace casual
 
       } // state
 
-      Transaction::Resource::Result Transaction::Resource::convert( int value)
+      Transaction::Resource::Result Transaction::Resource::convert( common::error::code::xa value)
       {
          switch( value)
          {
-            case XA_HEURHAZ: return Result::xa_HEURHAZ; break;
-            case XA_HEURMIX: return Result::xa_HEURMIX; break;
-            case XA_HEURCOM: return Result::xa_HEURCOM; break;
-            case XA_HEURRB: return Result::xa_HEURRB; break;
-            case XAER_RMFAIL: return Result::xaer_RMFAIL; break;
-            case XAER_RMERR: return Result::xaer_RMERR; break;
-            case XA_RBINTEGRITY: return Result::xa_RBINTEGRITY; break;
-            case XA_RBCOMMFAIL: return Result::xa_RBCOMMFAIL; break;
-            case XA_RBROLLBACK: return Result::xa_RBROLLBACK; break;
-            case XA_RBOTHER: return Result::xa_RBOTHER; break;
-            case XA_RBDEADLOCK: return Result::xa_RBDEADLOCK; break;
-            case XAER_PROTO: return Result::xaer_PROTO; break;
-            case XA_RBPROTO: return Result::xa_RBPROTO; break;
-            case XA_RBTIMEOUT: return Result::xa_RBTIMEOUT; break;
-            case XA_RBTRANSIENT: return Result::xa_RBTRANSIENT; break;
-            case XAER_INVAL: return Result::xaer_INVAL; break;
-            case XA_NOMIGRATE: return Result::xa_NOMIGRATE; break;
-            case XAER_OUTSIDE: return Result::xaer_OUTSIDE; break;
-            case XAER_NOTA: return Result::xaer_NOTA; break;
-            case XAER_ASYNC: return Result::xaer_ASYNC; break;
-            case XA_RETRY: return Result::xa_RETRY; break;
-            case XAER_DUPID: return Result::xaer_DUPID; break;
-            case XA_OK: return Result::xa_OK; break;
-            case XA_RDONLY: return Result::xa_RDONLY; break;
+            using xa = common::error::code::xa;
+
+            case xa::heuristic_hazard: return Result::xa_HEURHAZ; break;
+            case xa::heuristic_mix: return Result::xa_HEURMIX; break;
+            case xa::heuristic_commit: return Result::xa_HEURCOM; break;
+            case xa::heuristic_rollback: return Result::xa_HEURRB; break;
+            case xa::resource_fail: return Result::xaer_RMFAIL; break;
+            case xa::resource_error: return Result::xaer_RMERR; break;
+            case xa::rollback_integrity: return Result::xa_RBINTEGRITY; break;
+            case xa::rollback_communication: return Result::xa_RBCOMMFAIL; break;
+            case xa::rollback_unspecified: return Result::xa_RBROLLBACK; break;
+            case xa::rollback_other: return Result::xa_RBOTHER; break;
+            case xa::rollback_deadlock: return Result::xa_RBDEADLOCK; break;
+            case xa::protocol: return Result::xaer_PROTO; break;
+            case xa::rollback_protocoll: return Result::xa_RBPROTO; break;
+            case xa::rollback_timeout: return Result::xa_RBTIMEOUT; break;
+            case xa::rollback_transient: return Result::xa_RBTRANSIENT; break;
+            case xa::argument: return Result::xaer_INVAL; break;
+            case xa::no_migrate: return Result::xa_NOMIGRATE; break;
+            case xa::outside: return Result::xaer_OUTSIDE; break;
+            case xa::invalid_xid: return Result::xaer_NOTA; break;
+            case xa::outstanding_async: return Result::xaer_ASYNC; break;
+            case xa::retry: return Result::xa_RETRY; break;
+            case xa::duplicate_xid: return Result::xaer_DUPID; break;
+            case xa::ok: return Result::xa_OK; break;
+            case xa::read_only: return Result::xa_RDONLY; break;
          }
          return Result::xaer_RMFAIL;
       }
 
-      int Transaction::Resource::convert( Result value)
+      common::error::code::xa Transaction::Resource::convert( Result value)
       {
+         using xa = common::error::code::xa;
+         
          switch( value)
          {
-            case Result::xa_HEURHAZ: return XA_HEURHAZ; break;
-            case Result::xa_HEURMIX: return XA_HEURMIX; break;
-            case Result::xa_HEURCOM: return XA_HEURCOM; break;
-            case Result::xa_HEURRB: return XA_HEURRB; break;
-            case Result::xaer_RMFAIL: return XAER_RMFAIL; break;
-            case Result::xaer_RMERR: return XAER_RMERR; break;
-            case Result::xa_RBINTEGRITY: return XA_RBINTEGRITY; break;
-            case Result::xa_RBCOMMFAIL: return XA_RBCOMMFAIL; break;
-            case Result::xa_RBROLLBACK: return XA_RBROLLBACK; break;
-            case Result::xa_RBOTHER: return XA_RBOTHER; break;
-            case Result::xa_RBDEADLOCK: return XA_RBDEADLOCK; break;
-            case Result::xaer_PROTO: return XAER_PROTO; break;
-            case Result::xa_RBPROTO: return XA_RBPROTO; break;
-            case Result::xa_RBTIMEOUT: return XA_RBTIMEOUT; break;
-            case Result::xa_RBTRANSIENT: return XA_RBTRANSIENT; break;
-            case Result::xaer_INVAL: return XAER_INVAL; break;
-            case Result::xa_NOMIGRATE: return XA_NOMIGRATE; break;
-            case Result::xaer_OUTSIDE: return XAER_OUTSIDE; break;
-            case Result::xaer_NOTA: return XAER_NOTA; break;
-            case Result::xaer_ASYNC: return XAER_ASYNC; break;
-            case Result::xa_RETRY: return XA_RETRY; break;
-            case Result::xaer_DUPID: return XAER_DUPID; break;
-            case Result::xa_OK: return XA_OK; break;
-            case Result::xa_RDONLY: return XA_RDONLY; break;
+            case Result::xa_HEURHAZ: return xa::heuristic_hazard; break;
+            case Result::xa_HEURMIX: return xa::heuristic_mix; break;
+            case Result::xa_HEURCOM: return xa::heuristic_commit; break;
+            case Result::xa_HEURRB: return xa::heuristic_rollback; break;
+            case Result::xaer_RMFAIL: return xa::resource_fail; break;
+            case Result::xaer_RMERR: return xa::resource_error; break;
+            case Result::xa_RBINTEGRITY: return xa::rollback_integrity; break;
+            case Result::xa_RBCOMMFAIL: return xa::rollback_communication; break;
+            case Result::xa_RBROLLBACK: return xa::rollback_unspecified; break;
+            case Result::xa_RBOTHER: return xa::rollback_other; break;
+            case Result::xa_RBDEADLOCK: return xa::rollback_deadlock; break;
+            case Result::xaer_PROTO: return xa::protocol; break;
+            case Result::xa_RBPROTO: return xa::rollback_protocoll; break;
+            case Result::xa_RBTIMEOUT: return xa::rollback_timeout; break;
+            case Result::xa_RBTRANSIENT: return xa::rollback_transient; break;
+            case Result::xaer_INVAL: return xa::argument; break;
+            case Result::xa_NOMIGRATE: return xa::no_migrate; break;
+            case Result::xaer_OUTSIDE: return xa::outside; break;
+            case Result::xaer_NOTA: return xa::invalid_xid; break;
+            case Result::xaer_ASYNC: return xa::outstanding_async; break;
+            case Result::xa_RETRY: return xa::retry; break;
+            case Result::xaer_DUPID: return xa::duplicate_xid; break;
+            case Result::xa_OK: return xa::ok; break;
+            case Result::xa_RDONLY: return xa::read_only; break;
          }
-         return XAER_RMFAIL;
+         return xa::resource_fail;
       }
 
-      void Transaction::Resource::set_result( int value)
+      void Transaction::Resource::set_result( common::error::code::xa value)
       {
          result = convert( value);
       }
@@ -355,7 +359,7 @@ namespace casual
          return result;
       }
 
-      Transaction::Resource::Result Transaction::results() const
+      common::error::code::xa Transaction::results() const
       {
          auto result = Resource::Result::xa_RDONLY;
 
@@ -366,7 +370,7 @@ namespace casual
                result = resource.result;
             }
          }
-         return result;
+         return Resource::convert( result);
       }
 
 

@@ -351,7 +351,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = XA_OK;
+                     reply.state = common::error::code::xa::ok;
 
                      try
                      {
@@ -366,7 +366,7 @@ namespace casual
                      catch( ...)
                      {
                         common::error::handler();
-                        reply.state = XAER_RMFAIL;
+                        reply.state = common::error::code::xa::resource_fail;
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});
@@ -384,7 +384,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = XA_OK;
+                     reply.state = common::error::code::xa::ok;
 
                      local::ipc::blocking::send( common::communication::ipc::transaction::manager::device(), reply);
                   }
@@ -402,7 +402,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = XA_OK;
+                     reply.state = common::error::code::xa::ok;
 
                      try
                      {
@@ -417,7 +417,7 @@ namespace casual
                      catch( ...)
                      {
                         common::error::handler();
-                        reply.state = XAER_RMFAIL;
+                        reply.state = common::error::code::xa::resource_fail;
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});

@@ -28,7 +28,7 @@ namespace casual
                         {
                            M message;
                            message.correlation = point.correlation;
-                           message.state = XAER_RMFAIL;
+                           message.state = common::error::code::xa::resource_fail;
 
                            ipc::optional::send( point.destination.queue, message);
                         }
@@ -59,7 +59,7 @@ namespace casual
                                  common::message::service::call::Reply reply;
 
                                  reply.correlation = point.correlation;
-                                 reply.status = TPESYSTEM;
+                                 reply.status = common::error::code::xatmi::system;
 
                                  ipc::optional::send( point.destination.queue, reply);
                               }

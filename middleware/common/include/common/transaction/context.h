@@ -15,6 +15,8 @@
 #include "common/message/transaction.h"
 #include "common/message/service.h"
 
+#include "common/error/code/tx.h"
+
 
 #include <stack>
 
@@ -39,16 +41,18 @@ namespace casual
             void open();
             void close();
 
-            int begin();
-            int commit();
-            int rollback();
+            error::code::tx begin();
+            error::code::tx commit();
+            error::code::tx rollback();
 
 
 
-            int setCommitReturn( COMMIT_RETURN value);
+            void set_commit_return( COMMIT_RETURN value);
             COMMIT_RETURN get_commit_return();
-            int setTransactionControl(TRANSACTION_CONTROL control);
-            void setTransactionTimeout( TRANSACTION_TIMEOUT timeout);
+            
+            void set_transaction_control( TRANSACTION_CONTROL control);
+            void set_transaction_timeout( TRANSACTION_TIMEOUT timeout);
+            
             bool info( TXINFO* info);
             //! @}
 
@@ -171,15 +175,15 @@ namespace casual
             Context();
 
 
-            int commit( const Transaction& transaction);
-            int rollback( const Transaction& transaction);
+            error::code::tx commit( const Transaction& transaction);
+            error::code::tx rollback( const Transaction& transaction);
 
 
             void resources_start( const Transaction& transaction, long flags);
             void resources_end( const Transaction& transaction, long flags);
-            int resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags);
+            error::code::tx resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags);
 
-            int pop_transaction();
+            error::code::tx pop_transaction();
 
 
          };

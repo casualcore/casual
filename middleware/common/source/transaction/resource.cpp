@@ -24,6 +24,11 @@ namespace casual
                   return const_cast< XID*>( &transaction.trid.xid);
                }
 
+               Resource::code convert( int code)
+               {
+                  return static_cast<  Resource::code>( code);
+               }
+
             } // <unnamed>
          } // local
 
@@ -37,14 +42,14 @@ namespace casual
          Resource::Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, 0, {}, {}) {}
 
 
-         int Resource::start( const Transaction& transaction, long flags)
+         Resource::code Resource::start( const Transaction& transaction, long flags)
          {
             log::category::transaction << "start resource: " << *this << " transaction: " << transaction << " flags: " << std::hex << flags << std::dec << '\n';
 
-            auto result = xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags);
+            auto result = local::convert( xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags));
 
 
-            if( result == XAER_DUPID)
+            if( result == code::duplicate_xid)
             {
                //
                // Transaction is already associated with this thread of control, we try to join instead
@@ -53,74 +58,70 @@ namespace casual
 
                flags |= TMJOIN;
 
-               result = xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags);
+               result = local::convert( xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags));
             }
 
-            if( result != XA_OK)
+            if( result != code::ok)
             {
-               log::category::error << error::xa::error( result) << " failed to start resource - " << *this << " - trid: " << transaction << '\n';
+               log::category::error << std::error_code( result) << " failed to start resource - " << *this << " - trid: " << transaction << '\n';
             }
             return result;
          }
 
-         int Resource::end( const Transaction& transaction, long flags)
+         Resource::code Resource::end( const Transaction& transaction, long flags)
          {
             log::category::transaction << "end resource: " << *this << " transaction: " << transaction << " flags: " << std::hex << flags << std::dec << '\n';
 
-            auto result = xa_switch->xa_end_entry( local::non_const_xid( transaction), id, flags);
+            auto result = local::convert( xa_switch->xa_end_entry( local::non_const_xid( transaction), id, flags));
 
-            if( result != XA_OK)
+            if( result != code::ok)
             {
-               log::category::error << error::xa::error( result) << " failed to end resource - " << *this << " - trid: " << transaction << '\n';
+               log::category::error << std::error_code( result) << " failed to end resource - " << *this << " - trid: " << transaction << '\n';
             }
             return result;
 
          }
 
-         int Resource::open( long flags)
+         Resource::code Resource::open( long flags)
          {
             log::category::transaction << "open resource: " << *this <<  " flags: " << std::hex << flags << std::dec << '\n';
 
-            auto result = xa_switch->xa_open_entry( openinfo.c_str(), id, flags);
+            auto result = local::convert( xa_switch->xa_open_entry( openinfo.c_str(), id, flags));
 
-            if( result != XA_OK)
+            if( result != code::ok)
             {
-               log::category::error << error::xa::error( result) << " failed to open resource - " << *this << '\n';
+               log::category::error << std::error_code( result) << " failed to open resource - " << *this << '\n';
             }
 
             return result;
          }
 
-         int Resource::close( long flags)
+         Resource::code Resource::close( long flags)
          {
             log::category::transaction << "close resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
 
-            auto result = xa_switch->xa_close_entry( closeinfo.c_str(), id, flags);
+            auto result = local::convert( xa_switch->xa_close_entry( closeinfo.c_str(), id, flags));
 
-            if( result != XA_OK)
+            if( result != code::ok)
             {
-               log::category::error << error::xa::error( result) << " failed to close resource - " << *this << '\n';
+               log::category::error << std::error_code( result) << " failed to close resource - " << *this << '\n';
             }
 
             return result;
          }
 
-         int Resource::commit( const Transaction& transaction, long flags)
+         Resource::code Resource::commit( const Transaction& transaction, long flags)
          {
             log::category::transaction << "commit resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
 
-            auto result = xa_switch->xa_commit_entry( local::non_const_xid( transaction), id, flags);
-
-            return result;
+            return local::convert( xa_switch->xa_commit_entry( local::non_const_xid( transaction), id, flags));
          }
 
-         int Resource::rollback( const Transaction& transaction, long flags)
+         Resource::code Resource::rollback( const Transaction& transaction, long flags)
          {
             log::category::transaction << "rollback resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
 
-            auto result = xa_switch->xa_rollback_entry( local::non_const_xid( transaction), id, flags);
-
-            return result;
+            return local::convert( xa_switch->xa_rollback_entry( local::non_const_xid( transaction), id, flags));
          }
 
          bool Resource::dynamic() const
@@ -131,7 +132,11 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Resource& resource)
          {
-            return out << "{key: " << resource.key << ", id: " << resource.id << ", openinfo: " << resource.openinfo << ", closeinfo: " << resource.closeinfo << "}";
+            return out << "{ key: " << resource.key 
+               << ", id: " << resource.id 
+               << ", openinfo: " << resource.openinfo
+               << ", closeinfo: " << resource.closeinfo 
+               << "}";
          }
 
 

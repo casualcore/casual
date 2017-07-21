@@ -1,8 +1,5 @@
 //!
-//! transaction_id.cpp
-//!
-//! Created on: Nov 1, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/transaction/id.h"

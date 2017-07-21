@@ -108,10 +108,8 @@ namespace casual
                      std::string operator () ( const vo::Transaction& value) const { return std::to_string( value.trid.owner.pid); }
                   };
 
-                  struct format_state
-                  {
-                     std::string operator () ( const vo::Transaction& value)
-                     { return common::error::xa::error( value.state);}
+                  auto format_state = []( const vo::Transaction& value){
+                     return common::string::compose( static_cast< common::error::code::xa>( value.state));
                   };
 
                   struct format_resources
@@ -126,7 +124,7 @@ namespace casual
                      common::terminal::format::column( "global", format_global{}, common::terminal::color::yellow),
                      common::terminal::format::column( "branch", format_branch{}, common::terminal::color::grey),
                      common::terminal::format::column( "owner", format_owner{}, common::terminal::color::white, common::terminal::format::Align::right),
-                     common::terminal::format::column( "state", format_state{}, common::terminal::color::green, common::terminal::format::Align::left),
+                     common::terminal::format::column( "state", format_state, common::terminal::color::green, common::terminal::format::Align::left),
                      common::terminal::format::column( "resources", format_resources{}, common::terminal::color::magenta, common::terminal::format::Align::left)
                   };
                }

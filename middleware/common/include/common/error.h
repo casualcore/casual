@@ -47,22 +47,6 @@ namespace casual
          std::string string( int code);
 
 
-         namespace xatmi
-         {
-            const std::string& error( int error);
-         } // xatmi
-
-         namespace xa
-         {
-            const char* error( int code);
-         } // xa
-
-         namespace tx
-         {
-            int handler();
-
-            const char* error( int code);
-         } // tx
 
       } // error
    } // common
