@@ -7,10 +7,10 @@
 #include "transaction/resource/proxy.h"
 #include "transaction/common.h"
 
-#include "common/error.h"
+#include "common/exception/handle.h"
+#include "common/exception/signal.h"
 #include "common/arguments.h"
 #include "common/environment.h"
-#include "common/exception.h"
 
 #include "sf/log.h"
 
@@ -19,7 +19,7 @@
 
 
 
-int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* serverArguments)
+int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* serverArguments)
 {
    try
    {
@@ -52,7 +52,7 @@ int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* s
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
 
    return 0;

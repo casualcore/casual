@@ -123,7 +123,7 @@ namespace casual
 
                      }
                   }
-                  catch( const exception::queue::Unavailable&)
+                  catch( const exception::system::communication::Unavailable&)
                   {
                      log << "failed to send delayed message to ipc: " << message.destination << " queue is unavailable - action: ignore\n";
                   }
@@ -200,7 +200,7 @@ namespace casual
             }
             catch( ...)
             {
-               return casual::common::error::handler();
+               return casual::common::exception::handle();
             }
             return 0;
          }

@@ -13,16 +13,25 @@ namespace casual
    {
       namespace exception 
       {
+         namespace detail 
+         {
+            template< typename E>
+            auto make_error_code( E code) { return code;}
+
+            inline auto make_error_code( std::errc code) { return std::make_error_code( code);}
+         } // detail 
+
+         using base = std::system_error;
 
          template< typename Enum>
-         class base_error : public std::system_error
+         class base_error : public base
          {
          public:
-            using base_type = std::system_error;
-            base_error( Enum error) : base_type{ error} {}
-            base_error( Enum error, const std::string& message) : base_type{ error, message} {}
+            base_error( Enum error) : base{ detail::make_error_code( error)} {}
+            base_error( Enum error, const std::string& message) : base{ detail::make_error_code( error), message} {}
+            base_error( Enum error, const char* message) : base{ detail::make_error_code( error), message} {}
 
-            Enum type() const noexcept { return static_cast< Enum>( base_type::code().value());}
+            Enum type() const noexcept { return static_cast< Enum>( base::code().value());}
 
          };
 
@@ -39,6 +48,7 @@ namespace casual
             using base_type = Base;
             basic_error() : base_type{ error} {}
             basic_error( const std::string& message) : base_type{ error, message} {}
+            basic_error( const char* message) : base_type{ error, message} {}
 
             constexpr static auto type() noexcept { return error;}
          };

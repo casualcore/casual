@@ -171,7 +171,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        exception::handle();
                      }
                   }
 
@@ -372,7 +372,7 @@ namespace casual
 
                      if( ! arguments.resources.empty())
                      {
-                        throw common::exception::invalid::Semantic{ "can't build and link an administration server with resources"};
+                        throw exception::system::invalid::Argument{ "can't build and link an administration server with resources"};
                      }
 
                      policy::local::configure::services( arguments.services, {});

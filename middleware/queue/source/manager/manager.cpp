@@ -15,7 +15,7 @@
 #include "common/algorithm.h"
 #include "common/process.h"
 #include "common/environment.h"
-#include "common/exception.h"
+#include "common/exception/signal.h"
 
 #include "configuration/message/transform.h"
 #include "configuration/queue.h"
@@ -253,7 +253,7 @@ namespace casual
          }
          catch( ...)
          {
-            common::error::handler();
+            common::exception::handle();
          }
 
       }

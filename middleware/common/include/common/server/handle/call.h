@@ -2,8 +2,8 @@
 //! casual
 //!
 
-#ifndef CASUAL_COMMON_SESRVER_HANDLE_H_
-#define CASUAL_COMMON_SESRVER_HANDLE_H_
+#ifndef CASUAL_COMMON_SERVER_HANDLE_H_
+#define CASUAL_COMMON_SERVER_HANDLE_H_
 
 
 #include "common/server/handle/service.h"
@@ -11,6 +11,8 @@
 #include "common/server/handle/policy.h"
 
 #include "common/service/call/context.h"
+
+#include "common/exception/handle.h"
 
 
 namespace casual
@@ -94,7 +96,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     error::handler();
+                     exception::handle();
                   }
                }
 

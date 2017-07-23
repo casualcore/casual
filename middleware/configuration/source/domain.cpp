@@ -6,7 +6,6 @@
 #include "configuration/file.h"
 #include "configuration/common.h"
 
-#include "common/exception.h"
 #include "common/file.h"
 #include "common/environment.h"
 #include "common/algorithm.h"

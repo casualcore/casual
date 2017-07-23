@@ -4,39 +4,44 @@
 
 #include <gtest/gtest.h>
 
-#include "common/exception.h"
+
 #include "common/error/code/xatmi.h"
 #include "common/exception/xatmi.h"
+#include "common/exception/handle.h"
 
 
 
 
 namespace casual
 {
-   namespace local
+   namespace common
    {
-      namespace
+         namespace local
       {
-         struct UnknownException
+         namespace
          {
+            struct UnknownException
+            {
 
-         };
-      } // <unnamed>
-   } // local
+            };
+         } // <unnamed>
+      } // local
 
-   TEST( casual_common_error, catch_unknown)
-   {
-      EXPECT_NO_THROW({
-         try
-         {
-            throw local::UnknownException{};
-         }
-         catch( ...)
-         {
-            common::error::handler();
-         }
-      });
-   }
+      TEST( casual_common_error, catch_unknown)
+      {
+         EXPECT_NO_THROW({
+            try
+            {
+               throw local::UnknownException{};
+            }
+            catch( ...)
+            {
+               exception::handle();
+            }
+         });
+      }
+   } // common
+
 
 /*
    template< typename E, long code, common::exception::code::log::Category category>

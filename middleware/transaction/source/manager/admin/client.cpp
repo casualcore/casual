@@ -380,7 +380,7 @@ namespace casual
                         {
                            if( values.size() % 2 != 0)
                            {
-                              throw exception::invalid::Argument{ "use: --update-instances [<rm-id> <# instances>]+"};
+                              throw exception::system::invalid::Argument{ "use: --update-instances [<rm-id> <# instances>]+"};
                            }
 
                            std::vector< vo::update::Instances> result;
@@ -455,10 +455,10 @@ namespace casual
                   arguments.parse( argc, argv);
 
                }
-               catch( const std::exception& exception)
+               catch( ...)
                {
-                  std::cerr << "error: " << exception.what() << std::endl;
-                  return 10;
+                  std::cerr << "error: ";
+                  common::exception::handle( std::cerr);
                }
                return 0;
             }

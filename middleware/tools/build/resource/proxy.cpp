@@ -7,10 +7,9 @@
 #include "common/environment.h"
 #include "common/file.h"
 #include "common/uuid.h"
-#include "common/error.h"
 #include "common/string.h"
 #include "common/process.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "configuration/resource/property.h"
 
 #include "sf/log.h"
@@ -229,7 +228,7 @@ int main( int argc, char** argv)
 
             if( ! found)
             {
-               throw common::exception::invalid::Argument( "resource-key: " + settings.key + " not found");
+               throw common::exception::system::invalid::Argument( "resource-key: " + settings.key + " not found");
             }
             return *found;
          }
@@ -309,7 +308,7 @@ int main( int argc, char **argv)
 
 
    }
-   catch( const common::exception::invalid::base& exception)
+   catch( const common::exception::system::exception& exception)
    {
       std::cerr << "error: " << exception << std::endl;
       return 1;
@@ -317,7 +316,7 @@ int main( int argc, char **argv)
    catch( ...)
    {
       std::cerr << "error: details is found in casual.log\n";
-      return common::error::handler();
+      return common::exception::handle();
    }
 
    return 0;

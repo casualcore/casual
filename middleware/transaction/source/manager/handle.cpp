@@ -52,7 +52,7 @@ namespace casual
                   {
                      ipc::device().blocking_send( device, message);
                   }
-                  catch( const common::exception::communication::Unavailable&)
+                  catch( const common::exception::system::communication::Unavailable&)
                   {
                      log << "failed to send message to queue: " << device << '\n';
                   }
@@ -1029,7 +1029,7 @@ namespace casual
                      }
 
                   }
-                  catch( common::exception::invalid::Argument&)
+                  catch( common::exception::system::invalid::Argument&)
                   {
                      common::log::category::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
 
@@ -1129,7 +1129,7 @@ namespace casual
             }
             catch( const user::error& exception)
             {
-               common::error::handler();
+               common::exception::handle();
 
                auto reply = local::transform::reply( message);
                reply.stage = decltype( reply)::Stage::error;
@@ -1146,7 +1146,7 @@ namespace casual
                auto fail = common::error::code::tx::fail;
                common::log::category::error << "unexpected error - action: send reply " << std::error_code( fail) << '\n';
 
-               common::error::handler();
+               common::exception::handle();
 
                auto reply = local::transform::reply( message);
                reply.stage = decltype( reply)::Stage::error;

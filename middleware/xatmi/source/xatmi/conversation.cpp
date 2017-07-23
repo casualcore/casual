@@ -40,7 +40,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
 
    return -1;
@@ -75,7 +75,7 @@ namespace local
             }
             catch( ...)
             {
-               casual::xatmi::internal::error::set( casual::common::error::handler());
+               casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
                return -1;
             }
             return 0;

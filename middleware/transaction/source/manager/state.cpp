@@ -8,7 +8,8 @@
 #include "configuration/domain.h"
 
 
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/exception/casual.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
 #include "common/event/send.h"
@@ -201,7 +202,7 @@ namespace casual
                {
                   if( ! state.resource_properties.emplace( resource.key, std::move( resource)).second)
                   {
-                     throw common::exception::invalid::Configuration( "multiple keys in resource config: " + resource.key);
+                     throw common::exception::casual::invalid::Configuration( "multiple keys in resource config: " + resource.key);
                   }
                }
             }
@@ -455,7 +456,7 @@ namespace casual
 
          if( ! found)
          {
-            throw common::exception::invalid::Argument{ "failed to find resource"};
+            throw common::exception::system::invalid::Argument{ "failed to find resource"};
          }
          return *found;
       }
@@ -470,7 +471,7 @@ namespace casual
 
          if( ! found)
          {
-            throw common::exception::invalid::Argument{ "failed to find instance"};
+            throw common::exception::system::invalid::Argument{ "failed to find instance"};
          }
          return *found;
       }
@@ -500,7 +501,7 @@ namespace casual
             return *found;
          }
 
-         throw common::exception::invalid::Argument{ "failed to find external resource proxy", CASUAL_NIP( rm)};
+         throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find external resource proxy: ", rm)};
       }
 
    } // transaction

@@ -29,7 +29,7 @@ namespace casual
 
                domain::singleton::create( process::handle(), domain::identity());
 
-         , exception::invalid::Process);
+         , exception::system::invalid::Process);
       }
 
 

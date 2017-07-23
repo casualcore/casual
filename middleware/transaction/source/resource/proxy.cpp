@@ -198,12 +198,12 @@ namespace casual
                if( ! ( state.xa_switches && state.xa_switches->key && state.xa_switches->key == state.rm_key
                      && ! state.rm_key.empty()))
                {
-                  throw common::exception::invalid::Argument( "mismatch between expected resource key and configured resource key");
+                  throw common::exception::system::invalid::Argument( "mismatch between expected resource key and configured resource key");
                }
 
                if( ! state.xa_switches->xa_switch)
                {
-                  throw common::exception::invalid::Argument( "xa-switch is null");
+                  throw common::exception::system::invalid::Argument( "xa-switch is null");
                }
 
             }

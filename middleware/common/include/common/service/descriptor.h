@@ -12,6 +12,8 @@
 
 #include "common/exception/xatmi.h"
 
+#include "common/string.h"
+
 #include <vector>
 
 namespace casual

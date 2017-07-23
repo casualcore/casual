@@ -6,8 +6,8 @@
 #include "queue/common/log.h"
 #include "queue/manager/admin/server.h"
 
-#include "common/error.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/exception/casual.h"
 #include "common/process.h"
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
@@ -88,7 +88,7 @@ namespace casual
                            ipc::device().blocking_send( device, std::forward< M>( message));
                            return true;
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            return false;
                         }
@@ -136,7 +136,7 @@ namespace casual
                         common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)),
                         std::bind( &process::Exit::apply, process::Exit{ m_state}, std::placeholders::_1));
 
-                  throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
+                  throw common::exception::casual::Shutdown{};
                }
 
             } // shutdown

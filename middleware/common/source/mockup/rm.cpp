@@ -82,7 +82,7 @@ namespace casual
             catch( ...)
             {
                log << "failed to parse mockup openinfo: " << openinfo << '\n';
-               error::handler();
+               exception::handle();
             }
 
 

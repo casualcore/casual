@@ -11,6 +11,8 @@
 #include "common/memory.h"
 #include "common/buffer/pool.h"
 
+#include "common/exception/handle.h"
+
 
 
 namespace casual
@@ -149,7 +151,7 @@ namespace casual
                               //
                               // User service returned, not by tpreturn.
                               //
-                              throw common::exception::xatmi::service::Error( "service: " + argument.service.name + " did not call tpreturn");
+                              throw exception::xatmi::service::Error( "service: " + argument.service.name + " did not call tpreturn");
                            }
                            case state::Jump::Location::c_forward:
                            {
@@ -159,7 +161,7 @@ namespace casual
                            }
                            default:
                            {
-                              throw common::exception::invalid::Semantic{ "unexpected value from setjmp"};
+                              throw common::exception::system::invalid::Argument{ "unexpected value from setjmp"};
                            }
                            case state::Jump::Location::c_return:
                            {
@@ -185,7 +187,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                            log::category::error << "exception thrown from service: " << argument.service.name << std::endl;
                         }
 

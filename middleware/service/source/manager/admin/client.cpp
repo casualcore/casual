@@ -653,11 +653,11 @@ namespace casual
             try
             {
                parser.parse( argc, argv);
-
             }
             catch( const std::exception& exception)
             {
-               std::cerr << "error: " << exception.what() << std::endl;
+               std::cerr << "error: ";
+               common::exception::handle( std::cerr);
             }
             return 0;
          }

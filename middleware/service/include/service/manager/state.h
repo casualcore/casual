@@ -20,7 +20,7 @@
 
 #include "common/event/dispatch.h"
 
-#include "common/exception.h"
+#include "common/exception/system.h"
 
 #include "sf/log.h"
 
@@ -63,9 +63,9 @@ namespace casual
 
             namespace exception
             {
-               struct Missing : public common::exception::base
+               struct Missing : public common::exception::system::invalid::Argument
                {
-                  using common::exception::base::base;
+                  using common::exception::system::invalid::Argument::Argument;
                };
 
             }

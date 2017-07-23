@@ -6,7 +6,7 @@
 #include "common/unittest.h"
 
 #include "common/environment.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 
 
 namespace casual
@@ -53,7 +53,7 @@ namespace casual
          EXPECT_THROW(
          {
             environment::string( "${HOME/a/b/c");
-         }, exception::invalid::Argument);
+         }, exception::system::invalid::Argument);
       }
 
       TEST( casual_common_environment, process___expect_serialized)

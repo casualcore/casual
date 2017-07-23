@@ -7,7 +7,7 @@
 
 
 #include "common/traits.h"
-#include "common/error.h"
+#include "common/exception/handle.h"
 #include "common/platform.h"
 #include "common/move.h"
 #include "common/cast.h"
@@ -54,7 +54,7 @@ namespace casual
                }
                catch( ...)
                {
-                  error::handler();
+                  exception::handle();
                }
             }
 

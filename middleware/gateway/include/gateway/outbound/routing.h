@@ -8,9 +8,10 @@
 
 #include "common/uuid.h"
 #include "common/process.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "common/algorithm.h"
 #include "common/message/type.h"
+#include "common/string.h"
 
 #include <vector>
 #include <mutex>
@@ -76,7 +77,7 @@ namespace casual
 
                if( ! found)
                {
-                  throw common::exception::invalid::Argument{ "failed to find correlation - Routing::get", CASUAL_NIP( correlation)};
+                  throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find correlation: ", correlation)};
                }
 
                auto result = std::move( *found);

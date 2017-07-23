@@ -14,8 +14,7 @@
 
 #include "common/environment.h"
 #include "common/flag.h"
-#include "common/error.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
 #include "common/signal.h"
 
 #include "common/transaction/context.h"

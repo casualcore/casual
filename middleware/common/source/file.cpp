@@ -4,12 +4,12 @@
 
 #include "common/file.h"
 #include "common/log.h"
-#include "common/error.h"
 #include "common/uuid.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
 #include "common/memory.h"
+#include "common/string.h"
 
 #include <cstdio>
 
@@ -49,9 +49,8 @@ namespace casual
          {
             if( ::rename( source.c_str(), destination.c_str()) == -1)
             {
-               throw exception::invalid::File{ "failed to move file", CASUAL_NIP( source), CASUAL_NIP( destination), CASUAL_NIP( error::string())};
+               exception::system::throw_from_errno( string::compose( "source: ", source, " destination: ", destination));
             }
-
             log::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
          }
 
@@ -140,13 +139,14 @@ namespace casual
 
          std::string absolute( const std::string& path)
          {
-            auto absolut = memory::guard( realpath( path.c_str(), nullptr), &free);
+            auto absolute = memory::guard( realpath( path.c_str(), nullptr), &free);
 
-            if( absolut)
+            if( absolute)
             {
-               return absolut.get();
+               return absolute.get();
             }
-            throw exception::invalid::File{ "invalid path", error::string(), CASUAL_NIP( path)};
+
+            throw exception::system::invalid::File{ path};
          }
 
          namespace name
@@ -202,7 +202,7 @@ namespace casual
 
                if( ::readlink( path.c_str(), link_name.data(), link_name.size()) == -1)
                {
-                  throw std::system_error{ errno, std::system_category(), "file::name::link"};
+                  exception::system::throw_from_errno( "file::name::link");
                }
 
                if( link_name.data())
@@ -265,7 +265,7 @@ namespace casual
             char buffer[ platform::size::max::path];
             if( getcwd( buffer, sizeof( buffer)) == nullptr)
             {
-               throw exception::NotReallySureWhatToNameThisException( "could not get working directory");
+               exception::system::throw_from_errno( "file::name::link");
             }
             return buffer;
          }
@@ -277,7 +277,7 @@ namespace casual
 
             if( chdir( path.c_str()) == -1)
             {
-               throw exception::invalid::Argument{ "failed to change working directory", CASUAL_NIP( error::string())};
+               exception::system::throw_from_errno( "file::name::link");
             }
 
             return current;
@@ -339,7 +339,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::category::error << "failed to create " << path << " - " << error::string() << std::endl;
+               log::category::error << "failed to create " << path << " - " << error::code::last::system::error() << std::endl;
                return false;
             }
 
@@ -350,7 +350,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::category::error << "failed to remove " << path << " - " << error::string() << std::endl;
+               log::category::error << "failed to remove " << path << " - " << error::code::last::system::error() << std::endl;
                return false;
             }
             return true;

@@ -11,6 +11,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/log.h"
+#include "common/exception/casual.h"
 
 
 #include "configuration/domain.h"
@@ -134,7 +135,7 @@ namespace casual
          }
          catch( ...)
          {
-            common::error::handler();
+            common::exception::handle();
          }
       }
 
@@ -248,7 +249,7 @@ namespace casual
                         log << "manager transactions: " << state.transactions.size() << "\n";
                      }
                   }
-                  catch( const exception::Shutdown&)
+                  catch( const exception::casual::Shutdown&)
                   {
                      //
                      // We do nothing
@@ -276,7 +277,7 @@ namespace casual
          }
          catch( ...)
          {
-            common::error::handler();
+            common::exception::handle();
          }
       }
 

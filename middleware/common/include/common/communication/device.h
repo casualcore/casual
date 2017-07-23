@@ -11,6 +11,8 @@
 #include "common/message/dispatch.h"
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
+#include "common/exception/signal.h"
+#include "common/exception/system.h"
 
 #include "common/log.h"
 
@@ -525,7 +527,7 @@ namespace casual
                         //
                         return policy.send( m_connector, complete);
                      }
-                     catch( const exception::communication::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         //
                         // Let connector take a crack at resolving this problem...

@@ -4,7 +4,8 @@
 
 #include "xa.h"
 #include "common/transaction/context.h"
-#include "common/error.h"
+
+#include "common/exception/xa.h"
 
 
 extern "C"
@@ -17,7 +18,7 @@ extern "C"
       }
       catch( ...)
       {
-         return casual::common::error::handler();
+         return casual::common::exception::xa::handle();
       }
    }
 
@@ -29,7 +30,7 @@ extern "C"
       }
       catch( ...)
       {
-         return casual::common::error::handler();
+         return casual::common::exception::xa::handle();
       }
    }
 }

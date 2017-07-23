@@ -5,7 +5,8 @@
 #include "common/service/header.h"
 
 #include "common/algorithm.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/log.h"
 
 namespace casual
 {
@@ -68,7 +69,7 @@ namespace casual
                   {
                      return found->value;
                   }
-                  throw exception::invalid::Argument{ "service header key not found", CASUAL_NIP( key)};
+                  throw exception::system::invalid::Argument{ "service header key not found: " + key};
                }
 
                std::string get( const std::string& key, const std::string& default_value)

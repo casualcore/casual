@@ -1,8 +1,5 @@
 //!
-//! queue_main.cpp
-//!
-//! Created on: Jun 6, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "queue/group/group.h"
@@ -10,7 +7,7 @@
 
 #include "common/arguments.h"
 #include "common/process.h"
-#include "common/error.h"
+#include "common/exception/handle.h"
 
 namespace casual
 {
@@ -43,7 +40,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
 
 

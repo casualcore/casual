@@ -1,13 +1,10 @@
 //!
-//! casaul
+//! casual
 //!
-
-
 
 #include "common/transcode.h"
 
-#include "common/exception.h"
-#include "common/error.h"
+#include "common/exception/system.h"
 
 #include <resolv.h>
 
@@ -55,7 +52,7 @@ namespace casual
 
                   if( length < 0)
                   {
-                     throw exception::Casual( "Base64-encode failed");
+                     throw exception::system::invalid::Argument( "Base64-encode failed");
                   }
 
                   result.resize( length);
@@ -79,7 +76,7 @@ namespace casual
 
                if( length < 0)
                {
-                  throw exception::Casual( "Base64-decode failed");
+                  throw exception::system::invalid::Argument( "Base64-decode failed");
                }
 
                result.resize( length);
@@ -101,17 +98,7 @@ namespace casual
                   {
                      if( m_descriptor == reinterpret_cast<iconv_t>( -1))
                      {
-                        switch( errno)
-                        {
-                        case EMFILE:
-                        case ENFILE:
-                        case ENOMEM:
-                           throw exception::limit::Memory( error::string());
-                        case EINVAL:
-                           throw exception::invalid::Argument( error::string());
-                        default:
-                           throw exception::Casual( error::string());
-                        }
+                        exception::system::throw_from_errno();
                      }
 
                   }
@@ -120,7 +107,7 @@ namespace casual
                   {
                      if( iconv_close( m_descriptor) == -1)
                      {
-                        std::cerr << error::string() << std::endl;
+                        std::cerr << error::code::last::system::error() << std::endl;
                      }
                   }
 
@@ -141,16 +128,7 @@ namespace casual
 
                         if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
-                           switch( errno)
-                           {
-                           case E2BIG:
-                              break;
-                           case EILSEQ:
-                           case EINVAL:
-                              throw exception::invalid::Argument( error::string());
-                           default:
-                              throw exception::Casual( error::string());
-                           }
+                           exception::system::throw_from_errno();
                         }
 
                         result.append( buffer, target);
@@ -178,30 +156,6 @@ namespace casual
                   std::string codeset;
                   std::string modifier;
                };
-
-/*
-               locale parse( const std::string& name)
-               {
-                  std::istringstream stream( name);
-
-                  locale result;
-
-                  std::getline( stream, result.language, '_');
-                  std::getline( stream, result.territory, '.');
-                  std::getline( stream, result.codeset, '@');
-                  std::getline( stream, result.modifier);
-
-                  return result;
-               }
-
-
-               locale info()
-               {
-                  //return parse( std::locale( "").name());
-                  return parse( std::setlocale( LC_CTYPE, ""));
-               }
-*/
-
             }
 
          }
@@ -244,7 +198,7 @@ namespace casual
                {
                   local::converter{ codeset, cCurrent};
                }
-               catch( const exception::invalid::Argument&)
+               catch( const exception::system::invalid::Argument&)
                {
                   return false;
                }

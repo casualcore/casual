@@ -4,11 +4,11 @@
 
 #include "event/service/monitor/vo/entry.h"
 
-#include "common/error.h"
 #include "common/service/invoke.h"
 #include "common/service/type.h"
 #include "common/environment.h"
 #include "common/arguments.h"
+#include "common/log.h"
 #include "common/server/start.h"
 
 #include "sf/service/protocol.h"
@@ -120,7 +120,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
 }
 

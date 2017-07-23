@@ -5,6 +5,7 @@
 #include "common/transaction/resource.h"
 #include "common/transaction/context.h"
 
+#include "common/log/category.h"
 #include "common/flag.h"
 
 namespace casual

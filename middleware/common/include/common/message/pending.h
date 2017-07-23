@@ -89,7 +89,7 @@ namespace casual
                            communication::ipc::outbound::Device device{ ipc};
                            return static_cast< bool>( device.put( message.complete, policy, handler));
                         }
-                        catch( const exception::queue::Unavailable&)
+                        catch( const exception::system::communication::Unavailable&)
                         {
                            return true;
                         }

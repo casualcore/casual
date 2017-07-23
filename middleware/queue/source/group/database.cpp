@@ -7,7 +7,6 @@
 
 #include "common/algorithm.h"
 
-#include "common/exception.h"
 
 // temp
 #include "common/chronology.h"

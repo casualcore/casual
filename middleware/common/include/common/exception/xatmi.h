@@ -86,6 +86,9 @@ namespace casual
             {
                using Event = base< error::code::xatmi::event>;
             }
+
+            int handle();
+
          } // xatmi 
       } // exception 
    } // common

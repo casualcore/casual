@@ -12,6 +12,7 @@
 #include "common/algorithm.h"
 #include "common/exception/xatmi.h"
 #include "common/exception/tx.h"
+#include "common/exception/system.h"
 #include "common/error/code/convert.h"
 
 #include "common/message/domain.h"
@@ -128,7 +129,7 @@ namespace casual
                      auto message = "missing configuration for linked RM: " + resource.key + " - check group memberships";
                      common::event::error::send( message);
 
-                     throw exception::invalid::Argument( message);
+                     throw exception::system::invalid::Argument( message);
                   }
 
                   for( auto& rm : partition)

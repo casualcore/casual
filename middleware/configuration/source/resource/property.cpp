@@ -74,9 +74,9 @@ namespace casual
                }
                else
                {
-                  throw common::exception::invalid::File( "could not find resource configuration file",
-                        common::exception::make_nip( "path", common::environment::directory::casual() + "/configuration"),
-                        common::exception::make_nip( "name", "resources.(yaml|json|xml|..."));
+                  throw common::exception::system::invalid::File( common::string::compose( "could not find resource configuration file",
+                        " path: ", common::environment::directory::casual(),  "/configuration",
+                        " name: ", "resources.(yaml|json|xml|..."));
                }
             }
 

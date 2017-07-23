@@ -42,6 +42,7 @@ install_headers = []
 
 
 casual_common_objectfiles = [
+
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/service.cpp'),
@@ -101,10 +102,15 @@ casual_common_objectfiles = [
     Compile( 'source/error/code/xatmi.cpp'),
     Compile( 'source/error/code/tx.cpp'),
     Compile( 'source/error/code/xa.cpp'),
+    Compile( 'source/error/code/system.cpp'),
+    Compile( 'source/error/code/signal.cpp'),
+    Compile( 'source/error/code/casual.cpp'),
     Compile( 'source/error/code/convert.cpp'),
-    Compile( 'source/error.cpp'),
     
-    Compile( 'source/exception.cpp'),
+    
+   Compile( 'source/exception/system.cpp'),
+   Compile( 'source/exception/handle.cpp'),
+
     Compile( 'source/uuid.cpp'),
     Compile( 'source/environment.cpp'),
     Compile( 'source/file.cpp'),
@@ -223,7 +229,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_process.cpp'),
     Compile( 'unittest/source/test_string.cpp'),
     Compile( 'unittest/source/test_environment.cpp'),
-    Compile( 'unittest/source/test_error.cpp'),
+    Compile( 'unittest/source/test_exception.cpp'),
     
     Compile( 'unittest/source/network/test_byteorder.cpp'),
     

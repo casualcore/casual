@@ -7,7 +7,7 @@
 #include "common/environment.h"
 #include "common/platform.h"
 #include "common/process.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "common/chronology.h"
 #include "common/server/context.h"
 #include "common/transaction/context.h"
@@ -263,7 +263,7 @@ namespace casual
                   return holder->stream;
                }
 
-               throw exception::invalid::Argument{ "invalid log category", CASUAL_NIP( category)};
+               throw exception::system::invalid::Argument{ "invalid log category: " + category};
             }
 
 

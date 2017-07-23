@@ -55,7 +55,7 @@ namespace casual
                            state.pending.replies.emplace_back( std::forward< M>( message), process.queue);
                         }
                      }
-                     catch( const exception::communication::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         log << "failed to send message - type: " << common::message::type( message) << " to: " << process << " - action: ignore\n";
                      }
@@ -104,7 +104,7 @@ namespace casual
                         }
 
                      }
-                     catch( const exception::invalid::Argument& e)
+                     catch( const exception::system::invalid::Argument& e)
                      {
                         log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
 
@@ -116,7 +116,7 @@ namespace casual
                         {
                            common::message::event::domain::Error message;
                            message.severity = common::message::event::domain::Error::Severity::error;
-                           message.message = "failed to spawn '" + executable.path + "' - " + e.description();
+                           message.message = string::compose( "failed to spawn '", executable.path, "' - ", e);
 
                            manager::local::ipc::send( state, state.event( message));
                         }
@@ -180,7 +180,7 @@ namespace casual
                      {
                         manager::ipc::device().blocking_send( service_manager.queue, prepare);
                      }
-                     catch( const exception::communication::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         //
                         // broker is not online, we simulate the reply from the broker
@@ -258,7 +258,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 
@@ -309,7 +309,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 

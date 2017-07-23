@@ -11,8 +11,6 @@
 #include "common/memory.h"
 
 #include "common/string.h"
-#include "common/error.h"
-
 
 #include <array>
 #include <stdarg.h>
@@ -47,7 +45,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
       return nullptr;
    }
 }
@@ -65,7 +63,7 @@ char* tprealloc( const char* ptr, long size)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
       return nullptr;
    }
 
@@ -107,7 +105,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
       return -1;
    }
 
@@ -121,7 +119,7 @@ void tpfree( const char* const ptr)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
 }
 

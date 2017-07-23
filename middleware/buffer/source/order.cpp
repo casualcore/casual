@@ -6,7 +6,7 @@
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
 #include "common/network/byteorder.h"
 #include "common/platform.h"
 #include "common/log.h"
@@ -202,7 +202,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      return CASUAL_ORDER_INTERNAL_FAILURE;
                   }
                }

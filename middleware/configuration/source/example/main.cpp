@@ -99,7 +99,7 @@ the output format will be deduced from file extension
             }
             catch( ...)
             {
-               return common::error::handler();
+               return common::exception::handle();
             }
          }
 

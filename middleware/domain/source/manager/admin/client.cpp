@@ -184,7 +184,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 
@@ -249,7 +249,7 @@ namespace casual
                         {
                            if( ! range::all_of( files, &common::file::exists))
                            {
-                              throw exception::invalid::File{ "at least one file does not exist", CASUAL_NIP( files)};
+                              throw exception::system::invalid::File{ string::compose( "at least one file does not exist - files: ", files)};
                            }
                            arguments.emplace_back( "--configuration-files");
                            range::copy( files, std::back_inserter( arguments));
@@ -400,7 +400,7 @@ namespace casual
                   {
                      if( values.size() % 2 != 0)
                      {
-                        throw exception::invalid::Argument{ "<alias> <# of instances>"};
+                        throw exception::system::invalid::Argument{ "<alias> <# of instances>"};
                      }
 
                      std::vector< admin::vo::scale::Instances> instances;

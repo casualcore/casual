@@ -138,7 +138,7 @@ namespace casual
             }
             else
             {
-               throw exception::invalid::Argument{ "failed to correlate listener to event", CASUAL_NIP( event)};
+               throw exception::system::invalid::Argument{ string::compose( "failed to correlate listener to event: ", event)};
             }
          }
 

@@ -81,7 +81,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
    return casual::xatmi::internal::error::get() == 0 ? 0 : -1;
 }
@@ -116,7 +116,7 @@ int tpacall( const char* const service, char* idata, const long ilen, const long
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
    return casual::xatmi::internal::error::get() == 0 ? 0 : -1;
 }

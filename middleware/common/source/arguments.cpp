@@ -3,6 +3,7 @@
 //!
 
 #include "common/arguments.h"
+#include "common/exception/system.h"
 
 
 namespace casual
@@ -398,7 +399,7 @@ namespace casual
 
             if( ! found)
             {
-               throw exception::invalid::Argument{ "invalid argument: " + *argumentRange};
+               throw exception::system::invalid::Argument{ "invalid argument: " + *argumentRange};
             }
 
             //
@@ -420,7 +421,7 @@ namespace casual
 
             if( ! found->valid())
             {
-               throw exception::invalid::Argument{ "invalid values for: " + argument};
+               throw exception::system::invalid::Argument{ "invalid values for: " + argument};
             }
 
             argumentRange = std::get< 1>( slice);

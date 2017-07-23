@@ -11,6 +11,7 @@
 #include "common/buffer/transport.h"
 #include "common/execution.h"
 #include "common/exception/xatmi.h"
+#include "common/log.h"
 
 #include "common/flag.h"
 

@@ -4,7 +4,7 @@
 
 #include "common/signal.h"
 #include "common/platform.h"
-#include "common/exception.h"
+#include "common/exception/signal.h"
 #include "common/log.h"
 #include "common/flag.h"
 #include "common/process.h"
@@ -47,10 +47,10 @@ namespace casual
                      switch( errno)
                      {
                         case ESRCH:
-                           log::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                           log::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << error::code::last::system::error() << '\n';
                            break;
                         default:
-                           log::category::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - errno: " << errno << " - "<< error::string() << std::endl;
+                           log::category::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << error::code::last::system::error() << '\n';
                            break;
                      }
                      return false;
@@ -219,9 +219,9 @@ namespace casual
 
                               if( sigaction( cast::underlying( Signal), &sa, nullptr) == -1)
                               {
-                                 std::cerr << "failed to register handle for signal: " << Signal << " - " << error::string() << std::endl;
+                                 std::cerr << "failed to register handle for signal: " << Signal << " - "  << error::code::last::system::error() << '\n';
 
-                                 throw std::system_error{ error::last(), std::system_category()};
+                                 exception::system::throw_from_errno();
                               }
                            }
 
@@ -342,7 +342,7 @@ namespace casual
 
                      if( ::getitimer( ITIMER_REAL, &old) != 0)
                      {
-                        throw exception::invalid::Argument{ "timer::get - " + error::string()};
+                        exception::system::throw_from_errno( "timer::get");
                      }
                      return convert( old);
                   }
@@ -353,7 +353,7 @@ namespace casual
 
                      if( ::setitimer( ITIMER_REAL, &value, &old) != 0)
                      {
-                        throw exception::invalid::Argument{ "timer::set - " + error::string()};
+                        exception::system::throw_from_errno( "timer::set");
                      }
 
                      log::debug << "timer set: "
@@ -636,7 +636,7 @@ namespace casual
 	       {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
                   {
-                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - errno: " << errno << " - "<< error::string() << std::endl;
+                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - error: " << error::code::last::system::error() << '\n';
                   } 
                }
                else

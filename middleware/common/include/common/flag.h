@@ -1,12 +1,14 @@
 //!
-//! causual
+//! casual
 //!
 
 #ifndef CASUAL_COMMON_FLAG_H_
 #define CASUAL_COMMON_FLAG_H_
 
 #include "common/marshal/marshal.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/string.h"
+#include "common/traits.h"
 
 #include <initializer_list>
 #include <type_traits>
@@ -44,7 +46,7 @@ namespace casual
          {
             if( flags & ~underlaying())
             {
-               throw exception::invalid::Flags{ "invalid flags", CASUAL_NIP( flags), exception::make_nip( "limit", *this)};
+               throw exception::system::invalid::Argument{ string::compose( "invalid flags: ", flags, " limit: ", *this)};
             }
             return { flags};
          }

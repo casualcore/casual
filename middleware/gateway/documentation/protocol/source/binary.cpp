@@ -204,7 +204,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     return common::error::handler();
+                     return common::exception::handle();
                   }
                }
             } // <unnamed>
