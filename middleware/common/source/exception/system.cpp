@@ -45,7 +45,7 @@ namespace casual
 
                         default:
                         {
-                           common::log::category::error << "throwing a generic exception\n";
+                           common::log::category::error << code <<  " - throwing a generic exception\n";
                            throw system::exception( code, std::forward< Args>( args)...);
                         }
                      }

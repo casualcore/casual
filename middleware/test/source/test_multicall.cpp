@@ -122,7 +122,7 @@ void run( Settings settings)
             }
             catch( ...)
             {
-               casual::common::error::handler();
+               casual::common::exception::handle();
             }
          }
 

@@ -107,9 +107,10 @@ casual_common_objectfiles = [
     Compile( 'source/error/code/casual.cpp'),
     Compile( 'source/error/code/convert.cpp'),
     
-    
-   Compile( 'source/exception/system.cpp'),
-   Compile( 'source/exception/handle.cpp'),
+    Compile( 'source/exception/system.cpp'),
+    Compile( 'source/exception/handle.cpp'),
+    Compile( 'source/exception/xa.cpp'),
+    Compile( 'source/exception/xatmi.cpp'),
 
     Compile( 'source/uuid.cpp'),
     Compile( 'source/environment.cpp'),

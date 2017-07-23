@@ -334,7 +334,7 @@ namespace casual
 
          EXPECT_THROW({
             queue::peek::information( "remote-queue");
-         }, common::exception::invalid::Argument);
+         }, common::exception::system::invalid::Argument);
       }
 
    } // queue

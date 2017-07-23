@@ -5,6 +5,8 @@
 #include "common/transcode.h"
 
 #include "common/exception/system.h"
+#include "common/error/code/system.h"
+
 
 #include <resolv.h>
 
@@ -22,7 +24,6 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cassert>
-//#include <langinfo.h>
 
 
 namespace casual
@@ -96,7 +97,7 @@ namespace casual
                   converter( const std::string& source, const std::string& target)
                      : m_descriptor( iconv_open( target.c_str(), source.c_str()))
                   {
-                     if( m_descriptor == reinterpret_cast<iconv_t>( -1))
+                     if( m_descriptor == reinterpret_cast< iconv_t>( -1))
                      {
                         exception::system::throw_from_errno();
                      }
@@ -113,7 +114,7 @@ namespace casual
 
                   std::string transcode( const std::string& value) const
                   {
-                     char* source = const_cast<char*>(value.c_str());
+                     auto source = const_cast<char*>( value.c_str());
                      std::size_t size = value.size();
 
                      std::string result;
@@ -128,7 +129,13 @@ namespace casual
 
                         if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
-                           exception::system::throw_from_errno();
+                           switch( error::code::last::system::error())
+                           {
+                              case error::code::system::argument_list_too_long: break;
+                              default:
+                                 exception::system::throw_from_errno();
+                           }
+                          
                         }
 
                         result.append( buffer, target);
@@ -142,13 +149,6 @@ namespace casual
                   const iconv_t m_descriptor;
                };
 
-            }
-         }
-
-         namespace local
-         {
-            namespace
-            {
                struct locale
                {
                   std::string language;
@@ -276,7 +276,7 @@ namespace casual
                {
                   std::string result( bytes * 2, 0);
 
-                  const char* first = static_cast< const char*>( data);
+                  auto first = static_cast< const char*>( data);
                   auto last = first + bytes;
 
                   local::encode( first, last, result.begin());

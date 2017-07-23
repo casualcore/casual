@@ -13,6 +13,7 @@
 #include "common/mockup/domain.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/exception/casual.h"
 
 namespace casual
 {
@@ -74,7 +75,7 @@ namespace casual
                            common::communication::ipc::policy::Blocking{}));
                   }
                }
-               catch( const common::exception::Shutdown&)
+               catch( const common::exception::casual::Shutdown&)
                {
                   // we're done
                }

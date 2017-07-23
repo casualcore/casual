@@ -79,7 +79,7 @@ int main( int argc, char** argv)
    /*
    // Start the server
    */
-   return casual_start_reource_proxy( &serverArguments);
+   return casual_start_resource_proxy( &serverArguments);
 
 }
 

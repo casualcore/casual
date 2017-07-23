@@ -94,7 +94,7 @@ namespace casual
       }
       catch( ...)
       {
-         EXPECT_TRUE( common::error::handler() == TestFixture::getCode());
+         EXPECT_TRUE( common::exception::handle() == TestFixture::getCode());
       }
 	}
 

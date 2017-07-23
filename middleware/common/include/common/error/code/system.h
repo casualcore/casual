@@ -65,8 +65,8 @@ namespace std
 {
    inline std::ostream& operator << ( std::ostream& out, std::errc value) 
    { 
-      const auto condition = std::make_error_condition( value);
-      return out << condition.category().name() << ':' << condition.value() << " - " << condition.message();
+      const auto code = std::make_error_code( value);
+      return out << code  << " - " << code.message();
    }
 } // std
 

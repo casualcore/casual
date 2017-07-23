@@ -13,38 +13,40 @@ namespace casual
 
       namespace exception
       {
-
-         int handle()
+         namespace xatmi
          {
-            try
+            int handle()
             {
-               throw;
-            }
+               try
+               {
+                  throw;
+               }
 
-            //
-            // xatmi stuff
-            //
-            catch( const exception::xatmi::exception& exception)
-            {
-               error::code::stream( exception.type()) << exception << std::endl;
-               return exception.code().value();
-            }
+               //
+               // xatmi stuff
+               //
+               catch( const exception& exception)
+               {
+                  error::code::stream( exception.type()) << exception << std::endl;
+                  return exception.code().value();
+               }
 
-            catch( const std::system_error& exception)
-            {
-               log::category::error << exception << std::endl;
-            }
-            catch( const std::exception& exception)
-            {
-               log::category::error << exception << std::endl;
-            }
-            catch( ...)
-            {
-               log::category::error << " - unexpected exception" << std::endl;
-            }
+               catch( const std::system_error& exception)
+               {
+                  log::category::error << exception << std::endl;
+               }
+               catch( const std::exception& exception)
+               {
+                  log::category::error << exception << std::endl;
+               }
+               catch( ...)
+               {
+                  log::category::error << " - unexpected exception" << std::endl;
+               }
 
-            return static_cast< int>( error::code::xatmi::system);
-         }
+               return static_cast< int>( error::code::xatmi::system);
+            }
+         } // xatmi
 
       } // exception
 	} // common

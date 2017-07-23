@@ -11,7 +11,6 @@
 
 
 #include "common/file.h"
-#include "common/exception.h"
 #include "common/environment.h"
 
 

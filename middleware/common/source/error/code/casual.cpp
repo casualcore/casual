@@ -32,6 +32,10 @@ namespace casual
                         switch( static_cast< code::casual>( code))
                         {
                            case casual::shutdown: return "shutdown";
+                           case casual::invalid_configuration: return "invalid configuration";
+                           case casual::invalid_document: return "invalid document";
+                           case casual::invalid_node: return "invalid node";
+                           case casual::validation: return "validation";
 
                            default: return "unknown";
                         }

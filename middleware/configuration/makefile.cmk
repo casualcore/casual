@@ -75,6 +75,7 @@ LinkUnittest( 'bin/test-casual-configuration',
        'casual-common', 
        'casual-mockup', 
        'casual-unittest',
+       'casual-mockup-unittest-environment',
    ])  
 
 

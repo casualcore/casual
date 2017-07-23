@@ -644,7 +644,7 @@ namespace casual
                {
                   auto& reason = deaths.front();
 
-                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                  throw exception::system::invalid::Argument( "spawn failed", CASUAL_NIP( path),
                         exception::make_nip( "arguments", range::make( arguments)),
                         exception::make_nip( "environment", range::make( environment)),
                         CASUAL_NIP( reason));
