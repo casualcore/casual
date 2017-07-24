@@ -8,6 +8,9 @@
 
 #include <string>
 
+// remove
+#include <iostream>
+
 namespace casual
 {
    namespace common
@@ -56,15 +59,15 @@ namespace casual
                         return local::message( static_cast< code::xatmi>( code));
                      }
                   };
-
-                  const Category category = {};
+                   
+                  const Category category{};
 
                } // <unnamed>
             } // local
 
             std::error_code make_error_code( xatmi code)
             {
-               return { static_cast< int>( code), local::category};
+               return std::error_code( static_cast< int>( code), local::category);
             }
             
             common::log::Stream& stream( code::xatmi code)

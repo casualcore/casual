@@ -5,13 +5,13 @@
 #ifndef CASUAL_UTILITY_ENVIRONMENT_H_
 #define CASUAL_UTILITY_ENVIRONMENT_H_
 
-#include <string>
-#include <sstream>
-
 #include "common/platform.h"
 #include "common/uuid.h"
 #include "common/process.h"
 
+#include <string>
+#include <sstream>
+#include <mutex>
 
 namespace casual
 {

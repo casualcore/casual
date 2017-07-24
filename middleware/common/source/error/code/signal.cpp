@@ -46,7 +46,7 @@ namespace casual
                      }
                   };
 
-                  const Category category = {};
+                  const Category category{};
 
                } // <unnamed>
             } // local
