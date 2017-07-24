@@ -9,6 +9,7 @@
 #include "common/service/call/flags.h"
 
 #include "common/message/service.h"
+#include "common/exception/xatmi.h"
 
 
 
@@ -32,31 +33,31 @@ namespace casual
          {
             namespace reply
             {
-               enum class State : int
-               {
-                  service_success = 0,
-                  service_fail = TPESVCFAIL
-               };
-
                struct Result
                {
                   common::buffer::Payload buffer;
                   long user = 0;
                   descriptor_type descriptor;
-                  State state;
                };
             } // reply
 
             namespace sync
             {
-               using State = reply::State;
                struct Result
                {
                   common::buffer::Payload buffer;
                   long user = 0;
-                  State state;
                };
             } // sync
+
+            //!
+            //! Will be thrown if service fails (application error)
+            //!
+            struct Fail : common::exception::xatmi::service::Fail
+            {
+               using common::exception::xatmi::service::Fail::Fail;
+               reply::Result result;
+            };
 
             class Context
             {

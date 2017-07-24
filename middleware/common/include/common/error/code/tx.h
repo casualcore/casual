@@ -20,7 +20,7 @@ namespace casual
          namespace code 
          {
             
-            enum class tx
+            enum class tx : int
             {
                not_supported = TX_NOT_SUPPORTED,
                ok = TX_OK,

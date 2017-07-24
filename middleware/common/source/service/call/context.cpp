@@ -326,10 +326,7 @@ namespace casual
                auto& reply = std::get< 0>( prepared);
                result.descriptor = std::get< 1>( prepared);
                result.user = reply.code;
-
                result.buffer = std::move( reply.buffer);
-               result.state = reply.status == error::code::xatmi::service_fail ? reply::State::service_fail : reply::State::service_success;
-
 
 
                //
@@ -346,11 +343,21 @@ namespace casual
                //
                // Check any errors
                //
-               if( reply.status != error::code::xatmi::ok && reply.status != error::code::xatmi::service_fail)
+               switch( reply.status)
                {
-                  throw exception::xatmi::exception{ reply.status};
+                  case error::code::xatmi::ok: 
+                     break;
+                  case error::code::xatmi::service_fail:
+                  {
+                     call::Fail exception;
+                     exception.result = std::move( result);
+                     throw exception;
+                  }
+                  default: 
+                  {
+                     throw exception::xatmi::exception{ reply.status};
+                  }
                }
-
                return result;
             }
 
@@ -369,7 +376,7 @@ namespace casual
                constexpr auto reply_flags = ~reply::Flags{};
                auto result = reply( descriptor, reply_flags.convert( flags));
 
-               return { std::move( result.buffer), result.user, result.state};
+               return { std::move( result.buffer), result.user};
             }
 
 

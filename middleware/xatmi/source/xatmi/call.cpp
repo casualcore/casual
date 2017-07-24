@@ -27,8 +27,6 @@ namespace local
 
          casual::common::buffer::pool::Holder::instance().deallocate( *odata);
          std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
-
-         casual::xatmi::internal::error::set( casual::common::cast::underlying( result.state));
       }
 
    } // <unnamed>
@@ -40,7 +38,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
 
    if( service == nullptr)
    {
-      casual::xatmi::internal::error::set( TPEINVAL);
+      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::argument);
       return -1;
    }
 
@@ -65,25 +63,23 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
             flags);
 
       casual::xatmi::internal::user::code::set( result.user);
+      local::handle_reply_buffer( result, flags, odata, olen);
 
-      auto output = casual::common::buffer::pool::Holder::instance().get( *odata);
-
-      if( flags.exist( Flag::no_change) && result.buffer.type != output.payload().type)
-      {
-         throw casual::common::exception::xatmi::buffer::type::Output{};
-      }
+      return 0;
+   }
+   catch( casual::common::service::call::Fail& fail)
+   {
+      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::service_fail);
+      casual::xatmi::internal::user::code::set( fail.result.user);
 
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
-      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
-
-      casual::xatmi::internal::error::set( casual::common::cast::underlying( result.state));
-
+      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));      
    }
    catch( ...)
    {
       casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
-   return casual::xatmi::internal::error::get() == 0 ? 0 : -1;
+   return -1;
 }
 
 int tpacall( const char* const service, char* idata, const long ilen, const long flags)
@@ -92,7 +88,7 @@ int tpacall( const char* const service, char* idata, const long ilen, const long
 
    if( service == nullptr)
    {
-      casual::xatmi::internal::error::set( TPEINVAL);
+      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::argument);
       return -1;
    }
 
@@ -118,15 +114,15 @@ int tpacall( const char* const service, char* idata, const long ilen, const long
    {
       casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
-   return casual::xatmi::internal::error::get() == 0 ? 0 : -1;
+   return -1;
 }
 
 int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitmap)
 {
    casual::xatmi::internal::clear();
 
-   return casual::xatmi::internal::error::wrap( [&](){
-
+   try 
+   {
       using Flag = casual::common::service::call::reply::Flag;
 
       constexpr casual::common::service::call::reply::Flags valid_flags{
@@ -145,7 +141,22 @@ int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitma
 
       local::handle_reply_buffer( result, flags, odata, olen);
 
-   });
+      return 0;
+   }
+   catch( casual::common::service::call::Fail& fail)
+   {
+      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::service_fail);
+      casual::xatmi::internal::user::code::set( fail.result.user);
+
+      *descriptor = fail.result.descriptor;
+      casual::common::buffer::pool::Holder::instance().deallocate( *odata);
+      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));      
+   }
+   catch( ...)
+   {
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
+   }
+   return -1;
 }
 
 int tpcancel( int id)

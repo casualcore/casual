@@ -95,7 +95,7 @@ int casual_start_server( casual_server_argument* arguments)
 	}
 	catch( ...)
 	{
-	   return casual::common::exception::xatmi::handle();
+	   return static_cast< int>( casual::common::exception::xatmi::handle());
 	}
 	return 0;
 }

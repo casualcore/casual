@@ -22,7 +22,7 @@
 
 int casual_get_tperrno()
 {
-   return casual::xatmi::internal::error::get();
+   return static_cast< int>( casual::xatmi::internal::error::get());
 }
 
 long casual_get_tpurcode()
@@ -34,7 +34,7 @@ long casual_get_tpurcode()
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
 
    try
    {
@@ -52,7 +52,7 @@ char* tpalloc( const char* type, const char* subtype, long size)
 
 char* tprealloc( const char* ptr, long size)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
 
    try
    {
@@ -72,7 +72,7 @@ char* tprealloc( const char* ptr, long size)
 
 long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
 
    try
    {
@@ -160,13 +160,13 @@ const char* tperrnostring( int error)
 
 int tpsvrinit( int argc, char **argv)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
    return tx_open() == TX_OK ? 0 : -1;
 }
 
 void tpsvrdone()
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
    tx_close();
 }
 

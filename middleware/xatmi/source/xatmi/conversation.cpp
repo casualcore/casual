@@ -10,11 +10,11 @@
 
 int tpconnect( const char* svc, const char* idata, long ilen, long flags)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::clear();
 
    if( svc == nullptr)
    {
-      casual::xatmi::internal::error::set( TPEINVAL);
+      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::argument);
       return -1;
    }
 
@@ -57,20 +57,20 @@ namespace local
          {
             try
             {
-               casual::xatmi::internal::error::set( 0);
+               casual::xatmi::internal::clear();
                auto result = task();
 
                if( result)
                {
                   event = result.underlaying();
-                  casual::xatmi::internal::error::set( TPEEVENT);
+                  casual::xatmi::internal::error::set( casual::common::error::code::xatmi::event);
                   return -1;
                }
             }
             catch( const casual::common::exception::conversation::Event& exception)
             {
                event = exception.event.underlaying();
-               casual::xatmi::internal::error::set( TPEEVENT);
+               casual::xatmi::internal::error::set( casual::common::error::code::xatmi::event);
                return -1;
             }
             catch( ...)

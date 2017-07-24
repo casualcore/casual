@@ -43,15 +43,12 @@ namespace casual
    } // common
 
 
-/*
-   template< typename E, long code, common::exception::code::log::Category category>
+
+   template< typename E, common::error::code::xatmi code>
    struct holder
    {
       typedef E exception_type;
-      static long getCode() { return code;}
-      static common::exception::code::log::Category getGategory() { return category;}
-      //static const char* getString() { return string;}
-
+      static common::error::code::xatmi getCode() { return code;}
    };
 
    template <typename H>
@@ -64,22 +61,22 @@ namespace casual
 
 
    typedef ::testing::Types<
-         holder< common::exception::xatmi::no::Message, TPEBLOCK, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::Limit, TPELIMIT, common::exception::code::log::Category::information>,
-         holder< common::exception::xatmi::invalid::Argument, TPEINVAL, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::os::Error, TPEOS, common::exception::code::log::Category::error>,
-         holder< common::exception::xatmi::Protocoll, TPEPROTO, common::exception::code::log::Category::error>,
-         holder< common::exception::xatmi::invalid::Descriptor, TPEBADDESC, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::service::Error, TPESVCERR, common::exception::code::log::Category::error>,
-         holder< common::exception::xatmi::service::Fail, TPESVCFAIL, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::service::no::Entry, TPENOENT, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::service::Advertised, TPEMATCH, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::System, TPESYSTEM, common::exception::code::log::Category::error>,
-         holder< common::exception::xatmi::Timeout, TPETIME, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::transaction::Support, TPETRAN, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::Signal, TPGOTSIG, common::exception::code::log::Category::information>,
-         holder< common::exception::xatmi::buffer::type::Input, TPEITYPE, common::exception::code::log::Category::debug>,
-         holder< common::exception::xatmi::buffer::type::Output, TPEOTYPE, common::exception::code::log::Category::debug>
+         holder< common::exception::xatmi::no::Message, common::error::code::xatmi::no_message>,
+         holder< common::exception::xatmi::Limit, common::error::code::xatmi::limit>,
+         holder< common::exception::xatmi::invalid::Argument, common::error::code::xatmi::argument>,
+         holder< common::exception::xatmi::os::Error, common::error::code::xatmi::os>,
+         holder< common::exception::xatmi::Protocoll, common::error::code::xatmi::protocol>,
+         holder< common::exception::xatmi::invalid::Descriptor, common::error::code::xatmi::descriptor>,
+         holder< common::exception::xatmi::service::Error, common::error::code::xatmi::service_error>,
+         holder< common::exception::xatmi::service::Fail, common::error::code::xatmi::service_fail>,
+         holder< common::exception::xatmi::service::no::Entry, common::error::code::xatmi::no_entry>,
+         holder< common::exception::xatmi::service::Advertised, common::error::code::xatmi::service_advertised>,
+         holder< common::exception::xatmi::System, common::error::code::xatmi::system>,
+         holder< common::exception::xatmi::Timeout, common::error::code::xatmi::timeout>,
+         holder< common::exception::xatmi::transaction::Support, common::error::code::xatmi::transaction>,
+         holder< common::exception::xatmi::Signal, common::error::code::xatmi::signal>,
+         holder< common::exception::xatmi::buffer::type::Input, common::error::code::xatmi::buffer_input>,
+         holder< common::exception::xatmi::buffer::type::Output, common::error::code::xatmi::buffer_output>
     > xatmi_exceptions;
 
    TYPED_TEST_CASE(casual_common_error_xatmi, xatmi_exceptions);
@@ -94,11 +91,11 @@ namespace casual
       }
       catch( ...)
       {
-         EXPECT_TRUE( common::exception::handle() == TestFixture::getCode());
+         EXPECT_TRUE( common::exception::xatmi::handle() == TestFixture::getCode());
       }
 	}
 
-   TYPED_TEST( casual_common_error_xatmi, xatmi__expect_category)
+   TYPED_TEST( casual_common_error_xatmi, xatmi__expect_code)
    {
       typedef typename TestFixture::exception_type exception_type;
 
@@ -106,9 +103,9 @@ namespace casual
       {
          throw exception_type( "some string");
       }
-      catch( common::exception::xatmi::base& exception)
+      catch( const common::exception::xatmi::exception& exception)
       {
-         EXPECT_TRUE( exception.category() == TestFixture::getGategory());
+         EXPECT_TRUE( exception.type() == TestFixture::getCode());
       }
    }
 
@@ -117,7 +114,7 @@ namespace casual
    {
 
    };
-   */
+  
 
    /*
    typedef ::testing::Types<
