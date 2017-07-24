@@ -56,6 +56,7 @@ namespace casual
             {
                switch( code)
                {
+                  case casual::shutdown: return common::log::category::information;
                   // debug
                   //case casual::ok: return common::log::debug;
 
