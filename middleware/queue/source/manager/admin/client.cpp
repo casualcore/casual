@@ -15,6 +15,7 @@
 #include "common/transcode.h"
 
 #include "sf/service/protocol/call.h"
+#include "sf/archive/maker.h"
 #include "sf/log.h"
 
 #include "xatmi.h"
@@ -283,6 +284,22 @@ namespace casual
                formatter.print( std::cout, affected);
             }
 
+            void state( const std::vector< std::string>& format)
+            {
+               auto state = call::state();
+
+               if( format.empty())
+               {
+                  sf::archive::log::Writer archive( std::cout);
+                  archive << CASUAL_MAKE_NVP( state);
+               }
+               else 
+               {
+                  auto archive = sf::archive::writer::from::name( std::cout, format.front());
+                  archive << CASUAL_MAKE_NVP( state);
+               }
+            }
+
          } // <unnamed>
       } // local
 
@@ -301,6 +318,7 @@ namespace casual
             common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual-admin queue --restore <queue-name>", &queue::local::restore),
             common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual-admin queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
             common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_),
+            common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "queue state in the provided format (xml|json|yaml|ini)", &queue::local::state),
       }};
 
       return parser;

@@ -448,7 +448,7 @@ namespace casual
                   common::argument::directive( { "-li", "--list-instances" }, "list current transactions", &dispatch::list_instances),
                   common::argument::directive( { "-ui", "--update-instances" }, "update instances - -ui [<rm-id> <# instances>]+", &dispatch::update_instances),
                   common::argument::directive( { "-lp", "--list-pending" }, "list pending tasks", &dispatch::list_pending),
-                  common::argument::directive( common::argument::cardinality::Any{}, { "--state" }, "view current state in supplied format: --state (yaml|json|xml|ini)", &dispatch::state)
+                  common::argument::directive( common::argument::cardinality::ZeroOne{}, { "--state" }, "view current state in supplied format: --state (yaml|json|xml|ini)", &dispatch::state)
                }};
 
 

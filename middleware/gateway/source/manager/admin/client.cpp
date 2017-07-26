@@ -12,6 +12,7 @@
 #include "common/transcode.h"
 
 #include "sf/service/protocol/call.h"
+#include "sf/archive/maker.h"
 #include "sf/log.h"
 
 #include "xatmi.h"
@@ -142,23 +143,35 @@ namespace casual
 
       } // format
 
-
-      void list_connections()
+      namespace action
       {
-         auto state = call::state();
+         
+         void list_connections()
+         {
+            auto state = call::state();
 
-         auto formatter = format::connections();
+            auto formatter = format::connections();
 
-         formatter.print( std::cout, state.connections);
-      }
+            formatter.print( std::cout, state.connections);
+         }
 
-      void print_state()
-      {
-         auto state = call::state();
+         void state( const std::vector< std::string>& format)
+         {
+            auto state = call::state();
 
-         std::cout << CASUAL_MAKE_NVP( state);
-      }
+            if( format.empty())
+            {
+               sf::archive::log::Writer archive( std::cout);
+               archive << CASUAL_MAKE_NVP( state);
+            }
+            else 
+            {
+               auto archive = sf::archive::writer::from::name( std::cout, format.front());
+               archive << CASUAL_MAKE_NVP( state);
+            }
+         }
 
+      } // action
 
 
    } // gateway
@@ -170,8 +183,8 @@ namespace casual
             common::argument::directive( {"--no-header"}, "do not print headers", &gateway::global::no_header),
             common::argument::directive( {"--no-color"}, "do not use color", &gateway::global::no_color),
             common::argument::directive( {"--porcelain"}, "Easy to parse format", gateway::global::porcelain),
-            common::argument::directive( {"-c", "--list-connections"}, "list all connections", &gateway::list_connections),
-            common::argument::directive( { "--state"}, "print state", &gateway::print_state),
+            common::argument::directive( {"-c", "--list-connections"}, "list all connections", &gateway::action::list_connections),
+            common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "gateway state in the provided format (xml|json|yaml|ini)", &gateway::action::state),
       }};
 
       return parser;

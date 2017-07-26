@@ -1,8 +1,5 @@
 //!
-//! terminal.cpp
-//!
-//! Created on: Dec 22, 2014
-//!     Author: Lazan
+//! casual
 //!
 
 #include "common/terminal.h"

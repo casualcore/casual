@@ -579,14 +579,22 @@ namespace casual
             }
 
 
-            void output_state( const std::string& format)
+            void output_state( const std::vector< std::string>& format)
             {
-               auto archive = sf::archive::writer::from::name( std::cout, format);
-
                auto state = call::state();
 
-               archive << CASUAL_MAKE_NVP( state);
+               if( format.empty())
+               {
+                  sf::archive::log::Writer archive( std::cout);
+                  archive << CASUAL_MAKE_NVP( state);
+               }
+               else 
+               {
+                  auto archive = sf::archive::writer::from::name( std::cout, format.front());
+                  archive << CASUAL_MAKE_NVP( state);
+               }
             }
+
 
             void list_service_legend()
             {
@@ -641,11 +649,11 @@ namespace casual
                   common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", global::no_header),
                   common::argument::directive( {"--admin"}, "casual administration services will be included", global::admin_services),
                   common::argument::directive( {"-ls", "--list-services"}, "list services", &action::list_services),
-                  common::argument::directive( {"--legend-list-services"}, "legend for --list-services output", &action::list_service_legend),
+                  common::argument::directive( {"--list-services-legend"}, "legend for --list-services output", &action::list_service_legend),
                   common::argument::directive( {"-li", "--list-instances"}, "list instances", &action::list_instances),
                   common::argument::directive( casual::common::argument::cardinality::Any{},
                      {"-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reseet", &action::metric::reset),
-                  common::argument::directive( {"-s", "--state"}, "prints the state on stdout in the provided format (json|yaml|xml|ini)", &action::output_state),
+                  common::argument::directive( common::argument::cardinality::ZeroOne{}, { "--state"}, "prints the state on stdout in the provided format (json|yaml|xml|ini)", &action::output_state),
 
                }
             };

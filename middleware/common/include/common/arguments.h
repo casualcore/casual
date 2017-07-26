@@ -78,6 +78,8 @@ namespace casual
 
             using Zero = Max< 0>;
 
+            using ZeroOne = Max< 1>;
+
             using Any = Min< 0>;
 
             using OneMany = Min< 1>;
