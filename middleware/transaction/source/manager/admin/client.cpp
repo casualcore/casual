@@ -457,6 +457,10 @@ namespace casual
                   arguments.parse( argc, argv);
 
                }
+               catch( const common::argument::exception::Help&)
+               {
+                  
+               }
                catch( const std::exception& exception)
                {
                   std::cerr << "error: " << exception.what() << std::endl;

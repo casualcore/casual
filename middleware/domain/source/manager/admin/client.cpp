@@ -475,7 +475,10 @@ namespace casual
             try
             {
                parser.parse( argc, argv);
-
+            }
+            catch( const common::argument::exception::Help&)
+            {
+               
             }
             catch( const std::exception& exception)
             {

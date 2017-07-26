@@ -263,6 +263,8 @@ namespace casual
                      format::description( m_out, m_description, 3) << "\nOPTIONS\n";
 
                      m_group->visit( *this);
+
+                     throw exception::Help{ "built in help was invoked"};
                   }
 
                private:

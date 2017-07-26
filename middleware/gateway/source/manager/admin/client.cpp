@@ -189,6 +189,10 @@ int main( int argc, char **argv)
       parser.parse( argc, argv);
 
    }
+   catch( const casual::common::argument::exception::Help&)
+   {
+      
+   }
    catch( const std::exception& exception)
    {
       std::cerr << "exception: " << exception.what() << std::endl;
