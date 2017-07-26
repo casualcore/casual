@@ -31,6 +31,7 @@ namespace casual
                         case xatmi::no_message: return "TPEBLOCK: no message ready to consume";
                         case xatmi::argument: return "TPEINVAL: invalid arguments was given";
                         case xatmi::limit: return "TPELIMIT: system limit was reached";
+                        case xatmi::no_entry: return "TPENOENT: failed to lookup service";
                         case xatmi::os: return "TPEOS: operating system level error detected";
                         case xatmi::protocol: return "TPEPROTO: routine was called in an improper context";
                         case xatmi::service_error: return "TPESVCERR: system level service error";

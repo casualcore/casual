@@ -16,6 +16,7 @@
 #include "common/service/lookup.h"
 
 #include "common/message/domain.h"
+#include "common/message/queue.h"
 
 #include "sf/service/protocol/call.h"
 #include "sf/log.h"
@@ -288,7 +289,7 @@ namespace casual
                   mockup::domain::Manager manager;
                   mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
-                  mockup::domain::queue::Broker queue;
+                  mockup::domain::queue::Manager queue;
 
                   Gateway gateway;
 

@@ -5,6 +5,8 @@
 #include "common/exception/xatmi.h"
 #include "common/log/category.h"
 
+#include "common/exception/system.h"
+
 
 namespace casual
 {
@@ -30,7 +32,11 @@ namespace casual
                   error::code::stream( exception.type()) << exception << std::endl;
                   return exception.type();
                }
-
+               catch ( const common::exception::system::invalid::Argument& exception)
+               {
+                  error::code::stream( exception.type()) << exception << std::endl;
+                  return error::code::xatmi::argument;
+               }
                catch( const std::system_error& exception)
                {
                   log::category::error << exception << std::endl;

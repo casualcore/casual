@@ -52,17 +52,17 @@ namespace casual
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
 
-               server::context().jump_return( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
+               server::context().jump_return( flag::xatmi::Return::success, 0, buffer, replyMessage().size());
             }
 
             void test_service_TPFAIL( TPSVCINFO *serviceInfo)
             {
-               server::context().jump_return( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
+               server::context().jump_return( flag::xatmi::Return::fail, 0, serviceInfo->data, serviceInfo->len);
             }
 
             void test_service_TPSUCCESS( TPSVCINFO *serviceInfo)
             {
-               server::context().jump_return( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
+               server::context().jump_return( flag::xatmi::Return::success, 42, serviceInfo->data, serviceInfo->len);
             }
 
             server::Arguments arguments()

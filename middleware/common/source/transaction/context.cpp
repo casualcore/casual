@@ -12,6 +12,7 @@
 #include "common/algorithm.h"
 #include "common/exception/xatmi.h"
 #include "common/exception/tx.h"
+#include "common/exception/xa.h"
 #include "common/exception/system.h"
 #include "common/error/code/convert.h"
 
@@ -247,7 +248,7 @@ namespace casual
 
             if( trid)
             {
-               resources_start( transaction, TMNOFLAGS);
+               resources_start( transaction);
             }
 
             m_transactions.push_back( std::move( transaction));
@@ -259,7 +260,7 @@ namespace casual
 
             auto transaction = local::startTransaction( start, m_timeout);
 
-            resources_start( transaction, TMNOFLAGS);
+            resources_start( transaction);
 
             m_transactions.push_back( std::move( transaction));
          }
@@ -472,7 +473,7 @@ namespace casual
                   //
                   // end resource
                   //
-                  resources_end( *found, TMSUCCESS);
+                  resources_end( *found, flag::xa::Flag::success);
                }
 
 
@@ -480,7 +481,7 @@ namespace casual
             }
          }
 
-         int Context::resourceRegistration( int rmid, XID* xid, long flags)
+         void Context::resource_registration( int rmid, XID* xid)
          {
             Trace trace{ "transaction::Context::resourceRegistration"};
 
@@ -489,8 +490,7 @@ namespace casual
             //
             if( ! common::range::find( m_resources.dynamic, rmid))
             {
-               log::category::error << "invalid resource id " << rmid << " TMER_INVAL\n";
-               return TMER_INVAL;
+               throw exception::ax::exception{ error::code::ax::argument, string::compose( "resource id: ", rmid)};
             }
 
 
@@ -504,7 +504,7 @@ namespace casual
             //
             if( common::range::find( transaction.resources, rmid))
             {
-               return TM_RESUME;
+               throw exception::ax::exception{ error::code::ax::resume};
             }
 
             //
@@ -512,13 +512,10 @@ namespace casual
             //
             *xid = transaction.trid.xid;
 
-
             transaction.resources.push_back( rmid);
-
-            return TM_OK;
          }
 
-         int Context::resourceUnregistration( int rmid, long flags)
+         void Context::resource_unregistration( int rmid)
          {
             Trace trace{ "transaction::Context::resourceUnregistration"};
 
@@ -535,10 +532,10 @@ namespace casual
                if( found)
                {
                   transaction.resources.erase( found.begin());
-                  return TM_OK;
+                  return;
                }
             }
-            return TMER_PROTO;
+            throw exception::ax::exception{ error::code::ax::protocol};
          }
 
 
@@ -558,7 +555,7 @@ namespace casual
                //
                // Tell the RM:s to suspend
                //
-               resources_end( transaction, TMSUSPEND);
+               resources_end( transaction, flag::xa::Flag::suspend);
 
             }
             else if( ! transaction.resources.empty())
@@ -568,7 +565,7 @@ namespace casual
 
             auto trans = local::startTransaction( platform::time::clock::type::now(), m_timeout);
 
-            resources_start( trans, TMNOFLAGS);
+            resources_start( trans);
 
             m_transactions.push_back( std::move( trans));
 
@@ -589,7 +586,7 @@ namespace casual
             //   failed to open...
             //
             range::for_each( m_resources.all, []( auto& r){
-               auto result = r.open( TMNOFLAGS);
+               auto result = r.open();
                if( result != error::code::xa::ok)
                {
                   common::event::error::send( string::compose( "failed to open resource: ", r.key, " - error: ", std::error_code( result)));
@@ -602,7 +599,7 @@ namespace casual
             Trace trace{ "transaction::Context::close"};
 
             auto results = range::transform( m_resources.all, []( auto& r){
-               return r.close( TMNOFLAGS);
+               return r.close();
             });
 
             if( ! range::all_of( results, []( auto r){ return r == error::code::xa::ok;}))
@@ -642,7 +639,7 @@ namespace casual
             //
             // end resources
             //
-            resources_end( transaction, TMSUCCESS);
+            resources_end( transaction, flag::xa::Flag::success);
 
 
             if( transaction.local() && transaction.resources.size() + m_resources.fixed.size() <= 1)
@@ -658,12 +655,12 @@ namespace casual
 
                if( ! transaction.resources.empty())
                {
-                  return resource_commit( transaction.resources.front(), transaction, TMONEPHASE);
+                  return resource_commit( transaction.resources.front(), transaction, flag::xa::Flag::one_phase);
                }
 
                if( ! m_resources.fixed.empty())
                {
-                  return resource_commit( m_resources.fixed.front().id, transaction, TMONEPHASE);
+                  return resource_commit( m_resources.fixed.front().id, transaction, flag::xa::Flag::one_phase);
                }
 
                //
@@ -775,7 +772,7 @@ namespace casual
             //
             // end resources
             //
-            resources_end( transaction, TMSUCCESS);
+            resources_end( transaction);
 
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
@@ -899,7 +896,7 @@ namespace casual
             //
             // Tell the RM:s to suspend
             //
-            resources_end( ongoing, TMSUSPEND);
+            resources_end( ongoing, flag::xa::Flag::suspend);
 
             *xid = ongoing.trid.xid;
 
@@ -955,7 +952,7 @@ namespace casual
                //
                // Tell the RM:s to resume
                //
-               resources_start( *found, TMRESUME);
+               resources_start( *found, flag::xa::Flag::resume);
 
                //
                // We pop the top null-xid that represent a suspended transaction
@@ -970,7 +967,7 @@ namespace casual
          }
 
 
-         void Context::resources_start( const Transaction& transaction, long flags)
+         void Context::resources_start( const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_start"};
 
@@ -992,7 +989,7 @@ namespace casual
             }
          }
 
-         void Context::resources_end( const Transaction& transaction, long flags)
+         void Context::resources_end( const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_end"};
 
@@ -1014,7 +1011,7 @@ namespace casual
             }
          }
 
-         error::code::tx Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags)
+         error::code::tx Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
 
@@ -1069,7 +1066,7 @@ namespace casual
                   //
                   // Tell the RM:s to resume
                   //
-                  resources_end( m_transactions.back(), TMRESUME);
+                  resources_end( m_transactions.back(), flag::xa::Flag::resume);
 
                   break;
                }

@@ -6,10 +6,9 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_CONVERSATION_CONTEXT_H_
 
 #include "common/service/conversation/state.h"
-#include "common/service/conversation/flags.h"
+#include "common/flag/service/conversation.h"
 
 #include "common/buffer/type.h"
-#include "common/flag.h"
 #include "common/exception/xatmi.h"
 
 #include "xatmi/defines.h"
@@ -26,10 +25,10 @@ namespace casual
             using base_exception = xatmi::conversational::Event;
             struct Event : base_exception
             {
-               Event( service::conversation::Events event) :
+               Event( flag::service::conversation::Events event) :
                   event( event) {}
 
-               service::conversation::Events event;
+               flag::service::conversation::Events event;
             };
 
          } // conversation
@@ -40,10 +39,26 @@ namespace casual
       {
          namespace conversation
          {
+            using Event = flag::service::conversation::Event;
+            using Events = flag::service::conversation::Events;
 
+            namespace connect
+            {
+               using Flag = flag::service::conversation::connect::Flag;
+               using Flags = flag::service::conversation::connect::Flags;
+            } // connect
+
+            namespace send
+            {
+               using Flag = flag::service::conversation::send::Flag;
+               using Flags = flag::service::conversation::send::Flags;
+            } // send
 
             namespace receive
             {
+               using Flag = flag::service::conversation::receive::Flag;
+               using Flags = flag::service::conversation::receive::Flags;
+
                struct Result
                {
                   common::Flags< Event> event;

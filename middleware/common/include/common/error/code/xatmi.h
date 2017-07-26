@@ -5,7 +5,7 @@
 #ifndef CASUAL_COMMON_ERROR_CODE_XATMI_H_
 #define CASUAL_COMMON_ERROR_CODE_XATMI_H_
 
-#include "xatmi/defines.h"
+#include "xatmi/code.h"
 
 #include "common/log/stream.h"
 
@@ -16,6 +16,10 @@ namespace casual
 {
    namespace common
    {
+      namespace log
+      {
+         //class Stream;
+      } // log
       namespace error
       {
          namespace code 
@@ -48,6 +52,7 @@ namespace casual
 
             const char* message( xatmi code) noexcept;
 
+
          } // code 
 
       } // error
@@ -73,5 +78,34 @@ namespace casual
       } // error
    } // common
 } // casual
+
+
+//
+// To help prevent missuse of "raw codes"
+//
+
+
+#ifndef CASUAL_NO_XATMI_UNDEFINE
+
+#undef TPEBADDESC
+#undef TPEBLOCK
+#undef TPEINVAL
+#undef TPELIMIT
+#undef TPENOENT
+#undef TPEOS
+#undef TPEPROTO
+#undef TPESVCERR
+#undef TPESVCFAIL
+#undef TPESYSTEM
+#undef TPETIME
+#undef TPETRAN
+#undef TPGOTSIG
+#undef TPEITYPE
+#undef TPEOTYPE
+#undef TPEEVENT
+#undef TPEMATCH
+
+#endif // CASUAL_NO_XATMI_UNDEFINE
+
 
 #endif

@@ -7,6 +7,7 @@
 
 #include "common/transaction/context.h"
 #include "common/error/code/tx.h"
+#include "common/cast.h"
 
 namespace local
 {
@@ -14,7 +15,7 @@ namespace local
    {
       int convert( casual::common::error::code::tx value)
       {
-         return static_cast< int>( value);
+         return casual::common::cast::underlying( value);
       }
 
       template< typename E, typename... Args>
@@ -28,7 +29,7 @@ namespace local
          {
             return convert( casual::common::exception::tx::handler());
          }
-         return TX_OK;
+         return convert( casual::common::error::code::tx::ok);
       }
 
       template< typename E, typename... Args>
@@ -42,7 +43,7 @@ namespace local
          {
             return convert( casual::common::exception::tx::handler());
          }
-         return TX_OK;
+         return convert( casual::common::error::code::tx::ok);
       }
 
    } // <unnamed>

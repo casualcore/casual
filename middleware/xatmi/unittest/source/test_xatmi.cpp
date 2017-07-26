@@ -2,10 +2,13 @@
 //! casual
 //!
 
+//
+// to be able to use 'raw' flags and codes
+// since we undefine 'all' of them in common
+//
+#define CASUAL_NO_XATMI_UNDEFINE
+
 #include "common/unittest.h"
-
-#include "xatmi.h"
-
 
 
 #include "common/mockup/ipc.h"
@@ -16,6 +19,10 @@
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+
+
+#include "xatmi.h"
+
 
 #include <map>
 #include <vector>

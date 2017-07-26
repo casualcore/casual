@@ -14,6 +14,17 @@ namespace casual
    {
       namespace exception 
       {
+         namespace ax 
+         {
+
+            using exception = common::exception::base_error< error::code::ax>;
+
+            template< error::code::ax error>
+            using base = common::exception::basic_error< exception, error>;
+
+            int handle();
+         } // xa 
+
          namespace xa 
          {
 

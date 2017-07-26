@@ -199,6 +199,7 @@ namespace casual
                         state.event.execution = message.execution;
                         state.event.service = message.service.name;
                         state.event.parent = message.parent;
+                        state.event.trid = reply.transaction.trid;
                         state.event.process = process::handle();
 
                         for( auto& queue : message.service.event_subscribers)

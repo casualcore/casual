@@ -61,7 +61,9 @@ namespace casual
                   reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
 
-                  reply.state = local::convert( m_state.xa_switches->xa_switch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS));
+                  reply.state = local::convert( 
+                     m_state.xa_switches->xa_switch->xa_open_entry( 
+                        m_state.rm_openinfo.c_str(), m_state.rm_id, common::cast::underlying( common::flag::xa::Flag::no_flags)));
 
 
                   {
@@ -120,7 +122,7 @@ namespace casual
                   template< typename M>
                   common::error::code::xa operator() ( State& state, M& message) const
                   {
-                     auto result = local::convert( state.xa_switches->xa_switch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags));
+                     auto result = local::convert( state.xa_switches->xa_switch->xa_prepare_entry( &message.trid.xid, state.rm_id, message.flags.underlaying()));
                      log << result << " prepare rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
@@ -131,7 +133,7 @@ namespace casual
                   template< typename M>
                   common::error::code::xa operator() ( State& state, M& message) const
                   {
-                     auto result = local::convert( state.xa_switches->xa_switch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags));
+                     auto result = local::convert( state.xa_switches->xa_switch->xa_commit_entry( &message.trid.xid, state.rm_id, message.flags.underlaying()));
 
                      if( log)
                      {
@@ -162,7 +164,7 @@ namespace casual
                   template< typename M>
                   common::error::code::xa operator() ( State& state, M& message) const
                   {
-                     auto result = local::convert( state.xa_switches->xa_switch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags));
+                     auto result = local::convert( state.xa_switches->xa_switch->xa_rollback_entry( &message.trid.xid, state.rm_id, message.flags.underlaying()));
                      log << result << " rollback rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
                      return result;
                   }
@@ -218,7 +220,11 @@ namespace casual
 
         Proxy::~Proxy()
         {
-           auto result = common::error::code::xa( m_state.xa_switches->xa_switch->xa_close_entry( m_state.rm_closeinfo.c_str(), m_state.rm_id, TMNOFLAGS));
+           auto result = common::error::code::xa( 
+               m_state.xa_switches->xa_switch->xa_close_entry( 
+                  m_state.rm_closeinfo.c_str(), 
+                  m_state.rm_id, 
+                  common::cast::underlying( common::flag::xa::Flag::no_flags)));
 
            if( result != common::error::code::xa::ok)
            {

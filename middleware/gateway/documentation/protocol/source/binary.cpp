@@ -135,7 +135,7 @@ namespace casual
                         set_general( message);
                         message.trid = trid();
                         message.resource = 42;
-                        message.flags = 0;
+                        message.flags = common::flag::xa::Flag::no_flags;
                      };
 
                      auto transaction_reply = []( auto& message){

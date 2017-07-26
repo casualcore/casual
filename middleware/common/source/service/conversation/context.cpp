@@ -50,13 +50,10 @@ namespace casual
                      {
                         message::conversation::connect::caller::Request message{ std::move( buffer)};
 
-
-                        constexpr auto valid_flags = ~message::conversation::connect::Flags{};
-
                         message.correlation = uuid::make();
                         message.service = service;
                         message.process = process::handle();
-                        message.flags = valid_flags.convert( flags);
+                        message.flags = flags;
 
                         //
                         // we push the ipc-queue-id that this instance has. This will

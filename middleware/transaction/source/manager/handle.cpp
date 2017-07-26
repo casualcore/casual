@@ -197,7 +197,10 @@ namespace casual
                      namespace persistent
                      {
                         template< typename M, typename F>
-                        void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
+                        void request( State& state, 
+                           Transaction& transaction, 
+                           F&& filter, 
+                           common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                         {
                            auto resources = common::range::partition(
                               transaction.resources,
@@ -221,7 +224,11 @@ namespace casual
 
 
                      template< typename M, typename F>
-                     void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage new_stage, long flags = TMNOFLAGS)
+                     void request( State& state, 
+                        Transaction& transaction, 
+                        F&& filter, 
+                        Transaction::Resource::Stage new_stage, 
+                        common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                      {
                         Trace trace{ "transaction::handle::send::resource::request"};
 
@@ -1238,7 +1245,7 @@ namespace casual
                      transaction,
                      Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
                      Transaction::Resource::Stage::commit_requested,
-                     TMONEPHASE
+                     common::flag::xa::Flag::one_phase
                   );
 
                   break;
@@ -1532,7 +1539,7 @@ namespace casual
                   //
                   // It has to be a one phase commit optimization.
                   //
-                  if( ! common::flag< TMONEPHASE>( message.flags))
+                  if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
                      reply.state = common::error::code::xa::protocol;
@@ -1558,8 +1565,7 @@ namespace casual
                         m_state,
                         transaction,
                         Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                        Transaction::Resource::Stage::prepare_requested,
-                        TMNOFLAGS
+                        Transaction::Resource::Stage::prepare_requested
                      );
                   }
                   else

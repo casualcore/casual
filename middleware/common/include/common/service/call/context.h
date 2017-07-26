@@ -6,7 +6,9 @@
 #define CASUAL_CALLING_CONTEXT_H_
 
 #include "common/service/call/state.h"
-#include "common/service/call/flags.h"
+#include "common/flag/service/call.h"
+
+//#include "common/flag/xa.h"
 
 #include "common/message/service.h"
 #include "common/exception/xatmi.h"
@@ -31,8 +33,11 @@ namespace casual
       {
          namespace call
          {
+            namespace async = flag::service::call::async;
+
             namespace reply
             {
+               using namespace flag::service::call::reply;
                struct Result
                {
                   common::buffer::Payload buffer;
@@ -43,6 +48,7 @@ namespace casual
 
             namespace sync
             {
+               using namespace flag::service::call::sync;
                struct Result
                {
                   common::buffer::Payload buffer;

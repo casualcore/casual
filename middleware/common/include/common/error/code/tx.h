@@ -82,4 +82,32 @@ namespace casual
    } // common
 } // casual
 
+//
+// To help prevent missuse of "raw codes"
+//
+
+
+#ifndef CASUAL_NO_XATMI_UNDEFINE
+
+#undef TX_NOT_SUPPORTED 
+#undef TX_OK
+#undef TX_OUTSIDE
+#undef TX_ROLLBACK
+#undef TX_MIXED
+#undef TX_HAZARD
+#undef TX_PROTOCOL_ERROR
+#undef TX_ERROR
+#undef TX_FAIL
+#undef TX_EINVAL
+#undef TX_COMMITTED
+#undef TX_NO_BEGIN
+
+#undef TX_ROLLBACK_NO_BEGIN
+#undef TX_MIXED_NO_BEGIN
+#undef TX_HAZARD_NO_BEGIN
+#undef TX_COMMITTED_NO_BEGIN
+
+#endif // CASUAL_NO_XATMI_UNDEFINE
+
+
 #endif

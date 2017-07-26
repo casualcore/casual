@@ -108,7 +108,7 @@ namespace casual
                         service::invoke::Result result{ transform::payload( jump)};
 
                         result.code = jump.state.code;
-                        result.transaction = jump.state.value == TPSUCCESS ?
+                        result.transaction = jump.state.value == flag::xatmi::Return::success ?
                               service::invoke::Result::Transaction::commit : service::invoke::Result::Transaction::rollback;
 
                         return result;

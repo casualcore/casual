@@ -16,6 +16,7 @@
 #include "common/message/service.h"
 
 #include "common/error/code/tx.h"
+#include "common/flag/xa.h"
 
 
 #include <stack>
@@ -68,8 +69,8 @@ namespace casual
             //! Correspond to the ax API
             //!
             //! @{
-            int resourceRegistration( int rmid, XID* xid, long flags);
-            int resourceUnregistration( int rmid, long flags);
+            void resource_registration( int rmid, XID* xid);
+            void resource_unregistration( int rmid);
             //! @}
 
 
@@ -179,9 +180,9 @@ namespace casual
             error::code::tx rollback( const Transaction& transaction);
 
 
-            void resources_start( const Transaction& transaction, long flags);
-            void resources_end( const Transaction& transaction, long flags);
-            error::code::tx resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags);
+            void resources_start( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
+            void resources_end( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
+            error::code::tx resource_commit( platform::resource::id::type rm, const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
 
             error::code::tx pop_transaction();
 

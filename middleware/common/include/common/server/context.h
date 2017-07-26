@@ -56,7 +56,7 @@ namespace casual
 
                struct State
                {
-                  int value = 0;
+                  flag::xatmi::Return value = flag::xatmi::Return::success;
                   long code = 0;
                } state;
 
@@ -70,15 +70,6 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Jump& value);
             };
          } // state
-
-         namespace xatmi
-         {
-            struct Service
-            {
-
-            };
-
-         } // xatmi
 
          struct State
          {
@@ -113,7 +104,7 @@ namespace casual
             //!
             //! Being called from tpreturn
             //!
-            void jump_return( int rval, long rcode, char* data, long len, long flags);
+            void jump_return( flag::xatmi::Return rval, long rcode, char* data, long len);
 
             //!
             //! called from extern casual_service_forward

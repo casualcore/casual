@@ -43,11 +43,11 @@ namespace casual
          Resource::Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, 0, {}, {}) {}
 
 
-         Resource::code Resource::start( const Transaction& transaction, long flags)
+         Resource::code Resource::start( const Transaction& transaction, Flags flags)
          {
-            log::category::transaction << "start resource: " << *this << " transaction: " << transaction << " flags: " << std::hex << flags << std::dec << '\n';
+            log::category::transaction << "start resource: " << *this << " transaction: " << transaction << " flags: " << flags << '\n';
 
-            auto result = local::convert( xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags));
+            auto result = local::convert( xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags.underlaying()));
 
 
             if( result == code::duplicate_xid)
@@ -55,11 +55,11 @@ namespace casual
                //
                // Transaction is already associated with this thread of control, we try to join instead
                //
-               log::category::transaction << "XAER_DUPID - action: try to join instead\n";
+               log::category::transaction << result << " - action: try to join instead\n";
 
-               flags |= TMJOIN;
+               flags |= Flag::join;
 
-               result = local::convert( xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags));
+               result = local::convert( xa_switch->xa_start_entry( local::non_const_xid( transaction), id, flags.underlaying()));
             }
 
             if( result != code::ok)
@@ -69,11 +69,11 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::end( const Transaction& transaction, long flags)
+         Resource::code Resource::end( const Transaction& transaction, Flags flags)
          {
-            log::category::transaction << "end resource: " << *this << " transaction: " << transaction << " flags: " << std::hex << flags << std::dec << '\n';
+            log::category::transaction << "end resource: " << *this << " transaction: " << transaction << " flags: " << flags  << '\n';
 
-            auto result = local::convert( xa_switch->xa_end_entry( local::non_const_xid( transaction), id, flags));
+            auto result = local::convert( xa_switch->xa_end_entry( local::non_const_xid( transaction), id, flags.underlaying()));
 
             if( result != code::ok)
             {
@@ -83,11 +83,11 @@ namespace casual
 
          }
 
-         Resource::code Resource::open( long flags)
+         Resource::code Resource::open( Flags flags)
          {
-            log::category::transaction << "open resource: " << *this <<  " flags: " << std::hex << flags << std::dec << '\n';
+            log::category::transaction << "open resource: " << *this <<  " flags: " << flags << '\n';
 
-            auto result = local::convert( xa_switch->xa_open_entry( openinfo.c_str(), id, flags));
+            auto result = local::convert( xa_switch->xa_open_entry( openinfo.c_str(), id, flags.underlaying()));
 
             if( result != code::ok)
             {
@@ -97,11 +97,11 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::close( long flags)
+         Resource::code Resource::close( Flags flags)
          {
-            log::category::transaction << "close resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
+            log::category::transaction << "close resource: " << *this <<  " flags: " << flags <<'\n';
 
-            auto result = local::convert( xa_switch->xa_close_entry( closeinfo.c_str(), id, flags));
+            auto result = local::convert( xa_switch->xa_close_entry( closeinfo.c_str(), id, flags.underlaying()));
 
             if( result != code::ok)
             {
@@ -111,23 +111,24 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::commit( const Transaction& transaction, long flags)
+         Resource::code Resource::commit( const Transaction& transaction, Flags flags)
          {
-            log::category::transaction << "commit resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
+            log::category::transaction << "commit resource: " << *this <<  " flags: " << flags <<'\n';
 
-            return local::convert( xa_switch->xa_commit_entry( local::non_const_xid( transaction), id, flags));
+            return local::convert( xa_switch->xa_commit_entry( local::non_const_xid( transaction), id, flags.underlaying()));
          }
 
-         Resource::code Resource::rollback( const Transaction& transaction, long flags)
+         Resource::code Resource::rollback( const Transaction& transaction, Flags flags)
          {
-            log::category::transaction << "rollback resource: " << *this <<  " flags: " << std::hex << flags << std::dec <<'\n';
+            log::category::transaction << "rollback resource: " << *this <<  " flags: " << flags  <<'\n';
 
-            return local::convert( xa_switch->xa_rollback_entry( local::non_const_xid( transaction), id, flags));
+            return local::convert( xa_switch->xa_rollback_entry( local::non_const_xid( transaction), id, flags.underlaying()));
          }
 
          bool Resource::dynamic() const
          {
-            return common::flag< TMREGISTER>( xa_switch->flags);
+            return static_cast< flag::xa::resource::Flags>( 
+               xa_switch->flags).exist( flag::xa::resource::Flag::dynamic);
          }
 
 

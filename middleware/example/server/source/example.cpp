@@ -44,7 +44,7 @@ namespace casual
 
                common::range::transform( buffer, buffer, ::toupper);
 
-               tpreturn( TPFAIL, 0, info->data, info->len, 0);
+               tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
             }
 
          }

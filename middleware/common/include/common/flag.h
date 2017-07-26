@@ -20,11 +20,17 @@ namespace casual
 	namespace common
 	{
 
-		template< std::uint64_t flags, typename T>
-		constexpr inline bool flag( T value)
-		{
-			return ( value & flags) == flags;
-		}
+      namespace has
+      {
+         template< std::uint64_t flags, typename T>
+         constexpr inline bool flag( T value)
+         {
+            return ( value & flags) == flags;
+         }
+
+
+      } // has
+
 
 
       template< typename E>
@@ -40,7 +46,7 @@ namespace casual
          template< typename... Enums>
          constexpr Flags( enum_type e, Enums... enums) : Flags( bitmask( e, enums...)) {}
 
-
+         constexpr explicit Flags( underlaying_type flags) : m_flags( flags) {}
 
          constexpr Flags convert( underlaying_type flags) const
          {
@@ -48,7 +54,7 @@ namespace casual
             {
                throw exception::system::invalid::Argument{ string::compose( "invalid flags: ", flags, " limit: ", *this)};
             }
-            return { flags};
+            return Flags{ flags};
          }
 
          template< typename E2>
@@ -99,8 +105,6 @@ namespace casual
 
 
       private:
-
-         constexpr Flags( underlaying_type bitmask) : m_flags( bitmask) {}
 
          static constexpr underlaying_type bitmask( enum_type e) { return underlaying( e);}
 

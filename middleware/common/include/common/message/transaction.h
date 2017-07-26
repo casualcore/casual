@@ -8,6 +8,7 @@
 #include "common/message/type.h"
 #include "common/error/code/xa.h"
 #include "common/error/code/tx.h"
+#include "common/flag/xa.h"
 
 
 namespace casual
@@ -249,7 +250,7 @@ namespace casual
                   using base_type = basic_request;
 
                   id::type resource = 0;
-                  int flags = 0;
+                  flag::xa::Flags flags = flag::xa::Flag::no_flags;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

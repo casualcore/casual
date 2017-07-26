@@ -2,6 +2,14 @@
 //! casual
 //!
 
+//
+// to be able to use 'raw' flags and codes
+// since we undefine 'all' of them in common
+//
+#define CASUAL_NO_XATMI_UNDEFINE
+
+
+
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
@@ -635,7 +643,7 @@ resources:
             communication::ipc::blocking::receive( gateway.output(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.flags == TMONEPHASE);
+            EXPECT_TRUE( message.flags == common::flag::xa::Flag::one_phase);
 
             auto reply = common::message::reverse::type( message);
             reply.resource = message.resource;
@@ -702,7 +710,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
@@ -737,7 +745,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
@@ -805,7 +813,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
@@ -859,7 +867,7 @@ resources:
             common::message::transaction::resource::commit::Request message;
             message.trid = trid;
             message.process = process::handle();
-            message.flags = TMONEPHASE;
+            message.flags = common::flag::xa::Flag::one_phase;
 
             local::send::tm( message);
          }
@@ -874,7 +882,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
@@ -897,7 +905,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
@@ -952,7 +960,7 @@ resources:
             common::message::transaction::resource::commit::Request message;
             message.trid = trid;
             message.process = process::handle();
-            message.flags = TMONEPHASE;
+            message.flags = common::flag::xa::Flag::one_phase;
 
             local::send::tm( message);
          }
@@ -967,7 +975,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
@@ -990,7 +998,7 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;

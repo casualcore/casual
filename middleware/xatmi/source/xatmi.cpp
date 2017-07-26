@@ -123,10 +123,11 @@ void tpfree( const char* const ptr)
    }
 }
 
-void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
+void tpreturn( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
 {
    casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::Context::instance().jump_return( rval, rcode, data, len, flags);
+      casual::common::server::context().jump_return( 
+         static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
    });
 }
 
@@ -138,14 +139,14 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
 int tpadvertise( const char* service, void (*function)( TPSVCINFO *))
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::Context::instance().advertise( service, function);
+      casual::common::server::context().advertise( service, function);
    });
 }
 
 int tpunadvertise( const char* const service)
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::Context::instance().unadvertise( service);
+      casual::common::server::context().unadvertise( service);
    });
 }
 
@@ -173,7 +174,7 @@ void tpsvrdone()
 
 void casual_service_forward( const char* service, char* data, long size)
 {
-   casual::common::server::Context::instance().forward( service, data, size);
+   casual::common::server::context().forward( service, data, size);
 }
 
 namespace local

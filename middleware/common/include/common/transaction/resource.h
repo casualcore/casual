@@ -10,6 +10,7 @@
 
 #include "common/platform.h"
 #include "common/error/code/xa.h"
+#include "common/flag/xa.h"
 
 #include <string>
 #include <ostream>
@@ -27,19 +28,21 @@ namespace casual
 
             using id_type = common::platform::resource::id::type;
             using code = error::code::xa;
+            using Flag = flag::xa::Flag;
+            using Flags = flag::xa::Flags;
 
             Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
             Resource( std::string key, xa_switch_t* xa);
 
 
-            code start( const Transaction& transaction, long flags);
-            code end( const Transaction& transaction, long flags);
+            code start( const Transaction& transaction, Flags flags);
+            code end( const Transaction& transaction, Flags flags);
 
-            code open( long flags);
-            code close( long flags);
+            code open( Flags flags = Flag::no_flags);
+            code close( Flags flags = Flag::no_flags);
 
-            code commit( const Transaction& transaction, long flags);
-            code rollback( const Transaction& transaction, long flags);
+            code commit( const Transaction& transaction, Flags flags);
+            code rollback( const Transaction& transaction, Flags flags);
 
             bool dynamic() const;
 

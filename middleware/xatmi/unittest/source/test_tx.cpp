@@ -2,6 +2,14 @@
 //! casual
 //!
 
+
+//
+// to be able to use 'raw' flags and codes
+// since we undefine 'all' of them in common
+//
+#define CASUAL_NO_XATMI_UNDEFINE
+
+
 #include "common/unittest.h"
 
 #include "tx.h"

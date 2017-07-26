@@ -6,6 +6,7 @@
 #include "common/exception/xatmi.h"
 
 #include "xatmi/extended.h"
+#include "xatmi/defines.h"
 
 namespace casual
 {
