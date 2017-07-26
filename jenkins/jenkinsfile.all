@@ -168,13 +168,16 @@ try
       {
          node( "documentation")
          {
-            stage('Documentation')
+            if ( "${env.BRANCH_NAME}" == "develop" )
             {
-               checkout scm          
-               sh """
-                 gitbook init .
-                 gitbook build .
-                """
+               stage('Documentation')
+               {
+                  checkout scm          
+                  sh """
+                    gitbook init .
+                    gitbook build .
+                  """
+               }
             }
          }
       }

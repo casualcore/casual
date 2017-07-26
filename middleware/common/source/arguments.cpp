@@ -221,7 +221,7 @@ namespace casual
                         option_string = "<empty>";
                      }
 
-                     out << "   " << terminal::color::white << option_string;
+                     out << "   " << option_string;
                      format::cardinality( out, directive.cardinality()) << std::endl;
 
                      format::description( out, directive.description()) << std::endl;
@@ -233,7 +233,7 @@ namespace casual
                {
                public:
 
-                  Help( const Group* group, std::string description, std::ostream& out = std::clog)
+                  Help( const Group* group, std::string description, std::ostream& out = std::cout)
                      : m_group( group), m_description( std::move( description)), m_out( out)
                   {
                   }
@@ -247,23 +247,21 @@ namespace casual
 
                   void do_visit( const Group& group) override
                   {
-                     //format::help( m_out, group);
-                     std::clog << "---group ---" << std::endl;
-
-                     //internal::format::help( m_out, *this);
 
                   }
 
                   void operator () ()
                   {
                      m_out << "NAME\n   ";
-                     m_out << terminal::color::white << file::name::base( process::path());
+                     m_out << file::name::base( process::path());
 
                      m_out << "\n\nDESCRIPTION\n";
 
                      format::description( m_out, m_description, 3) << "\nOPTIONS\n";
 
                      m_group->visit( *this);
+
+                     throw exception::Help{ "built in help was invoked"};
                   }
 
                private:

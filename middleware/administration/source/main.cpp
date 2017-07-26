@@ -96,6 +96,9 @@ The following categories are supported:
             arguments.parse( argc, argv);
 
          }
+         catch( const common::argument::exception::Help&)
+         {
+         }
          catch( ...)
          {
             return common::exception::handle( std::cerr);

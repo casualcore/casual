@@ -14,6 +14,7 @@
 
 #include "sf/service/protocol/call.h"
 #include "sf/archive/maker.h"
+#include "sf/log.h"
 
 namespace casual
 {
@@ -437,13 +438,20 @@ namespace casual
                   } // persist
 
 
-                  void state( const std::string& format)
+                  void state( const std::vector< std::string>& format)
                   {
                      auto state = call::state();
 
-                     auto archive = sf::archive::writer::from::name( std::cout, format);
-
-                     archive << CASUAL_MAKE_NVP( state);
+                     if( format.empty())
+                     {
+                        sf::archive::log::Writer archive( std::cout);
+                        archive << CASUAL_MAKE_NVP( state);
+                     }
+                     else 
+                     {
+                        auto archive = sf::archive::writer::from::name( std::cout, format.front());
+                        archive << CASUAL_MAKE_NVP( state);
+                     }
                   }
 
 
@@ -461,7 +469,7 @@ namespace casual
                   common::argument::directive( {"--no-color"}, "no color will be used", local::global::no_color),
                   common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", local::global::no_header),
 
-                  common::argument::directive( {"--state"}, "domain state in the provided format (xml|json|yaml|ini)", &local::action::state),
+                  common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "domain state in the provided format (xml|json|yaml|ini)", &local::action::state),
                   common::argument::directive( {"-ls", "--list-servers"}, "list all servers", &local::action::list_servers),
                   common::argument::directive( {"-le", "--list-executables"}, "list all executables", &local::action::list_executable),
                   common::argument::directive( {"-li", "--list-instances"}, "list all instances", &local::action::list_instances),
@@ -475,7 +483,10 @@ namespace casual
             try
             {
                parser.parse( argc, argv);
-
+            }
+            catch( const common::argument::exception::Help&)
+            {
+               
             }
             catch( const std::exception& exception)
             {

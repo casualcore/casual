@@ -78,6 +78,8 @@ namespace casual
 
             using Zero = Max< 0>;
 
+            using ZeroOne = Max< 1>;
+
             using Any = Min< 0>;
 
             using OneMany = Min< 1>;
@@ -90,8 +92,11 @@ namespace casual
 
          } // visitor
 
+
+
          namespace option
          {
+
             struct Holder
             {
 
@@ -187,6 +192,16 @@ namespace casual
             };
          } // option
 
+         namespace exception
+         {
+            //! 
+            //! Will be thrown if built in help is invoked.
+            //!
+            struct Help : std::runtime_error
+            {
+               using std::runtime_error::runtime_error;
+            };
+         } // exception
 
          namespace internal
          {

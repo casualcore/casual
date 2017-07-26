@@ -32,12 +32,7 @@ namespace casual
             {
                tpreturn( TPSUCCESS, 0, nullptr, 0, 0);
             }
-
-            void casual_example_rollback( TPSVCINFO* info)
-            {
-               tpreturn( TPFAIL, 0, info->data, info->len, 0);
-            }
-
+            
             void casual_example_uppercase( TPSVCINFO* info)
             {
                auto buffer = common::range::make( info->data, info->len);
@@ -46,6 +41,22 @@ namespace casual
 
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
             }
+
+            void casual_example_lowercase( TPSVCINFO* info)
+            {
+               auto buffer = common::range::make( info->data, info->len);
+
+               common::range::transform( buffer, buffer, ::tolower);
+
+               tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+            }
+
+            void casual_example_rollback( TPSVCINFO* info)
+            {
+               tpreturn( TPFAIL, 0, info->data, info->len, 0);
+            }
+
+
 
          }
       } // server
