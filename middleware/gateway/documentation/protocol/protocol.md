@@ -91,20 +91,20 @@ message type: **8100**
 role name           | network type  | network size | description                                                        
 ------------------- | ------------- | ------------ | -------------------------------------------------------------------
 execution           | fixed array   |           16 | uuid of the current execution path                                 
-call.descriptor     | uint64        |            8 | descriptor of the call                                             
-service.name.size   | dynamic array |          128 | service name size                                                  
-service.name.data   | uint64        |            8 | byte array with service name                                       
+service.name.size   | uint64        |            8 | service name size                                                  
+service.name.data   | dynamic array |          128 | byte array with service name                                       
 service.timeout     | uint64        |            8 | timeout of the service in use (in microseconds)                    
-parent.name.size    | dynamic array |          128 | parent service name size                                           
-parent.name.data    | uint64        |            8 | byte array with parent service name                                
+parent.name.size    | uint64        |            8 | parent service name size                                           
+parent.name.data    | dynamic array |          128 | byte array with parent service name                                
 xid.format          | uint64        |            8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length    | uint64        |            8 | length of the transaction gtrid part                               
-xid.bqual_length    | dynamic array |           32 | length of the transaction branch part                              
-xid.payload         | uint64        |            8 | byte array with the size of gtrid_length + bqual_length (max 128)  
+xid.bqual_length    | uint64        |            8 | length of the transaction branch part                              
+xid.payload         | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 flags               | uint64        |            8 | XATMI flags sent to the service                                    
-buffer.type.size    | dynamic array |           25 | buffer type name size                                              
-buffer.type.data    | uint64        |            8 | byte array with buffer type in the form 'type/subtype'             
-buffer.payload.size | dynamic array |          128 | buffer payload size (could be very big)                            
+buffer.type.size    | uint64        |            8 | buffer type name size                                              
+buffer.type.data    | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'             
+buffer.payload.size | uint64        |            8 | buffer payload size (could be very big)                            
+buffer.payload.data | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)         
 
 #### message::interdomain::service::call::receive::Reply
 

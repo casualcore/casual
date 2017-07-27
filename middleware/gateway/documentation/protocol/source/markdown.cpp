@@ -507,7 +507,6 @@ Sent to and received from other domains when one domain wants call a service in 
 
                   local::format::type( out, request, {
                            { "execution", "uuid of the current execution path"},
-                           { "call.descriptor", "descriptor of the call"},
                            { "service.name.size", "service name size"},
                            { "service.name.data", "byte array with service name"},
                            { "service.timeout", "timeout of the service in use (in microseconds)"},
@@ -525,7 +524,6 @@ Sent to and received from other domains when one domain wants call a service in 
                            { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                            { "buffer.payload.size", "buffer payload size (could be very big)"},
                            { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
-
                         });
                }
 

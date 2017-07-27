@@ -111,10 +111,7 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
             private:
-               // gcc 4.9.4 requires Payload to be defined, switch to pointer until we can use a better compiler
-               //const Payload* m_payload;
                std::reference_wrapper< const Payload> m_payload;
-
             };
 
          } // payload
