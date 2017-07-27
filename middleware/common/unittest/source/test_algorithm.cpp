@@ -21,6 +21,23 @@ namespace casual
 
       } // local
 
+
+      TEST( casual_common_algorithm_range, execute_once)
+      {
+         common::unittest::Trace trace;
+
+         long executions = 0;
+
+         for( int count = 0; count < 10; ++count)
+         {
+            execute::once( [&](){
+               ++executions;
+            });
+         }
+
+         EXPECT_TRUE( executions == 1);
+      }
+
       TEST( casual_common_algorithm_range, default_constructor__expect_empty)
       {
          common::unittest::Trace trace;
@@ -306,6 +323,7 @@ namespace casual
 
       }
 
+
       TEST( casual_common_algorithm, uniform__true)
       {
          common::unittest::Trace trace;
@@ -326,7 +344,7 @@ namespace casual
       }
 
 
-      TEST( casual_common_algorithm, sort_patition_find_value)
+      TEST( casual_common_algorithm, sort_partition_find_value)
       {
          common::unittest::Trace trace;
 
@@ -715,6 +733,52 @@ namespace casual
          EXPECT_TRUE( compare::any( 1, { 5, 4, 3, 2, 1}));
       }
 
+
+      TEST( casual_common_algorithm_remove, empty_empty__expect_empty)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> container;
+
+         EXPECT_TRUE( range::remove( range::make( container), range::make( container)).empty());
+      }
+
+      TEST( casual_common_algorithm_remove, source_4__unwanted_empty__expect_4)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> container{ 1, 2, 3, 4};
+
+         EXPECT_TRUE( range::remove( range::make( container), range::make( std::begin( container), 0)) == container);
+      }
+
+      TEST( casual_common_algorithm_remove, source_4__unwanted_first__expect_3)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> container{ 1, 2, 3, 4};
+
+         EXPECT_TRUE(( range::remove( range::make( container), range::make( std::begin( container), 1)) == std::vector< int>{ 2, 3, 4}));
+      }
+
+
+      TEST( casual_common_algorithm_remove, source_4__unwanted_last__expect_3)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> container{ 1, 2, 3, 4};
+
+         EXPECT_TRUE(( range::remove( range::make( container), range::make( std::end( container) - 1, 1)) == std::vector< int>{ 1, 2, 3}));
+      }
+
+      TEST( casual_common_algorithm_remove, source_4__unwanted_middle_2__expect_2)
+      {
+         common::unittest::Trace trace;
+
+         std::vector< int> container{ 1, 2, 3, 4};
+
+         EXPECT_TRUE(( range::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
+      }
 
    } // common
 

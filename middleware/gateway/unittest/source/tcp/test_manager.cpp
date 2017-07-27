@@ -6,6 +6,7 @@
 #include "common/unittest.h"
 
 #include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/server.h"
 
 #include "common/mockup/file.h"
 #include "common/mockup/process.h"
@@ -16,7 +17,7 @@
 
 #include "common/message/domain.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
 namespace casual
@@ -37,6 +38,10 @@ namespace casual
                 : process{ "./bin/casual-gateway-manager"}
                {
 
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  process::instance::fetch::handle( process::instance::identity::gateway::manager());
                }
 
                struct set_environment_t
@@ -58,7 +63,7 @@ namespace casual
                }
 
                mockup::domain::Manager manager;
-               mockup::domain::Broker broker;
+               mockup::domain::service::Manager service;
                mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
@@ -76,7 +81,7 @@ namespace casual
                        domain1{ mockup::domain::echo::create::service( "remote1")} {}
 
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
 
                   mockup::domain::echo::Server domain1;
@@ -114,15 +119,13 @@ namespace casual
 
                manager::admin::vo::State state()
                {
-                  sf::xatmi::service::binary::Sync service( ".casual.gateway.state");
+                  sf::service::protocol::binary::Call call;
+                  auto reply = call( manager::admin::service::name::state());
 
-                  auto reply = service();
+                  manager::admin::vo::State result;
+                  reply >> CASUAL_MAKE_NVP( result);
 
-                  manager::admin::vo::State serviceReply;
-
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                  return serviceReply;
+                  return result;
                }
 
 
@@ -283,7 +286,7 @@ namespace casual
                   }
 
                   mockup::domain::Manager manager;
-                  mockup::domain::Broker broker;
+                  mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
                   mockup::domain::queue::Broker queue;
 

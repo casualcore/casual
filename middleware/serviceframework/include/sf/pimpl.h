@@ -13,6 +13,13 @@ namespace casual
 
    namespace sf
    {
+      namespace move
+      {
+         template< typename T>
+         using Pimpl = common::move::basic_pimpl< T>;
+
+      } // move
+
       template< typename T>
       using Pimpl = common::basic_pimpl< T>;
 

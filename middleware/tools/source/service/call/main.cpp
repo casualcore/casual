@@ -75,23 +75,6 @@ int main( int argc, char* argv[])
          }};
 
          parser.parse( argc, argv);
-
-         //
-         // Hotfix - See tickets #45 and #46
-         //
-         if( service.empty())
-         {
-            const std::string help{ "--help"};
-
-            const auto where = std::find( argv + 1, argv + argc, help);
-
-            if( where == (argv + argc))
-            {
-               parser.parse( { help});
-            }
-
-            return 0;
-         }
       }
 
       //
@@ -157,9 +140,9 @@ int main( int argc, char* argv[])
       }
 
       //
-      // Print the result
+      // Print the result (we don't add a new line)
       //
-      std::cout << payload << std::endl;
+      std::cout << payload << std::flush;
 
 
       if( error)
@@ -171,6 +154,10 @@ int main( int argc, char* argv[])
       }
 
       return 0;
+
+   }
+   catch( const casual::common::argument::exception::Help&)
+   {
 
    }
    catch( const std::exception& e)

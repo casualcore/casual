@@ -13,13 +13,15 @@ with Scope():
     Parallel( True)
     
     Build( 'domain/makefile.cmk')    
-    Build( 'traffic/makefile.cmk')
+    Build( 'event/makefile.cmk')
     Build( 'administration/makefile.cmk')
     Build( 'gateway/makefile.cmk')
 
-    Build( 'broker/makefile.cmk')
+    Build( 'service/makefile.cmk')
     Build( 'transaction/makefile.cmk')
-    Build( 'queue/makefile.cmk')    
+    Build( 'queue/makefile.cmk')  
+
+    Build( 'binding/makefile.cmk')  
     
 
 

@@ -67,6 +67,28 @@ namespace casual
          EXPECT_TRUE( process == environment::variable::process::get( "TEST_PROCESS_VARIABLE"));
 
       }
+
+      TEST( casual_common_environment, environment_CASUAL_HOME__variable_in_middle__expect_altered)
+      {
+         common::unittest::Trace trace;
+
+         environment::variable::set( "CASUAL_HOME", "test");
+
+         auto result =  environment::string( "main.cpp -I${CASUAL_HOME}/include");
+
+         EXPECT_TRUE( result == "main.cpp -Itest/include") << "result: " << result;
+      }
+
+      TEST( casual_common_environment, environment_CASUAL_HOME__variable_before_dash_I__expect_altered)
+      {
+         common::unittest::Trace trace;
+
+         environment::variable::set( "CASUAL_HOME", "test");
+
+         auto result =  environment::string( "-I${CASUAL_HOME}/include");
+
+         EXPECT_TRUE( result == "-Itest/include") << "result: " << result;
+      }
    } // common
 } // casual
 

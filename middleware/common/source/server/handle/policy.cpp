@@ -41,7 +41,9 @@ namespace casual
 
                            log::debug << "advertise: " << advertise << '\n';
 
-                           communication::ipc::blocking::send( communication::ipc::broker::device(), advertise);
+                           signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+
+                           communication::ipc::blocking::send( communication::ipc::service::manager::device(), advertise);
                         }
                      }
 
@@ -58,14 +60,12 @@ namespace casual
 
                            for( auto& service : services)
                            {
+                              auto physical = server::context().physical( service.name);
 
-                              auto physical = server::Context::instance().physical( service.origin);
-
-
-                              if( physical && ( configuration.restrictions.empty() || range::find( configuration.restrictions, service.origin)))
+                              if( physical && ( configuration.restrictions.empty() || range::find( configuration.restrictions, service.name)))
                               {
                                  auto found = range::find_if( configuration.routes, [&service]( const message::domain::configuration::server::Reply::Service& s){
-                                    return s.name == service.origin;
+                                    return s.name == service.name;
                                  });
 
                                  if( found)
@@ -81,7 +81,7 @@ namespace casual
                                  }
                                  else
                                  {
-                                    advertise.emplace_back( service.origin, service.category, service.transaction);
+                                    advertise.emplace_back( service.name, service.category, service.transaction);
                                  }
                               }
                            }
@@ -130,45 +130,36 @@ namespace casual
 
                   }
 
-                  void Default::reply( platform::ipc::id::type id, message::service::call::Reply& message)
+                  void Default::reply( communication::ipc::Handle id, message::service::call::Reply& message)
                   {
                      Trace trace{ "server::handle::policy::Default::reply"};
+
+                     log::debug << "reply: " << message << '\n';
 
                      communication::ipc::blocking::send( id, message);
                   }
 
-                  void Default::reply( platform::ipc::id::type id, message::conversation::caller::Send& message)
+                  void Default::reply( communication::ipc::Handle id, message::conversation::caller::Send& message)
                   {
                      Trace trace{ "server::handle::policy::Default::conversation::reply"};
+
+                     log::debug << "reply: " << message << '\n';
 
                      auto node = message.route.next();
                      communication::ipc::blocking::send( node.address, message);
                   }
 
-                  void Default::ack( const message::service::call::callee::Request& message)
+                  void Default::ack()
                   {
                      Trace trace{ "server::handle::policy::Default::ack"};
 
                      message::service::call::ACK ack;
                      ack.process = process::handle();
-                     ack.service = message.service.name;
 
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   }
 
-                  void Default::ack( const message::conversation::connect::callee::Request& message)
-                  {
-                     Trace trace{ "server::handle::policy::Default::ack"};
-
-                     message::service::call::ACK ack;
-                     ack.process = process::handle();
-                     ack.service = message.service.name;
-
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
-                  }
-
-
-                  void Default::statistics( platform::ipc::id::type id,  message::traffic::Event& event)
+                  void Default::statistics( communication::ipc::Handle id,  message::event::service::Call& event)
                   {
                      Trace trace{ "server::handle::policy::Default::statistics"};
 
@@ -198,7 +189,7 @@ namespace casual
                            //
                            // We keep track of callers transaction (can be null-trid).
                            //
-                           transaction::Context::instance().caller = message.trid;
+                           transaction::context().caller = message.trid;
 
                            switch( service.transaction)
                            {
@@ -247,67 +238,96 @@ namespace casual
                      } // <unnamed>
                   } // local
 
-
-                  void Default::transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time::point::type& now)
+                  void Default::transaction(
+                        const common::transaction::ID& trid,
+                        const server::Service& service,
+                        const std::chrono::microseconds& timeout,
+                        const platform::time::point::type& now)
                   {
-                     local::transaction( message, service, now);
+                     Trace trace{ "server::handle::policy::local::transaction"};
+
+                     log::debug << "trid: " << trid << " - service: " << service << '\n';
+
+                     //
+                     // We keep track of callers transaction (can be null-trid).
+                     //
+                     transaction::context().caller = trid;
+
+                     switch( service.transaction)
+                     {
+                        case service::transaction::Type::automatic:
+                        {
+                           if( trid)
+                           {
+                              transaction::Context::instance().join( trid);
+                           }
+                           else
+                           {
+                              transaction::Context::instance().start( now);
+                           }
+                           break;
+                        }
+                        case service::transaction::Type::join:
+                        {
+                           transaction::Context::instance().join( trid);
+                           break;
+                        }
+                        case service::transaction::Type::atomic:
+                        {
+                           transaction::Context::instance().start( now);
+                           break;
+                        }
+                        case service::transaction::Type::none:
+                        default:
+                        {
+                           //
+                           // We don't start or join any transactions
+                           // (technically we join a null-trid)
+                           //
+                           transaction::Context::instance().join( transaction::ID{ process::handle()});
+                           break;
+                        }
+
+                     }
+
+                     //
+                     // Set 'global deadline'
+                     //
+                     transaction::Context::instance().current().timout.set( now, timeout);
                   }
 
-                  void Default::transaction( const message::conversation::connect::callee::Request& message, const server::Service& service, const platform::time::point::type& now)
+
+                  message::service::Transaction Default::transaction( bool commit)
                   {
-                     local::transaction( message, service, now);
+                     return transaction::context().finalize( commit);
                   }
 
-                  void Default::transaction( message::service::call::Reply& message, int return_state)
-                  {
-                     transaction::Context::instance().finalize( message, return_state);
-                  }
-
-                  void Default::transaction( message::conversation::caller::Send& message, int return_state)
-                  {
-                     //transaction::Context::instance().finalize( message, return_state);
-                  }
 
                   namespace local
                   {
                      namespace
                      {
                         template< typename M>
-                        void forward( M&& message, const state::Jump& jump)
+                        void forward( M&& message, service::invoke::Forward&& forward)
                         {
                            Trace trace{ "server::handle::policy::local::forward"};
 
 
-                           if( transaction::Context::instance().pending())
+                           if( transaction::context().pending())
                            {
                               throw common::exception::xatmi::service::Error( "service: " + message.service.name + " tried to forward with pending transactions");
                            }
 
                            common::service::Lookup lookup{
-                              jump.forward.service,
-                              message::service::lookup::Request::Context::forward};
+                              forward.parameter.service.name,
+                              common::service::Lookup::Context::forward};
 
-                           /*
-                           message::service::call::callee::Request request;
-                           request.correlation = message.correlation;
-                           request.parent = message.service.name;
-                           request.descriptor = message.descriptor;
-                           request.trid = message.trid;
-                           request.process = message.process;
-                           request.flags = message.flags;
-                           */
 
                            auto request = message;
 
-
-
                            auto target = lookup();
 
-                           if( target.state == message::service::lookup::Reply::State::absent)
-                           {
-                              throw common::exception::xatmi::service::no::Entry( target.service.name);
-                           }
-                           else if( target.state ==  message::service::lookup::Reply::State::busy)
+                           if( target.busy())
                            {
                               //
                               // We wait for service to become idle
@@ -315,36 +335,26 @@ namespace casual
                               target = lookup();
                            }
 
-                           if( jump.buffer.data == nullptr)
-                           {
-                              request.buffer = buffer::Payload{ nullptr};
-                           }
-                           else
-                           {
-                              request.buffer = buffer::pool::Holder::instance().release( jump.buffer.data, jump.buffer.size);
-                           }
-
+                           request.buffer = std::move( forward.parameter.payload);
                            request.service = target.service;
-
 
                            log::debug << "policy::Default::forward - request:" << request << std::endl;
 
                            communication::ipc::blocking::send( target.process.queue, request);
-
                         }
 
                      } // <unnamed>
                   } // local
 
-                  void Default::forward( const message::service::call::callee::Request& message, const state::Jump& jump)
+                  void Default::forward( service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
                   {
-                     local::forward( message, jump);
+                     local::forward( message, std::move( forward));
                   }
 
 
-                  void Default::forward( const message::conversation::connect::callee::Request& message, const state::Jump& jump)
+                  void Default::forward( service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message)
                   {
-                     local::forward( message, jump);
+                     local::forward( message, std::move( forward));
                   }
 
 
@@ -369,36 +379,41 @@ namespace casual
 
                   }
 
-                  void Admin::reply( platform::ipc::id::type id, message::service::call::Reply& message)
+                  void Admin::reply( communication::ipc::Handle id, message::service::call::Reply& message)
                   {
                      communication::ipc::blocking::send( id, message, m_error_handler);
                   }
 
-                  void Admin::ack( const message::service::call::callee::Request& message)
+                  void Admin::ack()
                   {
                      message::service::call::ACK ack;
                      ack.process = common::process::handle();
-                     ack.service = message.service.name;
 
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack, m_error_handler);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack, m_error_handler);
                   }
 
 
-                  void Admin::statistics( platform::ipc::id::type id, message::traffic::Event&)
+                  void Admin::statistics( communication::ipc::Handle id, message::event::service::Call& event)
                   {
                      // no-op
                   }
 
-                  void Admin::transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&)
-                  {
-                     // no-op
-                  }
-                  void Admin::transaction( message::service::call::Reply& message, int return_state)
+                  void Admin::transaction(
+                        const common::transaction::ID& trid,
+                        const server::Service& service,
+                        const std::chrono::microseconds& timeout,
+                        const platform::time::point::type& now)
                   {
                      // no-op
                   }
 
-                  void Admin::forward( const common::message::service::call::callee::Request& message, const state::Jump& jump)
+                  message::service::Transaction Admin::transaction( bool commit)
+                  {
+                     // no-op
+                     return {};
+                  }
+
+                  void Admin::forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message)
                   {
                      throw common::exception::xatmi::System{ "can't forward within an administration server"};
                   }

@@ -55,7 +55,7 @@ namespace casual
             }
 
             common::mockup::domain::Manager manager;
-            common::mockup::domain::Broker broker;
+            common::mockup::domain::service::Manager service;
          };
 
       } // <unnamed>

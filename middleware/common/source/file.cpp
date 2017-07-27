@@ -115,7 +115,7 @@ namespace casual
          {
             std::string result;
 
-            auto directory = make::deleter( opendir( path.c_str()), &closedir);
+            auto directory = memory::guard( opendir( path.c_str()), &closedir);
 
             if( directory)
             {
@@ -140,7 +140,7 @@ namespace casual
 
          std::string absolute( const std::string& path)
          {
-            auto absolut = make::deleter( realpath( path.c_str(), nullptr), &free);
+            auto absolut = memory::guard( realpath( path.c_str(), nullptr), &free);
 
             if( absolut)
             {
@@ -195,6 +195,22 @@ namespace casual
                }
 
             } // without
+
+            std::string link( const std::string& path)
+            {
+               std::vector< char> link_name( PATH_MAX);
+
+               if( ::readlink( path.c_str(), link_name.data(), link_name.size()) == -1)
+               {
+                  throw std::system_error{ errno, std::system_category(), "file::name::link"};
+               }
+
+               if( link_name.data())
+               {
+                  return link_name.data();
+               }
+               return {};
+            }
 
          } // name
 

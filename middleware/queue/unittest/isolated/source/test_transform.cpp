@@ -6,7 +6,7 @@
 #include "common/unittest.h"
 
 #include "queue/common/transform.h"
-#include "queue/broker/broker.h"
+#include "queue/manager/manager.h"
 
 #include "sf/log.h"
 
@@ -17,14 +17,14 @@ namespace casual
    {
       namespace local
       {
-         broker::State state()
+         manager::State state()
          {
-            broker::State result;
+            manager::State result;
 
             {
-               broker::State::Group group;
+               manager::State::Group group;
                group.process.pid = 1;
-               group.process.queue = 1;
+               group.process.queue = common::communication::ipc::Handle{ 1};
                group.name = "group1";
 
                result.groups.push_back( std::move( group));
@@ -32,9 +32,9 @@ namespace casual
             }
 
             {
-               broker::State::Group group;
+               manager::State::Group group;
                group.process.pid = 2;
-               group.process.queue = 2;
+               group.process.queue = common::communication::ipc::Handle{ 2};
                group.name = "group2";
 
                result.groups.push_back( std::move( group));

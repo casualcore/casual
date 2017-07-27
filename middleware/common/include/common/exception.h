@@ -431,7 +431,6 @@ namespace casual
                using Support = basic_tx< TX_NOT_SUPPORTED, code::log::Category::debug>;
             } // no
          }
-
 		} // exception
 	} // common
 } // casual

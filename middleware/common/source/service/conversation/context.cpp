@@ -7,6 +7,7 @@
 
 #include "common/log.h"
 #include "common/buffer/transport.h"
+#include "common/transaction/context.h"
 
 #include "common/message/conversation.h"
 
@@ -63,6 +64,25 @@ namespace casual
                         // with us, in the "reverse" order).
                         //
                         message.recording.nodes.push_back( { communication::ipc::inbound::id()});
+
+                        auto& transaction = common::transaction::context().current();
+
+                        if( ! flags.exist( connect::Flag::no_transaction) && transaction)
+                        {
+                           message.trid = transaction.trid;
+                           transaction.associate( message.correlation);
+
+                           //
+                           // We use the transaction deadline if it's earlier
+                           //
+                           /*
+                           if( transaction.timout.deadline() < descriptor.timeout.deadline())
+                           {
+                              descriptor.timeout.set( start, std::chrono::duration_cast< std::chrono::microseconds>( transaction.timout.deadline() - start));
+                           }
+                           */
+                        }
+
 
                         return message;
                      }
@@ -221,11 +241,6 @@ namespace casual
 
                auto target = lookup();
 
-               if( target.state == message::service::lookup::Reply::State::absent)
-               {
-                  throw common::exception::xatmi::service::no::Entry( service);
-               }
-
                //
                // The service exists. Take care of reserving descriptor and determine timeout
                //
@@ -242,11 +257,10 @@ namespace casual
                   {
                      message::service::call::ACK ack;
                      ack.process = target.process;
-                     ack.service = target.service.name;
-                     communication::ipc::blocking::send( communication::ipc::broker::device(), ack);
+                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   });
 
-               if( target.state == message::service::lookup::Reply::State::busy)
+               if( target.busy())
                {
                   //
                   // We wait for an instance to become idle.

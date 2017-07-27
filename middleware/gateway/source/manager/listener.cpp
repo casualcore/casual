@@ -20,11 +20,11 @@ namespace casual
          {
             namespace
             {
-               void listener_thread( communication::tcp::Address address, Uuid correlation)
+               void listener_thread( communication::tcp::Address address, Listener::Limit limit, Uuid correlation)
                {
                   Trace trace{ "listener_thread"};
 
-                  signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::user})};
+                  signal::thread::scope::Mask block{ signal::set::filled( signal::Type::user)};
 
 
                   auto send_event = [=]( gateway::message::manager::listener::Event::State state){
@@ -58,6 +58,7 @@ namespace casual
                         {
                            gateway::message::tcp::Connect message;
                            message.descriptor = socket.descriptor();
+                           message.limit = limit;
 
                            communication::ipc::blocking::send( communication::ipc::inbound::id(), message);
 
@@ -81,7 +82,13 @@ namespace casual
          } // local
 
          Listener::Listener( common::communication::tcp::Address address)
-            : m_address{ std::move( address)}
+            : Listener( std::move( address), {})
+         {
+
+         }
+
+         Listener::Listener( common::communication::tcp::Address address, Limit limit)
+            : m_address{ std::move( address)}, m_limit{ std::move( limit)}
          {
          }
 
@@ -117,7 +124,7 @@ namespace casual
                throw exception::invalid::Semantic{ "trying to start a listener that is already started", CASUAL_NIP( *this)};
             }
 
-            m_thread = std::thread{ local::listener_thread, m_address, m_correlation};
+            m_thread = std::thread{ local::listener_thread, m_address, m_limit, m_correlation};
             m_state = State::spawned;
          }
 

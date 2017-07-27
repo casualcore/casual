@@ -81,6 +81,15 @@ namespace casual
                return local::parse( m_document, json.c_str());
             }
 
+            const rapidjson::Document& Load::operator() ( const platform::binary::type& json)
+            {
+               if( ! json.empty() && json.back() == '\0')
+               {
+                  return local::parse( m_document, json.data());
+               }
+               return operator() ( json.data(), json.size());
+            }
+
             const rapidjson::Document& Load::operator() ( const char* const json, const std::size_t size)
             {
                // To ensure null-terminated string
@@ -280,7 +289,25 @@ namespace casual
 
                   throw exception::archive::invalid::Document{ "Failed to write document"};
                }
+            }
 
+            void Save::operator() ( platform::binary::type& json) const
+            {
+               rapidjson::StringBuffer buffer;
+               rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
+
+               if( m_document.Accept( writer))
+               {
+                  json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
+               }
+               else
+               {
+                  //
+                  // TODO: Better
+                  //
+
+                  throw exception::archive::invalid::Document{ "Failed to write document"};
+               }
             }
 
             namespace writer

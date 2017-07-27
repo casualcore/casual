@@ -32,7 +32,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
          Flag::send_only,
          Flag::signal_restart};
 
-      return casual::common::service::conversation::Context::instance().connect(
+      return casual::common::service::conversation::context().connect(
             svc,
             buffer,
             valid_flags.convert( flags));
@@ -99,7 +99,7 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
          Flag::no_time,
          Flag::signal_restart};
 
-      return casual::common::service::conversation::Context::instance().send(
+      return casual::common::service::conversation::context().send(
             id,
             std::move( buffer),
             valid_flags.convert( flags));
@@ -124,7 +124,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
 
       auto flag = valid_flags.convert( bitmask);
 
-      auto result = casual::common::service::conversation::Context::instance().receive(
+      auto result = casual::common::service::conversation::context().receive(
             id,
             flag);
 
@@ -144,6 +144,6 @@ int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
 int tpdiscon( int id)
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::service::conversation::Context::instance().disconnect( id);
+      casual::common::service::conversation::context().disconnect( id);
    });
 }

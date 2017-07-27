@@ -5,6 +5,12 @@
 #include "transaction/manager/handle.h"
 #include "transaction/manager/action.h"
 #include "transaction/common.h"
+#include "transaction/manager/admin/server.h"
+
+
+#include "common/message/handle.h"
+#include "common/event/listen.h"
+#include "common/server/handle/call.h"
 
 
 namespace casual
@@ -825,14 +831,17 @@ namespace casual
 
             void Exit::operator () ( message_type& message)
             {
-               apply( message.state);
-            }
 
-            void Exit::apply( const common::process::lifetime::Exit& exit)
-            {
                Trace trace{ "transaction::handle::process::Exit"};
 
-               // TODO: check if it's one of spawned resource proxies, if so, restart?
+               //
+               // Check if it's a resource proxy instance
+               //
+               if( m_state.remove_instance( message.state.pid))
+               {
+                  ipc::device().blocking_send( common::communication::ipc::domain::manager::device(), message);
+                  return;
+               }
 
                //
                // Check if the now dead process is owner to any transactions, if so, roll'em back...
@@ -841,7 +850,7 @@ namespace casual
 
                for( auto& trans : m_state.transactions)
                {
-                  if( trans.trid.owner().pid == exit.pid)
+                  if( trans.trid.owner().pid == message.state.pid)
                   {
                      trids.push_back( trans.trid);
                   }
@@ -942,9 +951,24 @@ namespace casual
                      if( resource)
                      {
                         //
-                        // We found all the stuff, let the real handler handle the message
+                        // We found all the stuff
                         //
-                        if( m_handler( message, transaction, *resource))
+
+                        // check if we
+                        resource->set_result( message.state);
+
+                        if( resource->done())
+                        {
+                           transaction.resources.erase( std::begin( resource));
+                        }
+                        else
+                        {
+                           resource->stage = handler_type::stage();
+                        }
+
+
+                        //  let the real handler handle the message
+                        if( m_handler( message, transaction))
                         {
                            //
                            // We remove the transaction from our state
@@ -1021,28 +1045,11 @@ namespace casual
                   }
                }
 
-               bool basic_prepare::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_prepare::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::prepare reply"};
 
                   log << "message: " << message << '\n';
-
-
-                  //
-                  // If the resource only did a read only, we 'promote' it to 'not involved'
-                  //
-                  {
-                     resource.result = Transaction::Resource::convert( message.state);
-
-                     if( resource.result == Transaction::Resource::Result::xa_RDONLY)
-                     {
-                        resource.stage = Transaction::Resource::Stage::not_involved;
-                     }
-                     else
-                     {
-                        resource.stage = Transaction::Resource::Stage::prepare_replied;
-                     }
-                  }
 
                   //
                   // Are we in a prepared state?
@@ -1061,14 +1068,11 @@ namespace casual
 
 
 
-               bool basic_commit::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_commit::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::commit reply"};
 
                   log << "message: " << message << '\n';
-
-                  resource.stage = Transaction::Resource::Stage::commit_replied;
-
 
                   //
                   // Are we in a committed state?
@@ -1085,21 +1089,17 @@ namespace casual
                }
 
 
-
-               bool basic_rollback::operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource)
+               bool basic_rollback::operator () ( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::handle::resource::rollback reply"};
 
                   log << "message: " << message << '\n';
 
-                  resource.stage = Transaction::Resource::Stage::rollback_replied;
-
                   //
-                  // Are we in a rolled back state?
+                  // Are we in a rolled back stage?
                   //
                   if( transaction.stage() < Transaction::Resource::Stage::rollback_replied)
                   {
-
                      return false;
                   }
 
@@ -1232,14 +1232,14 @@ namespace casual
                default:
                {
                   //
-                  // More than one resource involved, we do the prepare stage
-                  //
-                  log << "prepare " << transaction << "\n";
-
-                  //
                   // Keep the correlation so we can send correct reply
                   //
                   transaction.correlation = message.correlation;
+
+                  //
+                  // More than one resource involved, we do the prepare stage
+                  //
+                  log << "prepare " << transaction << "\n";
 
                   local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                      m_state,
@@ -1296,6 +1296,8 @@ namespace casual
             }
             else
             {
+               log << "resources involved - " << transaction << "\n";
+
                //
                // Keep the correlation so we can send correct reply
                //
@@ -1304,7 +1306,7 @@ namespace casual
                local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                   m_state,
                   transaction,
-                  Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                  []( auto& r){ return r.stage < Transaction::Resource::Stage::not_involved;},
                   Transaction::Resource::Stage::rollback_requested
                );
             }
@@ -1575,6 +1577,9 @@ namespace casual
                if( found)
                {
                   auto& transaction = *found;
+
+                  transaction.correlation = message.correlation;
+
                   log << "transaction: " << transaction << '\n';
 
                   local::send::resource::request< common::message::transaction::resource::rollback::Request>(
@@ -1614,6 +1619,32 @@ namespace casual
                template struct Wrapper< basic_rollback>;
 
             } // reply
+
+         }
+
+
+         dispatch_type handlers( State& state)
+         {
+            return ipc::device().handler(
+               common::event::listener( handle::process::Exit{ state}),
+               common::message::handle::Shutdown{},
+               handle::Commit{ state},
+               handle::Rollback{ state},
+               handle::resource::Involved{ state},
+               handle::resource::Lookup{ state},
+               handle::resource::reply::Connect{ state},
+               handle::resource::reply::Prepare{ state},
+               handle::resource::reply::Commit{ state},
+               handle::resource::reply::Rollback{ state},
+               handle::external::Involved{ state},
+               handle::domain::Prepare{ state},
+               handle::domain::Commit{ state},
+               handle::domain::Rollback{ state},
+               common::server::handle::admin::Call{
+                  manager::admin::services( state),
+                  ipc::device().error_handler()},
+               common::message::handle::ping()
+            );
 
          }
 

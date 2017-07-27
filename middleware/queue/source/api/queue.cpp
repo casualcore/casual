@@ -6,6 +6,7 @@
 #include "queue/common/log.h"
 #include "queue/common/queue.h"
 #include "queue/common/transform.h"
+#include "queue/manager/admin/services.h"
 
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
@@ -15,8 +16,7 @@
 #include "common/communication/ipc.h"
 
 
-#include "sf/xatmi_call.h"
-
+#include "sf/service/protocol/call.h"
 
 namespace casual
 {
@@ -62,7 +62,7 @@ namespace casual
 
                   auto group = lookup();
 
-                  if( group.process.queue == 0)
+                  if( ! group.process.queue)
                   {
                      throw common::exception::invalid::Argument{ "failed to look up queue"};
                   }
@@ -114,7 +114,7 @@ namespace casual
                      }
                      catch( const common::exception::communication::Unavailable&)
                      {
-                        // queue-broker is off-line
+                        // queue-manager is off-line
                      }
                   });
 
@@ -430,19 +430,19 @@ namespace casual
             {
                Trace trace{ "casual::queue::restore::queue"};
 
-               std::vector< Affected> result;
+               std::vector< Affected> affected;
 
                for( auto& queue : queues)
                {
-                  sf::xatmi::service::binary::Sync service( ".casual/queue/restore");
-                  service << CASUAL_MAKE_NVP( queue);
+                  sf::service::protocol::binary::Call call;
+                  call << CASUAL_MAKE_NVP( queue);
 
-                  auto reply = service();
+                  auto reply = call( manager::admin::service::name::restore());
 
-                  std::vector< broker::admin::Affected> serviceReply;
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
+                  std::vector< manager::admin::Affected> result;
+                  reply >> CASUAL_MAKE_NVP( result);
 
-                  common::range::transform( serviceReply, result, []( const broker::admin::Affected& a){
+                  common::range::transform( result, affected, []( const manager::admin::Affected& a){
                      Affected result;
                      result.queue = a.queue.name;
                      result.restored = a.restored;
@@ -450,7 +450,7 @@ namespace casual
                   });
                }
 
-               return result;
+               return affected;
             }
          } // restore
       }

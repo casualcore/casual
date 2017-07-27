@@ -53,9 +53,17 @@ namespace casual
                struct Listener
                {
 
-                  communication::tcp::Address operator () ( const common::message::domain::configuration::gateway::Listener& value) const
+
+
+                  manager::Listener operator () ( const common::message::domain::configuration::gateway::Listener& value) const
                   {
-                     return { value.address};
+                     manager::Listener::Limit limit;
+                     {
+                        limit.messages = value.limit.messages;
+                        limit.size = value.limit.size;
+                     }
+
+                     return { value.address, limit};
                   }
 
                };

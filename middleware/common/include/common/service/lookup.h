@@ -18,10 +18,36 @@ namespace casual
       {
          struct Lookup
          {
+            using Context = message::service::lookup::Request::Context;
+            using Reply = message::service::lookup::Reply;
+            using State = Reply::State;
+
+            //!
+            //! Lookup an entry point for the @p service
+            //!
             Lookup( std::string service);
-            Lookup( std::string service, message::service::lookup::Request::Context context);
+
+            //!
+            //! Lookup an entry point for the @p service
+            //! using a specific context
+            //!  * regular
+            //!  * no_reply
+            //!  * forward
+            //!  * gateway
+            //!
+            Lookup( std::string service, Context context);
+
             ~Lookup();
-            message::service::lookup::Reply operator () () const;
+
+            //!
+            //! @return the reply from the `broker`
+            //!    can only be either idle (reserved) or busy.
+            //!
+            //!    if busy, a second invocation will block until it's idle
+            //!
+            //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
+            //!
+            Reply operator () () const;
          private:
             std::string m_service;
             mutable Uuid m_correlation;

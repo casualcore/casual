@@ -120,6 +120,9 @@ namespace casual
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
+               blocking_policy policy_blocking() const { return blocking_policy{};}
+               non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
+
 
                //!
                //! Creates a corresponding message-dispatch-handler to this
@@ -310,7 +313,9 @@ namespace casual
                   //
                   signal::thread::scope::Block block;
 
-                  while( next( message_type::flush_ipc, non_blocking_policy{}))
+                  auto count = platform::batch::flush();
+
+                  while( next( message_type::flush_ipc, non_blocking_policy{}) && --count > 0)
                   {
                      ;
                   }

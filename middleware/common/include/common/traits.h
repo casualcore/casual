@@ -27,7 +27,43 @@ namespace casual
    {
       namespace traits
       {
+         template< typename...>
+         using void_t = void;
 
+         namespace detect
+         {
+            //
+            // Taken pretty much straight of from N4502
+            //
+
+            // primary template handles all types not supporting the archetypal Op:
+            template< typename Default 
+               , typename // always void; supplied externally
+               , template< typename...> class Op
+               , typename... Args>
+            struct detector
+            {
+               using value_t = std::false_type;
+               using type = Default;
+            };
+
+            // the specialization recognizes and handles only types supporting Op:
+            template< typename Default
+            , template< typename...> class Op
+            , typename... Args
+            >
+            struct detector<Default, void_t<Op<Args...>>, Op, Args...>
+            {
+               using value_t = std::true_type;
+               using type = Op<Args...>;
+            };
+
+            template< template<class...> class Op, class... Args >
+            using is_detected = typename detector<void, void, Op, Args...>::value_t;
+
+            template< template<class...> class Op, class... Args >
+            using detected_t = typename detector<void, void, Op, Args...>::type;
+         }
 
 
          namespace detail
@@ -56,8 +92,21 @@ namespace casual
 
          }
 
+         namespace has
+         {
+            template< typename T> 
+            using call_operator_exists = decltype( &T::operator());
+
+            template< typename T>
+            using call_operator = detect::is_detected< call_operator_exists, T>;
+         }
+
+         template<typename T, typename Enable = void>
+         struct function {};
+
          template<typename T>
-         struct function : public function< decltype( &T::operator())>
+         struct function< T, std::enable_if_t< has::call_operator< T>::value>> 
+            : public function< decltype( &T::operator())>
          {
 
          };
@@ -88,7 +137,7 @@ namespace casual
          //! free function specialization
          //!
          template< typename R, typename ...Args>
-         struct function< R(Args...)> : public detail::function< R, Args...>
+         struct function< R(*)(Args...)> : public detail::function< R, Args...>
          {
          };
 
@@ -226,22 +275,48 @@ namespace casual
 
          namespace iterator
          {
+            //!
+            //! SFINAE friendly iterator_traits
+            //! @{
 
-            template< typename Iter, typename Tag>
-            struct is_tag : std::integral_constant< bool,
-               std::is_base_of< Tag, typename std::iterator_traits< Iter>::iterator_category>::value> {};
+            template< typename T>
+            using has_category = typename std::iterator_traits< std::remove_reference_t< T>>::iterator_category;
+
+            template< typename  T, bool = detect::is_detected< has_category, T>::value>
+            struct traits : std::iterator_traits< std::remove_reference_t< T>> {};
+
+            template<class T>
+            struct traits<T, false> {};
+
+            //! @}
+
+            template< typename T>
+            using has_reference = typename std::iterator_traits< std::remove_reference_t< T>>::reference;
+
+            namespace detail
+            {
+               template< typename Iter, typename Tag, bool = detect::is_detected< has_category, Iter>::value>
+               struct is_tag : std::integral_constant< bool,
+                  std::is_base_of< Tag, typename iterator::traits< std::remove_reference_t< Iter>>::iterator_category>::value> {};
+
+               template< typename Iter, typename Tag>
+               struct is_tag< Iter, Tag, false> : std::false_type {};
+            }
 
 
             template< typename Iter>
-            struct is_random_access : is_tag< Iter, std::random_access_iterator_tag> {};
+            struct is_random_access : detail::is_tag< Iter, std::random_access_iterator_tag> {};
 
             template< typename Iter>
             struct is_output : std::integral_constant< bool,
-               is_tag< Iter, std::output_iterator_tag>::value
-               || (
-                     is_tag< Iter, std::forward_iterator_tag>::value
-                     && ! std::is_const< typename std::iterator_traits< Iter>::reference>::value
+               ( 
+                  detail::is_tag< Iter, std::output_iterator_tag>::value
+                  || 
+                  (
+                     detail::is_tag< Iter, std::forward_iterator_tag>::value
+                     && ! std::is_const< detect::detected_t< has_reference, Iter>>::value
                   )
+               )
                > {};
 
          } // iterator
@@ -288,12 +363,6 @@ namespace casual
             }
 
          } // expression
-
-         template< typename T>
-         using decay_t = typename std::decay< T>::type;
-
-         template< class T >
-         using remove_reference_t = typename std::remove_reference< T>::type;
 
 
 
@@ -347,6 +416,60 @@ namespace casual
             uncopyable( const uncopyable&) = delete;
             uncopyable& operator = ( const uncopyable&) = delete;
          };
+
+         namespace is
+         {
+            template< typename T>
+            using begin_end_existing = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
+
+            template< typename T>
+            using iterable = detect::is_detected< begin_end_existing, T>;
+
+            template< typename T>
+            using iterator = detect::is_detected< traits::iterator::has_category, T>;
+
+
+            namespace reverse
+            {
+               template< typename T>
+               using has_rbegin_rend = std::tuple< decltype( std::declval< T&>().rbegin()), decltype( std::declval< T&>().rend())>;
+
+               template< typename T>
+               using iterable = detect::is_detected< has_rbegin_rend, T>;
+            }
+         }
+
+         namespace member
+         {
+            template< typename T>
+            using has_size = decltype( std::declval< T&>().size());
+
+            template< typename T>
+            using has_insert = decltype( std::declval< T&>().insert( std::begin( std::declval< T&>()), std::begin( std::declval< T&>()), std::begin( std::declval< T&>())));
+
+            template< typename T>
+            using has_push_back = decltype( std::declval< T&>().push_back( *std::begin( std::declval< T&>())));
+
+            template< typename T, typename A>
+            using has_serialize = decltype( std::declval< T&>().serialize( std::declval< A&>()));
+         }
+
+         namespace has
+         {
+            template< typename T>
+            using size = detect::is_detected< member::has_size, T>;
+
+            template< typename T>
+            using insert = detect::is_detected< member::has_insert, T>;
+
+
+            template< typename T>
+            using push_back = detect::is_detected< member::has_push_back, T>;
+
+            template< typename T, typename A>
+            using serialize = detect::is_detected< member::has_serialize, T, A>;
+
+         }
 
       } // traits
    } // common

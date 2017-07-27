@@ -52,7 +52,7 @@ namespace casual
                   return {
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0851"},
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0852"},
-                     common::process::Handle{ 42, 42}
+                     common::process::Handle{ 42, common::communication::ipc::Handle{ 42}}
                   };
                }
 
@@ -119,10 +119,10 @@ namespace casual
                      message::interdomain::service::call::receive::Reply message;
                      set_general( message);
 
-                     message.error = 9;
+                     message.status = 9;
                      message.code = 42;
                      message.transaction.trid = trid();
-                     message.transaction.state = 0;
+                     message.transaction.state = common::message::service::Transaction::State::active;
 
                      message.buffer.type = ".json/";
                      message.buffer.memory = { '{', '}'};
@@ -199,12 +199,17 @@ namespace casual
                         arguments.parse( argc, argv);
                      }
 
+                     if( common::range::back( basename) != '/')
+                        basename.push_back( '/');
+
                      generate( basename);
                      return 0;
                   }
-                  catch( ...)
+                  catch( const std::exception& e)
                   {
-                     return common::error::handler();
+                     std::cerr << "error: " << e.what() << std::endl;
+                     return 42;
+                     //return common::error::handler();
                   }
                }
             } // <unnamed>

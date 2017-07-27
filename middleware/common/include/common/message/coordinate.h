@@ -66,7 +66,7 @@ namespace casual
 
 
             template< typename... Requested>
-            void add( const Uuid& correlation, platform::ipc::id::type destination, Requested&&... requested)
+            void add( const Uuid& correlation, communication::ipc::Handle destination, Requested&&... requested)
             {
                m_messages.emplace_back(
                      destination,
@@ -127,12 +127,18 @@ namespace casual
 
             std::size_t size() const { return m_messages.size();}
 
+            friend std::ostream& operator << ( std::ostream& out, const Coordinate& value)
+            {
+               return out << "{ messages: " << range::make( value.m_messages)
+                  << '}';
+            }
+
          private:
 
             struct holder_type
             {
                template< typename... Args>
-               holder_type( platform::ipc::id::type queue, const Uuid& correlation, Args&&... args)
+               holder_type( communication::ipc::Handle queue, const Uuid& correlation, Args&&... args)
                   : queue{ queue}, policy{ std::forward< Args>( args)...}
                {
                   message.correlation = correlation;
@@ -140,9 +146,16 @@ namespace casual
 
                bool done() const { return policy.done();}
 
-               platform::ipc::id::type queue;
+               communication::ipc::Handle queue;
                message_policy_type policy;
                message_type message;
+
+               friend std::ostream& operator << ( std::ostream& out, const holder_type& value)
+               {
+                  return out << "{ queue: " << value.queue
+                     << ", message: " << value.message
+                     << '}';
+               }
             };
 
 

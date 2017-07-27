@@ -24,13 +24,15 @@ namespace casual
          {
             void remove( platform::pid::type pid);
 
+            inline const std::vector< common::process::Handle>& subscribers() const { return m_subscribers;}
+
          protected:
 
             common::message::pending::Message pending( common::communication::message::Complete&& complete) const;
 
-            std::vector< common::process::Handle> subscribers;
+            std::vector< common::process::Handle> m_subscribers;
 
-            bool exists( platform::ipc::id::type queue) const;
+            bool exists( communication::ipc::Handle queue) const;
          };
 
          template< typename Event>
@@ -43,33 +45,33 @@ namespace casual
             {
                if( ( message.types.empty() || range::find( message.types, Event::type())) && ! exists( message.process.queue))
                {
-                  subscribers.push_back( message.process);
+                  m_subscribers.push_back( message.process);
                }
             }
 
             void subscription( const message::event::subscription::End& message)
             {
-               range::trim( subscribers, range::remove_if( subscribers, [&]( auto& v){
+               range::trim( m_subscribers, range::remove_if( m_subscribers, [&]( auto& v){
                   return v.queue == message.process.queue;
                }));
             }
 
             void remove( platform::pid::type pid)
             {
-               range::trim( subscribers, range::remove_if( subscribers, [pid]( auto& v){
+               range::trim( m_subscribers, range::remove_if( m_subscribers, [pid]( auto& v){
                   return pid == v.pid;
                }));
             }
 
-            void subscription( platform::ipc::id::type queue)
+            void subscription( communication::ipc::Handle queue)
             {
                if( ! exists( queue))
                {
-                  subscribers.emplace_back( 0, queue);
+                  m_subscribers.emplace_back( 0, queue);
                }
             }
 
-            explicit operator bool () const { return ! subscribers.empty();}
+            explicit operator bool () const { return ! m_subscribers.empty();}
 
             common::message::pending::Message create( const Event& event) const
             {
@@ -79,7 +81,7 @@ namespace casual
             friend std::ostream& operator << ( std::ostream& out, const Dispatch& value)
             {
                return out << "{ event: " << Event::type()
-                     << ", subscribers: " << range::make( value.subscribers)
+                     << ", subscribers: " << range::make( value.m_subscribers)
                      << '}';
             }
 

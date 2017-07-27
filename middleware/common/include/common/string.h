@@ -112,22 +112,55 @@ namespace casual
 			   return result;
 			}
 
+         namespace detail
+         {
+            inline void composer( std::ostream& out) {}
+
+            template< typename Part, typename... Parts>
+            inline void composer( std::ostream& out, Part&& part, Parts&&... parts)
+            {
+               out << std::forward< Part>( part);
+               composer( out, std::forward< Parts>( parts)...);
+            }
+         } // detail
+
+         //!
+         //! composes a string from several parts, using the stream operator
+         //!
+         template< typename... Parts>
+         inline std::string compose( Parts&&... parts)
+         {
+            std::ostringstream out;
+            detail::composer( out, std::forward< Parts>( parts)...);
+            return out.str();
+         }
 		} // string
 
 		namespace internal
       {
-		   template< typename R>
+		   template< typename R, typename Enable = void>
 		   struct from_string;
 
-		   template<>
-		   struct from_string< std::string> { static const std::string& get( const std::string& value) { return value;} };
+         template< typename T >
+		   struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
+         { 
+            static T get( const std::string& value) { return std::stol( value);} 
+         };
+
+         template< typename T >
+		   struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
+         { 
+            static T get( const std::string& value) { return std::stoul( value);} 
+         };
+
+         template< typename T >
+		   struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
+         { 
+            static T get( const std::string& value) { return std::stod( value);} 
+         };
 
 		   template<>
-		   struct from_string< int> { static int get( const std::string& value) { return std::stoi( value);} };
-
-		   template<>
-		   struct from_string< long> { static long get( const std::string& value) { return std::stol( value);} };
-
+		   struct from_string< std::string, void> { static const std::string& get( const std::string& value) { return value;} };
 
 
          //inline std::string to_string( std::string value) { return value;}
@@ -146,13 +179,13 @@ namespace casual
       } // internal
 
 		template< typename R>
-		R from_string( const std::string& value)
+		decltype( auto) from_string( const std::string& value)
 		{
 		   return internal::from_string< typename std::decay< R>::type>::get( value);
 		}
 
 		template< typename T>
-		auto to_string( T&& value) -> decltype( internal::to_string( std::forward< T>( value)))
+		decltype( auto) to_string( T&& value)
 		{
 		   return internal::to_string( std::forward< T>( value));
 		}

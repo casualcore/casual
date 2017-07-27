@@ -73,7 +73,6 @@ namespace casual
                   struct Info
                   {
                      Name name;
-                     Type native;
                      Type network;
                   };
 
@@ -82,10 +81,7 @@ namespace casual
                   {
                      static std::unordered_map< std::type_index, const char*> names
                      {
-                        { typeid( short), "short"},
-                        { typeid( int), "int"},
-                        { typeid( long), "long"},
-                        { typeid( long long), "long long"},
+                        { typeid( std::uint8_t), "uint8"},
                         { typeid( std::uint16_t), "uint16"},
                         { typeid( std::uint32_t), "uint32"},
                         { typeid( std::uint64_t), "uint64"},
@@ -99,7 +95,7 @@ namespace casual
                         return found->second;
                      }
 
-                     return "unknown";
+                     return typeid( T).name();
                   }
 
 
@@ -113,27 +109,14 @@ namespace casual
                   template< typename T>
                   auto network( T&& value) -> typename std::enable_if< common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
                   {
-                     return Type{ "fixed array", common::memory::size( value)};
+                     return Type{ "fixed array", static_cast< common::network::byteorder::size::host::type>( common::memory::size( value))};
                   }
-
-                  template< typename T>
-                  auto native( T&& value) -> typename std::enable_if< ! common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
-                  {
-                     return Type{ name( value), common::memory::size( value)};
-                  }
-
-                  template< typename T>
-                  auto native( T&& value) -> typename std::enable_if< common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
-                  {
-                     return network( std::forward< T>( value));
-                  }
-
 
 
                   template< typename T>
                   Info info( T&& value, std::string role, std::string description)
                   {
-                     return Info{ { std::move( role), std::move( description)}, native( std::forward< T>( value)), network( std::forward< T>( value))};
+                     return Info{ { std::move( role), std::move( description)}, network( std::forward< T>( value))};
                   }
 
 
@@ -187,10 +170,8 @@ namespace casual
                         m_roles.pop();
                      }
 
-                     info.native.size = size;
-                     info.native.type = "dynamic array";
-
-                     info.network = info.native;
+                     info.network.size = size;
+                     info.network.type = "dynamic array";
 
                      m_types.push_back( std::move( info));
                   }
@@ -231,7 +212,6 @@ namespace casual
                         m_roles.pop();
                      }
                   }
-
 
                   template< typename T>
                   void write( const std::vector< T>& value)
@@ -295,8 +275,6 @@ namespace casual
                      return {
                         { false, false, true, " | "},
                         common::terminal::format::column( "role name", []( const type::Info& i) { return i.name.role;}, common::terminal::color::no_color),
-                        common::terminal::format::column( "native type", []( const type::Info& i) { return i.native.type;}, common::terminal::color::no_color),
-                        common::terminal::format::column( "native size", []( const type::Info& i) { return i.native.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
                         common::terminal::format::column( "network type", []( const type::Info& i) { return i.network.type;}, common::terminal::color::no_color),
                         common::terminal::format::column( "network size", []( const type::Info& i) { return i.network.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
                         common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color),
@@ -323,8 +301,8 @@ namespace casual
             void header( std::ostream& out)
             {
                out << R"(
-| role name     | native type | native size | network type | network size  | comments
-|---------------|-------------|-------------|--------------|---------------|---------
+| role name     | network type | network size  | comments
+|---------------|--------------|---------------|---------
 )";
             }
 
@@ -532,7 +510,7 @@ Sent to and received from other domains when one domain wants call a service in 
                            { "call.descriptor", "descriptor of the call"},
                            { "service.name.size", "service name size"},
                            { "service.name.data", "byte array with service name"},
-                           { "service.timeout", "timeout of the service in use"},
+                           { "service.timeout", "timeout of the service in use (in microseconds)"},
                            { "parent.name.size", "parent service name size"},
                            { "parent.name.data", "byte array with parent service name"},
 
@@ -572,7 +550,6 @@ Reply to call request
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
 
-                           { "call.descriptor", "descriptor of the call"},
                            { "call.error", "XATMI error code, if any."},
                            { "call.code", "XATMI user supplied code"},
 

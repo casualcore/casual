@@ -79,21 +79,32 @@ namespace casual
                {
                   using message::Service::Service;
 
-                  std::vector< platform::ipc::id::type> traffic_monitors;
+                  std::vector< communication::ipc::Handle> event_subscribers;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      message::Service::marshal( archive);
-                     archive & traffic_monitors;
+                     archive & event_subscribers;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const call::Service& value);
                };
                static_assert( traits::is_movable< Service>::value, "not movable");
             } // call
 
             struct Transaction
             {
+               enum class State : char
+               {
+                  absent,
+                  active = absent,
+                  rollback,
+                  timeout,
+                  error,
+               };
+
                common::transaction::ID trid;
-               std::int64_t state = 0;
+               State state = State::active;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -101,6 +112,7 @@ namespace casual
                   archive & state;
                })
 
+               friend std::ostream& operator << ( std::ostream& out, State value);
                friend std::ostream& operator << ( std::ostream& out, const Transaction& message);
             };
             static_assert( traits::is_movable< Transaction>::value, "not movable");
@@ -199,6 +211,8 @@ namespace casual
 
                   State state = State::idle;
 
+                  inline bool busy() const { return state == State::busy;}
+
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
@@ -291,7 +305,7 @@ namespace casual
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-                  int error = 0;
+                  int status = 0;
                   long code = 0;
                   Transaction transaction;
                   common::buffer::Payload buffer;
@@ -299,7 +313,7 @@ namespace casual
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & error;
+                     archive & status;
                      archive & code;
                      archive & transaction;
                      archive & buffer;
@@ -315,20 +329,53 @@ namespace casual
                //!
                struct ACK : basic_message< Type::service_acknowledge>
                {
-
-                  std::string service;
                   common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      base_type::marshal( archive);
-                     archive & service;
                      archive & process;
                   })
+
+                  friend std::ostream& operator << ( std::ostream& out, const ACK& message);
                };
                static_assert( traits::is_movable< ACK>::value, "not movable");
 
             } // call
+
+            namespace remote
+            {
+               struct Metric : basic_message< Type::service_remote_metrics>
+               {
+                  struct Service
+                  {
+                     Service() = default;
+                     Service( std::string name, std::chrono::microseconds duration)
+                      : name( std::move( name)), duration( std::move( duration)) {}
+
+                     std::string name;
+                     std::chrono::microseconds duration;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        archive & name;
+                        archive & duration;
+                     })
+                  };
+
+                  common::process::Handle process;
+                  std::vector< Service> services;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & process;
+                     archive & services;
+                  })
+
+               };
+               static_assert( traits::is_movable< Metric>::value, "not movable");
+            } // remote
 
          } // service
 

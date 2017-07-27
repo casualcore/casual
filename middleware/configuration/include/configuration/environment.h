@@ -66,6 +66,8 @@ namespace casual
 
          std::vector< Variable> fetch( configuration::Environment environment);
 
+         std::vector< std::string> transform( const std::vector< Variable>& variables);
+
       } // environment
 
 

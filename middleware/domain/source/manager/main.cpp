@@ -20,7 +20,7 @@ namespace casual
          int main( int argc, char** argv)
          {
 
-            common::platform::ipc::id::type event_queue = 0;
+            common::communication::ipc::Handle event_queue;
 
             try
             {
@@ -41,7 +41,7 @@ namespace casual
 
                   parser.parse( argc, argv);
 
-                  event_queue = settings.event_queue;
+                  event_queue = common::communication::ipc::Handle{ settings.event_queue};
                }
 
                Manager domain( std::move( settings));

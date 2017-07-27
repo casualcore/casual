@@ -232,8 +232,13 @@ namespace casual
             //!
             //! @return filled() - excluded
             //!
-            //Mask filled( std::initializer_list< Type> excluded);
-			   signal::Set filled( const std::vector< Type>& excluded);
+            template< typename... Types>
+            signal::Set filled( signal::Type type, Types... types)
+            {
+               auto set = filled( types...);
+               set.remove( type);
+               return set;
+            }
 
 
             //!

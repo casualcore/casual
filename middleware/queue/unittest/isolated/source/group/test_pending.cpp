@@ -205,7 +205,7 @@ namespace casual
 
          group::State::Pending pending;
 
-         pending.dequeue( local::create_request( 10, true, { 42, 666}));
+         pending.dequeue( local::create_request( 10, true, { 42, common::communication::ipc::Handle{  666}}));
          pending.enqueue( trid, 10);
          pending.enqueue( trid, 10);
          pending.enqueue( trid, 10);

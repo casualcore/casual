@@ -144,6 +144,7 @@ int casual_field_plain_type_host_size( int type, long* count);
 /* get the minimum_need (of unused space) if a value with provided id would be added */
 int casual_field_minimum_need( long id, long* count);
 
+
 /* get allocated - and used bytes */
 int casual_field_explore_buffer( const char* buffer, long* size, long* used);
 /* get (host) size of any value if existing */

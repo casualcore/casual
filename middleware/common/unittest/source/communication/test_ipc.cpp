@@ -90,7 +90,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::traffic_event));
+            auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::event_service_call));
 
             EXPECT_TRUE( static_cast< bool>( complete));
             EXPECT_TRUE( complete.complete()) << "complete.unhandled().size()" << complete.unhandled().size();
@@ -109,7 +109,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto parts = local::payload::parts( 100, common::message::Type::traffic_event);
+            auto parts = local::payload::parts( 100, common::message::Type::event_service_call);
             range::reverse( parts);
             auto complete = local::payload::complete( parts);
 
@@ -309,9 +309,9 @@ namespace casual
                message.correlation = uuid::make();
                message.execution = uuid::make();
                message.transaction.trid = transaction::ID::create( process::handle());
-               message.transaction.state = 666;
+               message.transaction.state = common::message::service::Transaction::State::rollback;
                message.buffer.type = ".binary";
-               message.error = 0;
+               message.status = 0;
                message.code = 0;
                message.buffer.memory = unittest::random::binary( 1200);
             }

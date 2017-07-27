@@ -9,6 +9,7 @@
 #include "domain/manager/configuration.h"
 #include "domain/manager/manager.h"
 #include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/server.h"
 
 
 #include "common/string.h"
@@ -17,7 +18,8 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/service/lookup.h"
-#include "sf/xatmi_call.h"
+#include "common/event/listen.h"
+#include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
 
@@ -57,15 +59,31 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./bin/casual-domain-manager", {
-                        "--event-queue", std::to_string( common::communication::ipc::inbound::id()),
+                        "--event-queue", common::string::compose( common::communication::ipc::inbound::id()),
                         "--configuration-files", configuration::names( files),
                         "--bare",
                      }}
                   {
+
+                     //
+                     // Make sure we unregister the event subscription
+                     //
+                     auto unsubscribe = common::scope::execute( [](){
+                        common::event::unsubscribe( common::process::handle(), {});
+                     });
+
                      //
                      // Wait for the domain to boot
                      //
                      unittest::domain::manager::wait( common::communication::ipc::inbound::device());
+
+                     //
+                     // Set environment variable to make it easier for other processes to
+                     // reach domain-manager (should work any way...)
+                     //
+                     common::environment::variable::process::set(
+                           common::environment::variable::name::ipc::domain::manager(),
+                           process.handle());
 
                   }
 
@@ -84,29 +102,6 @@ namespace casual
                   mockup::Process process;
                };
 
-               namespace manager
-               {
-
-                  platform::ipc::id::type ipc()
-                  {
-                     std::ifstream file{ environment::domain::singleton::file()};
-
-                     while( ! file.is_open())
-                     {
-                        process::sleep( std::chrono::milliseconds{ 10});
-                        file.open( environment::domain::singleton::file());
-                     }
-
-                     platform::ipc::id::type result = 0;
-
-                     file >> result;
-
-                     log::debug << "manager ipc: " << result << '\n';
-
-                     return result;
-                  }
-
-               } // manager
 
 
                namespace configuration
@@ -175,8 +170,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::empty()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -186,8 +179,44 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo()}};
-               process::ping( local::manager::ipc());
+            });
+         }
 
+
+         TEST( casual_domain_manager, non_existing_path___expect_boot)
+         {
+            common::unittest::Trace trace;
+
+            const auto configuration = R"(
+domain:
+   name: echo
+   executables:
+     - path: non-existing-e53ce069de5f49e6a2f546ad8e175093
+       instances: 1    
+
+)";
+
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { configuration}};
+            });
+         }
+
+         TEST( casual_domain_manager, non_existing_path__restart___expect_restart_ignored_during_boot)
+         {
+            common::unittest::Trace trace;
+
+            const auto configuration = R"(
+domain:
+   name: echo
+   executables:
+     - path: non-existing-e53ce069de5f49e6a2f546ad8e175093
+       instances: 1
+       restart: true
+
+)";
+
+            EXPECT_NO_THROW( {
+               local::Manager manager{ { configuration}};
             });
          }
 
@@ -198,8 +227,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::echo_restart()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -210,8 +237,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { local::configuration::sleep()}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -230,8 +255,6 @@ domain:
 
             EXPECT_NO_THROW( {
                local::Manager manager{ { configuration}};
-               process::ping( local::manager::ipc());
-
             });
          }
 
@@ -243,40 +266,10 @@ domain:
                namespace call
                {
 
-                  namespace service
-                  {
-                     namespace wait
-                     {
-                        void online( const std::string& service)
-                        {
-                           auto count = 100;
-
-                           while( count-- > 0)
-                           {
-                              auto reply = common::service::Lookup{ service}();
-
-                              if( reply.process)
-                              {
-                                 return;
-                              }
-                              process::sleep( std::chrono::microseconds{ 10});
-                           }
-                           throw exception::xatmi::service::no::Entry{ service};
-                        }
-                     } // wait
-
-
-
-                  } // service
-
-
                   admin::vo::State state()
                   {
-                     service::wait::online( ".casual.domain.state");
-
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.state");
-
-                     auto reply = service();
+                     sf::service::protocol::binary::Call call;
+                     auto reply = call( admin::service::name::state());
 
                      admin::vo::State serviceReply;
 
@@ -288,17 +281,15 @@ domain:
 
                   std::vector< admin::vo::scale::Instances> scale( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     service::wait::online( ".casual.domain.scale.instances");
+                     sf::service::protocol::binary::Call call;
 
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
-                     service << CASUAL_MAKE_NVP( instances);
+                     call << CASUAL_MAKE_NVP( instances);
+                     auto reply = call( admin::service::name::scale::instances());
 
-                     auto reply = service();
+                     std::vector< admin::vo::scale::Instances> result;
+                     reply >> CASUAL_MAKE_NVP( result);
 
-                     std::vector< admin::vo::scale::Instances> serviceReply;
-                     reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                     return serviceReply;
+                     return result;
                   }
 
                   std::vector< admin::vo::scale::Instances> scale( const std::string& alias, std::size_t instances)
@@ -350,10 +341,8 @@ domain:
             common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
-            process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
 
@@ -370,12 +359,8 @@ domain:
             common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
-            process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
+            mockup::domain::service::Manager service;
 
             auto instances = local::call::scale( "sleep", 10);
             EXPECT_TRUE( instances.size() == 1);
@@ -384,7 +369,6 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 10) << CASUAL_MAKE_NVP( state);
             EXPECT_TRUE( state.executables.at( 0).instances.size() == 10) << CASUAL_MAKE_NVP( state);
          }
 
@@ -393,13 +377,8 @@ domain:
             common::unittest::Trace trace;
 
             local::Manager manager{ { local::configuration::long_running_processes_5()}};
-            process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
-
+            mockup::domain::service::Manager service;
 
             auto instances = local::call::scale( "sleep", 0);
             EXPECT_TRUE( instances.size() == 1);
@@ -408,7 +387,6 @@ domain:
             auto state = local::call::state();
 
             ASSERT_TRUE( state.executables.size() == 1);
-            EXPECT_TRUE( state.executables.at( 0).configured_instances == 0) << CASUAL_MAKE_NVP( state);
 
             // not deterministic how long it takes for the processes to terminate.
             // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_MAKE_NVP( state);
@@ -429,10 +407,8 @@ domain:
 )"};
 
             local::Manager manager{ { configuration}};
-            process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
 
@@ -441,6 +417,52 @@ domain:
             EXPECT_TRUE( state.servers.at( 1).instances.size() == 1) << CASUAL_MAKE_NVP( state);
             EXPECT_TRUE( state.servers.at( 1).alias == "test-simple-server");
 
+         }
+
+         TEST( casual_domain_manager, scale_in___expect__prepare_shutdown_to_broker)
+         {
+            common::unittest::Trace trace;
+
+            const std::string configuration{ R"(
+domain:
+  name: simple-server
+  servers:
+    - path: ./bin/test-simple-server
+      instances: 2
+
+)"};
+
+            local::Manager manager{ { configuration}};
+
+            //
+            // We add/override handler for prepare shutdown and forward to our
+            // local ipc queue
+            //
+            auto local_queue = communication::ipc::inbound::id();
+
+            mockup::domain::service::Manager service{
+               [local_queue]( message::domain::process::prepare::shutdown::Request& m)
+               {
+                  Trace trace{ "local forward"};
+                  mockup::ipc::eventually::send( local_queue, m);
+               }
+            };
+
+            auto instances = local::call::scale( "test-simple-server", 1);
+            ASSERT_TRUE( instances.size() == 1) << "instances: " << CASUAL_MAKE_NVP( instances);
+
+            //
+            // Consume the request and send reply.
+            //
+            {
+               message::domain::process::prepare::shutdown::Request request;
+               EXPECT_TRUE( communication::ipc::blocking::receive( communication::ipc::inbound::device(), request));
+               EXPECT_TRUE( request.processes.size() == 1) << "request: " << request;
+
+               auto reply = message::reverse::type( request);
+               reply.processes = std::move( request.processes);
+               communication::ipc::blocking::send( request.process.queue, reply);
+            }
          }
 
          TEST( casual_domain_manager, configuration_service_routes)
@@ -460,7 +482,6 @@ domain:
 )"};
 
             local::Manager manager{ { configuration}};
-            process::ping( local::manager::ipc());
 
             mockup::ipc::Collector server;
             // We need to register this process to the manager
@@ -598,20 +619,14 @@ domain:
 )"};
 
             local::Manager manager{ { configuration}};
-            process::ping( local::manager::ipc());
 
-            mockup::domain::Broker broker;
-
-            // make sure we wait for broker
-            common::process::instance::fetch::handle( common::process::instance::identity::broker());
+            mockup::domain::service::Manager service;
 
             auto state = local::call::state();
             state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));
 
 
             ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
-            EXPECT_TRUE( state.executables.at( 1).configured_instances == 1) << CASUAL_MAKE_NVP( state);
-
 
             for( auto& instance : state.executables)
             {
@@ -622,7 +637,6 @@ domain:
 
             for( auto executable : range::remove_if( state.executables, local::predicate::Manager{}))
             {
-               EXPECT_TRUE( executable.configured_instances == 10);
                EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
             }
          }

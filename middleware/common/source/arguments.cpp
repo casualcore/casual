@@ -1,5 +1,5 @@
 //!
-//! casaul
+//! casual
 //!
 
 #include "common/arguments.h"
@@ -220,7 +220,7 @@ namespace casual
                         option_string = "<empty>";
                      }
 
-                     out << "   " << terminal::color::white << option_string;
+                     out << "   " << option_string;
                      format::cardinality( out, directive.cardinality()) << std::endl;
 
                      format::description( out, directive.description()) << std::endl;
@@ -232,7 +232,7 @@ namespace casual
                {
                public:
 
-                  Help( const Group* group, std::string description, std::ostream& out = std::clog)
+                  Help( const Group* group, std::string description, std::ostream& out = std::cout)
                      : m_group( group), m_description( std::move( description)), m_out( out)
                   {
                   }
@@ -246,23 +246,21 @@ namespace casual
 
                   void do_visit( const Group& group) override
                   {
-                     //format::help( m_out, group);
-                     std::clog << "---group ---" << std::endl;
-
-                     //internal::format::help( m_out, *this);
 
                   }
 
                   void operator () ()
                   {
                      m_out << "NAME\n   ";
-                     m_out << terminal::color::white << file::name::base( process::path());
+                     m_out << file::name::base( process::path());
 
                      m_out << "\n\nDESCRIPTION\n";
 
                      format::description( m_out, m_description, 3) << "\nOPTIONS\n";
 
                      m_group->visit( *this);
+
+                     throw exception::Help{ "built in help was invoked"};
                   }
 
                private:
@@ -270,6 +268,71 @@ namespace casual
                   const std::string m_description;
                   std::ostream& m_out;
                };
+
+               class Completion: public visitor::Base
+               {
+               public:
+                  Completion( const Group& group, std::ostream& out = std::cout)
+                     : m_group( group), m_out( out)
+                  {
+                  }
+
+   
+                  template< typename R>
+                  void operator () ( R&& context)
+                  {
+                     m_group.visit( *this);
+
+                     for( auto& option : m_options)
+                     {
+                        m_out << option << '\n';
+                     }
+                  }                  
+
+               private:
+                  void do_visit( const Group& group) override
+                  {
+                  }
+
+                  void do_visit( const internal::base_directive& option) override
+                  {
+                     m_options.push_back( Option{ option.options().back(), option.cardinality()});
+                  }
+
+                  struct Option
+                  {  
+                     std::string name;
+                     internal::value_cardinality cardinality;
+
+                     inline friend std::ostream& operator << ( std::ostream& out, const Option& value)
+                     {
+                        return out << value.name << ' ' << value.cardinality.min << ' ' << value.cardinality.max;
+                     }
+                  };
+                  // we use a flat structure for now... 
+                  std::vector< Option> m_options;
+
+                  const Group& m_group;
+                  std::ostream& m_out;
+               };
+
+               template< typename Range>
+               bool completion( const Group& group, Range&& arguments)
+               {
+                  auto found = range::find( arguments, "casual-bash-completion");
+
+                  if( found && std::begin( found) == std::begin( arguments))
+                  {
+                     arguments = range::remove( arguments, range::make( std::begin( found), 1));
+
+                     Completion visitor{ group};
+
+                     visitor( arguments);
+
+                     return true;
+                  }
+                  return false;
+               }
 
             } // <unnamed>
          } // local
@@ -303,26 +366,25 @@ namespace casual
          if( argc > 0)
          {
             std::vector< std::string> arguments{ argv + 1, argv + argc};
-            parse( argv[ 0], arguments);
+            parse( arguments);
          }
       }
 
-      void Arguments::parse( const std::vector< std::string>& arguments)
+
+      void Arguments::parse( std::vector< std::string> arguments)
       {
-         parse( process::path(), arguments);
-      }
-
-
-      void Arguments::parse( const std::string& process, const std::vector< std::string>& arguments)
-      {
-         process::path( process);
-
 
          //
          // start divide and conquer the arguments and try to find handlers for'em
          //
 
          auto argumentRange = range::make( arguments);
+
+         //
+         // check special completion case
+         //
+         if( argument::local::completion( *this, argumentRange))
+            return;
 
          while( argumentRange)
          {
@@ -344,8 +406,6 @@ namespace casual
             auto argument = *argumentRange;
             ++argumentRange;
 
-            log::debug << "arguments after prefix increment: " << argumentRange << '\n';
-
             //
             // Find the end of values associated with this option
             //
@@ -362,18 +422,10 @@ namespace casual
             }
 
             argumentRange = std::get< 1>( slice);
-
-            log::debug << "arguments after slice: " << argumentRange << '\n';
          }
 
          dispatch();
       }
-
-      const std::string& Arguments::process() const
-      {
-         return process::path();
-      }
-
 
 
    } // common

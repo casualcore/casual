@@ -22,7 +22,7 @@ namespace casual
             {
                namespace remove
                {
-                  void ipc( platform::ipc::id::type ipc)
+                  void ipc( communication::ipc::Handle ipc)
                   {
                      if( communication::ipc::exists( ipc))
                      {
@@ -41,7 +41,6 @@ namespace casual
                      << ", arguments: " << range::make( value.arguments)
                      << ", restart: " << value.restart
                      << ", memberships: " << range::make( value.memberships)
-                     << ", configured-instances: " << value.configured_instances
                      << ", instances: " << range::make( value.instances);
                }
 
@@ -61,6 +60,22 @@ namespace casual
                      << '}';
             }
 
+            namespace instance
+            {
+               std::ostream& operator << ( std::ostream& out, State value)
+               {
+                  switch( value)
+                  {
+                     case State::scale_out: return out << "scale-out";
+                     case State::running: return out << "running";
+                     case State::scale_in: return out << "scale-in";
+                     case State::exit: return out << "exit";
+                     case State::spawn_error: return out << "spawn-error";
+                  }
+                  return out << "unknown";
+               }
+            } // instance
+
 
             bool Group::boot::Order::operator () ( const Group& lhs, const Group& rhs)
             {
@@ -70,45 +85,140 @@ namespace casual
                return rhs_depend && ! lhs_depend;
             }
 
+            namespace local
+            {
+               namespace
+               {
+                  namespace instance
+                  {
+                     template< typename I>
+                     auto spawnable( I& instances)
+                     {
+                        using state_type = typename I::value_type::state_type;
 
-            bool Executable::remove( pid_type instance)
+                        return range::sorted::subrange( instances, []( auto& i){
+                           return i.state ==  state_type::scale_out && common::process::id( i.handle) == 0;
+                        });
+                     }
+
+                     template< typename I>
+                     auto shutdownable( I& instances)
+                     {
+                        using state_type = typename I::value_type::state_type;
+
+                        return range::sorted::subrange( instances, []( auto& i){
+                           return i.state == state_type::scale_in && common::process::id( i.handle) != 0;
+                        });
+                     }
+
+                     template< typename I>
+                     void scale( I& instances, std::size_t count)
+                     {
+                        Trace trace{ "domain::manager::state::local::scale"};
+
+                        using state_type = typename I::value_type::state_type;
+
+                        auto split = range::stable_partition( instances, []( auto& i){
+                           return compare::any( i.state, { state_type::running, state_type::scale_out});
+                        });
+
+                        auto running = std::get< 0>( split);
+
+                        //
+                        // Do we scale in, or scale out?
+                        //
+                        if( running.size() < count)
+                        {
+                           count -= running.size();
+
+                           // scale out
+                           // check if we got any 'exit' to reuse
+                           {
+                              auto exit = std::get< 0>( range::partition( std::get< 1>( split), []( auto& i){
+                                 return i.state == state_type::exit;
+                              }));
+
+                              count -= range::for_each_n( exit, count, []( auto& i){
+                                 i.state = state_type::scale_out;
+                              }).size();
+                           }
+
+                           // resize to get the rest, and rely on default ctor for instance_type.
+                           instances.resize( instances.size() + count);
+
+                        }
+                        else
+                        {
+                           // scale in.
+                           // We just advance the range, and scale_in the reminders.
+                           range::for_each( running.advance( count), []( auto& i){
+                              i.state = state_type::scale_in;
+                           });
+                        }
+
+                        range::stable_sort( instances);
+
+                        log::debug << "instances: " << range::make( instances) << '\n';
+
+                     }
+
+
+                  } // instance
+               } // <unnamed>
+            } // local
+
+            Executable::instances_range Executable::spawnable()
+            {
+               return local::instance::spawnable( instances);
+            }
+
+            Executable::const_instances_range Executable::spawnable() const
+            {
+               return local::instance::spawnable( instances);
+            }
+
+            Executable::const_instances_range Executable::shutdownable() const
+            {
+               return local::instance::shutdownable( instances);
+            }
+
+            void Executable::scale( std::size_t count)
+            {
+               local::instance::scale( instances, count);
+            }
+
+            void Executable::remove( pid_type instance)
             {
                auto found = range::find( instances, instance);
 
                if( found)
                {
-                  instances.erase( std::begin( found));
-                  return true;
+                  auto const state = found->state;
+
+                  if( state == state_type::scale_in)
+                  {
+                     instances.erase( std::begin( found));
+                  }
+                  else
+                  {
+                     found->handle = 0;
+                     found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+                  }
                }
-               return false;
             }
 
-            bool Executable::offline() const
-            {
-               return instances.empty();
-            }
-
-            bool Executable::online() const
-            {
-               return configured_instances == 0 || ! instances.empty();
-            }
-
-            bool Executable::complete() const
-            {
-               return instances.size() >= configured_instances;
-            }
 
             std::ostream& operator << ( std::ostream& out, const Executable& value)
             {
                out << "{ ";
-               local::print_executables( out, value);
+               manager::local::print_executables( out, value);
                return out << '}';
             }
 
-            common::process::Handle Server::process( common::platform::pid::type pid) const
+            Server::instance_type Server::instance( common::platform::pid::type pid) const
             {
                auto found = range::find_if( instances, [pid]( auto& p){
-                  return p.pid == pid;
+                  return p.handle.pid == pid;
                });
 
                if( found)
@@ -118,55 +228,73 @@ namespace casual
                return {};
             }
 
-            common::process::Handle Server::remove( common::platform::pid::type pid)
+            Server::instance_type Server::remove( common::platform::pid::type pid)
             {
                auto found = range::find_if( instances, [pid]( auto& p){
-                  return p.pid == pid;
+                  return p.handle.pid == pid;
                });
 
-               common::process::Handle result;
+               instance_type result;
 
                if( found)
                {
                   result = *found;
 
-                  instances.erase( std::begin( found));
+                  auto const state = found->state;
+
+                  if( state == state_type::scale_in)
+                  {
+                     instances.erase( std::begin( found));
+                  }
+                  else
+                  {
+                     found->handle = common::process::Handle{};
+                     found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+                  }
                }
                return result;
             }
 
             bool Server::connect( common::process::Handle process)
             {
-               auto found = range::find_if( instances, common::process::Handle::equal::pid( process.pid));
+               auto found = range::find_if( instances, [=]( auto& i){
+                  return i.handle.pid == process.pid;
+               });
 
                if( found)
                {
-                  *found = process;
+                  found->handle = process;
+                  found->state = instance::State::running;
                }
                return found;
             }
 
-            bool Server::offline() const
+
+            Server::instances_range Server::spawnable()
             {
-               return instances.empty();
+               return local::instance::spawnable( instances);
             }
 
-            bool Server::online() const
+            Server::const_instances_range Server::spawnable() const
             {
-               return configured_instances == 0
-                     || ( ! instances.empty()
-                           && range::all_of( instances, []( auto& p){ return p;}));
+               return local::instance::spawnable( instances);
             }
 
-            bool Server::complete() const
+            Server::const_instances_range Server::shutdownable() const
             {
-               return instances.size() >= configured_instances;
+               return local::instance::shutdownable( instances);
             }
+
+            void Server::scale( std::size_t count)
+            {
+               local::instance::scale( instances, count);
+            }
+
 
             std::ostream& operator << ( std::ostream& out, const Server& value)
             {
                out << "{ ";
-               local::print_executables( out, value);
+               manager::local::print_executables( out, value);
                return out << ", resources: " << range::make( value.resources)
                   << ", restrictions: " << range::make( value.restrictions)
                   << '}';
@@ -174,46 +302,11 @@ namespace casual
 
             bool operator == ( const Server& lhs, common::platform::pid::type rhs)
             {
-               return lhs.process( rhs).pid == rhs;
+               return lhs.instance( rhs).handle.pid == rhs;
             }
 
 
-            Batch::Batch( State& state, Group::id_type group) : group( group), m_state( state) {}
-
-            std::chrono::milliseconds Batch::timeout() const
-            {
-               std::chrono::milliseconds result{ 4000};
-               constexpr std::chrono::milliseconds timeout{ 400};
-
-               range::for_each( servers, [&]( const auto& e){ result +=  this->state().server( e.id).instances.size() * timeout;});
-               range::for_each( executables, [&]( const auto& e){ result +=  this->state().executable( e.id).instances.size() * timeout;});
-
-               return result;
-            }
-
-
-            bool Batch::online() const
-            {
-               return range::all_of( servers, [&]( auto task){
-                  return this->state().server( task.id).online();
-               })
-               && range::all_of( executables, [&]( auto task){
-                  return this->state().executable( task.id).online();
-               });
-            }
-
-            bool Batch::offline() const
-            {
-               return range::all_of( servers, [&]( auto task){
-                  return this->state().server( task.id).offline();
-               })
-               && range::all_of( executables, [&]( auto task){
-                  return this->state().executable( task.id).offline();
-               });
-            }
-
-            const State& Batch::state() const { return m_state.get();}
-            State& Batch::state() { return m_state.get();}
+            Batch::Batch( Group::id_type group) : group( group) {}
 
 
             std::ostream& operator << ( std::ostream& out, const Batch& value)
@@ -221,7 +314,7 @@ namespace casual
                return out << "{ group: " << value.group
                      << ", servers: " << range::make( value.servers)
                      << ", executables: " << range::make( value.executables)
-                     << ", timeout: " << value.timeout().count() << "ms}";
+                     << '}';
             }
 
          } // state
@@ -261,7 +354,7 @@ namespace casual
                      //
                      for( auto& group : range::reverse( groups))
                      {
-                        state::Batch batch{ state, group.get().id};
+                        state::Batch batch{ group.get().id};
 
                         auto extract = [&]( auto& entites, auto& output){
 
@@ -274,8 +367,7 @@ namespace casual
 
                            range::transform( std::get< 0>( slice), output, []( auto& e){
                               common::traits::concrete::type_t< decltype( range::front( output))> result;
-                              result.id = e.get().id;
-                              result.instances = e.get().configured_instances;
+                              result = e.get().id;
                               return result;
                            });
 
@@ -313,63 +405,16 @@ namespace casual
             return range::reverse( local::order::boot( *this));
          }
 
-         void State::remove_process( common::platform::pid::type pid)
+
+
+         std::tuple< state::Server*, state::Executable*> State::exited( common::platform::pid::type pid)
          {
-            Trace trace{ "domain::manager::State::remove_process"};
+            Trace trace{ "domain::manager::State::exited"};
 
             //
             // Vi remove from event listeners if one of them has died
             //
-            {
-               event.remove( pid);
-            }
-
-            message::domain::scale::Executable restart;
-
-            auto restart_process = [&]( auto& executable, auto& output){
-
-               if( ! executable.complete() && executable.restart && m_runlevel == Runlevel::running)
-               {
-                  message::domain::scale::Executable::Scale scale;
-                  scale.id = common::id::underlaying( executable.id);
-                  scale.instances = executable.configured_instances;
-                  output.push_back( std::move( scale));
-               }
-            };
-
-            //
-            // Check if it's a server
-            //
-            {
-               auto found = range::find( servers, pid);
-
-               if( found)
-               {
-                  auto process = found->remove( pid);
-                  //
-                  // Try to remove ipc-queue (no-op if it's removed already)
-                  //
-                  local::remove::ipc( process.queue);
-
-                  restart_process( *found, restart.servers);
-               }
-            }
-
-            //
-            // Find and remove from executable
-            //
-            {
-               auto found = range::find_if( executables, [pid]( state::Executable& e){
-                  return e.remove( pid);
-               });
-
-               if( found)
-               {
-                  log << "removed executable with pid: " << pid << '\n';
-
-                  restart_process( *found, restart.executables);
-               }
-            }
+            event.remove( pid);
 
             //
             // Remove from singeltons
@@ -385,18 +430,63 @@ namespace casual
                }
             }
 
-            if( restart)
+
+            using result_type = std::tuple< state::Server*, state::Executable*>;
+
+            //
+            // Check if it's a server
+            //
             {
-               communication::ipc::inbound::device().push( restart);
+               auto found = server( pid);
+
+               if( found)
+               {
+                  auto instance = found->remove( pid);
+                  //
+                  // Try to remove ipc-queue (no-op if it's removed already)
+                  //
+                  local::remove::ipc( instance.handle.queue);
+
+                  if( found->restart && runlevel() == Runlevel::running)
+                  {
+                     return result_type{ found, nullptr};
+                  }
+               }
             }
 
+            //
+            // Find and remove from executable
+            //
+            {
+               auto found = executable( pid);
+
+               if( found)
+               {
+                  found->remove( pid);
+
+                  if( found->restart && runlevel() == Runlevel::running)
+                  {
+                     return result_type{ nullptr, found};
+                  }
+               }
+            }
+            return result_type{};
+         }
+
+         std::vector< std::string> State::variables( const state::Process& process)
+         {
+            auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
+
+            range::append( process.environment.variables, result);
+
+            return result;
          }
 
 
          state::Server* State::server( common::platform::pid::type pid)
          {
             return range::find_if( servers, [pid]( const auto& s){
-               return s.process( pid).pid == pid;
+               return s.instance( pid).handle.pid == pid;
             }).data();
          }
 
@@ -422,18 +512,47 @@ namespace casual
             }));
          }
 
-         const state::Server& State::server( state::Server::id_type id) const
+         namespace local
          {
-            return range::front( range::find_if( servers, [id]( const auto& s){
-               return s.id == id;
-            }));
+            namespace
+            {
+               template< typename I, typename ID>
+               decltype( auto) executable( I& instances, ID id)
+               {
+                  return range::front( range::find_if( instances, [id]( auto& i){
+                     return i.id == id;
+                  }));
+               }
+            } // <unnamed>
+         } // local
+
+         state::Server& State::server( state::Server::id_type id)
+         {
+            return local::executable( servers, id);
          }
 
+         const state::Server& State::server( state::Server::id_type id) const
+         {
+            return local::executable( servers, id);
+         }
+
+         state::Executable& State::executable( state::Executable::id_type id)
+         {
+            return local::executable( executables, id);
+         }
          const state::Executable& State::executable( state::Executable::id_type id) const
          {
-            return range::front( range::find_if( executables, [id]( const auto& e){
-               return e.id == id;
-            }));
+            return local::executable( executables, id);
+         }
+
+         common::process::Handle State::singleton( const common::Uuid& id) const
+         {
+            auto found = range::find( singeltons, id);
+            if( found)
+            {
+               return found->second;
+            }
+            return {};
          }
 
          bool State::execute()

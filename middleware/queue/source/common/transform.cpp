@@ -3,7 +3,7 @@
 //!
 
 #include "queue/common/transform.h"
-#include "queue/broker/broker.h"
+#include "queue/manager/manager.h"
 
 #include "common/algorithm.h"
 
@@ -23,12 +23,12 @@ namespace casual
 
                struct Group
                {
-                  broker::admin::Group operator () ( const broker::State::Group& group) const
+                  manager::admin::Group operator () ( const manager::State::Group& group) const
                   {
-                     broker::admin::Group result;
+                     manager::admin::Group result;
 
                      result.process.pid = group.process.pid;
-                     result.process.queue = group.process.queue;
+                     result.process.queue = group.process.queue.native();
 
                      result.name = group.name;
                      result.queuebase = group.queuebase;
@@ -41,26 +41,26 @@ namespace casual
          } // local
 
 
-         std::vector< broker::admin::Group> groups( const broker::State& state)
+         std::vector< manager::admin::Group> groups( const manager::State& state)
          {
-            std::vector< broker::admin::Group> result;
+            std::vector< manager::admin::Group> result;
 
             common::range::transform( state.groups, result, local::Group{});
 
             return result;
          }
 
-         broker::admin::Queue Queue::operator () ( const common::message::queue::information::Queue& queue) const
+         manager::admin::Queue Queue::operator () ( const common::message::queue::information::Queue& queue) const
          {
-            broker::admin::Queue result;
+            manager::admin::Queue result;
 
             auto queue_type = []( common::message::queue::information::Queue::Type type )
                   {
                      switch( type)
                      {
-                        case common::message::queue::information::Queue::Type::group_error_queue: return broker::admin::Queue::Type::group_error_queue;
-                        case common::message::queue::information::Queue::Type::error_queue: return broker::admin::Queue::Type::error_queue;
-                        default: return broker::admin::Queue::Type::queue;
+                        case common::message::queue::information::Queue::Type::group_error_queue: return manager::admin::Queue::Type::group_error_queue;
+                        case common::message::queue::information::Queue::Type::error_queue: return manager::admin::Queue::Type::error_queue;
+                        default: return manager::admin::Queue::Type::queue;
                      }
                   };
 
@@ -78,15 +78,15 @@ namespace casual
             return result;
          }
 
-         std::vector< broker::admin::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values)
+         std::vector< manager::admin::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values)
          {
-            std::vector< broker::admin::Queue> result;
+            std::vector< manager::admin::Queue> result;
 
             for( auto& value : values)
             {
                auto range = common::range::transform( value.queues, result, transform::Queue{});
 
-               common::range::for_each( range, [&]( broker::admin::Queue& q){
+               common::range::for_each( range, [&]( manager::admin::Queue& q){
                   q.group = value.process.pid;
                });
             }
@@ -111,9 +111,9 @@ namespace casual
             return result;
          }
 
-         broker::admin::Message Message::operator () ( const common::message::queue::information::Message& message) const
+         manager::admin::Message Message::operator () ( const common::message::queue::information::Message& message) const
          {
-            broker::admin::Message result;
+            manager::admin::Message result;
 
             result.id = message.id;
             result.queue = message.queue;
@@ -134,7 +134,7 @@ namespace casual
             return result;
          }
 
-         std::vector< broker::admin::Message> messages( const common::message::queue::information::messages::Reply& reply)
+         std::vector< manager::admin::Message> messages( const common::message::queue::information::messages::Reply& reply)
          {
             return common::range::transform( reply.messages, Message{});
          }

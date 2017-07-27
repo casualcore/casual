@@ -166,7 +166,7 @@ namespace casual
          Server::Server( Settings settings) : m_state( std::move( settings.queuebase), std::move( settings.name))
          {
             //
-            // Talk to queue-broker to get configuration
+            // Talk to queue-manager to get configuration
             //
 
 
@@ -174,7 +174,7 @@ namespace casual
                common::message::queue::connect::Request request;
                request.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), request);
+               common::communication::ipc::blocking::send( common::communication::ipc::queue::manager::device(), request);
             }
 
             {
@@ -212,14 +212,14 @@ namespace casual
 
 
                //
-               // Send all our queues to queue-broker
+               // Send all our queues to queue-manager
                //
                {
                   common::message::queue::Information information;
                   information.process = common::process::handle();
                   information.queues = m_state.queuebase.queues();
 
-                  common::communication::ipc::blocking::send( common::communication::ipc::queue::broker::device(), information);
+                  common::communication::ipc::blocking::send( common::communication::ipc::queue::manager::device(), information);
                }
             }
          }

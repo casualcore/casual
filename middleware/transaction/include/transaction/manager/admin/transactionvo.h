@@ -1,8 +1,5 @@
 //!
-//! transactionvo.h
-//!
-//! Created on: Jun 14, 2015
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef CASUAL_TRANSACTION_MANAGER_ADMIN_TRANSACTIONVO_H_
@@ -19,17 +16,6 @@ namespace casual
    {
       namespace vo
       {
-         struct Process
-         {
-            sf::platform::pid::type pid;
-            sf::platform::ipc::id::type queue;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-            {
-               archive & CASUAL_MAKE_NVP( pid);
-               archive & CASUAL_MAKE_NVP( queue);
-            })
-         };
 
          struct Statistics
          {
@@ -96,7 +82,7 @@ namespace casual
                };
 
                id_type id;
-               Process process;
+               common::process::Handle process;
 
                Stats statistics;
 
@@ -167,7 +153,7 @@ namespace casual
 
             struct Reply
             {
-               sf::platform::ipc::id::type queue;
+               sf::platform::ipc::handle::type queue;
                sf::platform::Uuid correlation;
                long type;
 
@@ -185,7 +171,7 @@ namespace casual
          {
             struct ID
             {
-               Process owner;
+               common::process::Handle owner;
                long type;
                std::string global;
                std::string branch;

@@ -9,8 +9,10 @@
 #include "queue/common/environment.h"
 #include "queue/common/transform.h"
 #include "queue/api/queue.h"
-#include "queue/broker/admin/queuevo.h"
+#include "queue/manager/admin/queuevo.h"
+#include "queue/manager/admin/services.h"
 
+#include "common/process.h"
 #include "common/message/gateway.h"
 #include "common/message/domain.h"
 #include "common/mockup/domain.h"
@@ -20,7 +22,7 @@
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/namevaluepair.h"
 #include "sf/log.h"
 
@@ -40,15 +42,19 @@ namespace casual
             using config_domain = common::message::domain::configuration::Domain;
 
 
-            struct Broker
+            struct Manager
             {
 
-               Broker()
-                    : m_process{ "./bin/casual-queue-broker", {
+               Manager()
+                    : m_process{ "./bin/casual-queue-manager", {
                         "-g", "./bin/casual-queue-group",
                       }}
                {
 
+                  //
+                  // Make sure we're up'n running before we let unittest-stuff interact with us...
+                  //
+                  common::process::instance::fetch::handle( common::process::instance::identity::queue::manager());
                }
 
                common::process::Handle process() const { return m_process.handle();}
@@ -62,48 +68,39 @@ namespace casual
                Domain( config_domain configuration)
                : manager{ std::move( configuration)}
                {
-
-                  //
-                  // We make sure queue-broker is up'n running, we send ping
-                  //
-                  common::process::ping( queue_broker.process().queue);
                }
 
                common::mockup::domain::Manager manager;
-               common::mockup::domain::Broker broker;
+               common::mockup::domain::service::Manager service;
                common::mockup::domain::transaction::Manager tm;
 
-               Broker queue_broker;
+               Manager queue_manager;
 
             };
 
             namespace call
             {
-               broker::admin::State state()
+               manager::admin::State state()
                {
-                  sf::xatmi::service::binary::Sync service( ".casual/queue/state");
+                  sf::service::protocol::binary::Call call;
+                  auto reply = call( manager::admin::service::name::state());
 
-                  auto reply = service();
+                  manager::admin::State result;
+                  reply >> CASUAL_MAKE_NVP( result);
 
-                  broker::admin::State serviceReply;
-
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                  return serviceReply;
+                  return result;
                }
 
-               std::vector< broker::admin::Message> messages( const std::string& queue)
+               std::vector< manager::admin::Message> messages( const std::string& queue)
                {
-                  sf::xatmi::service::binary::Sync service( ".casual.queue.list.messages");
-                  service << CASUAL_MAKE_NVP( queue);
+                  sf::service::protocol::binary::Call call;
+                  call << CASUAL_MAKE_NVP( queue);
+                  auto reply = call( manager::admin::service::name::list_messages());
 
-                  auto reply = service();
+                  std::vector< manager::admin::Message> result;
+                  reply >> CASUAL_MAKE_NVP( result);
 
-                  std::vector< broker::admin::Message> serviceReply;
-
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                  return serviceReply;
+                  return result;
                }
             } // call
 
@@ -167,7 +164,7 @@ namespace casual
 
 
 
-      TEST( casual_queue, broker_startup)
+      TEST( casual_queue, manager_startup)
       {
          common::unittest::Trace trace;
 
@@ -323,16 +320,16 @@ namespace casual
 
          local::Domain domain{ local::configuration()};
 
-         // make sure casual-broker-queue knows about a "remote queue"
+         // make sure casual-manager-queue knows about a "remote queue"
          {
             common::message::gateway::domain::Advertise remote;
 
             remote.process.pid = 666;
-            remote.process.queue = 777;
+            remote.process.queue = common::communication::ipc::Handle{ 777};
 
             remote.queues.push_back( { "remote-queue"});
 
-            common::communication::ipc::blocking::send( domain.queue_broker.process().queue, remote);
+            common::communication::ipc::blocking::send( domain.queue_manager.process().queue, remote);
          }
 
          EXPECT_THROW({

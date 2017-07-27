@@ -121,7 +121,7 @@ namespace casual
 
          } // detail
          template< typename T>
-         struct is_nvp : detail::is_nvp< common::traits::decay_t< T>> {};
+         struct is_nvp : detail::is_nvp< std::decay_t< T>> {};
 
       } // traits
    } // sf

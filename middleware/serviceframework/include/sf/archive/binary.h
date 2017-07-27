@@ -1,8 +1,5 @@
 //!
-//! archive_binary.h
-//!
-//! Created on: Jun 2, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #ifndef ARCHIVE_BINARY_H_
@@ -10,7 +7,9 @@
 
 
 #include "sf/archive/basic.h"
-#include "sf/buffer.h"
+
+#include "common/memory.h"
+#include "common/network/byteorder.h"
 
 namespace casual
 {
@@ -20,15 +19,30 @@ namespace casual
       {
          namespace binary
          {
+
             namespace implementation
             {
-               class Writer
+               struct Base
+               {
+                  using memory_type = platform::binary::type;
+
+                  Base( memory_type& buffer) : m_memory( buffer) {}
+
+                  inline auto size() const { return memory().size();}
+
+               protected:
+
+                  inline platform::binary::type& memory() { return m_memory.get();}
+                  inline const platform::binary::type& memory() const { return m_memory.get();}
+
+                  std::reference_wrapper< memory_type> m_memory;
+               };
+
+               class Writer : Base
                {
                public:
 
-                  typedef buffer::binary::Stream buffer_type;
-
-                  Writer( buffer_type& buffer) : m_buffer( buffer) {}
+                  using Base::Base;
 
                   //! @{
                   //! No op
@@ -50,20 +64,52 @@ namespace casual
                   template< typename T>
                   void write( T&& value, const char*)
                   {
-                     m_buffer << std::forward< T>( value);
+                     store( std::forward< T>( value));
                   }
                private:
-                  buffer_type& m_buffer;
+                  template< typename Range>
+                  void append( Range source)
+                  {
+                     auto current_size = size();
+
+                     memory().resize( current_size + source.size());
+
+                     auto destination = common::range::make( std::begin( memory()) + current_size, source.size());
+
+                     common::memory::copy( source, destination);
+                  }
+
+                  template< typename T>
+                  void store( const T& value)
+                  {
+                     append( common::memory::range::make( value));
+                  }
+
+                  void store( const platform::binary::type& value)
+                  {
+                     //
+                     // TODO: Write the size as some-common_size_type
+                     //
+                     store( value.size());
+                     append( common::range::make( value));
+                  }
+
+                  void store( const std::string& value)
+                  {
+                     //
+                     // TODO: Write the size as some-common_size_type
+                     //
+                     store( value.size());
+                     append( common::range::make( value));
+                  }
+
                };
 
 
-               class Reader
+               class Reader : Base
                {
                public:
-
-                  typedef buffer::binary::Stream buffer_type;
-
-                  Reader( buffer_type& buffer) : m_buffer( buffer) {}
+                  using Base::Base;
 
                   //! @{
                   //! No op
@@ -85,17 +131,60 @@ namespace casual
                   template< typename T>
                   bool read( T& value, const char*)
                   {
-                     m_buffer >> value;
+                     load( value);
                      return true;
                   }
+
                private:
-                  buffer_type& m_buffer;
+
+                  template< typename Range>
+                  void consume( Range destination)
+                  {
+                     if( m_offset + destination.size() > size())
+                     {
+                        throw exception::Validation( "Attempt to read out of bounds  ro: " + std::to_string( m_offset) + " size: " + std::to_string( size()));
+                     }
+
+                     auto source = common::range::make( std::begin( memory()) + m_offset, destination.size());
+
+                     m_offset += common::memory::copy( source, destination);
+                  }
+
+                  template< typename T>
+                  void load( T& value)
+                  {
+                     consume( common::memory::range::make( value));
+                  }
+
+                  void load( std::string& value)
+                  {
+                     //
+                     // TODO: Read the size as some-common_size_type
+                     //
+                     auto size = value.size();
+                     load( size);
+                     value.resize( size);
+                     consume( common::range::make( value));
+                  }
+
+                  void load( platform::binary::type& value)
+                  {
+                     //
+                     // TODO: Read the size as some-common_size_type
+                     //
+                     auto size = value.size();
+                     load( size);
+                     value.resize( size);
+                     consume( common::range::make( value));
+                  }
+
+                  platform::binary::size::type m_offset = 0;
+
                };
-            } // policy
+            } // implementation
 
             typedef basic_reader< implementation::Reader, policy::Relaxed> Reader;
             typedef basic_writer< implementation::Writer> Writer;
-
 
          } // binary
       } // archive

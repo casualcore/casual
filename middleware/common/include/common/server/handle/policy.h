@@ -9,7 +9,7 @@
 #include "common/server/context.h"
 #include "common/communication/device.h"
 
-#include "common/message/traffic.h"
+#include "common/message/event.h"
 #include "common/message/service.h"
 #include "common/message/conversation.h"
 
@@ -34,25 +34,24 @@ namespace casual
                   {
                      void configure( server::Arguments& arguments);
 
-                     void reply( platform::ipc::id::type id, message::service::call::Reply& message);
-                     void reply( platform::ipc::id::type id, message::conversation::caller::Send& message);
+                     void reply( communication::ipc::Handle id, message::service::call::Reply& message);
+                     void reply( communication::ipc::Handle id, message::conversation::caller::Send& message);
 
-                     void ack( const message::service::call::callee::Request& message);
-                     void ack( const message::conversation::connect::callee::Request& message);
+                     void ack();
 
+                     void statistics( communication::ipc::Handle id, message::event::service::Call& event);
 
-
-                     void statistics( platform::ipc::id::type id, message::traffic::Event& event);
-
-                     void transaction( const message::service::call::callee::Request& message, const server::Service& service, const platform::time::point::type& now);
-                     void transaction( const message::conversation::connect::callee::Request& message, const server::Service& service, const platform::time::point::type& now);
-
-                     void transaction( message::service::call::Reply& message, int return_state);
-                     void transaction( message::conversation::caller::Send& message, int return_state);
+                     void transaction(
+                           const common::transaction::ID& trid,
+                           const server::Service& service,
+                           const std::chrono::microseconds& timeout,
+                           const platform::time::point::type& now);
 
 
-                     void forward( const message::service::call::callee::Request& message, const state::Jump& jump);
-                     void forward( const message::conversation::connect::callee::Request& message, const state::Jump& jump);
+                     message::service::Transaction transaction( bool commit);
+
+                     void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
+                     void forward( common::service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message);
                   };
 
 
@@ -60,21 +59,21 @@ namespace casual
                   {
                      Admin( communication::error::type handler);
 
-
                      void configure( server::Arguments& arguments);
+                     void reply( communication::ipc::Handle id, message::service::call::Reply& message);
+                     void ack();
+                     void statistics( communication::ipc::Handle id, message::event::service::Call& event);
 
-                     void reply( platform::ipc::id::type id, message::service::call::Reply& message);
+                     message::service::Transaction transaction( bool commit);
 
-                     void ack( const message::service::call::callee::Request& message);
+                     void transaction(
+                           const common::transaction::ID& trid,
+                           const server::Service& service,
+                           const std::chrono::microseconds& timeout,
+                           const platform::time::point::type& now);
 
 
-                     void statistics( platform::ipc::id::type id, message::traffic::Event&);
-
-                     void transaction( const message::service::call::callee::Request&, const server::Service&, const common::platform::time::point::type&);
-
-                     void transaction( message::service::call::Reply& message, int return_state);
-
-                     void forward( const common::message::service::call::callee::Request& message, const state::Jump& jump);
+                     void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
 
                   private:
                      communication::error::type m_error_handler;

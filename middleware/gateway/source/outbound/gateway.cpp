@@ -24,7 +24,7 @@ namespace casual
                      template< typename M>
                      struct basic_transaction
                      {
-                        void operator () ( const Routing::Point& point) const
+                        void operator () ( const routing::Point& point) const
                         {
                            M message;
                            message.correlation = point.correlation;
@@ -34,11 +34,11 @@ namespace casual
                         }
                      };
 
-                     void send( const Routing::Point& point)
+                     void send( const routing::Point& point)
                      {
                         Trace trace{ "gateway::outbound::error::reply::send"};
 
-                        static const std::map< common::message::Type, std::function<void( const Routing::Point&)>> dispatch{
+                        static const std::map< common::message::Type, std::function<void( const routing::Point&)>> dispatch{
                            // transactions
                            {
                               common::message::transaction::resource::prepare::Request::type(),
@@ -55,11 +55,11 @@ namespace casual
                            // call
                            {
                               common::message::service::call::callee::Request::type(),
-                              []( const Routing::Point& point){
+                              []( const auto& point){
                                  common::message::service::call::Reply reply;
 
                                  reply.correlation = point.correlation;
-                                 reply.error = TPESYSTEM;
+                                 reply.status = TPESYSTEM;
 
                                  ipc::optional::send( point.destination.queue, reply);
                               }
@@ -67,7 +67,7 @@ namespace casual
                            // domain discover
                            {
                               common::message::gateway::domain::discover::Request::type(),
-                              []( const Routing::Point& point){
+                              []( const auto& point){
                                  common::message::gateway::domain::discover::Reply reply;
 
                                  reply.correlation = point.correlation;
@@ -78,7 +78,7 @@ namespace casual
                            // queue
                            {
                               common::message::queue::enqueue::Request::type(),
-                              []( const Routing::Point& point){
+                              []( const auto& point){
                                  common::message::queue::enqueue::Reply reply;
 
                                  reply.correlation = point.correlation;
@@ -88,7 +88,7 @@ namespace casual
                            },
                            {
                               common::message::queue::dequeue::Request::type(),
-                              []( const Routing::Point& point){
+                              []( const auto& point){
                                  common::message::queue::dequeue::Reply reply;
 
                                  reply.correlation = point.correlation;
@@ -104,7 +104,7 @@ namespace casual
 
                      struct Send
                      {
-                        void operator () ( const Routing::Point& point) const
+                        void operator () ( const routing::Point& point) const
                         {
                            try
                            {

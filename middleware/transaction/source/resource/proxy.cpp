@@ -11,6 +11,7 @@
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 #include "common/communication/ipc.h"
+#include "common/event/send.h"
 
 #include "sf/log.h"
 
@@ -53,13 +54,22 @@ namespace casual
                   reply.state = m_state.xa_switches->xa_switch->xa_open_entry( m_state.rm_openinfo.c_str(), m_state.rm_id, TMNOFLAGS);
 
 
-                  common::log::trace::Outcome logConnect{ "resource connect to transaction monitor", log};
+                  {
+                     common::log::trace::Outcome log_connect{ "resource connect to transaction monitor", log};
 
-                  common::communication::ipc::blocking::send( m_state.tm_queue, reply);
+                     common::communication::ipc::blocking::send(
+                           common::communication::ipc::transaction::manager::device(), reply);
+                  }
+
+
 
                   if( reply.state != XA_OK)
                   {
-                     throw common::exception::NotReallySureWhatToNameThisException( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo);
+                     auto error = common::error::xa::error( reply.state);
+
+                     common::event::error::send( "failed to open xa resurce " + m_state.rm_key + " - error: " + error + " - action: shutdown resource proxy");
+
+                     throw common::exception::tx::Error( "failed to open xa resurce " + m_state.rm_key + " with: " + m_state.rm_openinfo, CASUAL_NIP( error));
                   }
                }
             };
@@ -88,7 +98,8 @@ namespace casual
 
                   reply.statistics.end = common::platform::time::clock::type::now();
 
-                  common::communication::ipc::blocking::send( m_state.tm_queue, reply);
+                  common::communication::ipc::blocking::send(
+                        common::communication::ipc::transaction::manager::device(), reply);
 
                }
             };
@@ -117,6 +128,8 @@ namespace casual
                      if( log)
                      {
                         log << common::error::xa::error( result) << " commit rm: " << state.rm_id << " trid: " << message.trid << " flags: " << std::hex << message.flags << std::dec << std::endl;
+
+                        /*
                         if( result != XA_OK)
                         {
                            std::array< XID, 12> xids;
@@ -129,6 +142,7 @@ namespace casual
                            }
 
                         }
+                        */
                      }
 
                      return result;
@@ -176,12 +190,12 @@ namespace casual
                if( ! ( state.xa_switches && state.xa_switches->key && state.xa_switches->key == state.rm_key
                      && ! state.rm_key.empty()))
                {
-                  throw common::exception::NotReallySureWhatToNameThisException( "mismatch between expected resource key and configured resource key");
+                  throw common::exception::invalid::Argument( "mismatch between expected resource key and configured resource key");
                }
 
                if( ! state.xa_switches->xa_switch)
                {
-                  throw common::exception::NotReallySureWhatToNameThisException( "xa-switch is null");
+                  throw common::exception::invalid::Argument( "xa-switch is null");
                }
 
             }

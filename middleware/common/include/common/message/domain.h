@@ -64,11 +64,25 @@ namespace casual
                {
                   struct Listener
                   {
+                     struct Limit
+                     {
+                        std::size_t size = 0;
+                        std::size_t messages = 0;
+
+                        CASUAL_CONST_CORRECT_MARSHAL
+                        (
+                           archive & size;
+                           archive & messages;
+                        )
+                     };
+
                      std::string address;
+                     Limit limit;
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
                         archive & address;
+                        archive & limit;
                      )
                   };
 
@@ -79,12 +93,16 @@ namespace casual
                         ipc,
                         tcp
                      };
+
+
+
                      Type type = Type::tcp;
                      bool restart = true;
                      std::string address;
                      std::string note;
                      std::vector< std::string> services;
                      std::vector< std::string> queues;
+
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
@@ -291,6 +309,7 @@ namespace casual
 
             namespace scale
             {
+               /*
                struct Executable : common::message::basic_message< common::message::Type::domain_scale_executable>
                {
                   using id_type = std::size_t;
@@ -327,6 +346,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Executable& value);
                };
                static_assert( traits::is_movable< Executable>::value, "not movable");
+               */
 
             } // scale
 
@@ -375,6 +395,7 @@ namespace casual
 
 
 
+
                namespace lookup
                {
                   using base_reqeust = message::basic_request< Type::domain_process_lookup_request>;
@@ -419,6 +440,46 @@ namespace casual
 
                } // lookup
 
+               namespace prepare
+               {
+                  namespace shutdown
+                  {
+                     using base_request = basic_request< Type::domain_process_prepare_shutdown_request>;
+                     struct Request : base_request
+                     {
+                        using base_request::base_request;
+
+                        std::vector< common::process::Handle> processes;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           base_request::marshal( archive);
+                           archive & processes;
+                        })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                     };
+
+                     using base_reply = basic_request< Type::domain_process_prepare_shutdown_reply>;
+                     struct Reply : base_reply
+                     {
+                        using base_reply::base_reply;
+
+                        std::vector< common::process::Handle> processes;
+
+                        CASUAL_CONST_CORRECT_MARSHAL(
+                        {
+                           base_reply::marshal( archive);
+                           archive & processes;
+                        })
+
+                        friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                     };
+
+
+                  } // shutdown
+               } // prepare
+
             } // process
 
          } // domain
@@ -436,6 +497,10 @@ namespace casual
 
             template<>
             struct type_traits< domain::process::connect::Request> : detail::type< domain::process::connect::Reply> {};
+
+
+            template<>
+            struct type_traits< domain::process::prepare::shutdown::Request> : detail::type< domain::process::prepare::shutdown::Reply> {};
 
 
          } // reverse

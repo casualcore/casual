@@ -77,6 +77,22 @@ namespace casual
 	         //!
 	         constexpr std::size_t statistics() { return 1000;}
 
+
+	         //!
+	         //! Max number of ipc messages consumed from the queue to cache
+	         //! (application memory) during a 'flush'
+	         //!
+	         constexpr std::size_t flush() { return 20;}
+
+	         namespace gateway
+            {
+	            //!
+	            //! Max number of batched metrics before force
+	            //! send to service-manager
+	            //!
+	            constexpr std::size_t metrics() { return 20;}
+            } // gateway
+
          } // batch
 
 
@@ -96,10 +112,10 @@ namespace casual
 
 		   namespace ipc
          {
-		      namespace id
+		      namespace handle
             {
                using type = long;
-            } // id
+            } // handle
 
             namespace message
             {

@@ -131,9 +131,11 @@ namespace casual
                std::string note;
 
                //!
-               //! @return true if all instances is idle
+               //! @return true if all instances 'has connected'
                //!
-               bool ready() const;
+               bool booted() const;
+
+               bool remove_instance( common::platform::pid::type pid);
 
 
                friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
@@ -218,7 +220,7 @@ namespace casual
 
             struct Reply : base_message
             {
-               typedef common::platform::ipc::id::type queue_id_type;
+               using queue_id_type = common::communication::ipc::Handle;
 
                template< typename M>
                Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}
@@ -307,7 +309,7 @@ namespace casual
                xaer_ASYNC,
                xa_RETRY,
                xaer_DUPID,
-               xaer_NOTA,
+               xaer_NOTA,  //! nothing to do?
                xa_OK,      //! Went as expected
                xa_RDONLY,  //! Went "better" than expected
             };
@@ -325,6 +327,11 @@ namespace casual
 
             void set_result( int value);
 
+            //!
+            //! @return true if there's nothing more to do, hence this resource can be removed
+            //!    from the transaction
+            //!
+            bool done() const;
 
             struct update
             {
@@ -542,10 +549,11 @@ namespace casual
          bool outstanding() const;
 
 
+
          //!
-         //! @return true if all resource proxies is booted and ready do work
+         //! @return true if all resource proxies is booted
          //!
-         bool ready() const;
+         bool booted() const;
 
 
          //!
@@ -559,6 +567,8 @@ namespace casual
 
          state::resource::Proxy& get_resource( state::resource::id::type rm);
          state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::platform::pid::type pid);
+
+         bool remove_instance( common::platform::pid::type pid);
 
 
          using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;

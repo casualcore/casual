@@ -28,14 +28,10 @@ namespace casual
          {
             namespace
             {
-               manager::State connect( manager::Settings settings)
+               manager::State configure( manager::Settings settings)
                {
                   Trace trace{ "gateway::manager::local::connect"};
 
-                  //
-                  // Connect to domain
-                  //
-                  process::instance::connect( process::instance::identity::gateway::manager());
 
                   //
                   // Set environment variable to make it easier for connections to get in
@@ -78,7 +74,7 @@ namespace casual
 
 
       Manager::Manager( manager::Settings settings)
-        : m_state{ manager::local::connect( std::move( settings))}
+        : m_state{ manager::local::configure( std::move( settings))}
       {
          Trace trace{ "gateway::Manager::Manager"};
 
@@ -123,6 +119,11 @@ namespace casual
          {
 
             auto handler = manager::handler( m_state);
+
+            //
+            // Connect to domain
+            //
+            process::instance::connect( process::instance::identity::gateway::manager());
 
 
             while( true)

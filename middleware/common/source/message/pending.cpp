@@ -45,7 +45,7 @@ namespace casual
 
             namespace policy
             {
-               bool consume_unavalibe::operator () () const
+               bool consume_unavailable::operator () () const
                {
                   try
                   {

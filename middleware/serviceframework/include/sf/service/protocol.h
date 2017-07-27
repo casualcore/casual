@@ -1,21 +1,18 @@
 //!
-//! casual
+//! casual 
 //!
 
-#ifndef SERVICE_IMPLEMENTATION_H_
-#define SERVICE_IMPLEMENTATION_H_
+#ifndef CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_IO_H_
+#define CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_IO_H_
 
-#include "sf/service/interface.h"
-#include "sf/service/model.h"
 
-#include "sf/archive/yaml.h"
-#include "sf/archive/binary.h"
-#include "sf/archive/json.h"
-#include "sf/archive/xml.h"
-#include "sf/archive/ini.h"
-#include "sf/archive/log.h"
-#include "sf/archive/service.h"
-#include "sf/log.h"
+#include "sf/archive/archive.h"
+
+#include "common/service/invoke.h"
+#include "common/functional.h"
+
+
+#include <vector>
 
 namespace casual
 {
@@ -25,182 +22,198 @@ namespace casual
       {
          namespace protocol
          {
-            class Base : public Interface
+            using parameter_type = common::service::invoke::Parameter;
+            using result_type = common::service::invoke::Result;
+
+            namespace io
             {
+               using readers_type = std::vector< archive::Reader*>;
+               using writers_type = std::vector< archive::Writer*>;
 
-            public:
-               Base( TPSVCINFO* serviceInfo);
-
-               Base( Base&&);
-
-            private:
-
-               bool do_call() override;
-
-               reply::State do_finalize() override;
-
-               void do_handle_exception() override;
-
-               Interface::Input& do_input() override;
-
-               Interface::Output& do_output() override;
-
-
-            protected:
-
-               TPSVCINFO* m_info;
-               reply::State m_state;
-
-               Interface::Input m_input;
-               Interface::Output m_output;
-            };
-
-
-            class Binary : public Base
-            {
-            public:
-               Binary( TPSVCINFO* serviceInfo);
-
-               static const std::string& type();
-
-               reply::State do_finalize() override;
-
-            private:
-
-               buffer::binary::Stream m_readerBuffer;
-               archive::binary::Reader m_reader;
-
-               buffer::binary::Stream m_writerBuffer;
-               archive::binary::Writer m_writer;
-
-            };
-
-            class Yaml : public Base
-            {
-            public:
-
-               Yaml( TPSVCINFO* serviceInfo);
-
-               reply::State do_finalize() override;
-
-               static const std::string& type();
-
-            private:
-
-               archive::yaml::Load m_load;
-               archive::yaml::Reader m_reader;
-               archive::yaml::Save m_save;
-               archive::yaml::Writer m_writer;
-            };
-
-            class Json : public Base
-            {
-            public:
-
-               Json( TPSVCINFO* serviceInfo);
-
-               reply::State do_finalize() override;
-
-               static const std::string& type();
-
-
-            private:
-
-               archive::json::Load m_load;
-               archive::json::Reader m_reader;
-               archive::json::Save m_save;
-               archive::json::Writer m_writer;
-            };
-
-            class Xml : public Base
-            {
-            public:
-
-               Xml( TPSVCINFO* serviceInfo);
-
-               reply::State do_finalize() override;
-
-               static const std::string& type();
-
-            private:
-
-               archive::xml::Load m_load;
-               archive::xml::Reader m_reader;
-               archive::xml::Save m_save;
-               archive::xml::Writer m_writer;
-            };
-
-            class Ini : public Base
-            {
-            public:
-               Ini( TPSVCINFO* service_info);
-
-               reply::State do_finalize() override;
-
-               static const std::string& type();
-
-            private:
-
-               archive::ini::Load m_load;
-               archive::ini::Reader m_reader;
-               archive::ini::Save m_save;
-               archive::ini::Writer m_writer;
-
-            };
-
-
-
-            namespace parameter
-            {
-               template< typename B>
-               class Log : public B
+               struct Input
                {
-               public:
-                  using base_type = B;
-
-                  Log( TPSVCINFO* serviceInfo) : base_type( serviceInfo), m_writer( log::parameter)
-                  {
-                     this->m_input.writers.push_back( &m_writer);
-                     this->m_output.writers.push_back( &m_writer);
-                  }
-
-               private:
-
-                  archive::log::Writer m_writer;
-
+                  readers_type readers;
+                  writers_type writers;
                };
-            } // parameter
 
-            class Describe : public Base
-            {
-            public:
-
-               Describe( TPSVCINFO* information, std::unique_ptr< Interface>&& protocol);
-
-            private:
-
-               bool do_call() override;
-               reply::State do_finalize() override;
-
-               Model m_model;
-
-               archive::service::describe::Prepare m_prepare;
-
-               struct writer_t
+               struct Output
                {
-                  writer_t( Model& model) : input( model.arguments.input), output( model.arguments.output) {}
+                  readers_type readers;
+                  writers_type writers;
+               };
 
-                  archive::service::describe::Writer input;
-                  archive::service::describe::Writer output;
-               } m_writer;
-
-               std::unique_ptr< Interface> m_protocol;
-            };
+            } // io
 
          } // protocol
+
+
+         class Protocol
+         {
+         public:
+
+            template< typename P>
+            Protocol( P&& protocol)
+               : Protocol{ std::make_unique< Implementation< P>>( std::move( protocol))}
+            {
+            }
+
+
+            ~Protocol();
+
+            Protocol( Protocol&&);
+            Protocol& operator = ( Protocol&&);
+
+
+            bool call() const { return m_implementaion->call();}
+
+            protocol::result_type finalize() { return m_implementaion->finalize();}
+            void exception() { m_implementaion->exception();}
+            const std::string& type() const { return m_implementaion->type();}
+
+            template< typename T>
+            Protocol& operator >> ( T&& value)
+            {
+               serialize( std::forward< T>( value), m_implementaion->input());
+               return *this;
+            }
+
+            template< typename T>
+            Protocol& operator << ( T&& value)
+            {
+               serialize( std::forward< T>( value), m_implementaion->output());
+               return *this;
+            }
+
+            template< typename P, typename... Args>
+            static Protocol emplace( Args&&... args)
+            {
+               return { std::make_unique< Implementation< P>>( std::forward< Args>( args)...)};
+            }
+
+         private:
+
+            struct Base
+            {
+               virtual protocol::io::Input& input() = 0;
+               virtual protocol::io::Output& output() = 0;
+               virtual bool call() const = 0;
+               virtual protocol::result_type finalize() = 0;
+               virtual void exception() = 0;
+
+               virtual const std::string& type() const = 0;
+            };
+
+            template< typename P>
+            Protocol( std::unique_ptr< P>&& implementation) : m_implementaion( std::move( implementation)) {}
+
+            template< typename Protocol>
+            struct Implementation : Base
+            {
+               template< typename... Args>
+               Implementation( Args&&... args) : m_protocol{ std::forward< Args>( args)...} {}
+
+               protocol::io::Input& input() override { return m_protocol.input();}
+               protocol::io::Output& output() override { return m_protocol.output();}
+               bool call() const override { return m_protocol.call();}
+               protocol::result_type finalize() override { return m_protocol.finalize();}
+               void exception() override { m_protocol.exception();}
+
+               const std::string& type() const override { return m_protocol.type();}
+
+            private:
+               Protocol m_protocol;
+            };
+
+            template< typename T, typename A>
+            void serialize( T&& value, A& io)
+            {
+               for( auto&& archive : io.readers)
+               {
+                  *archive >> std::forward< T>( value);
+               }
+
+               for( auto&& archive : io.writers)
+               {
+                  *archive << std::forward< T>( value);
+               }
+            }
+
+            std::unique_ptr< Base> m_implementaion;
+
+         };
+
+
+         template< typename F, typename... Args>
+         auto user( Protocol& protocol, F&& function, Args&&... args)
+         {
+            if( protocol.call())
+            {
+               try
+               {
+                  return common::invoke( function, std::forward< Args>( args)...);
+               }
+               catch( ...)
+               {
+                  protocol.exception();
+               }
+            }
+            return decltype( common::invoke( function, std::forward< Args>( args)...))();
+         }
+
+
+
+         namespace protocol
+         {
+            class Factory
+            {
+            public:
+               static Factory& instance();
+
+               using creator_type = std::function< Protocol( protocol::parameter_type&&)>;
+
+               Protocol create( protocol::parameter_type&& parameter);
+
+               template< typename Protocol>
+               const std::string& registration( const std::string& type)
+               {
+                  m_creators[ type] = Creator< Protocol>{};
+                  return type;
+               }
+
+               template< typename Protocol>
+               const std::string& registration()
+               {
+                  m_creators[ Protocol::type()] = Creator< Protocol>{};
+                  return Protocol::type();
+               }
+
+            private:
+
+               template< typename P>
+               struct Creator
+               {
+                  using protocol_type = P;
+
+                  service::Protocol operator()( protocol::parameter_type&& parameter) const
+                  {
+                     return service::Protocol::emplace< protocol_type>( std::move( parameter));
+                  }
+
+               };
+
+               Factory();
+
+               using mapping_type = std::map< std::string, creator_type>;
+
+               mapping_type m_creators;
+            };
+
+            Protocol deduce( protocol::parameter_type&& parameter);
+
+         } // protocol
+
       } // service
    } // sf
 } // casual
 
-
-#endif /* SERVICE_IMPLEMENTATION_H_ */
+#endif // CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_IO_H_

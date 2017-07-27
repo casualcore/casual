@@ -75,7 +75,7 @@ namespace casual
                            //
                            // We only want to handle terminate during this
                            //
-                           common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::terminate})};
+                           common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate)};
 
                            if( connection.running())
                            {
@@ -174,7 +174,7 @@ namespace casual
                //
                // We only want to handle child-signals during this stage
                //
-               common::signal::thread::scope::Mask mask{ signal::set::filled( { signal::Type::child})};
+               common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
                state.runlevel = State::Runlevel::shutdown;
 
@@ -457,7 +457,7 @@ namespace casual
                         connection.process.pid = common::process::spawn(
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
                               {
-                                    "--remote-ipc-queue", std::to_string( message.process.queue),
+                                    "--remote-ipc-queue", common::string::compose( message.process.queue),
                                     "--correlation", uuid::string( message.correlation),
                               });
 
@@ -495,6 +495,8 @@ namespace casual
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
                               {
                                     "--descriptor", std::to_string( socket.descriptor()),
+                                    "--limit-messages", std::to_string( message.limit.messages),
+                                    "--limit-size", std::to_string( message.limit.size),
                               });
 
                         state().connections.inbound.push_back( std::move( connection));
@@ -509,7 +511,7 @@ namespace casual
 
          common::communication::ipc::dispatch::Handler handler( State& state)
          {
-            static common::server::handle::basic_admin_call admin{
+            static common::server::handle::admin::Call admin{
                manager::admin::services( state),
                ipc::device().error_handler()};
 

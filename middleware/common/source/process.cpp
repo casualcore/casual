@@ -39,6 +39,7 @@
 
 #ifdef __APPLE__
    #include <crt_externs.h>
+   #include <mach-o/dyld.h>
 #else
    #include <unistd.h>
 #endif
@@ -55,20 +56,33 @@ namespace casual
          {
             namespace
             {
-               std::string getProcessPath()
-               {
-                  if( environment::variable::exists( "_"))
-                  {
-                     return environment::variable::get( "_");
-                  }
 
-                  return std::string{};
+               std::string get_process_path()
+               {
+#ifdef __APPLE__
+                  std::uint32_t size = platform::size::max::path;
+                  std::vector< char> path( platform::size::max::path);
+                  if( ::_NSGetExecutablePath( path.data(), &size) != 0)
+                  {
+                     throw exception::invalid::Argument{ "failed to get the path to the current executable"};
+                  }
+                  if( path.data()) { return path.data();}
+                  return {};
+#else
+                  return file::name::link( "/proc/self/exe");
+#endif
                }
 
                std::string& path()
                {
-                  static std::string path = getProcessPath();
+                  static std::string path = get_process_path();
                   return path;
+               }
+
+               std::string& basename()
+               {
+                  static std::string basename = file::name::base( local::path());
+                  return basename;
                }
 
                char* const * environment()
@@ -80,18 +94,24 @@ namespace casual
                   #endif
                }
 
+               namespace instantiated
+               {
+                  std::string& path = local::path();
+                  std::string& basename = local::basename();
+
+               } // instantiated
 
             } // <unnamed>
          } // local
 
          const std::string& path()
          {
-            return local::path();
+            return local::instantiated::path;
          }
 
-         void path( const std::string& path)
+         const std::string& basename()
          {
-            local::path() = path;
+            return local::instantiated::basename;
          }
 
 
@@ -112,11 +132,14 @@ namespace casual
          {
             namespace identity
             {
-               const Uuid& broker()
+               namespace service
                {
-                  const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
-                  return singleton;
-               }
+                  const Uuid& manager()
+                  {
+                     const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
+                     return singleton;
+                  }
+               } // service
 
                namespace forward
                {
@@ -139,7 +162,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker()
+                  const Uuid& manager()
                   {
                      const static Uuid singleton{ "c0c5a19dfc27465299494ad7a5c229cd"};
                      return singleton;
@@ -259,6 +282,14 @@ namespace casual
                      }
                   }
 
+                  template< typename M>
+                  void connect( M&& message)
+                  {
+                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
+
+                     connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), message));
+                  }
+
                } // <unnamed>
             } // local
 
@@ -270,7 +301,7 @@ namespace casual
                request.identification = identity;
                request.process = process;
 
-               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+               local::connect( request);
             }
 
             void connect( const Uuid& identity)
@@ -285,7 +316,7 @@ namespace casual
                message::domain::process::connect::Request request;
                request.process = process;
 
-               local::connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), request));
+               local::connect( request);
             }
 
             void connect()
@@ -299,6 +330,11 @@ namespace casual
          bool operator == ( const Handle& lhs, const Handle& rhs)
          {
             return lhs.pid == rhs.pid && lhs.queue == rhs.queue;
+         }
+
+         bool operator < ( const Handle& lhs, const Handle& rhs)
+         {
+            return std::tie( lhs.pid, lhs.queue) < std::tie( rhs.pid, rhs.queue);
          }
 
          std::ostream& operator << ( std::ostream& out, const Handle& value)
@@ -816,7 +852,7 @@ namespace casual
 
 
 
-         Handle ping( platform::ipc::id::type queue)
+         Handle ping( communication::ipc::Handle queue)
          {
             Trace trace{ "process::ping"};
 
@@ -865,7 +901,7 @@ namespace casual
                //
                // We'll only handle child signals.
                //
-               signal::thread::scope::Mask block{ signal::set::filled( { signal::Type::child})};
+               signal::thread::scope::Mask block{ signal::set::filled( signal::Type::child)};
 
                std::vector< lifetime::Exit> terminations;
 

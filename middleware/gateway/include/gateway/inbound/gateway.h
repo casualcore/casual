@@ -122,7 +122,7 @@ namespace casual
                      //
                      // Send lookup
                      //
-                     blocking::send( common::communication::ipc::broker::device(), request);
+                     blocking::send( common::communication::ipc::service::manager::device(), request);
                   }
                };
 
@@ -175,7 +175,7 @@ namespace casual
                      {
                         common::message::service::call::Reply reply;
                         reply.correlation = message.correlation;
-                        reply.error = TPESVCERR;
+                        reply.status = TPESVCERR;
                         common::communication::ipc::inbound::device().push( reply);
                      }
                   };
@@ -220,7 +220,7 @@ namespace casual
                      // Send lookup
                      //
 
-                     blocking::send( common::communication::ipc::queue::broker::optional::device(), request);
+                     blocking::send( common::communication::ipc::queue::manager::optional::device(), request);
 
                      //
                      // We could send the lookup, so we won't remove the message from the cache
@@ -430,7 +430,7 @@ namespace casual
 
                         }
 
-                        inline void send( common::platform::ipc::id::type queue, message_type& message)
+                        inline void send( common::communication::ipc::Handle queue, message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
 
@@ -506,14 +506,14 @@ namespace casual
                         {
                            if( ! message.services.empty())
                            {
-                              blocking::send( common::communication::ipc::broker::device(), message.get());
-                              coordinate.pids.push_back( common::communication::ipc::broker::device().connector().process().pid);
+                              blocking::send( common::communication::ipc::service::manager::device(), message.get());
+                              coordinate.pids.push_back( common::communication::ipc::service::manager::device().connector().process().pid);
                            }
 
                            if( ! message.queues.empty() &&
-                                 blocking::optional::send( common::communication::ipc::queue::broker::optional::device(), message.get()))
+                                 blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message.get()))
                            {
-                              coordinate.pids.push_back( common::communication::ipc::queue::broker::optional::device().connector().process().pid);
+                              coordinate.pids.push_back( common::communication::ipc::queue::manager::optional::device().connector().process().pid);
                            }
                         }
                      }
@@ -558,7 +558,7 @@ namespace casual
                      {
                         Trace trace{ "gateway::inbound::handle::domain::discover::Coordinate::operator()"};
 
-                        m_discover.add( message.correlation, 0, message.pids);
+                        m_discover.add( message.correlation, {}, message.pids);
                      }
 
                   private:
@@ -568,9 +568,9 @@ namespace casual
                   namespace coordinate
                   {
                      template< typename C>
-                     auto make( C&& cooordintate) -> Coordinate< common::traits::remove_reference_t< C>>
+                     auto make( C&& coordinate) -> Coordinate< std::remove_reference_t< C>>
                      {
-                        return { std::forward< C>( cooordintate)};
+                        return { std::forward< C>( coordinate)};
                      }
                   } // coordinate
 
@@ -578,6 +578,8 @@ namespace casual
                } // discover
             } // domain
          } // handle
+
+
 
          template< typename Policy>
          struct Gateway
@@ -591,6 +593,7 @@ namespace casual
 
             template< typename S>
             Gateway( S&& settings)
+              : m_cache{ policy_type::limits( settings)}
             {
                //
                // 'connect' to our local domain
@@ -780,7 +783,7 @@ namespace casual
                }
 
                //
-               // Handle the message, so the remote oubound gets what it wants.
+               // Handle the message, so the remote outbound gets what it wants.
                //
                {
                   handle::domain::discover::coordinate::make( discover)( message);
@@ -793,7 +796,7 @@ namespace casual
                //
                // We're only interested in sig-user
                //
-               common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
+               common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
 
 
                Trace trace{ "gateway::inbound::Gateway::request_thread"};

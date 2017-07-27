@@ -50,6 +50,7 @@ namespace casual
          {
             Payload();
             Payload( std::nullptr_t);
+            Payload( std::string type);
             Payload( std::string type, platform::binary::type buffer);
             Payload( std::string type, platform::binary::size::type size);
 

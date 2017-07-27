@@ -110,10 +110,14 @@ namespace casual
 
                if( common::file::exists( path))
                {
+                  auto content = singleton::read( path);
+
+                  log::debug << "domain: " << content << '\n';
+
                   //
                   // There is potentially a running casual-domain already - abort
                   //
-                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path);
+                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path, CASUAL_NIP( content));
                }
 
                //
@@ -132,30 +136,32 @@ namespace casual
                return { std::move( path)};
             }
 
-            Result read()
+            std::ostream& operator << ( std::ostream& out, const Result& value)
             {
-               return read( process::pattern::Sleep{
-                  { std::chrono::milliseconds{ 10}, 10},
-                  { std::chrono::milliseconds{ 100}, 10},
-                  { std::chrono::seconds{ 1}, 60}
-               });
+               return out << "{ process: " << value.process
+                     << ", domain: " << value.identity
+                     << '}';
             }
 
-            Result read( process::pattern::Sleep retries)
+
+            Result read( const std::string& path, process::pattern::Sleep retries)
             {
                Trace trace{ "common::domain::singleton::read"};
 
-               log::debug << "retries: " << retries << '\n';
+               log::debug << "path: " << path << "retries: " << retries << '\n';
 
                do
                {
-                  std::ifstream file{ common::environment::domain::singleton::file()};
+                  std::ifstream file{ path};
 
                   if( file)
                   {
                      Result result;
                      {
-                        file >> result.process.queue;
+                        auto queue = result.process.queue.native();
+                        file >> queue;
+                        result.process.queue = communication::ipc::Handle{ queue};
+
                         file >> result.process.pid;
                         file >> result.identity.name;
                         std::string uuid;
@@ -174,6 +180,22 @@ namespace casual
                while( retries());
 
                return {};
+            }
+            Result read( process::pattern::Sleep retries)
+            {
+               return read( common::environment::domain::singleton::file(), std::move( retries));
+            }
+            
+            Result read( const std::string& path)
+            {
+               return read( path, process::pattern::Sleep{
+                  { std::chrono::milliseconds{ 100}, 10}
+               });
+            }
+
+            Result read()
+            {
+               return read( common::environment::domain::singleton::file());
             }
 
          } // singleton

@@ -49,7 +49,7 @@ namespace casual
 
                   log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
-                  auto result = ::msgsnd( id, &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
+                  auto result = ::msgsnd( id.native(), &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
                   if( result == -1)
                   {
@@ -74,11 +74,11 @@ namespace casual
                         }
                         case EIDRM:
                         {
-                           throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                           throw exception::queue::Unavailable{ string::compose( "queue unavailable - id: ", id, " - ",  common::error::string())};
                         }
                         case ENOMEM:
                         {
-                           throw exception::limit::Memory{ "id: " + std::to_string( id) + " - " + common::error::string()};
+                           throw exception::limit::Memory{ string::compose(  "id: ", id, " - ", common::error::string())};
                         }
                         case EINVAL:
                         {
@@ -88,7 +88,7 @@ namespace casual
                               //
                               // The problem is with queue-id. We guess that it has been removed.
                               //
-                              throw exception::queue::Unavailable{ "queue unavailable - id: " + std::to_string( id) + " - " + common::error::string()};
+                              throw exception::queue::Unavailable{ string::compose( "queue unavailable - id: ", id, " - ", common::error::string())};
                            }
                            // we let it fall through to default
                         }
@@ -96,7 +96,7 @@ namespace casual
                         case EFAULT:
                         default:
                         {
-                           throw common::exception::invalid::Argument( "invalid queue arguments - id: " + std::to_string( id) + " - " + common::error::string());
+                           throw common::exception::invalid::Argument{ string::compose(  "invalid queue arguments - id: ", id, " - ", common::error::string())};
                         }
                      }
                   }
@@ -112,7 +112,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id, &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
+                  auto result = msgrcv( id.native(), &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -139,14 +139,13 @@ namespace casual
                         }
                         case EIDRM:
                         {
-                           throw exception::queue::Unavailable{ "queue removed - id: " + std::to_string( id) + " - " + common::error::string()};
+                           throw exception::queue::Unavailable{ string::compose( "queue removed - id: ", id, " - ", common::error::string())};
                         }
                         default:
                         {
-                           std::ostringstream msg;
-                           msg << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: " << flags << " - " << common::error::string();
-                           log << msg.str() << std::endl;
-                           throw exception::invalid::Argument( msg.str(), __FILE__, __LINE__);
+                           auto msg = string::compose( "ipc < [", id, "] receive failed - transport: ", transport, " - flags: ", flags, " - ", common::error::string());
+                           log << msg << std::endl;
+                           throw exception::invalid::Argument( msg, __FILE__, __LINE__);
                         }
                      }
                   }
@@ -237,7 +236,7 @@ namespace casual
                Connector::Connector()
                 : m_id( msgget( IPC_PRIVATE, IPC_CREAT | 0660))
                {
-                  if( m_id  == cInvalid)
+                  if( ! m_id)
                   {
                      throw exception::invalid::Argument( "ipc queue create failed - " + common::error::string(), __FILE__, __LINE__);
                   }
@@ -277,8 +276,8 @@ namespace casual
 
                Device& device()
                {
-                  static Device singlton;
-                  return singlton;
+                  static Device singleton;
+                  return singleton;
                }
 
                handle_type id()
@@ -365,7 +364,8 @@ namespace casual
 
                      if( ! communication::ipc::exists( m_process.queue))
                      {
-                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue for instance", CASUAL_NIP( m_identity), CASUAL_NIP( m_environment), CASUAL_NIP( m_process)};
+                        auto& instance = *this;
+                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue - is there a domain running?", CASUAL_NIP( instance)};
                      }
                   }
 
@@ -373,8 +373,8 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Connector< directive>& rhs)
                   {
                      return out << "{ process: " << rhs.m_process
-                           << ", identity:" << rhs.m_identity
-                           << ", environment:" << rhs.m_environment
+                           << ", identity: " << rhs.m_identity
+                           << ", environment: " << rhs.m_environment
                            << '}';
                   }
 
@@ -391,7 +391,7 @@ namespace casual
                      {
 
                         template< typename R>
-                        platform::ipc::id::type reconnect( R&& singleton_policy)
+                        communication::ipc::Handle reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -467,19 +467,22 @@ namespace casual
 
 
 
-
-            namespace broker
+            namespace service
             {
-               outbound::instance::Device& device()
+               namespace manager
                {
-                  static outbound::instance::Device singelton{
-                     process::instance::identity::broker(),
-                     common::environment::variable::name::ipc::broker()};
+                  outbound::instance::Device& device()
+                  {
+                     static outbound::instance::Device singelton{
+                        process::instance::identity::service::manager(),
+                        common::environment::variable::name::ipc::service::manager()};
 
-                  return singelton;
-               }
+                     return singelton;
+                  }
 
-            } // broker
+               } // manager
+            } // service
+
 
             namespace transaction
             {
@@ -526,13 +529,13 @@ namespace casual
 
             namespace queue
             {
-               namespace broker
+               namespace manager
                {
                   outbound::instance::Device& device()
                   {
                      static outbound::instance::Device singelton{
-                        process::instance::identity::queue::broker(),
-                        environment::variable::name::ipc::queue::broker()};
+                        process::instance::identity::queue::manager(),
+                        environment::variable::name::ipc::queue::manager()};
 
                      return singelton;
                   }
@@ -542,13 +545,13 @@ namespace casual
                      outbound::instance::optional::Device& device()
                      {
                         static outbound::instance::optional::Device singelton{
-                           process::instance::identity::queue::broker(),
-                           environment::variable::name::ipc::queue::broker()};
+                           process::instance::identity::queue::manager(),
+                           environment::variable::name::ipc::queue::manager()};
 
                         return singelton;
                      }
                   } // optional
-               } // broker
+               } // manager
             } // queue
 
 
@@ -581,14 +584,14 @@ namespace casual
             {
                struct msqid_ds info;
 
-               return msgctl( id, IPC_STAT, &info) == 0;
+               return msgctl( id.native(), IPC_STAT, &info) == 0;
             }
 
             bool remove( handle_type id)
             {
-               if( id != -1)
+               if( id)
                {
-                  if( msgctl( id, IPC_RMID, nullptr) == 0)
+                  if( msgctl( id.native(), IPC_RMID, nullptr) == 0)
                   {
                      log << "queue id: " << id << " removed\n";
                      return true;
@@ -605,7 +608,7 @@ namespace casual
             {
                struct msqid_ds info;
 
-               if( msgctl( owner.queue, IPC_STAT, &info) != 0)
+               if( msgctl( owner.queue.native(), IPC_STAT, &info) != 0)
                {
                   return false;
                }

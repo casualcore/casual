@@ -10,6 +10,8 @@
 #include "common/service/conversation/flags.h"
 #include "common/flag.h"
 
+#include "common/communication/ipc/handle.h"
+
 namespace casual
 {
    namespace common
@@ -21,9 +23,9 @@ namespace casual
             struct Node
             {
                inline Node() = default;
-               inline Node( platform::ipc::id::type address) : address( address) {}
+               inline Node( communication::ipc::Handle address) : address( address) {}
 
-               platform::ipc::id::type address = 0;
+               communication::ipc::Handle address;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -116,6 +118,8 @@ namespace casual
                Route route;
                common::service::conversation::send::Flags flags;
                common::service::conversation::Events events;
+               service::Transaction transaction;
+               int status;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -123,6 +127,7 @@ namespace casual
                   archive & route;
                   archive & flags;
                   archive & events;
+                  archive & status;
                })
                friend std::ostream& operator << ( std::ostream& out, const basic_send& value);
             };

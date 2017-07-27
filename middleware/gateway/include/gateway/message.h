@@ -157,7 +157,8 @@ namespace casual
 
          namespace inbound
          {
-            struct Connect : basic_connect< common::message::Type::gateway_inbound_connect>
+            using base_connect =  basic_connect< common::message::Type::gateway_inbound_connect>;
+            struct Connect : base_connect
             {
             };
          } // inbound
@@ -183,15 +184,31 @@ namespace casual
 
          namespace tcp
          {
+            namespace connect
+            {
+               struct Limit
+               {
+                  std::size_t size = 0;
+                  std::size_t messages = 0;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                     archive & size;
+                     archive & messages;
+                  )
+
+               };
+            } // connect
             struct Connect : common::message::basic_message< common::message::Type::gateway_manager_tcp_connect>
             {
                common::platform::tcp::descriptor::type descriptor;
+               connect::Limit limit;
 
                friend std::ostream& operator << ( std::ostream& out, const Connect& value);
 
                CASUAL_CONST_CORRECT_MARSHAL({
                   base_type::marshal( archive);
                   archive & descriptor;
+                  archive & limit;
                })
             };
 
@@ -468,7 +485,7 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL({
                         archive & this->get().execution;
-                        archive & this->get().error;
+                        archive & this->get().status;
                         archive & this->get().code;
 
                         archive & this->get().transaction.trid.xid;

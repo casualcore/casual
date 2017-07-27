@@ -1,0 +1,21 @@
+# Do not load, if casual-admin is not in $PATH
+which casual-admin &> /dev/null || return 0
+
+_casual_admin() {
+	local current previous options
+	COMPREPLY=()
+	current="${COMP_WORDS[COMP_CWORD]}"
+	previous="${COMP_WORDS[COMP_CWORD-1]}"
+	options=($(casual-admin casual-bash-completion | awk '{print $1}'))
+
+	if (( COMP_CWORD == 1 )); then
+		COMPREPLY=($(compgen -W "${options[*]} help" -- "${current}"))
+		return 0
+	elif (( COMP_CWORD == 2 )) && [[ "${options[*]}" == *"${previous}"* ]]; then
+		local arguments
+		arguments=($(casual-admin "${previous}" casual-bash-completion | awk '{print $1}'))
+		COMPREPLY=($(compgen -W "${arguments[*]}" -- "${current}"))
+		return 0
+	fi
+}
+complete -F _casual_admin casual-admin

@@ -78,6 +78,8 @@ namespace casual
 
             using Zero = Max< 0>;
 
+            using ZeroOne = Max< 1>;
+
             using Any = Min< 0>;
 
             using OneMany = Min< 1>;
@@ -90,8 +92,11 @@ namespace casual
 
          } // visitor
 
+
+
          namespace option
          {
+
             struct Holder
             {
 
@@ -187,6 +192,16 @@ namespace casual
             };
          } // option
 
+         namespace exception
+         {
+            //! 
+            //! Will be thrown if built in help is invoked.
+            //!
+            struct Help : std::runtime_error
+            {
+               using std::runtime_error::runtime_error;
+            };
+         } // exception
 
          namespace internal
          {
@@ -207,15 +222,7 @@ namespace casual
                template< typename T>
                operator std::vector< T>() const
                {
-                  std::vector< T> result;
-
-                  std::transform(
-                     std::begin( m_values),
-                     std::end( m_values),
-                     std::back_inserter( result),
-                     convert< T>{});
-
-                  return result;
+                  return range::transform( m_values, convert< T>{});
                }
 
                operator const std::string&() const
@@ -236,10 +243,7 @@ namespace casual
                {
                   T operator () ( const std::string& value) const
                   {
-                     std::istringstream converter( value);
-                     T result{};
-                     converter >> result;
-                     return result;
+                     return common::from_string< T>( value);
                   }
                };
 
@@ -289,121 +293,79 @@ namespace casual
                   using type = bool;
                };
 
-
-               template< typename O>
-               cardinality::Zero cardinality( O&, void (O::*)(void)) { return cardinality::Zero();}
-
-               cardinality::Zero cardinality( void (*)(void)) { return cardinality::Zero();}
-
-               cardinality::Zero cardinality( std::function<void()>) { return cardinality::Zero();}
-
-
-
-               template< typename O, typename T>
-               auto cardinality( O&, void (O::*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               template< typename F, typename... Args, std::enable_if_t< traits::function< F>::arguments() == 0>* dummy = nullptr>
+               constexpr auto cardinality( F&& function, Args&&... args)
                {
-                  return typename helper< typename std::decay< T>::type>::cardinality();
+                  return cardinality::Zero{};
                }
+
 
                template< typename T>
-               auto cardinality( void (*)( T)) -> typename helper< typename std::decay< T>::type>::cardinality
+               constexpr auto cardinality( T& value )
                {
-                  return typename helper< typename std::decay< T>::type>::cardinality();
+                  return typename helper< std::decay_t< T>>::cardinality();
                }
 
-               template< typename T>
-               auto cardinality( T& value ) -> typename helper< typename std::decay< T>::type>::cardinality
+               template< typename F, typename... Args, std::enable_if_t< traits::function< F>::arguments() == 1>* dummy = nullptr>
+               constexpr auto cardinality( F&& function, Args&&... args)
                {
-                  return typename helper< typename std::decay< T>::type>::cardinality();
+                  using type = typename traits::function< F>::template argument< 0>::type;
+                  return typename helper< std::decay_t< type>>::cardinality();
                }
+
             } // deduce
 
 
             namespace value
             {
-               template< typename V, typename T>
-               void assign( V& variable, T&& value)
+               template< typename T, typename V>
+               void assign( T&& value, V& variable)
                {
                   variable = std::forward< T>( value);
                }
 
-               template< typename V, typename T>
-               void assign( std::vector< V>& variable, T&& value)
+               template< typename T, typename V>
+               void assign( T&& value, std::vector< V>& variable)
                {
                   range::copy( value, std::back_inserter( variable));
                }
             } // value
 
 
-            using namespace std::placeholders;
-
-            template< typename C>
-            struct maker
+            namespace caller
             {
-
-               template< typename O, typename T>
-               auto static make( O& object, void (O::*member)( T)) -> std::function<void( T)>
+               //
+               // for callables
+               //
+               template< typename T, typename... Args, std::enable_if_t< traits::function< T>::arguments() >= 0>* dummy = nullptr>
+               decltype( auto) make( T&& function, Args&&... args)
                {
-                  return [=,&object]( const T& value){ common::invoke( member, object, value);};
-               }
-
-               template< typename T>
-               auto static make( void (*function)( T)) -> std::function<void( T)>
-               {
-                  return [=]( const T& value){ common::invoke( function, value);};
+                  return [function,&args...]( auto&&... value) mutable { 
+                     common::invoke( function, std::forward< Args>( args)..., std::forward<decltype( value)>( value)...);
+                  };
                }
 
                //
                // For variables
                //
                template< typename T>
-               auto static make( T& variable) -> std::function<void( T)>
+               auto make( T& variable)
                {
                   //
                   // We bind directly to the variable
                   //
-                  return [&variable]( const T& values){ value::assign( variable, values);};
-               }
-            };
-
-
-            template<>
-            struct maker< cardinality::Zero>
-            {
-               using zero_result_type = std::function<void()>;
-
-               template< typename O>
-               static zero_result_type make( O& object, void (O::*function)(void))
-               {
-                  return [=,&object](){ common::invoke( function, object);};
-               }
-
-               static zero_result_type make( void (*function)(void))
-               {
-                  return { function};
-               }
-
-               static zero_result_type make( std::function<void()> function)
-               {
-                  return function;
+                  return [&variable]( const T& values){ value::assign( values, variable);};
                }
 
                //
                // For variable bool
                //
-               static zero_result_type make( bool& value)
+               auto make( bool& value)
                {
                   return [&value](){ value = true;};
                }
-            };
 
-
-
-            template< typename C, typename ...Args>
-            auto make( C cardinality, Args&&... args) -> decltype( maker< C>::make( std::forward< Args>( args)...))
-            {
-               return maker< C>::make( std::forward< Args>( args)...);
-            }
+            } // caller
 
 
             struct base_directive
@@ -451,7 +413,7 @@ namespace casual
                }
 
                bool consumed() const { return false;}
-               void dispatch() const
+               void dispatch()
                {
                   if( m_assigned)
                      internal::call( m_dispatch, m_values, cardinality_type{});
@@ -518,7 +480,7 @@ namespace casual
          template< typename C, typename... Args>
          option::Holder directive( C cardinality, std::vector< std::string> options, std::string description, Args&&... args)
          {
-            auto caller = internal::make( cardinality, std::forward< Args>( args)...);
+            auto caller = internal::caller::make( std::forward< Args>( args)...);
             return option::Holder{ internal::basic_directive< decltype( caller), C>{ std::move( options), std::move( description), std::move( caller)}};
          }
 
@@ -526,7 +488,7 @@ namespace casual
          option::Holder directive( std::vector< std::string> options, std::string description, Args&&... args)
          {
             auto cardinality = internal::deduce::cardinality( std::forward< Args>( args)...);
-            return option::Holder{ directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...)};
+            return directive( cardinality, std::move( options), std::move( description), std::forward< Args>( args)...);
          }
 
          /*
@@ -568,15 +530,7 @@ namespace casual
          //!
          void parse( int argc, char** argv);
 
-         void parse( const std::vector< std::string>& arguments);
-
-
-         void parse( const std::string& process, const std::vector< std::string>& arguments);
-
-         //!
-         //! @return process name
-         //!
-         const std::string& process() const;
+         void parse( std::vector< std::string> arguments);
 
 
       };

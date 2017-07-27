@@ -20,6 +20,27 @@ namespace casual
 
          namespace admin
          {
+            namespace service
+            {
+               namespace name
+               {
+                  constexpr auto state() { return ".casual/domain/state";}
+                  namespace scale
+                  {
+                     constexpr auto instances() { return ".casual/domain/scale/instances";}
+                  } // scale
+
+                  constexpr auto shutdown() { return ".casual/domain/shutdown";}
+
+                  namespace configuration
+                  {
+                     constexpr auto persist() { return ".casual/domain/configuration/persist";}
+
+                  } // configuration
+
+               } // name
+            } // service
+
             common::server::Arguments services( manager::State& state);
 
 

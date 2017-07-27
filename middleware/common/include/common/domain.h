@@ -60,15 +60,19 @@ namespace casual
             {
                process::Handle process;
                Identity identity;
+
+               friend std::ostream& operator << ( std::ostream& out, const Result& value);
             };
+
+            Result read( const std::string& path, process::pattern::Sleep retries);
+            Result read( const std::string& path);
 
             Result read( process::pattern::Sleep retries);
             Result read();
 
+            
+
          } // singleton
-
-
-
 
       } // domain
    } // common

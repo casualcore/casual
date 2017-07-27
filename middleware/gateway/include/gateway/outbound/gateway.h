@@ -128,82 +128,103 @@ namespace casual
                return basic_request< M, D>{ routing, device};
             }
 
-            namespace call
+            namespace service
             {
-
-               template< typename D>
-               struct Request : basic_request< common::message::service::call::callee::Request, D>
+               namespace call
                {
-                  using message_type = common::message::service::call::callee::Request;
-                  using request_base = basic_request< common::message::service::call::callee::Request, D>;
-
-                  Request( const Routing& routing, D& device)
-                     : request_base{ routing, device} {}
-
-                  void operator() ( message_type& message)
+                  struct Base
                   {
-                     log << "call request: " << message << '\n';
+                     Base( const outbound::service::Routing& routing)
+                      : routing( routing) {}
 
-                     if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
-                     {
-                        if( message.trid)
-                        {
-                           //
-                           // Notify TM that this "resource" is involved in the transaction
-                           //
-                           common::communication::ipc::blocking::send(
-                                 common::communication::ipc::transaction::manager::device(),
-                                 common::message::transaction::resource::external::involved::create( message));
-                        }
-
-                        this->routing.add( message);
-                     }
-
-                     auto&& request = message::interdomain::send::wrap( message);
-                     this->device.blocking_send( request);
-                  }
-               };
-
-            } // call
-
-            namespace conversation
-            {
-               namespace connect
-               {
-                  template< typename D>
-                  struct Request : basic_request< common::message::conversation::connect::callee::Request, D>
-                  {
-                     using message_type = common::message::conversation::connect::callee::Request;
-                     using request_base = basic_request< common::message::conversation::connect::callee::Request, D>;
-
-                     Request( const Routing& routing, D& device)
-                        : request_base{ routing, device} {}
-
-                     void operator() ( message_type& message)
-                     {
-                        log << "conversation connect request: " << message << '\n';
-
-                        if( message.trid)
-                        {
-                           //
-                           // Notify TM that this "resource" is involved in the transaction
-                           //
-                           common::communication::ipc::blocking::send(
-                                 common::communication::ipc::transaction::manager::device(),
-                                 common::message::transaction::resource::external::involved::create( message));
-                        }
-
-                        this->routing.add( message);
-
-
-                        auto&& request = message::interdomain::send::wrap( message);
-                        this->device.blocking_send( request);
-                     }
+                     const outbound::service::Routing& routing;
                   };
 
-               } // connect
+                  template< typename D>
+                  struct Request
+                  {
+                     using device_type = D;
 
-            } // conversation
+                     Request( const outbound::service::Routing& routing, device_type& device)
+                     : routing( routing), device( device) {}
+
+                     void operator() ( common::message::service::call::callee::Request& message)
+                     {
+                        log << "call request: " << message << '\n';
+
+                        auto now = common::platform::time::clock::type::now();
+
+                        if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                        {
+                           if( message.trid)
+                           {
+                              //
+                              // Notify TM that this "resource" is involved in the transaction
+                              //
+                              common::communication::ipc::blocking::send(
+                                    common::communication::ipc::transaction::manager::device(),
+                                    common::message::transaction::resource::external::involved::create( message));
+                           }
+
+                           routing.emplace(
+                              message.correlation,
+                              message.process,
+                              message.service.name,
+                              now
+                           );
+                        }
+
+                        auto&& request = message::interdomain::send::wrap( message);
+                        device.blocking_send( request);
+                     }
+
+                  private:
+                     const outbound::service::Routing& routing;
+                     device_type& device;
+                  };
+
+               } // call
+
+               namespace conversation
+               {
+                  namespace connect
+                  {
+                     template< typename D>
+                     struct Request : basic_request< common::message::conversation::connect::callee::Request, D>
+                     {
+                        using message_type = common::message::conversation::connect::callee::Request;
+                        using request_base = basic_request< common::message::conversation::connect::callee::Request, D>;
+
+                        Request( const Routing& routing, D& device)
+                        : request_base{ routing, device} {}
+
+                        void operator() ( message_type& message)
+                        {
+                           log << "conversation connect request: " << message << '\n';
+
+                           if( message.trid)
+                           {
+                              //
+                              // Notify TM that this "resource" is involved in the transaction
+                              //
+                              common::communication::ipc::blocking::send(
+                                    common::communication::ipc::transaction::manager::device(),
+                                    common::message::transaction::resource::external::involved::create( message));
+                           }
+
+                           this->routing.add( message);
+
+
+                           auto&& request = message::interdomain::send::wrap( message);
+                           this->device.blocking_send( request);
+                        }
+                     };
+
+                  } // connect
+
+               } // conversation
+            } // service
+
 
             namespace queue
             {
@@ -282,7 +303,6 @@ namespace casual
                }
 
             private:
-               void process( common::message::service::call::Reply& message) const { }
                void process( common::message::queue::enqueue::Reply& message) const { }
                void process( common::message::queue::dequeue::Reply& message) const { }
 
@@ -327,7 +347,7 @@ namespace casual
                               //
                               for( auto& service : advertise.services) { ++service.hops;}
 
-                              ipc::optional::send( common::communication::ipc::broker::device(), advertise);
+                              ipc::optional::send( common::communication::ipc::service::manager::device(), advertise);
                            }
 
                            if( ! advertise.queues.empty())
@@ -335,7 +355,7 @@ namespace casual
                               try
                               {
                                  common::communication::ipc::blocking::send(
-                                       common::communication::ipc::queue::broker::optional::device(),
+                                       common::communication::ipc::queue::manager::optional::device(),
                                        advertise);
                               }
                               catch( const common::exception::communication::Unavailable&)
@@ -356,6 +376,47 @@ namespace casual
 
                } // discover
             } // domain
+
+            namespace service
+            {
+               namespace call
+               {
+                  struct Reply
+                  {
+                     Reply( const outbound::service::Routing& routing, common::message::service::remote::Metric& metric)
+                        : routing( routing), metric( metric) {}
+
+                     void operator() ( message::interdomain::service::call::receive::Reply& message) const
+                     {
+                        auto&& reply = message.get();
+
+                        log << "reply: " << reply << '\n';
+
+                        try
+                        {
+                           auto destination = routing.get( reply.correlation);
+
+                           auto now = common::platform::time::clock::type::now();
+
+                           metric.services.emplace_back(
+                                 std::move( destination.service),
+                                 std::chrono::duration_cast< std::chrono::microseconds>( now - destination.start));
+
+                           ipc::optional::send( destination.destination.queue, reply);
+                        }
+                        catch( const common::exception::invalid::Argument&)
+                        {
+                           common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
+                        }
+                     }
+                  private:
+                     const outbound::service::Routing& routing;
+                     common::message::service::remote::Metric& metric;
+                  };
+
+               } // call
+
+            } // service
 
          } // handle
 
@@ -396,7 +457,8 @@ namespace casual
                //
                common::process::instance::connect();
 
-               m_reply_thread = std::thread{ &reply_thread< S>, std::ref( m_routing), std::forward< S>( settings)};
+               m_reply_thread = std::thread{ &reply_thread< S>,
+                  std::ref( m_service_routing), std::ref( m_routing), std::forward< S>( settings)};
             }
 
 
@@ -480,8 +542,8 @@ namespace casual
                   //
                   // external messages, that will be forward to remote domain
                   //
-                  handle::call::Request< outbound_device_type>{ m_routing, outbound_device},
-                  handle::conversation::connect::Request< outbound_device_type>{ m_routing, outbound_device},
+                  handle::service::call::Request< outbound_device_type>{ m_service_routing, outbound_device},
+                  handle::service::conversation::connect::Request< outbound_device_type>{ m_routing, outbound_device},
 
                   handle::queue::enqueue::Request< outbound_device_type>{ m_routing, outbound_device},
                   handle::queue::dequeue::Request< outbound_device_type>{ m_routing, outbound_device},
@@ -634,12 +696,12 @@ namespace casual
             }
 
             template< typename S>
-            static void reply_thread( const Routing& routing, S&& settings)
+            static void reply_thread( const service::Routing& service_routing, const Routing& routing, S&& settings)
             {
                //
                // We're only interested in sig-user
                //
-               common::signal::thread::scope::Mask block{ common::signal::set::filled( { common::signal::Type::user})};
+               common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
 
                Trace trace{ "gateway::outbound::Gateway::reply_thread"};
 
@@ -705,6 +767,12 @@ namespace casual
 
                   common::log::category::information << "connection established - policy: " << policy << "\n";
 
+                  common::message::service::remote::Metric metric;
+                  metric.process = common::process::handle();
+                  metric.services.reserve( common::platform::batch::gateway::metrics());
+
+
+
                   //
                   // we start our reply-message-pump
                   //
@@ -713,7 +781,7 @@ namespace casual
                      //
                      // External messages from the other domain
                      //
-                     handle::basic_reply< message::interdomain::service::call::receive::Reply>{ routing},
+                     handle::service::call::Reply{ service_routing, metric},
 
                      handle::basic_reply< message::interdomain::queue::enqueue::receive::Reply>{ routing},
                      handle::basic_reply< message::interdomain::queue::dequeue::receive::Reply>{ routing},
@@ -726,7 +794,31 @@ namespace casual
 
                   log << "start reply message pump\n";
 
-                  common::message::dispatch::blocking::pump( handler, inbound);
+
+                  while( true)
+                  {
+                     while( metric.services.empty())
+                     {
+                        // we can block
+                        handler( inbound.next( inbound.policy_blocking()));
+                     }
+
+                     //
+                     // consume until queue is empty or we reach batch limit
+                     //
+                     while( ! handler( inbound.next( inbound.policy_non_blocking()))
+                           && metric.services.size() < common::platform::batch::gateway::metrics())
+                     {
+                        ;
+                     }
+
+                     //
+                     // Send metrics to service-manager
+                     //
+                     common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), metric);
+                     metric.services.clear();
+
+                  }
 
                }
                catch( const common::exception::signal::User&)
@@ -740,7 +832,9 @@ namespace casual
                }
             }
 
+            const service::Routing m_service_routing;
             const Routing m_routing;
+
             std::thread m_reply_thread;
          };
 

@@ -2,17 +2,19 @@
 //! casual
 //!
 
+#include "common/event/listen.h"
 #include "domain/manager/admin/vo.h"
+#include "domain/manager/admin/server.h"
 
 #include "common/arguments.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 
 #include "common/communication/ipc.h"
-#include "common/event/listener.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/archive/maker.h"
+#include "sf/log.h"
 
 namespace casual
 {
@@ -107,23 +109,37 @@ namespace casual
                            },
                            []( message::event::domain::Error& m)
                            {
+
+                              auto print_error = []( const message::event::domain::Error& m){
+                                 std::cerr << terminal::color::yellow << m.executable << " "
+                                       << terminal::color::white << m.pid << ": "
+                                       << terminal::color::white << m.message
+                                       << '\n';
+                              };
+
                               switch( m.severity)
                               {
                                  case message::event::domain::Error::Severity::fatal:
                                  {
-                                    std::cerr << terminal::color::red << "fatal: " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::red << "fatal: ";
+                                    print_error( m);
                                     throw Done{};
                                  }
                                  case message::event::domain::Error::Severity::error:
                                  {
-                                    std::cerr << terminal::color::red << "error: " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::red << "error: ";
+                                    print_error( m);
                                     break;
                                  }
                                  default:
                                  {
-                                    std::cerr << terminal::color::magenta << "warning " << terminal::color::white << m.message << '\n';
+                                    std::cerr << terminal::color::magenta << "warning ";
+                                    print_error( m);
                                  }
                               }
+
+
+
                            },
                            [&]( message::event::domain::Group& m){
                               using context_type = message::event::domain::Group::Context;
@@ -195,8 +211,8 @@ namespace casual
 
                   admin::vo::State state()
                   {
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.state");
-                     auto reply = service();
+                     sf::service::protocol::binary::Call call;
+                     auto reply = call( admin::service::name::state());
 
                      admin::vo::State serviceReply;
 
@@ -208,10 +224,10 @@ namespace casual
 
                   std::vector< admin::vo::scale::Instances> scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.scale.instances");
+                     sf::service::protocol::binary::Call call;
+                     call << CASUAL_MAKE_NVP( instances);
 
-                     service << CASUAL_MAKE_NVP( instances);
-                     auto reply = service();
+                     auto reply = call( admin::service::name::scale::instances());
 
                      std::vector< admin::vo::scale::Instances> serviceReply;
 
@@ -241,7 +257,7 @@ namespace casual
                         }
 
                         arguments.emplace_back( "--event-queue");
-                        arguments.emplace_back( std::to_string( common::communication::ipc::inbound::id()));
+                        arguments.emplace_back( common::string::compose( common::communication::ipc::inbound::id()));
 
                         return arguments;
                      };
@@ -263,15 +279,15 @@ namespace casual
                      {
                         for( auto& i : s.instances)
                         {
-                           mapping[ i.pid] = s.alias;
+                           mapping[ i.handle.pid] = s.alias;
                         }
                      }
 
                      for( auto& e : state.executables)
                      {
-                        for( auto& pid : e.instances)
+                        for( auto& i : e.instances)
                         {
-                           mapping[ pid] = e.alias;
+                           mapping[ i.handle] = e.alias;
                         }
                      }
                      return mapping;
@@ -294,8 +310,7 @@ namespace casual
 
                      event::Handler events{ get_alias_mapping()};
 
-                     sf::xatmi::service::binary::Sync service( ".casual.domain.shutdown");
-                     auto reply = service();
+                     sf::service::protocol::binary::Call{}( admin::service::name::shutdown());
 
                      events();
                   }
@@ -326,7 +341,7 @@ namespace casual
                         { global::porcelain, ! global::no_color, ! global::no_header},
                         terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "instances", format_no_of_instances, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::column( "#c", std::mem_fn( &P::configured_instances), terminal::color::blue, terminal::format::Align::right),
+                        //terminal::format::column( "#c", std::mem_fn( &P::configured_instances), terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
                         terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left),
@@ -418,18 +433,25 @@ namespace casual
                   {
                      void configuration()
                      {
-                        sf::xatmi::service::binary::Sync{ ".casual/domain/configuration/persist"}();
+                        sf::service::protocol::binary::Call{}( admin::service::name::configuration::persist());
                      }
                   } // persist
 
 
-                  void state( const std::string& format)
+                  void state( const std::vector< std::string>& format)
                   {
                      auto state = call::state();
 
-                     auto archive = sf::archive::writer::from::name( std::cout, format);
-
-                     archive << CASUAL_MAKE_NVP( state);
+                     if( format.empty())
+                     {
+                        sf::archive::log::Writer archive( std::cout);
+                        archive << CASUAL_MAKE_NVP( state);
+                     }
+                     else 
+                     {
+                        auto archive = sf::archive::writer::from::name( std::cout, format.front());
+                        archive << CASUAL_MAKE_NVP( state);
+                     }
                   }
 
 
@@ -447,7 +469,7 @@ namespace casual
                   common::argument::directive( {"--no-color"}, "no color will be used", local::global::no_color),
                   common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", local::global::no_header),
 
-                  common::argument::directive( {"--state"}, "domain state in the provided format (xml|json|yaml|ini)", &local::action::state),
+                  common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "domain state in the provided format (xml|json|yaml|ini)", &local::action::state),
                   common::argument::directive( {"-ls", "--list-servers"}, "list all servers", &local::action::list_servers),
                   common::argument::directive( {"-le", "--list-executables"}, "list all executables", &local::action::list_executable),
                   common::argument::directive( {"-li", "--list-instances"}, "list all instances", &local::action::list_instances),
@@ -461,7 +483,10 @@ namespace casual
             try
             {
                parser.parse( argc, argv);
-
+            }
+            catch( const common::argument::exception::Help&)
+            {
+               
             }
             catch( const std::exception& exception)
             {

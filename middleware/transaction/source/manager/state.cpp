@@ -11,6 +11,7 @@
 #include "common/exception.h"
 #include "common/algorithm.h"
 #include "common/environment.h"
+#include "common/event/send.h"
 
 
 
@@ -84,9 +85,34 @@ namespace casual
                return m_state;
             }
 
-            bool Proxy::ready() const
+            bool Proxy::booted() const
             {
-               return common::range::all_of( instances, []( const Instance& i){ return i.state() == Instance::State::idle;});
+               return common::range::all_of( instances, []( const Instance& i){
+                  switch( i.state())
+                  {
+                     case Instance::State::idle:
+                     case Instance::State::error:
+                     case Instance::State::busy:
+                        return true;
+                     default:
+                        return false;
+                  }
+               });
+            }
+
+            bool Proxy::remove_instance( common::platform::pid::type pid)
+            {
+               auto found = common::range::find_if( instances, [pid]( auto& i){
+                  return i.process.pid == pid;
+               });
+
+               if( found)
+               {
+                  statistics += found->statistics;
+                  instances.erase( std::begin( found));
+                  return true;
+               }
+               return false;
             }
 
             std::ostream& operator << ( std::ostream& out, const Proxy& value)
@@ -186,6 +212,7 @@ namespace casual
             {
                Trace trace{ "transaction manager resource configuration"};
 
+
                auto transform_resource = []( const common::message::domain::configuration::transaction::Resource& r){
 
                   state::resource::Proxy proxy{ state::resource::Proxy::generate_id{}};
@@ -200,10 +227,22 @@ namespace casual
                   return proxy;
                };
 
-               common::range::transform(
+               auto validate = [&state]( const common::message::domain::configuration::transaction::Resource& r) {
+                  if( ! common::range::find( state.resource_properties, r.key))
+                  {
+                     common::log::category::error << "failed to correlate resource key '" << r.key << "' - action: skip resource\n";
+
+                     common::event::error::send( "failed to correlate resource key '" + r.key + "'");
+                     return false;
+                  }
+                  return true;
+               };
+
+               common::range::transform_if(
                      configuration.domain.transaction.resources,
                      state.resources,
-                     transform_resource);
+                     transform_resource,
+                     validate);
 
             }
 
@@ -292,6 +331,17 @@ namespace casual
          result = convert( value);
       }
 
+      bool Transaction::Resource::done() const
+      {
+         switch( result)
+         {
+         case Result::xa_RDONLY:
+         case Result::xaer_NOTA:
+            return true;
+         default:
+            return false;
+         }
+      }
 
       Transaction::Resource::Stage Transaction::stage() const
       {
@@ -337,9 +387,10 @@ namespace casual
          return ! persistent.replies.empty();
       }
 
-      bool State::ready() const
+
+      bool State::booted() const
       {
-         return common::range::all_of( resources, []( const state::resource::Proxy& p){ return p.ready();});
+         return common::range::all_of( resources, []( const auto& p){ return p.booted();});
       }
 
       std::size_t State::instances() const
@@ -418,6 +469,13 @@ namespace casual
             throw common::exception::invalid::Argument{ "failed to find instance"};
          }
          return *found;
+      }
+
+      bool State::remove_instance( common::platform::pid::type pid)
+      {
+         return common::range::find_if( resources, [pid]( auto& r){
+            return r.remove_instance( pid);
+         });
       }
 
       State::instance_range State::idle_instance( state::resource::id::type rm)

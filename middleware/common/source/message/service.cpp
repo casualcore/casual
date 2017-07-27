@@ -40,11 +40,33 @@ namespace casual
             out << "{ ";
             local::output::base_service( out, value);
             return out << ", timeout: " << value.timeout.count() << '}';
-;
          }
 
          namespace service
          {
+            namespace call
+            {
+               std::ostream& operator << ( std::ostream& out, const call::Service& value)
+               {
+                  out << "{ ";
+                  local::output::base_service( out, value);
+                  return out << ", timeout: " << value.timeout.count()
+                        << ", event_subscribers: " << range::make( value.event_subscribers)
+                        << '}';
+               }
+            } // call
+
+            std::ostream& operator << ( std::ostream& out, Transaction::State value)
+            {
+               switch( value)
+               {
+                  case Transaction::State::error: return out << "error";
+                  case Transaction::State::active: return out << "active";
+                  case Transaction::State::rollback: return out << "rollback";
+                  case Transaction::State::timeout: return out << "timeout";
+                  default: return out << "unknown";
+               }
+            }
 
             std::ostream& operator << ( std::ostream& out, const Transaction& message)
             {
@@ -130,9 +152,15 @@ namespace casual
                std::ostream& operator << ( std::ostream& out, const Reply& message)
                {
                   return out << "{ transaction: " << message.transaction
-                        << ", error: " << message.error
+                        << ", status: " << message.status
                         << ", code: " << message.code
                         << ", buffer: " << message.buffer
+                        << '}';
+               }
+
+               std::ostream& operator << ( std::ostream& out, const ACK& message)
+               {
+                  return out << "{ process: " << message.process
                         << '}';
                }
 

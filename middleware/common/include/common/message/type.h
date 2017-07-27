@@ -48,6 +48,9 @@ namespace casual
             domain_process_lookup_request,
             domain_process_lookup_reply,
 
+            domain_process_prepare_shutdown_request,
+            domain_process_prepare_shutdown_reply,
+
             domain_configuration_request = DOMAIN_BASE + 200,
             domain_configuration_reply,
             domain_server_configuration_request,
@@ -71,6 +74,7 @@ namespace casual
             service_call = SERVICE_BASE + 100,
             service_reply,
             service_acknowledge,
+            service_remote_metrics,
 
             service_conversation_connect_request = SERVICE_BASE + 200,
             service_conversation_connect_reply,
@@ -78,12 +82,29 @@ namespace casual
             service_conversation_disconnect,
 
 
-            // Monitor
-            TRAFFICMONITOR_BASE = 4000,
-            traffic_monitor_connect_request,
-            traffic_monitor_connect_reply,
-            traffic_monitor_disconnect,
-            traffic_event,
+            // event messages
+            EVENT_BASE = 4000,
+            event_subscription_begin,
+            event_subscription_end,
+
+            EVENT_DOMAIN_BASE = 4100,
+            event_domain_boot_begin = EVENT_DOMAIN_BASE,
+            event_domain_boot_end,
+            event_domain_shutdown_begin,
+            event_domain_shutdown_end,
+            event_domain_error,
+            event_domain_server_connect,
+            event_domain_group,
+
+            event_process_spawn,
+            event_process_exit,
+            EVENT_DOMAIN_BASE_END,
+
+            EVENT_SERVICE_BASE = 4200,
+            event_service_call = EVENT_SERVICE_BASE,
+            EVENT_SERVICE_BASE_END,
+
+
 
             // Transaction
             TRANSACTION_BASE = 5000,
@@ -185,25 +206,7 @@ namespace casual
             interdomain_queue_dequeue_request,
             interdomain_queue_dequeue_reply,
 
-            // event messages
-            EVENT_BASE = 9000,
-            event_subscription_begin,
-            event_subscription_end,
-            event_subscribe_update,
-            event_unsubscribe_request,
 
-            event_domain_boot_begin,
-            event_domain_boot_end,
-            event_domain_shutdown_begin,
-            event_domain_shutdown_end,
-            event_domain_error,
-            event_domain_server_connect,
-            event_domain_boot_group_start,
-            event_domain_boot_group_end,
-            event_domain_group,
-
-            event_process_spawn,
-            event_process_exit,
 
 
 

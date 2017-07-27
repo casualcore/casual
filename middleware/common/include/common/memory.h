@@ -42,7 +42,7 @@ namespace casual
 
 
          template< typename T>
-         constexpr auto size( T&&) -> typename std::enable_if< traits::is_trivially_copyable< typename std::remove_reference<T>::type>::value, size_type>::type
+         constexpr auto size( T&&)
          {
             return detail::size< typename std::remove_reference<T>::type>();
          }

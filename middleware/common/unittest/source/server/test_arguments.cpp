@@ -16,23 +16,9 @@ namespace casual
          namespace
          {
 
-            namespace lifetime
-            {
-               struct Init
-               {
-                  int operator () ( int argc, char **argv) { return 42; }
-               };
-
-               struct Done
-               {
-                  void operator () () {}
-               };
-
-            } // lifetime
-
-            void service1( TPSVCINFO *) {}
-            void service3( TPSVCINFO *, int) {}
-            void service4( TPSVCINFO *, std::string& value) { value = "test";}
+            service::invoke::Result service1( service::invoke::Parameter&&) { return {};}
+            service::invoke::Result service3( service::invoke::Parameter&&, int) { return {};}
+            service::invoke::Result service4( service::invoke::Parameter&&, std::string& value) { value = "test"; return {};}
          } // <unnamed>
       } // local
 
@@ -43,7 +29,7 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            server::Arguments arguments( {}, local::lifetime::Init{}, local::lifetime::Done{});
+            server::Arguments arguments;
          });
       }
 
@@ -52,27 +38,10 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            server::Arguments arguments( {}, local::lifetime::Init{}, local::lifetime::Done{});
+            server::Arguments arguments;
 
             arguments.services.emplace_back( ".1", &local::service1);
-         });
-      }
 
-      TEST( common_server_argument, server_init)
-      {
-         common::unittest::Trace trace;
-         server::Arguments arguments{ {}, local::lifetime::Init{}, local::lifetime::Done{}};
-
-         EXPECT_TRUE( arguments.init( 0, nullptr) == 42);
-      }
-
-      TEST( common_server_argument, server_done)
-      {
-         common::unittest::Trace trace;
-         server::Arguments arguments{ {}, local::lifetime::Init{}, local::lifetime::Done{}};
-
-         EXPECT_NO_THROW({
-            arguments.done();
          });
       }
 
@@ -82,7 +51,7 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            server::Arguments arguments( {}, local::lifetime::Init{}, local::lifetime::Done{});
+            server::Arguments arguments;
 
             arguments.services.emplace_back( ".1", std::bind( &local::service3, std::placeholders::_1, 10));
          });
@@ -93,9 +62,11 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            server::Arguments arguments( {}, local::lifetime::Init{}, local::lifetime::Done{});
+            server::Arguments arguments;
 
-            arguments.services.emplace_back( ".1", std::bind( &local::service3, std::placeholders::_1, 10), common::service::category::admin, common::service::transaction::Type::none);
+            arguments.services.emplace_back( ".1",
+                  std::bind( &local::service3, std::placeholders::_1, 10),
+                  common::service::transaction::Type::none, common::service::category::admin());
          });
       }
 
@@ -109,9 +80,13 @@ namespace casual
          std::string value;
 
          EXPECT_NO_THROW({
-            server::Arguments arguments( {}, local::lifetime::Init{}, local::lifetime::Done{});
-            arguments.services.emplace_back( ".1", std::bind( &local::service4, std::placeholders::_1, std::ref( value)), common::service::category::admin, common::service::transaction::Type::none);
-            arguments.services.back().call( nullptr);
+            server::Arguments arguments;
+
+            arguments.services.emplace_back( ".1",
+                        std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
+                        common::service::transaction::Type::none, common::service::category::admin());
+
+            arguments.services.back()( service::invoke::Parameter{ buffer::Payload{ ".binary/", 128}});
          });
 
          EXPECT_TRUE( value == "test");
@@ -124,9 +99,15 @@ namespace casual
          {
             server::Arguments make_arguments( std::string& value)
             {
-               server::Arguments arguments( {}, local::lifetime::Init{}, local::lifetime::Done{});
-               arguments.services.emplace_back( ".1", std::bind( &local::service4, std::placeholders::_1, std::ref( value)), common::service::category::admin, common::service::transaction::Type::none);
-               arguments.services.back().call( nullptr);
+               server::Arguments arguments;
+
+               arguments.services = {
+                     { ".1",
+                           std::bind( &local::service4, std::placeholders::_1, std::ref( value)),
+                           common::service::transaction::Type::none, common::service::category::admin()}
+               };
+
+               arguments.services.back()( service::invoke::Parameter{});
 
                return arguments;
             }

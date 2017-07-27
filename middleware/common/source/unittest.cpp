@@ -7,6 +7,7 @@
 #include "common/signal.h"
 
 #include "common/message/event.h"
+#include "common/message/handle.h"
 
 
 #include <random>
@@ -119,6 +120,7 @@ namespace casual
                {
                   struct wait_done{};
 
+
                   auto handler = device.handler(
                      []( const message::event::domain::boot::End&){
                         throw wait_done{};
@@ -126,9 +128,16 @@ namespace casual
                      []( const message::event::domain::Error& error){
                         if( error.severity == message::event::domain::Error::Severity::fatal)
                         {
-                           throw wait_done{};
+                           throw exception::Shutdown{ "fatal error", CASUAL_NIP( error)};
                         }
-                     }
+                     },
+                     common::message::handle::Discard< common::message::event::domain::Group>{},
+                     common::message::handle::Discard< common::message::event::domain::boot::Begin>{},
+                     common::message::handle::Discard< common::message::event::domain::shutdown::Begin>{},
+                     common::message::handle::Discard< common::message::event::domain::shutdown::End>{},
+                     common::message::handle::Discard< common::message::event::domain::server::Connect>{},
+                     common::message::handle::Discard< common::message::event::process::Spawn>{},
+                     common::message::handle::Discard< common::message::event::process::Exit>{}
                   );
 
                   try
@@ -137,6 +146,7 @@ namespace casual
                   }
                   catch( const wait_done&)
                   {
+                     log::debug << "domain manager booted\n";
                      // no-op
                   }
                }

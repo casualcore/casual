@@ -115,7 +115,14 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
 
 void tpfree( const char* const ptr)
 {
-   casual::common::buffer::pool::Holder::instance().deallocate( ptr);
+   try
+   {
+      casual::common::buffer::pool::Holder::instance().deallocate( ptr);
+   }
+   catch( ...)
+   {
+      casual::xatmi::internal::error::set( casual::common::error::handler());
+   }
 }
 
 void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)

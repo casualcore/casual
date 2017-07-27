@@ -45,6 +45,7 @@ namespace casual
 
       namespace handle
       {
+         using dispatch_type = common::communication::ipc::dispatch::Handler;
 
          namespace implementation
          {
@@ -66,9 +67,6 @@ namespace casual
                using message_type = common::message::event::process::Exit;
 
                void operator () ( message_type& message);
-
-
-               void apply( const common::process::lifetime::Exit& exit);
             };
 
          } // process
@@ -102,7 +100,8 @@ namespace casual
                template< typename H>
                struct Wrapper : public state::Base
                {
-                  using message_type = typename H::message_type;
+                  using handler_type = H;
+                  using message_type = typename handler_type::message_type;
 
                   Wrapper( State& state) : state::Base{ state}, m_handler{ state} {}
 
@@ -133,7 +132,9 @@ namespace casual
 
                   using state::Base::Base;
 
-                  bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool operator () ( message_type& message, Transaction& transaction);
+
+                  static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::prepare_replied;}
 
                };
                using Prepare = Wrapper< basic_prepare>;
@@ -145,7 +146,9 @@ namespace casual
 
                   using state::Base::Base;
 
-                  bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool operator () ( message_type& message, Transaction& transaction);
+
+                  static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::commit_replied;}
 
                };
                using Commit = Wrapper< basic_commit>;
@@ -156,7 +159,9 @@ namespace casual
 
                   using state::Base::Base;
 
-                  bool operator () ( message_type& message, Transaction& transaction, Transaction::Resource& resource);
+                  bool operator () ( message_type& message, Transaction& transaction);
+
+                  static constexpr Transaction::Resource::Stage stage() { return Transaction::Resource::Stage::rollback_replied;}
                };
 
                using Rollback = Wrapper< basic_rollback>;
@@ -257,6 +262,8 @@ namespace casual
             };
 
          } // domain
+
+         dispatch_type handlers( State& state);
 
       } // handle
    } // transaction

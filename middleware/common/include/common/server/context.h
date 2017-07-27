@@ -10,9 +10,9 @@
 #include "common/server/service.h"
 
 
-#include "common/message/traffic.h"
-
 #include "common/platform.h"
+
+#include "common/message/event.h"
 
 
 
@@ -71,6 +71,15 @@ namespace casual
             };
          } // state
 
+         namespace xatmi
+         {
+            struct Service
+            {
+
+            };
+
+         } // xatmi
+
          struct State
          {
             state::Jump jump;
@@ -87,9 +96,7 @@ namespace casual
             service_mapping_type services;
 
 
-            message::traffic::Event traffic;
-
-            std::function<void()> server_done;
+            message::event::service::Call event;
 
          };
 
@@ -145,7 +152,7 @@ namespace casual
             //!
             //! @param name
             //! @return a pointer to the service if found, nullptr otherwise.
-            server::Service* physical( const server::Service::function_type& function);
+            server::Service* physical( const server::xatmi::function_type& function);
 
 
             //!
@@ -164,6 +171,8 @@ namespace casual
 
             State m_state;
          };
+
+         inline Context& context() { return Context::instance();}
 
       } // server
 	} // common

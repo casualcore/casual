@@ -160,6 +160,8 @@ namespace casual
                };
 
 
+
+
                platform::buffer::raw::type m_inbound = nullptr;
                std::vector< std::unique_ptr< Base>> m_pools;
 
@@ -246,6 +248,8 @@ namespace casual
 
             };
 
+
+            inline Holder& holder() { return Holder::instance();}
 
             template< typename B>
             struct basic_pool

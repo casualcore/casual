@@ -6,6 +6,7 @@
 #include "common/unittest.h"
 
 #include "gateway/manager/admin/vo.h"
+#include "gateway/manager/admin/server.h"
 
 #include "common/mockup/file.h"
 #include "common/mockup/process.h"
@@ -15,7 +16,7 @@
 
 #include "common/message/domain.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
 namespace casual
@@ -57,7 +58,7 @@ namespace casual
                } set_environment;
 
                mockup::domain::Manager manager;
-               mockup::domain::Broker broker;
+               mockup::domain::service::Manager service;
                mockup::domain::transaction::Manager tm;
 
                Gateway gateway;
@@ -88,15 +89,13 @@ namespace casual
 
                manager::admin::vo::State state()
                {
-                  sf::xatmi::service::binary::Sync service( ".casual.gateway.state");
+                  sf::service::protocol::binary::Call call;
+                  auto reply = call( manager::admin::service::name::state());
 
-                  auto reply = service();
+                  manager::admin::vo::State result;
+                  reply >> CASUAL_MAKE_NVP( result);
 
-                  manager::admin::vo::State serviceReply;
-
-                  reply >> CASUAL_MAKE_NVP( serviceReply);
-
-                  return serviceReply;
+                  return result;
                }
 
 
@@ -289,7 +288,7 @@ namespace casual
 
          common::message::service::call::callee::Request request;
          {
-            request.service.name = ".casual.gateway.state";
+            request.service.name = manager::admin::service::name::state();
             request.process = process::handle();
          }
 

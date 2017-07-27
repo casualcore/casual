@@ -11,6 +11,7 @@
 
 #include "common/string.h"
 #include "common/file.h"
+#include "common/buffer/type.h"
 
 #include <fstream>
 
@@ -28,7 +29,6 @@ namespace casual
             const auto cINI{ "ini"};
          }
 
-
          namespace maker
          {
             namespace
@@ -45,12 +45,12 @@ namespace casual
 
                   virtual ~Basic() noexcept {}
 
-                  virtual void serialize() override
+                  void serialize() override
                   {
                      m_load_save( m_stream);
                   }
 
-                  virtual archive_type& archive() override
+                  archive_type& archive() override
                   {
                      return m_archive;
                   }
@@ -66,7 +66,7 @@ namespace casual
                   template<typename D, typename IO>
                   auto name( const D& dispatch, IO&& stream, std::string name) -> decltype(common::range::find( dispatch, name)->second( std::forward<IO>( stream)))
                   {
-                     const auto found = common::range::find( dispatch, common::string::lower( std::move( name)));
+                     const auto found = common::range::find( dispatch, common::string::lower( name));
 
                      if( found)
                      {
@@ -110,15 +110,14 @@ namespace casual
 
                         static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
                         {
-                           { cYML, yml_type{}}, { cYAML, yml_type{}},
-                           { cXML, xml_type{}},
-                           { cJSN, jsn_type{}}, { cJSON, jsn_type{}},
-                           { cINI, ini_type{}},
+                           { cYML, yml_type{}}, { common::buffer::type::yaml(), yml_type{}}, { cYAML, yml_type{}},
+                           { cXML, xml_type{}}, { common::buffer::type::xml(), xml_type{}},
+                           { cJSN, jsn_type{}}, { common::buffer::type::json(), jsn_type{}}, { cJSON, jsn_type{}},
+                           { cINI, ini_type{}}, { common::buffer::type::ini(), ini_type{}}
                         };
 
                         return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
                      }
-
                   } // <unnamed>
                } // local
 
@@ -186,6 +185,11 @@ namespace casual
                   return local::name( stream, std::move( name));
                }
 
+               Holder buffer( const platform::binary::type& data, std::string type)
+               {
+                  return local::name( data, std::move( type));
+               }
+
             } // from
 
          } // reader
@@ -209,10 +213,10 @@ namespace casual
 
                         static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
                         {
-                           { cYML, yml_type{}}, { cYAML, yml_type{}},
-                           { cXML, xml_type{}},
-                           { cJSN, jsn_type{}}, { cJSON, jsn_type{}},
-                           { cINI, ini_type{}},
+                           { cYML, yml_type{}}, { common::buffer::type::yaml(), yml_type{}}, { cYAML, yml_type{}},
+                           { cXML, xml_type{}}, { common::buffer::type::xml(),  xml_type{}},
+                           { cJSN, jsn_type{}}, { common::buffer::type::json(), jsn_type{}}, { cJSON, jsn_type{}},
+                           { cINI, ini_type{}}, { common::buffer::type::ini(),  ini_type{}}
                         };
 
                         return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
@@ -240,6 +244,11 @@ namespace casual
                Holder name( std::ostream& stream, std::string name)
                {
                   return local::name( stream, std::move( name));
+               }
+
+               Holder buffer( platform::binary::type& data, std::string type)
+               {
+                  return local::name( data, std::move( type));
                }
 
             } // from

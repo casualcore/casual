@@ -37,6 +37,10 @@ int main( int argc, char** argv)
       manager.start();
 
    }
+   catch( const std::exception& exception)
+   {
+
+   }
    catch( ...)
    {
       return casual::common::error::handler();

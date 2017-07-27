@@ -1604,7 +1604,6 @@ int casual_field_type_of_name( const char* const name, int* const type)
 
 int casual_field_plain_type_host_size( const int type, long* const count)
 {
-
    if( count)
    {
       switch( type)
@@ -1640,6 +1639,7 @@ int casual_field_minimum_need( long id, long* count)
 {
    if( count)
    {
+
       const constexpr auto item_size = casual::common::network::byteorder::bytes<casual::buffer::field::item_type>();
       const constexpr auto size_size = casual::common::network::byteorder::bytes<casual::buffer::field::size_type>();
 
@@ -1677,6 +1677,8 @@ int casual_field_minimum_need( long id, long* count)
 
    return CASUAL_FIELD_SUCCESS;
 }
+
+
 
 int casual_field_remove_all( char* const buffer)
 {

@@ -24,6 +24,10 @@ Follow the [build instructions](build.md)
 
 See [examples](middleware/example/domain/readme.md)
 
+[how to build resource proxies](middleware/tools/documentation/build/resource/proxy.md)
+
+[how to build servers](middleware/tools/documentation/build/server.md)
+
 
 ### Status
 

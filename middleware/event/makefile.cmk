@@ -1,0 +1,94 @@
+from casual.middleware.make.dsl import *
+
+IncludePaths([
+	'include',
+	'../common/include',
+	'../serviceframework/include',
+	'../xatmi/include',
+	'../../thirdparty/database/include',
+	'$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+	])
+
+
+LibraryPaths([
+	'bin',
+    '../common/bin',
+    '../xatmi/bin',
+    '../serviceframework/bin',
+    '../configuration/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+    ])
+
+
+install_lib = []
+install_bin = []
+
+common_archive = LinkArchive( 'bin/casual-event-common',
+	[
+		Compile( 'source/common.cpp')
+	] 
+	)
+
+archive_vo = LinkArchive( 'bin/casual-event-service-monitor-vo',
+    [
+		Compile( 'source/service/monitor/vo/entry.cpp')
+	])
+
+install_lib.append( archive_vo)
+
+    
+target = LinkExecutable( 'bin/casual-event-service-monitor',
+	[
+        Compile( 'source/service/monitor/database.cpp')
+	],
+	[
+	'casual-common',
+	'sqlite3'] )
+
+install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-event-service-log',
+	[
+	    Compile( 'source/service/log/log.cpp')
+	],
+	[
+	'casual-common'] )
+
+install_bin.append( target)
+
+target = LinkExecutable( 'bin/casual-event-service-monitor-server',
+	[
+	    Compile( 'source/service/monitor/server.cpp')
+	],
+	[
+		archive_vo,
+		common_archive,
+		'casual-common',
+		'casual-sf',
+		'sqlite3'
+	] )
+
+install_bin.append( target)
+	
+		
+#
+# unittest
+#
+LinkUnittest( 'bin/test-casual-monitor',
+	[ Compile( 'unittest/isolated/source/test_monitor.cpp')],
+	[
+	archive_vo,
+	'casual-common',
+	'sqlite3'])	
+
+#
+# Install
+#
+Install( install_lib,'$(CASUAL_HOME)/lib')
+Install( install_bin,'$(CASUAL_HOME)/bin')
+
+
+
+
+
+

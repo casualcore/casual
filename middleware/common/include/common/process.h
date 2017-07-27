@@ -11,7 +11,10 @@
 
 #include "common/algorithm.h"
 
+#include "common/communication/ipc/handle.h"
+
 #include "common/marshal/marshal.h"
+
 
 
 //
@@ -36,14 +39,9 @@ namespace casual
          const std::string& path();
 
          //!
-         //! Sets the path of the current process
+         //! @return the basename of the current process
          //!
-         void path( const std::string& path);
-
-         //!
-         //! @return process id (pid) for current process.
-         //!
-         platform::pid::type id();
+         const std::string& basename();
 
 
          //!
@@ -51,22 +49,19 @@ namespace casual
          //!
          struct Handle
          {
+            using queue_handle = communication::ipc::Handle;
+
             Handle() = default;
             Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, platform::ipc::id::type queue) : pid( pid), queue( queue) {}
+            Handle( platform::pid::type pid, queue_handle queue) : pid( pid),  queue( queue)  {}
 
             platform::pid::type pid = 0;
-            platform::ipc::id::type queue = 0;
+            queue_handle queue;
 
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
             inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
-            inline friend bool operator < ( const Handle& lhs, const Handle& rhs)
-            {
-               if( lhs.pid == rhs.pid)
-                  return lhs.queue < rhs.queue;
-               return lhs.pid < rhs.pid;
-            }
+            friend bool operator < ( const Handle& lhs, const Handle& rhs);
 
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
 
@@ -92,9 +87,9 @@ namespace casual
                };
             };
 
-            explicit operator bool() const
+            inline explicit operator bool() const
             {
-               return pid != 0 && queue != 0;
+               return pid != 0 && queue;
             }
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -109,12 +104,23 @@ namespace casual
          //!
          Handle handle();
 
+         //!
+         //! @return process id (pid) for current process.
+         //!
+         platform::pid::type id();
+
+         inline platform::pid::type id( const Handle& handle) { return handle.pid;}
+         inline platform::pid::type id( platform::pid::type pid) { return pid;}
+
          namespace instance
          {
 
             namespace identity
             {
-               const Uuid& broker();
+               namespace service
+               {
+                  const Uuid& manager();
+               } // service
 
                namespace forward
                {
@@ -133,7 +139,7 @@ namespace casual
 
                namespace queue
                {
-                  const Uuid& broker();
+                  const Uuid& manager();
                } // queue
 
                namespace transaction
@@ -321,7 +327,7 @@ namespace casual
          //!
          //! @return the process handle
          //!
-         Handle ping( platform::ipc::id::type queue);
+         Handle ping( communication::ipc::Handle queue);
 
          namespace lifetime
          {

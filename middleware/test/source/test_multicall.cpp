@@ -17,7 +17,7 @@
 
 #include "common/arguments.h"
 
-#include "sf/xatmi_call.h"
+#include "sf/service/protocol/call.h"
 
 void help()
 {
@@ -94,15 +94,17 @@ void run( Settings settings)
          Transaction transaction( settings, timepoints);
 
 
-         using Async = casual::sf::xatmi::service::binary::Async;
-         Async caller{ settings.service};
+         using Send = casual::sf::service::protocol::binary::Send;
+         Send send;
 
-         std::vector< Async::receive_type> receivers;
+         send << CASUAL_MAKE_NVP( settings.argument);
+
+         std::vector< Send::receive_type> receivers;
+         receivers.reserve( settings.calls);
 
          for( long index = 0; index < settings.calls; ++index )
          {
-            caller << CASUAL_MAKE_NVP( settings.argument);
-            receivers.push_back( caller());
+            receivers.push_back( send( settings.service));
          }
 
          timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "call");
