@@ -17,9 +17,9 @@ namespace casual
          namespace
          {
 
-            typedef common::network::byteorder::size::host::type size_type;
-            typedef common::platform::binary::type::const_pointer const_data_type;
-            typedef common::platform::binary::type::pointer data_type;
+            using size_type = common::platform::size::type;
+            using const_data_type = common::platform::binary::type::const_pointer;
+            using data_type = common::platform::binary::type::pointer;
 
 
             struct Buffer : common::buffer::Buffer
@@ -29,7 +29,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               auto transport( const common::platform::binary::size::type user_size) const
+               size_type transport( const size_type user_size) const
                {
                   //
                   // Just ignore user-size all together

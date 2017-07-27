@@ -100,11 +100,7 @@ namespace casual
                void marshal( A& archive) const
                {
                   archive << payload().type;
-                  //
-                  // TODO: Fix this ... this is bad
-                  // We should somehow use network::byteorder::size::encode instead
-                  //
-                  archive << static_cast<network::byteorder::size::host::type>(transport);
+                  archive << transport;
                   archive.append( std::begin( payload().memory), std::begin( payload().memory) + transport);
                }
 

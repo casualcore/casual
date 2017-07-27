@@ -36,7 +36,7 @@ namespace casual
                      using host_uuid_type = Uuid::uuid_type;
                      using network_uuid_type = host_uuid_type;
 
-                     using host_size_type = common::network::byteorder::size::host::type;
+                     using host_size_type = platform::size::type;
                      using network_size_type = common::network::byteorder::type<host_size_type>;
 
                      network_type_type type = 0;

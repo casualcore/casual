@@ -32,8 +32,8 @@ namespace casual
             };
 */
 
-            typedef common::network::byteorder::size::host::type size_type;
-            typedef common::platform::buffer::raw::type data_type;
+            using size_type = common::platform::size::type;
+            using data_type = common::platform::buffer::raw::type;
 
 
             namespace local
@@ -67,7 +67,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               auto transport( const common::platform::binary::size::type user_size) const
+               common::platform::binary::size::type transport( const common::platform::binary::size::type user_size) const
                {
                   //
                   // Just ignore user-size all together

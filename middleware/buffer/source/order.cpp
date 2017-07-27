@@ -24,7 +24,7 @@ namespace casual
          namespace
          {
 
-            typedef common::network::byteorder::size::host::type size_type;
+            typedef common::platform::size::type size_type;
             typedef common::platform::binary::type::const_pointer const_data_type;
             typedef common::platform::binary::type::pointer data_type;
 
@@ -40,13 +40,14 @@ namespace casual
 
 
                using common::buffer::Buffer::Buffer;
+               using size_type = common::platform::binary::size::type;
 
                void shrink()
                {
                   return payload.memory.shrink_to_fit();
                }
 
-               auto capacity() const noexcept
+               size_type capacity() const noexcept
                {
                   return payload.memory.capacity();
                }
@@ -56,7 +57,7 @@ namespace casual
                   payload.memory.reserve( value);
                }
 
-               auto utilized() const noexcept
+               size_type utilized() const noexcept
                {
                   return payload.memory.size();
                }
@@ -66,7 +67,7 @@ namespace casual
                   payload.memory.resize( value);
                }
 
-               auto consumed() const noexcept
+               size_type consumed() const noexcept
                {
                   return selector;
                }
@@ -90,7 +91,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               auto transport( const common::platform::binary::size::type user_size) const
+               size_type transport( const common::platform::binary::size::type user_size) const
                {
                   //
                   // Just ignore user-size all together
@@ -172,14 +173,6 @@ namespace casual
 
          namespace
          {
-/*
-            struct trace : common::trace::basic::Scope
-            {
-               template<decltype(sizeof("")) size>
-               explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
-            };
-*/
-
             namespace error
             {
                int handle()

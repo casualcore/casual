@@ -67,7 +67,7 @@ namespace casual
                   struct Type
                   {
                      std::string type;
-                     common::network::byteorder::size::host::type size;
+                     common::platform::size::type size;
                   };
 
                   struct Info
@@ -109,7 +109,7 @@ namespace casual
                   template< typename T>
                   auto network( T&& value) -> typename std::enable_if< common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
                   {
-                     return Type{ "fixed array", static_cast< common::network::byteorder::size::host::type>( common::memory::size( value))};
+                     return Type{ "fixed array", static_cast< common::platform::size::type>( common::memory::size( value))};
                   }
 
 
@@ -217,7 +217,7 @@ namespace casual
                   void write( const std::vector< T>& value)
                   {
                      // TODO:
-                     write_pod( static_cast<common::network::byteorder::size::host::type>(value.size()));
+                     write_pod( static_cast< common::platform::size::type>( value.size()));
 
                      for( auto& current : value)
                      {
@@ -228,7 +228,7 @@ namespace casual
                   void write( const std::string& value)
                   {
                      // TODO:
-                     write_pod( static_cast<common::network::byteorder::size::host::type>(value.size()));
+                     write_pod( static_cast< common::platform::size::type>(value.size()));
 
                      append(
                         std::begin( value),
@@ -238,7 +238,7 @@ namespace casual
                   void write( const common::platform::binary::type& value)
                   {
                      // TODO:
-                     write_pod( static_cast<common::network::byteorder::size::host::type>(value.size()));
+                     write_pod( static_cast< common::platform::size::type>(value.size()));
 
                      append(
                         std::begin( value),

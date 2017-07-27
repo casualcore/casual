@@ -106,13 +106,14 @@ namespace casual
 
          platform::binary::size::type Buffer::transport( platform::binary::size::type user_size) const
          {
-            if( user_size > payload.memory.size())
+            if( user_size > reserved())
             {
                throw exception::xatmi::invalid::Argument{ "user supplied size is larger than the buffer actual size"};
             }
 
             return user_size;
          }
+
 
          platform::binary::size::type Buffer::reserved() const
          {

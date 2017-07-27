@@ -226,6 +226,10 @@ namespace casual
             } // id
          } // resource
 
+         namespace size
+         {
+            using type = long;
+         } // size
 
 			namespace binary
          {
@@ -237,7 +241,7 @@ namespace casual
                //!
                //! The common type used to represent sizes (especially in buffers)
                //!
-               using type = uint64_t;
+               using type = platform::size::type;
 
             } // size
 
@@ -251,7 +255,7 @@ namespace casual
 
                namespace size
                {
-                  using type = long;
+                  using type = platform::size::type;;
                } // size
 
 

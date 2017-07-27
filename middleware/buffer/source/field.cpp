@@ -42,7 +42,7 @@ namespace casual
          {
 
             using item_type = long;
-            using size_type = common::network::byteorder::size::host::type;
+            using size_type = common::platform::binary::size::type;
             using const_data_type = common::platform::binary::type::const_pointer;
             using data_type = common::platform::binary::type::pointer;
 
@@ -130,7 +130,7 @@ namespace casual
                   return payload.memory.shrink_to_fit();
                }
 
-               auto capacity() const noexcept
+               size_type capacity() const noexcept
                {
                   return payload.memory.capacity();
                }
@@ -141,7 +141,7 @@ namespace casual
                }
 
 
-               auto utilized() const noexcept
+               size_type utilized() const noexcept
                {
                   return payload.memory.size();
                }
@@ -164,7 +164,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               auto transport( const common::platform::binary::size::type user_size) const
+               size_type transport( const common::platform::binary::size::type user_size) const
                {
                   //
                   // Just ignore user-size all together
@@ -176,7 +176,7 @@ namespace casual
                //!
                //! Implement Buffer::reserved
                //!
-               auto reserved() const
+               size_type reserved() const
                {
                   return capacity();
                }
