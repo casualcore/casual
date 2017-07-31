@@ -5,6 +5,8 @@
 #ifndef CASUAL_UTILITY_STRING_H_
 #define CASUAL_UTILITY_STRING_H_
 
+#include "common/platform.h"
+
 #include <string>
 #include <locale>
 
@@ -100,10 +102,9 @@ namespace casual
 
 
 			template< typename T>
-			typename std::enable_if< std::is_integral< T>::value, std::size_t>::type
-			digits( T value)
+			auto digits( T value) -> std::enable_if_t< std::is_integral< T>::value, platform::size::type>
 			{
-			   std::size_t result{ 1};
+			   platform::size::type result{ 1};
 
 			   while( value /= 10)
 			   {

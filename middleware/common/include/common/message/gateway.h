@@ -92,7 +92,7 @@ namespace casual
 
                   common::process::Handle process;
                   common::domain::Identity domain;
-                  std::size_t order = 0;
+                  platform::size::type order = 0;
                   std::vector< advertise::Service> services;
                   std::vector< advertise::Queue> queues;
 

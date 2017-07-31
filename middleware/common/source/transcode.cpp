@@ -39,7 +39,7 @@ namespace casual
          {
             namespace detail
             {
-               std::string encode( const void* data, std::size_t bytes)
+               std::string encode( const void* data, platform::size::type bytes)
                {
                   //
                   // b64_ntop requires one extra char of some reason
@@ -127,14 +127,14 @@ namespace casual
                   std::string transcode( const std::string& value) const
                   {
                      char* source = const_cast<char*>(value.c_str());
-                     std::size_t size = value.size();
+                     auto size = value.size();
 
                      std::string result;
 
                      do
                      {
                         char buffer[32];
-                        std::size_t left = sizeof buffer;
+                        auto left = sizeof buffer;
                         char* target = buffer;
 
                         const auto conversions = iconv( m_descriptor, &source, &size, &target, &left);
@@ -318,7 +318,7 @@ namespace casual
 
             namespace detail
             {
-               std::string encode( const void* data, std::size_t bytes)
+               std::string encode( const void* data, platform::size::type bytes)
                {
                   std::string result( bytes * 2, 0);
 

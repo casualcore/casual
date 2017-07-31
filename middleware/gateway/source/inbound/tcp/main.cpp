@@ -22,14 +22,16 @@ namespace casual
       {
          namespace tcp
          {
+            using size_type = common::platform::size::type;
+
             struct Settings
             {
                communication::tcp::socket::descriptor_type descriptor = 0;
 
                struct
                {
-                  std::size_t size = 0;
-                  std::size_t messages = 0;
+                  size_type size = 0;
+                  size_type messages = 0;
                } limit;
 
 
@@ -41,6 +43,9 @@ namespace casual
 
                using outbound_device_type = communication::tcp::outbound::Device;
                using inbound_device_type = communication::tcp::inbound::Device;
+               
+               static_assert( common::marshal::is_network_normalizing< inbound_device_type>::value, "inbound device has to normalize network representation");
+               static_assert( common::marshal::is_network_normalizing< outbound_device_type>::value, "outbound device has to normalize network representation");
 
                static inbound::Cache::Limit limits( const Settings& settings)
                {

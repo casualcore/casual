@@ -393,15 +393,15 @@ namespace casual
             {
                namespace
                {
-                  std::size_t check_infinity( std::size_t quantity)
+                  platform::size::type check_infinity( platform::size::type quantity)
                   {
-                     return quantity ==  0 ? std::numeric_limits< std::size_t>::max() : quantity;
+                     return quantity ==  0 ? std::numeric_limits< platform::size::type>::max() : quantity;
                   }
                } // <unnamed>
             } // local
 
 
-            Sleep::Pattern::Pattern( std::chrono::microseconds time, std::size_t quantity)
+            Sleep::Pattern::Pattern( std::chrono::microseconds time, platform::size::type quantity)
                : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
@@ -409,7 +409,7 @@ namespace casual
             {
                sleep( m_time);
 
-               if( m_quantity == std::numeric_limits< std::size_t>::max())
+               if( m_quantity == std::numeric_limits< platform::size::type>::max())
                {
                   return false;
                }

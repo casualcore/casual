@@ -22,13 +22,15 @@ namespace casual
 
             namespace implementation
             {
+               using size_type = common::platform::size::type;
+
                struct Base
                {
                   using memory_type = platform::binary::type;
 
                   Base( memory_type& buffer) : m_memory( buffer) {}
 
-                  inline auto size() const { return memory().size();}
+                  inline size_type size() const { return memory().size();}
 
                protected:
 
@@ -52,11 +54,9 @@ namespace casual
                   //! @}
 
 
-                  std::size_t container_start( const std::size_t size, const char*)
+                  size_type container_start( const size_type size, const char*)
                   {
-                     // TODO:
-                     const auto elements = static_cast< platform::binary::size::type>( size);
-                     write( elements, nullptr);
+                     write( size, nullptr);
                      return size;
                   }
 
@@ -119,12 +119,10 @@ namespace casual
 
                   bool serialtype_start( const char*) { return true;}
 
-                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char*)
+                  std::tuple< size_type, bool> container_start( size_type size, const char*)
                   {
-                     // TODO:
-                     platform::binary::size::type elements;
-                     read( elements, nullptr);
-                     return std::make_tuple( elements, true);
+                     read( size, nullptr);
+                     return std::make_tuple( size, true);
                   }
 
 
@@ -158,10 +156,7 @@ namespace casual
 
                   void load( std::string& value)
                   {
-                     //
-                     // TODO: Read the size as some-common_size_type
-                     //
-                     auto size = value.size();
+                     size_type size = value.size();
                      load( size);
                      value.resize( size);
                      consume( common::range::make( value));
@@ -169,16 +164,13 @@ namespace casual
 
                   void load( platform::binary::type& value)
                   {
-                     //
-                     // TODO: Read the size as some-common_size_type
-                     //
-                     auto size = value.size();
+                     size_type size = value.size();
                      load( size);
                      value.resize( size);
                      consume( common::range::make( value));
                   }
 
-                  platform::binary::size::type m_offset = 0;
+                  size_type m_offset = 0;
 
                };
             } // implementation

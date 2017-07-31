@@ -57,13 +57,14 @@ namespace casual
 
          namespace state
          {
+            using size_type = common::platform::size::type;
             namespace internal
             {
 
                template< typename T>
                struct Id
                {
-                  using id_type = common::id::basic< std::size_t, T>;
+                  using id_type = common::id::basic< size_type, T>;
 
                   id_type id = id_type::next();
 
@@ -149,7 +150,7 @@ namespace casual
                //!
                //! Number of instances that has been restarted
                //!
-               std::size_t restarts = 0;
+               size_type restarts = 0;
 
                //!
                //! For persistent state
@@ -240,7 +241,7 @@ namespace casual
                const_instances_range spawnable() const;
                const_instances_range shutdownable() const;
 
-               void scale( std::size_t instances);
+               void scale( size_type instances);
 
                void remove( pid_type instance);
 
@@ -291,7 +292,7 @@ namespace casual
                const_instances_range spawnable() const;
                const_instances_range shutdownable() const;
 
-               void scale( std::size_t instances);
+               void scale( size_type instances);
 
 
                instance_type instance( common::platform::pid::type pid) const;

@@ -69,7 +69,7 @@ namespace casual
                   // Set 'sender' so we (our main thread) get the reply
                   //
                   message.process = common::process::handle();
-                  blocking::send( common::communication::ipc::transaction::manager::device(), message.get());
+                  blocking::send( common::communication::ipc::transaction::manager::device(), message);
                }
             };
 
@@ -89,7 +89,7 @@ namespace casual
             {
                struct Request : cache::Base
                {
-                  using message_type = message::interdomain::service::call::receive::Request;
+                  using message_type = common::message::service::call::callee::Request;
 
                   using cache::Base::Base;
 
@@ -117,7 +117,7 @@ namespace casual
                      //
                      // Add message to cache, this could block
                      //
-                     m_cache.add( common::marshal::complete( std::move( message.get())));
+                     m_cache.add( common::marshal::complete( std::move( message)));
 
                      //
                      // Send lookup
@@ -210,7 +210,7 @@ namespace casual
                      //
                      // Add message to cache, this could block
                      //
-                     cache.add( common::marshal::complete( std::move( message.get())));
+                     cache.add( common::marshal::complete( std::move( message)));
 
                      auto remove = common::scope::execute( [&](){
                         cache.get( request.correlation);
@@ -291,7 +291,7 @@ namespace casual
                {
                   struct Request : cache::Base
                   {
-                     using message_type = message::interdomain::queue::enqueue::receive::Request;
+                     using message_type = common::message::queue::enqueue::Request;
 
                      using cache::Base::Base;
 
@@ -329,7 +329,7 @@ namespace casual
                {
                   struct Request : cache::Base
                   {
-                     using message_type = message::interdomain::queue::dequeue::receive::Request;
+                     using message_type = common::message::queue::dequeue::Request;
 
                      using cache::Base::Base;
 
@@ -376,11 +376,9 @@ namespace casual
                {
                   Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
 
-                  auto&& wrapper = message::interdomain::send::wrap( message);
-
                   log << "forward message: " << message << '\n';
 
-                  m_device.blocking_send( wrapper);
+                  m_device.blocking_send( message);
                }
 
             private:
@@ -440,11 +438,9 @@ namespace casual
                            message.domain = common::domain::identity();
                            message.process = common::process::handle();
 
-                           auto&& wrapper = gateway::message::interdomain::send::wrap( message);
-
                            log << "forward message: " << message << '\n';
 
-                           m_device.blocking_send( wrapper);
+                           m_device.blocking_send( message);
                         }
                      private:
                         device_type& m_device;
@@ -474,7 +470,7 @@ namespace casual
 
                   struct Request
                   {
-                     void operator () ( message::interdomain::domain::discovery::receive::Request& message) const
+                     void operator () ( common::message::gateway::domain::discover::Request& message) const
                      {
                         Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
 
@@ -506,12 +502,12 @@ namespace casual
                         {
                            if( ! message.services.empty())
                            {
-                              blocking::send( common::communication::ipc::service::manager::device(), message.get());
+                              blocking::send( common::communication::ipc::service::manager::device(), message);
                               coordinate.pids.push_back( common::communication::ipc::service::manager::device().connector().process().pid);
                            }
 
                            if( ! message.queues.empty() &&
-                                 blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message.get()))
+                                 blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message))
                            {
                               coordinate.pids.push_back( common::communication::ipc::queue::manager::optional::device().connector().process().pid);
                            }
@@ -659,8 +655,6 @@ namespace casual
 
 
                auto&& outbound_device = policy.outbound();
-
-
 
                using outbound_type = common::traits::concrete::type_t< decltype( outbound_device)>;
 
@@ -829,7 +823,6 @@ namespace casual
 
                   auto&& device = policy.device();
 
-
                   //
                   // Send connection to the main thread so it knows how to communicate with the other
                   // domain
@@ -855,9 +848,9 @@ namespace casual
                   //
                   auto handler = device.handler(
                      handle::call::Request{ cache},
-                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::prepare::Request>{},
-                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::commit::Request>{},
-                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::rollback::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
                      handle::domain::discover::Request{},
 
                      handle::queue::dequeue::Request{ cache},

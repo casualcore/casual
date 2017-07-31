@@ -125,7 +125,7 @@ namespace casual
             Policy& policy() { return m_policy;}
             const Policy& policy() const { return m_policy;}
 
-            std::size_t size() const { return m_messages.size();}
+            platform::size::type size() const { return m_messages.size();}
 
             friend std::ostream& operator << ( std::ostream& out, const Coordinate& value)
             {

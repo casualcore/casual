@@ -5,7 +5,10 @@
 #ifndef CASUAL_TRANSACTION_MANAGER_LOG_H_
 #define CASUAL_TRANSACTION_MANAGER_LOG_H_
 
+
 #include "sql/database.h"
+
+#include "sf/platform.h"
 
 #include "common/message/transaction.h"
 
@@ -51,11 +54,11 @@ namespace casual
          {
             struct update_t
             {
-               std::size_t prepare = 0;
-               std::size_t remove = 0;
+               sf::platform::size::type prepare = 0;
+               sf::platform::size::type remove = 0;
             } update;
 
-            std::size_t writes = 0;
+            sf::platform::size::type writes = 0;
          };
 
          const Stats& stats() const;

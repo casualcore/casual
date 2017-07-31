@@ -21,6 +21,8 @@ namespace casual
    {
       namespace manager
       {
+         using size_type = common::platform::size::type;
+
          struct State
          {
 
@@ -55,7 +57,7 @@ namespace casual
 
                common::domain::Identity id;
                common::process::Handle process;
-               std::size_t order = 0;
+               size_type order = 0;
 
                friend bool operator == ( const Gateway& lhs, const common::domain::Identity& rhs);
 
@@ -64,12 +66,12 @@ namespace casual
             struct Queue
             {
                Queue() = default;
-               Queue( common::process::Handle process, std::size_t queue, std::size_t order = 0)
+               Queue( common::process::Handle process, size_type queue, size_type order = 0)
                   : process{ std::move( process)}, queue{ queue}, order{ order} {}
 
                common::process::Handle process;
-               std::size_t queue = 0;
-               std::size_t order = 0;
+               size_type queue = 0;
+               size_type order = 0;
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
                friend std::ostream& operator << ( std::ostream& out, const Queue& value);

@@ -27,6 +27,8 @@ namespace casual
 
    namespace transaction
    {
+      using size_type = common::platform::size::type;
+
       namespace handle
       {
          namespace implementation
@@ -46,7 +48,7 @@ namespace casual
             std::chrono::microseconds min;
             std::chrono::microseconds max;
             std::chrono::microseconds total;
-            std::size_t invoked;
+            size_type invoked;
 
             void start( const common::platform::time::point::type& start);
             void end( const common::platform::time::point::type& end);
@@ -117,7 +119,7 @@ namespace casual
                std::string key;
                std::string openinfo;
                std::string closeinfo;
-               std::size_t concurency = 0;
+               size_type concurency = 0;
 
                //!
                //! This 'counter' keep track of statistics for removed
@@ -152,9 +154,9 @@ namespace casual
 
             private:
 
-               inline static std::size_t next_id()
+               inline static size_type next_id()
                {
-                  static std::size_t id = 1;
+                  static size_type id = 1;
                   return id++;
                }
 
@@ -559,7 +561,7 @@ namespace casual
          //!
          //! @return number of total instances
          //!
-         std::size_t instances() const;
+         size_type instances() const;
 
          std::vector< common::platform::pid::type> processes() const;
 

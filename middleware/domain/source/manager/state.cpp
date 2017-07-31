@@ -112,7 +112,7 @@ namespace casual
                      }
 
                      template< typename I>
-                     void scale( I& instances, std::size_t count)
+                     void scale( I& instances, size_type count)
                      {
                         Trace trace{ "domain::manager::state::local::scale"};
 
@@ -182,7 +182,7 @@ namespace casual
                return local::instance::shutdownable( instances);
             }
 
-            void Executable::scale( std::size_t count)
+            void Executable::scale( size_type count)
             {
                local::instance::scale( instances, count);
             }
@@ -285,7 +285,7 @@ namespace casual
                return local::instance::shutdownable( instances);
             }
 
-            void Server::scale( std::size_t count)
+            void Server::scale( size_type count)
             {
                local::instance::scale( instances, count);
             }

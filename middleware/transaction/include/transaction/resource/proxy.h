@@ -23,7 +23,7 @@ namespace casual
 
          struct State
          {
-            std::size_t rm_id = 0;
+            common::platform::size::type rm_id = 0;
 
             std::string rm_key;
             std::string rm_openinfo;

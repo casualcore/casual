@@ -207,7 +207,7 @@ namespace casual
                instance.add( *this);
             }
 
-            void Service::add( state::instance::Remote& instance, std::size_t hops)
+            void Service::add( state::instance::Remote& instance, size_type hops)
             {
                instances.remote.emplace_back( instance, hops);
                partition_remote_instances();

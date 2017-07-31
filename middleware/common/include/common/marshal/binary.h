@@ -26,6 +26,7 @@ namespace casual
       {
          namespace binary
          {
+            using size_type = platform::size::type;
             namespace detail
             {
 
@@ -54,13 +55,13 @@ namespace casual
                }
 
                template< typename T>
-               static std::size_t read( const platform::binary::type& buffer, const std::size_t offset, T& value)
+               static size_type read( const platform::binary::type& buffer, const size_type offset, T& value)
                {
                   return memory::copy( buffer, offset, value);
                }
 
                template< typename T>
-               static std::size_t read_size( const platform::binary::type& buffer, const std::size_t offset, T& value)
+               static size_type read_size( const platform::binary::type& buffer, const size_type offset, T& value)
                {
                   return read( buffer, offset, value);
                }
@@ -200,7 +201,7 @@ namespace casual
 
 
                template< typename Iter>
-               void consume( Iter out, std::size_t size)
+               void consume( Iter out, size_type size)
                {
                   assert( m_offset + size <= m_buffer.size());
 
@@ -328,6 +329,10 @@ namespace casual
             using reverse_t = typename reverse< T>::type;
 
          } // create
+
+
+         template< typename A>
+         struct is_network_normalizing : std::false_type {};
 
 
 

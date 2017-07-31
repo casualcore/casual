@@ -24,6 +24,8 @@ namespace casual
       {
          namespace message
          {
+            using size_type = platform::size::type;
+
             namespace complete
             {
                namespace network
@@ -75,7 +77,7 @@ namespace casual
                Complete( const complete::network::Header& header);
 
                template< typename Chunk>
-               Complete( common::message::Type type, const Uuid& correlation, std::size_t size, Chunk&& chunk) :
+               Complete( common::message::Type type, const Uuid& correlation, size_type size, Chunk&& chunk) :
                   type{ type}, correlation{ correlation},
                   payload( size), m_unhandled{ range::make( payload)}
                {
@@ -98,6 +100,8 @@ namespace casual
 
                bool complete() const;
 
+               inline size_type size() const { return payload.size();}
+
                message_type_type type = message_type_type::absent_message;
                Uuid correlation;
                payload_type payload;
@@ -115,7 +119,7 @@ namespace casual
                   //
                   // Some sanity checks
                   //
-                  if( payload.size() < offset( chunk) + size)
+                  if( Complete::size() < offset( chunk) + size)
                   {
                      throw exception::invalid::Argument{
                         "communication::message::Complete: added chunk is out of bounds", CASUAL_NIP( payload.size())

@@ -292,7 +292,7 @@ domain:
                      return result;
                   }
 
-                  std::vector< admin::vo::scale::Instances> scale( const std::string& alias, std::size_t instances)
+                  std::vector< admin::vo::scale::Instances> scale( const std::string& alias, common::platform::size::type instances)
                   {
                      return scale( { { alias, instances}});
                   }

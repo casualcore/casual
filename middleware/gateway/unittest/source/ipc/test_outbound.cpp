@@ -116,12 +116,12 @@ namespace casual
                      {
                         Trace trace{ "remote - wait for discovery from outbound to 'local' inbound"};
 
-                        message::interdomain::domain::discovery::receive::Request request;
+                        common::message::gateway::domain::discover::Request request;
                         communication::ipc::blocking::receive( remote.output(), request);
 
                         log::debug << "request: " << request << '\n';
 
-                        message::interdomain::domain::discovery::receive::Reply reply;
+                        common::message::gateway::domain::discover::Reply reply;
                         reply.correlation = request.correlation;
                         reply.execution = request.execution;
                         reply.process = remote.process();
@@ -139,7 +139,6 @@ namespace casual
                   }
 
                }
-
 
                common::mockup::domain::Manager manager;
 
@@ -235,7 +234,7 @@ namespace casual
          //
          {
 
-            message::interdomain::service::call::receive::Request message;
+            common::message::service::call::callee::Request message;
             communication::ipc::blocking::receive( domain.remote.output(), message);
 
             EXPECT_TRUE( message.correlation == correlation);

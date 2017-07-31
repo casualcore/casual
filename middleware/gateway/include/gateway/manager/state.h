@@ -21,6 +21,8 @@ namespace casual
       {
          namespace state
          {
+            using size_type = common::platform::size::type;
+            
             struct base_connection
             {
                enum class Type
@@ -86,7 +88,7 @@ namespace casual
                   //!
                   std::vector< std::string> queues;
 
-                  std::size_t order = 0;
+                  size_type order = 0;
                   bool restart = false;
 
                   void reset();

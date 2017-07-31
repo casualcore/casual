@@ -40,6 +40,10 @@ namespace casual
 
       namespace platform
       {
+         namespace size 
+         {
+             using namespace common::platform::size;
+         } // size 
          namespace buffer
          {
             using namespace common::platform::buffer;

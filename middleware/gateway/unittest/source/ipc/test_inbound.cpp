@@ -73,13 +73,13 @@ namespace casual
                      log << "external: " << external << std::endl;
 
                      //
-                     // act as the oubound and send discover
+                     // act as the outbound and send discover
                      //
                      {
                         Trace trace{ "gateway::local::Domain outbound -> discover"};
 
 
-                        message::interdomain::domain::discovery::receive::Request request;
+                        common::message::gateway::domain::discover::Request request;
                         request.process = process::handle();
                         request.domain = remote;
                         communication::ipc::blocking::send( external.queue , request);
@@ -183,20 +183,20 @@ namespace casual
          mockup::domain::echo::Server server{ { "service1"}};
 
 
-         platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+         platform::binary::type payload{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 
-         message::interdomain::service::call::receive::Request request;
+         common::message::service::call::callee::Request request;
          {
             request.service.name = "service1";
             request.process = process::handle();
-            request.buffer = buffer::Payload{ buffer::type::binary(), paylaod};
+            request.buffer = buffer::Payload{ buffer::type::binary(), payload};
          }
 
 
          auto reply = communication::ipc::call( domain.external.queue, request);
 
-         EXPECT_TRUE( reply.buffer.memory == paylaod);
+         EXPECT_TRUE( reply.buffer.memory == payload);
       }
 
       TEST( casual_gateway_inbound_ipc, service_call__absent_service__expect_reply_with_TPESVCERR)
@@ -207,7 +207,7 @@ namespace casual
 
          platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         message::interdomain::service::call::receive::Request request;
+         common::message::service::call::callee::Request request;
          {
             request.service.name = "absent_service";
             request.process = process::handle();
@@ -229,7 +229,7 @@ namespace casual
 
          platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         message::interdomain::service::call::receive::Request request;
+         common::message::service::call::callee::Request request;
          {
             request.service.name = "removed_ipc_queue";
             request.process = process::handle();

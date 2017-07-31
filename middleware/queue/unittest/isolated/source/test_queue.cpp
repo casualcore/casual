@@ -256,7 +256,7 @@ namespace casual
          EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_MAKE_NVP( info);
          EXPECT_TRUE( info.attributes.reply == "queueA2");
          EXPECT_TRUE( info.payload.type == common::buffer::type::binary());
-         EXPECT_TRUE( info.payload.size == payload.size());
+         EXPECT_TRUE( info.payload.size == common::range::size( payload));
 
          // message should still be there
          {

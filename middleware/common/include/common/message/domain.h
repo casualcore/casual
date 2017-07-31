@@ -28,7 +28,7 @@ namespace casual
 
                      std::string name;
                      std::string key;
-                     std::size_t instances = 0;
+                     platform::size::type instances = 0;
                      std::string note;
 
                      std::string openinfo;
@@ -66,8 +66,8 @@ namespace casual
                   {
                      struct Limit
                      {
-                        std::size_t size = 0;
-                        std::size_t messages = 0;
+                        platform::size::type size = 0;
+                        platform::size::type messages = 0;
 
                         CASUAL_CONST_CORRECT_MARSHAL
                         (
@@ -139,7 +139,7 @@ namespace casual
                      inline Queue( std::function< void(Queue&)> foreign) { foreign( *this);}
 
                      std::string name;
-                     std::size_t retries = 0;
+                     platform::size::type retries = 0;
                      std::string note;
 
                      CASUAL_CONST_CORRECT_MARSHAL
@@ -312,12 +312,12 @@ namespace casual
                /*
                struct Executable : common::message::basic_message< common::message::Type::domain_scale_executable>
                {
-                  using id_type = std::size_t;
+                  using id_type = platform::size::type;
 
                   struct Scale
                   {
                      id_type id = 0;
-                     std::size_t instances = 0;
+                     platform::size::type instances = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL({
                         archive & id;

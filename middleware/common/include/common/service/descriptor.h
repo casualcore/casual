@@ -61,7 +61,7 @@ namespace casual
 
                descriptor_type& get( descriptor::type descriptor);
 
-               std::size_t size() const { return m_descriptors.size();}
+               platform::size::type size() const { return m_descriptors.size();}
                bool empty() const { return m_descriptors.empty();}
 
                bool active() const

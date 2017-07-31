@@ -393,9 +393,9 @@ namespace casual
          return common::range::all_of( resources, []( const auto& p){ return p.booted();});
       }
 
-      std::size_t State::instances() const
+      size_type State::instances() const
       {
-         std::size_t result = 0;
+         size_type result = 0;
 
          for( auto& resource : resources)
          {

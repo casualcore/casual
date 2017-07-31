@@ -102,7 +102,7 @@ namespace casual
             queue::Message result;
 
             result.id = value.id;
-            result.attributes.available = value.avalible;
+            result.attributes.available = value.available;
             result.attributes.properties = value.properties;
             result.attributes.reply = value.reply;
             result.payload.type = value.type;
@@ -125,7 +125,7 @@ namespace casual
             result.state = message.state;
             result.redelivered = message.redelivered;
 
-            result.avalible = message.avalible;
+            result.available = message.available;
             result.timestamp = message.timestamp;
 
             result.size = message.size;

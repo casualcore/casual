@@ -24,7 +24,7 @@ namespace casual
                      << ", type: " << value.type
                      << ", properties: " << value.properties
                      << ", reply: " << value.reply
-                     << ", available: " << common::chronology::local( value.avalible)
+                     << ", available: " << common::chronology::local( value.available)
                      << ", size: " << value.payload.size()
                      << '}';
             }

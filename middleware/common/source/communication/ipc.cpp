@@ -29,8 +29,8 @@ namespace casual
                {
                   return out << "{ type: " << value.type()
                         << ", correlation: " << uuid::string( value.correlation())
-                        << ", offset: " << value.pyaload_offset()
-                        << ", payload.size: " << value.pyaload_size()
+                        << ", offset: " << value.payload_offset()
+                        << ", payload.size: " << value.payload_size()
                         << ", complete_size: " << value.complete_size()
                         << ", header-size: " << transport::header_size()
                         << ", transport-size: " <<  value.size()
@@ -197,7 +197,7 @@ namespace casual
 
                Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags)
                {
-                  message::Transport transport{ complete.type, complete.payload.size()};
+                  message::Transport transport{ complete.type, complete.size()};
 
                   complete.correlation.copy( transport.correlation());
 

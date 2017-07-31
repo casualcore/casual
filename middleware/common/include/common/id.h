@@ -6,6 +6,7 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_ID_H_
 
 #include "common/marshal/marshal.h"
+#include "common/platform.h"
 
 namespace casual
 {
@@ -80,7 +81,7 @@ namespace casual
 
       } // id
 
-      using Id = id::basic< std::size_t>;
+      using Id = id::basic< platform::size::type>;
 
    } // common
 } // casual

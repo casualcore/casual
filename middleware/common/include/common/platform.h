@@ -61,6 +61,15 @@ namespace casual
 	{
 		namespace platform
 		{
+         namespace size
+         {
+            using type = long;
+
+		      namespace max
+            {
+		         constexpr auto path = PATH_MAX;
+            } // max
+         } // size
 
 		   namespace batch
          {
@@ -69,20 +78,20 @@ namespace casual
 	         //! before (forced) persistence store of the updates, could be
 	         //! stored before though
 	         //!
-	         constexpr std::size_t transaction() { return 100;}
+	         constexpr size::type transaction() { return 100;}
 
 	         //!
 	         //! Max number of statistics updates that will be done
 	         //! before persistence store of the updates...
 	         //!
-	         constexpr std::size_t statistics() { return 1000;}
+	         constexpr size::type statistics() { return 1000;}
 
 
 	         //!
 	         //! Max number of ipc messages consumed from the queue to cache
 	         //! (application memory) during a 'flush'
 	         //!
-	         constexpr std::size_t flush() { return 20;}
+	         constexpr size::type flush() { return 20;}
 
 	         namespace gateway
             {
@@ -90,7 +99,7 @@ namespace casual
 	            //! Max number of batched metrics before force
 	            //! send to service-manager
 	            //!
-	            constexpr std::size_t metrics() { return 20;}
+	            constexpr size::type metrics() { return 20;}
             } // gateway
 
          } // batch
@@ -101,13 +110,7 @@ namespace casual
 			// Some os-specific if-defs?
 			//
 
-		   namespace size
-         {
-		      namespace max
-            {
-		         constexpr auto path = PATH_MAX;
-            } // max
-         } // size
+
 
 
 		   namespace ipc
@@ -126,9 +129,9 @@ namespace casual
                //
                // OSX has very tight limits on IPC
                //
-               constexpr std::size_t size = 1024;
+               constexpr size::type size = 1024;
 #else
-               constexpr std::size_t size = 1024 * 8;
+               constexpr size::type size = 1024 * 8;
 #endif
 
             } // message
@@ -142,9 +145,11 @@ namespace casual
             {
                namespace max
                {
-                  constexpr std::size_t size = SSIZE_MAX;
+                  constexpr size::type size = SSIZE_MAX;
+                  static_assert( size > 0, "tcp::message::max::size overflow");
+
                } // max
-               constexpr std::size_t size = 1024 * 16;
+               constexpr size::type size = 1024 * 16;
 
                static_assert( size <= max::size, "requested tcp message size is to big");
 
@@ -168,12 +173,6 @@ namespace casual
 			namespace uuid
          {
 			   using type = uuid_t;
-
-			   namespace string
-            {
-               using type = char[ 37];
-            } // string
-
          } // uuid
 
 			namespace jump
@@ -225,11 +224,6 @@ namespace casual
 			      using type = int;
             } // id
          } // resource
-
-         namespace size
-         {
-            using type = long;
-         } // size
 
 			namespace binary
          {

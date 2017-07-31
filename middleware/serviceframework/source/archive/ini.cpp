@@ -1,9 +1,6 @@
-/*
- * ini.cpp
- *
- *  Created on: Feb 11, 2015
- *      Author: kristone
- */
+//!
+//! casual
+//!
 
 
 #include "sf/archive/ini.h"
@@ -278,7 +275,7 @@ namespace casual
                return operator() ( ini.data(), ini.size());
             }
 
-            const tree& Load::operator() ( const char* ini, std::size_t size)
+            const tree& Load::operator() ( const char* ini, platform::size::type size)
             {
                std::istringstream stream( std::string( ini, size));
                return operator() ( stream);
@@ -289,7 +286,7 @@ namespace casual
 
                Implementation::Implementation( const tree& document) : m_node_stack{ &document } {}
 
-               std::tuple< std::size_t, bool> Implementation::container_start( const std::size_t size, const char* const name)
+               std::tuple< platform::size::type, bool> Implementation::container_start( const platform::size::type size, const char* const name)
                {
 
                   if( name)
@@ -589,7 +586,7 @@ namespace casual
 
                Implementation::Implementation( tree& document) : m_node_stack{ &document } {}
 
-               std::size_t Implementation::container_start( const std::size_t size, const char* const name)
+               platform::size::type Implementation::container_start( const platform::size::type size, const char* const name)
                {
                   //
                   // We do not know where it's node or data

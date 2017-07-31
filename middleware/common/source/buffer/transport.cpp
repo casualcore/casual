@@ -36,7 +36,7 @@ namespace casual
 
             }
 
-            void Context::registration( std::size_t order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback)
+            void Context::registration( size_type order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback)
             {
                m_callbacks.emplace_back( order, std::move( lifecycles), std::move( types), std::move( callback));
 
@@ -75,7 +75,7 @@ namespace casual
                dispatch( buffer, size, service, lifecycle, buffer::pool::Holder::instance().type( buffer));
             }
 
-            Context::Callback::Callback( std::size_t order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback)
+            Context::Callback::Callback( size_type order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback)
              : order( order), lifecycles( std::move( lifecycles)), types( std::move( types)), dispatch( std::move( callback)) {}
 
 

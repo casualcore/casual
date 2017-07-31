@@ -19,6 +19,8 @@ namespace casual
       {
          namespace queue
          {
+            using size_type = platform::size::type;
+
             struct base_message_information
             {
                common::Uuid id;
@@ -26,7 +28,7 @@ namespace casual
                std::string properties;
                std::string reply;
 
-               common::platform::time::point::type avalible;
+               common::platform::time::point::type available;
                std::string type;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -34,7 +36,7 @@ namespace casual
                   archive & id;
                   archive & properties;
                   archive & reply;
-                  archive & avalible;
+                  archive & available;
                   archive & type;
                })
 
@@ -78,8 +80,8 @@ namespace casual
                   Reply( common::process::Handle process) : process( std::move( process)) {}
 
                   common::process::Handle process;
-                  std::size_t queue = 0;
-                  std::size_t order = 0;
+                  size_type queue = 0;
+                  size_type order = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL({
                      archive & process;
@@ -102,7 +104,7 @@ namespace casual
 
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  long queue = 0;
+                  size_type queue = 0;
                   std::string name;
 
                   Message message;
@@ -156,7 +158,7 @@ namespace casual
                {
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  std::size_t queue = 0;
+                  size_type queue = 0;
                   std::string name;
                   Selector selector;
                   bool block = false;
@@ -183,11 +185,7 @@ namespace casual
                      Message( const base_message& m) : base_message( m) {}
                      Message() = default;
 
-                     //Message( Message&&) = default;
-                     //Message& operator = ( Message&&) = default;
-
-
-                     long redelivered = 0;
+                     size_type redelivered = 0;
                      common::platform::time::point::type timestamp;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -216,7 +214,7 @@ namespace casual
                   struct Request : basic_message< Type::queue_dequeue_forget_request>
                   {
                      common::process::Handle process;
-                     std::size_t queue = 0;
+                     size_type queue = 0;
                      std::string name;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -260,15 +258,15 @@ namespace casual
                   queue = 3,
                };
 
-               using id_type = std::size_t;
+               using id_type = size_type;
 
                Queue() = default;
-               Queue( std::string name, std::size_t retries) : name( std::move( name)), retries( retries) {}
+               Queue( std::string name, size_type retries) : name( std::move( name)), retries( retries) {}
                Queue( std::string name) : Queue( std::move( name), 0) {};
 
                id_type id = 0;
                std::string name;
-               std::size_t retries = 0;
+               size_type retries = 0;
                id_type error = 0;
                Type type = Type::queue;
 
@@ -296,9 +294,9 @@ namespace casual
 
                struct Queue : message::queue::Queue
                {
-                  std::size_t count;
-                  std::size_t size;
-                  std::size_t uncommitted;
+                  size_type count;
+                  size_type size;
+                  size_type uncommitted;
                   platform::time::point::type timestamp;
 
 
@@ -331,14 +329,14 @@ namespace casual
 
                struct Message : queue::base_message_information
                {
-                  std::size_t queue;
-                  std::size_t origin;
+                  size_type queue;
+                  size_type origin;
                   platform::binary::type trid;
-                  std::size_t state;
-                  std::size_t redelivered;
+                  size_type state;
+                  size_type redelivered;
                   platform::time::point::type timestamp;
 
-                  std::size_t size;
+                  size_type size;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -412,7 +410,7 @@ namespace casual
                   struct Request : basic_message< Type::queue_peek_information_request>
                   {
                      common::process::Handle process;
-                     std::size_t queue = 0;
+                     size_type queue = 0;
                      std::string name;
                      dequeue::Selector selector;
 
@@ -534,7 +532,7 @@ namespace casual
                   struct Affected
                   {
                      Queue::id_type queue;
-                     std::size_t restored = 0;
+                     size_type restored = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

@@ -19,6 +19,7 @@ namespace casual
       {
          namespace admin
          {
+            using size_type = sf::platform::size::type;
 
 
             struct Group
@@ -58,15 +59,15 @@ namespace casual
 
 
                sf::platform::pid::type group;
-               std::size_t id;
+               size_type id;
                std::string name;
                Type type;
-               std::size_t retries;
-               std::size_t error;
+               size_type retries;
+               size_type error;
 
-               std::size_t count;
-               std::size_t size;
-               std::size_t uncommitted;
+               size_type count;
+               size_type size;
+               size_type uncommitted;
                sf::platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -94,18 +95,18 @@ namespace casual
 
 
                sf::platform::Uuid id;
-               std::size_t queue;
-               std::size_t origin;
+               size_type queue;
+               size_type origin;
                sf::platform::binary::type trid;
-               std::size_t state;
+               size_type state;
                std::string reply;
-               std::size_t redelivered;
+               size_type redelivered;
                std::string type;
 
-               sf::platform::time::point::type avalible;
+               sf::platform::time::point::type available;
                sf::platform::time::point::type timestamp;
 
-               std::size_t size;
+               size_type size;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -118,7 +119,7 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( reply);
                   archive & CASUAL_MAKE_NVP( redelivered);
                   archive & CASUAL_MAKE_NVP( type);
-                  archive & CASUAL_MAKE_NVP( avalible);
+                  archive & CASUAL_MAKE_NVP( available);
                   archive & CASUAL_MAKE_NVP( timestamp);
                   archive & CASUAL_MAKE_NVP( size);
                })
@@ -145,7 +146,7 @@ namespace casual
             {
                struct
                {
-                  std::size_t id;
+                  size_type id;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -156,7 +157,7 @@ namespace casual
                } queue;
 
 
-               std::size_t restored = 0;
+               size_type restored = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {

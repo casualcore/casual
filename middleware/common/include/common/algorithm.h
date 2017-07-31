@@ -328,10 +328,12 @@ namespace casual
 
          Range() = default;
          Range( iterator first, iterator last) :  m_first( first), m_last( last) {}
-         Range( iterator first, std::size_t size) : m_first( first), m_last( first + size) {}
+
+         template< typename Size, std::enable_if_t< std::is_integral< Size>::value>* dummy = nullptr>
+         Range( iterator first, Size size) : m_first( first), m_last( first + size) {}
 
 
-         std::size_t size() const { return std::distance( m_first, m_last);}
+         platform::size::type size() const { return std::distance( m_first, m_last);}
          bool empty() const { return m_first == m_last;}
 
 
@@ -493,8 +495,10 @@ namespace casual
             return Range< Iter>( first, last);
          }
 
-         template< typename Iter, typename = std::enable_if_t< common::traits::is::iterator< Iter>::value>>
-         Range< Iter> make( Iter first, std::size_t count)
+         template< typename Iter, typename Count, std::enable_if_t< 
+            common::traits::is::iterator< Iter>::value 
+            && std::is_integral< Count>::value>* dummy = nullptr>
+         Range< Iter> make( Iter first, Count count)
          {
             return Range< Iter>( first, first + count);
          }
@@ -528,7 +532,7 @@ namespace casual
          template< typename C>
          struct type_traits
          {
-            using type = decltype( make( std::declval< C>().begin(), std::size_t{}));
+            using type = decltype( make( std::begin( std::declval< C&>()), std::end( std::declval< C&>())));
          };
 
 
@@ -539,10 +543,10 @@ namespace casual
          using const_type_t = typename type_traits< const C>::type;
 
          template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value>* dummy = nullptr>
-         constexpr auto size( R&& range) { return sizeof( R) / sizeof( *range);}
+         constexpr platform::size::type size( R&& range) { return sizeof( R) / sizeof( *range);}
 
          template< typename R, std::enable_if_t< common::traits::has::size< R>::value>* dummy = nullptr>
-         constexpr auto size( R&& range) { return range.size();}
+         constexpr platform::size::type size( R&& range) { return range.size();}
 
 
          namespace position

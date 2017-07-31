@@ -230,10 +230,10 @@ namespace casual
                struct Pattern
                {
 
-                  Pattern( std::chrono::microseconds time, std::size_t quantity);
+                  Pattern( std::chrono::microseconds time, platform::size::type quantity);
 
                   template< typename R, typename P>
-                  Pattern( std::chrono::duration< R, P> time, std::size_t quantity)
+                  Pattern( std::chrono::duration< R, P> time, platform::size::type quantity)
                    : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
                   {}
 
@@ -244,10 +244,9 @@ namespace casual
 
                private:
                   std::chrono::microseconds m_time;
-                  std::size_t m_quantity = 0;
+                  platform::size::type m_quantity = 0;
                };
-
-               //Sleep( std::vector< Pattern> pattern);
+               
                Sleep( std::initializer_list< Pattern> pattern);
 
                bool operator () ();

@@ -30,6 +30,8 @@ namespace casual
    {
       namespace outbound
       {
+         using size_type = common::platform::size::type;
+         
          namespace ipc
          {
             namespace optional
@@ -102,20 +104,17 @@ namespace casual
 
                void operator() ( message_type& message)
                {
-
-
                   routing.add( message);
 
-                  auto&& request = message::interdomain::send::wrap( message);
+                  //auto&& request = message::interdomain::send::wrap( message);
 
                   // todo: temp
                   if( log)
                   {
                      log << "basic_request::operator() - message: " << message << '\n';
-                     log << "basic_request::operator() - request: " << request << '\n';
                   }
 
-                  device.blocking_send( request);
+                  device.blocking_send( message);
                }
 
                const Routing& routing;
@@ -174,8 +173,7 @@ namespace casual
                            );
                         }
 
-                        auto&& request = message::interdomain::send::wrap( message);
-                        device.blocking_send( request);
+                        device.blocking_send( message);
                      }
 
                   private:
@@ -214,9 +212,7 @@ namespace casual
 
                            this->routing.add( message);
 
-
-                           auto&& request = message::interdomain::send::wrap( message);
-                           this->device.blocking_send( request);
+                           this->device.blocking_send( message);
                         }
                      };
 
@@ -256,8 +252,7 @@ namespace casual
 
                      this->routing.add( message);
 
-                     auto&& request = message::interdomain::send::wrap( message);
-                     this->device.blocking_send( request);
+                     this->device.blocking_send( message);
                   }
                };
 
@@ -282,10 +277,8 @@ namespace casual
                using message_type = M;
                using Base::Base;
 
-               void operator() ( message_type& message) const
+               void operator() ( message_type& reply) const
                {
-                  auto&& reply = message.get();
-
                   log << "reply: " << reply << '\n';
 
                   try
@@ -316,12 +309,12 @@ namespace casual
             {
                namespace discover
                {
-                  using base_type = basic_reply< message::interdomain::domain::discovery::receive::Reply>;
+                  using base_type = basic_reply< common::message::gateway::domain::discover::Reply>;
                   struct Reply : base_type
                   {
-                     Reply( const Routing& routing, std::size_t order) : base_type{ routing}, m_order{ order} {}
+                     Reply( const Routing& routing, size_type order) : base_type{ routing}, m_order{ order} {}
 
-                     void operator () ( message::interdomain::domain::discovery::receive::Reply& reply) const
+                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
                      {
                         Trace trace{ "gateway::outbound::handle::domain::discover::Reply"};
 
@@ -369,7 +362,7 @@ namespace casual
                         base_type::operator() ( reply);
                      }
                   private:
-                     std::size_t m_order;
+                     size_type m_order;
 
                   };
 
@@ -386,10 +379,8 @@ namespace casual
                      Reply( const outbound::service::Routing& routing, common::message::service::remote::Metric& metric)
                         : routing( routing), metric( metric) {}
 
-                     void operator() ( message::interdomain::service::call::receive::Reply& message) const
+                     void operator() ( common::message::service::call::Reply& reply) const
                      {
-                        auto&& reply = message.get();
-
                         log << "reply: " << reply << '\n';
 
                         try
@@ -783,12 +774,13 @@ namespace casual
                      //
                      handle::service::call::Reply{ service_routing, metric},
 
-                     handle::basic_reply< message::interdomain::queue::enqueue::receive::Reply>{ routing},
-                     handle::basic_reply< message::interdomain::queue::dequeue::receive::Reply>{ routing},
+                     handle::basic_reply< common::message::queue::enqueue::Reply>{ routing},
+                     handle::basic_reply< common::message::queue::dequeue::Reply>{ routing},
 
-                     handle::basic_reply< message::interdomain::transaction::resource::receive::prepare::Reply>{ routing},
-                     handle::basic_reply< message::interdomain::transaction::resource::receive::commit::Reply>{ routing},
-                     handle::basic_reply< message::interdomain::transaction::resource::receive::rollback::Reply>{ routing},
+                     handle::basic_reply< common::message::transaction::resource::prepare::Reply>{ routing},
+                     handle::basic_reply< common::message::transaction::resource::commit::Reply>{ routing},
+                     handle::basic_reply< common::message::transaction::resource::rollback::Reply>{ routing},
+
                      handle::domain::discover::Reply{ routing, order}
                   );
 

@@ -18,6 +18,7 @@ namespace casual
    {
       inline namespace v1  {
 
+      using size_type = sf::platform::size::type;
 
       struct Attributes
       {
@@ -116,14 +117,14 @@ namespace casual
             {
                common::Uuid id;
                common::platform::binary::type trid;
-               std::size_t state;
+               size_type state;
 
                Attributes attributes;
 
                struct
                {
                   std::string type;
-                  std::size_t size;
+                  size_type size;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -134,7 +135,7 @@ namespace casual
                } payload;
 
 
-               std::size_t redelivered;
+               size_type redelivered;
                common::platform::time::point::type timestamp;
 
 

@@ -5,9 +5,9 @@
 #include "gateway/inbound/gateway.h"
 #include "gateway/common.h"
 
-
 #include "common/arguments.h"
 #include "common/environment.h"
+
 
 
 namespace casual
@@ -26,12 +26,14 @@ namespace casual
                std::string correlation;
             };
 
+            using outbound_device_type = common::communication::ipc::outbound::Device;
+            using inbound_device_type = common::communication::ipc::inbound::Device;
+
+            static_assert( ! common::marshal::is_network_normalizing< inbound_device_type>::value, "inbound device does not need to normalize network representation");
+            static_assert( ! common::marshal::is_network_normalizing< outbound_device_type>::value, "outbound device does not need to normalize network representation");
+
             struct Policy
             {
-
-               using outbound_device_type = communication::ipc::outbound::Device;
-               using inbound_device_type = communication::ipc::inbound::Device;
-
 
                struct configuration_type
                {
@@ -118,7 +120,6 @@ namespace casual
          } // ipc
       } // inbound
    } // gateway
-
 } // casual
 
 

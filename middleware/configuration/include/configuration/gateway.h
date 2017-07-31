@@ -22,8 +22,8 @@ namespace casual
          {
             struct Limit
             {
-               sf::optional< std::size_t> size;
-               sf::optional< std::size_t> messages;
+               sf::optional< sf::platform::size::type> size;
+               sf::optional< sf::platform::size::type> messages;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (

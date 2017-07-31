@@ -23,7 +23,8 @@ namespace casual
             {
                inline namespace v1
                {
-                  using id_type = std::size_t;
+                  using id_type = common::platform::size::type;
+                  using size_type = common::platform::size::type;
 
                   struct Group
                   {
@@ -67,7 +68,7 @@ namespace casual
                      } environment;
 
                      bool restart = false;
-                     std::size_t restarts = 0;
+                     size_type restarts = 0;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({
                         archive & CASUAL_MAKE_NVP( id);
@@ -172,7 +173,7 @@ namespace casual
                      struct Instances
                      {
                         std::string alias;
-                        std::size_t instances;
+                        size_type instances;
 
                         template< typename A>
                         void serialize( A& archive)

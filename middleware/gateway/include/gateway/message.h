@@ -15,8 +15,11 @@
 #include "common/message/queue.h"
 #include "common/message/conversation.h"
 #include "common/domain.h"
+#include "common/marshal/binary.h"
 
 #include <thread>
+
+
 
 
 
@@ -52,10 +55,19 @@ void casual_unmarshal_value( XID& value, M& unmarshler)
          std::begin( value.data),
          value.gtrid_length + value.bqual_length);
    }
-
 }
 //! @}
 
+
+#define CASUAL_CUSTOMIZATION_POINT_MARSHAL( type, statement) \
+template< typename A> auto casual_marshal( type& value, A& archive) -> std::enable_if_t< casual::common::marshal::is_network_normalizing< A>::value> \
+{  \
+   statement  \
+} \
+template< typename A> auto casual_marshal( const type& value, A& archive) -> std::enable_if_t< casual::common::marshal::is_network_normalizing< A>::value> \
+{  \
+   statement  \
+} \
 
 namespace casual
 {
@@ -63,6 +75,7 @@ namespace casual
    {
       namespace message
       {
+         using size_type = common::platform::size::type;
 
          namespace manager
          {
@@ -188,8 +201,8 @@ namespace casual
             {
                struct Limit
                {
-                  std::size_t size = 0;
-                  std::size_t messages = 0;
+                  size_type size = 0;
+                  size_type messages = 0;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & size;
@@ -257,518 +270,6 @@ namespace casual
 
 
          } // worker
-
-         //!
-         //! Wrappers for interdomain communications
-         //!
-         namespace interdomain
-         {
-            namespace detail
-            {
-               //!
-               //! constexpr functions to help map internal message types against interdomain message types
-               //!
-               //!
-               constexpr common::message::Type message_type( common::message::transaction::resource::prepare::Request&&)
-               { return common::message::Type::interdomain_transaction_resource_prepare_request;}
-
-               constexpr common::message::Type message_type( common::message::transaction::resource::prepare::Reply&&)
-               { return common::message::Type::interdomain_transaction_resource_prepare_reply;}
-
-               constexpr common::message::Type message_type( common::message::transaction::resource::commit::Request&&)
-               { return common::message::Type::interdomain_transaction_resource_commit_request;}
-
-               constexpr common::message::Type message_type( common::message::transaction::resource::commit::Reply&&)
-               { return common::message::Type::interdomain_transaction_resource_commit_reply;}
-
-               constexpr common::message::Type message_type( common::message::transaction::resource::rollback::Request&&)
-               { return common::message::Type::interdomain_transaction_resource_rollback_request;}
-
-               constexpr common::message::Type message_type( common::message::transaction::resource::rollback::Reply&&)
-               { return common::message::Type::interdomain_transaction_resource_rollback_reply;}
-
-
-               constexpr common::message::Type message_type( common::message::service::call::callee::Request&&)
-               { return common::message::Type::interdomain_service_call;}
-
-               constexpr common::message::Type message_type( common::message::service::call::Reply&&)
-               { return common::message::Type::interdomain_service_reply;}
-
-
-               constexpr common::message::Type message_type( common::message::conversation::connect::callee::Request&&)
-               { return common::message::Type::interdomain_conversation_connect_request;}
-
-               constexpr common::message::Type message_type( common::message::conversation::connect::Reply&&)
-               { return common::message::Type::interdomain_conversation_connect_reply;}
-
-               constexpr common::message::Type message_type( common::message::conversation::callee::Send&&)
-               { return common::message::Type::interdomain_conversation_send;}
-
-               constexpr common::message::Type message_type( common::message::conversation::Disconnect&&)
-               { return common::message::Type::interdomain_conversation_disconnect;}
-
-
-               constexpr common::message::Type message_type( common::message::gateway::domain::discover::Request&&)
-               { return common::message::Type::interdomain_domain_discover_request;}
-
-               constexpr common::message::Type message_type( common::message::gateway::domain::discover::Reply&&)
-               { return common::message::Type::interdomain_domain_discover_reply;}
-
-
-               constexpr common::message::Type message_type( common::message::queue::enqueue::Request&&)
-               { return common::message::Type::interdomain_queue_enqueue_request;}
-
-               constexpr common::message::Type message_type( common::message::queue::enqueue::Reply&&)
-               { return common::message::Type::interdomain_queue_enqueue_reply;}
-
-               constexpr common::message::Type message_type( common::message::queue::dequeue::Request&&)
-               { return common::message::Type::interdomain_queue_dequeue_request;}
-
-               constexpr common::message::Type message_type( common::message::queue::dequeue::Reply&&)
-               { return common::message::Type::interdomain_queue_dequeue_reply;}
-
-
-               template< typename Message>
-               struct external_send_wrapper : std::reference_wrapper< Message>
-               {
-                  using concrete_message = Message;
-                  using base_type = std::reference_wrapper< concrete_message>;
-
-                  external_send_wrapper( Message& message)
-                     : base_type{ message}, correlation( message.correlation), execution( message.execution)  {}
-
-                  constexpr static common::message::Type type() { return message_type( Message{});}
-
-                  common::Uuid& correlation;
-                  common::Uuid& execution;
-
-               };
-
-               template< typename Message>
-               struct external_receive_wrapper : Message
-               {
-                  using concrete_message = Message;
-                  using concrete_message::concrete_message;
-
-                  constexpr static common::message::Type type() { return message_type( Message{});}
-
-                  concrete_message& get() { return static_cast< concrete_message&>( *this);}
-                  const concrete_message& get() const { return static_cast< const concrete_message&>( *this);}
-
-               };
-
-
-            } // detail
-
-
-            namespace transaction
-            {
-               namespace resource
-               {
-                  template< typename Wrapper>
-                  struct basic_request : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        //base_type::marshal( archive);
-                        archive & this->get().execution;
-                        archive & this->get().trid.xid;
-                        archive & this->get().resource;
-                        archive & this->get().flags;
-                     })
-                  };
-                  template< typename Wrapper>
-                  struct basic_reply : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        //base_type::marshal( archive);
-                        archive & this->get().execution;
-                        archive & this->get().trid.xid;
-                        archive & this->get().resource;
-                        archive & this->get().state;
-                     })
-                  };
-
-
-
-
-                  namespace send
-                  {
-                     template< typename Message>
-                     using basic_request = resource::basic_request< detail::external_send_wrapper< Message>>;
-
-                     template< typename Message>
-                     using basic_reply = resource::basic_reply< detail::external_send_wrapper< Message>>;
-
-                     namespace prepare
-                     {
-                        using Request = basic_request< common::message::transaction::resource::prepare::Request>;
-                        using Reply = basic_reply< common::message::transaction::resource::prepare::Reply>;
-                     } // prepare
-
-                     namespace commit
-                     {
-                        using Request = basic_request< common::message::transaction::resource::commit::Request>;
-                        using Reply = basic_reply< common::message::transaction::resource::commit::Reply>;
-                     } // commit
-
-                     namespace rollback
-                     {
-                        using Request = basic_request< common::message::transaction::resource::rollback::Request>;
-                        using Reply = basic_reply< common::message::transaction::resource::rollback::Reply>;
-                     } // rollback
-
-                  } // send
-
-                  namespace receive
-                  {
-                     template< typename Message>
-                     using basic_request = resource::basic_request< detail::external_receive_wrapper< Message>>;
-
-                     template< typename Message>
-                     using basic_reply = resource::basic_reply< detail::external_receive_wrapper< Message>>;
-
-                     namespace prepare
-                     {
-                        using Request = basic_request< common::message::transaction::resource::prepare::Request>;
-                        using Reply = basic_reply< common::message::transaction::resource::prepare::Reply>;
-
-                     } // prepare
-
-                     namespace commit
-                     {
-                        using Request = basic_request< common::message::transaction::resource::commit::Request>;
-                        using Reply = basic_reply< common::message::transaction::resource::commit::Reply>;
-
-                     } // commit
-
-                     namespace rollback
-                     {
-                        using Request = basic_request< common::message::transaction::resource::rollback::Request>;
-                        using Reply = basic_reply< common::message::transaction::resource::rollback::Reply>;
-
-                     } // rollback
-                  } // receive
-
-               } // resource
-            } // transaction
-
-            namespace service
-            {
-               namespace call
-               {
-                  template< typename Wrapper>
-                  struct basic_request : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().service.name;
-                        archive & this->get().service.timeout;
-                        archive & this->get().parent;
-
-                        archive & this->get().trid.xid;
-                        archive & this->get().flags;
-
-                        archive & this->get().buffer;
-                     })
-                  };
-
-                  template< typename Wrapper>
-                  struct basic_reply : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().status;
-                        archive & this->get().code;
-
-                        archive & this->get().transaction.trid.xid;
-                        archive & this->get().transaction.state;
-
-                        archive & this->get().buffer;
-                     })
-                  };
-
-                  namespace send
-                  {
-                     using Request = basic_request< detail::external_send_wrapper< common::message::service::call::callee::Request>>;
-                     using Reply = basic_reply< detail::external_send_wrapper< common::message::service::call::Reply>>;
-
-                  } // send
-
-                  namespace receive
-                  {
-                     using Request = basic_request< detail::external_receive_wrapper< common::message::service::call::callee::Request>>;
-                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::service::call::Reply>>;
-                  } // receive
-
-               } // call
-
-               namespace conversation
-               {
-                  namespace connect
-                  {
-                     template< typename Wrapper>
-                     struct basic_request : call::basic_request< Wrapper>
-                     {
-                        using base_request = call::basic_request< Wrapper>;
-                        using base_request::base_request;
-
-                        CASUAL_CONST_CORRECT_MARSHAL({
-                           base_request::marshal( archive);
-                           archive & this->get().recording;
-                        })
-                     };
-
-                     template< typename Wrapper>
-                     struct basic_reply : Wrapper
-                     {
-                        using Wrapper::Wrapper;
-
-                        CASUAL_CONST_CORRECT_MARSHAL({
-                           archive & this->get().execution;
-                           archive & this->get().route;
-                           archive & this->get().recording;
-                           archive & this->get().status;
-                        })
-                     };
-
-                     namespace send
-                     {
-                        using Request = basic_request< detail::external_send_wrapper< common::message::conversation::connect::callee::Request>>;
-                        using Reply = basic_reply< detail::external_send_wrapper< common::message::conversation::connect::Reply>>;
-                     } // send
-
-                     namespace receive
-                     {
-                        using Request = basic_request< detail::external_receive_wrapper< common::message::conversation::connect::callee::Request>>;
-                        using Reply = basic_reply< detail::external_receive_wrapper< common::message::conversation::connect::Reply>>;
-                     } // receive
-
-                  } // connect
-
-                  namespace send
-                  {
-                     template< typename Wrapper>
-                     struct basic_request : call::basic_request< Wrapper>
-                     {
-                        using base_request = call::basic_request< Wrapper>;
-                        using base_request::base_request;
-
-                        CASUAL_CONST_CORRECT_MARSHAL({
-                           base_request::marshal( archive);
-                           archive & this->get().recording;
-                        })
-                     };
-
-                  } // send
-
-               } // conversation
-            } // service
-
-            namespace queue
-            {
-               namespace enqueue
-               {
-                  template< typename Wrapper>
-                  struct basic_request : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().name;
-                        archive & this->get().trid.xid;
-                        archive & this->get().message;
-                     })
-                  };
-
-                  template< typename Wrapper>
-                  struct basic_reply : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().id;
-                     })
-                  };
-
-                  namespace send
-                  {
-                     using Request = basic_request< detail::external_send_wrapper< common::message::queue::enqueue::Request>>;
-                     using Reply = basic_reply< detail::external_send_wrapper< common::message::queue::enqueue::Reply>>;
-
-                  } // send
-
-                  namespace receive
-                  {
-                     using Request = basic_request< detail::external_receive_wrapper< common::message::queue::enqueue::Request>>;
-                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::queue::enqueue::Reply>>;
-                  } // receive
-
-
-               } // enqueue
-
-               namespace dequeue
-               {
-
-                  template< typename Wrapper>
-                  struct basic_request : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().name;
-                        archive & this->get().trid.xid;
-                        archive & this->get().selector;
-                        archive & this->get().block;
-                     })
-                  };
-
-                  template< typename Wrapper>
-                  struct basic_reply : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().message;
-                     })
-                  };
-
-
-                  namespace send
-                  {
-                     using Request = basic_request< detail::external_send_wrapper< common::message::queue::dequeue::Request>>;
-                     using Reply = basic_reply< detail::external_send_wrapper< common::message::queue::dequeue::Reply>>;
-
-                  } // send
-
-                  namespace receive
-                  {
-                     using Request = basic_request< detail::external_receive_wrapper< common::message::queue::dequeue::Request>>;
-                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::queue::dequeue::Reply>>;
-                  } // receive
-
-               } // dequeue
-
-            } // queue
-
-
-            namespace domain
-            {
-               namespace discovery
-               {
-                  template< typename Wrapper>
-                  struct basic_request : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().domain;
-                        archive & this->get().services;
-                        archive & this->get().queues;
-                     })
-                  };
-
-                  template< typename Wrapper>
-                  struct basic_reply : Wrapper
-                  {
-                     using Wrapper::Wrapper;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & this->get().execution;
-                        archive & this->get().domain;
-                        archive & this->get().services;
-                        archive & this->get().queues;
-                     })
-                  };
-
-                  namespace send
-                  {
-                     using Request = basic_request< detail::external_send_wrapper< common::message::gateway::domain::discover::Request>>;
-                     using Reply = basic_reply< detail::external_send_wrapper< common::message::gateway::domain::discover::Reply>>;
-
-                  } // send
-
-                  namespace receive
-                  {
-                     using Request = basic_request< detail::external_receive_wrapper< common::message::gateway::domain::discover::Request>>;
-                     using Reply = basic_reply< detail::external_receive_wrapper< common::message::gateway::domain::discover::Reply>>;
-                  } // receive
-
-               } // discovery
-
-            } // domain
-
-            //!
-            //! Helpers to get the right interdomain wrapper before sending, hence correct marshaling to the other domain.
-            //!
-            namespace send
-            {
-               inline transaction::resource::send::prepare::Request wrap( common::message::transaction::resource::prepare::Request& message)
-               { return { message};}
-
-               inline transaction::resource::send::prepare::Reply wrap( common::message::transaction::resource::prepare::Reply& message)
-               { return { message};}
-
-
-               inline transaction::resource::send::commit::Request wrap( common::message::transaction::resource::commit::Request& message)
-               { return { message};}
-
-               inline transaction::resource::send::commit::Reply wrap( common::message::transaction::resource::commit::Reply& message)
-               { return { message};}
-
-
-               inline transaction::resource::send::rollback::Request wrap( common::message::transaction::resource::rollback::Request& message)
-               { return { message};}
-
-               inline transaction::resource::send::rollback::Reply wrap( common::message::transaction::resource::rollback::Reply& message)
-               { return { message};}
-
-               inline service::call::send::Request wrap( common::message::service::call::callee::Request& message)
-               { return { message};}
-
-               inline service::call::send::Reply wrap( common::message::service::call::Reply& message)
-               { return { message};}
-
-
-               inline service::conversation::connect::send::Request wrap( common::message::conversation::connect::callee::Request& message)
-               { return { message};}
-
-               inline service::conversation::connect::send::Reply wrap( common::message::conversation::connect::Reply& message)
-               { return { message};}
-
-
-               inline domain::discovery::send::Request wrap( common::message::gateway::domain::discover::Request& message)
-               { return { message};}
-
-               inline domain::discovery::send::Reply wrap( common::message::gateway::domain::discover::Reply& message)
-               { return { message};}
-
-               inline queue::dequeue::send::Request wrap( common::message::queue::dequeue::Request& message)
-               { return { message};}
-
-               inline queue::dequeue::send::Reply wrap( common::message::queue::dequeue::Reply& message)
-               { return { message};}
-
-               inline queue::enqueue::send::Request wrap( common::message::queue::enqueue::Request& message)
-               { return { message};}
-
-               inline queue::enqueue::send::Reply wrap( common::message::queue::enqueue::Reply& message)
-               { return { message};}
-
-            } // send
-         } // interdomain
       } // message
    } // gateway
 
@@ -781,20 +282,216 @@ namespace casual
             template<>
             struct type_traits< casual::gateway::message::ipc::connect::Request> : detail::type< casual::gateway::message::ipc::connect::Reply> {};
 
-
-            template<>
-            struct type_traits< casual::gateway::message::interdomain::service::call::receive::Request>
-            : detail::type< casual::gateway::message::interdomain::service::call::receive::Reply> {};
-
-
             template<>
             struct type_traits< casual::gateway::message::outbound::configuration::Request> : detail::type< casual::gateway::message::outbound::configuration::Reply> {};
-
-
          } // reverse
+
+         template< typename A>
+         constexpr auto type( const gateway::domain::discover::Request&, A&& archive) -> std::enable_if_t< casual::common::marshal::is_network_normalizing< A>::value, Type>
+         {
+            return Type::interdomain_domain_discover_request;
+         }
+
+         namespace gateway
+         {
+            namespace domain
+            { 
+               namespace discover
+               {
+                  CASUAL_CUSTOMIZATION_POINT_MARSHAL( Request,
+                  {
+                     archive & value.execution;
+                     archive & value.domain;
+                     archive & value.services;
+                     archive & value.queues;
+                  })
+
+                  CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
+                  {
+                     archive & value.execution;
+                     archive & value.domain;
+                     archive & value.services;
+                     archive & value.queues;
+                  })
+               }
+            }
+         }
+
+         namespace service 
+         {
+            namespace call 
+            { 
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( callee::Request,
+               {
+                  archive & value.execution;
+                  archive & value.service.name;
+                  archive & value.service.timeout;
+                  archive & value.parent;
+                  archive & value.trid.xid;
+                  archive & value.flags;
+                  archive & value.buffer;
+               })
+            
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
+               {
+                     archive & value.execution;
+                     archive & value.status;
+                     archive & value.code;
+                     archive & value.transaction.trid.xid;
+                     archive & value.transaction.state;
+                     archive & value.buffer;
+               })
+            }
+         }
+
+         namespace conversation
+         {
+            namespace connect
+            {
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( callee::Request,
+               {
+                  archive & value.execution;
+                  archive & value.service.name;
+                  archive & value.service.timeout;
+                  archive & value.parent;
+                  archive & value.trid.xid;
+                  archive & value.flags;
+                  archive & value.recording;
+                  archive & value.buffer;
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
+               {
+                  archive & value.execution;
+                  archive & value.route;
+                  archive & value.recording;
+                  archive & value.status;
+               })
+
+            } // connect
+
+            CASUAL_CUSTOMIZATION_POINT_MARSHAL( Disconnect,
+            {
+               archive & value.execution;
+               archive & value.route;
+               archive & value.events;
+            })
+
+            CASUAL_CUSTOMIZATION_POINT_MARSHAL( callee::Send,
+            {
+               archive & value.execution;
+               archive & value.route;
+               archive & value.events;
+               archive & value.status;
+               archive & value.buffer;
+            })
+
+         } // conversation
+
+         namespace transaction
+         {
+            namespace resource
+            {
+               namespace marshal
+               {
+                  template< typename T, typename A>
+                  void transaction_request( T& value, A& archive)
+                  {
+                     archive & value.execution;
+                     archive & value.trid.xid;
+                     archive & value.resource;
+                     archive & value.flags;
+                  }
+
+                  template< typename T, typename A>
+                  void transaction_reply( T& value, A& archive)
+                  {
+                     archive & value.execution;
+                     archive & value.trid.xid;
+                     archive & value.resource;
+                     archive & value.state;
+                  }
+
+               } // marshal
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( prepare::Request,
+               {
+                  marshal::transaction_request( value, archive);
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( prepare::Reply,
+               {
+                  marshal::transaction_reply( value, archive);
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( commit::Request,
+               {
+                  marshal::transaction_request( value, archive);
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( commit::Reply,
+               {
+                  marshal::transaction_reply( value, archive);
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( rollback::Request, 
+               {
+                  marshal::transaction_request( value, archive);
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( rollback::Reply,
+               {
+                  marshal::transaction_reply( value, archive);
+               })
+
+            } // resource
+         } // transaction
+
+         namespace queue
+         {
+            namespace enqueue
+            {
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( Request,
+               {
+                  archive & value.execution;
+                  archive & value.name;
+                  archive & value.trid.xid;
+                  archive & value.message;
+               })
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
+               {
+                  archive & value.execution;
+                  archive & value.id;
+               })
+            }
+
+            namespace dequeue
+            {
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( Request,
+               {
+                  archive & value.execution;
+                  archive & value.name;
+                  archive & value.trid.xid;
+                  archive & value.selector;
+                  archive & value.block;
+               })
+
+
+               CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
+               {
+                  archive & value.execution;
+                  archive & value.message;
+               })               
+            }
+         } // queue
       } // message
    } // common
 
+
 } // casual
+
+
 
 #endif // CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MESSAGE_H_

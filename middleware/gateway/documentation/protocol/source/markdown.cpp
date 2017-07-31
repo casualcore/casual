@@ -43,9 +43,9 @@ namespace casual
                   }
                }
             }
-         }
-      }
-   }
+         } // message
+      } // communication
+   } // common
 
    namespace gateway
    {
@@ -187,7 +187,8 @@ namespace casual
                   template< typename T>
                   typename std::enable_if< ! common::marshal::binary::detail::is_native_marshable< T>::value>::type
                   write( T& value)
-                  {
+                  {  
+                     using casual::casual_marshal_value;
                      casual_marshal_value( value, *this);
                   }
 
@@ -204,7 +205,7 @@ namespace casual
                   {
                      if( m_roles.empty())
                      {
-                        m_types.push_back( type::info( value, "unknown", ""));
+                        m_types.push_back( type::info( value, typeid( value).name(), ""));
                      }
                      else
                      {
@@ -250,16 +251,38 @@ namespace casual
                   std::queue< type::Name> m_roles;
 
                };
+            }
+         }
+      }
+   }
+   namespace common
+   {
+      namespace marshal
+      {
+         template<>
+         struct is_network_normalizing< gateway::protocol::local::Printer>: std::true_type {};
+      } // marshal
+   } // common
+
+   namespace gateway
+   {
+
+      namespace protocol
+      {
+         namespace local
+         {
+            namespace
+            {
 
                namespace extract
                {
                   template< typename T>
-                  std::vector< type::Info> types( T&& type, std::initializer_list< type::Name> roles)
+                  std::vector< type::Info> types( T& type, std::initializer_list< type::Name> roles)
                   {
                      std::vector< type::Info> result;
                      local::Printer typer{ result, std::move( roles)};
 
-                     typer << std::forward< T>( type);
+                     typer << type;
 
                      return result;
                   }
@@ -282,11 +305,11 @@ namespace casual
                   }
 
                   template< typename T>
-                  void type( std::ostream& out, T&& value, std::initializer_list< type::Name> roles)
+                  void type( std::ostream& out, T& value, std::initializer_list< type::Name> roles)
                   {
                      auto formatter = type_info();
 
-                     formatter.print( out, extract::types( std::forward< T>( value), std::move( roles)));
+                     formatter.print( out, extract::types( value, std::move( roles)));
                   }
 
 
@@ -390,7 +413,7 @@ the rest of the message.
 )";
                {
 
-                  using message_type = message::interdomain::transaction::resource::receive::prepare::Request;
+                  using message_type = common::message::transaction::resource::prepare::Request;
 
                   out << R"(
 #### message::interdomain::transaction::resource::receive::prepare::Request
@@ -402,7 +425,7 @@ Sent to and received from other domains when one domain wants to prepare a trans
                }
 
                {
-                  using message_type = message::interdomain::transaction::resource::receive::prepare::Reply;
+                  using message_type = common::message::transaction::resource::prepare::Reply;
 
                   out << R"(
 #### message::interdomain::transaction::resource::receive::prepare::Reply
@@ -419,7 +442,7 @@ Sent to and received from other domains when one domain wants to prepare a trans
 )";
 
                {
-                  using message_type = message::interdomain::transaction::resource::receive::commit::Request;
+                  using message_type = common::message::transaction::resource::commit::Request;
 
                   out << R"(
 #### message::interdomain::transaction::resource::receive::commit::Request
@@ -431,7 +454,7 @@ Sent to and received from other domains when one domain wants to commit an alrea
                }
 
                {
-                  using message_type = message::interdomain::transaction::resource::receive::commit::Reply;
+                  using message_type = common::message::transaction::resource::commit::Reply;
 
                   out << R"(
 #### message::interdomain::transaction::resource::receive::commit::Reply
@@ -451,7 +474,7 @@ Reply to a commit request.
 
 
                {
-                  using message_type = message::interdomain::transaction::resource::receive::rollback::Request;
+                  using message_type = common::message::transaction::resource::rollback::Request;
 
                   out << R"(
 #### message::interdomain::transaction::resource::receive::rollback::Request
@@ -464,7 +487,7 @@ That is, when one or more resources has failed to prepare.
                }
 
                {
-                  using message_type =  message::interdomain::transaction::resource::receive::rollback::Reply;
+                  using message_type =  common::message::transaction::resource::rollback::Reply;
 
                   out << R"(
 #### message::interdomain::transaction::resource::receive::rollback::Reply
@@ -488,7 +511,7 @@ Reply to a rollback request.
 
 )";
                {
-                  using message_type = message::interdomain::service::call::receive::Request;
+                  using message_type = common::message::service::call::callee::Request;
 
                   out << R"(
 #### message::interdomain::service::call::receive::Request
@@ -529,7 +552,7 @@ Sent to and received from other domains when one domain wants call a service in 
 
 
                {
-                  using message_type = message::interdomain::service::call::receive::Reply;
+                  using message_type = common::message::service::call::Reply;
 
                   out << R"(
 #### message::interdomain::service::call::receive::Reply
@@ -552,7 +575,7 @@ Reply to call request
                            { "call.code", "XATMI user supplied code"},
 
                            { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
-                           { "transaction.trid.xid.gtrid_length", "length of the transactino gtrid part"},
+                           { "transaction.trid.xid.gtrid_length", "length of the transaction gtrid part"},
                            { "transaction.trid.xid.bqual_length", "length of the transaction branch part"},
                            { "transaction.trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
                            { "transaction.state", "state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY"},
@@ -578,7 +601,7 @@ Reply to call request
 )";
 
                {
-                  using message_type = message::interdomain::domain::discovery::receive::Request;
+                  using message_type = common::message::gateway::domain::discover::Request;
 
                   out << R"(
 #### message::interdomain::domain::discovery::Request
@@ -612,7 +635,7 @@ Sent to and received from other domains when one domain wants discover informati
 
 
                {
-                  using message_type = message::interdomain::domain::discovery::receive::Reply;
+                  using message_type = common::message::gateway::domain::discover::Reply;
 
                   out << R"(
 #### message::interdomain::domain::discovery::Reply
@@ -649,16 +672,314 @@ Sent to and received from other domains when one domain wants discover informati
                }
             }
 
+            void queue( std::ostream& out)
+            {
+               out << R"(
+## queue messages
+
+### enqueue 
+
+)";
+
+               {
+                  using message_type = common::message::queue::enqueue::Request;
+
+                  out << R"(
+#### message::queue::enqueue::Request
+
+Represent enqueue request.
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.trid = common::transaction::ID::create();
+
+                  message.name.resize( 128);
+                  message.message.payload.resize( 1024);
+
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "name.size", "size of queue name"},
+                           { "name.data", "data of queue name"},
+                           { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
+                           { "transaction.trid.xid.gtrid_length", "length of the transaction gtrid part"},
+                           { "transaction.trid.xid.bqual_length", "length of the transaction branch part"},
+                           { "transaction.trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                           { "message.id", "id of the message"},
+                           { "message.properties.size", "length of message properties"},
+                           { "message.properties.data", "data of message properties"},
+                           { "message.reply.size", "length of the reply queue"},
+                           { "message.reply.data", "data of reply queue"},
+                           { "message.available", "when the message is available for dequeue (us since epoc)"},
+                           { "message.type.size", "length of the type string"},
+                           { "message.type.data", "data of the type string"},
+                           { "message.payload.size", "size of the payload"},
+                           { "message.payload.data", "data of the payload"},
+                        });
+               }
+
+               {
+                  using message_type = common::message::queue::enqueue::Reply;
+
+                  out << R"(
+#### message::queue::enqueue::Reply
+
+Represent enqueue reply.
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "id", "id of the enqueued message"},
+                        });
+               }
+
+
+               {
+                  using message_type = common::message::queue::dequeue::Request;
+
+                  out << R"(
+### dequeue 
+
+#### message::queue::dequeue::Request
+
+Represent dequeue request.
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.trid = common::transaction::ID::create();
+                  message.name.resize( 128);
+
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "name.size", "size of the queue name"},
+                           { "name.data", "data of the queue name"},
+                           { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
+                           { "transaction.trid.xid.gtrid_length", "length of the transaction gtrid part"},
+                           { "transaction.trid.xid.bqual_length", "length of the transaction branch part"},
+                           { "transaction.trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                           { "selector.properties.size", "size of the selector properties (ignored if empty)"},
+                           { "selector.properties.data", "data of the selector properties (ignored if empty)"},
+                           { "selector.id", "selector uuid (ignored if 'empty'"},
+                           { "block", "dictates if this is a blocking call or not"},
+                        });
+               }
+
+               {
+                  using message_type = common::message::queue::dequeue::Reply;
+
+                  out << R"(
+#### message::queue::dequeue::Reply
+
+Represent dequeue reply.
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.message.resize( 1);
+                  message.message.at( 0).properties.resize( 128);
+                  message.message.at( 0).reply.resize( 128);
+                  message.message.at( 0).type.resize( 128);
+                  message.message.at( 0).payload.resize( 1024);
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "message.size", "number of messages dequeued"},
+                           { "message.element.id", "id of the message"},
+                           { "message.element.properties.size", "length of message properties"},
+                           { "message.element.properties.data", "data of message properties"},
+                           { "message.element.reply.size", "length of the reply queue"},
+                           { "message.element.reply.data", "data of reply queue"},
+                           { "message.element.available", "when the message was available for dequeue (us since epoc)"},
+                           { "message.element.type.size", "length of the type string"},
+                           { "message.element.type.data", "data of the type string"},
+                           { "message.element.payload.size", "size of the payload"},
+                           { "message.element.payload.data", "data of the payload"},
+                           { "message.element.redelivered", "how many times the message has been redelivered"},
+                           { "message.element.timestamp", "when the message was enqueued (us since epoc)"},
+                        });
+               }
+            }
+
+            void conversation( std::ostream& out)
+            {
+               out << R"(
+## conversation messages
+
+### connect 
+
+)";
+
+               {
+                  using message_type = common::message::conversation::connect::callee::Request;
+
+                  out << R"(
+#### message::conversation::connect::Request
+
+Sent to establish a conversation
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.service.name.resize( 128);
+                  message.parent.resize( 128);
+                  message.trid = common::transaction::ID::create();
+                  message.buffer.type.resize( 8 + 1 + 16);
+                  message.buffer.memory.resize( 1024);
+                  message.recording.nodes.resize( 1);
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "service.name.size", "size of the service name"},
+                           { "service.name.data", "data of the service name"},
+                           { "service.name.timeout", "timeout (in us"},
+                           { "parent.size", "size of the parent service name (the caller)"},
+                           { "parent.data", "data of the parent service name (the caller)"},
+                           { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
+                           { "transaction.trid.xid.gtrid_length", "length of the transaction gtrid part"},
+                           { "transaction.trid.xid.bqual_length", "length of the transaction branch part"},
+                           { "transaction.trid.xid.payload", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                           { "flags", "xatmi flag"},
+                           { "recording.nodes.size", "size of the recording of 'passed nodes'"},
+                           { "recording.nodes.element.address", "'address' of a node'"},
+                           { "buffer.type.size", "buffer type name size"},
+                           { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                           { "buffer.payload.size", "buffer payload size (could be very big)"},
+                           { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        });
+               }
+
+               {
+                  using message_type = common::message::conversation::connect::Reply;
+
+                  out << R"(
+#### message::conversation::connect::Reply
+
+Reply for a conversation
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.route.nodes.resize( 1);
+                  message.recording.nodes.resize( 1);
+ 
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "route.nodes.size", "size of the established route"},
+                           { "route.nodes.element.address", "'address' of a 'node' in the route"},
+                           { "recording.nodes.size", "size of the recording of 'passed nodes'"},
+                           { "recording.nodes.element.address", "'address' of a node'"},
+                           { "status", "status of the connection"},
+                        });
+               }
+
+               {
+                  using message_type = common::message::conversation::callee::Send;
+
+                  out << R"(
+### send
+
+#### message::conversation::Send
+
+Represent a message sent 'over' an established connection
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.route.nodes.resize( 1);
+                  message.buffer.type.resize( 16 + 8 + 1);
+                  message.buffer.memory.resize( 1024);
+                  
+ 
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "route.nodes.size", "size of the established route"},
+                           { "route.nodes.element.address", "'address' of a 'node' in the route"},
+                           { "events", "events"},
+                           { "status", "status of the connection"},
+                           { "buffer.type.size", "buffer type name size"},
+                           { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                           { "buffer.payload.size", "buffer payload size (could be very big)"},
+                           { "buffer.payload.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        });
+               }
+
+               {
+                  using message_type = common::message::conversation::Disconnect;
+
+                  out << R"(
+### disconnect
+
+#### message::conversation::Disconnect
+
+Sent to abruptly disconnect the conversation
+
+)";
+
+                  out << "message type: **" << message_type::type() << "**\n\n";
+
+                  message_type message;
+
+                  message.route.nodes.resize( 1);
+
+                
+
+                  local::format::type( out, message, {
+                           { "execution", "uuid of the current execution path"},
+                           { "route.nodes.size", "size of the established route"},
+                           { "route.nodes.element.address", "'address' of a 'node' in the route"},
+                           { "events", "events"},
+                        });
+               }
+               
+            }
+
+
+
+            
+
             void protocol()
             {
+               static_assert( common::marshal::is_network_normalizing< local::Printer>::value, "not network...");
+
                message_header( std::cout);
                domain_discovery( std::cout);
                service_call( std::cout);
                transaction( std::cout);
+               queue( std::cout);
+               conversation( std::cout);
             }
          } // print
       } // protocol
    } // gateway
+
 } // casual
 
 int main( int argc, char **argv)

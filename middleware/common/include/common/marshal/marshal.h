@@ -23,15 +23,23 @@
 namespace casual
 {
    template< typename T, typename M>
-   void casual_marshal_value( T& value, M& marshler)
+   void casual_marshal( T& value, M& marshler)
    {
       value.marshal( marshler);
    }
 
    template< typename T, typename M>
+   void casual_marshal_value( T& value, M& marshler)
+   {
+      using casual::casual_marshal;
+      casual_marshal( value, marshler);
+   }
+
+   template< typename T, typename M>
    void casual_unmarshal_value( T& value, M& unmarshler)
    {
-      value.marshal( unmarshler);
+      using casual::casual_marshal;
+      casual_marshal( value, unmarshler);
    }
 
 } // casual

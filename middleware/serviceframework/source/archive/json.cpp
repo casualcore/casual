@@ -90,10 +90,10 @@ namespace casual
                return operator() ( json.data(), json.size());
             }
 
-            const rapidjson::Document& Load::operator() ( const char* const json, const std::size_t size)
+            const rapidjson::Document& Load::operator() ( const char* const json, const platform::size::type size)
             {
                // To ensure null-terminated string
-               const std::string buffer{ json, size};
+               const std::string buffer{ json, json + size};
                return local::parse( m_document, buffer.c_str());
             }
 
@@ -108,7 +108,7 @@ namespace casual
                Implementation::Implementation( const rapidjson::Value& document) : m_stack{ &document} {}
                Implementation::~Implementation() = default;
 
-               std::tuple< std::size_t, bool> Implementation::container_start( std::size_t size, const char* const name)
+               std::tuple< platform::size::type, bool> Implementation::container_start( platform::size::type size, const char* const name)
                {
                   if( ! start( name))
                   {
@@ -324,7 +324,7 @@ namespace casual
 
                Implementation::~Implementation() = default;
 
-               std::size_t Implementation::container_start( std::size_t size, const char* const name)
+               platform::size::type Implementation::container_start( platform::size::type size, const char* const name)
                {
                   start( name);
 

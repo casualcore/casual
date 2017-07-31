@@ -223,7 +223,7 @@ namespace casual
                {
                   return unmarshal(
                         this->next(
-                              common::message::type( message),
+                              common::message::type( message, *this),
                               std::forward< P>( policy),
                               handler),
                         message);
@@ -240,7 +240,7 @@ namespace casual
                {
                   return unmarshal(
                         this->next(
-                              common::message::type( message),
+                              common::message::type( message, this),
                               correlation,
                               std::forward< P>( policy),
                               handler),
@@ -483,7 +483,9 @@ namespace casual
                      message.execution = execution::id();
                   }
 
-                  message::Complete complete( message.type(), message.correlation ? message.correlation : uuid::make());
+                  message::Complete complete( 
+                     common::message::type( message, *this), 
+                     message.correlation ? message.correlation : uuid::make());
 
                   auto marshal = marshal_type()( complete.payload);
                   marshal << message;

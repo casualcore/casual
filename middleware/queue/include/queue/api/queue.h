@@ -52,7 +52,7 @@ namespace casual
          struct Affected
          {
             std::string queue;
-            std::size_t restored = 0;
+            sf::platform::size::type restored = 0;
          };
 
          std::vector< Affected> queue( const std::vector< std::string>& queues);

@@ -377,7 +377,7 @@ namespace casual
                option( Option::linger, linger);
             }
 
-            void Socket::option( int optname, const void *optval, std::size_t optlen)
+            void Socket::option( int optname, const void *optval, size_type optlen)
             {
                local::socket::check::result( ::setsockopt( descriptor(), SOL_SOCKET, optname, optval, optlen));
             }
@@ -489,7 +489,7 @@ namespace casual
                   namespace
                   {
 
-                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, std::size_t const size, common::Flags< Flag> flags)
+                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, size_type const size, common::Flags< Flag> flags)
                      {
                         common::signal::handle();
 

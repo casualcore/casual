@@ -56,7 +56,7 @@ namespace casual
                   request.message.type = message.payload.type;
                   request.message.properties = message.attributes.properties;
                   request.message.reply = message.attributes.reply;
-                  request.message.avalible = message.attributes.available;
+                  request.message.available = message.attributes.available;
 
                   request.name = lookup.name();
 
@@ -372,7 +372,7 @@ namespace casual
                   message.id = m.id;
                   message.trid = std::move( m.trid);
                   message.state = m.state;
-                  message.attributes.available = m.avalible;
+                  message.attributes.available = m.available;
                   message.attributes.reply = std::move( m.reply);
                   message.attributes.properties = std::move( m.properties);
                   message.payload.type = std::move( m.type);
@@ -412,7 +412,7 @@ namespace casual
                common::range::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
                   Message message;
                   message.id = m.id;
-                  message.attributes.available = m.avalible;
+                  message.attributes.available = m.available;
                   message.attributes.reply = std::move( m.reply);
                   message.attributes.properties = std::move( m.properties);
                   message.payload.type = std::move( m.type);

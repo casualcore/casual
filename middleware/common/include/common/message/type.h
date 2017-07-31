@@ -2,8 +2,8 @@
 //! casual
 //!
 
-#ifndef COMMONMESSAGETYPE_H_
-#define COMMONMESSAGETYPE_H_
+#ifndef COMMON_MESSAGE_TYPE_H_
+#define COMMON_MESSAGE_TYPE_H_
 
 #include "common/platform.h"
 #include "common/transaction/id.h"
@@ -219,20 +219,26 @@ namespace casual
 
          //!
          //! Deduce witch type of message it is.
-         //!
+         //! @{
          template< typename M>
          constexpr Type type( const M& message)
          {
             return message.type();
          }
 
+         template< typename M, typename A>
+         constexpr Type type( const M& message, A&& archive)
+         {
+            return type( message);
+         }
+
 
          namespace convert
          {
-            using underlying_type = typename std::underlying_type_t< message::Type>;
+            using underlying_type = std::underlying_type_t< message::Type>;
 
-            constexpr Type type( underlying_type type) { return static_cast< Type>( type);}
-            constexpr underlying_type type( Type type) { return static_cast< underlying_type>( type);}
+            constexpr auto type( underlying_type type) { return static_cast< Type>( type);}
+            constexpr auto type( Type type) { return cast::underlying( type);}
 
          } // convert
 

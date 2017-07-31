@@ -15,12 +15,12 @@ namespace casual
    {
       namespace memory
       {
-         using size_type = decltype( sizeof( int));
+         using size_type = platform::size::type;
 
          namespace detail
          {
             template< typename T>
-            constexpr auto size() -> typename std::enable_if< ! std::is_array< T>::value, size_type>::type
+            constexpr auto size() -> std::enable_if_t< ! std::is_array< T>::value && std::is_trivially_copyable< T>::value, size_type>
             {
                return sizeof( T);
             }
@@ -107,7 +107,7 @@ namespace casual
          }
 
          template< typename InputIter, typename OutputIter>
-         std::size_t copy( const Range< InputIter> source, Range< OutputIter> destination)
+         size_type copy( const Range< InputIter> source, Range< OutputIter> destination)
          {
             assert( destination.size() >= source.size());
 
@@ -121,7 +121,7 @@ namespace casual
 
 
          template< typename T, typename Iter>
-         std::size_t copy( const T& source, Range< Iter> destination)
+         size_type copy( const T& source, Range< Iter> destination)
          {
             return copy( range::make( source), destination);
          }
@@ -135,9 +135,9 @@ namespace casual
          //! @return the new offset ( @p offset + memory::size( value) )
          //!
          template< typename T>
-         std::size_t copy( const platform::binary::type& buffer, std::size_t offset, T& value)
+         size_type copy( const platform::binary::type& buffer, size_type offset, T& value)
          {
-            assert( buffer.size() - offset >=  memory::size( value));
+            assert( common::range::size( buffer) - offset >=  memory::size( value));
 
             auto source = common::range::make( std::begin( buffer) + offset, memory::size( value));
             auto destination = memory::range::make( value);

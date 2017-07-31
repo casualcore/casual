@@ -105,7 +105,7 @@ namespace casual
             auto format_trid = []( const manager::admin::Message& v) { return transcode::hex::encode( v.trid);};
             auto format_type = []( const manager::admin::Message& v) { return v.type;};
             auto format_timestamp = []( const manager::admin::Message& v) { return normalize::timestamp( v.timestamp);};
-            auto format_avalible = []( const manager::admin::Message& v) { return normalize::timestamp( v.avalible);};
+            auto format_available = []( const manager::admin::Message& v) { return normalize::timestamp( v.available);};
 
             return {
                { global::porcelain, global::color, global::header},
@@ -117,7 +117,7 @@ namespace casual
                terminal::format::column( "type", format_type, terminal::color::no_color),
                terminal::format::column( "reply", std::mem_fn( &manager::admin::Message::reply), terminal::color::no_color),
                terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "avalible", format_avalible, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
 
             };
          }

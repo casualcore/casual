@@ -18,7 +18,7 @@ namespace casual
 
 
          Cache::Limit::Limit() = default;
-         Cache::Limit::Limit( std::size_t size, std::size_t messages) : size( size), messages( messages) {}
+         Cache::Limit::Limit( size_type size, size_type messages) : size( size), messages( messages) {}
 
 
          Cache::Cache() = default;
@@ -123,7 +123,7 @@ namespace casual
 
          bool Cache::vacant( const lock_type&) const
          {
-            if( m_limit.messages && m_messages.size() >= m_limit.messages)
+            if( m_limit.messages && common::range::size( m_messages) >= m_limit.messages)
             {
                return false;
             }
@@ -137,7 +137,7 @@ namespace casual
          Cache::Limit Cache::size() const
          {
             lock_type lock{ m_mutex};
-            return { m_size, m_messages.size()};
+            return { m_size, common::range::size( m_messages)};
          }
 
          std::ostream& operator << ( std::ostream& out, const Cache& value)

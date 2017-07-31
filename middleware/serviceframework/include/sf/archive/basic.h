@@ -65,7 +65,7 @@ namespace casual
 
          private:
 
-            std::tuple< std::size_t, bool> dispatch_container_start( std::size_t size, const char* name) override
+            std::tuple< platform::size::type, bool> dispatch_container_start( platform::size::type size, const char* name) override
             {
                auto result = m_implementation.container_start( size, name);
                policy_type::apply( std::get< 1>( result), name);
@@ -134,7 +134,7 @@ namespace casual
 
          private:
 
-            void dispatch_container_start( std::size_t size, const char* name) override
+            void dispatch_container_start( platform::size::type size, const char* name) override
             {
                m_implementation.container_start( size, name);
             }

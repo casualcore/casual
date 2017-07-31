@@ -60,7 +60,7 @@ namespace casual
                void generate( const std::string& basename)
                {
                   {
-                     message::interdomain::domain::discovery::receive::Request message;
+                     common::message::gateway::domain::discover::Request message;
                      set_general( message);
 
                      message.domain.id = common::Uuid{ "315dacc6182e4c12bf9877efa924cb86"};
@@ -73,7 +73,7 @@ namespace casual
                   }
 
                   {
-                     message::interdomain::domain::discovery::receive::Reply message;
+                     common::message::gateway::domain::discover::Reply message;
                      set_general( message);
 
                      message.domain.id = common::Uuid{ "e2f6b7c37f734a0982a0ab1581b21fa5"};
@@ -98,7 +98,7 @@ namespace casual
                   }
 
                   {
-                     message::interdomain::service::call::receive::Request message;
+                     common::message::service::call::callee::Request message;
                      set_general( message);
 
                      message.service.name = "service1";
@@ -116,7 +116,7 @@ namespace casual
                   }
 
                   {
-                     message::interdomain::service::call::receive::Reply message;
+                     common::message::service::call::Reply message;
                      set_general( message);
 
                      message.status = 9;
@@ -146,37 +146,37 @@ namespace casual
                      };
 
                      {
-                        message::interdomain::transaction::resource::receive::prepare::Request message;
+                        common::message::transaction::resource::prepare::Request message;
                         transaction_request( message);
                         generate( message, basename + "message.interdomain.transaction.resource.receive.prepare.Request.bin");
                      }
 
                      {
-                        message::interdomain::transaction::resource::receive::prepare::Reply message;
+                        common::message::transaction::resource::prepare::Reply message;
                         transaction_reply( message);
                         generate( message, basename + "message.interdomain.transaction.resource.receive.prepare.Reply.bin");
                      }
 
                      {
-                        message::interdomain::transaction::resource::receive::commit::Request message;
+                        common::message::transaction::resource::commit::Request message;
                         transaction_request( message);
                         generate( message, basename + "message.interdomain.transaction.resource.receive.commit.Request.bin");
                      }
 
                      {
-                        message::interdomain::transaction::resource::receive::commit::Reply message;
+                        common::message::transaction::resource::commit::Reply message;
                         transaction_reply( message);
                         generate( message, basename + "message.interdomain.transaction.resource.receive.commit.Reply.bin");
                      }
 
                      {
-                        message::interdomain::transaction::resource::receive::rollback::Request message;
+                        common::message::transaction::resource::rollback::Request message;
                         transaction_request( message);
                         generate( message, basename + "message.interdomain.transaction.resource.receive.rollback.Request.bin");
                      }
 
                      {
-                        message::interdomain::transaction::resource::receive::rollback::Reply message;
+                        common::message::transaction::resource::rollback::Reply message;
                         transaction_reply( message);
                         generate( message, basename + "message.interdomain.transaction.resource.receive.rollback.Reply.bin");
                      }

@@ -20,7 +20,7 @@ namespace casual
          {
             namespace detail
             {
-               std::string encode( const void* data, std::size_t bytes);
+               std::string encode( const void* data, platform::size::type bytes);
             } // detail
 
 
@@ -128,7 +128,7 @@ namespace casual
          {
             namespace detail
             {
-               std::string encode( const void* data, std::size_t bytes);
+               std::string encode( const void* data, platform::size::type bytes);
                void decode( const std::string& value, void* data);
             } // detail
 

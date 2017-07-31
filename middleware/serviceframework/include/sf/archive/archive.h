@@ -34,7 +34,7 @@ namespace casual
             Reader();
             virtual ~Reader();
 
-            std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
+            std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
             void container_end( const char* name);
 
             bool serialtype_start( const char* name);
@@ -54,7 +54,7 @@ namespace casual
 
          private:
 
-            virtual std::tuple< std::size_t, bool> dispatch_container_start( std::size_t size, const char* name) = 0;
+            virtual std::tuple< platform::size::type, bool> dispatch_container_start( platform::size::type size, const char* name) = 0;
             virtual void dispatch_container_end( const char* name) = 0;
 
             virtual bool dispatch_serialtype_start( const char* name) = 0;
@@ -113,7 +113,7 @@ namespace casual
 
          namespace detail
          {
-            template< std::size_t index>
+            template< platform::size::type index>
             struct tuple_read
             {
                template< typename T>
@@ -259,7 +259,7 @@ namespace casual
             Writer();
             virtual ~Writer();
 
-            void container_start( std::size_t size, const char* name);
+            void container_start( platform::size::type size, const char* name);
             void container_end( const char* name);
 
             void serialtype_start( const char* name);
@@ -279,7 +279,7 @@ namespace casual
 
          private:
 
-            virtual void dispatch_container_start( std::size_t size, const char* name) = 0;
+            virtual void dispatch_container_start( platform::size::type size, const char* name) = 0;
             virtual void dispatch_container_end( const char* name) = 0;
 
             virtual void dispatch_serialtype_start( const char* name) = 0;
@@ -324,7 +324,7 @@ namespace casual
 
          namespace detail
          {
-            template< std::size_t index>
+            template< platform::size::type index>
             struct tuple_write
             {
                template< typename T>

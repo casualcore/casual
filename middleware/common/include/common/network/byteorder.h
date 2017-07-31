@@ -5,6 +5,8 @@
 #ifndef CASUAL_COMMON_NETWORK_BYTEORDER_H_
 #define CASUAL_COMMON_NETWORK_BYTEORDER_H_
 
+#include "common/platform.h"
+
 #include <cstddef>
 #include <cstdint>
 
@@ -102,7 +104,7 @@ namespace casual
             using type = decltype( encode( T{}));
 
             template< typename T>
-            constexpr std::size_t bytes() noexcept
+            constexpr platform::size::type bytes() noexcept
             {
                return sizeof( decltype( encode( T{})));
             }

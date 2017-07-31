@@ -19,7 +19,8 @@ namespace casual
    {
       namespace group
       {
-         using queue_id_type = std::size_t;
+         using queue_id_type = common::platform::size::type;
+         using size_type = common::platform::size::type;
 
          struct Settings
          {
@@ -63,7 +64,7 @@ namespace casual
 
 
                std::vector< request_type> requests;
-               std::map< common::transaction::ID, std::map< queue_id_type, std::size_t>> transactions;
+               std::map< common::transaction::ID, std::map< queue_id_type, size_type>> transactions;
 
                void dequeue( const request_type& request);
 
@@ -75,7 +76,7 @@ namespace casual
                struct result_t
                {
                   std::vector< request_type> requests;
-                  std::map< queue_id_type, std::size_t> enqueued;
+                  std::map< queue_id_type, size_type> enqueued;
                };
 
                result_t commit( const common::transaction::ID& trid);

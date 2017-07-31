@@ -25,6 +25,8 @@ namespace casual
       {
          namespace transport
          {
+            using size_type = platform::size::type;
+
             struct Context;
 
             enum class Lifecycle
@@ -42,7 +44,7 @@ namespace casual
 
                static Context& instance();
 
-               void registration( std::size_t order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback);
+               void registration( size_type order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback);
 
                void dispatch(
                      platform::buffer::raw::type& buffer,
@@ -63,9 +65,9 @@ namespace casual
 
                struct Callback
                {
-                  Callback( std::size_t order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback);
+                  Callback( size_type order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback);
 
-                  std::size_t order = 0;
+                  size_type order = 0;
                   std::vector< Lifecycle> lifecycles;
                   std::vector< std::string> types;
                   dispatch_type dispatch;
