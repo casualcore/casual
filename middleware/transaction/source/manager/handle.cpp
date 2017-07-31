@@ -1475,19 +1475,22 @@ namespace casual
                }
                else
                {
-
-                  log << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
-
                   //
-                  // Send reply
+                  // It has to be a one phase commit optimization.
                   //
+                  if( ! common::flag< TMONEPHASE>( message.flags))
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = XAER_NOTA;
+                     reply.state = XAER_PROTO;
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
+                     return;
                   }
+
+                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
+
+                  local::send::read_only( m_state, message);
                }
             }
 
