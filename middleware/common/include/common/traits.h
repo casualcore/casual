@@ -203,10 +203,10 @@ namespace casual
 
 
 
-            template< typename T, platform::size::type size>
+            template< typename T, std::size_t size>
             struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::array>{};
 
-            template< typename T, platform::size::type size>
+            template< typename T, std::size_t size>
             struct traits< T[ size]> : detail::traits< std::array< T, size>, container::category::array>{};
 
 
