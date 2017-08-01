@@ -26,6 +26,6 @@ int main( int argc, char** argv)
    }
    catch( ...)
    {
-      return error::handler();
+      return exception::handle();
    }
 }

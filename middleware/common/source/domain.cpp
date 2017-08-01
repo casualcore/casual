@@ -6,6 +6,8 @@
 
 #include "common/environment.h"
 #include "common/log.h"
+#include "common/exception/system.h"
+#include "common/string.h"
 
 #include <fstream>
 
@@ -104,7 +106,7 @@ namespace casual
                }
                else
                {
-                  throw common::exception::invalid::File( "failed to write temporary domain singleton file: " + temp_file.path());
+                  throw exception::system::invalid::File( "failed to write temporary domain singleton file: " + temp_file.path());
                }
 
 
@@ -117,7 +119,8 @@ namespace casual
                   //
                   // There is potentially a running casual-domain already - abort
                   //
-                  throw common::exception::invalid::Process( "can only be one casual-domain running in a domain - domain lock file: " + path, CASUAL_NIP( content));
+                  throw exception::system::invalid::Process( string::compose( 
+                     "can only be one casual-domain running in a domain - domain lock file: ", path, " content: ", content));
                }
 
                //

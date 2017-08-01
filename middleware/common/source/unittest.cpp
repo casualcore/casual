@@ -9,6 +9,8 @@
 #include "common/message/event.h"
 #include "common/message/handle.h"
 
+#include "common/exception/casual.h"
+
 
 #include <random>
 
@@ -37,7 +39,7 @@ namespace casual
 
                   if( size < size_type_size)
                   {
-                     throw exception::invalid::Argument{ "mockup message size is to small"};
+                     throw exception::system::invalid::Argument{ "mockup message size is to small"};
                   }
                   return size - size_type_size;
                }
@@ -128,7 +130,7 @@ namespace casual
                      []( const message::event::domain::Error& error){
                         if( error.severity == message::event::domain::Error::Severity::fatal)
                         {
-                           throw exception::Shutdown{ "fatal error", CASUAL_NIP( error)};
+                           throw exception::casual::Shutdown{ string::compose( "fatal error: ", error)};
                         }
                      },
                      common::message::handle::Discard< common::message::event::domain::Group>{},

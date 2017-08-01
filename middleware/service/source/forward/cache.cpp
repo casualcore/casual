@@ -8,6 +8,7 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/exception/casual.h"
 
 #include "common/server/handle/call.h"
 
@@ -49,7 +50,7 @@ namespace casual
                            reply.correlation = message.correlation;
                            reply.execution = message.execution;
                            reply.transaction.trid = message.trid;
-                           reply.status = TPESVCERR;
+                           reply.status = common::error::code::xatmi::service_error;
                            reply.buffer = buffer::Payload{ nullptr};
 
                            try
@@ -65,7 +66,7 @@ namespace casual
                                  log << "could not send error reply to process: " << message.process << " - will try later\n";
                               }
                            }
-                           catch( const exception::queue::Unavailable&)
+                           catch( const exception::system::communication::Unavailable&)
                            {
                               //
                               // No-op, we just drop the message
@@ -91,7 +92,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 
@@ -244,9 +245,9 @@ namespace casual
                   }
                }
             }
-            catch( const exception::Shutdown&)
+            catch( const exception::casual::Shutdown&)
             {
-               error::handler();
+               exception::handle();
             }
          }
       } // forward

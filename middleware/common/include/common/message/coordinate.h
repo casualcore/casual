@@ -7,7 +7,6 @@
 
 
 #include "common/uuid.h"
-#include "common/exception.h"
 #include "common/process.h"
 
 #include <vector>

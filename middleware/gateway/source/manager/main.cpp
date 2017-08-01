@@ -5,7 +5,6 @@
 #include "gateway/manager/manager.h"
 
 
-#include "common/error.h"
 #include "common/arguments.h"
 
 
@@ -37,7 +36,7 @@ Responsible for interdomain communications.
             }
             catch( ...)
             {
-               return casual::common::error::handler();
+               return casual::common::exception::handle();
             }
             return 0;
          }

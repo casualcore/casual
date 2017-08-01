@@ -146,7 +146,7 @@ xid.gtrid_length | uint64        |            8 | length of the transaction gtri
 xid.bqual_length | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 resource.id      | uint32        |            4 | RM id of the resource - has to correlate with the reply            
-flags            | uint32        |            4 | XA flags to be forward to the resource                             
+flags            | uint64        |            8 | XA flags to be forward to the resource                             
 
 #### message::interdomain::transaction::resource::receive::prepare::Reply
 
@@ -181,7 +181,7 @@ xid.gtrid_length | uint64        |            8 | length of the transaction gtri
 xid.bqual_length | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 resource.id      | uint32        |            4 | RM id of the resource - has to correlate with the reply            
-flags            | uint32        |            4 | XA flags to be forward to the resource                             
+flags            | uint64        |            8 | XA flags to be forward to the resource                             
 
 #### message::interdomain::transaction::resource::receive::commit::Reply
 
@@ -217,7 +217,7 @@ xid.gtrid_length | uint64        |            8 | length of the transaction gtri
 xid.bqual_length | uint64        |            8 | length of the transaction branch part                              
 xid.payload      | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 resource.id      | uint32        |            4 | RM id of the resource - has to correlate with the reply            
-flags            | uint32        |            4 | XA flags to be forward to the resource                             
+flags            | uint64        |            8 | XA flags to be forward to the resource                             
 
 #### message::interdomain::transaction::resource::receive::rollback::Reply
 

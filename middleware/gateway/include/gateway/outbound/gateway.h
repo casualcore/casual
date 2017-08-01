@@ -44,7 +44,7 @@ namespace casual
                      common::communication::ipc::blocking::send( destination, message);
                      return true;
                   }
-                  catch( const common::exception::queue::Unavailable&)
+                  catch( const common::exception::system::communication::Unavailable&)
                   {
                      log << "destination queue unavailable for correlation: " << message.correlation << " - action: discard\n";
                   }
@@ -289,7 +289,7 @@ namespace casual
 
                      ipc::optional::send( destination.destination.queue, reply);
                   }
-                  catch( const common::exception::invalid::Argument&)
+                  catch( const common::exception::system::invalid::Argument&)
                   {
                      common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                   }
@@ -351,7 +351,7 @@ namespace casual
                                        common::communication::ipc::queue::manager::optional::device(),
                                        advertise);
                               }
-                              catch( const common::exception::communication::Unavailable&)
+                              catch( const common::exception::system::communication::Unavailable&)
                               {
                                  common::log::category::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
                               }
@@ -395,7 +395,7 @@ namespace casual
 
                            ipc::optional::send( destination.destination.queue, reply);
                         }
-                        catch( const common::exception::invalid::Argument&)
+                        catch( const common::exception::system::invalid::Argument&)
                         {
                            common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                         }
@@ -489,7 +489,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                }
 
             }
@@ -716,7 +716,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        common::exception::handle();
                      }
                   };
 
@@ -819,7 +819,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   send_disconnect( message::worker::Disconnect::Reason::disconnect);
                }
             }

@@ -5,7 +5,7 @@
 #include "buffer/field.h"
 
 #include "common/environment.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
@@ -283,7 +283,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      return CASUAL_FIELD_INTERNAL_FAILURE;
                   }
                }
@@ -1458,7 +1458,7 @@ namespace casual
                catch( ...)
                {
                   // TODO: Handle this in an other way ?
-                  casual::common::error::handler();
+                  common::exception::handle();
                }
 
                return CASUAL_FIELD_NO_ID;
@@ -1482,7 +1482,7 @@ namespace casual
                catch( ...)
                {
                   // TODO: Handle this in an other way ?
-                  casual::common::error::handler();
+                  common::exception::handle();
                }
 
                return nullptr;

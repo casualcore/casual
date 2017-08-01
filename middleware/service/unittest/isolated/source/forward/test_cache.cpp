@@ -72,7 +72,7 @@ namespace casual
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.status == 0);
+            EXPECT_TRUE( reply.status == common::error::code::xatmi::ok);
          }
 
          // make sure we quit
@@ -124,7 +124,7 @@ namespace casual
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.status == TPESVCERR);
+            EXPECT_TRUE( reply.status == common::error::code::xatmi::service_error);
 
          }
 

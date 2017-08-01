@@ -2,6 +2,14 @@
 //! casual
 //!
 
+//
+// to be able to use 'raw' flags and codes
+// since we undefine 'all' of them in common
+//
+#define CASUAL_NO_XATMI_UNDEFINE
+
+
+
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
@@ -21,6 +29,7 @@
 #include "common/message/transaction.h"
 #include "common/environment.h"
 #include "common/transcode.h"
+#include "common/functional.h"
 
 #include "sf/service/protocol/call.h"
 #include "sf/archive/log.h"
@@ -350,6 +359,18 @@ resources:
       }
 
 
+      namespace local
+      {
+         namespace
+         {
+            template< typename F, typename... Args>
+            common::error::code::tx tx_invoke( F function, Args&&... args)
+            {
+               return static_cast< common::error::code::tx>( common::invoke( function, std::forward< Args>( args)...));
+            }
+         } // <unnamed>
+      } // local
+
       TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__xa_XA_RBDEADLOCK___expect__TX_HAZARD)
       {
          common::unittest::Trace trace;
@@ -379,10 +400,11 @@ resources:
             local::send::tm( message);
          }
 
-         auto result = tx_commit();
-         ASSERT_TRUE( result == TX_HAZARD) << "result: " << common::error::tx::error( result);
+         using tx = common::error::code::tx;
+         auto result = local::tx_invoke( &tx_commit);
+         ASSERT_TRUE( result == tx::hazard) << "result: " << result;
 
-         EXPECT_TRUE( tx_rollback() == TX_OK);
+         EXPECT_TRUE( local::tx_invoke( &tx_rollback) == tx::ok);
 
       }
 
@@ -397,8 +419,9 @@ resources:
 
          local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
 
+         using tx = common::error::code::tx;
 
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
 
          //
          // Make sure we make the transaction distributed
@@ -416,8 +439,8 @@ resources:
             local::send::tm( message);
          }
 
-         auto result = tx_commit();
-         EXPECT_TRUE( result == TX_OK) << "result: " << common::error::tx::error( result);
+         auto result = local::tx_invoke( &tx_commit);
+         EXPECT_TRUE( result == tx::ok) << "result: " << result;
       }
 
       TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
@@ -620,11 +643,11 @@ resources:
             communication::ipc::blocking::receive( gateway.output(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.flags == TMONEPHASE);
+            EXPECT_TRUE( message.flags == common::flag::xa::Flag::one_phase);
 
             auto reply = common::message::reverse::type( message);
             reply.resource = message.resource;
-            reply.state = XA_OK;
+            reply.state = common::error::code::xa::ok;
             reply.trid = message.trid;
 
             local::send::tm( reply);
@@ -638,7 +661,7 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == TX_OK);
+            EXPECT_TRUE( message.state == common::error::code::tx::ok);
 
          }
       }
@@ -687,11 +710,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XA_OK;
+               reply.state = common::error::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -709,7 +732,7 @@ resources:
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::prepare);
-            EXPECT_TRUE( message.state == TX_OK);
+            EXPECT_TRUE( message.state == common::error::code::tx::ok);
          }
 
 
@@ -722,11 +745,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XA_OK;
+               reply.state = common::error::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -744,7 +767,7 @@ resources:
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::commit);
-            EXPECT_TRUE( message.state == TX_OK);
+            EXPECT_TRUE( message.state == common::error::code::tx::ok);
          }
       }
 
@@ -790,11 +813,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XA_RDONLY;
+               reply.state = common::error::code::xa::read_only;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -811,7 +834,8 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == XA_RDONLY) << "state: " << message.state;
+            //EXPECT_TRUE( message.state == XA_RDONLY) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::error::code::tx::ok) << "state: " << message.state;
          }
       }
 
@@ -843,7 +867,7 @@ resources:
             common::message::transaction::resource::commit::Request message;
             message.trid = trid;
             message.process = process::handle();
-            message.flags = TMONEPHASE;
+            message.flags = common::flag::xa::Flag::one_phase;
 
             local::send::tm( message);
          }
@@ -858,11 +882,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XA_OK;
+               reply.state = common::error::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -881,11 +905,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XA_OK;
+               reply.state = common::error::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -902,7 +926,7 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == XA_OK) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::error::code::xa::ok) << "state: " << message.state;
          }
       }
 
@@ -936,7 +960,7 @@ resources:
             common::message::transaction::resource::commit::Request message;
             message.trid = trid;
             message.process = process::handle();
-            message.flags = TMONEPHASE;
+            message.flags = common::flag::xa::Flag::one_phase;
 
             local::send::tm( message);
          }
@@ -951,11 +975,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XAER_RMERR;
+               reply.state = common::error::code::xa::resource_error;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -974,11 +998,11 @@ resources:
                communication::ipc::blocking::receive( gtw.output(), message);
 
                EXPECT_TRUE( message.trid == trid);
-               EXPECT_TRUE( message.flags == TMNOFLAGS);
+               EXPECT_TRUE( message.flags == common::flag::xa::Flag::no_flags);
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = XA_OK;
+               reply.state = common::error::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -995,7 +1019,7 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == XA_RBOTHER) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::error::code::xa::rollback_other) << "state: " << message.state;
          }
       }
 

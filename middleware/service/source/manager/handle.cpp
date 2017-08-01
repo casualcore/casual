@@ -55,7 +55,7 @@ namespace casual
                            ipc::device().blocking_send( device, message);
                            return true;
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            return false;
                         }
@@ -279,7 +279,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        common::exception::handle();
                      }
                   }
                }

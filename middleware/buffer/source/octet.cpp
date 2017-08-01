@@ -127,7 +127,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   return CASUAL_OCTET_INTERNAL_FAILURE;
                }
             }

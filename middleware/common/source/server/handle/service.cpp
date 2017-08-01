@@ -28,7 +28,7 @@ namespace casual
 
                      result.correlation = message.correlation;
                      result.buffer = buffer::Payload{ nullptr};
-                     result.status = TPESVCERR;
+                     result.status = error::code::xatmi::service_error;
 
                      return result;
                   }
@@ -91,12 +91,12 @@ namespace casual
                      if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
                         reply.transaction.state = message::service::Transaction::State::active;
-                        reply.status = 0;
+                        reply.status = error::code::xatmi::ok;
                      }
                      else
                      {
                         reply.transaction.state = message::service::Transaction::State::rollback;
-                        reply.status = TPESVCFAIL;
+                        reply.status = error::code::xatmi::service_fail;
                      }
 
                      log::debug << "reply: " << reply << '\n';
@@ -112,12 +112,12 @@ namespace casual
                      if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
                         reply.events = common::service::conversation::Event::service_success;
-                        reply.status = 0;
+                        reply.status = error::code::xatmi::ok;
                      }
                      else
                      {
                         reply.events = common::service::conversation::Event::service_fail;
-                        reply.status = TPESVCFAIL;
+                        reply.status = error::code::xatmi::service_fail;
                      }
 
                      reply.buffer = std::move( result.payload);

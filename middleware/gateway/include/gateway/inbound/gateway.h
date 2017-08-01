@@ -48,7 +48,7 @@ namespace casual
                      blocking::send( std::forward< D>( device), std::forward< M>( message));
                      return true;
                   }
-                  catch( const common::exception::communication::Unavailable&)
+                  catch( const common::exception::system::communication::Unavailable&)
                   {
                      return false;
                   }
@@ -149,7 +149,7 @@ namespace casual
                                  common::communication::ipc::outbound::Device ipc{ message.process.queue};
                                  ipc.put( request, common::communication::ipc::policy::Blocking{});
                               }
-                              catch( const common::exception::queue::Unavailable&)
+                              catch( const common::exception::system::communication::Unavailable&)
                               {
                                  common::log::category::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
                                  send_error_reply( message);
@@ -175,7 +175,7 @@ namespace casual
                      {
                         common::message::service::call::Reply reply;
                         reply.correlation = message.correlation;
-                        reply.status = TPESVCERR;
+                        reply.status = common::error::code::xatmi::service_error;
                         common::communication::ipc::inbound::device().push( reply);
                      }
                   };
@@ -306,7 +306,7 @@ namespace casual
                         {
                            queue::lookup::send( m_cache, message);
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
@@ -344,7 +344,7 @@ namespace casual
                         {
                            queue::lookup::send( m_cache, message);
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
@@ -633,7 +633,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                }
             }
 
@@ -809,7 +809,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        common::exception::handle();
                      }
                   };
 
@@ -866,7 +866,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   send_disconnect( message::worker::Disconnect::Reason::disconnect);
                }
 

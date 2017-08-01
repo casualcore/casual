@@ -36,7 +36,7 @@ namespace casual
 
                            if( process.alias.empty())
                            {
-                              throw exception::invalid::Configuration{ "executables has to have a path", CASUAL_NIP( process)};
+                              throw exception::casual::invalid::Configuration{ string::compose( "executables has to have a path - process_ ", process)};
                            }
                         }
 
@@ -78,7 +78,7 @@ namespace casual
                      }
                      else
                      {
-                        throw exception::invalid::Argument{ "unresolved dependency to group '" + name + "'" };
+                        throw exception::casual::invalid::Configuration{ "unresolved dependency to group '" + name + "'" };
                      }
                   }
 
@@ -119,7 +119,7 @@ namespace casual
                      {
                         return found->id;
                      }
-                     throw exception::invalid::Argument{ "unresolved dependency to group '" + name + "'" };
+                     throw exception::casual::invalid::Configuration{ "unresolved dependency to group '" + name + "'" };
                   }
 
                   const manager::State& m_state;

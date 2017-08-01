@@ -119,7 +119,7 @@ namespace casual
                      common::message::service::call::Reply message;
                      set_general( message);
 
-                     message.status = 9;
+                     message.status = common::error::code::xatmi::service_fail;
                      message.code = 42;
                      message.transaction.trid = trid();
                      message.transaction.state = common::message::service::Transaction::State::active;
@@ -135,14 +135,14 @@ namespace casual
                         set_general( message);
                         message.trid = trid();
                         message.resource = 42;
-                        message.flags = 0;
+                        message.flags = common::flag::xa::Flag::no_flags;
                      };
 
                      auto transaction_reply = []( auto& message){
                         set_general( message);
                         message.trid = trid();
                         message.resource = 42;
-                        message.state = 0;
+                        message.state = common::error::code::xa::ok;
                      };
 
                      {
@@ -205,11 +205,9 @@ namespace casual
                      generate( basename);
                      return 0;
                   }
-                  catch( const std::exception& e)
+                  catch( ...)
                   {
-                     std::cerr << "error: " << e.what() << std::endl;
-                     return 42;
-                     //return common::error::handler();
+                     return common::exception::handle( std::cerr);
                   }
                }
             } // <unnamed>

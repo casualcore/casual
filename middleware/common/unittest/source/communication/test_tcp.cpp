@@ -6,6 +6,7 @@
 #include "common/unittest.h"
 
 #include "common/communication/tcp.h"
+#include "common/exception/system.h"
 
 
 
@@ -40,7 +41,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     exception::handle();
                   }
                }
 
@@ -66,7 +67,7 @@ namespace casual
 
             EXPECT_THROW( {
                tcp::connect( local::address());
-            }, exception::communication::Refused);
+            }, exception::system::communication::Refused);
          }
 
          TEST( casual_common_communication_tcp, listener_port)
@@ -135,7 +136,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        exception::handle();
                      }
 
                   }
@@ -155,7 +156,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        exception::handle();
                      }
                   }
 

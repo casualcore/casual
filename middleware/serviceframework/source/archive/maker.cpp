@@ -73,7 +73,7 @@ namespace casual
                         return found->second( std::forward<IO>( stream));
                      }
 
-                     throw exception::Validation{ "Could not deduce archive from name", CASUAL_NIP( name)};
+                     throw exception::Validation{ string::compose( "Could not deduce archive from name: ",name)};
                   }
                } // from
 
@@ -169,7 +169,7 @@ namespace casual
 
                   if( ! file.is_open())
                   {
-                     throw exception::invalid::File( name);
+                     throw exception::system::invalid::File( name);
                   }
 
                   return local::name( std::move( file), common::file::name::extension( name));
@@ -230,7 +230,7 @@ namespace casual
 
                   if( ! file.is_open())
                   {
-                     throw exception::invalid::File( name);
+                     throw exception::system::invalid::File( name);
                   }
 
                   return local::name( std::move( file), common::file::name::extension( name));

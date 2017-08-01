@@ -11,6 +11,7 @@
 #include "common/transaction/id.h"
 #include "common/algorithm.h"
 #include "common/optional.h"
+#include "common/string.h"
 
 
 
@@ -38,6 +39,11 @@ namespace casual
    {
       using common::optional;
 
+      namespace string
+      {
+         using namespace common::string;   
+      } // string
+      
       namespace platform
       {
          namespace size 
@@ -48,6 +54,7 @@ namespace casual
          {
             using namespace common::platform::buffer;
          } // buffer
+
 
 
          namespace binary

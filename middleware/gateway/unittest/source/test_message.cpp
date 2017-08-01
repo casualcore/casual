@@ -130,7 +130,7 @@ namespace casual
                            common::message::service::call::Reply message;
                            general::intitialize( message);
                            message.code = 43;
-                           message.status = 666;
+                           message.status = common::error::code::xatmi::protocol;
                            message.transaction.trid = common::transaction::ID::create();
                            message.transaction.state = common::message::service::Transaction::State::rollback;
 

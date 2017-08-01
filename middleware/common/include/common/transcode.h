@@ -69,7 +69,7 @@ namespace casual
             //! @return UTF-8-encoded string
             //!
             //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
             //!
             std::string encode( const std::string& value);
@@ -80,7 +80,7 @@ namespace casual
             //! @return String encoded in local default codeset
             //!
             //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
             //!
             std::string decode( const std::string& value);
@@ -105,7 +105,7 @@ namespace casual
             //! @return UTF-8-encoded string
             //!
             //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
             //!
             std::string encode( const std::string& value, const std::string& codeset);
@@ -117,7 +117,7 @@ namespace casual
             //! @return String encoded in provided codeset
             //!
             //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::invalid::Argument for bad input
+            //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
             //!
             std::string decode( const std::string& value, const std::string& codeset);

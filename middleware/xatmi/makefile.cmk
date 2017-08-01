@@ -33,9 +33,16 @@ install_lib.append( lib_xatmi)
 install_include.append( ( 'include/xatmi/server.h', 'xatmi'))
 install_include.append( ( 'include/xatmi/defines.h', 'xatmi'))
 install_include.append( ( 'include/xatmi/extended.h', 'xatmi'))
-install_include.append( 'include/xa.h')
-install_include.append( 'include/tx.h')
+install_include.append( ( 'include/xatmi/flag.h', 'xatmi'))
+install_include.append( ( 'include/xatmi/code.h', 'xatmi'))
 install_include.append( 'include/xatmi.h')
+
+install_include.append( ( 'include/tx/code.h', 'tx'))
+install_include.append( 'include/tx.h')
+
+install_include.append( ( 'include/xa/code.h', 'xa'))
+install_include.append( ( 'include/xa/flag.h', 'xa'))
+install_include.append( 'include/xa.h')
 
 #
 # unittest

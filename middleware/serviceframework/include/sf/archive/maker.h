@@ -12,6 +12,7 @@
 
 #include "sf/archive/archive.h"
 
+
 namespace casual
 {
    namespace sf
@@ -64,19 +65,17 @@ namespace casual
                using Base::Base;
 
                template< typename T>
-               Holder& operator & ( T&& value)
-               {
-                  m_base->serialize();
-                  m_base->archive() & std::forward< T>( value);
-                  return *this;
-               }
-
-               template< typename T>
                Holder& operator >> ( T&& value)
                {
                   m_base->serialize();
                   m_base->archive() >> std::forward< T>( value);
                   return *this;
+               }
+
+               template< typename T>
+               Holder& operator & ( T&& value)
+               {
+                  return Holder::operator >> ( std::forward< T>( value));
                }
             };
 
@@ -117,13 +116,7 @@ namespace casual
 
                using Base::Base;
 
-               template< typename T>
-               Holder& operator & ( T&& value)
-               {
-                  m_base->archive() & std::forward< T>( value);
-                  m_base->serialize();
-                  return *this;
-               }
+
 
                template< typename T>
                Holder& operator << ( T&& value)
@@ -131,6 +124,12 @@ namespace casual
                   m_base->archive() << std::forward< T>( value);
                   m_base->serialize();
                   return *this;
+               }
+
+               template< typename T>
+               Holder& operator & ( T&& value)
+               {
+                  return Holder::operator << ( std::forward< T>( value));
                }
             };
 

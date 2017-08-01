@@ -51,7 +51,7 @@ namespace casual
                   {
                      throw;
                   }
-                  catch( const exception::queue::Unavailable&)
+                  catch( const exception::system::communication::Unavailable&)
                   {
                      return true;
                   }

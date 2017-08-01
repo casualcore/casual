@@ -172,7 +172,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   return CASUAL_STRING_INTERNAL_FAILURE;
                }
             }

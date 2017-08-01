@@ -66,7 +66,7 @@ namespace casual
             }
             catch( ...)
             {
-               error::handler();
+               exception::handle();
             }
          }
 

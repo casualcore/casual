@@ -10,8 +10,11 @@
 #include "common/process.h"
 #include "common/log.h"
 #include "common/algorithm.h"
-#include "common/error.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
+#include "common/exception/tx.h"
+#include "common/exception/xa.h"
+#include "common/exception/system.h"
+#include "common/error/code/convert.h"
 
 #include "common/message/domain.h"
 #include "common/event/send.h"
@@ -33,39 +36,6 @@ namespace casual
             template< typename T>
             Trace( T&& value) : common::log::Trace( std::forward< T>( value), log::category::transaction) {}
          };
-
-         int xaTotx( int code)
-         {
-            switch( code)
-            {
-               case XA_RBROLLBACK:
-               case XA_RBCOMMFAIL:
-               case XA_RBDEADLOCK:
-               case XA_RBINTEGRITY:
-               case XA_RBOTHER:
-               case XA_RBPROTO:
-               case XA_RBTIMEOUT:
-               case XA_RBTRANSIENT:
-               case XA_NOMIGRATE:
-               case XA_HEURHAZ: return TX_HAZARD;
-               case XA_HEURCOM:
-               case XA_HEURRB:
-               case XA_HEURMIX: return TX_MIXED;
-               case XA_RETRY:
-               case XA_RDONLY: return TX_OK;
-               case XA_OK: return TX_OK;
-               case XAER_ASYNC:
-               case XAER_RMERR:
-               case XAER_NOTA: return TX_NO_BEGIN;
-               case XAER_INVAL:
-               case XAER_PROTO: return TX_PROTOCOL_ERROR;
-               case XAER_RMFAIL:
-               case XAER_DUPID:
-               case XAER_OUTSIDE: return TX_OUTSIDE;
-               default: return TX_FAIL;
-
-            }
-         }
 
 
          Context& Context::instance()
@@ -160,7 +130,7 @@ namespace casual
                      auto message = "missing configuration for linked RM: " + resource.key + " - check group memberships";
                      common::event::error::send( message);
 
-                     throw exception::invalid::Argument( message);
+                     throw exception::system::invalid::Argument( message);
                   }
 
                   for( auto& rm : partition)
@@ -278,7 +248,7 @@ namespace casual
 
             if( trid)
             {
-               resources_start( transaction, TMNOFLAGS);
+               resources_start( transaction);
             }
 
             m_transactions.push_back( std::move( transaction));
@@ -290,7 +260,7 @@ namespace casual
 
             auto transaction = local::startTransaction( start, m_timeout);
 
-            resources_start( transaction, TMNOFLAGS);
+            resources_start( transaction);
 
             m_transactions.push_back( std::move( transaction));
          }
@@ -304,7 +274,7 @@ namespace casual
 
                if( ! found)
                {
-                  throw exception::xatmi::System{ "failed to find transaction", __FILE__, __LINE__};
+                  throw exception::xatmi::System{ string::compose( "failed to find transaction: ", reply.transaction)};
                }
 
                auto& transaction = *found;
@@ -392,9 +362,9 @@ namespace casual
             {
                auto status = Context::rollback( transaction);
 
-               if( status != TX_OK)
+               if( status != error::code::tx::ok)
                {
-                  log::category::error << "failed to rollback transaction: " << transaction.trid << " - " << error::tx::error( status) << std::endl;
+                  error::code::stream( status) << "failed to rollback transaction: " << transaction.trid << " - " << std::error_code{ status} << std::endl;
                   result.state = message::service::Transaction::State::error;
                }
             };
@@ -405,9 +375,9 @@ namespace casual
                {
                   auto status = Context::commit( transaction);
 
-                  if( status != TX_OK)
+                  if( status != error::code::tx::ok)
                   {
-                     log::category::error << "failed to commit transaction: " << transaction.trid << " - " << error::tx::error( status) << std::endl;
+                     error::code::stream( status) << "failed to commit transaction: " << transaction.trid << " - " << std::error_code{ status} << std::endl;
                      result.state = message::service::Transaction::State::error;
                   }
                }
@@ -503,7 +473,7 @@ namespace casual
                   //
                   // end resource
                   //
-                  resources_end( *found, TMSUCCESS);
+                  resources_end( *found, flag::xa::Flag::success);
                }
 
 
@@ -511,7 +481,7 @@ namespace casual
             }
          }
 
-         int Context::resourceRegistration( int rmid, XID* xid, long flags)
+         void Context::resource_registration( int rmid, XID* xid)
          {
             Trace trace{ "transaction::Context::resourceRegistration"};
 
@@ -520,8 +490,7 @@ namespace casual
             //
             if( ! common::range::find( m_resources.dynamic, rmid))
             {
-               log::category::error << "invalid resource id " << rmid << " TMER_INVAL\n";
-               return TMER_INVAL;
+               throw exception::ax::exception{ error::code::ax::argument, string::compose( "resource id: ", rmid)};
             }
 
 
@@ -535,7 +504,7 @@ namespace casual
             //
             if( common::range::find( transaction.resources, rmid))
             {
-               return TM_RESUME;
+               throw exception::ax::exception{ error::code::ax::resume};
             }
 
             //
@@ -543,13 +512,10 @@ namespace casual
             //
             *xid = transaction.trid.xid;
 
-
             transaction.resources.push_back( rmid);
-
-            return TM_OK;
          }
 
-         int Context::resourceUnregistration( int rmid, long flags)
+         void Context::resource_unregistration( int rmid)
          {
             Trace trace{ "transaction::Context::resourceUnregistration"};
 
@@ -566,14 +532,14 @@ namespace casual
                if( found)
                {
                   transaction.resources.erase( found.begin());
-                  return TM_OK;
+                  return;
                }
             }
-            return TMER_PROTO;
+            throw exception::ax::exception{ error::code::ax::protocol};
          }
 
 
-         int Context::begin()
+         error::code::tx Context::begin()
          {
             Trace trace{ "transaction::Context::begin"};
 
@@ -583,13 +549,13 @@ namespace casual
             {
                if( m_control != Control::stacked)
                {
-                  throw exception::tx::Protocol{ "begin - already in transaction mode", CASUAL_NIP( transaction)};
+                  throw exception::tx::Protocol{ string::compose( "begin - already in transaction mode - ", transaction)};
                }
 
                //
                // Tell the RM:s to suspend
                //
-               resources_end( transaction, TMSUSPEND);
+               resources_end( transaction, flag::xa::Flag::suspend);
 
             }
             else if( ! transaction.resources.empty())
@@ -599,13 +565,13 @@ namespace casual
 
             auto trans = local::startTransaction( platform::time::clock::type::now(), m_timeout);
 
-            resources_start( trans, TMNOFLAGS);
+            resources_start( trans);
 
             m_transactions.push_back( std::move( trans));
 
             common::log::category::transaction << "transaction: " << m_transactions.back().trid << " started\n";
 
-            return TX_OK;
+            return error::code::tx::ok;
          }
 
 
@@ -619,41 +585,31 @@ namespace casual
             //   seams really strange not to notify user that some of the resources has
             //   failed to open...
             //
-
-            for( auto& resource :  m_resources.all)
-            {
-               auto result = resource.open( TMNOFLAGS);
-               if( result != XA_OK)
+            range::for_each( m_resources.all, []( auto& r){
+               auto result = r.open();
+               if( result != error::code::xa::ok)
                {
-                  common::event::error::send( "failed to open resource: " + resource.key + " - error: " + common::error::xa::error( result));
+                  common::event::error::send( string::compose( "failed to open resource: ", r.key, " - error: ", std::error_code( result)));
                }
-            }
+            });
          }
 
          void Context::close()
          {
             Trace trace{ "transaction::Context::close"};
 
-            std::vector< int> result;
+            auto results = range::transform( m_resources.all, []( auto& r){
+               return r.close();
+            });
 
-            auto close = std::bind( &Resource::close, std::placeholders::_1, TMNOFLAGS);
-
-            range::transform( m_resources.all, result, close);
-
-            // TODO:
-            // TX_PROTOCOL_ERROR
-            // TX_FAIL
-
-            /*
-            if( result != TX_OK)
+            if( ! range::all_of( results, []( auto r){ return r == error::code::xa::ok;}))
             {
-               throw exception::tx::Error( "failed to close resources");
+               log::category::error << "failed to close one or more resource\n";
             }
-            */
          }
 
 
-         int Context::commit( const Transaction& transaction)
+         error::code::tx Context::commit( const Transaction& transaction)
          {
             Trace trace{ "transaction::Context::commit"};
 
@@ -666,24 +622,24 @@ namespace casual
 
             if( transaction.trid.owner() != process)
             {
-               throw exception::tx::Protocol{ "commit - not owner of transaction", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ string::compose( "commit - not owner of transaction: ", transaction)};
             }
 
             if( transaction.state != Transaction::State::active)
             {
-               throw exception::tx::Protocol{ "commit - transaction is in rollback only mode", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ string::compose( "commit - transaction is in rollback only mode - ", transaction)};
             }
 
             if( transaction.pending())
             {
-               throw exception::tx::Protocol{ "commit - pending replies associated with transaction", CASUAL_NIP( transaction)};
+               throw exception::tx::Protocol{ string::compose(  "commit - pending replies associated with transaction: ", transaction)};
             }
 
 
             //
             // end resources
             //
-            resources_end( transaction, TMSUCCESS);
+            resources_end( transaction, flag::xa::Flag::success);
 
 
             if( transaction.local() && transaction.resources.size() + m_resources.fixed.size() <= 1)
@@ -699,18 +655,18 @@ namespace casual
 
                if( ! transaction.resources.empty())
                {
-                  return resource_commit( transaction.resources.front(), transaction, TMONEPHASE);
+                  return resource_commit( transaction.resources.front(), transaction, flag::xa::Flag::one_phase);
                }
 
                if( ! m_resources.fixed.empty())
                {
-                  return resource_commit( m_resources.fixed.front().id, transaction, TMONEPHASE);
+                  return resource_commit( m_resources.fixed.front().id, transaction, flag::xa::Flag::one_phase);
                }
 
                //
                // No resources associated to this transaction, hence the commit is successful.
                //
-               return TX_OK;
+               return error::code::tx::ok;
             }
             else
             {
@@ -736,7 +692,7 @@ namespace casual
                   {
                      case message::transaction::commit::Reply::Stage::prepare:
                      {
-                        log::category::transaction << "prepare reply: " << error::xa::error( reply.state) << '\n';
+                        log::category::transaction << "prepare reply: " << std::error_code( reply.state) << '\n';
 
                         if( m_commit_return == Commit_Return::logged)
                         {
@@ -754,31 +710,31 @@ namespace casual
                            //
                            communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
 
-                           log::category::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+                           log::category::transaction << "commit reply: " << std::error_code( reply.state) << '\n';
                         }
 
                         break;
                      }
                      case message::transaction::commit::Reply::Stage::commit:
                      {
-                        log::category::transaction << "commit reply: " << error::xa::error( reply.state) << '\n';
+                        log::category::transaction << "commit reply: " << std::error_code( reply.state) << '\n';
 
                         break;
                      }
                      case message::transaction::commit::Reply::Stage::error:
                      {
-                        log::category::error << "commit error: " << error::xa::error( reply.state) << std::endl;
+                        log::category::error << "commit error: " << std::error_code( reply.state) << std::endl;
 
                         break;
                      }
                   }
 
-                  return xaTotx( reply.state);
+                  return reply.state;
                }
             }
          }
 
-         int Context::commit()
+         error::code::tx Context::commit()
          {
             Trace trace{ "transaction::Context::commit"};
 
@@ -788,7 +744,7 @@ namespace casual
             // We only remove/consume transaction if commit succeed
             // TODO: any other situation we should remove?
             //
-            if( result == TX_OK)
+            if( result == error::code::tx::ok)
             {
                return pop_transaction();
             }
@@ -797,7 +753,7 @@ namespace casual
 
          }
 
-         int Context::rollback( const Transaction& transaction)
+         error::code::tx Context::rollback( const Transaction& transaction)
          {
             Trace trace{ "transaction::Context::rollback"};
 
@@ -810,13 +766,13 @@ namespace casual
 
             if( transaction.trid.owner() != process)
             {
-               throw exception::tx::Protocol{ "current process not owner of transaction", CASUAL_NIP( transaction.trid)};
+               throw exception::tx::Protocol{ string::compose( "current process not owner of transaction: ", transaction.trid)};
             }
 
             //
             // end resources
             //
-            resources_end( transaction, TMSUCCESS);
+            resources_end( transaction);
 
             message::transaction::rollback::Request request;
             request.trid = transaction.trid;
@@ -826,20 +782,16 @@ namespace casual
 
             auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
-            log::category::transaction << "rollback reply xa: " << error::xa::error( reply.state) << " tx: " << error::tx::error( xaTotx( reply.state)) << std::endl;
+            log::category::transaction << "rollback reply tx: " << std::error_code( reply.state) << '\n';
 
-            return xaTotx( reply.state);
-
-            return TX_OK;
-
+            return reply.state;
          }
 
-         int Context::rollback()
+         error::code::tx Context::rollback()
          {
-
             auto result = rollback( current());
 
-            if( result == TX_OK)
+            if( result == error::code::tx::ok)
             {
                return pop_transaction();
             }
@@ -849,7 +801,7 @@ namespace casual
 
 
 
-         int Context::setCommitReturn( COMMIT_RETURN value)
+         void Context::set_commit_return( COMMIT_RETURN value)
          {
             switch( value)
             {
@@ -861,10 +813,9 @@ namespace casual
                }
                default:
                {
-                  return TX_EINVAL;
+                  throw exception::tx::Argument{};
                }
             }
-            return TX_OK;
          }
 
          COMMIT_RETURN Context::get_commit_return()
@@ -872,7 +823,7 @@ namespace casual
             return static_cast< COMMIT_RETURN>( m_commit_return);
          }
 
-         int Context::setTransactionControl(TRANSACTION_CONTROL control)
+         void Context::set_transaction_control( TRANSACTION_CONTROL control)
          {
             switch( control)
             {
@@ -893,17 +844,16 @@ namespace casual
                }
                default:
                {
-                  throw exception::tx::Argument{ "argument control has invalid value", CASUAL_NIP( control)};
+                  throw exception::tx::Argument{ string::compose( "argument control has invalid value: ", control)};
                }
             }
-            return TX_OK;
          }
 
-         void Context::setTransactionTimeout( TRANSACTION_TIMEOUT timeout)
+         void Context::set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
          {
             if( timeout < 0)
             {
-               throw exception::tx::Argument{ "timeout value has to be 0 or greater", CASUAL_NIP( timeout)};
+               throw exception::tx::Argument{ "timeout value has to be 0 or greater"};
             }
             m_timeout = timeout;
          }
@@ -946,7 +896,7 @@ namespace casual
             //
             // Tell the RM:s to suspend
             //
-            resources_end( ongoing, TMSUSPEND);
+            resources_end( ongoing, flag::xa::Flag::suspend);
 
             *xid = ongoing.trid.xid;
 
@@ -982,7 +932,7 @@ namespace casual
             if( ! ongoing.resources.empty())
             {
                auto& global = ongoing;
-               throw exception::tx::Outside{ "ongoing work outside global transaction", CASUAL_NIP( global)};
+               throw exception::tx::Outside{ string::compose( "ongoing work outside global transaction: ", global)};
             }
 
 
@@ -1002,7 +952,7 @@ namespace casual
                //
                // Tell the RM:s to resume
                //
-               resources_start( *found, TMRESUME);
+               resources_start( *found, flag::xa::Flag::resume);
 
                //
                // We pop the top null-xid that represent a suspended transaction
@@ -1017,58 +967,67 @@ namespace casual
          }
 
 
-         void Context::resources_start( const Transaction& transaction, long flags)
+         void Context::resources_start( const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_start"};
 
-            if( transaction && m_resources.fixed)
+            if( transaction)
             {
                //
                // We call start only on static resources
                //
-
-               auto start = std::bind( &Resource::start, std::placeholders::_1, std::ref( transaction), flags);
-               range::for_each( m_resources.fixed, start);
-
-            }
-         }
-
-         void Context::resources_end( const Transaction& transaction, long flags)
-         {
-            Trace trace{ "transaction::Context::resources_end"};
-
-            if( transaction && ! m_resources.all.empty())
-            {
-               //
-               // We call end on all resources
-               //
-               auto end = std::bind( &Resource::end, std::placeholders::_1, std::ref( transaction), flags);
-
-               std::vector< int> results;
-               range::transform( m_resources.all, results, end);
+               for( auto& r : m_resources.fixed)
+               {
+                  auto result = r.start( transaction, flags);
+                  if( result != error::code::xa::ok)
+                  {
+                     error::code::stream( result) << "failed to start resource: " << r << " - error: " << std::error_code( result) << '\n';
+                  }
+               };
 
                // TODO: throw if some of the rm:s report an error?
             }
          }
 
-         int Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, long flags)
+         void Context::resources_end( const Transaction& transaction, flag::xa::Flags flags)
+         {
+            Trace trace{ "transaction::Context::resources_end"};
+
+            if( transaction)
+            {
+               //
+               // We call end on all resources
+               //
+               for( auto& r : m_resources.all)
+               {
+                  auto result = r.end( transaction, flags);
+                  if( result != error::code::xa::ok)
+                  {
+                     error::code::stream( result) << "failed to end resource: " << r << " - error: " << std::error_code( result) << '\n';
+                  }
+               }
+
+               // TODO: throw if some of the rm:s report an error?
+            }
+         }
+
+         error::code::tx Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
 
-            auto commit = std::bind( &Resource::commit, std::placeholders::_1, std::ref( transaction), flags);
+            auto found = range::find_if (m_resources.all, [rm]( const auto& r){
+               return r.id == rm;
+            });
 
-            for( auto& resource : m_resources.all)
+            if( found)
             {
-               if( resource.id == rm)
-               {
-                  return xaTotx( commit( resource));
-               }
+               return common::error::code::convert::to::tx( found->commit( transaction, flags));
             }
-            throw exception::tx::Error{ "resource id not known", CASUAL_NIP( rm), CASUAL_NIP( transaction)};
 
+            throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
          }
 
-         int Context::pop_transaction()
+         error::code::tx Context::pop_transaction()
          {
             Trace trace{ "transaction::Context::pop_transaction"};
 
@@ -1107,7 +1066,7 @@ namespace casual
                   //
                   // Tell the RM:s to resume
                   //
-                  resources_end( m_transactions.back(), TMRESUME);
+                  resources_end( m_transactions.back(), flag::xa::Flag::resume);
 
                   break;
                }
@@ -1116,7 +1075,7 @@ namespace casual
                   throw exception::tx::Fail{ "unknown control directive - this can not happen"};
                }
             }
-            return TX_OK;
+            return error::code::tx::ok;
          }
 
       } // transaction

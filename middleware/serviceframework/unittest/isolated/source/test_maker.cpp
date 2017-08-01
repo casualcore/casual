@@ -117,7 +117,7 @@ namespace casual
       EXPECT_THROW
       ({
          sf::archive::reader::from::file( common::file::name::unique( common::directory::temporary() + "/", ".ini"));
-      },sf::exception::invalid::File);
+      },sf::exception::system::invalid::File);
    }
 
    TEST( casual_sf_maker, write_and_read_file__expecting_success)

@@ -8,6 +8,7 @@
 
 #include "common/communication/ipc.h"
 
+#include "common/exception/xatmi.h"
 
 namespace casual
 {
@@ -102,7 +103,7 @@ namespace casual
                {
                   return *found;
                }
-               throw exception::xatmi::invalid::Descriptor{ "failed to locate pending from correlation", CASUAL_NIP( correlation)};
+               throw exception::xatmi::invalid::Descriptor{ string::compose( "failed to locate pending from correlation: ", correlation)};
             }
 
             signal::timer::Deadline State::Pending::deadline( descriptor_type descriptor, const platform::time::point::type& now) const

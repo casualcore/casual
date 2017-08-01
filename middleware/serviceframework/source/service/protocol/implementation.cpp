@@ -6,6 +6,7 @@
 #include "sf/log.h"
 
 #include "common/execution.h"
+#include "common/exception/handle.h"
 
 #include "xatmi.h"
 
@@ -46,7 +47,7 @@ namespace casual
                void Base::exception()
                {
                   m_result.transaction = common::service::invoke::Result::Transaction::rollback;
-                  common::error::handler();
+                  common::exception::handle();
                }
 
                io::Input& Base::input() { return m_input;}

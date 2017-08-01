@@ -9,7 +9,6 @@
 #include <cstring>
 
 #include "xatmi.h"
-#include "common/error.h"
 #include "common/arguments.h"
 
 std::string type_from_input( const std::string& input)

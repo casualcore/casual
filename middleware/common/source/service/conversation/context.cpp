@@ -50,13 +50,10 @@ namespace casual
                      {
                         message::conversation::connect::caller::Request message{ std::move( buffer)};
 
-
-                        constexpr auto valid_flags = ~message::conversation::connect::Flags{};
-
                         message.correlation = uuid::make();
                         message.service = service;
                         message.process = process::handle();
-                        message.flags = valid_flags.convert( flags);
+                        message.flags = flags;
 
                         //
                         // we push the ipc-queue-id that this instance has. This will
@@ -117,7 +114,7 @@ namespace casual
 
                         if( ( flags & duplex) == duplex || ! ( flags & duplex))
                         {
-                           throw exception::xatmi::invalid::Argument{ "send or receive intention must be provided", CASUAL_NIP( flags)};
+                           throw exception::xatmi::invalid::Argument{ string::compose( "send or receive intention must be provided - flags: ", flags)};
                         }
                      }
 

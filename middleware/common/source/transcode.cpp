@@ -1,13 +1,12 @@
 //!
-//! casaul
+//! casual
 //!
-
-
 
 #include "common/transcode.h"
 
-#include "common/exception.h"
-#include "common/error.h"
+#include "common/exception/system.h"
+#include "common/error/code/system.h"
+
 
 #include <resolv.h>
 
@@ -25,7 +24,6 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cassert>
-//#include <langinfo.h>
 
 
 namespace casual
@@ -55,7 +53,7 @@ namespace casual
 
                   if( length < 0)
                   {
-                     throw exception::Casual( "Base64-encode failed");
+                     throw exception::system::invalid::Argument( "Base64-encode failed");
                   }
 
                   result.resize( length);
@@ -79,7 +77,7 @@ namespace casual
 
                if( length < 0)
                {
-                  throw exception::Casual( "Base64-decode failed");
+                  throw exception::system::invalid::Argument( "Base64-decode failed");
                }
 
                result.resize( length);
@@ -99,19 +97,9 @@ namespace casual
                   converter( const std::string& source, const std::string& target)
                      : m_descriptor( iconv_open( target.c_str(), source.c_str()))
                   {
-                     if( m_descriptor == reinterpret_cast<iconv_t>( -1))
+                     if( m_descriptor == reinterpret_cast< iconv_t>( -1))
                      {
-                        switch( errno)
-                        {
-                        case EMFILE:
-                        case ENFILE:
-                        case ENOMEM:
-                           throw exception::limit::Memory( error::string());
-                        case EINVAL:
-                           throw exception::invalid::Argument( error::string());
-                        default:
-                           throw exception::Casual( error::string());
-                        }
+                        exception::system::throw_from_errno();
                      }
 
                   }
@@ -120,13 +108,13 @@ namespace casual
                   {
                      if( iconv_close( m_descriptor) == -1)
                      {
-                        std::cerr << error::string() << std::endl;
+                        std::cerr << error::code::last::system::error() << std::endl;
                      }
                   }
 
                   std::string transcode( const std::string& value) const
                   {
-                     char* source = const_cast<char*>(value.c_str());
+                     auto source = const_cast<char*>( value.c_str());
                      auto size = value.size();
 
                      std::string result;
@@ -141,16 +129,13 @@ namespace casual
 
                         if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
-                           switch( errno)
+                           switch( error::code::last::system::error())
                            {
-                           case E2BIG:
-                              break;
-                           case EILSEQ:
-                           case EINVAL:
-                              throw exception::invalid::Argument( error::string());
-                           default:
-                              throw exception::Casual( error::string());
+                              case error::code::system::argument_list_too_long: break;
+                              default:
+                                 exception::system::throw_from_errno();
                            }
+                          
                         }
 
                         result.append( buffer, target);
@@ -164,13 +149,6 @@ namespace casual
                   const iconv_t m_descriptor;
                };
 
-            }
-         }
-
-         namespace local
-         {
-            namespace
-            {
                struct locale
                {
                   std::string language;
@@ -178,30 +156,6 @@ namespace casual
                   std::string codeset;
                   std::string modifier;
                };
-
-/*
-               locale parse( const std::string& name)
-               {
-                  std::istringstream stream( name);
-
-                  locale result;
-
-                  std::getline( stream, result.language, '_');
-                  std::getline( stream, result.territory, '.');
-                  std::getline( stream, result.codeset, '@');
-                  std::getline( stream, result.modifier);
-
-                  return result;
-               }
-
-
-               locale info()
-               {
-                  //return parse( std::locale( "").name());
-                  return parse( std::setlocale( LC_CTYPE, ""));
-               }
-*/
-
             }
 
          }
@@ -244,7 +198,7 @@ namespace casual
                {
                   local::converter{ codeset, cCurrent};
                }
-               catch( const exception::invalid::Argument&)
+               catch( const exception::system::invalid::Argument&)
                {
                   return false;
                }
@@ -322,7 +276,7 @@ namespace casual
                {
                   std::string result( bytes * 2, 0);
 
-                  const char* first = static_cast< const char*>( data);
+                  auto first = static_cast< const char*>( data);
                   auto last = first + bytes;
 
                   local::encode( first, last, result.begin());

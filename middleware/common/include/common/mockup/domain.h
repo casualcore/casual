@@ -10,13 +10,13 @@
 
 #include "common/message/service.h"
 #include "common/message/server.h"
-#include "common/message/transaction.h"
-#include "common/message/queue.h"
 #include "common/message/conversation.h"
 
 
 #include "common/file.h"
 #include "common/domain.h"
+
+#include "common/pimpl.h"
 
 
 #include <vector>
@@ -39,8 +39,6 @@ namespace casual
       namespace mockup
       {
 
-
-
          namespace domain
          {
 
@@ -48,19 +46,6 @@ namespace casual
 
             namespace service
             {
-               struct Echo
-               {
-                  void operator()( message::service::call::callee::Request& reqeust);
-               };
-
-               namespace conversation
-               {
-
-                  dispatch_type echo();
-
-               } // conversation
-
-
                struct Manager
                {
                   Manager();
@@ -69,18 +54,8 @@ namespace casual
                   ~Manager();
 
                private:
-
-                  struct State
-                  {
-                     std::map< std::string, common::message::service::lookup::Reply> services;
-                     std::vector< communication::ipc::Handle> traffic_monitors;
-                  };
-
-
-                  dispatch_type default_handler();
-
-                  State m_state;
-                  ipc::Replier m_replier;
+                  struct Implementation;
+                  common::move::basic_pimpl< Implementation> m_implementation;
                };
 
 
@@ -98,9 +73,7 @@ namespace casual
 
                process::Handle process() const;
 
-
             private:
-
                struct Implementation;
                common::move::basic_pimpl< Implementation> m_implementation;
             };
@@ -130,22 +103,16 @@ namespace casual
 
             namespace queue
             {
-               struct Broker
+               struct Manager
                {
-                  Broker();
-                  Broker( dispatch_type&& handler);
+                  Manager();
+                  Manager( dispatch_type&& handler);
+                  ~Manager();
 
                private:
-                  dispatch_type default_handler();
-
-                  using Message = message::queue::dequeue::Reply::Message;
-
-                  std::unordered_map< std::string, std::queue< Message>> m_queues;
-
-                  ipc::Replier m_replier;
+                  struct Implementation;
+                  common::move::basic_pimpl< Implementation> m_implementation;
                };
-
-
             } // queue
 
 

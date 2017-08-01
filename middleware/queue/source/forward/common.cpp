@@ -9,6 +9,7 @@
 #include "common/communication/ipc.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/exception/casual.h"
 #include "common/transaction/context.h"
 
 
@@ -29,7 +30,7 @@ namespace casual
                {
                   try
                   {
-                     if( tx_begin() != TX_OK)
+                     if( tx_begin() != common::cast::underlying( common::error::code::tx::ok))
                      {
                         return false;
                      }
@@ -57,13 +58,13 @@ namespace casual
                         }
                      }
                   }
-                  catch( const common::exception::Shutdown&)
+                  catch( const common::exception::casual::Shutdown&)
                   {
                      return false;
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      //return false;
                   }
 
@@ -79,7 +80,7 @@ namespace casual
          {
             if( m_tasks.size() != 1)
             {
-               throw common::exception::invalid::Argument{ "only one task is allowed"};
+               throw common::exception::system::invalid::Argument{ "only one task is allowed"};
             }
 
             common::process::instance::connect();

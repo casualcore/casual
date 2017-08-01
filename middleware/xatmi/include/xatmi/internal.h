@@ -5,7 +5,7 @@
 #ifndef CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_INTERNAL_H_
 #define CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_INTERNAL_H_
 
-#include "common/error.h"
+#include "common/exception/xatmi.h"
 
 namespace casual
 {
@@ -17,26 +17,27 @@ namespace casual
 
          namespace error
          {
-            void set( int value);
-            int get();
-
+            void clear();
+            void set( common::error::code::xatmi value);
+            common::error::code::xatmi get();
 
             template< typename T>
             int wrap( T&& task)
             {
                try
                {
-                  error::set( 0);
+                  error::clear();
                   task();
+
+                  return 0;
                }
                catch( ...)
                {
-                  error::set( casual::common::error::handler());
+                  error::set( casual::common::exception::xatmi::handle());
                }
-               return error::get() == 0 ? 0 : -1;
+               return -1;
             }
-
-         } // tperrno
+         } // error
 
          namespace user
          {

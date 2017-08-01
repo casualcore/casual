@@ -65,7 +65,7 @@ namespace casual
                });
 
                result.trid = ID{}( transaction.trid);
-               result.state = transaction::Transaction::Resource::convert( transaction.results());
+               result.state = static_cast< long>( transaction.results());
 
                return result;
             }

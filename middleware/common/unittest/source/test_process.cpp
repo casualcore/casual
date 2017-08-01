@@ -8,7 +8,7 @@
 
 #include "common/process.h"
 #include "common/file.h"
-#include "common/exception.h"
+#include "common/exception/signal.h"
 
 #include "common/signal.h"
 

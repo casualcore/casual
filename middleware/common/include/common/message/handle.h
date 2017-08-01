@@ -51,7 +51,7 @@ namespace casual
 
 
             //!
-            //! @throws exception::Shutdown if message::shutdown::Request is dispatched
+            //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
             //!
             struct Shutdown
             {

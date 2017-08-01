@@ -15,6 +15,7 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/process.h"
 #include "common/service/lookup.h"
+#include "common/exception/xatmi.h"
 
 #include "sf/service/protocol/call.h"
 

@@ -8,7 +8,9 @@
 #include "common/buffer/type.h"
 #include "common/platform.h"
 #include "common/algorithm.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/exception/xatmi.h"
+#include "common/string.h"
 
 #include "common/log.h"
 
@@ -184,9 +186,7 @@ namespace casual
                      }
 
                      {
-                        std::ostringstream message{ "buffer type already registered: "};
-                        message << type;
-                        throw exception::invalid::Argument{ message.str()};
+                        throw exception::system::invalid::Argument{ string::compose( "buffer type already registered: ", type)};
                      }
 
                   }

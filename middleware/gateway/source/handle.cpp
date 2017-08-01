@@ -5,6 +5,7 @@
 #include "gateway/handle.h"
 #include "gateway/common.h"
 
+#include "common/exception/casual.h"
 
 namespace casual
 {
@@ -31,7 +32,7 @@ namespace casual
             m_thread.join();
 
             // TODO: we may need to distinguish disconnect from shutdown...
-            throw common::exception::Shutdown{ "disconnected"};
+            throw common::exception::casual::Shutdown{ "disconnected"};
          }
 
 

@@ -108,10 +108,8 @@ namespace casual
                      std::string operator () ( const vo::Transaction& value) const { return std::to_string( value.trid.owner.pid); }
                   };
 
-                  struct format_state
-                  {
-                     std::string operator () ( const vo::Transaction& value)
-                     { return common::error::xa::error( value.state);}
+                  auto format_state = []( const vo::Transaction& value){
+                     return common::string::compose( static_cast< common::error::code::xa>( value.state));
                   };
 
                   struct format_resources
@@ -126,7 +124,7 @@ namespace casual
                      common::terminal::format::column( "global", format_global{}, common::terminal::color::yellow),
                      common::terminal::format::column( "branch", format_branch{}, common::terminal::color::grey),
                      common::terminal::format::column( "owner", format_owner{}, common::terminal::color::white, common::terminal::format::Align::right),
-                     common::terminal::format::column( "state", format_state{}, common::terminal::color::green, common::terminal::format::Align::left),
+                     common::terminal::format::column( "state", format_state, common::terminal::color::green, common::terminal::format::Align::left),
                      common::terminal::format::column( "resources", format_resources{}, common::terminal::color::magenta, common::terminal::format::Align::left)
                   };
                }
@@ -382,7 +380,7 @@ namespace casual
                         {
                            if( values.size() % 2 != 0)
                            {
-                              throw exception::invalid::Argument{ "use: --update-instances [<rm-id> <# instances>]+"};
+                              throw exception::system::invalid::Argument{ "use: --update-instances [<rm-id> <# instances>]+"};
                            }
 
                            std::vector< vo::update::Instances> result;
@@ -459,12 +457,10 @@ namespace casual
                }
                catch( const common::argument::exception::Help&)
                {
-                  
                }
-               catch( const std::exception& exception)
+               catch( ...)
                {
-                  std::cerr << "error: " << exception.what() << std::endl;
-                  return 10;
+                  common::exception::handle( std::cerr);
                }
                return 0;
             }

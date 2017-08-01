@@ -146,7 +146,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
    return 0;
 }

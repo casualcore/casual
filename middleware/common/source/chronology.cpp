@@ -3,7 +3,7 @@
 //!
 
 #include "common/chronology.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "common/environment.h"
 
 #include <ctime>
@@ -112,7 +112,7 @@ namespace chronology
          if( unit == "d") return std::chrono::hours( count * 24);
 
 
-         throw exception::invalid::Argument{ "invalid time representation: " + value};
+         throw exception::system::invalid::Argument{ "invalid time representation: " + value};
       }
    } // from
 

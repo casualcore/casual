@@ -6,7 +6,6 @@
 #define CASUAL_COMMON_PROCESS_H_
 
 #include "common/platform.h"
-#include "common/exception.h"
 #include "common/file.h"
 
 #include "common/algorithm.h"

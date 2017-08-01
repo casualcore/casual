@@ -59,7 +59,7 @@ namespace casual
                //!
                //! @param key to be found
                //! @return the value associated with the key
-               //! @throws exception::invalid::Argument if key is not found.
+               //! @throws exception::system::invalid::Argument if key is not found.
                //!
                const std::string& get( const std::string& key);
 

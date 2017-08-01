@@ -8,8 +8,8 @@
 #include "common/server/start.h"
 
 
-#include "common/error.h"
 #include "common/functional.h"
+#include "common/exception/xatmi.h"
 #include "common/process.h"
 #include "common/event/send.h"
 
@@ -95,7 +95,7 @@ int casual_start_server( casual_server_argument* arguments)
 	}
 	catch( ...)
 	{
-	   return casual::common::error::handler();
+	   return static_cast< int>( casual::common::exception::xatmi::handle());
 	}
 	return 0;
 }

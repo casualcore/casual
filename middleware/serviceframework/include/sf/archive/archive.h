@@ -143,7 +143,7 @@ namespace casual
 
                   if( expected_size != size)
                   {
-                     throw exception::archive::invalid::Node{ "got unexpected size", CASUAL_NIP( expected_size), CASUAL_NIP( size)};
+                     throw exception::archive::invalid::Node{ string::compose( "got unexpected size: ", size, " - expected: ", expected_size)};
                   }
                   tuple_read< std::tuple_size< T>::value>::serialize( archive, value);
 

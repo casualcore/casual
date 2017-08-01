@@ -54,7 +54,7 @@ namespace casual
                            ipc::device().blocking_send( device, message);
                            return true;
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            return false;
                         }
@@ -91,7 +91,7 @@ namespace casual
                                     communication::ipc::outbound::Device ipc{ connection.process.queue};
                                     ipc.send( request, communication::ipc::policy::Blocking{});
                                  }
-                                 catch( const exception::queue::Unavailable&)
+                                 catch( const exception::system::communication::Unavailable&)
                                  {
                                     connection.runlevel = state::base_connection::Runlevel::error;
                                     // no op, will be removed
@@ -126,7 +126,7 @@ namespace casual
                         }
                         default:
                         {
-                           throw exception::invalid::Argument{ "invalid connection type", CASUAL_NIP( connection)};
+                           throw exception::system::invalid::Argument{ string::compose( "invalid connection type: ", connection)};
                         }
                      }
                   }
@@ -151,7 +151,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              error::handler();
+                              exception::handle();
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::error;
                            }
                         }

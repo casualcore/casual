@@ -3,7 +3,7 @@
 //!
 
 #include "common/message/handle.h"
-#include "common/exception.h"
+#include "common/exception/casual.h"
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -21,7 +21,7 @@ namespace casual
             {
                log::debug << "shutdown received from: " << message.process << '\n';
 
-               throw exception::Shutdown{ "shutdown " + common::process::path()};
+               throw exception::casual::Shutdown{};
             }
 
             void Ping::operator () ( server::ping::Request& message)
@@ -43,7 +43,7 @@ namespace casual
                   signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
                   ipc.send( reply, communication::ipc::policy::Blocking{});
                }
-               catch( common::exception::queue::Unavailable&)
+               catch( const common::exception::system::communication::Unavailable&)
                {
                   log::debug << "queue unavailable: " << message.process << " - action: ignore\n";
                }

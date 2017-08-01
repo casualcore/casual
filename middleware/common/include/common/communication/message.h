@@ -11,6 +11,8 @@
 #include "common/memory.h"
 #include "common/log/category.h"
 #include "common/network/byteorder.h"
+#include "common/exception/system.h"
+#include "common/string.h"
 
 
 #include <cstdint>
@@ -121,8 +123,8 @@ namespace casual
                   //
                   if( Complete::size() < offset( chunk) + size)
                   {
-                     throw exception::invalid::Argument{
-                        "communication::message::Complete: added chunk is out of bounds", CASUAL_NIP( payload.size())
+                     throw exception::system::invalid::Argument{
+                        string::compose( "added chunk is out of bounds - size: ", payload.size())
                      };
                   }
 

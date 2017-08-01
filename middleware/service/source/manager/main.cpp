@@ -6,7 +6,7 @@
 #include "service/manager/manager.h"
 
 
-#include "common/error.h"
+#include "common/exception/handle.h"
 #include "common/arguments.h"
 
 
@@ -43,7 +43,7 @@ namespace casual
          }
          catch( ...)
          {
-            return casual::common::error::handler();
+            return casual::common::exception::handle();
 
          }
          return 0;

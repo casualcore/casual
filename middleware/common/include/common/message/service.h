@@ -12,7 +12,8 @@
 #include "common/service/type.h"
 #include "common/buffer/type.h"
 #include "common/uuid.h"
-#include "common/flag.h"
+#include "common/flag/xatmi.h"
+#include "common/error/code/xatmi.h"
 
 #include "common/service/header.h"
 
@@ -233,9 +234,9 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     no_transaction = TPNOTRAN,
-                     no_reply = TPNOREPLY,
-                     no_time = TPNOTIME,
+                     no_transaction = cast::underlying( flag::xatmi::Flag::no_transaction),
+                     no_reply = cast::underlying( flag::xatmi::Flag::no_reply),
+                     no_time = cast::underlying( flag::xatmi::Flag::no_time),
                   };
                   using Flags = common::Flags< Flag>;
 
@@ -305,7 +306,7 @@ namespace casual
                //!
                struct Reply :  basic_message< Type::service_reply>
                {
-                  int status = 0;
+                  error::code::xatmi status = error::code::xatmi::ok;
                   long code = 0;
                   Transaction transaction;
                   common::buffer::Payload buffer;

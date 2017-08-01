@@ -8,9 +8,7 @@
 #include "queue/common/environment.h"
 
 #include "common/message/handle.h"
-
-#include "../../../common/include/common/event/listen.h"
-#include "common/error.h"
+#include "common/event/listen.h"
 
 namespace casual
 {
@@ -83,7 +81,7 @@ namespace casual
                               }
 
                            }
-                           catch( const common::exception::queue::Unavailable& exception)
+                           catch( const common::exception::system::communication::Unavailable& exception)
                            {
                               log << "ipc-queue unavailable for request: " << request << " - action: ignore\n";
                            }
@@ -105,7 +103,7 @@ namespace casual
                            {
                               return common::communication::ipc::blocking::send( device, std::forward< M>( message));
                            }
-                           catch( const common::exception::communication::Unavailable&)
+                           catch( const common::exception::system::communication::Unavailable&)
                            {
                               return common::uuid::empty();
                            }
@@ -303,7 +301,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        common::exception::handle();
                      }
                   }
 
@@ -351,7 +349,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = XA_OK;
+                     reply.state = common::error::code::xa::ok;
 
                      try
                      {
@@ -365,8 +363,8 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
-                        reply.state = XAER_RMFAIL;
+                        common::exception::handle();
+                        reply.state = common::error::code::xa::resource_fail;
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});
@@ -384,7 +382,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = XA_OK;
+                     reply.state = common::error::code::xa::ok;
 
                      local::ipc::blocking::send( common::communication::ipc::transaction::manager::device(), reply);
                   }
@@ -402,7 +400,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = XA_OK;
+                     reply.state = common::error::code::xa::ok;
 
                      try
                      {
@@ -416,8 +414,8 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
-                        reply.state = XAER_RMFAIL;
+                        common::exception::handle();
+                        reply.state = common::error::code::xa::resource_fail;
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});

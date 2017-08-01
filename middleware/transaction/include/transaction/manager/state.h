@@ -288,7 +288,7 @@ namespace casual
             //! Used to rank the return codes from the resources, the lower the enum value (higher up),
             //! the more severe...
             //!
-            enum class Result : std::uint16_t
+            enum class Result : int
             {
                xa_HEURHAZ,
                xa_HEURMIX,
@@ -324,10 +324,10 @@ namespace casual
             Stage stage = Stage::involved;
             Result result = Result::xa_OK;
 
-            static Result convert( int value);
-            static int convert( Result value);
+            static Result convert( common::error::code::xa value);
+            static common::error::code::xa convert( Result value);
 
-            void set_result( int value);
+            void set_result( common::error::code::xa value);
 
             //!
             //! @return true if there's nothing more to do, hence this resource can be removed
@@ -432,7 +432,7 @@ namespace casual
          //!
          //! @return the most severe result from the resources
          //!
-         Resource::Result results() const;
+         common::error::code::xa results() const;
 
          friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
       };

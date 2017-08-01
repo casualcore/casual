@@ -6,7 +6,6 @@
 #include "configuration/file.h"
 #include "configuration/common.h"
 
-#include "common/exception.h"
 #include "common/file.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
@@ -159,6 +158,8 @@ namespace casual
 
          Manager get( const std::vector< std::string>& files)
          {
+            common::Trace trace{ "configuration::domain::get"};
+
             auto domain = range::accumulate( files, Manager{}, &local::get);
 
             return domain;
@@ -166,5 +167,5 @@ namespace casual
          }
       } // domain
 
-   } // config
+   } // configuration
 } // casual

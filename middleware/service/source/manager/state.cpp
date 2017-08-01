@@ -8,7 +8,6 @@
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
-#include "common/exception.h"
 #include "common/algorithm.h"
 
 #include "common/process.h"
@@ -42,7 +41,7 @@ namespace casual
                   {
                      return found->second;
                   }
-                  throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
+                  throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
                }
 
                template< typename C, typename ID>
@@ -55,7 +54,7 @@ namespace casual
                   {
                      return *found;
                   }
-                  throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
+                  throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
                }
 
             } // <unnamed>

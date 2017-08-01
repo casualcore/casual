@@ -7,7 +7,8 @@
 
 #include "sql/database.h"
 
-
+#include "common/exception/system.h"
+#include "common/string.h"
 #include "common/message/queue.h"
 
 namespace casual
@@ -114,7 +115,8 @@ namespace casual
                   return found->second;
                }
 
-               throw common::exception::invalid::Argument{ "requested queue is not hosted by this queue-group", CASUAL_NIP( message)};
+               throw common::exception::system::invalid::Argument{ 
+                  common::string::compose( "requested queue is not hosted by this queue-group - message: ", message)};
             }
 
 

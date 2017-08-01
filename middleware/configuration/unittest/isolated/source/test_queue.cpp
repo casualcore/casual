@@ -7,7 +7,7 @@
 #include "configuration/example/domain.h"
 
 
-#include "common/exception.h"
+#include "common/exception/casual.h"
 #include "common/file.h"
 
 
@@ -70,7 +70,7 @@ namespace casual
          queue::Manager manager;
          manager.groups.resize( 1);
 
-         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::invalid::Configuration);
+         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::casual::invalid::Configuration);
       }
 
 
@@ -84,7 +84,7 @@ namespace casual
          manager.groups.at( 1).queuebase.emplace( "Z");
 
 
-         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::invalid::Configuration);
+         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::casual::invalid::Configuration);
       }
 
       TEST( casual_configuration_queue, validate__group_has_to_have_unique_queuebase)
@@ -97,7 +97,7 @@ namespace casual
          manager.groups.at( 1).queuebase.emplace( "X");
 
 
-         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::invalid::Configuration);
+         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::casual::invalid::Configuration);
       }
 
       TEST( casual_configuration_queue, validate__multiple_groups_can_have_memory_queuebase)
@@ -124,7 +124,7 @@ namespace casual
          manager.groups.at( 0).queues.at( 1).name = "a";
 
 
-         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::invalid::Configuration);
+         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::casual::invalid::Configuration);
       }
 
       TEST( casual_configuration_queue, validate__queue_has_to_have_unique_name_regardless_of_group)
@@ -141,7 +141,7 @@ namespace casual
          manager.groups.at( 1).queues.resize( 1);
          manager.groups.at( 1).queues.at( 0).name = "a";
 
-         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::invalid::Configuration);
+         EXPECT_THROW( { queue::unittest::validate( manager);}, common::exception::casual::invalid::Configuration);
       }
 
       TEST( casual_configuration_queue, default_values__retries)

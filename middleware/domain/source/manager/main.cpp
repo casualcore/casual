@@ -6,7 +6,7 @@
 #include "domain/manager/manager.h"
 
 
-#include "common/error.h"
+#include "common/exception/handle.h"
 #include "common/arguments.h"
 
 
@@ -53,16 +53,16 @@ namespace casual
                if( event_queue)
                {
                   common::message::event::domain::Error event;
-                  event.message = exception.description();
+                  event.message = exception.what();
                   event.severity = common::message::event::domain::Error::Severity::fatal;
 
                   common::communication::ipc::non::blocking::send( event_queue, event);
                }
-               return casual::common::error::handler();
+               return casual::common::exception::handle();
             }
             catch( ...)
             {
-               return casual::common::error::handler();
+               return casual::common::exception::handle();
 
             }
             return 0;

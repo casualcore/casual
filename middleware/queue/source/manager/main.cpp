@@ -4,7 +4,7 @@
 
 #include "queue/manager/manager.h"
 #include "common/arguments.h"
-#include "common/error.h"
+#include "common/exception/handle.h"
 
 using namespace casual;
 
@@ -40,7 +40,7 @@ Manages casual queue, the provided queue functionality.
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
 
    }
    return 0;

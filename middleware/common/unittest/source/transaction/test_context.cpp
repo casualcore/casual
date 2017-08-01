@@ -5,6 +5,7 @@
 #include <common/unittest.h>
 
 #include "common/mockup/domain.h"
+#include "common/exception/tx.h"
 
 
 #include "common/transaction/context.h"
@@ -58,9 +59,9 @@ namespace casual
             local::Domain domain;
 
 
-            ASSERT_TRUE( Context::instance().begin() == TX_OK);
+            ASSERT_TRUE( Context::instance().begin() == error::code::tx::ok);
             EXPECT_TRUE( ! Context::instance().current().trid.null());
-            EXPECT_TRUE( Context::instance().commit() == TX_OK);
+            EXPECT_TRUE( Context::instance().commit() == error::code::tx::ok);
          }
 
          TEST( casual_common_transaction, context__two_begin__expect_TX_PROTOCOLL_ERROR)
@@ -69,9 +70,9 @@ namespace casual
 
             local::Domain domain;
 
-            ASSERT_TRUE( Context::instance().begin() == TX_OK);
+            ASSERT_TRUE( Context::instance().begin() == error::code::tx::ok);
             EXPECT_THROW( Context::instance().begin(), exception::tx::Protocol);
-            EXPECT_TRUE( Context::instance().rollback() == TX_OK);
+            EXPECT_TRUE( Context::instance().rollback() == error::code::tx::ok);
          }
 
          TEST( casual_common_transaction, context__begin_suspend_resume__rollback__expect_TX_OK)
@@ -82,11 +83,11 @@ namespace casual
 
             XID xid;
 
-            ASSERT_TRUE( Context::instance().begin() == TX_OK);
+            ASSERT_TRUE( Context::instance().begin() == error::code::tx::ok);
             ASSERT_NO_THROW( Context::instance().suspend( &xid));
             EXPECT_TRUE( Context::instance().current().trid.null());
             ASSERT_NO_THROW( Context::instance().resume( &xid));
-            EXPECT_TRUE( Context::instance().rollback() == TX_OK);
+            EXPECT_TRUE( Context::instance().rollback() == error::code::tx::ok);
          }
 
          TEST( casual_common_transaction, context__begin__10__suspend_begin_suspend_resume__rollback__expect_TX_OK)
@@ -96,7 +97,7 @@ namespace casual
             local::Domain domain;
 
             // global...
-            ASSERT_TRUE( Context::instance().begin() == TX_OK);
+            ASSERT_TRUE( Context::instance().begin() == error::code::tx::ok);
 
             std::vector< XID> xids( 10);
 
@@ -105,17 +106,17 @@ namespace casual
             {
                ASSERT_NO_THROW( Context::instance().suspend( &xid));
                EXPECT_TRUE( Context::instance().current().trid.null());
-               ASSERT_TRUE( Context::instance().begin() == TX_OK);
+               ASSERT_TRUE( Context::instance().begin() == error::code::tx::ok);
             }
 
             for( auto& xid : xids)
             {
-               EXPECT_TRUE( Context::instance().commit() == TX_OK);
+               EXPECT_TRUE( Context::instance().commit() == error::code::tx::ok);
                ASSERT_NO_THROW( Context::instance().resume( &xid)) << "xid: " << xid;
                EXPECT_TRUE( Context::instance().current().trid == xid);
             }
 
-            EXPECT_TRUE( Context::instance().rollback() == TX_OK);
+            EXPECT_TRUE( Context::instance().rollback() == error::code::tx::ok);
          }
 
 

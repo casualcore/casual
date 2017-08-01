@@ -3,8 +3,9 @@
 //!
 
 #include "common/process.h"
-#include "common/exception.h"
-#include "common/error.h"
+#include "common/exception/system.h"
+#include "common/exception/casual.h"
+
 #include "common/file.h"
 #include "common/log.h"
 #include "common/signal.h"
@@ -64,7 +65,7 @@ namespace casual
                   std::vector< char> path( platform::size::max::path);
                   if( ::_NSGetExecutablePath( path.data(), &size) != 0)
                   {
-                     throw exception::invalid::Argument{ "failed to get the path to the current executable"};
+                     throw exception::system::invalid::Argument{ "failed to get the path to the current executable"};
                   }
                   if( path.data()) { return path.data();}
                   return {};
@@ -268,12 +269,12 @@ namespace casual
                         case M::Directive::singleton:
                         {
                            log::category::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
-                           throw exception::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
+                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
                         }
                         case M::Directive::shutdown:
                         {
                            log::category::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
-                           throw exception::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
+                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
                         }
                         default:
                         {
@@ -368,20 +369,16 @@ namespace casual
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
-               switch( std::errc( error::last()))
+               switch( error::code::last::system::error())
                {
-                  case std::errc::interrupted:
+                  case error::code::system::interrupted:
                   {
                      signal::handle();
                      break;
                   }
-                  case std::errc::invalid_argument:
-                  {
-                     throw exception::invalid::Argument{ error::string()};
-                  }
                   default:
                   {
-                     throw std::system_error{ error::last(), std::system_category()};
+                     exception::system::throw_from_errno();
                   }
                }
             }
@@ -540,7 +537,7 @@ namespace casual
                      void check_error( int code, const char* message)
                      {
                         if( code != 0)
-                           throw exception::invalid::Argument{ message, CASUAL_NIP( error::string( code))};
+                           exception::system::throw_from_code( code);
                      };
 
                      posix_spawnattr_t m_attributes;
@@ -567,9 +564,9 @@ namespace casual
             //
             if( ! file::permission::execution( path))
             {
-               throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
-                  exception::make_nip( "arguments", range::make( arguments)),
-                  exception::make_nip( "environment", range::make( environment)));
+               throw exception::system::invalid::Argument( string::compose( "spawn failed - path: ", path,
+                  " arguments: ", range::make( arguments),
+                  " environment: ", range::make( environment)));
             }
 
             //
@@ -620,10 +617,7 @@ namespace casual
                   case 0:
                      break;
                   default:
-                     throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
-                           exception::make_nip( "arguments", range::make( arguments)),
-                           exception::make_nip( "environment", range::make( environment)),
-                           CASUAL_NIP( error::string( status)));
+                     exception::system::throw_from_code( status);
                }
             }
 
@@ -650,7 +644,7 @@ namespace casual
                {
                   auto& reason = deaths.front();
 
-                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                  throw exception::system::invalid::Argument( "spawn failed", CASUAL_NIP( path),
                         exception::make_nip( "arguments", range::make( arguments)),
                         exception::make_nip( "environment", range::make( environment)),
                         CASUAL_NIP( reason));
@@ -705,14 +699,14 @@ namespace casual
 
                      if( result == -1)
                      {
-                        switch( std::errc( error::last()))
+                        switch( error::code::last::system::error())
                         {
-                           case std::errc::no_child_process:
+                           case error::code::system::no_child_process:
                            {
                               // no child
                               break;
                            }
-                           case std::errc::interrupted:
+                           case error::code::system::interrupted:
                            {
                               handle_signal();
 
@@ -723,8 +717,8 @@ namespace casual
                            }
                            default:
                            {
-                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
-                              throw std::system_error{ error::last(), std::system_category()};
+                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << error::code::last::system::error() << '\n';
+                              exception::system::throw_from_errno();
                            }
                         }
                      }

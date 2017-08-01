@@ -233,7 +233,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      common::log::category::information << "failed to locate persistent file - using default state\n";
                   }
                   return {};
@@ -249,7 +249,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      common::log::category::information << "failed to locate persistent file during save - ignore\n";
                   }
                }

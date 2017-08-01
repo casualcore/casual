@@ -5,6 +5,8 @@
 #include "gateway/inbound/cache.h"
 #include "gateway/common.h"
 
+#include "common/exception/casual.h"
+#include "common/exception/system.h"
 #include "common/algorithm.h"
 
 namespace casual
@@ -64,7 +66,7 @@ namespace casual
 
             if( m_state == State::terminate)
             {
-               throw exception::Shutdown{ "conditional variable wants to shutdown..."};
+               throw exception::casual::Shutdown{ "conditional variable wants to shutdown..."};
             }
 
             m_size += message.payload.size();
@@ -92,7 +94,7 @@ namespace casual
 
             if( ! found)
             {
-               throw common::exception::invalid::Argument{ "failed to find correlation - Cache::get", CASUAL_NIP( correlation)};
+               throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find correlation: ", correlation)};
             }
 
             auto result = std::move( *found);
