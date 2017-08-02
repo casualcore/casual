@@ -1595,18 +1595,10 @@ namespace casual
                }
                else
                {
-                  log << "XAER_NOTA trid: " << message.trid << " is not known to this TM - action: send XAER_NOTA reply\n";
 
-                  //
-                  // Send reply
-                  //
-                  {
-                     auto reply = local::transform::reply( message);
-                     reply.state = XAER_NOTA;
-                     reply.resource = message.resource;
+                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
-                     local::send::reply( m_state, std::move( reply), message.process);
-                  }
+                  local::send::read_only( m_state, message);
                }
             }
          } // domain
