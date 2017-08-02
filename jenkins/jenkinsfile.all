@@ -1,5 +1,23 @@
 #!groovy
 
+//
+// Use this to set version of casual
+//
+if ( "${env.BRANCH_NAME}" ==~ "^.*0.50.*" )
+{
+   //
+   // Next version
+   //
+   env.CASUAL_VERSION="0.50"
+}
+else
+{
+   //
+   // Current version
+   //
+   env.CASUAL_VERSION="0.42"
+}
+
 def common_backend_builder = '''
 umask 000
 cd /git/casual
@@ -39,7 +57,7 @@ casual-make --no-colors -d -a --use-valgrind make && \
 // Script for the backend builder centos
 //
 def backend_builder_centos = '''#! /bin/sh
-CASUAL_VERSION="0.42"
+CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 DISTRIBUTION="centos"
 
@@ -58,7 +76,7 @@ source scl_source enable devtoolset-4
 // Script for the backend builder suse
 //
 def backend_builder_suse = '''#! /bin/sh
-CASUAL_VERSION="0.42"
+CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 DISTRIBUTION="suse"
 
