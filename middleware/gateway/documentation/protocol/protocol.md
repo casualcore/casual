@@ -44,7 +44,7 @@ role name             | native type   | native size | network type  | network si
 execution             | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                           
 domain.id             | fixed array   |          16 | fixed array   |           16 | uuid of the caller domain                                    
 domain.name.size      | size          |           8 | uint64        |            8 | size of the caller domain name                               
-domain.name.data      | dynamic array |           0 | dynamic array |            0 | dynamic byte array with the caller domain name               
+domain.name.data      | dynamic array |           8 | dynamic array |            8 | dynamic byte array with the caller domain name               
 services.size         | size          |           8 | uint64        |            8 | number of requested services to follow (an array of services)
 services.element.size | size          |           8 | uint64        |            8 | size of the current service name                             
 services.element.data | dynamic array |         128 | dynamic array |          128 | dynamic byte array of the current service name               
@@ -91,7 +91,6 @@ message type: **8100**
 role name           | native type   | native size | network type  | network size | description                                                        
 ------------------- | ------------- | ----------- | ------------- | ------------ | -------------------------------------------------------------------
 execution           | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                                 
-call.descriptor     | int           |           4 | uint64        |            8 | descriptor of the call                                             
 service.name.size   | size          |           8 | uint64        |            8 | service name size                                                  
 service.name.data   | dynamic array |         128 | dynamic array |          128 | byte array with service name                                       
 service.timeout     | int64         |           8 | uint64        |            8 | timeout of the service in use                                      
@@ -101,11 +100,11 @@ xid.format          | long          |           8 | uint64        |            8
 xid.gtrid_length    | long          |           8 | uint64        |            8 | length of the transaction gtrid part                               
 xid.bqual_length    | long          |           8 | uint64        |            8 | length of the transaction branch part                              
 xid.payload         | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-flags               | int64         |           8 | uint64        |            8 | XATMI flags sent to the service                                    
+flags               | long          |           8 | uint64        |            8 | XATMI flags sent to the service                                    
 buffer.type.size    | size          |           8 | uint64        |            8 | buffer type name size                                              
 buffer.type.data    | dynamic array |          25 | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'             
 buffer.payload.size | size          |           8 | uint64        |            8 | buffer payload size (could be very big)                            
-buffer.payload.data | dynamic array |         128 | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)         
+buffer.payload.data | dynamic array |        1024 | dynamic array |         1024 | buffer payload data (with the size of buffer.payload.size)         
 
 #### message::interdomain::service::call::receive::Reply
 
@@ -116,18 +115,17 @@ message type: **8101**
 role name                         | native type   | native size | network type  | network size | description                                                                   
 --------------------------------- | ------------- | ----------- | ------------- | ------------ | ------------------------------------------------------------------------------
 execution                         | fixed array   |          16 | fixed array   |           16 | uuid of the current execution path                                            
-call.descriptor                   | int           |           4 | uint64        |            8 | descriptor of the call                                                        
-call.error                        | int           |           4 | uint64        |            8 | XATMI error code, if any.                                                     
+call.status                       | int           |           4 | uint64        |            8 | XATMI error code, if any.                                                     
 call.code                         | long          |           8 | uint64        |            8 | XATMI user supplied code                                                      
 transaction.trid.xid.format       | long          |           8 | uint64        |            8 | xid format type. if 0 no more information of the xid is transported           
 transaction.trid.xid.gtrid_length | long          |           8 | uint64        |            8 | length of the transactino gtrid part                                          
 transaction.trid.xid.bqual_length | long          |           8 | uint64        |            8 | length of the transaction branch part                                         
 transaction.trid.xid.payload      | dynamic array |          32 | dynamic array |           32 | byte array with the size of gtrid_length + bqual_length (max 128)             
-transaction.state                 | int64         |           8 | uint64        |            8 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
+transaction.state                 | char          |           1 | uint8         |            1 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
 buffer.type.size                  | size          |           8 | uint64        |            8 | buffer type name size                                                         
 buffer.type.data                  | dynamic array |          25 | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'                        
 buffer.payload.size               | size          |           8 | uint64        |            8 | buffer payload size (could be very big)                                       
-buffer.payload.data               | dynamic array |         128 | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)                    
+buffer.payload.data               | dynamic array |        1024 | dynamic array |         1024 | buffer payload data (with the size of buffer.payload.size)                    
 
 ## Transaction messages
 

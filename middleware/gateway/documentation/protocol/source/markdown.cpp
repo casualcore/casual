@@ -80,9 +80,11 @@ namespace casual
                   const char* name( T&& value)
                   {
                      static std::unordered_map< std::type_index, const char*> names{
+                        { typeid( char), "char"},
                         { typeid( short), "short"},
                         { typeid( int), "int"},
                         { typeid( long), "long"},
+                        { typeid( std::uint8_t), "uint8"},
                         { typeid( std::uint64_t), "uint64"},
                         { typeid( std::int64_t), "int64"},
                         { typeid( std::uint16_t), "uint16"},
@@ -520,11 +522,10 @@ Sent to and received from other domains when one domain wants call a service in 
                   request.service.name.resize( 128);
                   request.parent.resize( 128);
                   request.buffer.type.resize( 8 + 1 + 16);
-                  request.buffer.memory.resize( 128);
+                  request.buffer.memory.resize( 1024);
 
                   local::format::type( out, request, {
                            { "execution", "uuid of the current execution path"},
-                           { "call.descriptor", "descriptor of the call"},
                            { "service.name.size", "service name size"},
                            { "service.name.data", "byte array with service name"},
                            { "service.timeout", "timeout of the service in use"},
@@ -562,13 +563,12 @@ Reply to call request
 
                   message.transaction.trid = common::transaction::ID::create();
                   message.buffer.type.resize( 8 + 1 + 16);
-                  message.buffer.memory.resize( 128);
+                  message.buffer.memory.resize( 1024);
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
 
-                           { "call.descriptor", "descriptor of the call"},
-                           { "call.error", "XATMI error code, if any."},
+                           { "call.status", "XATMI error code, if any."},
                            { "call.code", "XATMI user supplied code"},
 
                            { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
@@ -610,6 +610,8 @@ Sent to and received from other domains when one domain wants discover informati
                   out << "message type: **" << message_type::type() << "**\n\n";
 
                   message_type message;
+
+                  message.domain.name = "domain-A";
 
                   message.services.push_back( std::string( 128, 0));
                   message.queues.push_back( std::string( 128, 0));
