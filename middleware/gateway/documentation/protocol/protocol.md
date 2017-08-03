@@ -37,14 +37,14 @@ header.size        | uint64       |            8 | the size of the payload that 
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 
-message type: **7011**
+message type: **8001**
 
 role name             | network type  | network size | description                                                  
 --------------------- | ------------- | ------------ | -------------------------------------------------------------
 execution             | fixed array   |           16 | uuid of the current execution path                           
 domain.id             | fixed array   |           16 | uuid of the caller domain                                    
 domain.name.size      | uint64        |            8 | size of the caller domain name                               
-domain.name.data      | dynamic array |            0 | dynamic byte array with the caller domain name               
+domain.name.data      | dynamic array |            8 | dynamic byte array with the caller domain name               
 services.size         | uint64        |            8 | number of requested services to follow (an array of services)
 services.element.size | uint64        |            8 | size of the current service name                             
 services.element.data | dynamic array |          128 | dynamic byte array of the current service name               
@@ -104,7 +104,7 @@ flags               | uint64        |            8 | XATMI flags sent to the ser
 buffer.type.size    | uint64        |            8 | buffer type name size                                              
 buffer.type.data    | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'             
 buffer.payload.size | uint64        |            8 | buffer payload size (could be very big)                            
-buffer.payload.data | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)         
+buffer.payload.data | dynamic array |         1024 | buffer payload data (with the size of buffer.payload.size)         
 
 #### message::interdomain::service::call::receive::Reply
 
@@ -115,7 +115,7 @@ message type: **3101**
 role name                         | network type  | network size | description                                                                   
 --------------------------------- | ------------- | ------------ | ------------------------------------------------------------------------------
 execution                         | fixed array   |           16 | uuid of the current execution path                                            
-call.error                        | uint32        |            4 | XATMI error code, if any.                                                     
+call.status                       | uint32        |            4 | XATMI error code, if any.                                                     
 call.code                         | uint64        |            8 | XATMI user supplied code                                                      
 transaction.trid.xid.format       | uint64        |            8 | xid format type. if 0 no more information of the xid is transported           
 transaction.trid.xid.gtrid_length | uint64        |            8 | length of the transaction gtrid part                                          
@@ -125,7 +125,7 @@ transaction.state                 | uint8         |            1 | state of the 
 buffer.type.size                  | uint64        |            8 | buffer type name size                                                         
 buffer.type.data                  | dynamic array |           25 | byte array with buffer type in the form 'type/subtype'                        
 buffer.payload.size               | uint64        |            8 | buffer payload size (could be very big)                                       
-buffer.payload.data               | dynamic array |          128 | buffer payload data (with the size of buffer.payload.size)                    
+buffer.payload.data               | dynamic array |         1024 | buffer payload data (with the size of buffer.payload.size)                    
 
 ## Transaction messages
 

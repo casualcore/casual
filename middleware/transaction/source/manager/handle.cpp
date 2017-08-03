@@ -1615,19 +1615,10 @@ namespace casual
                }
                else
                {
-                  auto fail = common::error::code::xa::invalid_xid;
-                  log << fail << " trid: " << message.trid << " is not known to this TM - action: send reply\n";
 
-                  //
-                  // Send reply
-                  //
-                  {
-                     auto reply = local::transform::reply( message);
-                     reply.state = fail;
-                     reply.resource = message.resource;
+                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
-                     local::send::reply( m_state, std::move( reply), message.process);
-                  }
+                  local::send::read_only( m_state, message);
                }
             }
          } // domain

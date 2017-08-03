@@ -286,12 +286,6 @@ namespace casual
             struct type_traits< casual::gateway::message::outbound::configuration::Request> : detail::type< casual::gateway::message::outbound::configuration::Reply> {};
          } // reverse
 
-         template< typename A>
-         constexpr auto type( const gateway::domain::discover::Request&, A&& archive) -> std::enable_if_t< casual::common::marshal::is_network_normalizing< A>::value, Type>
-         {
-            return Type::interdomain_domain_discover_request;
-         }
-
          namespace gateway
          {
             namespace domain

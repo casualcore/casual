@@ -138,9 +138,9 @@ namespace casual
 
                struct Printer
                {
-                  Printer( std::vector< type::Info>& types) : m_types( types) {}
+                  Printer() = default;
 
-                  Printer( std::vector< type::Info>& types, std::initializer_list< type::Name> roles) : m_types( types), m_roles( std::move( roles)) {}
+                  Printer( std::initializer_list< type::Name> roles) : m_roles( std::move( roles)) {}
 
 
                   template< typename T>
@@ -180,6 +180,13 @@ namespace casual
                   void append( C&& range)
                   {
                      append( std::begin( range), std::end( range));
+                  }
+
+                  std::vector< type::Info> release() 
+                  {
+                     std::vector< type::Info> result;
+                     std::swap( result, m_types);
+                     return result;
                   }
 
                private:
@@ -247,7 +254,7 @@ namespace casual
                   }
 
 
-                  std::vector< type::Info>& m_types;
+                  std::vector< type::Info> m_types;
                   std::queue< type::Name> m_roles;
 
                };
@@ -279,12 +286,11 @@ namespace casual
                   template< typename T>
                   std::vector< type::Info> types( T& type, std::initializer_list< type::Name> roles)
                   {
-                     std::vector< type::Info> result;
-                     local::Printer typer{ result, std::move( roles)};
+                     local::Printer typer{ std::move( roles)};
 
                      typer << type;
 
-                     return result;
+                     return typer.release();
                   }
 
 
@@ -315,6 +321,11 @@ namespace casual
 
                } // format
 
+               template< typename M>
+               std::ostream& message_type( std::ostream& out, M message)
+               {
+                  return out << "message type: **" << common::message::type( message) << "**";
+               }
 
             } // <unnamed>
          } // local
@@ -371,7 +382,7 @@ the rest of the message.
             {
                message.trid = common::transaction::ID::create();
 
-               out << "message type: **" << M::type() << "**\n\n";
+               local::message_type( out, message) << "\n\n";
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution path"},
@@ -389,7 +400,7 @@ the rest of the message.
             {
                message.trid = common::transaction::ID::create();
 
-               out << "message type: **" << M::type() << "**\n\n";
+               local::message_type( out, message) << "\n\n";
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution path"},
@@ -519,14 +530,14 @@ Reply to a rollback request.
 Sent to and received from other domains when one domain wants call a service in the other domain
 
 )";
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type request;
                   request.trid = common::transaction::ID::create();
                   request.service.name.resize( 128);
                   request.parent.resize( 128);
                   request.buffer.type.resize( 8 + 1 + 16);
-                  request.buffer.memory.resize( 128);
+                  request.buffer.memory.resize( 1024);
 
                   local::format::type( out, request, {
                            { "execution", "uuid of the current execution path"},
@@ -560,18 +571,18 @@ Sent to and received from other domains when one domain wants call a service in 
 Reply to call request
 
 )";
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
                   message.transaction.trid = common::transaction::ID::create();
                   message.buffer.type.resize( 8 + 1 + 16);
-                  message.buffer.memory.resize( 128);
+                  message.buffer.memory.resize( 1024);
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
 
-                           { "call.error", "XATMI error code, if any."},
+                           { "call.status", "XATMI error code, if any."},
                            { "call.code", "XATMI user supplied code"},
 
                            { "transaction.trid.xid.format", "xid format type. if 0 no more information of the xid is transported"},
@@ -610,9 +621,11 @@ Sent to and received from other domains when one domain wants discover informati
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
+
+                  message.domain.name = "domain-A";
 
                   message.services.push_back( std::string( 128, 0));
                   message.queues.push_back( std::string( 128, 0));
@@ -644,7 +657,7 @@ Sent to and received from other domains when one domain wants discover informati
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -691,7 +704,7 @@ Represent enqueue request.
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -732,7 +745,7 @@ Represent enqueue reply.
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -755,7 +768,7 @@ Represent dequeue request.
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -788,7 +801,7 @@ Represent dequeue reply.
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -836,7 +849,7 @@ Sent to establish a conversation
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -878,7 +891,7 @@ Reply for a conversation
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -908,7 +921,7 @@ Represent a message sent 'over' an established connection
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
@@ -943,7 +956,7 @@ Sent to abruptly disconnect the conversation
 
 )";
 
-                  out << "message type: **" << message_type::type() << "**\n\n";
+                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
 
