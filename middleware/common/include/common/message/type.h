@@ -225,12 +225,7 @@ namespace casual
          {
             return message.type();
          }
-
-         template< typename M, typename A>
-         constexpr Type type( const M& message, A&& archive)
-         {
-            return type( message);
-         }
+         //! @}
 
 
          namespace convert
@@ -248,7 +243,6 @@ namespace casual
          {
 
             using base_type = basic_message< message_type>;
-
 
             constexpr static Type type() { return message_type;}
 

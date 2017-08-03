@@ -427,7 +427,7 @@ the rest of the message.
                   using message_type = common::message::transaction::resource::prepare::Request;
 
                   out << R"(
-#### message::interdomain::transaction::resource::receive::prepare::Request
+#### message::transaction::resource::prepare::Request
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -439,7 +439,7 @@ Sent to and received from other domains when one domain wants to prepare a trans
                   using message_type = common::message::transaction::resource::prepare::Reply;
 
                   out << R"(
-#### message::interdomain::transaction::resource::receive::prepare::Reply
+#### message::transaction::resource::prepare::Reply
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -456,7 +456,7 @@ Sent to and received from other domains when one domain wants to prepare a trans
                   using message_type = common::message::transaction::resource::commit::Request;
 
                   out << R"(
-#### message::interdomain::transaction::resource::receive::commit::Request
+#### message::transaction::resource::commit::Request
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -468,7 +468,7 @@ Sent to and received from other domains when one domain wants to commit an alrea
                   using message_type = common::message::transaction::resource::commit::Reply;
 
                   out << R"(
-#### message::interdomain::transaction::resource::receive::commit::Reply
+#### message::transaction::resource::commit::Reply
 
 Reply to a commit request. 
 
@@ -488,7 +488,7 @@ Reply to a commit request.
                   using message_type = common::message::transaction::resource::rollback::Request;
 
                   out << R"(
-#### message::interdomain::transaction::resource::receive::rollback::Request
+#### message::transaction::resource::rollback::Request
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -501,7 +501,7 @@ That is, when one or more resources has failed to prepare.
                   using message_type =  common::message::transaction::resource::rollback::Reply;
 
                   out << R"(
-#### message::interdomain::transaction::resource::receive::rollback::Reply
+#### message::transaction::resource::rollback::Reply
 
 Reply to a rollback request. 
 
@@ -525,7 +525,7 @@ Reply to a rollback request.
                   using message_type = common::message::service::call::callee::Request;
 
                   out << R"(
-#### message::interdomain::service::call::receive::Request
+#### message::service::call::Request
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -566,7 +566,7 @@ Sent to and received from other domains when one domain wants call a service in 
                   using message_type = common::message::service::call::Reply;
 
                   out << R"(
-#### message::interdomain::service::call::receive::Reply
+#### message::service::call::Reply
 
 Reply to call request
 
@@ -615,7 +615,7 @@ Reply to call request
                   using message_type = common::message::gateway::domain::discover::Request;
 
                   out << R"(
-#### message::interdomain::domain::discovery::Request
+#### message::gateway::domain::discover::Request
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 
@@ -651,7 +651,7 @@ Sent to and received from other domains when one domain wants discover informati
                   using message_type = common::message::gateway::domain::discover::Reply;
 
                   out << R"(
-#### message::interdomain::domain::discovery::Reply
+#### message::gateway::domain::discover::Reply
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 

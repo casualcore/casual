@@ -187,6 +187,7 @@ namespace casual
                   result[ handle_type::message_type::type()] = std::move( holder);
                }
 
+
                static void add( handlers_type& result, basic_handler&& holder)
                {
                   for( auto&& handler : holder.m_handlers)

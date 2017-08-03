@@ -608,7 +608,95 @@ resources:
          EXPECT_TRUE( tx_rollback() == TX_OK);
       }
 
-      TEST( casual_transaction_manager, begin_transaction__1_remote_resurce_involved___expect_one_phase_optimization)
+      TEST( casual_transaction_manager, remote_resource_commit_one_phase__xid_unknown___expect_read_only)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto trid = common::transaction::ID::create();
+
+
+         // remote commit
+         {
+            common::message::transaction::resource::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+            message.flags = common::flag::xa::Flag::one_phase;
+
+            local::send::tm( message);
+         }
+
+         // commit reply
+         {
+            common::message::transaction::resource::commit::Reply message;
+
+            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == common::error::code::xa::read_only);
+         }
+      }
+
+      TEST( casual_transaction_manager, remote_resource_prepare__xid_unknown___expect_read_only)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto trid = common::transaction::ID::create();
+
+
+         // remote commit
+         {
+            common::message::transaction::resource::prepare::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+         
+            local::send::tm( message);
+         }
+
+         // commit reply
+         {
+            common::message::transaction::resource::prepare::Reply message;
+
+            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == common::error::code::xa::read_only);
+         }
+      }
+
+      TEST( casual_transaction_manager, remote_resource_rollback__xid_unknown___expect_read_only)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto trid = common::transaction::ID::create();
+
+
+         // remote commit
+         {
+            common::message::transaction::resource::rollback::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+         
+            local::send::tm( message);
+         }
+
+         // commit reply
+         {
+            common::message::transaction::resource::rollback::Reply message;
+
+            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == common::error::code::xa::read_only);
+         }
+      }
+
+      TEST( casual_transaction_manager, begin_transaction__1_remote_resource_involved___expect_one_phase_optimization)
       {
          common::unittest::Trace trace;
 
@@ -668,7 +756,7 @@ resources:
 
 
 
-      TEST( casual_transaction_manager, begin_transaction__2_remote_resurce_involved___expect_remote_prepare_commit)
+      TEST( casual_transaction_manager, begin_transaction__2_remote_resource_involved___expect_remote_prepare_commit)
       {
          common::unittest::Trace trace;
 
@@ -771,7 +859,7 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, begin_transaction__2_remote_resurce_involved_read_only___expect_remote_prepare__read_only_optimization)
+      TEST( casual_transaction_manager, begin_transaction__2_remote_resource_involved_read_only___expect_remote_prepare__read_only_optimization)
       {
          common::unittest::Trace trace;
 
@@ -839,7 +927,7 @@ resources:
          }
       }
 
-      TEST( casual_transaction_manager, transaction_2_remote_resurce_involved__one_phase_commit_optimzation___expect_prepare_phase_commit_XA_OK)
+      TEST( casual_transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization___expect_prepare_phase_commit_XA_OK)
       {
          common::unittest::Trace trace;
 
@@ -932,7 +1020,7 @@ resources:
 
 
 
-      TEST( casual_transaction_manager, transaction_2_remote_resurce_involved__one_phase_commit_optimzation__RM_fail__expect_rollback__commit_XA_RBOTHER)
+      TEST( casual_transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization__RM_fail__expect_rollback__commit_XA_RBOTHER)
       {
          common::unittest::Trace trace;
 

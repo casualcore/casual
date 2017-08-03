@@ -521,10 +521,10 @@ namespace casual
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
 
-         {
+         EXPECT_THROW({
             Arguments arguments{{}};
             arguments.parse( { "casual-bash-completion"});      
-         }
+         }, argument::exception::bash::Completion);
 
          auto lines = local::consume( stream);
 
@@ -538,11 +538,11 @@ namespace casual
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
 
-         {
-         Arguments arguments{ {
-            argument::directive( { "-f", "--foo"}, "some foo stuff", &local::freeFunctionOneToMany)}};
+         EXPECT_THROW({
+            Arguments arguments{ {
+               argument::directive( { "-f", "--foo"}, "some foo stuff", &local::freeFunctionOneToMany)}};
             arguments.parse( { "casual-bash-completion"});      
-         }
+         }, argument::exception::bash::Completion);
 
          auto lines = local::consume( stream);
 
@@ -555,11 +555,11 @@ namespace casual
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
 
-         {
-         Arguments arguments{ {
-            argument::directive( argument::cardinality::Any{}, { "-f", "--foo"}, "some foo stuff", []( const std::vector< std::string>&){})}};
+         EXPECT_THROW({
+            Arguments arguments{ {
+               argument::directive( argument::cardinality::Any{}, { "-f", "--foo"}, "some foo stuff", []( const std::vector< std::string>&){})}};
             arguments.parse( { "casual-bash-completion"});      
-         }
+         }, argument::exception::bash::Completion);
 
          auto lines = local::consume( stream);
 
@@ -572,11 +572,12 @@ namespace casual
          std::stringstream stream;
          auto guard = local::bind_to_stdout( stream);
 
-         {
-         Arguments arguments{ {
-            argument::directive( argument::cardinality::Fixed< 3>{}, { "-f", "--foo"}, "some foo stuff", []( const std::vector< std::string>&){})}};
-            arguments.parse( { "casual-bash-completion"});      
-         }
+         EXPECT_THROW({
+            Arguments arguments{ {
+               argument::directive( argument::cardinality::Fixed< 3>{}, { "-f", "--foo"}, "some foo stuff", []( const std::vector< std::string>&){})}};
+            arguments.parse( { "casual-bash-completion"});
+            
+         }, argument::exception::bash::Completion);
 
          auto lines = local::consume( stream);
 

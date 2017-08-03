@@ -318,7 +318,7 @@ namespace casual
                };
 
                template< typename Range>
-               bool completion( const Group& group, Range&& arguments)
+               void completion( const Group& group, Range&& arguments)
                {
                   auto found = range::find( arguments, "casual-bash-completion");
 
@@ -330,9 +330,8 @@ namespace casual
 
                      visitor( arguments);
 
-                     return true;
+                     throw exception::bash::Completion{ "built in bash-completion was invoked"};
                   }
-                  return false;
                }
 
             } // <unnamed>
@@ -384,8 +383,7 @@ namespace casual
          //
          // check special completion case
          //
-         if( argument::local::completion( *this, argumentRange))
-            return;
+         argument::local::completion( *this, argumentRange);
 
          while( argumentRange)
          {

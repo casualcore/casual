@@ -201,6 +201,18 @@ namespace casual
             {
                using std::runtime_error::runtime_error;
             };
+
+            namespace bash
+            {
+               //! 
+               //! Will be thrown if the 'secret' casual-bash-completion is passed
+               //!
+               struct Completion : std::runtime_error
+               {
+                  using std::runtime_error::runtime_error;
+               };
+            } // bash
+
          } // exception
 
          namespace internal
@@ -360,7 +372,7 @@ namespace casual
                //
                // For variable bool
                //
-               auto make( bool& value)
+               inline auto make( bool& value)
                {
                   return [&value](){ value = true;};
                }
@@ -507,7 +519,7 @@ namespace casual
                void operator () () {};
             };
 
-            Help help() { return Help{};}
+            inline Help help() { return Help{};}
          } // no
 
       } // argument

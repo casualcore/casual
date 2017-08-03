@@ -33,11 +33,11 @@ header.size        | uint64       |            8 | the size of the payload that 
 ### domain discovery 
 
 
-#### message::interdomain::domain::discovery::Request
+#### message::gateway::domain::discover::Request
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 
-message type: **8001**
+message type: **7011**
 
 role name             | network type  | network size | description                                                  
 --------------------- | ------------- | ------------ | -------------------------------------------------------------
@@ -52,7 +52,7 @@ queues.size           | uint64        |            8 | number of requested queue
 queues.element.size   | uint64        |            8 | size of the current queue name                               
 queues.element.data   | dynamic array |          128 | dynamic byte array of the current queue name                 
 
-#### message::interdomain::domain::discovery::Reply
+#### message::gateway::domain::discover::Reply
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 
@@ -82,7 +82,7 @@ queues.element.retries         | uint64        |            8 | how many 'retrie
 ### Service call 
 
 
-#### message::interdomain::service::call::receive::Request
+#### message::service::call::Request
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -106,7 +106,7 @@ buffer.type.data    | dynamic array |           25 | byte array with buffer type
 buffer.payload.size | uint64        |            8 | buffer payload size (could be very big)                            
 buffer.payload.data | dynamic array |         1024 | buffer payload data (with the size of buffer.payload.size)         
 
-#### message::interdomain::service::call::receive::Reply
+#### message::service::call::Reply
 
 Reply to call request
 
@@ -132,7 +132,7 @@ buffer.payload.data               | dynamic array |         1024 | buffer payloa
 ### Resource prepare
 
 
-#### message::interdomain::transaction::resource::receive::prepare::Request
+#### message::transaction::resource::prepare::Request
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -148,7 +148,7 @@ xid.payload      | dynamic array |           32 | byte array with the size of gt
 resource.id      | uint32        |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64        |            8 | XA flags to be forward to the resource                             
 
-#### message::interdomain::transaction::resource::receive::prepare::Reply
+#### message::transaction::resource::prepare::Reply
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -167,7 +167,7 @@ resource.state   | uint32        |            4 | The state of the operation - I
 ### Resource commit
 
 
-#### message::interdomain::transaction::resource::receive::commit::Request
+#### message::transaction::resource::commit::Request
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -183,7 +183,7 @@ xid.payload      | dynamic array |           32 | byte array with the size of gt
 resource.id      | uint32        |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64        |            8 | XA flags to be forward to the resource                             
 
-#### message::interdomain::transaction::resource::receive::commit::Reply
+#### message::transaction::resource::commit::Reply
 
 Reply to a commit request. 
 
@@ -202,7 +202,7 @@ resource.state   | uint32        |            4 | The state of the operation - I
 ### Resource rollback
 
 
-#### message::interdomain::transaction::resource::receive::rollback::Request
+#### message::transaction::resource::rollback::Request
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -219,7 +219,7 @@ xid.payload      | dynamic array |           32 | byte array with the size of gt
 resource.id      | uint32        |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64        |            8 | XA flags to be forward to the resource                             
 
-#### message::interdomain::transaction::resource::receive::rollback::Reply
+#### message::transaction::resource::rollback::Reply
 
 Reply to a rollback request. 
 

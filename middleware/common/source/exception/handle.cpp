@@ -10,6 +10,8 @@
 #include "common/exception/casual.h"
 #include "common/exception/tx.h"
 
+#include "common/arguments.h"
+
 #include "common/log/category.h"
 
 
@@ -77,7 +79,6 @@ namespace casual
                      return local::log( exception, out);
                   }
 
-
                   catch( const std::system_error& exception)
                   {
                      if( out) 
@@ -85,6 +86,18 @@ namespace casual
                      else 
                         common::log::category::error << exception << std::endl;
                   }
+
+                  catch( const argument::exception::Help& exception)
+                  {
+                     if( ! out)
+                        common::log::category::error << exception << std::endl;
+                  }
+                  catch( const argument::exception::bash::Completion& exception)
+                  {
+                     if( ! out)
+                        common::log::category::error << exception << std::endl;
+                  }
+                  
                   catch( const std::exception& exception)
                   {
 
