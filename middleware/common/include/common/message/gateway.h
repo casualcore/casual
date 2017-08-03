@@ -129,6 +129,7 @@ namespace casual
                   struct Request : basic_message< Type::gateway_domain_discover_request>
                   {
                      common::process::Handle process;
+                     std::vector< platform::size::type> versions;
                      common::domain::Identity domain;
                      std::vector< std::string> services;
                      std::vector< std::string> queues;
@@ -137,6 +138,7 @@ namespace casual
                      {
                         base_type::marshal( archive);
                         archive & process;
+                        archive & versions;
                         archive & domain;
                         archive & services;
                         archive & queues;
@@ -157,6 +159,7 @@ namespace casual
                      using Queue = domain::advertise::Queue;
 
                      common::process::Handle process;
+                     platform::size::type version;
                      common::domain::Identity domain;
                      std::vector< Service> services;
                      std::vector< Queue> queues;
@@ -165,6 +168,7 @@ namespace casual
                      {
                         base_type::marshal( archive);
                         archive & process;
+                        archive & version;
                         archive & domain;
                         archive & services;
                         archive & queues;

@@ -624,7 +624,7 @@ Sent to and received from other domains when one domain wants discover informati
                   local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
-
+                  message.versions = { 42};
                   message.domain.name = "domain-A";
 
                   message.services.push_back( std::string( 128, 0));
@@ -632,6 +632,8 @@ Sent to and received from other domains when one domain wants discover informati
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
+                           { "versions.size", "size of versions container that holds all versions that instigator can communicate with "},
+                           { "versions.element", "value of supported version"},
                            { "domain.id", "uuid of the caller domain"},
                            { "domain.name.size", "size of the caller domain name"},
                            { "domain.name.data", "dynamic byte array with the caller domain name"},
@@ -666,6 +668,7 @@ Sent to and received from other domains when one domain wants discover informati
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
+                           { "version", "the chosen version - 0 if no compatible version was possible"},
                            { "domain.id", "uuid of the caller domain"},
                            { "domain.name.size", "size of the caller domain name"},
                            { "domain.name.data", "dynamic byte array with the caller domain name"},

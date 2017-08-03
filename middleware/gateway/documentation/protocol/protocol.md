@@ -39,18 +39,20 @@ Sent to and received from other domains when one domain wants discover informati
 
 message type: **7011**
 
-role name             | network type  | network size | description                                                  
---------------------- | ------------- | ------------ | -------------------------------------------------------------
-execution             | fixed array   |           16 | uuid of the current execution path                           
-domain.id             | fixed array   |           16 | uuid of the caller domain                                    
-domain.name.size      | uint64        |            8 | size of the caller domain name                               
-domain.name.data      | dynamic array |            8 | dynamic byte array with the caller domain name               
-services.size         | uint64        |            8 | number of requested services to follow (an array of services)
-services.element.size | uint64        |            8 | size of the current service name                             
-services.element.data | dynamic array |          128 | dynamic byte array of the current service name               
-queues.size           | uint64        |            8 | number of requested queues to follow (an array of queues)    
-queues.element.size   | uint64        |            8 | size of the current queue name                               
-queues.element.data   | dynamic array |          128 | dynamic byte array of the current queue name                 
+role name             | network type  | network size | description                                                                             
+--------------------- | ------------- | ------------ | ----------------------------------------------------------------------------------------
+execution             | fixed array   |           16 | uuid of the current execution path                                                      
+versions.size         | uint64        |            8 | size of versions container that holds all versions that instigator can communicate with 
+versions.element      | uint64        |            8 | value of supported version                                                              
+domain.id             | fixed array   |           16 | uuid of the caller domain                                                               
+domain.name.size      | uint64        |            8 | size of the caller domain name                                                          
+domain.name.data      | dynamic array |            8 | dynamic byte array with the caller domain name                                          
+services.size         | uint64        |            8 | number of requested services to follow (an array of services)                           
+services.element.size | uint64        |            8 | size of the current service name                                                        
+services.element.data | dynamic array |          128 | dynamic byte array of the current service name                                          
+queues.size           | uint64        |            8 | number of requested queues to follow (an array of queues)                               
+queues.element.size   | uint64        |            8 | size of the current queue name                                                          
+queues.element.data   | dynamic array |          128 | dynamic byte array of the current queue name                                            
 
 #### message::gateway::domain::discover::Reply
 
@@ -61,6 +63,7 @@ message type: **7012**
 role name                      | network type  | network size | description                                                     
 ------------------------------ | ------------- | ------------ | ----------------------------------------------------------------
 execution                      | fixed array   |           16 | uuid of the current execution path                              
+version                        | uint64        |            8 | the chosen version - 0 if no compatible version was possible    
 domain.id                      | fixed array   |           16 | uuid of the caller domain                                       
 domain.name.size               | uint64        |            8 | size of the caller domain name                                  
 domain.name.data               | dynamic array |            0 | dynamic byte array with the caller domain name                  

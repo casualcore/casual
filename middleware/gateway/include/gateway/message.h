@@ -295,6 +295,7 @@ namespace casual
                   CASUAL_CUSTOMIZATION_POINT_MARSHAL( Request,
                   {
                      archive & value.execution;
+                     archive & value.versions;
                      archive & value.domain;
                      archive & value.services;
                      archive & value.queues;
@@ -303,6 +304,7 @@ namespace casual
                   CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
                   {
                      archive & value.execution;
+                     archive & value.version;
                      archive & value.domain;
                      archive & value.services;
                      archive & value.queues;
