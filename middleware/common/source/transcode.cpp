@@ -5,7 +5,7 @@
 #include "common/transcode.h"
 
 #include "common/exception/system.h"
-#include "common/error/code/system.h"
+#include "common/code/system.h"
 
 
 #include <resolv.h>
@@ -108,7 +108,7 @@ namespace casual
                   {
                      if( iconv_close( m_descriptor) == -1)
                      {
-                        std::cerr << error::code::last::system::error() << std::endl;
+                        std::cerr << code::last::system::error() << std::endl;
                      }
                   }
 
@@ -129,9 +129,9 @@ namespace casual
 
                         if( conversions == std::numeric_limits< decltype( conversions)>::max())
                         {
-                           switch( error::code::last::system::error())
+                           switch( code::last::system::error())
                            {
-                              case error::code::system::argument_list_too_long: break;
+                              case code::system::argument_list_too_long: break;
                               default:
                                  exception::system::throw_from_errno();
                            }

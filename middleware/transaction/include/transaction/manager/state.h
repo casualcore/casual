@@ -324,10 +324,10 @@ namespace casual
             Stage stage = Stage::involved;
             Result result = Result::xa_OK;
 
-            static Result convert( common::error::code::xa value);
-            static common::error::code::xa convert( Result value);
+            static Result convert( common::code::xa value);
+            static common::code::xa convert( Result value);
 
-            void set_result( common::error::code::xa value);
+            void set_result( common::code::xa value);
 
             //!
             //! @return true if there's nothing more to do, hence this resource can be removed
@@ -432,7 +432,7 @@ namespace casual
          //!
          //! @return the most severe result from the resources
          //!
-         common::error::code::xa results() const;
+         common::code::xa results() const;
 
          friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
       };

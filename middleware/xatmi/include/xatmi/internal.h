@@ -18,8 +18,8 @@ namespace casual
          namespace error
          {
             void clear();
-            void set( common::error::code::xatmi value);
-            common::error::code::xatmi get();
+            void set( common::code::xatmi value);
+            common::code::xatmi get();
 
             template< typename T>
             int wrap( T&& task)

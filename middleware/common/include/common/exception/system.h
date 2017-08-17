@@ -5,7 +5,7 @@
 #ifndef CASUAL_COMMON_EXCEPTION_SYSTEM_H_
 #define CASUAL_COMMON_EXCEPTION_SYSTEM_H_
 
-#include "common/error/code/system.h"
+#include "common/code/system.h"
 #include "common/exception/common.h"
 
 namespace casual
@@ -17,19 +17,19 @@ namespace casual
          namespace system 
          {
 
-            using exception = common::exception::base_error< error::code::system>;
+            using exception = common::exception::base_error< code::system>;
 
-            template< error::code::system error>
+            template< code::system error>
             using base = common::exception::basic_error< exception, error>;
             
 
             namespace invalid
             {
-               using Argument = system::base< error::code::system::invalid_argument>;
+               using Argument = system::base< code::system::invalid_argument>;
 
-               using File = system::base< error::code::system::no_such_file_or_directory>;
+               using File = system::base< code::system::no_such_file_or_directory>;
 
-               using Process = system::base< error::code::system::no_such_process>;               
+               using Process = system::base< code::system::no_such_process>;
 
             } // invalid
 
@@ -44,11 +44,11 @@ namespace casual
 
                   namespace message 
                   {
-                     template< error::code::system error>
+                     template< code::system error>
                      using basic = common::exception::basic_error< Message, error>;
 
-                     using Absent = basic< error::code::system::no_message>;
-                     using Resource = basic< error::code::system::resource_unavailable_try_again>;
+                     using Absent = basic< code::system::no_message>;
+                     using Resource = basic< code::system::resource_unavailable_try_again>;
 
                   } // message 
                } // no
@@ -60,22 +60,22 @@ namespace casual
 
                namespace unavailable
                {
-                  template< error::code::system error>
+                  template< code::system error>
                   using basic = common::exception::basic_error< Unavailable, error>;
 
-                  using Removed = basic< error::code::system::identifier_removed>;
-                  using Reset = basic< error::code::system::connection_reset>;
-                  using Pipe = basic< error::code::system::broken_pipe>;
+                  using Removed = basic< code::system::identifier_removed>;
+                  using Reset = basic< code::system::connection_reset>;
+                  using Pipe = basic< code::system::broken_pipe>;
                  
                   namespace no 
                   {
-                     using Connect = basic< error::code::system::not_connected>;   
+                     using Connect = basic< code::system::not_connected>;
                   } // not 
                } // unavailable
 
-               using Refused = system::base< error::code::system::connection_refused>;
+               using Refused = system::base< code::system::connection_refused>;
 
-               using Protocol = system::base< error::code::system::protocol_error>;
+               using Protocol = system::base< code::system::protocol_error>;
 
             } // communication
 

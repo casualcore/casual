@@ -364,9 +364,9 @@ resources:
          namespace
          {
             template< typename F, typename... Args>
-            common::error::code::tx tx_invoke( F function, Args&&... args)
+            common::code::tx tx_invoke( F function, Args&&... args)
             {
-               return static_cast< common::error::code::tx>( common::invoke( function, std::forward< Args>( args)...));
+               return static_cast< common::code::tx>( common::invoke( function, std::forward< Args>( args)...));
             }
          } // <unnamed>
       } // local
@@ -400,7 +400,7 @@ resources:
             local::send::tm( message);
          }
 
-         using tx = common::error::code::tx;
+         using tx = common::code::tx;
          auto result = local::tx_invoke( &tx_commit);
          ASSERT_TRUE( result == tx::hazard) << "result: " << result;
 
@@ -419,7 +419,7 @@ resources:
 
          local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
 
-         using tx = common::error::code::tx;
+         using tx = common::code::tx;
 
          EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
 
@@ -634,7 +634,7 @@ resources:
             communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::error::code::xa::read_only);
+            EXPECT_TRUE( message.state == common::code::xa::read_only);
          }
       }
 
@@ -663,7 +663,7 @@ resources:
             communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::error::code::xa::read_only);
+            EXPECT_TRUE( message.state == common::code::xa::read_only);
          }
       }
 
@@ -692,7 +692,7 @@ resources:
             communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::error::code::xa::read_only);
+            EXPECT_TRUE( message.state == common::code::xa::read_only);
          }
       }
 
@@ -735,7 +735,7 @@ resources:
 
             auto reply = common::message::reverse::type( message);
             reply.resource = message.resource;
-            reply.state = common::error::code::xa::ok;
+            reply.state = common::code::xa::ok;
             reply.trid = message.trid;
 
             local::send::tm( reply);
@@ -749,7 +749,7 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::error::code::tx::ok);
+            EXPECT_TRUE( message.state == common::code::tx::ok);
 
          }
       }
@@ -802,7 +802,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::ok;
+               reply.state = common::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -820,7 +820,7 @@ resources:
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::prepare);
-            EXPECT_TRUE( message.state == common::error::code::tx::ok);
+            EXPECT_TRUE( message.state == common::code::tx::ok);
          }
 
 
@@ -837,7 +837,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::ok;
+               reply.state = common::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -855,7 +855,7 @@ resources:
 
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.stage == common::message::transaction::commit::Reply::Stage::commit);
-            EXPECT_TRUE( message.state == common::error::code::tx::ok);
+            EXPECT_TRUE( message.state == common::code::tx::ok);
          }
       }
 
@@ -905,7 +905,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::read_only;
+               reply.state = common::code::xa::read_only;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -923,7 +923,7 @@ resources:
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
             //EXPECT_TRUE( message.state == XA_RDONLY) << "state: " << message.state;
-            EXPECT_TRUE( message.state == common::error::code::tx::ok) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::code::tx::ok) << "state: " << message.state;
          }
       }
 
@@ -974,7 +974,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::ok;
+               reply.state = common::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -997,7 +997,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::ok;
+               reply.state = common::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -1014,7 +1014,7 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == common::error::code::xa::ok) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::code::xa::ok) << "state: " << message.state;
          }
       }
 
@@ -1067,7 +1067,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::resource_error;
+               reply.state = common::code::xa::resource_error;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -1090,7 +1090,7 @@ resources:
 
                auto reply = common::message::reverse::type( message);
                reply.resource = message.resource;
-               reply.state = common::error::code::xa::ok;
+               reply.state = common::code::xa::ok;
                reply.trid = message.trid;
 
                local::send::tm( reply);
@@ -1107,7 +1107,7 @@ resources:
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << "message: " << message;
-            EXPECT_TRUE( message.state == common::error::code::xa::rollback_other) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::code::xa::rollback_other) << "state: " << message.state;
          }
       }
 

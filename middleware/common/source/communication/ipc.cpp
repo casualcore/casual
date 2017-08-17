@@ -53,9 +53,9 @@ namespace casual
 
                   if( result == -1)
                   {
-                     switch( common::error::code::last::system::error())
+                     switch( common::code::last::system::error())
                      {
-                        using sys = common::error::code::system;
+                        using sys = common::code::system;
 
                         case sys::resource_unavailable_try_again:
                         {
@@ -107,9 +107,9 @@ namespace casual
 
                   if( result == -1)
                   {
-                     switch( common::error::code::last::system::error())
+                     switch( common::code::last::system::error())
                      {
-                        using sys = common::error::code::system;
+                        using sys = common::code::system;
 
                         case sys::interrupted:
                         {
@@ -130,7 +130,7 @@ namespace casual
                         }
                         default:
                         {
-                           log << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: "<< flags << " - " << common::error::code::last::system::error();
+                           log << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: "<< flags << " - " << common::code::last::system::error();
                            exception::system::throw_from_errno( string::compose(  "ipc: ", id));
                         }
                      }
@@ -585,7 +585,7 @@ namespace casual
                   }
                   else
                   {
-                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::code::last::system::error() << "\n";
+                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::code::last::system::error() << "\n";
                   }
                }
                return false;

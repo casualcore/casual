@@ -175,7 +175,7 @@ namespace casual
                      {
                         common::message::service::call::Reply reply;
                         reply.correlation = message.correlation;
-                        reply.status = common::error::code::xatmi::service_error;
+                        reply.status = common::code::xatmi::service_error;
                         common::communication::ipc::inbound::device().push( reply);
                      }
                   };

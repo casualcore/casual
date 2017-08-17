@@ -85,17 +85,17 @@ namespace casual
                   namespace
                   {
                      // using limit as a "success"
-                     constexpr auto success = error::code::xatmi::limit;
+                     constexpr auto success = code::xatmi::limit;
 
                      auto reply_error( const std::string& service)
                      {
-                        if( range::search( service, std::string{ "TPEOS"})) { return error::code::xatmi::os;}
-                        if( range::search( service, std::string{ "TPEPROTO"})) { return error::code::xatmi::protocol;}
-                        if( range::search( service, std::string{ "TPESVCERR"})) { return error::code::xatmi::service_error;}
-                        if( range::search( service, std::string{ "TPESVCFAIL"})) { return error::code::xatmi::service_fail;}
-                        if( range::search( service, std::string{ "TPESYSTEM"})) { return error::code::xatmi::system;}
+                        if( range::search( service, std::string{ "TPEOS"})) { return code::xatmi::os;}
+                        if( range::search( service, std::string{ "TPEPROTO"})) { return code::xatmi::protocol;}
+                        if( range::search( service, std::string{ "TPESVCERR"})) { return code::xatmi::service_error;}
+                        if( range::search( service, std::string{ "TPESVCFAIL"})) { return code::xatmi::service_fail;}
+                        if( range::search( service, std::string{ "TPESYSTEM"})) { return code::xatmi::system;}
                         if( range::search( service, std::string{ "SUCCESS"})) { return success;}
-                        return error::code::xatmi::ok;
+                        return code::xatmi::ok;
                      }
 
                   } // <unnamed>
@@ -142,12 +142,12 @@ namespace casual
                            common::message::conversation::Route route;
                         };
 
-                        flag::service::conversation::Events event_from_error( error::code::xatmi error)
+                        flag::service::conversation::Events event_from_error( code::xatmi error)
                         {
                            switch( error)
                            {
                               case service::local::success: return flag::service::conversation::Event::service_success;
-                              case error::code::xatmi::service_fail: return flag::service::conversation::Event::service_fail;
+                              case code::xatmi::service_fail: return flag::service::conversation::Event::service_fail;
                               default: return flag::service::conversation::Event::service_error;
                            }
                         }
@@ -188,7 +188,7 @@ namespace casual
                               message.process = state->process;
                               message.route = request.recording;
 
-                              if( error != error::code::xatmi::ok)
+                              if( error != code::xatmi::ok)
                               {
                                  message.events = local::event_from_error( error);
                               }
@@ -203,7 +203,7 @@ namespace casual
 
                               ipc::eventually::send( node.address, message);
                            }
-                           else if( error != error::code::xatmi::ok)
+                           else if( error != code::xatmi::ok)
                            {
                               message::conversation::Disconnect message;
                               message.correlation = request.correlation;
@@ -672,7 +672,7 @@ namespace casual
 
                         reply.correlation = message.correlation;
                         reply.process = m_replier.process();
-                        reply.state = error::code::tx::ok;
+                        reply.state = code::tx::ok;
                         reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
                         reply.trid = message.trid;
 
@@ -690,7 +690,7 @@ namespace casual
 
                         reply.correlation = message.correlation;
                         reply.process = m_replier.process();
-                        reply.state = error::code::tx::ok;;
+                        reply.state = code::tx::ok;;
                         reply.trid = message.trid;
 
                         ipc::eventually::send( message.process.queue, reply);

@@ -38,7 +38,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
 
    if( service == nullptr)
    {
-      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::argument);
+      casual::xatmi::internal::error::set( casual::common::code::xatmi::argument);
       return -1;
    }
 
@@ -69,7 +69,7 @@ int tpcall( const char* const service, char* idata, const long ilen, char** odat
    }
    catch( casual::common::service::call::Fail& fail)
    {
-      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::service_fail);
+      casual::xatmi::internal::error::set( casual::common::code::xatmi::service_fail);
       casual::xatmi::internal::user::code::set( fail.result.user);
 
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
@@ -88,7 +88,7 @@ int tpacall( const char* const service, char* idata, const long ilen, const long
 
    if( service == nullptr)
    {
-      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::argument);
+      casual::xatmi::internal::error::set( casual::common::code::xatmi::argument);
       return -1;
    }
 
@@ -145,7 +145,7 @@ int tpgetrply( int *const descriptor, char** odata, long* olen, const long bitma
    }
    catch( casual::common::service::call::Fail& fail)
    {
-      casual::xatmi::internal::error::set( casual::common::error::code::xatmi::service_fail);
+      casual::xatmi::internal::error::set( casual::common::code::xatmi::service_fail);
       casual::xatmi::internal::user::code::set( fail.result.user);
 
       *descriptor = fail.result.descriptor;

@@ -15,7 +15,7 @@ extern "C"
       try
       {
          casual::common::transaction::context().resource_registration( rmid, xid);
-         return casual::common::cast::underlying( casual::common::error::code::ax::ok);
+         return casual::common::cast::underlying( casual::common::code::ax::ok);
       }
       catch( ...)
       {
@@ -28,7 +28,7 @@ extern "C"
       try
       {
          casual::common::transaction::context().resource_unregistration( rmid);
-         return casual::common::cast::underlying( casual::common::error::code::ax::ok);
+         return casual::common::cast::underlying( casual::common::code::ax::ok);
       }
       catch( ...)
       {

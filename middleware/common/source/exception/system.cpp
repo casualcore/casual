@@ -18,11 +18,11 @@ namespace casual
                namespace
                {
                   template< typename... Args>
-                  void throw_from_code( error::code::system code, Args&&... args)
+                  void throw_from_code( code::system code, Args&&... args)
                   {
-                     switch( error::code::last::system::error())
+                     switch( code::last::system::error())
                      {
-                        using sys = error::code::system;
+                        using sys = code::system;
 
                         case sys::invalid_argument: throw system::invalid::Argument( std::forward< Args>( args)...);
                         case sys::no_such_file_or_directory: throw system::invalid::File( std::forward< Args>( args)...);
@@ -54,7 +54,7 @@ namespace casual
                   template< typename... Args>
                   void throw_from_errno( Args&&... args)
                   {
-                     throw_from_code( error::code::last::system::error(), std::forward< Args>( args)...);
+                     throw_from_code( code::last::system::error(), std::forward< Args>( args)...);
                   }
                } // <unnamed>
             } // local
@@ -75,7 +75,7 @@ namespace casual
 
             void throw_from_code( int code)
             {
-               local::throw_from_code( static_cast< error::code::system>( code));
+               local::throw_from_code( static_cast< code::system>( code));
             }
             
          } // system 

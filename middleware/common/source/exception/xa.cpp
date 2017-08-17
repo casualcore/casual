@@ -28,7 +28,7 @@ namespace casual
                //
                catch( const exception& exception)
                {
-                  error::code::stream( exception.type()) << exception << std::endl;
+                  code::stream( exception.type()) << exception << std::endl;
                   return exception.code().value();
                }
 
@@ -45,7 +45,7 @@ namespace casual
                   log::category::error << " - unexpected exception" << std::endl;
                }
 
-               return static_cast< int>( error::code::ax::error);
+               return static_cast< int>( code::ax::error);
             }
          } // xa
 
@@ -64,7 +64,7 @@ namespace casual
                //
                catch( const exception& exception)
                {
-                  error::code::stream( exception.type()) << exception << std::endl;
+                  code::stream( exception.type()) << exception << std::endl;
                   return exception.code().value();
                }
 
@@ -81,7 +81,7 @@ namespace casual
                   log::category::error << " - unexpected exception" << std::endl;
                }
 
-               return static_cast< int>( error::code::xa::resource_fail);
+               return static_cast< int>( code::xa::resource_fail);
             }
          } // xa
       } // exception

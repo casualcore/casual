@@ -5,7 +5,7 @@
 #ifndef CASUAL_COMMON_EXCEPTION_TX_H_
 #define CASUAL_COMMON_EXCEPTION_TX_H_
 
-#include "common/error/code/tx.h"
+#include "common/code/tx.h"
 #include "common/exception/common.h"
 
 namespace casual
@@ -17,27 +17,27 @@ namespace casual
          namespace tx 
          {
 
-            using exception = common::exception::base_error< error::code::tx>;
+            using exception = common::exception::base_error< code::tx>;
 
-            template< error::code::tx error>
+            template< code::tx error>
             using base = common::exception::basic_error< exception, error>;
             
 
-            using Fail = base< error::code::tx::fail>;
+            using Fail = base< code::tx::fail>;
 
-            using Error =  base< error::code::tx::error>;
+            using Error =  base< code::tx::error>;
 
-            using Protocol =  base< error::code::tx::protocol>;
+            using Protocol =  base< code::tx::protocol>;
 
-            using Argument =  base< error::code::tx::argument>;
+            using Argument =  base< code::tx::argument>;
 
-            using Outside =  base< error::code::tx::outside>;
+            using Outside =  base< code::tx::outside>;
 
             namespace no
             {
-               using Begin = base< error::code::tx::no_begin>;
+               using Begin = base< code::tx::no_begin>;
 
-               using Support = base< error::code::tx::not_supported>;
+               using Support = base< code::tx::not_supported>;
             } // no
          } // tx 
       } // exception 

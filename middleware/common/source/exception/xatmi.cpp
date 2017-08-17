@@ -17,7 +17,7 @@ namespace casual
       {
          namespace xatmi
          {
-            error::code::xatmi handle()
+            code::xatmi handle()
             {
                try
                {
@@ -29,13 +29,13 @@ namespace casual
                //
                catch( const exception& exception)
                {
-                  error::code::stream( exception.type()) << exception << std::endl;
+                  code::stream( exception.type()) << exception << std::endl;
                   return exception.type();
                }
                catch ( const common::exception::system::invalid::Argument& exception)
                {
-                  error::code::stream( exception.type()) << exception << std::endl;
-                  return error::code::xatmi::argument;
+                  code::stream( exception.type()) << exception << std::endl;
+                  return code::xatmi::argument;
                }
                catch( const std::system_error& exception)
                {
@@ -50,7 +50,7 @@ namespace casual
                   log::category::error << " - unexpected exception" << std::endl;
                }
 
-               return error::code::xatmi::system;
+               return code::xatmi::system;
             }
          } // xatmi
 

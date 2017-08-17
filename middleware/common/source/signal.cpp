@@ -47,10 +47,10 @@ namespace casual
                      switch( errno)
                      {
                         case ESRCH:
-                           log::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << error::code::last::system::error() << '\n';
+                           log::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << code::last::system::error() << '\n';
                            break;
                         default:
-                           log::category::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << error::code::last::system::error() << '\n';
+                           log::category::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << code::last::system::error() << '\n';
                            break;
                      }
                      return false;
@@ -219,7 +219,7 @@ namespace casual
 
                               if( sigaction( cast::underlying( Signal), &sa, nullptr) == -1)
                               {
-                                 std::cerr << "failed to register handle for signal: " << Signal << " - "  << error::code::last::system::error() << '\n';
+                                 std::cerr << "failed to register handle for signal: " << Signal << " - "  << code::last::system::error() << '\n';
 
                                  exception::system::throw_from_errno();
                               }
@@ -636,7 +636,7 @@ namespace casual
 	       {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
                   {
-                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - error: " << error::code::last::system::error() << '\n';
+                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - error: " << code::last::system::error() << '\n';
                   } 
                }
                else

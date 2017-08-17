@@ -9,7 +9,7 @@
 #include "tx.h"
 
 #include "common/platform.h"
-#include "common/error/code/xa.h"
+#include "common/code/xa.h"
 #include "common/flag/xa.h"
 
 #include <string>
@@ -27,7 +27,7 @@ namespace casual
          {
 
             using id_type = common::platform::resource::id::type;
-            using code = error::code::xa;
+            using code = code::xa;
             using Flag = flag::xa::Flag;
             using Flags = flag::xa::Flags;
 

@@ -339,7 +339,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::category::error << "failed to create " << path << " - " << error::code::last::system::error() << std::endl;
+               log::category::error << "failed to create " << path << " - " << code::last::system::error() << std::endl;
                return false;
             }
 
@@ -350,7 +350,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::category::error << "failed to remove " << path << " - " << error::code::last::system::error() << std::endl;
+               log::category::error << "failed to remove " << path << " - " << code::last::system::error() << std::endl;
                return false;
             }
             return true;

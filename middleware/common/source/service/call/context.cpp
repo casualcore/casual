@@ -345,9 +345,9 @@ namespace casual
                //
                switch( reply.status)
                {
-                  case error::code::xatmi::ok: 
+                  case code::xatmi::ok:
                      break;
-                  case error::code::xatmi::service_fail:
+                  case code::xatmi::service_fail:
                   {
                      call::Fail exception;
                      exception.result = std::move( result);

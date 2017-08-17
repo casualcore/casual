@@ -30,7 +30,7 @@ namespace casual
                {
                   try
                   {
-                     if( tx_begin() != common::cast::underlying( common::error::code::tx::ok))
+                     if( tx_begin() != common::cast::underlying( common::code::tx::ok))
                      {
                         return false;
                      }

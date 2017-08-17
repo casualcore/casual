@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 
-#include "common/error/code/xatmi.h"
+#include "common/code/xatmi.h"
 #include "common/exception/xatmi.h"
 #include "common/exception/handle.h"
 
@@ -44,11 +44,11 @@ namespace casual
 
 
 
-   template< typename E, common::error::code::xatmi code>
+   template< typename E, common::code::xatmi code>
    struct holder
    {
       typedef E exception_type;
-      static common::error::code::xatmi getCode() { return code;}
+      static common::code::xatmi getCode() { return code;}
    };
 
    template <typename H>
@@ -61,22 +61,22 @@ namespace casual
 
 
    typedef ::testing::Types<
-         holder< common::exception::xatmi::no::Message, common::error::code::xatmi::no_message>,
-         holder< common::exception::xatmi::Limit, common::error::code::xatmi::limit>,
-         holder< common::exception::xatmi::invalid::Argument, common::error::code::xatmi::argument>,
-         holder< common::exception::xatmi::os::Error, common::error::code::xatmi::os>,
-         holder< common::exception::xatmi::Protocoll, common::error::code::xatmi::protocol>,
-         holder< common::exception::xatmi::invalid::Descriptor, common::error::code::xatmi::descriptor>,
-         holder< common::exception::xatmi::service::Error, common::error::code::xatmi::service_error>,
-         holder< common::exception::xatmi::service::Fail, common::error::code::xatmi::service_fail>,
-         holder< common::exception::xatmi::service::no::Entry, common::error::code::xatmi::no_entry>,
-         holder< common::exception::xatmi::service::Advertised, common::error::code::xatmi::service_advertised>,
-         holder< common::exception::xatmi::System, common::error::code::xatmi::system>,
-         holder< common::exception::xatmi::Timeout, common::error::code::xatmi::timeout>,
-         holder< common::exception::xatmi::transaction::Support, common::error::code::xatmi::transaction>,
-         holder< common::exception::xatmi::Signal, common::error::code::xatmi::signal>,
-         holder< common::exception::xatmi::buffer::type::Input, common::error::code::xatmi::buffer_input>,
-         holder< common::exception::xatmi::buffer::type::Output, common::error::code::xatmi::buffer_output>
+         holder< common::exception::xatmi::no::Message, common::code::xatmi::no_message>,
+         holder< common::exception::xatmi::Limit, common::code::xatmi::limit>,
+         holder< common::exception::xatmi::invalid::Argument, common::code::xatmi::argument>,
+         holder< common::exception::xatmi::os::Error, common::code::xatmi::os>,
+         holder< common::exception::xatmi::Protocoll, common::code::xatmi::protocol>,
+         holder< common::exception::xatmi::invalid::Descriptor, common::code::xatmi::descriptor>,
+         holder< common::exception::xatmi::service::Error, common::code::xatmi::service_error>,
+         holder< common::exception::xatmi::service::Fail, common::code::xatmi::service_fail>,
+         holder< common::exception::xatmi::service::no::Entry, common::code::xatmi::no_entry>,
+         holder< common::exception::xatmi::service::Advertised, common::code::xatmi::service_advertised>,
+         holder< common::exception::xatmi::System, common::code::xatmi::system>,
+         holder< common::exception::xatmi::Timeout, common::code::xatmi::timeout>,
+         holder< common::exception::xatmi::transaction::Support, common::code::xatmi::transaction>,
+         holder< common::exception::xatmi::Signal, common::code::xatmi::signal>,
+         holder< common::exception::xatmi::buffer::type::Input, common::code::xatmi::buffer_input>,
+         holder< common::exception::xatmi::buffer::type::Output, common::code::xatmi::buffer_output>
     > xatmi_exceptions;
 
    TYPED_TEST_CASE(casual_common_error_xatmi, xatmi_exceptions);
@@ -160,10 +160,10 @@ namespace casual
    {
       TEST( casual_common_error_xatmi, error_code)
       {
-         std::error_code code = error::code::xatmi::no_entry;
+         std::error_code code = code::xatmi::no_entry;
 
          EXPECT_TRUE( code) << "code: " << code.message();
-         EXPECT_TRUE( code.value() == static_cast< int>( error::code::xatmi::no_entry)) << "code: " << code;
+         EXPECT_TRUE( code.value() == static_cast< int>( code::xatmi::no_entry)) << "code: " << code;
 
       }
 
@@ -176,7 +176,7 @@ namespace casual
          catch( const exception::xatmi::service::no::Entry& e)
          {
             EXPECT_TRUE( e.code()) << "code: " << e.code().message();
-            EXPECT_TRUE( e.code().value() == static_cast< int>( error::code::xatmi::no_entry));
+            EXPECT_TRUE( e.code().value() == static_cast< int>( code::xatmi::no_entry));
          }
       }
    } // common

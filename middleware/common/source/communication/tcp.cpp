@@ -36,9 +36,9 @@ namespace casual
 
                      namespace check
                      {
-                        void error( common::error::code::system last_error)
+                        void error( common::code::system last_error)
                         {
-                           using system = common::error::code::system;
+                           using system = common::code::system;
                            switch( last_error)
                            {
                               case system::interrupted:
@@ -62,7 +62,7 @@ namespace casual
                         {
                            if( result == -1)
                            {
-                              check::error( common::error::code::last::system::error());
+                              check::error( common::code::last::system::error());
                            }
                            return result;
                         }
@@ -138,9 +138,9 @@ namespace casual
                         }
 
 
-                        switch( common::error::code::last::system::error())
+                        switch( common::code::last::system::error())
                         {
-                           case common::error::code::system::connection_refused:
+                           case common::code::system::connection_refused:
                               throw exception::system::communication::Refused( string::compose( address));
                            default:
                            {

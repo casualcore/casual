@@ -32,15 +32,15 @@ namespace casual
             ~Base() = default;
          };
 
-         using Validation =  common::exception::casual::base< common::error::code::casual::validation>;
+         using Validation =  common::exception::casual::base< common::code::casual::validation>;
 
          namespace archive
          {
             namespace invalid
             {
-               using Document = common::exception::casual::base< common::error::code::casual::invalid_document>;
+               using Document = common::exception::casual::base< common::code::casual::invalid_document>;
 
-               using Node = common::exception::casual::base< common::error::code::casual::invalid_node>;
+               using Node = common::exception::casual::base< common::code::casual::invalid_node>;
 
             } // invalid
          } // archive

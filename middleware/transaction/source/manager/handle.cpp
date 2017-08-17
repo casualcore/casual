@@ -11,7 +11,7 @@
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 #include "common/server/handle/call.h"
-#include "common/error/code/convert.h"
+#include "common/code/convert.h"
 
 
 namespace casual
@@ -182,7 +182,7 @@ namespace casual
                   void read_only( State& state, R&& message)
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = common::error::code::xa::read_only;
+                     reply.state = common::code::xa::read_only;
                      reply.resource = message.resource;
 
                      send::reply( state, std::move( reply), message.process);
@@ -381,7 +381,7 @@ namespace casual
 
                         switch( result)
                         {
-                           using xa = common::error::code::xa;
+                           using xa = common::code::xa;
 
                            case xa::read_only:
                            {
@@ -400,8 +400,8 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::commit;
-                                 //reply.state = common::error::code::tx::read_only;
-                                 reply.state = common::error::code::tx::ok;
+                                 //reply.state = common::code::tx::read_only;
+                                 reply.state = common::code::tx::ok;
 
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -427,7 +427,7 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::prepare;
-                                 reply.state = common::error::code::tx::ok;
+                                 reply.state = common::code::tx::ok;
 
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -487,7 +487,7 @@ namespace casual
 
                         switch( result)
                         {
-                           using xa = common::error::code::xa;
+                           using xa = common::code::xa;
                            
                            case xa::ok:
                            {
@@ -496,7 +496,7 @@ namespace casual
                               auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.stage = reply_type::Stage::commit;
-                              reply.state = common::error::code::tx::ok;
+                              reply.state = common::code::tx::ok;
 
                               if( transaction.resources.size() <= 1)
                               {
@@ -537,7 +537,7 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::commit;
-                                 reply.state = common::error::code::convert::to::tx( result);
+                                 reply.state = common::code::convert::to::tx( result);
 
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -561,7 +561,7 @@ namespace casual
 
                         switch( result)
                         {
-                           using xa = common::error::code::xa;
+                           using xa = common::code::xa;
 
                            case xa::ok:
                            case xa::invalid_xid:
@@ -575,7 +575,7 @@ namespace casual
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
-                                 reply.state = common::error::code::tx::ok;
+                                 reply.state = common::code::tx::ok;
 
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -602,7 +602,7 @@ namespace casual
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
-                                 reply.state = common::error::code::convert::to::tx( result);
+                                 reply.state = common::code::convert::to::tx( result);
 
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -734,7 +734,7 @@ namespace casual
 
                                  switch( result)
                                  {
-                                    using xa = common::error::code::xa;
+                                    using xa = common::code::xa;
 
                                     case xa::read_only:
                                     {
@@ -824,7 +824,7 @@ namespace casual
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
                                     reply.resource = transaction.resource;
-                                    reply.state = common::error::code::xa::rollback_other;
+                                    reply.state = common::code::xa::rollback_other;
 
                                     local::send::reply( state, std::move( reply), transaction.trid.owner());
                                  }
@@ -1020,7 +1020,7 @@ namespace casual
                   {
                      auto& instance = m_state.get_instance( message.resource, message.process.pid);
 
-                     if( message.state == common::error::code::xa::ok)
+                     if( message.state == common::code::xa::ok)
                      {
                         instance.process = std::move( message.process);
 
@@ -1150,7 +1150,7 @@ namespace casual
             }
             catch( ...)
             {
-               auto fail = common::error::code::tx::fail;
+               auto fail = common::code::tx::fail;
                common::log::category::error << "unexpected error - action: send reply " << std::error_code( fail) << '\n';
 
                common::exception::handle();
@@ -1188,7 +1188,7 @@ namespace casual
                }
                default:
                {
-                  throw user::error{ common::error::code::tx::protocol, common::string::compose( "Attempt to commit transaction, which is not in a state for commit - trid: ",message.trid)};
+                  throw user::error{ common::code::tx::protocol, common::string::compose( "Attempt to commit transaction, which is not in a state for commit - trid: ",message.trid)};
                }
             }
 
@@ -1219,8 +1219,8 @@ namespace casual
                   //
                   {
                      auto reply = local::transform::reply( message);
-                     //reply.state = common::error::code::xa::read_only;
-                     reply.state = common::error::code::tx::ok;
+                     //reply.state = common::code::xa::read_only;
+                     reply.state = common::code::tx::ok;
                      reply.stage = reply_type::Stage::commit;
 
                      local::send::reply( m_state, std::move( reply), message.process);
@@ -1310,7 +1310,7 @@ namespace casual
                //
                {
                   auto reply = local::transform::reply( message);
-                  reply.state = common::error::code::tx::ok;
+                  reply.state = common::code::tx::ok;
 
                   local::send::reply( m_state, std::move( reply), message.process);
                }
@@ -1502,7 +1502,7 @@ namespace casual
                   if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = common::error::code::xa::protocol;
+                     reply.state = common::code::xa::protocol;
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
@@ -1545,7 +1545,7 @@ namespace casual
                   if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = common::error::code::xa::protocol;
+                     reply.state = common::code::xa::protocol;
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);

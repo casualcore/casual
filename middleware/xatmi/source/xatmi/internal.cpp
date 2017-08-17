@@ -18,24 +18,24 @@ namespace casual
             {
                namespace
                {
-                  common::error::code::xatmi value = common::error::code::xatmi::ok;
+                  common::code::xatmi value = common::code::xatmi::ok;
 
                } // <unnamed>
             } // local
 
-            void set( common::error::code::xatmi value)
+            void set( common::code::xatmi value)
             {
                local::value = value;
             }
 
-            common::error::code::xatmi get()
+            common::code::xatmi get()
             {
                return local::value;
             }
 
             void clear()
             {
-               local::value = common::error::code::xatmi::ok;
+               local::value = common::code::xatmi::ok;
             }
          } // error
 
@@ -65,7 +65,7 @@ namespace casual
 
          void clear()
          {
-            error::local::value = common::error::code::xatmi::ok;
+            error::local::value = common::code::xatmi::ok;
             user::code::local::value = 0;
          }
 

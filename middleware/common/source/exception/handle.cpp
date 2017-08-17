@@ -35,7 +35,7 @@ namespace casual
                   }
                   else 
                   {
-                     error::code::stream( exception.type()) << exception << std::endl;
+                     code::stream( exception.type()) << exception << std::endl;
                   }
                   return exception.code().value();
                }

@@ -109,7 +109,7 @@ namespace casual
                   };
 
                   auto format_state = []( const vo::Transaction& value){
-                     return common::string::compose( static_cast< common::error::code::xa>( value.state));
+                     return common::string::compose( static_cast< common::code::xa>( value.state));
                   };
 
                   struct format_resources

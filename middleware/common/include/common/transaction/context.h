@@ -15,7 +15,7 @@
 #include "common/message/transaction.h"
 #include "common/message/service.h"
 
-#include "common/error/code/tx.h"
+#include "common/code/tx.h"
 #include "common/flag/xa.h"
 
 
@@ -42,9 +42,9 @@ namespace casual
             void open();
             void close();
 
-            error::code::tx begin();
-            error::code::tx commit();
-            error::code::tx rollback();
+            code::tx begin();
+            code::tx commit();
+            code::tx rollback();
 
 
 
@@ -176,15 +176,15 @@ namespace casual
             Context();
 
 
-            error::code::tx commit( const Transaction& transaction);
-            error::code::tx rollback( const Transaction& transaction);
+            code::tx commit( const Transaction& transaction);
+            code::tx rollback( const Transaction& transaction);
 
 
             void resources_start( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
             void resources_end( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
-            error::code::tx resource_commit( platform::resource::id::type rm, const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
+            code::tx resource_commit( platform::resource::id::type rm, const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
 
-            error::code::tx pop_transaction();
+            code::tx pop_transaction();
 
 
          };

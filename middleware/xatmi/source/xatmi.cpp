@@ -156,7 +156,7 @@ int tpunadvertise( const char* const service)
 
 const char* tperrnostring( int error)
 {
-   return casual::common::error::code::message( static_cast< casual::common::error::code::xatmi>( error));
+   return casual::common::code::message( static_cast< casual::common::code::xatmi>( error));
 }
 
 int tpsvrinit( int argc, char **argv)

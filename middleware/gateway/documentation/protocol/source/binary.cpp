@@ -119,7 +119,7 @@ namespace casual
                      common::message::service::call::Reply message;
                      set_general( message);
 
-                     message.status = common::error::code::xatmi::service_fail;
+                     message.status = common::code::xatmi::service_fail;
                      message.code = 42;
                      message.transaction.trid = trid();
                      message.transaction.state = common::message::service::Transaction::State::active;
@@ -142,7 +142,7 @@ namespace casual
                         set_general( message);
                         message.trid = trid();
                         message.resource = 42;
-                        message.state = common::error::code::xa::ok;
+                        message.state = common::code::xa::ok;
                      };
 
                      {

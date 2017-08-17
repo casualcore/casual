@@ -369,9 +369,9 @@ namespace casual
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
-               switch( error::code::last::system::error())
+               switch( code::last::system::error())
                {
-                  case error::code::system::interrupted:
+                  case code::system::interrupted:
                   {
                      signal::handle();
                      break;
@@ -699,14 +699,14 @@ namespace casual
 
                      if( result == -1)
                      {
-                        switch( error::code::last::system::error())
+                        switch( code::last::system::error())
                         {
-                           case error::code::system::no_child_process:
+                           case code::system::no_child_process:
                            {
                               // no child
                               break;
                            }
-                           case error::code::system::interrupted:
+                           case code::system::interrupted:
                            {
                               handle_signal();
 
@@ -717,7 +717,7 @@ namespace casual
                            }
                            default:
                            {
-                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << error::code::last::system::error() << '\n';
+                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << code::last::system::error() << '\n';
                               exception::system::throw_from_errno();
                            }
                         }

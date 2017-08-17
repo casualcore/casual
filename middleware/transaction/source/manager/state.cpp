@@ -263,11 +263,11 @@ namespace casual
 
       } // state
 
-      Transaction::Resource::Result Transaction::Resource::convert( common::error::code::xa value)
+      Transaction::Resource::Result Transaction::Resource::convert( common::code::xa value)
       {
          switch( value)
          {
-            using xa = common::error::code::xa;
+            using xa = common::code::xa;
 
             case xa::heuristic_hazard: return Result::xa_HEURHAZ; break;
             case xa::heuristic_mix: return Result::xa_HEURMIX; break;
@@ -297,9 +297,9 @@ namespace casual
          return Result::xaer_RMFAIL;
       }
 
-      common::error::code::xa Transaction::Resource::convert( Result value)
+      common::code::xa Transaction::Resource::convert( Result value)
       {
-         using xa = common::error::code::xa;
+         using xa = common::code::xa;
          
          switch( value)
          {
@@ -331,7 +331,7 @@ namespace casual
          return xa::resource_fail;
       }
 
-      void Transaction::Resource::set_result( common::error::code::xa value)
+      void Transaction::Resource::set_result( common::code::xa value)
       {
          result = convert( value);
       }
@@ -360,7 +360,7 @@ namespace casual
          return result;
       }
 
-      common::error::code::xa Transaction::results() const
+      common::code::xa Transaction::results() const
       {
          auto result = Resource::Result::xa_RDONLY;
 

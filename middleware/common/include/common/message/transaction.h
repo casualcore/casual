@@ -2,12 +2,12 @@
 //! casual
 //!
 
-#ifndef TRANSACTION_H_
-#define TRANSACTION_H_
+#ifndef COMMON_MESSAGE_TRANSACTION_H_
+#define COMMON_MESSAGE_TRANSACTION_H_
 
 #include "common/message/type.h"
-#include "common/error/code/xa.h"
-#include "common/error/code/tx.h"
+#include "common/code/xa.h"
+#include "common/code/tx.h"
 #include "common/flag/xa.h"
 
 
@@ -78,7 +78,7 @@ namespace casual
                };
                static_assert( traits::is_movable< Request>::value, "not movable");
 
-               using base_reply = basic_reply< error::code::tx, Type::transaction_commit_reply>;
+               using base_reply = basic_reply< code::tx, Type::transaction_commit_reply>;
                struct Reply : base_reply
                {
                   enum class Stage : char
@@ -122,7 +122,7 @@ namespace casual
                static_assert( traits::is_movable< Request>::value, "not movable");
 
 
-               using base_reply = basic_reply< error::code::tx, Type::transaction_rollback_reply>;
+               using base_reply = basic_reply< code::tx, Type::transaction_rollback_reply>;
 
                struct Reply : base_reply
                {
@@ -204,9 +204,9 @@ namespace casual
                } // lookup
 
                template< message::Type type>
-               struct basic_reply : transaction::basic_reply< error::code::xa, type>
+               struct basic_reply : transaction::basic_reply< code::xa, type>
                {
-                  using base_type = transaction::basic_reply< error::code::xa, type>;
+                  using base_type = transaction::basic_reply< code::xa, type>;
                   id::type resource = 0;
                   Statistics statistics;
 
@@ -278,7 +278,7 @@ namespace casual
                   {
                      common::process::Handle process;
                      id::type resource = 0;
-                     error::code::xa state = error::code::xa::ok;
+                     code::xa state = code::xa::ok;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

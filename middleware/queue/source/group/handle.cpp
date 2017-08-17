@@ -349,7 +349,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = common::error::code::xa::ok;
+                     reply.state = common::code::xa::ok;
 
                      try
                      {
@@ -364,7 +364,7 @@ namespace casual
                      catch( ...)
                      {
                         common::exception::handle();
-                        reply.state = common::error::code::xa::resource_fail;
+                        reply.state = common::code::xa::resource_fail;
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});
@@ -382,7 +382,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = common::error::code::xa::ok;
+                     reply.state = common::code::xa::ok;
 
                      local::ipc::blocking::send( common::communication::ipc::transaction::manager::device(), reply);
                   }
@@ -400,7 +400,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.resource = message.resource;
                      reply.trid = message.trid;
-                     reply.state = common::error::code::xa::ok;
+                     reply.state = common::code::xa::ok;
 
                      try
                      {
@@ -415,7 +415,7 @@ namespace casual
                      catch( ...)
                      {
                         common::exception::handle();
-                        reply.state = common::error::code::xa::resource_fail;
+                        reply.state = common::code::xa::resource_fail;
                      }
 
                      m_state.persist( std::move( reply), { message.process.queue});
