@@ -22,7 +22,7 @@ objectfiles = [
     
 ]
 
-binary_name = 'bin/casual-cobol-binding'
+binary_name = 'bin/casual-cobol-xatmi'
 
 lib_xatmi_so = LinkLibrary( binary_name,
      objectfiles,
@@ -34,8 +34,7 @@ install_lib.append( lib_xatmi_so)
 
 lib_xatmi_a = LinkArchive( binary_name, objectfiles)
 
-install_lib.append( lib_xatmi_so)
+install_lib.append( lib_xatmi_a)
 
 
-
-
+Install( install_lib, '$(CASUAL_HOME)/lib')
