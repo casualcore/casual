@@ -202,9 +202,6 @@ int main( int argc, char **argv)
       parser.parse( argc, argv);
 
    }
-   catch( const casual::common::argument::exception::Help&)
-   {   
-   }
    catch( ...)
    {
       return casual::common::exception::handle( std::cerr);

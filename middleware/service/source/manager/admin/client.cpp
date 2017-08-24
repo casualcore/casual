@@ -662,14 +662,9 @@ namespace casual
             {
                parser.parse( argc, argv);
             }
-            catch( const common::argument::exception::Help&)
+            catch( ...)
             {
-               
-            }
-            catch( const std::exception& exception)
-            {
-               std::cerr << "error: ";
-               common::exception::handle( std::cerr);
+               return casual::common::exception::handle( std::cerr);
             }
             return 0;
          }

@@ -341,14 +341,9 @@ int main( int argc, char **argv)
       //std::cerr << exception.what() << std::endl;
       return 10;
    }
-   catch( const casual::common::argument::exception::Help&)
+   catch( ...)
    {
-      
-   }
-   catch( const std::exception& exception)
-   {
-      std::cerr << "exception: " << exception.what() << std::endl;
-      return 20;
+      return casual::common::exception::handle( std::cerr);
    }
 
 
