@@ -122,7 +122,7 @@ namespace casual
             transaction_rollback_reply,
             transaction_generic_reply,
 
-            transaction_resurce_connect_reply = TRANSACTION_BASE + 200,
+            transaction_resource_connect_reply = TRANSACTION_BASE + 200,
             transaction_resource_prepare_request,
             transaction_resource_prepare_reply,
             transaction_resource_commit_request,
@@ -178,34 +178,14 @@ namespace casual
             gateway_worker_disconnect,
             gateway_ipc_connect_request,
             gateway_ipc_connect_reply,
-            gateway_domain_discover_request,
+            gateway_domain_connect_request = GATEWAY_BASE + 200,
+            gateway_domain_connect_reply,
+            gateway_domain_discover_request = GATEWAY_BASE + 300,
             gateway_domain_discover_reply,
             gateway_domain_discover_accumulated_reply,
             gateway_domain_discover_internal_coordination,
             gateway_domain_advertise,
             gateway_domain_id,
-
-            // Innterdomain messages, part of gateway
-            INTERDOMAIN_BASE = 8000,
-            interdomain_domain_discover_request,
-            interdomain_domain_discover_reply,
-            interdomain_service_call = INTERDOMAIN_BASE + 100,
-            interdomain_service_reply,
-            interdomain_conversation_connect_request = INTERDOMAIN_BASE + 200,
-            interdomain_conversation_connect_reply,
-            interdomain_conversation_send,
-            interdomain_conversation_disconnect,
-            interdomain_transaction_resource_prepare_request = INTERDOMAIN_BASE + 300,
-            interdomain_transaction_resource_prepare_reply,
-            interdomain_transaction_resource_commit_request,
-            interdomain_transaction_resource_commit_reply,
-            interdomain_transaction_resource_rollback_request,
-            interdomain_transaction_resource_rollback_reply,
-            interdomain_queue_enqueue_request = INTERDOMAIN_BASE + 400,
-            interdomain_queue_enqueue_reply,
-            interdomain_queue_dequeue_request,
-            interdomain_queue_dequeue_reply,
-
 
 
 

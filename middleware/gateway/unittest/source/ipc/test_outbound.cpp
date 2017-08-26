@@ -96,8 +96,29 @@ namespace casual
                      //
                      // Act as the local gateway
                      //
+
+
+                     //
+                     // connect the remote domain
+                     //
                      {
-                        Trace trace{ "local - wait for connect from outbound to local domain"};
+                        Trace trace{ "remote - wait for connect from outbound to 'local' inbound"};
+
+                        common::message::gateway::domain::connect::Request request;
+                        communication::ipc::blocking::receive( remote.output(), request);
+
+                        log::debug << "request: " << request << '\n';
+
+                        auto reply = common::message::reverse::type( request);
+                        reply.version = common::message::gateway::domain::protocol::Version::version_1;
+
+
+                        communication::ipc::blocking::send(
+                              external.queue, reply);
+                     }
+
+                     {
+                        Trace trace{ "local - wait for configuration request from outbound to local domain"};
 
                         message::outbound::configuration::Request request;
                         communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
@@ -111,17 +132,18 @@ namespace casual
                      }
 
                      //
-                     // Act as the remote domain
+                     // discover from the remote domain
                      //
                      {
-                        Trace trace{ "remote - wait for discovery from outbound to 'local' inbound"};
+                        Trace trace{ "remote - wait for discover from outbound to 'local' inbound"};
 
                         common::message::gateway::domain::discover::Request request;
                         communication::ipc::blocking::receive( remote.output(), request);
 
                         log::debug << "request: " << request << '\n';
 
-                        common::message::gateway::domain::discover::Reply reply;
+                        auto reply = common::message::reverse::type( request);
+
                         reply.correlation = request.correlation;
                         reply.execution = request.execution;
                         reply.process = remote.process();

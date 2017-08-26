@@ -274,7 +274,7 @@ namespace casual
                   //!
                   //! Used to notify the TM that a resource proxy is up and running, or not...
                   //!
-                  struct Reply : basic_message< Type::transaction_resurce_connect_reply>
+                  struct Reply : basic_message< Type::transaction_resource_connect_reply>
                   {
                      common::process::Handle process;
                      id::type resource = 0;

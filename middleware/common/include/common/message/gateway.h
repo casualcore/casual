@@ -25,6 +25,17 @@ namespace casual
          {
             namespace domain
             {
+               using size_type = platform::size::type;
+
+               namespace protocol
+               {
+                  enum class Version : size_type
+                  {
+                     invalid = 0,
+                     version_1 = 1000,
+                  };
+               } // protocol
+
 
                namespace advertise
                {
@@ -37,12 +48,12 @@ namespace casual
                      Service( std::string name,
                            std::string category = {},
                            common::service::transaction::Type transaction = common::service::transaction::Type::automatic,
-                           long hops = 0)
+                           size_type hops = 0)
                       : message::Service{ std::move( name), std::move( category), transaction}, hops{ hops} {}
 
                       Service( std::function<void(Service&)> foreign) { foreign( *this);}
 
-                     long hops = 0;
+                     size_type hops = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -58,13 +69,13 @@ namespace casual
                   {
                      Queue() = default;
 
-                     Queue( std::string name, long retries) : name{ std::move( name)}, retries{ retries} {}
+                     Queue( std::string name, size_type retries) : name{ std::move( name)}, retries{ retries} {}
                      Queue( std::string name) : name{ std::move( name)} {}
 
-                     Queue( std::function<void(Queue&)> foreign) { foreign( *this);}
+                     Queue( std::function< void(Queue&)> foreign) { foreign( *this);}
 
                      std::string name;
-                     long retries = 0;
+                     size_type retries = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -114,6 +125,39 @@ namespace casual
                static_assert( traits::is_movable< Advertise>::value, "not movable");
 
 
+               namespace connect
+               {
+
+                  struct Request : basic_message< Type::gateway_domain_connect_request>
+                  {
+                     common::domain::Identity domain;
+                     std::vector< protocol::Version> versions;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & domain;
+                        archive & versions;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Request& value);
+                  };
+
+                  struct Reply : basic_message< Type::gateway_domain_connect_reply>
+                  {
+                     common::domain::Identity domain;
+                     protocol::Version version;
+
+                     CASUAL_CONST_CORRECT_MARSHAL(
+                     {
+                        base_type::marshal( archive);
+                        archive & domain;
+                        archive & version;
+                     })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
+                  };
+               } // connect
 
                namespace discover
                {
@@ -129,7 +173,6 @@ namespace casual
                   struct Request : basic_message< Type::gateway_domain_discover_request>
                   {
                      common::process::Handle process;
-                     std::vector< platform::size::type> versions;
                      common::domain::Identity domain;
                      std::vector< std::string> services;
                      std::vector< std::string> queues;
@@ -138,7 +181,6 @@ namespace casual
                      {
                         base_type::marshal( archive);
                         archive & process;
-                        archive & versions;
                         archive & domain;
                         archive & services;
                         archive & queues;
@@ -159,7 +201,6 @@ namespace casual
                      using Queue = domain::advertise::Queue;
 
                      common::process::Handle process;
-                     platform::size::type version;
                      common::domain::Identity domain;
                      std::vector< Service> services;
                      std::vector< Queue> queues;
@@ -168,7 +209,6 @@ namespace casual
                      {
                         base_type::marshal( archive);
                         archive & process;
-                        archive & version;
                         archive & domain;
                         archive & services;
                         archive & queues;
@@ -215,6 +255,9 @@ namespace casual
          {
             template<>
             struct type_traits< gateway::domain::discover::Request> : detail::type< gateway::domain::discover::Reply> {};
+
+            template<>
+            struct type_traits< gateway::domain::connect::Request> : detail::type< gateway::domain::connect::Reply> {};
 
          } // reverse
 

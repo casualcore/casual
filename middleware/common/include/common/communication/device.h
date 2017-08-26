@@ -122,8 +122,8 @@ namespace casual
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
-               blocking_policy policy_blocking() const { return blocking_policy{};}
-               non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
+               constexpr blocking_policy policy_blocking() const { return blocking_policy{};}
+               constexpr non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
 
 
                //!
@@ -215,7 +215,7 @@ namespace casual
 
 
                //!
-               //! Tries to find a message whith the same type as @p message
+               //! Tries to find a message with the same type as @p message
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)

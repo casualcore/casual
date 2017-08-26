@@ -76,6 +76,7 @@ Install( gateway_admin, '$(CASUAL_HOME)/internal/bin')
 
 
 
+
 #
 # The outbound tcp connector
 #
@@ -88,7 +89,6 @@ target = LinkExecutable( 'bin/casual-gateway-outbound-tcp',
      'casual-common',  
      ])
 
-install_bin.append( target)
 
 #
 # The inbound tcp connector

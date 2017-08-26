@@ -5,9 +5,9 @@ title gateway startup
 
 box "domain A" #LightBlue
    actor "client" as CA
-   participant "broker" as BA
-   participant "TM" as TMA
-   participant "gateway" as GA
+   participant "service manager" as BA
+   participant "transaction manager" as TMA
+   participant "gateway manager" as GA
    participant "outbound" as OA
    
 end box
@@ -15,11 +15,11 @@ end box
 box "domain B"
    participant "inbound" as IB
    participant "gateway" as GB 
-   participant "TM" as TMB
-   participant "rm-proxy" as RMPB
+   participant "transaction manager" as TMB
+   participant "resource-proxy" as RMPB
    participant "Server B" as SB
-   database "RM" as RMB
-   participant "broker" as BB
+   database "resource" as RMB
+   participant "service manager" as BB
 end box
 
 
@@ -36,10 +36,15 @@ activate BA
 BA -> GA: Type::gateway_domain_discover_request
 deactivate BA
 activate GA
+
+note over GA
+gateway manager will ask all outbound connections
+end note
 GA -> OA: Type::gateway_domain_discover_request
+
 deactivate GA
 activate OA
-OA -> IB: Type::interdomain_domain_discover_request
+OA -> IB: Type::gateway_domain_discover_request
 deactivate OA
 activate IB
 
@@ -59,12 +64,12 @@ deactivate GB
 activate IB
 
 
-IB -> OA: Type::interdomain_domain_discover_reply
+IB -> OA: Type::gateway_domain_discover_reply
 deactivate IB
 activate OA
 
 
-note over OA,BA: We adverties the found services\nwe might change this and only act on\nType::gateway_domain_discover_accumulated_reply.
+note over OA,BA: We advertise the found services\nwe might change this and only act on\nType::gateway_domain_discover_accumulated_reply.
 OA -> BA: Type::gateway_domain_advertise (X)
 activate BA
 BA -> CA: Type::service_name_lookup_reply (X)
@@ -91,7 +96,7 @@ activate OA
 OA -> TMA: Type::transaction_external_resource_involved
 activate TMA
 TMA -> TMA: associate trid to resource
-OA -> IB: Type::interdomain_service_call
+OA -> IB: Type::service_call
 deactivate TMA
 deactivate OA
 activate IB
@@ -135,7 +140,7 @@ deactivate SB
 
 
 activate IB
-IB -> OA: Type::interdomain_service_reply
+IB -> OA: Type::service_reply
 deactivate IB
 activate OA
 OA -> CA: Type::service_reply
@@ -164,7 +169,7 @@ activate OA
 
 
 
-OA -> IB: Type::interdomain_transaction_resource_prepare_request
+OA -> IB: Type::transaction_resource_prepare_request
 deactivate OA
 activate IB
 IB -> TMB: Type::transaction_resource_prepare_request
@@ -186,7 +191,7 @@ activate TMB
 TMB -> IB: Type::transaction_resource_prepare_reply
 deactivate TMB
 activate IB
-IB -> OA: Type::interdomain_transaction_resource_prepare_reply
+IB -> OA: Type::transaction_resource_prepare_reply
 deactivate IB
 activate OA
 OA -> TMA: Type::transaction_resource_prepare_reply
@@ -196,7 +201,7 @@ activate TMA
 TMA -> OA: Type::transaction_resource_commit_request
 deactivate TMA
 activate OA
-OA -> IB: Type::interdomain_transaction_resource_commit_request
+OA -> IB: Type::transaction_resource_commit_request
 deactivate OA
 activate IB
 IB -> TMB: Type::transaction_resource_commit_request
@@ -217,7 +222,7 @@ activate TMB
 TMB -> IB: Type::transaction_resource_commit_reply
 deactivate TMB
 activate IB
-IB -> OA: Type::interdomain_transaction_resource_commit_reply
+IB -> OA: Type::transaction_resource_commit_reply
 deactivate IB
 activate OA
 OA -> TMA: Type::transaction_resource_commit_reply

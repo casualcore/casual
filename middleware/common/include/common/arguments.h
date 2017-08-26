@@ -540,7 +540,7 @@ namespace casual
          //!
          //! @attention assumes first argument is process name.
          //!
-         void parse( int argc, char** argv);
+         void parse( int argc, char* argv[]);
 
          void parse( std::vector< std::string> arguments);
 

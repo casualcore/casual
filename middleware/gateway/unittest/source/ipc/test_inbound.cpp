@@ -73,15 +73,15 @@ namespace casual
                      log << "external: " << external << std::endl;
 
                      //
-                     // act as the outbound and send discover
+                     // act as the outbound and send connect
                      //
                      {
-                        Trace trace{ "gateway::local::Domain outbound -> discover"};
+                        Trace trace{ "gateway::local::Domain outbound -> connect"};
 
 
-                        common::message::gateway::domain::discover::Request request;
-                        request.process = process::handle();
+                        common::message::gateway::domain::connect::Request request;
                         request.domain = remote;
+                        request.versions = { common::message::gateway::domain::protocol::Version::version_1};
                         communication::ipc::blocking::send( external.queue , request);
 
                      }

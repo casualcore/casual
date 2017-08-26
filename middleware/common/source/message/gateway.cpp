@@ -56,6 +56,23 @@ namespace casual
                         << '}';
                }
 
+               namespace connect
+               {
+                  std::ostream& operator << ( std::ostream& out, const Request& value)
+                  {
+                     return out << "{ domain: " << value.domain 
+                        << ", versions: " << range::make( value.versions)
+                        << '}';
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ domain: " << value.domain 
+                        << ", version: " << value.version
+                        << '}';
+                  }
+               } // connect
+
                namespace discover
                {
 

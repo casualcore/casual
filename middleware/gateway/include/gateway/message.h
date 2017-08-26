@@ -115,12 +115,14 @@ namespace casual
          {
             common::process::Handle process;
             common::domain::Identity domain;
+            common::message::gateway::domain::protocol::Version version;
             std::vector< std::string> address;
 
             CASUAL_CONST_CORRECT_MARSHAL({
                common::message::basic_message< type>::marshal( archive);
                archive & process;
                archive & domain;
+               archive & version;
                archive & address;
             })
 
@@ -290,12 +292,28 @@ namespace casual
          {
             namespace domain
             { 
+               namespace connect
+               {
+                  CASUAL_CUSTOMIZATION_POINT_MARSHAL( Request,
+                  {
+                     archive & value.execution;
+                     archive & value.domain;
+                     archive & value.versions;
+                  })
+
+                  CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
+                  {
+                     archive & value.execution;
+                     archive & value.domain;
+                     archive & value.version;
+                  })
+               } // connect
+
                namespace discover
                {
                   CASUAL_CUSTOMIZATION_POINT_MARSHAL( Request,
                   {
                      archive & value.execution;
-                     archive & value.versions;
                      archive & value.domain;
                      archive & value.services;
                      archive & value.queues;
@@ -304,7 +322,6 @@ namespace casual
                   CASUAL_CUSTOMIZATION_POINT_MARSHAL( Reply,
                   {
                      archive & value.execution;
-                     archive & value.version;
                      archive & value.domain;
                      archive & value.services;
                      archive & value.queues;

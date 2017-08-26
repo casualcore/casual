@@ -1,5 +1,10 @@
 
-# casual domain protocol
+# casual domain protocol _version 1000_
+
+Attention, this documentation refers to **version 1000** (aka, version 1)
+
+
+
 
 Defines what messages is sent between domains and exactly what they contain. 
 
@@ -28,6 +33,40 @@ header.type        | uint64       |            8 | type of the message that the 
 header.correlation | fixed array  |           16 | correlation id of the message                
 header.size        | uint64       |            8 | the size of the payload that follows         
 
+## domain connect messages
+
+messages that is used to set up a connection
+
+
+### common::message::gateway::domain::connect::Request
+   
+Connection requests from another domain that wants to connect
+   
+   message type: **7200**
+
+role name                 | network type  | network size | description                                            
+------------------------- | ------------- | ------------ | -------------------------------------------------------
+execution                 | fixed array   |           16 | uuid of the current execution path                     
+domain.id                 | fixed array   |           16 | uuid of the outbound domain                            
+domain.name.size          | uint64        |            8 | size of the outbound domain name                       
+domain.name.data          | dynamic array |            8 | dynamic byte array with the outbound domain name       
+protocol.versions.size    | uint64        |            8 | number of protocol versions outbound domain can 'speak'
+protocol.versions.element | uint64        |            8 | a protocol version                                     
+
+### common::message::gateway::domain::connect::Reply
+   
+Connection reply
+   
+   message type: **7201**
+
+role name        | network type  | network size | description                                                       
+---------------- | ------------- | ------------ | ------------------------------------------------------------------
+execution        | fixed array   |           16 | uuid of the current execution path                                
+domain.id        | fixed array   |           16 | uuid of the inbound domain                                        
+domain.name.size | uint64        |            8 | size of the inbound domain name                                   
+domain.name.data | dynamic array |            8 | dynamic byte array with the inbound domain name                   
+protocol.version | uint64        |            8 | the chosen protocol version to use, or invalid (0) if incompatible
+
 ## Discovery messages
 
 ### domain discovery 
@@ -37,33 +76,30 @@ header.size        | uint64       |            8 | the size of the payload that 
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 
-message type: **7011**
+message type: **7300**
 
-role name             | network type  | network size | description                                                                             
---------------------- | ------------- | ------------ | ----------------------------------------------------------------------------------------
-execution             | fixed array   |           16 | uuid of the current execution path                                                      
-versions.size         | uint64        |            8 | size of versions container that holds all versions that instigator can communicate with 
-versions.element      | uint64        |            8 | value of supported version                                                              
-domain.id             | fixed array   |           16 | uuid of the caller domain                                                               
-domain.name.size      | uint64        |            8 | size of the caller domain name                                                          
-domain.name.data      | dynamic array |            8 | dynamic byte array with the caller domain name                                          
-services.size         | uint64        |            8 | number of requested services to follow (an array of services)                           
-services.element.size | uint64        |            8 | size of the current service name                                                        
-services.element.data | dynamic array |          128 | dynamic byte array of the current service name                                          
-queues.size           | uint64        |            8 | number of requested queues to follow (an array of queues)                               
-queues.element.size   | uint64        |            8 | size of the current queue name                                                          
-queues.element.data   | dynamic array |          128 | dynamic byte array of the current queue name                                            
+role name             | network type  | network size | description                                                  
+--------------------- | ------------- | ------------ | -------------------------------------------------------------
+execution             | fixed array   |           16 | uuid of the current execution path                           
+domain.id             | fixed array   |           16 | uuid of the caller domain                                    
+domain.name.size      | uint64        |            8 | size of the caller domain name                               
+domain.name.data      | dynamic array |            8 | dynamic byte array with the caller domain name               
+services.size         | uint64        |            8 | number of requested services to follow (an array of services)
+services.element.size | uint64        |            8 | size of the current service name                             
+services.element.data | dynamic array |          128 | dynamic byte array of the current service name               
+queues.size           | uint64        |            8 | number of requested queues to follow (an array of queues)    
+queues.element.size   | uint64        |            8 | size of the current queue name                               
+queues.element.data   | dynamic array |          128 | dynamic byte array of the current queue name                 
 
 #### message::gateway::domain::discover::Reply
 
 Sent to and received from other domains when one domain wants discover information abut the other.
 
-message type: **7012**
+message type: **7301**
 
 role name                      | network type  | network size | description                                                     
 ------------------------------ | ------------- | ------------ | ----------------------------------------------------------------
 execution                      | fixed array   |           16 | uuid of the current execution path                              
-version                        | uint64        |            8 | the chosen version - 0 if no compatible version was possible    
 domain.id                      | fixed array   |           16 | uuid of the caller domain                                       
 domain.name.size               | uint64        |            8 | size of the caller domain name                                  
 domain.name.data               | dynamic array |            0 | dynamic byte array with the caller domain name                  

@@ -249,6 +249,9 @@ namespace casual
                base_connector( const base_connector&) = delete;
                base_connector& operator = ( const base_connector&) = delete;
 
+               base_connector( base_connector&&) = default;
+               base_connector& operator = ( base_connector&&) = default;
+
                const handle_type& socket() const;
 
                friend std::ostream& operator << ( std::ostream& out, const base_connector& rhs);

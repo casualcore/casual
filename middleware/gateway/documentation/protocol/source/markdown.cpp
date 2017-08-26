@@ -345,7 +345,12 @@ namespace casual
                common::communication::message::complete::network::Header header;
 
                out << R"(
-# casual domain protocol
+# casual domain protocol _version 1000_
+
+Attention, this documentation refers to **version 1000** (aka, version 1)
+
+
+
 
 Defines what messages is sent between domains and exactly what they contain. 
 
@@ -376,6 +381,7 @@ the rest of the message.
                   { "header.size", "the size of the payload that follows"},
                });
             }
+
 
             template< typename M>
             void transaction_request( std::ostream& out, M&& message)
@@ -602,6 +608,71 @@ Reply to call request
 
             }
 
+
+            void domain_connect( std::ostream& out)
+            {
+               out << R"(
+## domain connect messages
+
+messages that is used to set up a connection
+
+)";     
+
+               {
+                  using message_type = common::message::gateway::domain::connect::Request;
+                  
+                  out << R"(
+### common::message::gateway::domain::connect::Request
+   
+Connection requests from another domain that wants to connect
+   
+   )";
+   
+                     local::message_type( out, message_type{}) << "\n\n";
+   
+                     message_type message;
+                     message.versions = { common::message::gateway::domain::protocol::Version::version_1};
+                     message.domain.name = "domain-A";
+
+                     local::format::type( out, message, {
+                        { "execution", "uuid of the current execution path"},
+                        { "domain.id", "uuid of the outbound domain"},
+                        { "domain.name.size", "size of the outbound domain name"},
+                        { "domain.name.data", "dynamic byte array with the outbound domain name"},
+                        { "protocol.versions.size", "number of protocol versions outbound domain can 'speak'"},
+                        { "protocol.versions.element", "a protocol version "},
+                     });
+
+               }
+
+               {
+                  using message_type = common::message::gateway::domain::connect::Reply;
+                  
+                  out << R"(
+### common::message::gateway::domain::connect::Reply
+   
+Connection reply
+   
+   )";
+   
+                     local::message_type( out, message_type{}) << "\n\n";
+   
+                     message_type message;
+                     message.version = common::message::gateway::domain::protocol::Version::version_1;
+                     message.domain.name = "domain-A";
+
+                     local::format::type( out, message, {
+                        { "execution", "uuid of the current execution path"},
+                        { "domain.id", "uuid of the inbound domain"},
+                        { "domain.name.size", "size of the inbound domain name"},
+                        { "domain.name.data", "dynamic byte array with the inbound domain name"},
+                        { "protocol.version", "the chosen protocol version to use, or invalid (0) if incompatible"},
+                     });
+
+               }               
+            }
+
+
             void domain_discovery( std::ostream& out)
             {
                out << R"(
@@ -624,7 +695,6 @@ Sent to and received from other domains when one domain wants discover informati
                   local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
-                  message.versions = { 42};
                   message.domain.name = "domain-A";
 
                   message.services.push_back( std::string( 128, 0));
@@ -632,8 +702,6 @@ Sent to and received from other domains when one domain wants discover informati
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
-                           { "versions.size", "size of versions container that holds all versions that instigator can communicate with "},
-                           { "versions.element", "value of supported version"},
                            { "domain.id", "uuid of the caller domain"},
                            { "domain.name.size", "size of the caller domain name"},
                            { "domain.name.data", "dynamic byte array with the caller domain name"},
@@ -668,7 +736,7 @@ Sent to and received from other domains when one domain wants discover informati
 
                   local::format::type( out, message, {
                            { "execution", "uuid of the current execution path"},
-                           { "version", "the chosen version - 0 if no compatible version was possible"},
+                           // { "version", "the chosen version - 0 if no compatible version was possible"},
                            { "domain.id", "uuid of the caller domain"},
                            { "domain.name.size", "size of the caller domain name"},
                            { "domain.name.data", "dynamic byte array with the caller domain name"},
@@ -986,6 +1054,7 @@ Sent to abruptly disconnect the conversation
                static_assert( common::marshal::is_network_normalizing< local::Printer>::value, "not network...");
 
                message_header( std::cout);
+               domain_connect( std::cout);
                domain_discovery( std::cout);
                service_call( std::cout);
                transaction( std::cout);

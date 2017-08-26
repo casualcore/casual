@@ -6,18 +6,18 @@ title gateway startup
 box "domain A" #LightBlue
    actor "client" as CA
    participant "domain manager" as DMA
-   participant "broker" as BA
+   participant "service manager" as BA
    participant "Server A" as SA
-   participant "gateway" as GA
+   participant "gateway manager" as GA
    participant "outbound" as OA
    
 end box
 
 box "domain B"
    participant "inbound" as IB
-   participant "gateway" as GB 
+   participant "gateway manager" as GB 
    participant "Server B" as SB
-   participant "broker" as BB
+   participant "service manager" as BB
    participant "domain manager" as DMB
    actor "client" as CB
 end box
@@ -28,24 +28,31 @@ CA -> DMA: boot
 
 activate DMA
 
-DMA -> BA: spawn broker
+DMA -> BA: spawn service manager
 activate BA
-BA -> DMA: domain connect
-BA -> DMA: get configuration
+BA -> DMA: Type::domain_process_connect_request
+DMA -> BA: Type::domain_process_connect_reply
+BA -> DMA: Type::domain_configuration_request
+DMA -> BA: Type::domain_configuration_reply
 deactivate BA
 
 DMA -> SA: spawn Server A
 activate SA
-SA -> DMA: domain connect
+SA -> DMA: Type::domain_process_connect_request
+DMA -> SA: Type::domain_process_connect_reply
+SA -> DMA: Type::domain_server_configuration_request
+DMA -> SA: Type::domain_server_configuration_reply
 deactivate SA
 DMA -> GA: spawn gateway A
 
 activate GA
-GA -> DMA: domain connect
+GA -> DMA: Type::domain_process_connect_request
+DMA -> GA: Type::domain_process_connect_reply
+GA -> DMA: Type::domain_configuration_request
+DMA -> GA: Type::domain_configuration_reply
 
 deactivate DMA
 
-GA -> DMA: get configuration
 GA -> OA: spawn outbound (B)
 OA -> OA: try connect to B
 
@@ -60,18 +67,25 @@ CB -> DMB: boot
 
 activate DMB
 
-DMB -> SB: spawn Server A
+DMB -> SB: spawn Server B
 activate SB
-SB -> DMB: domain connect
+SB -> DMB: Type::domain_process_connect_request
+DMB -> SB: Type::domain_process_connect_reply
+SB -> DMB: Type::domain_server_configuration_request
+DMB -> SB: Type::domain_server_configuration_reply
 deactivate SB
-DMB -> GB: spawn gateway A
+
+DMB -> GB: spawn gateway B
 
 activate GB
-GB -> DMB: domain connect
+GB -> DMB: Type::domain_process_connect_request
+DMB -> GB: Type::domain_process_connect_reply
+GB -> DMB: Type::domain_configuration_request
+DMB -> GB: Type::domain_configuration_reply
+
 
 deactivate DMB
 
-GB -> DMB: get configuration
 GB -> GB: spawn listener (thread)
 activate GB
 
@@ -79,41 +93,65 @@ deactivate DMB
 
 
 
-OA -> GB: connect (socket X)
+OA -> GB: connection established (socket X)
 activate OA
 
 
 
-GB -> IB: spawn inbound (A socket X)
+GB -> IB: spawn inbound (socket X)
 activate IB
 deactivate GB
+deactivate IB
 
 
 
-OA -> IB: message::interdomain::domain::discovery::Request
+OA -> IB: Type::gateway_domain_connect_request
+note left
+contains domain name and id of A, and  all protocol versions 
+that domain A can speak
+end note
+
+activate IB
+IB -> OA : Type::gateway_domain_connect_reply
+note right
+contains domain name and id of B, and the chosen protocol version
+(or invalid if no compatible protocol could be found)
+end note
+
+IB -> GB: Type::gateway_inbound_connect
+deactivate IB
+
+OA -> GA: Type::gateway_outbound_connect
+note left
+Give gateway manager information about the connection
+end note
+
+
+OA -> IB: Type::gateway_domain_discover_request
 note left
 outbound asks the other domain 
 if it got some of the provided 
 services and queues.
 During startup, this is the configured 
 services and queues. During runtime this is
-absent services and queues.
+absent requested services or queues.
 end note
 
+activate IB
+IB -> GB: Type::gateway_domain_discover_request
 
-IB -> GB: common::message::gateway::discover::Request
-GB -> BB: common::message::gateway::discover::Request
+GB -> BB: Type::gateway_domain_discover_request
 activate BB
-BB -> GB: common::message::gateway::discover::Reply
+BB -> GB: Type::gateway_domain_discover_reply
 deactivate BB
 
-GB ->IB: common::message::gateway::discover::accumulated::Reply
+GB ->IB: Type::gateway_domain_discover_accumulated_reply
 
-IB -> OA: message::interdomain::domain::discovery::Reply
+IB -> OA: Type::gateway_domain_discover_reply
 
 deactivate IB
 
-OA -> BA: common::message::gateway::domain::Advertise
+OA -> BA: Type::gateway_domain_advertise
 note right 
 	outbound advertises the services that the
 	other domain replied with

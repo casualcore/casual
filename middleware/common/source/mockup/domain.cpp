@@ -334,6 +334,11 @@ namespace casual
                            Trace trace{ "mockup service::call::ACK"};
 
                         },
+                        [&]( message::service::remote::Metric& m)
+                        {
+                           Trace trace{ "mockup service::remote::Metric"};
+
+                        },
                         [&]( message::domain::process::prepare::shutdown::Request& m)
                         {
                            Trace trace{ "mockup domain::process::prepare::shutdown::Request"};

@@ -361,7 +361,7 @@ namespace casual
       {
       }
 
-      void Arguments::parse( int argc, char** argv)
+      void Arguments::parse( int argc, char* argv[])
       {
          if( argc > 0)
          {
