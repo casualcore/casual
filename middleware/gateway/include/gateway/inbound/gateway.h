@@ -774,7 +774,7 @@ namespace casual
                {
                   auto handler = common::communication::ipc::inbound::device().handler(
                      common::message::handle::Shutdown{},
-                     common::message::handle::ping(),
+                     // we don't handle ping until we're up'n running common::message::handle::ping(),
                      gateway::handle::Disconnect{ m_request_thread},
                      common::message::handle::assign( message)
                   );

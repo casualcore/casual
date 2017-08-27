@@ -619,7 +619,7 @@ namespace casual
                   {
                      policy::cache_range_type receive( const inbound::Connector& tcp, policy::cache_type& cache, common::Flags< Flag> flags)
                      {
-                        auto message = native::receive( tcp.socket(), {});
+                        auto message = native::receive( tcp.socket(), flags);
 
                         if( message)
                         {
