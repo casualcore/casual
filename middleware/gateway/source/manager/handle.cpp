@@ -100,16 +100,31 @@ namespace casual
                               else if( connection.process.pid)
                               {
                                  log << "terminate connection: " << connection << std::endl;
-                                 common::process::lifetime::terminate( { connection.process.pid});
-                                 connection.runlevel = state::base_connection::Runlevel::offline;
+
+                                 // try to fetch handle from domain manager
+                                 {
+                                    auto handle = common::process::instance::fetch::handle( 
+                                       connection.process.pid, common::process::instance::fetch::Directive::direct);
+
+                                    log << "fetched handle: " << handle << '\n';
+
+                                    if( handle)
+                                    {
+                                       connection.process = handle;
+                                       operator() ( connection);
+                                    }
+                                    else 
+                                    {
+                                       common::process::lifetime::terminate( { connection.process.pid});
+                                       connection.runlevel = state::base_connection::Runlevel::offline;
+                                    }
+                                 }
                               }
                            }
                         }
 
                      };
-
-
-                  } // connection
+                  } // shutdown
 
 
                   std::string executable( const manager::state::outbound::Connection& connection)

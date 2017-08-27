@@ -3,7 +3,9 @@
 //!
 
 #include "common/exception/xatmi.h"
+#include "common/exception/handle.h"
 #include "common/log/category.h"
+
 
 #include "common/exception/system.h"
 
@@ -17,6 +19,17 @@ namespace casual
       {
          namespace xatmi
          {
+            namespace local
+            {
+               namespace
+               {
+                  template< typename E> 
+                  void log( E&& exception)
+                  {
+                     code::stream( exception.type()) << exception << std::endl;
+                  }
+               } // <unnamed>
+            } // local
             code::xatmi handle()
             {
                try
@@ -29,25 +42,17 @@ namespace casual
                //
                catch( const exception& exception)
                {
-                  code::stream( exception.type()) << exception << std::endl;
+                  local::log( exception);
                   return exception.type();
                }
                catch ( const common::exception::system::invalid::Argument& exception)
                {
-                  code::stream( exception.type()) << exception << std::endl;
+                  local::log( exception);
                   return code::xatmi::argument;
-               }
-               catch( const std::system_error& exception)
-               {
-                  log::category::error << exception << std::endl;
-               }
-               catch( const std::exception& exception)
-               {
-                  log::category::error << exception << std::endl;
                }
                catch( ...)
                {
-                  log::category::error << " - unexpected exception" << std::endl;
+                  common::exception::handle();
                }
 
                return code::xatmi::system;

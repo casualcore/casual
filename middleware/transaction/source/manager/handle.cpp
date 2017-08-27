@@ -490,6 +490,7 @@ namespace casual
                            using xa = common::code::xa;
                            
                            case xa::ok:
+                           case xa::read_only:
                            {
                               log << "commit completed - " << transaction << " XA_OK\n";
 
@@ -525,7 +526,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << std::error_code( result) <<  " TODO: something has gone wrong...\n";
+                              common::log::category::error << std::error_code( result) <<  " TODO: commit gone wrong for transaction: " << transaction << "\n";
                               
 
                               //
@@ -591,7 +592,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << std::error_code( result) << " TODO: resource rollback - something has gone wrong...\n";
+                              common::log::category::error << std::error_code( result) << " TODO: resource rollback for transaction: " << transaction << "\n";
 
                               //
                               // prepare send reply. Will be sent after persistent write to file

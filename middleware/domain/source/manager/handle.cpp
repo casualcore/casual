@@ -741,6 +741,22 @@ namespace casual
                {
                   namespace
                   {
+                     namespace lookup
+                     {
+                        common::process::Handle pid( const State& state, platform::pid::type pid)
+                        {
+                           auto server = state.server( pid);
+                           
+                           if( server)
+                           {
+                              return server->instance( pid).handle;
+                           }
+                           else
+                           {
+                              return state.grandchild( pid);
+                           }
+                        }
+                     } // lookup
                      struct Lookup : Base
                      {
                         using Base::Base;
@@ -754,7 +770,7 @@ namespace casual
 
                            if( message.identification)
                            {
-                              auto found = range::find( state().singeltons, message.identification);
+                              auto found = range::find( state().singletons, message.identification);
 
                               if( found)
                               {
@@ -772,11 +788,10 @@ namespace casual
                            }
                            else if( message.pid)
                            {
-                              auto server = state().server( message.pid);
+                              reply.process = local::lookup::pid( state(), message.pid);
 
-                              if( server)
+                              if( reply.process)
                               {
-                                 reply.process = server->instance( message.pid).handle;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
                               else if( message.directive == Directive::direct)
@@ -876,7 +891,7 @@ namespace casual
 
                   if( message.identification)
                   {
-                     auto found = range::find( state().singeltons, message.identification);
+                     auto found = range::find( state().singletons, message.identification);
 
 
                      if( found)
@@ -921,7 +936,7 @@ namespace casual
                      }
 
 
-                     state().singeltons[ message.identification] = message.process;
+                     state().singletons[ message.identification] = message.process;
 
                      local::singleton::connect( state(), message);
                   }
@@ -934,6 +949,11 @@ namespace casual
                   {
                      server->connect( message.process);
                      log << "added process: " << message.process << " to " << *server << '\n';
+                  }
+                  else 
+                  {
+                     // we assume it's a grandchild
+                     state().grandchildren.push_back( message.process);
                   }
 
                   auto& pending = state().pending.lookup;

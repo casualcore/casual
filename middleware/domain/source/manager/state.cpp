@@ -417,16 +417,17 @@ namespace casual
             event.remove( pid);
 
             //
-            // Remove from singeltons
+            // Remove from singletons
             //
             {
-               auto found = range::find_if( singeltons, [pid]( auto& v){
+               auto found = range::find_if( singletons, [pid]( auto& v){
                   return v.second.pid == pid;
                });
 
                if( found)
                {
-                  singeltons.erase( std::begin( found));
+                  log << "remove singleton: " << found->second << '\n';
+                  singletons.erase( std::begin( found));
                }
             }
 
@@ -442,6 +443,7 @@ namespace casual
                if( found)
                {
                   auto instance = found->remove( pid);
+                  log << "remove server instance: " << instance << '\n';
                   //
                   // Try to remove ipc-queue (no-op if it's removed already)
                   //
@@ -463,6 +465,7 @@ namespace casual
                if( found)
                {
                   found->remove( pid);
+                  log << "remove executable instance: " << pid << '\n';
 
                   if( found->restart && runlevel() == Runlevel::running)
                   {
@@ -470,6 +473,22 @@ namespace casual
                   }
                }
             }
+
+            //
+            // check if it's a grandchild
+            //
+            {
+               auto found = range::find_if( grandchildren, [=]( const auto& v){
+                  return v.pid == pid;
+               });
+
+               if( found)
+               {
+                  log << "remove grandchild: " << *found << '\n';
+                  grandchildren.erase( std::begin( found));
+               }
+            }
+
             return result_type{};
          }
 
@@ -482,12 +501,28 @@ namespace casual
             return result;
          }
 
+         namespace local
+         {
+            namespace
+            {
+               template< typename S>
+               auto server( S& servers, common::platform::pid::type pid)
+               {
+                  return range::find_if( servers, [pid]( const auto& s){
+                     return s.instance( pid).handle.pid == pid;
+                  }).data();
+               }
+            } // <unnamed>
+         } // local
 
          state::Server* State::server( common::platform::pid::type pid)
          {
-            return range::find_if( servers, [pid]( const auto& s){
-               return s.instance( pid).handle.pid == pid;
-            }).data();
+            return local::server( servers, pid);
+         }
+
+         const state::Server* State::server( common::platform::pid::type pid) const
+         {
+            return local::server( servers, pid);
          }
 
 
@@ -545,9 +580,21 @@ namespace casual
             return local::executable( executables, id);
          }
 
+         common::process::Handle State::grandchild( common::platform::pid::type pid) const
+         {
+            auto found = range::find_if( grandchildren, [=]( auto& v){
+               return v.pid == pid;
+            });
+
+            if( found) 
+               return *found;
+
+            return {};
+         }
+
          common::process::Handle State::singleton( const common::Uuid& id) const
          {
-            auto found = range::find( singeltons, id);
+            auto found = range::find( singletons, id);
             if( found)
             {
                return found->second;

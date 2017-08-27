@@ -300,11 +300,6 @@ namespace casual
 
                bool connect( common::process::Handle process);
 
-               //!
-               //! @return true if number of instances >= configured_instances
-               //!
-               //bool complete() const;
-
                friend std::ostream& operator << ( std::ostream& out, const Server& value);
 
                friend bool operator == ( const Server& lhs, common::platform::pid::type rhs);
@@ -370,7 +365,9 @@ namespace casual
             std::vector< state::Executable> executables;
             std::vector< state::Group> groups;
 
-            std::map< common::Uuid, common::process::Handle> singeltons;
+            std::map< common::Uuid, common::process::Handle> singletons;
+
+            
 
             struct
             {
@@ -384,6 +381,12 @@ namespace casual
             //!
             bool execute();
             task::Queue tasks;
+
+            //!
+            //! Processes that register but is not direct children of
+            //! this process.
+            //!
+            std::vector< common::process::Handle> grandchildren;
 
 
             //!
@@ -475,12 +478,15 @@ namespace casual
             const state::Group& group( state::Group::id_type id) const;
 
             state::Server* server( common::platform::pid::type pid);
+            const state::Server* server( common::platform::pid::type pid) const;
             state::Server& server( state::Server::id_type id);
             const state::Server& server( state::Server::id_type id) const;
 
             state::Executable* executable( common::platform::pid::type pid);
             state::Executable& executable( state::Executable::id_type id);
             const state::Executable& executable( state::Executable::id_type id) const;
+
+            common::process::Handle grandchild( common::platform::pid::type pid) const;
 
 
             common::process::Handle singleton( const common::Uuid& id) const;
