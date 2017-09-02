@@ -105,7 +105,7 @@ namespace casual
 
                   struct format_owner
                   {
-                     std::string operator () ( const vo::Transaction& value) const { return std::to_string( value.trid.owner.pid); }
+                     std::string operator () ( const vo::Transaction& value) const { return std::to_string( value.trid.owner.pid.native()); }
                   };
 
                   auto format_state = []( const vo::Transaction& value){

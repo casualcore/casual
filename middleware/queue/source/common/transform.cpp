@@ -27,8 +27,7 @@ namespace casual
                   {
                      manager::admin::Group result;
 
-                     result.process.pid = group.process.pid;
-                     result.process.queue = group.process.queue.native();
+                     result.process = group.process;
 
                      result.name = group.name;
                      result.queuebase = group.queuebase;

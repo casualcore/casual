@@ -10,8 +10,6 @@
 #include "common/flag/service/conversation.h"
 
 
-#include "common/communication/ipc/handle.h"
-
 namespace casual
 {
    namespace common
@@ -23,9 +21,9 @@ namespace casual
             struct Node
             {
                inline Node() = default;
-               inline Node( communication::ipc::Handle address) : address( address) {}
+               inline Node( platform::ipc::id address) : address( address) {}
 
-               communication::ipc::Handle address;
+               platform::ipc::id address;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {

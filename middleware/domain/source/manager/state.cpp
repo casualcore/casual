@@ -22,7 +22,7 @@ namespace casual
             {
                namespace remove
                {
-                  void ipc( communication::ipc::Handle ipc)
+                  void ipc( platform::ipc::id ipc)
                   {
                      if( communication::ipc::exists( ipc))
                      {
@@ -97,7 +97,7 @@ namespace casual
                         using state_type = typename I::value_type::state_type;
 
                         return range::sorted::subrange( instances, []( auto& i){
-                           return i.state ==  state_type::scale_out && common::process::id( i.handle) == 0;
+                           return i.state ==  state_type::scale_out && ! common::process::id( i.handle);
                         });
                      }
 
@@ -107,7 +107,7 @@ namespace casual
                         using state_type = typename I::value_type::state_type;
 
                         return range::sorted::subrange( instances, []( auto& i){
-                           return i.state == state_type::scale_in && common::process::id( i.handle) != 0;
+                           return i.state == state_type::scale_in && common::process::id( i.handle);
                         });
                      }
 
@@ -201,7 +201,7 @@ namespace casual
                   }
                   else
                   {
-                     found->handle = 0;
+                     found->handle = common::platform::process::id{};
                      found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
                   }
                }

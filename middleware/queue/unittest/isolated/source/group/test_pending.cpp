@@ -205,12 +205,12 @@ namespace casual
 
          group::State::Pending pending;
 
-         pending.dequeue( local::create_request( 10, true, { 42, common::communication::ipc::Handle{  666}}));
+         pending.dequeue( local::create_request( 10, true, { common::platform::process::id{ 42}, common::platform::ipc::id{  666}}));
          pending.enqueue( trid, 10);
          pending.enqueue( trid, 10);
          pending.enqueue( trid, 10);
 
-         pending.erase( 42);
+         pending.erase( common::platform::process::id{ 42});
 
          EXPECT_TRUE( pending.requests.empty());
 

@@ -42,7 +42,7 @@ namespace casual
 
                   log::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
 
-                  if( ::kill( pid, signal) != 0)
+                  if( ::kill( pid.native(), signal) != 0)
                   {
                      switch( errno)
                      {

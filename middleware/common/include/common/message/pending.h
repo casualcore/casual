@@ -23,8 +23,8 @@ namespace casual
             //!
             struct Message
             {
-               using targets_type = std::vector< communication::ipc::Handle>;
-               using target_type = communication::ipc::Handle;
+               using targets_type = std::vector< platform::ipc::id>;
+               using target_type = platform::ipc::id;
 
                enum class Targets
                {
@@ -82,7 +82,7 @@ namespace casual
             template< typename P>
             bool send( Message& message, P&& policy, const communication::error::type& handler = nullptr)
             {
-               auto send = [&]( communication::ipc::Handle ipc)
+               auto send = [&]( platform::ipc::id ipc)
                      {
                         try
                         {

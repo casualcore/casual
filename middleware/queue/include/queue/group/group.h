@@ -9,7 +9,6 @@
 
 #include "common/platform.h"
 #include "common/message/pending.h"
-#include "common/communication/ipc/handle.h"
 
 #include <string>
 
@@ -41,7 +40,7 @@ namespace casual
 
 
             template< typename M>
-            void persist( M&& message, std::vector< common::communication::ipc::Handle> destinations)
+            void persist( M&& message, std::vector< common::platform::ipc::id> destinations)
             {
                persistent.emplace_back( std::forward< M>( message), std::move( destinations));
             }

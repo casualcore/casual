@@ -34,12 +34,12 @@ namespace casual
                   {
                      void configure( server::Arguments& arguments);
 
-                     void reply( communication::ipc::Handle id, message::service::call::Reply& message);
-                     void reply( communication::ipc::Handle id, message::conversation::caller::Send& message);
+                     void reply( platform::ipc::id id, message::service::call::Reply& message);
+                     void reply( platform::ipc::id id, message::conversation::caller::Send& message);
 
                      void ack();
 
-                     void statistics( communication::ipc::Handle id, message::event::service::Call& event);
+                     void statistics( platform::ipc::id id, message::event::service::Call& event);
 
                      void transaction(
                            const common::transaction::ID& trid,
@@ -60,9 +60,9 @@ namespace casual
                      Admin( communication::error::type handler);
 
                      void configure( server::Arguments& arguments);
-                     void reply( communication::ipc::Handle id, message::service::call::Reply& message);
+                     void reply( platform::ipc::id id, message::service::call::Reply& message);
                      void ack();
-                     void statistics( communication::ipc::Handle id, message::event::service::Call& event);
+                     void statistics( platform::ipc::id id, message::event::service::Call& event);
 
                      message::service::Transaction transaction( bool commit);
 

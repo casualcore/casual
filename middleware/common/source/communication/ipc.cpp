@@ -378,7 +378,7 @@ namespace casual
                      {
 
                         template< typename R>
-                        communication::ipc::Handle reconnect( R&& singleton_policy)
+                        platform::ipc::id reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -599,7 +599,7 @@ namespace casual
                {
                   return false;
                }
-               if( info.msg_lrpid == owner.pid)
+               if( info.msg_lrpid == owner.pid.native())
                {
                   return remove( owner.queue);
                }

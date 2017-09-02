@@ -41,7 +41,7 @@ namespace casual
                
                auto queue = value.queue.native();
                archive >> CASUAL_MAKE_NVP( queue);
-               value.queue = common::communication::ipc::Handle{ queue};
+               value.queue = common::platform::ipc::id{ queue};
                
             }
             archive.serialtype_end( name);
@@ -54,6 +54,30 @@ namespace casual
             archive << name::value::pair::make( "queue", value.queue.native());
 
             archive.serialtype_end( name);
+         }
+
+         void serialize( Reader& archive, platform::process::id& value, const char* name)
+         {
+            auto pid = value.native();
+            archive >> name::value::pair::make( name, pid);
+            value = platform::process::id{ pid};
+         }
+
+         void serialize( Writer& archive, const platform::process::id& value, const char* name)
+         {
+            archive << name::value::pair::make( name, value.native());
+         }
+
+         void serialize( Reader& archive, platform::ipc::id& value, const char* name)
+         {
+            auto pid = value.native();
+            archive >> name::value::pair::make( name, pid);
+            value = platform::ipc::id{ pid};
+         }
+
+         void serialize( Writer& archive, const platform::ipc::id& value, const char* name)
+         {
+            archive << name::value::pair::make( name, value.native());
          }
 
          void serialize( Reader& archive, common::domain::Identity& value, const char* name)

@@ -428,7 +428,7 @@ namespace casual
 
                         }
 
-                        inline void send( common::communication::ipc::Handle queue, message_type& message)
+                        inline void send( common::platform::ipc::id queue, message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
 

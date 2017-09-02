@@ -22,7 +22,7 @@ namespace casual
          {
             struct Settings
             {
-               platform::ipc::handle::type ipc = -1;
+               platform::ipc::native::type ipc = platform::ipc::native::invalid;
                std::string correlation;
             };
 
@@ -37,7 +37,7 @@ namespace casual
 
                struct configuration_type
                {
-                  communication::ipc::Handle id;
+                  platform::ipc::id id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -67,7 +67,7 @@ namespace casual
 
                private:
 
-                  communication::ipc::Handle m_outbound;
+                  platform::ipc::id m_outbound;
                };
 
                struct external_type
@@ -76,7 +76,7 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::external_type ctor"};
 
-                     m_process.queue = communication::ipc::Handle{ settings.ipc};
+                     m_process.queue = platform::ipc::id{ settings.ipc};
 
                      //
                      // Send the reply

@@ -82,7 +82,7 @@ namespace casual
                if( settings.event_queue)
                {
                   common::message::event::subscription::Begin request;
-                  request.process.queue = common::communication::ipc::Handle{ settings.event_queue};
+                  request.process.queue = common::platform::ipc::id{ settings.event_queue};
                   state.event.subscription( request);
                }
 

@@ -28,7 +28,7 @@ namespace casual
          {
             struct Request : common::message::basic_message< common::message::Type::delay_message>
             {
-               common::communication::ipc::Handle destination;
+               common::platform::ipc::id destination;
                std::chrono::microseconds delay;
                common::communication::message::Complete message;
 
@@ -44,7 +44,7 @@ namespace casual
 
 
             template< typename M, typename R, typename D>
-            void send( M&& message, common::communication::ipc::Handle destination, std::chrono::duration< R, D> delay)
+            void send( M&& message, common::platform::ipc::id destination, std::chrono::duration< R, D> delay)
             {
                Request request;
                request.destination = destination;

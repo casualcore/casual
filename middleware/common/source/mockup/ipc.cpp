@@ -71,10 +71,10 @@ namespace casual
 
          namespace pid
          {
-            platform::pid::type next()
+            platform::process::id next()
             {
-               static auto pid = process::id() + 1000;
-               return ++pid;
+               static auto pid = process::id().native() + 1000;
+               return platform::process::id{ ++pid};
             }
 
          } // pid

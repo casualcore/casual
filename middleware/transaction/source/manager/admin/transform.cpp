@@ -127,7 +127,7 @@ namespace casual
                {
                   vo::pending::Reply result;
 
-                  result.queue = value.target.native();
+                  result.queue = value.target;
                   result.type = common::message::convert::type( value.message.type);
                   result.correlation = value.message.correlation;
 

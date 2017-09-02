@@ -6,7 +6,6 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_IPC_H_
 
 
-#include "common/communication/ipc/handle.h"
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 
@@ -193,7 +192,7 @@ namespace casual
             } // message
 
 
-            using handle_type = ipc::Handle;
+            using handle_type = platform::ipc::id;
 
 
 

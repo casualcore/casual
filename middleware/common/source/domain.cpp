@@ -163,9 +163,12 @@ namespace casual
                      {
                         auto queue = result.process.queue.native();
                         file >> queue;
-                        result.process.queue = communication::ipc::Handle{ queue};
+                        result.process.queue = platform::ipc::id{ queue};
+                        
+                        auto pid = result.process.pid.native();
+                        file >> pid;
+                        result.process.pid = platform::process::id{ pid};
 
-                        file >> result.process.pid;
                         file >> result.identity.name;
                         std::string uuid;
                         file >> uuid;

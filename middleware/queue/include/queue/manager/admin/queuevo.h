@@ -24,17 +24,7 @@ namespace casual
 
             struct Group
             {
-               struct
-               {
-                  sf::platform::pid::type pid;
-                  sf::platform::ipc::handle::type queue;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     archive & CASUAL_MAKE_NVP( pid);
-                     archive & CASUAL_MAKE_NVP( queue);
-                  })
-               } process;
+               common::process::Handle process;
 
                std::string name;
                std::string queuebase;
@@ -58,7 +48,7 @@ namespace casual
                };
 
 
-               sf::platform::pid::type group;
+               sf::platform::process::id group;
                size_type id;
                std::string name;
                Type type;

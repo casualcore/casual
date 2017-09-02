@@ -153,7 +153,7 @@ namespace casual
 
             struct Reply
             {
-               sf::platform::ipc::handle::type queue;
+               sf::platform::ipc::id queue;
                sf::platform::Uuid correlation;
                long type;
 

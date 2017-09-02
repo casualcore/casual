@@ -52,7 +52,7 @@ namespace casual
                   return {
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0851"},
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0852"},
-                     common::process::Handle{ 42, common::communication::ipc::Handle{ 42}}
+                     common::process::Handle{ common::platform::process::id{ 42}, common::platform::ipc::id{ 42}}
                   };
                }
 
@@ -163,8 +163,8 @@ namespace casual
                      message.parent = "parent-service";
                      message.trid = trid();
 
-                     message.recording.nodes.emplace_back( common::communication::ipc::Handle{ 42});
-                     message.recording.nodes.emplace_back( common::communication::ipc::Handle{ 4242});
+                     message.recording.nodes.emplace_back( common::platform::ipc::id{ 42});
+                     message.recording.nodes.emplace_back( common::platform::ipc::id{ 4242});
 
                      message.flags = common::flag::service::conversation::connect::Flag::send_only;
                      message.buffer.type = ".json/";
@@ -178,11 +178,11 @@ namespace casual
                      common::message::conversation::connect::Reply message;
                      set_general( message);
 
-                     message.route.nodes.emplace_back( common::communication::ipc::Handle{ 4242});
-                     message.route.nodes.emplace_back( common::communication::ipc::Handle{ 42});
+                     message.route.nodes.emplace_back( common::platform::ipc::id{ 4242});
+                     message.route.nodes.emplace_back( common::platform::ipc::id{ 42});
 
-                     message.recording.nodes.emplace_back( common::communication::ipc::Handle{ 42});
-                     message.recording.nodes.emplace_back( common::communication::ipc::Handle{ 4242});
+                     message.recording.nodes.emplace_back( common::platform::ipc::id{ 42});
+                     message.recording.nodes.emplace_back( common::platform::ipc::id{ 4242});
 
                      
 
@@ -194,8 +194,8 @@ namespace casual
                      common::message::conversation::callee::Send message;
                      set_general( message);
 
-                     message.route.nodes.emplace_back( common::communication::ipc::Handle{ 42});
-                     message.route.nodes.emplace_back( common::communication::ipc::Handle{ 4242});
+                     message.route.nodes.emplace_back( common::platform::ipc::id{ 42});
+                     message.route.nodes.emplace_back( common::platform::ipc::id{ 4242});
 
 
                      message.events = common::flag::service::conversation::Event::send_only;
@@ -215,8 +215,8 @@ namespace casual
                      common::message::conversation::Disconnect message;
                      set_general( message);
 
-                     message.route.nodes.emplace_back( common::communication::ipc::Handle{ 42});
-                     message.route.nodes.emplace_back( common::communication::ipc::Handle{ 4242});
+                     message.route.nodes.emplace_back( common::platform::ipc::id{ 42});
+                     message.route.nodes.emplace_back( common::platform::ipc::id{ 4242});
 
                      message.events = common::flag::service::conversation::Event::send_only;
 

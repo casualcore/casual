@@ -46,7 +46,7 @@ namespace casual
          namespace ipc
          {
 
-            using id_type = communication::ipc::Handle;
+            using id_type = platform::ipc::id;
 
             using transform_type = std::function< std::vector< communication::message::Complete>( communication::message::Complete&)>;
 

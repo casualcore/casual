@@ -81,7 +81,7 @@ namespace casual
 
                   struct Local
                   {
-                     sf::platform::pid::type pid;
+                     sf::platform::process::id pid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -91,7 +91,7 @@ namespace casual
 
                   struct Remote
                   {
-                     sf::platform::pid::type pid;
+                     sf::platform::process::id pid;
                      sf::platform::size::type hops;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(

@@ -34,7 +34,7 @@ namespace casual
 
          auto pid = process::spawn( local::processPath(), {});
 
-         EXPECT_TRUE( pid != 0);
+         EXPECT_TRUE( pid);
          EXPECT_TRUE( pid != process::id());
 
          // wait for it..
@@ -47,7 +47,7 @@ namespace casual
 
          auto pid = process::spawn( local::processPath(), { "-r", "42" });
 
-         EXPECT_TRUE( pid != 0);
+         EXPECT_TRUE( pid);
          EXPECT_TRUE( pid != process::id());
 
          // wait for it..
@@ -62,7 +62,7 @@ namespace casual
 
          auto pid = process::spawn( local::processPath(), {});
 
-         EXPECT_TRUE( pid != 0);
+         EXPECT_TRUE( pid);
          EXPECT_TRUE( pid != process::id());
 
          auto terminated = process::lifetime::ended();
@@ -106,9 +106,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::vector< platform::pid::type> pids( 10);
-
-         auto terminated = process::lifetime::wait( { 666});
+         auto terminated = process::lifetime::wait( { platform::process::id{ 666}});
 
          EXPECT_TRUE( terminated.empty());
       }

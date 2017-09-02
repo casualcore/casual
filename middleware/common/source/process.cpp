@@ -116,9 +116,9 @@ namespace casual
          }
 
 
-         platform::pid::type id()
+         platform::process::id id()
          {
-            static const platform::pid::type pid = getpid();
+            static const platform::process::id pid{ getpid()};
             return pid;
          }
 
@@ -585,7 +585,7 @@ namespace casual
 
 
 
-            platform::pid::type pid = 0;
+            platform::process::native::type pid;
 
             log::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
 
@@ -653,7 +653,7 @@ namespace casual
             */
             // TODO: try something else to detect if the process started correct or not.
 
-            return pid;
+            return platform::process::id{ pid};
          }
 
 
@@ -695,7 +695,7 @@ namespace casual
                   {
                      handle_signal();
 
-                     auto result = waitpid( pid, &exit.status, flags);
+                     auto result = waitpid( pid.native(), &exit.status, flags);
 
                      if( result == -1)
                      {
@@ -724,7 +724,7 @@ namespace casual
                      }
                      else if( result != 0)
                      {
-                        exit.pid = result;
+                        exit.pid = platform::process::id{ result};
 
 
                         if( WIFEXITED( exit.status))
@@ -770,13 +770,13 @@ namespace casual
                {
                   while( result.size() < pids.size())
                   {
-                     auto exit = local::wait( -1, 0);
+                     auto exit = local::wait( platform::process::id{ -1}, 0);
 
                      if( range::find( pids, exit.pid))
                      {
                         result.push_back( std::move( exit));
                      }
-                     else if( exit.pid == 0)
+                     else if( ! exit.pid)
                      {
                         //
                         // No children exists
@@ -846,7 +846,7 @@ namespace casual
 
 
 
-         Handle ping( communication::ipc::Handle queue)
+         Handle ping( platform::ipc::id queue)
          {
             Trace trace{ "process::ping"};
 
@@ -858,7 +858,7 @@ namespace casual
 
          namespace lifetime
          {
-            Exit::operator bool () const { return pid != 0;}
+            Exit::operator bool () const { return pid.valid();}
 
             bool Exit::deceased() const
             {
@@ -901,7 +901,7 @@ namespace casual
 
                while( true)
                {
-                  auto exit = local::wait( -1);
+                  auto exit = local::wait( platform::process::id{ -1});
                   if( exit)
                   {
                      terminations.push_back( exit);

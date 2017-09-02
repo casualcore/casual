@@ -43,7 +43,7 @@ namespace casual
             // send the event, premature...
             //
             message::event::process::Exit event;
-            event.state.pid = 42;
+            event.state.pid = platform::process::id{ 42};
             event.state.reason = process::lifetime::Exit::Reason::core;
 
             mockup::ipc::eventually::send( communication::ipc::inbound::id(), event);

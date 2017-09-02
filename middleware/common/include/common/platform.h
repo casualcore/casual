@@ -48,6 +48,8 @@
 #endif
 
 
+#include "common/safe/handle.h"
+
 //
 // std
 //
@@ -115,10 +117,18 @@ namespace casual
 
 		   namespace ipc
          {
-		      namespace handle
+            namespace native
             {
                using type = long;
-            } // handle
+               constexpr type invalid = -1;
+            } // native
+
+            namespace tag
+            {
+               struct type{};
+            } // tag
+
+            using id = safe::basic_handle< native::type, tag::type, native::invalid>;
 
             namespace message
             {
@@ -162,9 +172,26 @@ namespace casual
 
          } // tcp
 
+         namespace process
+         {
+            namespace native
+            {
+               using type = pid_t;
+               constexpr type invalid = -1;
+            } // native
+
+            namespace tag
+            {
+               struct type{};
+            } // tag
+
+            using id = safe::basic_handle< native::type, tag::type, native::invalid>;
+
+         } // process
+
 			namespace pid
          {
-			   using type = pid_t;
+			   using type = process::id;
          } // pid
 
 			//
