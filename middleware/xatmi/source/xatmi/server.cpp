@@ -77,7 +77,7 @@ int casual_start_server( casual_server_argument* arguments)
       //
       // We block child so users can spawn stuff without actions/errors from casual
       //
-      common::signal::thread::scope::Mask block( common::signal::mask::block( { common::signal::Type::child}));
+      common::signal::thread::scope::Block block( { common::signal::Type::child});
 
       common::server::start(
             local::transform::services( *arguments),
