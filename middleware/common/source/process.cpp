@@ -454,61 +454,84 @@ namespace casual
                namespace current
                {
 
-                  namespace internal
+                  namespace copy
                   {
-                     std::vector< const char*> environment()
+                     //
+                     // Appends from current process environment, if it's not
+                     // already overridden.
+                     //
+                     void environment( std::vector< std::string>& variables)
                      {
-                        std::vector< const char*> result;
+                        //
+                        // Since we're reading environment variables we need to lock
+                        //
+                        std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
 
                         auto current = local::environment();
 
                         while( (*current) != nullptr)
                         {
-                           result.push_back( *current);
+                           std::string variable{ *current};
+
+                           auto found =  range::find_if( variables, [&variable]( const std::string& v){
+                              return range::equal(
+                                 std::get< 0>( range::divide( variable, '=')),
+                                 std::get< 0>( range::divide( v, '='))
+                              );
+                           });
+
+                           if( ! found)
+                           {
+                              variables.push_back( std::move( variable));
+                           }
+
                            ++current;
                         }
-
-                        return result;
                      }
-                  } // internal
+                  } // copy
 
 
+               } // current
+
+               namespace C
+               {
                   std::vector< const char*> environment( std::vector< std::string>& environment)
                   {
-
-                     auto result = internal::environment();
+                     std::vector< const char*> result;
+                     result.resize( environment.size() + 1);
 
                      std::transform(
                         std::begin( environment),
                         std::end( environment),
-                        std::back_inserter( result),
+                        std::begin( result),
                         std::mem_fn( &std::string::data));
 
                      result.push_back( nullptr);
+
                      return result;
                   }
 
-               } // current
+                  std::vector< const char*> arguments( const std::string& path, std::vector< std::string>& arguments)
+                  {
+                     std::vector< const char*> c_arguments;
 
-               std::vector< const char*> arguments( const std::string& path, std::vector< std::string>& arguments)
-               {
-                  std::vector< const char*> c_arguments;
-
-                  //
-                  // think we must add application-name as first argument...
-                  //
-                  c_arguments.push_back( path.c_str());
+                     //
+                     // think we must add application-name as first argument...
+                     //
+                     c_arguments.push_back( path.c_str());
 
 
-                  range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
+                     range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
 
-                  //
-                  // Null end
-                  //
-                  c_arguments.push_back( nullptr);
+                     //
+                     // Null end
+                     //
+                     c_arguments.push_back( nullptr);
 
-                  return c_arguments;
-               }
+                     return c_arguments;
+                  }
+
+               } // C
 
                namespace spawn
                {
@@ -577,6 +600,7 @@ namespace casual
                {
                   argument = environment::string( argument);
                }
+
                for( auto& variable : environment)
                {
                   variable = environment::string( variable);
@@ -585,27 +609,29 @@ namespace casual
 
 
 
-            platform::process::native::type pid;
-
             log::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+
+            //
+            // Append current, if not "overridden"
+            //
+            local::current::copy::environment( environment);
+
+
+            platform::process::id pid;
 
             {
                local::spawn::Attributes attributes;
 
                //
-               // Since we're reading environment variables we need to lock
-               //
-               std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
-
-
-               //
                // prepare c-style arguments and environment
                //
-               auto c_arguments = local::arguments( path, arguments);
-               auto c_environment = local::current::environment( environment);
+               auto c_arguments = local::C::arguments( path, arguments);
+               auto c_environment = local::C::environment( environment);
+
+               platform::process::native::type native_pid;
 
                auto status =  posix_spawnp(
-                     &pid,
+                     &native_pid,
                      path.c_str(),
                      nullptr,
                      attributes.get(),
@@ -619,6 +645,8 @@ namespace casual
                   default:
                      exception::system::throw_from_code( status);
                }
+
+               pid = platform::process::id{ native_pid};
             }
 
             //
@@ -653,7 +681,7 @@ namespace casual
             */
             // TODO: try something else to detect if the process started correct or not.
 
-            return platform::process::id{ pid};
+            return pid;
          }
 
 
