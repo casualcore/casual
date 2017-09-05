@@ -93,6 +93,37 @@ namespace casual
             return result;
          }
 
+         manager::admin::State::Remote remote( const manager::State& state)
+         {
+            manager::admin::State::Remote result;
+
+            common::range::transform( state.remotes, result.domains, []( auto& r){
+               manager::admin::remote::Domain domain;
+               
+               domain.id = r.id;
+               domain.process = r.process;
+               domain.order = r.order;
+
+               return domain;
+            });
+
+            for( auto& queue : state.queues)
+            {
+               auto found = common::range::find_if( queue.second, []( auto& i){
+                  return i.order > 0;
+               });
+
+               common::range::transform( found, result.queues, [&queue]( auto& i){
+                  manager::admin::remote::Queue result;
+                  result.name = queue.first;
+                  result.pid = i.process.pid;
+
+                  return result;
+               });
+            }
+
+            return result;
+         }
 
 
 

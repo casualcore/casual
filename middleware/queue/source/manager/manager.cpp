@@ -132,7 +132,7 @@ namespace casual
          {
             void pump( State& state)
             {
-               log << "qeueue manager start" << std::endl;
+               log << "queue manager start" << std::endl;
 
                auto handler = manager::handlers( state);
 

@@ -8,6 +8,7 @@
 
 #include "sf/namevaluepair.h"
 #include "sf/platform.h"
+#include "common/domain.h"
 
 
 
@@ -37,6 +38,43 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( queuebase);
                })
             };
+            namespace remote
+            {
+               struct Domain
+               {
+                  common::domain::Identity id;
+                  common::process::Handle process;
+                  size_type order = 0;
+   
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( id);
+                     archive & CASUAL_MAKE_NVP( process);
+                     archive & CASUAL_MAKE_NVP( order);
+                  })
+               };
+
+               struct Queue
+               {
+                  std::string name;
+                  common::platform::process::id pid;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( name);
+                     archive & CASUAL_MAKE_NVP( pid);
+                  })
+
+                  inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
+                  {
+                     return std::tie( lhs.name, lhs.pid) 
+                          < std::tie( rhs.name, rhs.pid);
+                  }
+               };
+               
+            } // remote
+
+
 
             struct Queue
             {
@@ -74,9 +112,14 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( timestamp);
                })
 
-               friend bool operator < ( const Queue& lhs, const Queue& rhs)
+               inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
                {
-                  return lhs.id < rhs.id;
+                  auto type_order = []( auto& q){ return q.type == Type::group_error_queue ? 1 : 0;};
+
+                  if( type_order( lhs) == type_order( rhs))
+                     return lhs.name < rhs.name;
+
+                  return type_order( lhs) < type_order( rhs);
                }
             };
 
@@ -123,10 +166,24 @@ namespace casual
                std::vector< Group> groups;
                std::vector< Queue> queues;
 
+               struct Remote
+               {
+                  std::vector< remote::Domain> domains;
+                  std::vector< remote::Queue> queues;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( domains);
+                     archive & CASUAL_MAKE_NVP( queues);
+                  })
+
+               } remote;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( groups);
                   archive & CASUAL_MAKE_NVP( queues);
+                  archive & CASUAL_MAKE_NVP( remote);
                })
 
             };

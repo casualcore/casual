@@ -191,7 +191,7 @@ namespace casual
             EXPECT_TRUE( instances.front().order == 2) << " instances.front().order: " <<  instances.front().order;
 
 
-            auto found = common::range::find_if( state.state.gateways, [&]( const manager::State::Gateway& g){
+            auto found = common::range::find_if( state.state.remotes, [&]( const auto& g){
                return g.process == requester.process();
             });
 

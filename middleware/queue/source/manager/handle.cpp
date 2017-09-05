@@ -250,9 +250,9 @@ namespace casual
                      // Queues has been added, we check if there are any pending
                      //
 
-                     auto split = common::range::stable_partition( m_state.pending,[&]( decltype( m_state.pending.front()) p){
+                     auto split = common::range::stable_partition( m_state.pending,[&]( auto& p){
 
-                        return ! common::range::any_of( message.queues, [&]( decltype( message.queues.front()) q){
+                        return ! common::range::any_of( message.queues, [&]( auto& q){
                            return q.name == p.name;});
                      });
 
@@ -263,7 +263,7 @@ namespace casual
 
                      log << "pending to lookup: " << common::range::make( pending) << '\n';
 
-                     common::range::for_each( pending, [&]( decltype( pending.front()) pending){
+                     common::range::for_each( pending, [&]( auto& pending){
                         lookup::Request{ m_state}( pending);
                      });
                   }
@@ -301,7 +301,7 @@ namespace casual
                      // check if there are any pending lookups for this reply
                      //
 
-                     auto found = common::range::find_if( m_state.pending, [&]( const common::message::queue::lookup::Request& r){
+                     auto found = common::range::find_if( m_state.pending, [&]( const auto& r){
                         return r.correlation == message.correlation;
                      });
 
