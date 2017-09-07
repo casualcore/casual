@@ -2,9 +2,9 @@
 # Spec for casual
 #
 Summary: Casual Middleware
-Name: casual-middleware-%{distribution}
+Name: casual-middleware
 Version: %{casual_version}
-Release: %{casual_release}
+Release: %{casual_release}%{?dist}
 License: GPL
 Group: Applications/System
 Source: -
@@ -22,9 +22,11 @@ This is the core package for casual-middleware
 install -m 0755 -d $RPM_BUILD_ROOT/opt/casual
 cp -r /opt/casual/* $RPM_BUILD_ROOT/opt/casual/.
 find $RPM_BUILD_ROOT/opt/casual | xargs chmod 0755
+ln -s $RPM_BUILD_ROOT/opt/casual/etc/bash-completion.d/casual-admin $RPM_BUILD_ROOT/etc/bash-completion.d/casual-admin
 
 %files
 /opt/casual
+/etc/bash-completion.d/casual-admin
 
 %changelog
 * Tue Sep  22 2015  Fredrik Eriksson <lazan@laz.se> 

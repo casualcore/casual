@@ -23,6 +23,8 @@ admin = LinkExecutable( 'bin/casual-admin',
 
 Install( admin, '$(CASUAL_HOME)/bin')
 
+Install( 'etc/bash_completion.d/casual-admin', '$(CASUAL_HOME)/etc/bash_completion.d')
+
 
 
 

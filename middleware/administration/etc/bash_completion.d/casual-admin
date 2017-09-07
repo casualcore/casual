@@ -1,5 +1,3 @@
-# do not load, if casual-admin is not in $PATH
-which casual-admin &> /dev/null || return 0
 
 __index_of() {
     local needle="${1}"
@@ -9,6 +7,10 @@ __index_of() {
 }
 
 _casual_admin() {
+
+    # do not load, if casual-admin is not in $PATH
+    which casual-admin &> /dev/null || return 0
+
     local current previous arguments options i index cmd
     local parameters=("${COMP_WORDS[@]:0:COMP_CWORD}")
     COMPREPLY=()
