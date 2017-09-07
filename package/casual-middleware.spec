@@ -26,7 +26,7 @@ ln -s $RPM_BUILD_ROOT/opt/casual/etc/bash_completion.d/casual-admin $RPM_BUILD_R
 
 %files
 /opt/casual
-/etc/bash-completion.d/casual-admin
+/etc/bash_completion.d/casual-admin
 
 %changelog
 * Tue Sep  22 2015  Fredrik Eriksson <lazan@laz.se> 
