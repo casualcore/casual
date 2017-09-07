@@ -1,21 +1,67 @@
-# Do not load, if casual-admin is not in $PATH
-which casual-admin &> /dev/null || return 0
+
+__index_of() {
+    local needle="${1}"
+    local haystack="${2}"
+    local match="${haystack%%${needle}*}"
+    [[ "${match}" == "${haystack}" ]] && echo "${#haystack}" || echo "${#match}"
+}
 
 _casual_admin() {
-	local current previous options
-	COMPREPLY=()
-	current="${COMP_WORDS[COMP_CWORD]}"
-	previous="${COMP_WORDS[COMP_CWORD-1]}"
-	options=($(casual-admin casual-bash-completion | awk '{print $1}'))
 
-	if (( COMP_CWORD == 1 )); then
-		COMPREPLY=($(compgen -W "${options[*]} help" -- "${current}"))
-		return 0
-	elif (( COMP_CWORD == 2 )) && [[ "${options[*]}" == *"${previous}"* ]]; then
-		local arguments
-		arguments=($(casual-admin "${previous}" casual-bash-completion | awk '{print $1}'))
-		COMPREPLY=($(compgen -W "${arguments[*]}" -- "${current}"))
-		return 0
-	fi
+    # do not load, if casual-admin is not in $PATH
+    which casual-admin &> /dev/null || return 0
+
+    local current previous arguments options i index cmd
+    local parameters=("${COMP_WORDS[@]:0:COMP_CWORD}")
+    COMPREPLY=()
+    options=()
+    current="${COMP_WORDS[COMP_CWORD]}"
+    previous="${COMP_WORDS[COMP_CWORD-1]}"
+
+    # insert `casual-bash-completion` before any arguments starting with "--"
+    # XXX: when context is used, this might not result in expected behavior
+    cmd="${parameters[*]}"
+    cmd="${cmd/help/}" # abit ugly, but needed so there's no errors
+    index="$(__index_of "--" "${cmd}")"
+    cmd="${cmd%%--*} casual-bash-completion ${cmd:${index}:${#cmd}}"
+    index=-1
+
+    arguments=($(${cmd}))
+
+    # very much fail, if we don't have any arguments
+    (( ${#arguments[@]} > 0 )) || return 1
+
+    # only actual arguments (i.e. excluding cardinality)
+    for ((i=0; i<${#arguments[@]}; i+=3)) {
+        [[ -n "${previous}" && "${arguments[$i]}" == "${previous}" ]] && index=$i
+        options+=(${arguments[$i]})
+    }
+
+    # previous completed word was found, let's see what we can do with it
+    if (( index > -1 )); then
+        local cardinality_min="${arguments[${index}+1]}"
+        local cardinality_max="${arguments[${index}+2]}"
+        options=()
+
+        # assume cardinality of (0, 0) means you can stack other arguments after it
+        if (( cardinality_min == 0 && cardinality_max == 0 )) && [[ "${previous}" != *"help" ]]; then
+            for ((i=0; i<${#arguments[@]}; i+=3)) {
+                local option="${arguments[$i]}"
+
+                # if the option already has been included in the current context, don't suggest it again
+                # and don't suggest any help options either
+                [[ "${COMP_WORDS[*]}" == *"${option}"* || "${option}" == "--help" ]] && continue
+
+                options+=("${option}")
+            }
+        fi
+        # XXX: else/else if case here, to handle usage of "context" when implemented, to hopefully be able
+        #      to get suggestions on values
+    fi
+
+    COMPREPLY=($(compgen -W "${options[*]}" -- "${current}"))
+
+    return 0
+
 }
 complete -F _casual_admin casual-admin
