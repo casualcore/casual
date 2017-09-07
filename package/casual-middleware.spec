@@ -22,7 +22,7 @@ This is the core package for casual-middleware
 install -m 0755 -d $RPM_BUILD_ROOT/opt/casual
 cp -r /opt/casual/* $RPM_BUILD_ROOT/opt/casual/.
 find $RPM_BUILD_ROOT/opt/casual | xargs chmod 0755
-ln -s $RPM_BUILD_ROOT/opt/casual/etc/bash-completion.d/casual-admin $RPM_BUILD_ROOT/etc/bash-completion.d/casual-admin
+ln -s $RPM_BUILD_ROOT/opt/casual/etc/bash_completion.d/casual-admin $RPM_BUILD_ROOT/etc/bash_completion.d/casual-admin
 
 %files
 /opt/casual
