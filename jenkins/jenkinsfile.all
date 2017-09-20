@@ -227,7 +227,7 @@ try
                   
                   unstash 'frontend'
                   
-                  build( 'susecompile', 'casual/suse', backend_builder_suse)
+                  build( 'susecompile', 'casual/suse-builder', backend_builder_suse)
 
                   archive includes: '**/casual-middleware*.rpm'
                   
@@ -256,7 +256,7 @@ try
                   
                   unstash 'frontend'
                   
-                  build( 'centoscompile', 'casual/centos', backend_builder_centos)
+                  build( 'centoscompile', 'casual/centos-builder', backend_builder_centos)
 
                   step([$class: 'XUnitBuilder',
                      thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
