@@ -184,7 +184,7 @@ try
             {
                checkout scm
                
-               build( 'casualfrontend', 'casual/frontend', frontend_builder)
+               build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
 
                stash includes: '**/casual-webapp.zip', name: 'frontend'
             }
