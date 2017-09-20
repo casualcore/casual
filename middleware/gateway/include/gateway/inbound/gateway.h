@@ -449,27 +449,35 @@ namespace casual
                      template< typename D>
                      using Discover = common::message::Coordinate< Policy< D>>;
 
-
-                     namespace internal
-                     {
-                        struct Message : common::message::basic_message< common::message::Type::gateway_domain_discover_internal_coordination>
-                        {
-                           common::domain::Identity remote;
-                           std::vector< common::platform::pid::type> pids;
-
-                           CASUAL_CONST_CORRECT_MARSHAL(
-                           {
-                              archive & remote;
-                              archive & pids;
-                           })
-                        };
-
-                     } // internal
-
                   } // coordinate
 
+                  namespace forward
+                  {
+                     struct Request
+                     {
+                        void operator () ( common::message::gateway::domain::discover::Request& message) const
+                        {
+                           Trace trace{ "gateway::inbound::handle::connection::discover::forward::Request"};
+
+                           log << "message: " << message << '\n';
+
+                           //
+                           // Request from remote domain about this domain
+                           // We forward it to main thread (for async ordering reasons)
+                           //
+
+                           blocking::send( common::communication::ipc::inbound::id(), message);
+                        }
+                     };
+                  } // forward
+
+                  template< typename D>
                   struct Request
                   {
+                     using discover_type = D;
+
+                     Request( discover_type& device) : m_discover( device) {}
+
                      void operator () ( common::message::gateway::domain::discover::Request& message) const
                      {
                         Trace trace{ "gateway::inbound::handle::connection::discover::Request"};
@@ -477,43 +485,43 @@ namespace casual
                         log << "message: " << message << '\n';
 
                         //
-                        // Request from remote domain about this domain
-                        //
-
-                        //
-                        // Make sure the main thread gets the reply
+                        // Make sure we gets the reply
                         //
                         message.process = common::process::handle();
-
-                        coordinate::internal::Message coordinate;
-
-                        auto send_coordinate = common::scope::execute( [&](){
-
-                           coordinate.remote = message.domain;
-                           coordinate.correlation = message.correlation;
-
-                           blocking::send( common::communication::ipc::inbound::id(), coordinate);
-                        });
 
 
                         //
                         // Forward to broker and possible casual-queue
                         //
-                        {
-                           if( ! message.services.empty())
-                           {
-                              blocking::send( common::communication::ipc::service::manager::device(), message);
-                              coordinate.pids.push_back( common::communication::ipc::service::manager::device().connector().process().pid);
-                           }
+                        std::vector< common::platform::pid::type> pids;
 
-                           if( ! message.queues.empty() &&
-                                 blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message))
-                           {
-                              coordinate.pids.push_back( common::communication::ipc::queue::manager::optional::device().connector().process().pid);
-                           }
+                        if( ! message.services.empty())
+                        {
+                           blocking::send( common::communication::ipc::service::manager::device(), message);
+                           pids.push_back( common::communication::ipc::service::manager::device().connector().process().pid);
                         }
+
+                        if( ! message.queues.empty() &&
+                              blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message))
+                        {
+                           pids.push_back( common::communication::ipc::queue::manager::optional::device().connector().process().pid);
+                        }
+
+                        m_discover.add( message.correlation, {}, pids);
                      }
+
+                  private:
+                     discover_type& m_discover;
                   };
+
+                  namespace request
+                  {
+                     template< typename C>
+                     auto make( C&& coordinate) -> Request< std::remove_reference_t< C>>
+                     {
+                        return { std::forward< C>( coordinate)};
+                     }
+                  } // coordinate
 
 
                   template< typename D>
@@ -541,35 +549,6 @@ namespace casual
                      discover_type& m_discover;
 
                   };
-
-
-                  template< typename D>
-                  struct Coordinate
-                  {
-                     using discover_type = D;
-
-                     Coordinate( discover_type& device) : m_discover( device) {}
-
-                     void operator() ( coordinate::internal::Message& message)
-                     {
-                        Trace trace{ "gateway::inbound::handle::domain::discover::Coordinate::operator()"};
-
-                        m_discover.add( message.correlation, {}, message.pids);
-                     }
-
-                  private:
-                     discover_type& m_discover;
-                  };
-
-                  namespace coordinate
-                  {
-                     template< typename C>
-                     auto make( C&& coordinate) -> Coordinate< std::remove_reference_t< C>>
-                     {
-                        return { std::forward< C>( coordinate)};
-                     }
-                  } // coordinate
-
 
                } // discover
             } // domain
@@ -690,7 +669,7 @@ namespace casual
                   // replied
                   //
                   handle::domain::discover::Reply< outbound_type>{ discover},
-                  handle::domain::discover::coordinate::make( discover),
+                  handle::domain::discover::request::make( discover),
 
                   //
                   // Queue replies
@@ -741,6 +720,7 @@ namespace casual
 
                   auto reply = common::message::reverse::type( request);
 
+
                   version = validate( request.versions);
 
                   reply.version = version;
@@ -755,6 +735,7 @@ namespace casual
                   Trace trace{ "gateway::inbound::Gateway::domain_connect internal"};
 
                   message::inbound::Connect connect;
+
                   connect.domain = request.domain;
                   connect.process = common::process::handle();
                   connect.version = version;
@@ -880,10 +861,11 @@ namespace casual
                   //
                   auto handler = device.handler(
                      handle::call::Request{ cache},
+
                      handle::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
                      handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
-                     handle::domain::discover::Request{},
+                     handle::domain::discover::forward::Request{},
 
                      handle::queue::dequeue::Request{ cache},
                      handle::queue::enqueue::Request{ cache}
