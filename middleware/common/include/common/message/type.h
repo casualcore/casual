@@ -181,7 +181,6 @@ namespace casual
             gateway_domain_discover_request,
             gateway_domain_discover_reply,
             gateway_domain_discover_accumulated_reply,
-            gateway_domain_discover_internal_coordination,
             gateway_domain_advertise,
             gateway_domain_id,
 
