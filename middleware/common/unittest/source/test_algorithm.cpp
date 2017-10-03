@@ -59,6 +59,25 @@ namespace casual
          EXPECT_TRUE( empty.size() == 0);
       }
 
+      TEST( casual_common_algorithm_range, make_from_string_literal__expect_no_null_termination)
+      {
+         common::unittest::Trace trace;
+
+         {
+            auto range = range::make( "1");
+            EXPECT_TRUE( range.size() == 1);
+         }
+         {
+            auto range = range::make( "12");
+            EXPECT_TRUE( range.size() == 2);
+         }
+         {
+            auto range = range::make( "123");
+            EXPECT_TRUE( range.size() == 3);
+         }
+      }
+
+
       TEST( casual_common_algorithm_range, list_container)
       {
          common::unittest::Trace trace;

@@ -8,6 +8,8 @@
 #include "common/exception/system.h"
 #include "common/string.h"
 #include "common/algorithm.h"
+#include "common/transcode.h"
+#include "common/buffer/type.h"
 
 #include <curl/curl.h>
 
@@ -57,59 +59,63 @@ namespace casual
 
                   } // set
 
+                  struct Reply
+                  {
+                     std::vector< std::string> header;
+                     std::string payload;
+                  };
+
 
                   namespace callback
                   {
+                     using payload_const_view = common::Range< const char*>;
+
                      namespace reply
                      {
-                        size_t payload( char* data, size_t size, size_t nmemb, std::vector< char>* destination)
+                        size_t payload( char* data, size_t size, size_t nmemb, curl::Reply* destination)
                         {
-                          if( destination == nullptr)
-                          {
-                            return 0;
-                          }
+                           Trace trace{ "http::request::local::curl::callback::reply::payload"};
 
-                          auto first = data;
-                          auto last = data + ( size * nmemb);
+                           if( destination == nullptr)
+                           {
+                              return 0;
+                           }
 
-                          destination->insert( std::end( *destination), first, last);
+                           auto first = data;
+                           auto last = data + ( size * nmemb);
 
-                          return size * nmemb;
+                           destination->payload.insert( std::end( destination->payload), first, last);
+
+                           return size * nmemb;
                         }
                      } // reply
 
 
                      namespace request
                      {
-                        struct Payload
+                        size_t read( char* buffer, common::platform::size::type size, payload_const_view& input)
                         {
-                           Payload( const common::platform::binary::type& data) : data( data) {}
 
-                           std::size_t offset = 0;
-                           const common::platform::binary::type& data;
-
-                           auto begin() { return std::begin( data) + offset;}
-                           auto end() { return std::end( data);}
-
-                           auto read( char* buffer, std::size_t size)
+                           if( input.size() < size)
                            {
-                              auto left = data.size() - offset;
-                              if( left < size)
-                              {
-                                 std::copy( begin(), end(), buffer);
-                                 offset += left;
-                                 return left;
-                              }
-
-                              std::copy( begin(), begin() + size, buffer);
-                              offset += size;
+                              common::range::copy( input, buffer);
+                              auto count = input.size();
+                              input.advance( count);
+                              return count;
+                           }
+                           else
+                           {
+                              std::copy( std::begin( input), std::begin( input) + size, buffer);
+                              input.advance( size);
                               return size;
                            }
-                        };
+                        }
 
-                        size_t payload( char* buffer, size_t size, size_t nitems, Payload* input)
+                        size_t payload( char* buffer, size_t size, size_t nitems, payload_const_view* input)
                         {
-                           return input->read( buffer, size * nitems);
+                           Trace trace{ "http::request::local::curl::callback::request::payload"};
+
+                           return read( buffer, size * nitems, *input);
                         }
 
                      } // request
@@ -117,6 +123,8 @@ namespace casual
 
                      std::size_t header( char* buffer, size_t size, size_t nitems, std::vector< std::string>* destination)
                      {
+                        Trace trace{ "http::request::local::curl::header"};
+
                         if( destination == nullptr)
                         {
                           return 0;
@@ -136,7 +144,7 @@ namespace casual
                            return size * nitems;
                         }
 
-                        destination->emplace_back( first, last);
+                        destination->push_back( common::string::lower( std::string( first, last)));
 
                         return size * nitems;
                      }
@@ -176,6 +184,7 @@ namespace casual
                {
                   using handle_type = curl::handle_type;
                   using header_type = std::unique_ptr< curl_slist, std::function< void(curl_slist*)>>;
+                  using payload_const_view = local::curl::callback::payload_const_view;
 
 
                   Connection( const std::string& url, const std::vector< std::string>& header)
@@ -193,7 +202,6 @@ namespace casual
                      curl::set::option( m_handle, CURLOPT_ERRORBUFFER, global::error::buffer.data());
                      curl::set::option( m_handle, CURLOPT_URL, url.data());
                      curl::set::option( m_handle, CURLOPT_FOLLOWLOCATION, 1L);
-                     curl::set::option( m_handle, CURLOPT_WRITEFUNCTION, &curl::callback::reply::payload);
                      curl::set::option( m_handle, CURLOPT_FAILONERROR, 1L);
 
 
@@ -204,6 +212,8 @@ namespace casual
                         m_header.reset( curl_slist_append( m_header.release(), field.c_str()));
                      }
 
+
+
                   }
 
 
@@ -211,8 +221,9 @@ namespace casual
                   {
                      Trace trace{ "http::request::local::Connection::get"};
 
-                     request::Reply reply;
-                     curl::set::option( m_handle, CURLOPT_WRITEDATA, &reply.payload);
+                     local::curl::Reply reply;
+                     curl::set::option( m_handle, CURLOPT_WRITEFUNCTION, &curl::callback::reply::payload);
+                     curl::set::option( m_handle, CURLOPT_WRITEDATA, &reply);
 
                      if( m_header)
                      {
@@ -236,37 +247,170 @@ namespace casual
                            "failed to connect - code: ", code, " - message: ", global::error::buffer.data())};
                      }
 
-                     return reply;
+                     return transform( std::move( reply));
                   }
 
 
-                  request::Reply post( const common::platform::binary::type& payload) const
+                  request::Reply post( const payload::Request& payload)
                   {
                      Trace trace{ "http::request::local::Connection::post"};
 
                      curl::set::option( m_handle, CURLOPT_POST, 1L);
 
-                     curl::callback::request::Payload holder( payload);
+                     auto view = transcode( payload);
+
                      //
                      // set read-payload-stuff
                      //
                      {
-                        curl::set::option( m_handle, CURLOPT_POSTFIELDSIZE_LARGE , payload.size());
+                        curl::set::option( m_handle, CURLOPT_POSTFIELDSIZE_LARGE , view.size());
                         curl::set::option( m_handle, CURLOPT_READFUNCTION, &curl::callback::request::payload);
-                        curl::set::option( m_handle, CURLOPT_READDATA , &holder);
+                        curl::set::option( m_handle, CURLOPT_READDATA , &view);
                      }
 
                      return get();
                   }
-
                private:
+
+                  request::Reply transform( local::curl::Reply&& reply) const
+                  {
+                     Trace trace{ "http::request::local::Connection::transform"};
+
+                     auto get_buffer_type = []( const std::vector< std::string>& header){
+
+                        for( auto& field : header)
+                        {
+                           auto split = common::range::split( field, ':');
+                           if( common::range::search( std::get< 0>( split), common::range::make( "content-type")))
+                           {
+                              auto trimmed = common::string::trim( std::get< 1>( split));
+                              return std::string( std::begin( trimmed), std::end( trimmed));
+                           }
+                        }
+                        return std::string{};
+                     };
+
+                     auto transcode_base64 = [&]( local::curl::Reply&& reply, const std::string& type){
+
+                        request::Reply result;
+                        result.payload.type = std::move( type);
+                        result.header = std::move( reply.header);
+                        result.payload.memory = common::transcode::base64::decode( reply.payload);
+
+                        return result;
+                     };
+
+                     auto transcode_none = [&]( local::curl::Reply&& reply, const std::string& type){
+
+                        request::Reply result;
+                        result.payload.type = type;
+                        result.header = std::move( reply.header);
+                        common::range::copy( reply.payload, result.payload.memory);
+
+                        return result;
+                     };
+
+
+                     const auto mapping = std::map< std::string, std::function< request::Reply( local::curl::Reply&&, const std::string&)>>{
+                        {
+                           "CFIELD/",
+                           transcode_base64
+                        },
+                        {
+                           ".binary/",
+                           transcode_base64
+                        }
+                     };
+
+                     auto type = get_buffer_type( reply.header);
+
+                     verbose::log << "buffer type: " << type << '\n';
+
+                     auto found = common::range::find( mapping, type);
+
+                     if( found)
+                     {
+                        return found->second( std::move( reply), type);
+                     }
+                     else
+                     {
+                        common::log::category::error << "failed to find a transcoder for buffertype: " << type << '\n';
+                        verbose::log << "header: " << common::range::make( reply.header) << '\n';
+                        return transcode_none( std::move( reply), common::buffer::type::x_octet());
+                     }
+                  }
+
+                  std::string content( const std::string& buffertype)
+                  {
+                     const static auto mapping = std::map< std::string, std::string>{
+                        { common::buffer::type::binary(), "content-type: application/casual-binary"},
+                        { common::buffer::type::x_octet(), "content-type: application/casual-x-octet"},
+                        { common::buffer::type::json(), "content-type: application/json"},
+                        { common::buffer::type::xml(), "content-type: application/xml"}
+                     };
+
+                     auto found = common::range::find( mapping, buffertype);
+                     if( found) return found->second;
+
+                     return {};
+                  }
+
+                  payload_const_view transcode( const payload::Request& payload)
+                  {
+                     Trace trace{ "http::request::local::Connection::transcode"};
+
+                     auto transcode_base64 = [&]( const payload::Request& payload){
+
+                        auto content_type = content( payload.payload().type);
+
+                        verbose::log << "added header: " << content_type << '\n';
+
+                        m_header.reset( curl_slist_append( m_header.release(), content_type.c_str()));
+
+                        m_transcoded_payload = common::transcode::base64::encode( payload.payload().memory);
+                        return payload_const_view( m_transcoded_payload.data(), m_transcoded_payload.size());
+                     };
+
+                     const auto mapping = std::map< std::string, std::function<payload_const_view(const payload::Request&)>>{
+                        {
+                           "CFIELD/",
+                           transcode_base64
+                        },
+                        {
+                           ".binary/",
+                           transcode_base64
+                        }
+
+                     };
+
+                     auto found = common::range::find( mapping, payload.payload().type);
+
+                     if( found)
+                     {
+                        verbose::log << "found transcoder for: " << found->first << '\n';
+                        return found->second( payload);
+                     }
+                     else
+                     {
+                        common::log::category::error << "failed to find a transcoder for buffertype: " << payload.payload().type << '\n';
+                        verbose::log << "payload: " << payload.payload() << '\n';
+                        return transcode_base64( payload);
+                     }
+                  }
+
                   handle_type m_handle;
                   header_type m_header = header_type{ nullptr, &curl_slist_free_all};
+                  std::string m_transcoded_payload;
                };
             } // <unnamed>
          } // local
 
-         Reply post( const std::string& url, const common::platform::binary::type& payload, const std::vector< std::string>& header)
+         Reply post( const std::string& url, const payload::Request& payload)
+         {
+            return post( url, payload, {});
+         }
+
+         Reply post( const std::string& url, const payload::Request& payload, const std::vector< std::string>& header)
          {
             Trace trace{ "http::request::post"};
 

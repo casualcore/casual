@@ -6,6 +6,7 @@
 #define MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_REQUEST_H_
 
 #include "common/platform.h"
+#include "common/buffer/type.h"
 
 namespace casual
 {
@@ -13,13 +14,21 @@ namespace casual
    {
       namespace request
       {
+         namespace payload
+         {
+            using Request = common::buffer::payload::Send;
+            using Reply = common::buffer::Payload;
+
+         } // payload
+
          struct Reply
          {
             std::vector< std::string> header;
-            common::platform::binary::type payload;
+            payload::Reply payload;
          };
 
-         Reply post( const std::string& url, const common::platform::binary::type& payload, const std::vector< std::string>& header);
+         Reply post( const std::string& url, const payload::Request& payload);
+         Reply post( const std::string& url, const payload::Request& payload, const std::vector< std::string>& header);
 
 
       } // request

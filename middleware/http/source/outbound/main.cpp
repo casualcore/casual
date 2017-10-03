@@ -115,14 +115,20 @@ namespace casual
                      common::communication::ipc::blocking::send( message.process.queue, reply);
                   });
 
+                  // make sure we always send ACK
+                  auto send_ack = common::scope::execute( [&](){
+                     common::message::service::call::ACK ack;
+                     ack.correlation = message.correlation;
+                     ack.process = common::process::handle();
+                     common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), ack);
+                  });
+
                   auto& node = state.lookup.at( message.service.name);
 
-                  auto respons = http::request::post( node.url, message.buffer.memory, *node.headers.get());
+                  auto respons = http::request::post( node.url, message.buffer, *node.headers.get());
 
-                  reply.buffer.type = message.buffer.type;
-                  reply.buffer.memory = std::move( respons.payload);
+                  reply.buffer = std::move( respons.payload);
                   reply.status = common::code::xatmi::ok;
-
                }
             };
 
