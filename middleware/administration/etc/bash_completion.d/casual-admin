@@ -6,6 +6,22 @@ __index_of() {
     [[ "${match}" == "${haystack}" ]] && echo "${#haystack}" || echo "${#match}"
 }
 
+__get_file_list() {
+    local current="${1}"
+    local files=()
+    local k=0
+
+    (( ${#current} < 1 )) && current="$(pwd)/"
+
+    for j in $(compgen -f -- "${current#$(pwd)/}" ); do
+        [[ -d "${j}" ]] && { [[ "$(basename "${j}")" == "."* ]] && continue || j="${j}/"; }
+        [[ -f "${j}" ]] && { [[ "$(basename "${j}")" =~ .*\.(yaml|yml|json|ini|xml)$ ]] && j="${j} " || continue; }
+        files[k++]="${j}"
+    done
+
+    echo "${files[*]}"
+}
+
 _casual_admin() {
 
     # do not load, if casual-admin is not in $PATH
@@ -37,26 +53,57 @@ _casual_admin() {
         options+=(${arguments[$i]})
     }
 
+    # always add space after completed option
+    compopt +o nospace > /dev/null
+
     # previous completed word was found, let's see what we can do with it
     if (( index > -1 )); then
         local cardinality_min="${arguments[${index}+1]}"
         local cardinality_max="${arguments[${index}+2]}"
         options=()
 
-        # assume cardinality of (0, 0) means you can stack other arguments after it
-        if (( cardinality_min == 0 && cardinality_max == 0 )) && [[ "${previous}" != *"help" ]]; then
-            for ((i=0; i<${#arguments[@]}; i+=3)) {
-                local option="${arguments[$i]}"
+        if [[ "${previous}" != *"help" ]]; then
+            # assume cardinality of (0, 0) means you can stack other arguments after it
+            if (( cardinality_min == 0 && cardinality_max == 0 )); then
+                for ((i=0; i<${#arguments[@]}; i+=3)) {
+                    local option="${arguments[$i]}"
 
-                # if the option already has been included in the current context, don't suggest it again
-                # and don't suggest any help options either
-                [[ "${COMP_WORDS[*]}" == *"${option}"* || "${option}" == "--help" ]] && continue
+                    # if the option already has been included in the current context, don't suggest it again
+                    # and don't suggest any help options either
+                    [[ "${COMP_WORDS[*]}" == *"${option}"* || "${option}" == "--help" ]] && continue
 
-                options+=("${option}")
-            }
+                    options+=("${option}")
+                }
+            # assume cardinality max bigger than zero would accept a file as an argument, bash can't handle
+            # large numbers so check the lenght of the number...
+            elif (( cardinality_max > 0 || ${#cardinality_max} > 1 )); then
+                # special case, chose format
+                if [[ "${previous}" == "--state" ]]; then
+                    options=("json" "yaml" "xml" "ini")
+                # complete files and directories
+                # XXX: until we have a context
+                elif [[ "${previous}" == "--boot" ]]; then
+                    # do not add space after compeleted directory or file
+                    compopt -o nospace >/dev/null
+
+                    options=($(__get_file_list "${current}"))
+                elif [[ "${previous}" == "--metric-reset" ]]; then
+                    options=($(casual-admin service --list-services --porcelain | awk -F\| '{print $1}'))
+                fi
+            fi
+            # XXX: else/else if case here, to handle usage of "context" when implemented, to hopefully be able
+            #      to get suggestions on values
         fi
-        # XXX: else/else if case here, to handle usage of "context" when implemented, to hopefully be able
-        #      to get suggestions on values
+    # special case, do not continue to autocomplete after the dynamic parameter arguments
+    # has been completed once
+    else
+        case "${COMP_WORDS[COMP_CWORD-2]}" in
+            "--boot"|"--state"|"--metric-reset")
+                return 0
+                ;;
+            *)
+                ;;
+        esac
     fi
 
     COMPREPLY=($(compgen -W "${options[*]}" -- "${current}"))
