@@ -231,7 +231,7 @@ namespace casual
                      message.trid = trid();
 
                      message.message.id = common::uuid::make();
-                     message.message.properties = { "property 1", "property 2"};
+                     message.message.properties = "property 1:property 2";
                      message.message.reply = "queueB";
                      message.message.available = common::platform::time::clock::type::now();
                      message.message.type = ".json/";
@@ -257,7 +257,7 @@ namespace casual
                      message.name = "queueA";
                      message.trid = trid();
 
-                     message.selector.properties = { "property 1", "property 2"};
+                     message.selector.properties = "property 1:property 2";
                      message.selector.id = common::Uuid{ "315dacc6182e4c12bf9877efa924cb87"};
 
                      message.block = false;
@@ -273,7 +273,7 @@ namespace casual
 
 
                      message.id = common::uuid::make();
-                     message.properties = { "property 1", "property 2"};
+                     message.properties = "property 1:property 2";
                      message.reply = "queueB";
                      message.available = common::platform::time::clock::type::now();
                      message.type = ".json/";
