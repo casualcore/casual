@@ -1,12 +1,6 @@
-/*
- * tuxedo_handler.h
- *
- *  Created on: 9 apr. 2016
- *      Author: hbergk
- */
 
-#ifndef MIDDLEWARE_PLUGIN_TUXEDO_HANDLER_H_
-#define MIDDLEWARE_PLUGIN_TUXEDO_HANDLER_H_
+#ifndef MIDDLEWARE_PLUGIN_XAMTI_HANDLER_H_
+#define MIDDLEWARE_PLUGIN_XAMTI_HANDLER_H_
 
 #include <ngx_config.h>
 #include <ngx_core.h>
@@ -26,4 +20,4 @@ void errorhandler(ngx_http_request_t* r, ngx_http_xatmi_ctx_t* client_context);
 ngx_int_t buffer_size( ngx_int_t value);
 ngx_int_t get_header_length(ngx_http_request_t *r);
 ngx_int_t copy_headers( ngx_http_request_t *r, CasualHeader* headers);
-#endif /* MIDDLEWARE_PLUGIN_TUXEDO_HANDLER_H_ */
+#endif /* MIDDLEWARE_PLUGIN_XAMTI_HANDLER_H_ */

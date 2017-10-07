@@ -7,7 +7,6 @@ IncludePaths([
    '../common/include',
    '../xatmi/include',
    '../buffer/include',
-   '../../thirdparty/rapidjson/include',
    '../serviceframework/include',
    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
    ])

@@ -1,9 +1,3 @@
-/*
- * ngx_http_xatmi_common_declaration.h
- *
- *  Created on: 28 aug 2016
- *      Author: 40043017
- */
 
 #ifndef NGX_HTTP_XATMI_COMMON_DECLARATION_H_
 #define NGX_HTTP_XATMI_COMMON_DECLARATION_H_

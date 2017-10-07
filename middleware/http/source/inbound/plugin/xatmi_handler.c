@@ -1,14 +1,8 @@
-/*
- * tuxedo_handler.c
- *
- *  Created on: 9 apr. 2016
- *      Author: hbergk
- */
 #include "xatmi_handler.h"
 
-// Global representation av senaste tuxedo errorkod
+// Global representation av senaste xatmi errorkod
 long xatmi_tperrno;
-// Typ för att representera olika "context" där tuxedo anropas
+// Typ för att representera olika "context" där xatmi anropas
 enum xatmi_context{ cTPINIT, cTPALLOC, cTPACALL, cTPGETRPLY };
 //Global representation av senaste context där fel uppstod.
 enum xatmi_context xatmi_error_context;
@@ -36,11 +30,11 @@ ngx_str_t copy_buffer( Payload source, ngx_http_request_t* r)
 
 ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "tuxedo: calling service [%s]", client_context->service);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "tuxedo: call_buffer [%V]", &client_context->call_buffer);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: calling service [%s]", client_context->service);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: call_buffer [%V]", &client_context->call_buffer);
 
    ngx_int_t headersize = get_header_length(r);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "tuxedo: headerlength [%d]", headersize);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: headerlength [%d]", headersize);
    CasualHeader* header = NULL;
    if (headersize > 0)
    {
@@ -73,7 +67,7 @@ ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* 
 
    free(header);
    free(transport.payload.data);
-   ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "tuxedo: calling service - end");
+   ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: calling service - end");
 
    return calling_descriptor;
 }
@@ -81,7 +75,7 @@ ngx_int_t xatmi_call( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* 
 
 ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "tuxedo: receiving... calling_descriptor [%d]", client_context->calling_descriptor);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "xatmi: receiving... calling_descriptor [%d]", client_context->calling_descriptor);
 
    CasualBuffer transport;
    transport.header = 0; // No header needed
@@ -105,7 +99,7 @@ ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_
 
 void xatmi_cancel( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "tuxedo: canceling... calling_descriptor [%d]", client_context->calling_descriptor);
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "xatmi: canceling... calling_descriptor [%d]", client_context->calling_descriptor);
    tpcancel(client_context->calling_descriptor);
 }
 
@@ -206,7 +200,7 @@ void errorhandler(ngx_http_request_t* r, ngx_http_xatmi_ctx_t* client_context)
    u_char message[4096];
    ngx_memzero( message, sizeof( message)/ sizeof(u_char));
 
-   // client_context->state == NGX_ERROR gör att tuxedo_terminate (med tpterm) körs (i ett senare läge).
+   // client_context->state == NGX_ERROR gör att xatmi_terminate (med tpterm) körs (i ett senare läge).
    // Initierar till NGX_OK, så får man istället i felhanteringen aktivt sätta till NGX_ERROR när tpterm önskas!
    client_context->state = NGX_OK;
 
@@ -220,7 +214,7 @@ void errorhandler(ngx_http_request_t* r, ngx_http_xatmi_ctx_t* client_context)
       break;
 
    case cTPACALL:
-      // Sätt lämplig HTTP-returkod och avgör om tuxedo_terminate ska triggas
+      // Sätt lämplig HTTP-returkod och avgör om xatmi_terminate ska triggas
       switch( xatmi_tperrno )
       {
       case TPENOENT :

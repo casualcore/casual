@@ -1,9 +1,3 @@
-/*
- * platuxedo_nginx_utility_caller.cpp
- *
- *  Created on: 2 okt. 2017
- *      Author: 40043017
- */
 
 #include "http/common.h"
 #include "http/inbound/caller.h"
@@ -17,9 +11,8 @@
 
 namespace
 {
-// Global representation av senaste tuxedo errorkod
-// Typ för att representera olika "context" där tuxedo anropas
-enum tuxedo_context
+// Global representation av senaste errorkod
+enum 
 {
    cTPINIT, cTPALLOC, cTPACALL, cTPGETRPLY
 };
