@@ -1,0 +1,27 @@
+
+domain:
+
+    # name of this domain
+    name: example-http-inbound-domain
+      
+    servers: 
+         
+        #  
+        # path to the server. If servers path are in PATH environment variable
+        # one can omitt the path part, and only use the executable name
+        #  
+        - path: ${CASUAL_HOME}/example/bin/casual-example-server
+          instances: 1 # how many instances should be started
+          note: Arbitary information of this server
+      
+    executables:
+        - alias: casual-inbound-server
+          note: nginx casual style
+          path: ${CASUAL_HOME}/http/nginx
+          arguments: 
+             - -c
+             - ${CASUAL_HOME}/http/nginx.conf
+             - -p
+             - ${CASUAL_DOMAIN_HOME}
+          instances: 1
+

@@ -343,10 +343,10 @@ namespace casual
                   std::string content( const std::string& buffertype)
                   {
                      const static auto mapping = std::map< std::string, std::string>{
-                        { common::buffer::type::binary(), "content-type: application/casual-binary"},
-                        { common::buffer::type::x_octet(), "content-type: application/casual-x-octet"},
-                        { common::buffer::type::json(), "content-type: application/json"},
-                        { common::buffer::type::xml(), "content-type: application/xml"}
+                        { common::buffer::type::binary(), "content-type: " + http::protocol::binary()},
+                        { common::buffer::type::x_octet(), "content-type: " + http::protocol::x_octet()},
+                        { common::buffer::type::json(), "content-type: " + http::protocol::json()},
+                        { common::buffer::type::xml(), "content-type: " + http::protocol::xml()}
                      };
 
                      auto found = common::range::find( mapping, buffertype);

@@ -29,6 +29,14 @@ namespace casual
          Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
       };
 
+      namespace protocol
+      {
+         const std::string& x_octet();
+         const std::string& binary();
+         const std::string& json();
+         const std::string& xml();
+
+      } //protocol
    } // http
 } // casual
 
