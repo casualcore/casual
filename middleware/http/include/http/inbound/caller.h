@@ -34,8 +34,10 @@ extern "C" {
 
    long casual_xatmi_send( CasualBuffer* data);
    long casual_xatmi_receive( CasualBuffer* data);
+   long casual_xatmi_cancel( CasualBuffer* data);
 
    enum {OK, AGAIN, ERROR};
+   enum xatmi_context {cTPINIT, cTPALLOC, cTPACALL, cTPGETRPLY};
 
 #ifdef __cplusplus
 }

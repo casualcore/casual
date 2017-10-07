@@ -2,8 +2,6 @@
 
 // Global representation av senaste xatmi errorkod
 long xatmi_tperrno;
-// Typ för att representera olika "context" där xatmi anropas
-enum xatmi_context{ cTPINIT, cTPALLOC, cTPACALL, cTPGETRPLY };
 //Global representation av senaste context där fel uppstod.
 enum xatmi_context xatmi_error_context;
 
@@ -100,7 +98,8 @@ ngx_int_t xatmi_receive( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_
 void xatmi_cancel( ngx_http_xatmi_ctx_t* client_context, ngx_http_request_t* r)
 {
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0,  "xatmi: canceling... calling_descriptor [%d]", client_context->calling_descriptor);
-   tpcancel(client_context->calling_descriptor);
+   CasualBuffer transport;
+   casual_xatmi_cancel( &transport);
 }
 
 ngx_int_t xatmi_max_service_length()

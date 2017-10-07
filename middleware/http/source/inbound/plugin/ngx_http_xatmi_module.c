@@ -204,7 +204,6 @@ static ngx_int_t receive( ngx_http_request_t* r)
 
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: calling_descriptor=%d", client_context->calling_descriptor);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: numberOfCalls=%d", client_context->numberOfCalls);
-   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: Allocating buffer protocol=%s with len=1024", client_context->protocol);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: Waiting for answer: Initial size of client_context->reply_buffer: [%d]", client_context->reply_buffer.len);
 
    return xatmi_receive( client_context, r);
@@ -255,6 +254,8 @@ static ngx_int_t extract_information( ngx_http_request_t* r, ngx_http_xatmi_ctx_
    {
       return NGX_HTTP_BAD_REQUEST;
    }
+
+   ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: r->args=%V", &r->args);
 
    return NGX_OK;
 }

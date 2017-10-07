@@ -9,16 +9,6 @@
 #include <map>
 #include <vector>
 
-namespace
-{
-// Global representation av senaste errorkod
-enum 
-{
-   cTPINIT, cTPALLOC, cTPACALL, cTPGETRPLY
-};
-
-}
-
 namespace casual
 {
    namespace http
@@ -274,6 +264,35 @@ namespace casual
                   return exception::handle( transport);
                }
             }
+
+            long cancel( CasualBuffer* transport)
+            {
+               const http::Trace trace("casual::http::inbound::cancel");
+               const auto& protocol = transport->protocol;
+               const auto descriptor = transport->calldescriptor;
+               const auto& service = transport->service;
+
+               http::verbose::log << "protocol: " << protocol << '\n';
+               http::verbose::log << "service: " << service << '\n';
+               http::verbose::log << "descriptor: " << descriptor << '\n';
+
+               transport->context = cTPGETRPLY;
+
+               try
+               {
+                  //
+                  // Handle reply
+                  //
+                  namespace call = common::service::call;
+                  call::context().cancel( descriptor);
+
+                  return OK;
+               }
+               catch (...)
+               {
+                  return exception::handle( transport);
+               }
+            }
          }
       }
    }
@@ -287,5 +306,10 @@ long casual_xatmi_send( CasualBuffer* data)
 long casual_xatmi_receive( CasualBuffer* data)
 {
    return casual::http::inbound::receive(data);
+}
+
+long casual_xatmi_cancel( CasualBuffer* data)
+{
+   return casual::http::inbound::cancel(data);
 }
 
