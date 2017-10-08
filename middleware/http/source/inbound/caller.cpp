@@ -47,6 +47,74 @@ namespace casual
                }
             }
 
+            namespace parameter
+            {
+               std::map< std::string, std::string> copy( const Buffer& buffer)
+               {
+                  std::map< std::string, std::string> result;
+                  auto paramters = common::string::split( buffer.data, '&');
+                  for (const auto parameter : paramters)
+                  {
+                     const auto parts = common::string::split( parameter, '=');
+                     if (parts.size() == 2)
+                     {
+                        result[parts[0]] = parts[1];
+                     }
+                  }
+                  return result;
+               }
+
+               common::platform::binary::type make_json( const std::map< std::string, std::string>& parameters)
+               {
+                  common::platform::binary::type buffer;
+                  buffer.push_back('{');
+                  for ( const auto& parameter : parameters)
+                  {
+                     buffer.push_back('"');
+                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     buffer.push_back('"');
+                     buffer.push_back(':');
+                     buffer.push_back('"');
+                     std::copy( parameter.second.begin(), parameter.second.end(), std::back_inserter( buffer));
+                     buffer.push_back('"');
+                     buffer.push_back(',');
+                  }
+                  if ( buffer.back() == ',') buffer.pop_back();
+                  buffer.push_back('}');
+
+                  http::verbose::log << "parameters: " << std::string( buffer.begin(), buffer.end()) << '\n';
+                  return buffer;
+               }
+
+               common::platform::binary::type make_xml( const std::map< std::string, std::string>& parameters)
+               {
+                  common::platform::binary::type buffer;
+                  static const std::string root("root");
+
+                  buffer.push_back('<');
+                  std::copy( root.begin(), root.end(), std::back_inserter( buffer));
+                  buffer.push_back('>');
+                  for ( const auto& parameter : parameters)
+                  {
+                     buffer.push_back('<');
+                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     buffer.push_back('>');
+                     std::copy( parameter.second.begin(), parameter.second.end(), std::back_inserter( buffer));
+                     buffer.push_back('<');
+                     buffer.push_back('/');
+                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     buffer.push_back('>');
+                  }
+                  buffer.push_back('<');
+                  buffer.push_back('/');
+                  std::copy( root.begin(), root.end(), std::back_inserter( buffer));
+                  buffer.push_back('>');
+
+                  http::verbose::log << "parameters: " << std::string( buffer.begin(), buffer.end()) << '\n';
+                  return buffer;
+               }
+            }
+
             namespace buffer
             {
                namespace input
@@ -163,6 +231,24 @@ namespace casual
                   common::range::copy( input, output.data);
                   return output;
                }
+
+               common::platform::binary::type assemble( CasualBuffer* transport, const std::map< std::string, std::string>& parameters, const std::string& protocol)
+               {
+                  common::platform::binary::type buffer;
+                  if ( protocol == http::protocol::json() && transport->payload.size < 1)
+                  {
+                     buffer = parameter::make_json( parameters);
+                  }
+                  else if ( protocol == http::protocol::xml() && transport->payload.size < 1)
+                  {
+                     buffer = parameter::make_xml( parameters);
+                  }
+                  else
+                  {
+                     buffer = common::platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
+                  }
+                  return buffer;
+               }
             }
 
             namespace exception
@@ -177,62 +263,22 @@ namespace casual
                    {
                       transport->errorcode = exception.code().value();
                       transport->payload = buffer::copy( exception.code().message());
-                      return ERROR;
                    }
                    catch ( const common::exception::system::invalid::Argument& exception)
                    {
                       transport->errorcode = exception.code().value();
                       transport->payload = buffer::copy( std::string( exception.what()));
-                      return ERROR;
                    }
                    catch (...)
                    {
                       transport->errorcode = common::code::make_error_code( common::code::xatmi::os).value();
                       transport->payload = buffer::copy( std::string( "unknown error"));
-                      return ERROR;
                    }
+
+                   return ERROR;
                }
             }
 
-            namespace parameter
-            {
-               std::map< std::string, std::string> copy( const Buffer& buffer)
-               {
-                  std::map< std::string, std::string> result;
-                  auto paramters = common::string::split( buffer.data, '&');
-                  for (const auto parameter : paramters)
-                  {
-                     const auto parts = common::string::split( parameter, '=');
-                     if (parts.size() == 2)
-                     {
-                        result[parts[0]] = parts[1];
-                     }
-                  }
-                  return result;
-               }
-
-               common::platform::binary::type make_json( const std::map< std::string, std::string> parameters)
-               {
-                  common::platform::binary::type buffer;
-                  buffer.push_back('{');
-                  for ( const auto& parameter : parameters)
-                  {
-                     buffer.push_back('"');
-                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
-                     buffer.push_back('"');
-                     buffer.push_back(':');
-                     buffer.push_back('"');
-                     std::copy( parameter.second.begin(), parameter.second.end(), std::back_inserter( buffer));
-                     buffer.push_back('"');
-                     buffer.push_back(',');
-                  }
-                  if ( buffer.back() == ',') buffer.pop_back();
-                  buffer.push_back('}');
-
-                  http::verbose::log << "parameters: " << std::string( buffer.begin(), buffer.end()) << '\n';
-                  return buffer;
-               }
-            }
 
             long send( CasualBuffer* transport)
             {
@@ -262,16 +308,7 @@ namespace casual
                   //
                   // Handle buffer
                   //
-                  common::platform::binary::type buffer;
-                  if ( protocol == http::protocol::json() && transport->payload.size < 1)
-                  {
-                     buffer = parameter::make_json( parameters);
-                  }
-                  else
-                  {
-                     buffer = common::platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
-                  }
-
+                  auto buffer = buffer::assemble( transport, parameters, protocol);
                   common::buffer::Payload payload( buffer::type( protocol), buffer);
                   payload = buffer::input::transform( std::move( payload), protocol);
 
