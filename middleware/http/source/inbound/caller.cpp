@@ -126,10 +126,7 @@ namespace casual
                      {
                         common::buffer::Payload result;
                         result.type = std::move( buffer.type);
-                        http::verbose::log << "pre - transform" << '\n';
-
                         result.memory = common::transcode::base64::decode( std::string( buffer.memory.begin(), buffer.memory.end()));
-                        http::verbose::log << "post - transform" << '\n';
 
                         return result;
                     };
