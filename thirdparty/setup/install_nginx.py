@@ -11,7 +11,7 @@ import subprocess
 from shutil import copyfile
 
 URL="http://nginx.org/download/"
-FILENAME="nginx-1.10.2.tar.gz"
+FILENAME="nginx-1.13.5.tar.gz"
 TMP="/tmp/"
 
 if not os.getenv("CASUAL_BUILD_HOME") or not os.getenv("CASUAL_HOME") or not os.getenv("CASUAL_DOMAIN_HOME"):

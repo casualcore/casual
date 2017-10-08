@@ -17,10 +17,10 @@ domain:
     executables:
         - alias: casual-inbound-server
           note: nginx casual style
-          path: ${CASUAL_HOME}/http/nginx
+          path: ${CASUAL_HOME}/nginx/sbin/nginx
           arguments: 
              - -c
-             - ${CASUAL_HOME}/http/nginx.conf
+             - ${CASUAL_HOME}/nginx/conf/nginx.conf
              - -p
              - ${CASUAL_DOMAIN_HOME}
           instances: 1

@@ -21,7 +21,7 @@ typedef struct
 //
 // Constants
 //
-const long cServiceLocationStart = sizeof("/inbound/") - 1;
+const long cServiceLocationStart = sizeof("/casual/") - 1;
 
 //
 // Nginx "drivers"
@@ -48,7 +48,7 @@ static ngx_int_t receive( ngx_http_request_t* r);
 
 static ngx_command_t ngx_http_xatmi_commands[] = {
    {
-      ngx_string("xatmi_pass"),
+      ngx_string("casual_pass"),
       NGX_HTTP_LOC_CONF | NGX_CONF_NOARGS,
       ngx_http_xatmi_setup,
       NGX_HTTP_LOC_CONF_OFFSET,
