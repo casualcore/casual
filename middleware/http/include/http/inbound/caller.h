@@ -4,6 +4,15 @@
 #include <xatmi.h>
 
 #ifdef __cplusplus
+
+#include <map>
+#include <iostream>
+
+namespace std
+{
+   std::ostream& operator<<( std::ostream& stream, std::map< std::string, std::string> input);
+}
+
 extern "C" {
 #endif
 
@@ -13,11 +22,11 @@ extern "C" {
 	   char value[80];
    } CasualHeader;
 
-   typedef struct PayloadS
+   typedef struct BufferS
    {
       char* data;
       long size;
-   } Payload;
+   } Buffer;
 
    typedef struct CasualBufferS
    {
@@ -29,7 +38,8 @@ extern "C" {
 	   long errorcode;
 	   long format;
 	   char protocol[80];
-	   Payload payload;
+	   Buffer payload;
+	   Buffer parameter;
    } CasualBuffer;
 
    long casual_xatmi_send( CasualBuffer* data);

@@ -5,9 +5,22 @@
 #include "common/service/call/context.h"
 #include "common/transcode.h"
 #include "common/exception/system.h"
+#include "common/string.h"
 
 #include <map>
 #include <vector>
+
+namespace std
+{
+   std::ostream& operator<<( std::ostream& stream, std::map< std::string, std::string> input)
+   {
+      for (const auto data : input)
+      {
+         stream << "key: [" << data.first << "], value: [" << data.second << "]" << '\n';
+      }
+      return stream;
+   }
+}
 
 namespace casual
 {
@@ -142,13 +155,13 @@ namespace casual
                }
 
                template< typename Type>
-               Payload copy( const Type& buffer)
+               Buffer copy( const Type& input)
                {
-                  Payload payload;
-                  payload.data = reinterpret_cast<char*>( malloc( buffer.size()));
-                  payload.size = buffer.size();
-                  common::range::copy( buffer, payload.data);
-                  return payload;
+                  Buffer output;
+                  output.data = reinterpret_cast<char*>( malloc( input.size()));
+                  output.size = input.size();
+                  common::range::copy( input, output.data);
+                  return output;
                }
             }
 
@@ -181,6 +194,46 @@ namespace casual
                }
             }
 
+            namespace parameter
+            {
+               std::map< std::string, std::string> copy( const Buffer& buffer)
+               {
+                  std::map< std::string, std::string> result;
+                  auto paramters = common::string::split( buffer.data, '&');
+                  for (const auto parameter : paramters)
+                  {
+                     const auto parts = common::string::split( parameter, '=');
+                     if (parts.size() == 2)
+                     {
+                        result[parts[0]] = parts[1];
+                     }
+                  }
+                  return result;
+               }
+
+               common::platform::binary::type make_json( const std::map< std::string, std::string> parameters)
+               {
+                  common::platform::binary::type buffer;
+                  buffer.push_back('{');
+                  for ( const auto& parameter : parameters)
+                  {
+                     buffer.push_back('"');
+                     std::copy( parameter.first.begin(), parameter.first.end(), std::back_inserter( buffer));
+                     buffer.push_back('"');
+                     buffer.push_back(':');
+                     buffer.push_back('"');
+                     std::copy( parameter.second.begin(), parameter.second.end(), std::back_inserter( buffer));
+                     buffer.push_back('"');
+                     buffer.push_back(',');
+                  }
+                  if ( buffer.back() == ',') buffer.pop_back();
+                  buffer.push_back('}');
+
+                  http::verbose::log << "parameters: " << std::string( buffer.begin(), buffer.end()) << '\n';
+                  return buffer;
+               }
+            }
+
             long send( CasualBuffer* transport)
             {
                const http::Trace trace("casual::http::inbound::send");
@@ -201,9 +254,24 @@ namespace casual
                   common::service::header::fields( header);
 
                   //
+                  // Handle parameter
+                  //
+                  const auto& parameters = parameter::copy( transport->parameter);
+                  http::verbose::log << "parameters: " << parameters;
+
+                  //
                   // Handle buffer
                   //
-                  common::platform::binary::type buffer( transport->payload.data, transport->payload.data + transport->payload.size);
+                  common::platform::binary::type buffer;
+                  if ( protocol == http::protocol::json() && transport->payload.size < 1)
+                  {
+                     buffer = parameter::make_json( parameters);
+                  }
+                  else
+                  {
+                     buffer = common::platform::binary::type( transport->payload.data, transport->payload.data + transport->payload.size);
+                  }
+
                   common::buffer::Payload payload( buffer::type( protocol), buffer);
                   payload = buffer::input::transform( std::move( payload), protocol);
 

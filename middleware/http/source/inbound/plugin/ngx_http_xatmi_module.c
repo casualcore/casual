@@ -299,9 +299,9 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
       }
 
       //
-      // Only POST supported
+      // GET and POST supported
       //
-      if( !(r->method & NGX_HTTP_POST))
+      if( !((r->method & NGX_HTTP_POST) || (r->method & NGX_HTTP_GET)))
       {
          const char* message = "{\n   \"error\" : \"INPUT DATA ERROR\"\n}";
          errorreporter(r, client_context, NGX_HTTP_NOT_ALLOWED, message);
@@ -348,7 +348,7 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    rc = bufferhandler(r, &client_context->call_buffer);
    ngx_log_debug1(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: rc=%d", rc);
 
-   if ( rc != NGX_OK)
+   if ( rc != NGX_OK && rc != NGX_DONE)
    {
       ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0, "xatmi: returning due to error");
       return rc;
