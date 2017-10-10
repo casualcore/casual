@@ -6,7 +6,7 @@
 #include "domain/manager/manager.h"
 
 
-#include "common/error.h"
+#include "common/exception/handle.h"
 #include "common/arguments.h"
 
 
@@ -20,7 +20,7 @@ namespace casual
          int main( int argc, char** argv)
          {
 
-            common::communication::ipc::Handle event_queue;
+            common::platform::ipc::id event_queue;
 
             try
             {
@@ -41,7 +41,7 @@ namespace casual
 
                   parser.parse( argc, argv);
 
-                  event_queue = common::communication::ipc::Handle{ settings.event_queue};
+                  event_queue = common::platform::ipc::id{ settings.event_queue};
                }
 
                Manager domain( std::move( settings));
@@ -53,16 +53,16 @@ namespace casual
                if( event_queue)
                {
                   common::message::event::domain::Error event;
-                  event.message = exception.description();
+                  event.message = exception.what();
                   event.severity = common::message::event::domain::Error::Severity::fatal;
 
                   common::communication::ipc::non::blocking::send( event_queue, event);
                }
-               return casual::common::error::handler();
+               return casual::common::exception::handle();
             }
             catch( ...)
             {
-               return casual::common::error::handler();
+               return casual::common::exception::handle();
 
             }
             return 0;

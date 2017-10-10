@@ -6,7 +6,7 @@
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
 #include "common/network/byteorder.h"
 #include "common/platform.h"
 #include "common/log.h"
@@ -24,7 +24,7 @@ namespace casual
          namespace
          {
 
-            typedef common::platform::binary::type::size_type size_type;
+            typedef common::platform::size::type size_type;
             typedef common::platform::binary::type::const_pointer const_data_type;
             typedef common::platform::binary::type::pointer data_type;
 
@@ -34,12 +34,13 @@ namespace casual
 
             private:
 
-               common::platform::binary::type::size_type selector = 0;
+               decltype(payload.memory.size()) selector = 0;
 
             public:
 
 
                using common::buffer::Buffer::Buffer;
+               using size_type = common::platform::binary::size::type;
 
                void shrink()
                {
@@ -51,7 +52,7 @@ namespace casual
                   return payload.memory.capacity();
                }
 
-               void capacity( const size_type value)
+               void capacity( const decltype(payload.memory.capacity()) value)
                {
                   payload.memory.reserve( value);
                }
@@ -61,7 +62,7 @@ namespace casual
                   return payload.memory.size();
                }
 
-               void utilized( const size_type value)
+               void utilized( const decltype(payload.memory.size()) value)
                {
                   payload.memory.resize( value);
                }
@@ -71,17 +72,17 @@ namespace casual
                   return selector;
                }
 
-               void consumed( const size_type value) noexcept
+               void consumed( const decltype(payload.memory.size()) value) noexcept
                {
                   selector = value;
                }
 
-               const_data_type handle() const noexcept
+               auto handle() const noexcept
                {
                   return payload.memory.data();
                }
 
-               data_type handle() noexcept
+               auto handle() noexcept
                {
                   return payload.memory.data();
                }
@@ -90,7 +91,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               size_type transport( const size_type user_size) const
+               size_type transport( const common::platform::binary::size::type user_size) const
                {
                   //
                   // Just ignore user-size all together
@@ -102,7 +103,7 @@ namespace casual
                //!
                //! Implement Buffer::reserved
                //!
-               size_type reserved() const
+               auto reserved() const
                {
                   return capacity();
                }
@@ -172,14 +173,6 @@ namespace casual
 
          namespace
          {
-/*
-            struct trace : common::trace::basic::Scope
-            {
-               template<decltype(sizeof("")) size>
-               explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
-            };
-*/
-
             namespace error
             {
                int handle()
@@ -202,7 +195,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      return CASUAL_ORDER_INTERNAL_FAILURE;
                   }
                }
@@ -212,7 +205,7 @@ namespace casual
             namespace explore
             {
 
-               int buffer( const char* const handle, long* const reserved, long* const utilized, long* const consumed) noexcept
+               int buffer( const char* const handle, size_type* const reserved, size_type* const utilized, size_type* const consumed) noexcept
                {
                   //const trace trace( "order::explore::buffer");
 
@@ -220,9 +213,9 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     if( reserved) *reserved = static_cast<long>(buffer.capacity());
-                     if( utilized) *utilized = static_cast<long>(buffer.utilized());
-                     if( consumed) *consumed = static_cast<long>(buffer.consumed());
+                     if( reserved) *reserved = buffer.capacity();
+                     if( utilized) *utilized = buffer.utilized();
+                     if( consumed) *consumed = buffer.consumed();
                   }
                   catch( ...)
                   {
@@ -274,7 +267,7 @@ namespace casual
 
 
                template<typename M>
-               void append( M& memory, const_data_type data, const long size)
+               void append( M& memory, const_data_type data, const size_type size)
                {
                   //
                   // Make sure to reset the size in case of exception since
@@ -371,7 +364,7 @@ namespace casual
                   return std::strlen( value) + 1;
                }
 
-               size_type select( const_data_type where, const_data_type& data, long& size) noexcept
+               size_type select( const_data_type where, const_data_type& data, size_type& size) noexcept
                {
                   const auto read = select( where, size);
                   data = where + read;
@@ -465,7 +458,6 @@ int casual_order_explore_buffer( const char* const buffer, long* const reserved,
 {
    return casual::buffer::order::explore::buffer( buffer, reserved, utilized, consumed);
 }
-
 
 int casual_order_add_prepare( const char* const buffer)
 {
@@ -561,4 +553,3 @@ int casual_order_get_binary( const char* const buffer, const char** data, long* 
 {
    return casual::buffer::order::get::data( buffer, *data, *size);
 }
-

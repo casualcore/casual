@@ -7,6 +7,7 @@
 #include "gateway/common.h"
 
 #include "common/communication/ipc.h"
+#include "common/exception/casual.h"
 
 namespace casual
 {
@@ -72,7 +73,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     error::handler();
+                     exception::handle();
                      send_event( gateway::message::manager::listener::Event::State::error);
                   }
                }
@@ -106,7 +107,7 @@ namespace casual
             }
             catch( ...)
             {
-               error::handler();
+               exception::handle();
             }
          }
 
@@ -121,7 +122,7 @@ namespace casual
 
             if( m_thread.joinable())
             {
-               throw exception::invalid::Semantic{ "trying to start a listener that is already started", CASUAL_NIP( *this)};
+               throw exception::system::invalid::Argument{ string::compose( "trying to start a listener that is already started - ", *this)};
             }
 
             m_thread = std::thread{ local::listener_thread, m_address, m_limit, m_correlation};
@@ -148,7 +149,7 @@ namespace casual
 
             if( event.correlation != m_correlation)
             {
-               throw exception::invalid::Argument{ "failed to correlate event"};
+               throw exception::system::invalid::Argument{ "failed to correlate event"};
             }
 
             switch( event.state)
@@ -173,7 +174,7 @@ namespace casual
                      // some other process send a sig-term
                      //
                      m_state = State::exit;
-                     throw exception::Shutdown{ "listener got terminate signal"};
+                     throw exception::casual::Shutdown{ "listener got terminate signal"};
                   }
 
                   break;

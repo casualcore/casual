@@ -1,121 +1,108 @@
 //!
-//! tx.cpp
-//!
-//! Created on: Jul 14, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
 #include "tx.h"
 
 #include "common/transaction/context.h"
-#include "common/error.h"
+#include "common/code/tx.h"
+#include "common/cast.h"
 
-
-int tx_begin(void)
+namespace local
 {
-   try
+   namespace
    {
+      int convert( casual::common::code::tx value)
+      {
+         return casual::common::cast::underlying( value);
+      }
+
+      template< typename E, typename... Args>
+      int wrap( E&& executer, Args&&... args)
+      {
+         try
+         {
+            return convert( executer( std::forward< Args>( args)...));
+         }
+         catch( ...)
+         {
+            return convert( casual::common::exception::tx::handler());
+         }
+         return convert( casual::common::code::tx::ok);
+      }
+
+      template< typename E, typename... Args>
+      int wrap_void( E&& executer, Args&&... args)
+      {
+         try
+         {
+            executer( std::forward< Args>( args)...);
+         }
+         catch( ...)
+         {
+            return convert( casual::common::exception::tx::handler());
+         }
+         return convert( casual::common::code::tx::ok);
+      }
+
+   } // <unnamed>
+} // local
+
+int tx_begin()
+{
+   return local::wrap( [](){
       return casual::common::transaction::Context::instance().begin();
-   }
-   catch( ...)
-   {
-      return casual::common::error::tx::handler();
-   }
-   return TX_OK;
+   });
 }
 
-int tx_close(void)
+int tx_close()
 {
-   try
-   {
+   return local::wrap_void( [](){
       casual::common::transaction::Context::instance().close();
-   }
-   catch( ...)
-   {
-      return casual::common::error::tx::handler();
-   }
-   return TX_OK;
+   });
 }
 
-int tx_commit(void)
+int tx_commit()
 {
-  try
-  {
-     return casual::common::transaction::Context::instance().commit();
-  }
-  catch( ...)
-  {
-     return casual::common::error::tx::handler();
-  }
-  return TX_OK;
+   return local::wrap( [](){
+      return casual::common::transaction::Context::instance().commit();
+   });
 }
 
-int tx_open(void)
+int tx_open()
 {
-  try
-  {
-     casual::common::transaction::Context::instance().open();
-  }
-  catch( ...)
-  {
-     return casual::common::error::tx::handler();
-  }
-  return TX_OK;
+   return local::wrap_void( [](){
+      casual::common::transaction::Context::instance().open();
+   });
 }
 
-int tx_rollback(void)
+int tx_rollback()
 {
-  try
-  {
-     return casual::common::transaction::Context::instance().rollback();
-  }
-  catch( ...)
-  {
-     return casual::common::error::tx::handler();
-  }
-  return TX_OK;
+   return local::wrap( [](){
+      return casual::common::transaction::Context::instance().rollback();
+   });
 }
 
 int tx_set_commit_return(COMMIT_RETURN value)
 {
-
-   try
-   {
-      return casual::common::transaction::Context::instance().setCommitReturn( value);
-   }
-   catch( ...)
-   {
-      return casual::common::error::tx::handler();
-   }
-   return TX_OK;
-
+   return local::wrap_void( []( auto value){
+      casual::common::transaction::Context::instance().set_commit_return( value);
+   }, value);
 }
 
 int tx_set_transaction_control(TRANSACTION_CONTROL control)
 {
-  try
-  {
-     return casual::common::transaction::Context::instance().setTransactionControl( control);
-  }
-  catch( ...)
-  {
-     return casual::common::error::tx::handler();
-  }
-  return TX_OK;
+   return local::wrap_void( []( auto value){
+      return casual::common::transaction::Context::instance().set_transaction_control( value);
+   }, control);
 }
 
 int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
 {
-  try
-  {
-     casual::common::transaction::Context::instance().setTransactionTimeout( timeout);
-  }
-  catch( ...)
-  {
-     return casual::common::error::tx::handler();
-  }
-  return TX_OK;
+   return local::wrap_void( []( auto value){
+      casual::common::transaction::Context::instance().set_transaction_timeout( value);
+   }, timeout);
 }
 
 int tx_info( TXINFO* info)
@@ -126,36 +113,24 @@ int tx_info( TXINFO* info)
    }
    catch( ...)
    {
-      return casual::common::error::tx::handler();
+      casual::common::exception::tx::handler();
+      return 0; // false;
    }
-   return TX_OK;
 }
 
 /* casual extension */
 int tx_suspend( XID* xid)
 {
-   try
-   {
+   return local::wrap_void( [xid](){
       casual::common::transaction::Context::instance().suspend( xid);
-   }
-   catch( ...)
-   {
-      return casual::common::error::tx::handler();
-   }
-   return TX_OK;
+   });
 }
 
 int tx_resume( const XID* xid)
 {
-   try
-   {
+   return local::wrap_void( [xid](){
       casual::common::transaction::Context::instance().resume( xid);
-   }
-   catch( ...)
-   {
-      return casual::common::error::tx::handler();
-   }
-   return TX_OK;
+   });
 }
 
 
@@ -167,7 +142,7 @@ COMMIT_RETURN tx_get_commit_return()
    }
    catch( ...)
    {
-      return casual::common::error::tx::handler();
+      return local::convert( casual::common::exception::tx::handler());
    }
 }
 

@@ -86,7 +86,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        common::exception::handle();
                         common::event::error::send( "failed to spawn resource-proxy-instance: " + info.server);
                      }
                   }
@@ -158,7 +158,7 @@ namespace casual
                      result.push_back( transform::resource::Proxy{}( resource));
 
                   }
-                  catch( const common::exception::invalid::Argument&)
+                  catch( const common::exception::system::invalid::Argument&)
                   {
                      //
                      // User did not use correct resource-id. We propagate this by not including
@@ -245,7 +245,7 @@ namespace casual
                      return false;
                   }
                }
-               catch( const exception::queue::Unavailable&)
+               catch( const exception::system::communication::Unavailable&)
                {
                   common::log::category::error << "failed to send reply - target: " << message.target << ", message: " << message.message << " - TODO: rollback transaction?\n";
                   //

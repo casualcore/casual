@@ -7,10 +7,8 @@
 
 #include "common/message/service.h"
 
-#include "common/service/conversation/flags.h"
-#include "common/flag.h"
+#include "common/flag/service/conversation.h"
 
-#include "common/communication/ipc/handle.h"
 
 namespace casual
 {
@@ -23,9 +21,9 @@ namespace casual
             struct Node
             {
                inline Node() = default;
-               inline Node( communication::ipc::Handle address) : address( address) {}
+               inline Node( platform::ipc::id address) : address( address) {}
 
-               communication::ipc::Handle address;
+               platform::ipc::id address;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -55,20 +53,12 @@ namespace casual
 
             namespace connect
             {
-               enum class Flag : long
-               {
-                  no_transaction = TPNOTRAN,
-                  send_only = TPSENDONLY,
-                  receive_only = TPRECVONLY,
-                  no_time = TPNOTIME,
-               };
-               using Flags = common::Flags< Flag>;
 
                using base_request = type_wrapper< service::call::common_request, Type::service_conversation_connect_request>;
                struct basic_request : base_request
                {
                   Route recording;
-                  Flags flags;
+                  flag::service::conversation::connect::Flags flags;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -98,7 +88,7 @@ namespace casual
                {
                   Route route;
                   Route recording;
-                  int status;
+                  code::xatmi status;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -116,10 +106,11 @@ namespace casual
             struct basic_send : send_base
             {
                Route route;
-               common::service::conversation::send::Flags flags;
-               common::service::conversation::Events events;
+               
+               flag::service::conversation::send::Flags flags;
+               flag::service::conversation::Events events;
                service::Transaction transaction;
-               int status;
+               code::xatmi status = code::xatmi::ok;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -148,7 +139,7 @@ namespace casual
             struct Disconnect : disconnect_base
             {
                Route route;
-               common::service::conversation::Events events;
+               flag::service::conversation::Events events;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {

@@ -23,7 +23,7 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< std::size_t> retries;
+               sf::optional< sf::platform::size::type> retries;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (

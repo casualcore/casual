@@ -5,9 +5,9 @@
 #include "gateway/inbound/gateway.h"
 #include "gateway/common.h"
 
-
 #include "common/arguments.h"
 #include "common/environment.h"
+
 
 
 namespace casual
@@ -22,20 +22,22 @@ namespace casual
          {
             struct Settings
             {
-               platform::ipc::handle::type ipc = -1;
+               platform::ipc::native::type ipc = platform::ipc::native::invalid;
                std::string correlation;
             };
+
+            using outbound_device_type = common::communication::ipc::outbound::Device;
+            using inbound_device_type = common::communication::ipc::inbound::Device;
+
+            static_assert( ! common::marshal::is_network_normalizing< inbound_device_type>::value, "inbound device does not need to normalize network representation");
+            static_assert( ! common::marshal::is_network_normalizing< outbound_device_type>::value, "outbound device does not need to normalize network representation");
 
             struct Policy
             {
 
-               using outbound_device_type = communication::ipc::outbound::Device;
-               using inbound_device_type = communication::ipc::inbound::Device;
-
-
                struct configuration_type
                {
-                  communication::ipc::Handle id;
+                  platform::ipc::id id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -65,7 +67,7 @@ namespace casual
 
                private:
 
-                  communication::ipc::Handle m_outbound;
+                  platform::ipc::id m_outbound;
                };
 
                struct external_type
@@ -74,7 +76,7 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::external_type ctor"};
 
-                     m_process.queue = communication::ipc::Handle{ settings.ipc};
+                     m_process.queue = platform::ipc::id{ settings.ipc};
 
                      //
                      // Send the reply
@@ -118,7 +120,6 @@ namespace casual
          } // ipc
       } // inbound
    } // gateway
-
 } // casual
 
 
@@ -141,7 +142,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
    return 0;
 }

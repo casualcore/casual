@@ -20,7 +20,7 @@
 
 #include "common/event/dispatch.h"
 
-#include "common/exception.h"
+#include "common/exception/system.h"
 
 #include "sf/log.h"
 
@@ -37,13 +37,14 @@ namespace casual
    {
       namespace manager
       {
+         using size_type = common::platform::size::type;
 
          namespace internal
          {
             template< typename T>
             struct Id
             {
-               using id_type = std::size_t;
+               using id_type = size_type;
 
                id_type id = nextId();
 
@@ -63,9 +64,9 @@ namespace casual
 
             namespace exception
             {
-               struct Missing : public common::exception::base
+               struct Missing : public common::exception::system::invalid::Argument
                {
-                  using common::exception::base::base;
+                  using common::exception::system::invalid::Argument::Argument;
                };
 
             }
@@ -132,7 +133,7 @@ namespace casual
                {
                   using base_instance::base_instance;
 
-                  std::size_t order;
+                  size_type order;
 
                   friend bool operator < ( const Remote& lhs, const Remote& rhs);
                };
@@ -144,7 +145,7 @@ namespace casual
             {
                struct Metric
                {
-                  inline std::size_t count() const { return m_count;}
+                  inline size_type count() const { return m_count;}
                   inline std::chrono::microseconds total() const { return m_total;}
 
                   void add( const std::chrono::microseconds& duration);
@@ -158,7 +159,7 @@ namespace casual
                   void reset();
 
                private:
-                  std::size_t m_count = 0;
+                  size_type m_count = 0;
                   std::chrono::microseconds m_total = std::chrono::microseconds::zero();
 
                };
@@ -206,17 +207,17 @@ namespace casual
                   //!
                   struct Remote : remote_base
                   {
-                     Remote( state::instance::Remote& instance, std::size_t hops) : remote_base{ instance}, m_hops{ hops} {}
+                     Remote( state::instance::Remote& instance, size_type hops) : remote_base{ instance}, m_hops{ hops} {}
 
                      inline const common::process::Handle& process() const { return get().process;}
 
-                     inline std::size_t hops() const { return m_hops;}
+                     inline size_type hops() const { return m_hops;}
 
                      inline friend bool operator == ( const Remote& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
                      friend bool operator < ( const Remote& lhs, const Remote& rhs);
 
                   private:
-                     std::size_t m_hops = 0;
+                     size_type m_hops = 0;
                   };
                } // instance
             } // service
@@ -265,7 +266,7 @@ namespace casual
 
 
                void add( state::instance::Local& instance);
-               void add( state::instance::Remote& instance, std::size_t hops);
+               void add( state::instance::Remote& instance, size_type hops);
 
                void remove( common::platform::pid::type instance);
 
@@ -277,7 +278,7 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Service& service);
 
-               inline std::size_t remote_invocations() const { return m_remote_invocations;}
+               inline size_type remote_invocations() const { return m_remote_invocations;}
 
                inline const common::platform::time::point::type& last() const { return m_last;}
                inline void last( common::platform::time::point::type now) { m_last = now;}
@@ -293,7 +294,7 @@ namespace casual
                void partition_remote_instances();
 
                common::platform::time::point::type m_last = common::platform::time::point::type::min();
-               std::size_t m_remote_invocations = 0;
+               size_type m_remote_invocations = 0;
             };
          } // state
 
@@ -337,7 +338,7 @@ namespace casual
             common::event::dispatch::Collection<
                common::message::event::service::Call> events;
 
-            std::vector< common::communication::ipc::Handle> subscribers() const;
+            std::vector< common::platform::ipc::id> subscribers() const;
 
 
             common::process::Handle forward;

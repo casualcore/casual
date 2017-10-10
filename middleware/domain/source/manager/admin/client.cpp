@@ -185,7 +185,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 
@@ -250,7 +250,7 @@ namespace casual
                         {
                            if( ! range::all_of( files, &common::file::exists))
                            {
-                              throw exception::invalid::File{ "at least one file does not exist", CASUAL_NIP( files)};
+                              throw exception::system::invalid::File{ string::compose( "at least one file does not exist - files: ", files)};
                            }
                            arguments.emplace_back( "--configuration-files");
                            range::copy( files, std::back_inserter( arguments));
@@ -323,8 +323,14 @@ namespace casual
                   terminal::format::formatter< P> process()
                   {
 
-                     auto format_no_of_instances = []( const P& e){
+                     auto format_configured_instances = []( const P& e){
                         return e.instances.size();
+                     };
+
+                     auto format_running_instances = []( const P& e){
+                        return common::range::count_if( e.instances, []( auto& i){
+                              return i.state == admin::vo::instance::State::running;
+                        });
                      };
 
                      auto format_restart = []( const P& e){
@@ -340,8 +346,8 @@ namespace casual
                      return {
                         { global::porcelain, ! global::no_color, ! global::no_header},
                         terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
-                        terminal::format::column( "instances", format_no_of_instances, terminal::color::white, terminal::format::Align::right),
-                        //terminal::format::column( "#c", std::mem_fn( &P::configured_instances), terminal::color::blue, terminal::format::Align::right),
+                        terminal::format::column( "CI", format_configured_instances, terminal::color::no_color, terminal::format::Align::right),
+                        terminal::format::column( "I", format_running_instances, terminal::color::white, terminal::format::Align::right),
                         terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
                         terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left),
@@ -401,7 +407,7 @@ namespace casual
                   {
                      if( values.size() % 2 != 0)
                      {
-                        throw exception::invalid::Argument{ "<alias> <# of instances>"};
+                        throw exception::system::invalid::Argument{ "<alias> <# of instances>"};
                      }
 
                      std::vector< admin::vo::scale::Instances> instances;
@@ -484,15 +490,10 @@ namespace casual
             {
                parser.parse( argc, argv);
             }
-            catch( const common::argument::exception::Help&)
+            catch( ...)
             {
-               
+               common::exception::handle( std::cerr);
             }
-            catch( const std::exception& exception)
-            {
-               std::cerr << "error: " << exception.what() << std::endl;
-            }
-
 
             return 0;
          }

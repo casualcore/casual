@@ -15,7 +15,7 @@ namespace casual
 
 
 
-         std::tuple< std::size_t, bool> Reader::container_start( std::size_t size, const char* name)
+         std::tuple< platform::size::type, bool> Reader::container_start( platform::size::type size, const char* name)
          {
             return dispatch_container_start( size, name);
          }
@@ -111,7 +111,7 @@ namespace casual
          Writer::Writer() = default;
          Writer::~Writer() = default;
 
-         void Writer::container_start( std::size_t size, const char* name)
+         void Writer::container_start( platform::size::type size, const char* name)
          {
             return dispatch_container_start( size, name);
          }

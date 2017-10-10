@@ -1,4 +1,6 @@
-
+//!
+//! casual
+//! 
 
 #include "sf/archive/log.h"
 
@@ -33,7 +35,7 @@ namespace casual
             }
 
 
-            std::size_t Implementation::container_start( const std::size_t size, const char* name)
+            platform::size::type Implementation::container_start( const platform::size::type size, const char* name)
             {
                add( name);
 

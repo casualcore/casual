@@ -44,7 +44,7 @@ namespace casual
          message::service::call::callee::Request request;
 
          {
-            request.process.pid = 1;
+            request.process.pid = common::platform::process::id{ 1};
             request.process.queue = caller.id();
             request.service.name = "service2";
             request.trid = transaction::ID::create( process::handle());
@@ -72,7 +72,7 @@ namespace casual
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.status == 0);
+            EXPECT_TRUE( reply.status == common::code::xatmi::ok);
          }
 
          // make sure we quit
@@ -94,7 +94,7 @@ namespace casual
          message::service::call::callee::Request request;
 
          {
-            request.process.pid = 1;
+            request.process.pid = common::platform::process::id{ 1};
             request.process.queue = caller.id();;
             request.service.name = "removed_ipc_queue";
             request.trid = transaction::ID::create( process::handle());
@@ -124,7 +124,7 @@ namespace casual
 
             EXPECT_TRUE( reply.correlation == correlation);
             EXPECT_TRUE( reply.transaction.trid == request.trid);
-            EXPECT_TRUE( reply.status == TPESVCERR);
+            EXPECT_TRUE( reply.status == common::code::xatmi::service_error);
 
          }
 

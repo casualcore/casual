@@ -8,6 +8,8 @@
 #include "common/mockup/ipc.h"
 #include "common/mockup/domain.h"
 
+#include "common/exception/casual.h"
+
 
 namespace casual
 {
@@ -26,7 +28,7 @@ namespace casual
 
          EXPECT_THROW({
             event::listen();
-         }, exception::Shutdown);
+         }, exception::casual::Shutdown);
       }
 
       TEST( common_event, process_exit_event___expect_registration__event_dispatch)
@@ -41,7 +43,7 @@ namespace casual
             // send the event, premature...
             //
             message::event::process::Exit event;
-            event.state.pid = 42;
+            event.state.pid = platform::process::id{ 42};
             event.state.reason = process::lifetime::Exit::Reason::core;
 
             mockup::ipc::eventually::send( communication::ipc::inbound::id(), event);
@@ -64,7 +66,7 @@ namespace casual
                   EXPECT_TRUE( m.state.pid == 42);
                   EXPECT_TRUE( m.state.reason == process::lifetime::Exit::Reason::core);
                });
-            }, exception::Shutdown);
+            }, exception::casual::Shutdown);
          }
       }
 

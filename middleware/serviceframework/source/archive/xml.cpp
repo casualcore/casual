@@ -81,7 +81,7 @@ namespace casual
                return m_document;
             }
 
-            const pugi::xml_document& Load::operator() ( const char* const xml, const std::size_t size)
+            const pugi::xml_document& Load::operator() ( const char* const xml, const platform::size::type size)
             {
                if( ! size || ! xml)
                {
@@ -109,7 +109,7 @@ namespace casual
 
                Implementation::Implementation( pugi::xml_node node ) : m_stack{ std::move( node)} {}
 
-               std::tuple< std::size_t, bool> Implementation::container_start( const std::size_t size, const char* const name)
+               std::tuple< platform::size::type, bool> Implementation::container_start( const platform::size::type size, const char* const name)
                {
                   if( ! start( name))
                   {
@@ -251,7 +251,7 @@ namespace casual
                {
                   std::string& string;
                   string_writer( std::string& string) : string( string) {}
-                  void save( const void* const data, const std::size_t size) override
+                  void save( const void* const data, const platform::size::type size) override
                   {
                      string.append( static_cast<const char*>( data), size);
                   }
@@ -288,7 +288,7 @@ namespace casual
 
                Implementation::Implementation( pugi::xml_node node) : m_stack{ std::move( node)} {}
 
-               std::size_t Implementation::container_start( const std::size_t size, const char* const name)
+               platform::size::type Implementation::container_start( const platform::size::type size, const char* const name)
                {
                   start( name);
 
@@ -298,7 +298,7 @@ namespace casual
                   // Stack 'em backwards
                   //
 
-                  for( std::size_t idx = 0; idx < size; ++idx)
+                  for( platform::size::type idx = 0; idx < size; ++idx)
                   {
                      m_stack.push_back( element.prepend_child( "element"));
                   }

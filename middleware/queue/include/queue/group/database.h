@@ -7,7 +7,8 @@
 
 #include "sql/database.h"
 
-
+#include "common/exception/system.h"
+#include "common/string.h"
 #include "common/message/queue.h"
 
 namespace casual
@@ -17,7 +18,7 @@ namespace casual
       namespace group
       {
          using Queue = common::message::queue::Queue;
-
+         using size_type = common::platform::size::type;
 
          namespace message
          {
@@ -57,7 +58,7 @@ namespace casual
             common::message::queue::peek::messages::Reply peek( const common::message::queue::peek::messages::Request& request);
 
 
-            std::size_t restore( Queue::id_type id);
+            size_type restore( Queue::id_type id);
 
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
@@ -83,7 +84,7 @@ namespace casual
             //!
             //! @return the number of rows affected by the last statement.
             //!
-            std::size_t affected() const;
+            size_type affected() const;
 
 
 
@@ -114,7 +115,8 @@ namespace casual
                   return found->second;
                }
 
-               throw common::exception::invalid::Argument{ "requested queue is not hosted by this queue-group", CASUAL_NIP( message)};
+               throw common::exception::system::invalid::Argument{ 
+                  common::string::compose( "requested queue is not hosted by this queue-group - message: ", message)};
             }
 
 

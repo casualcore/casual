@@ -33,7 +33,7 @@ namespace casual
             struct Inbound
             {
 
-               Inbound( communication::ipc::Handle ipc)
+               Inbound( platform::ipc::id ipc)
                  : process{ "./bin/casual-gateway-inbound-ipc",
                   {
                      "--remote-ipc-queue", common::string::compose( ipc),
@@ -73,15 +73,15 @@ namespace casual
                      log << "external: " << external << std::endl;
 
                      //
-                     // act as the oubound and send discover
+                     // act as the outbound and send connect
                      //
                      {
-                        Trace trace{ "gateway::local::Domain outbound -> discover"};
+                        Trace trace{ "gateway::local::Domain outbound -> connect"};
 
 
-                        message::interdomain::domain::discovery::receive::Request request;
-                        request.process = process::handle();
+                        common::message::gateway::domain::connect::Request request;
                         request.domain = remote;
+                        request.versions = { common::message::gateway::domain::protocol::Version::version_1};
                         communication::ipc::blocking::send( external.queue , request);
 
                      }
@@ -100,7 +100,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      throw;
                   }
 
@@ -183,20 +183,20 @@ namespace casual
          mockup::domain::echo::Server server{ { "service1"}};
 
 
-         platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
+         platform::binary::type payload{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 
-         message::interdomain::service::call::receive::Request request;
+         common::message::service::call::callee::Request request;
          {
             request.service.name = "service1";
             request.process = process::handle();
-            request.buffer = buffer::Payload{ buffer::type::binary(), paylaod};
+            request.buffer = buffer::Payload{ buffer::type::binary(), payload};
          }
 
 
          auto reply = communication::ipc::call( domain.external.queue, request);
 
-         EXPECT_TRUE( reply.buffer.memory == paylaod);
+         EXPECT_TRUE( reply.buffer.memory == payload);
       }
 
       TEST( casual_gateway_inbound_ipc, service_call__absent_service__expect_reply_with_TPESVCERR)
@@ -207,7 +207,7 @@ namespace casual
 
          platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         message::interdomain::service::call::receive::Request request;
+         common::message::service::call::callee::Request request;
          {
             request.service.name = "absent_service";
             request.process = process::handle();
@@ -216,7 +216,7 @@ namespace casual
 
          auto reply = communication::ipc::call( domain.external.queue, request);
 
-         EXPECT_TRUE( reply.status == TPESVCERR);
+         EXPECT_TRUE( reply.status == common::code::xatmi::service_error);
          EXPECT_TRUE( reply.buffer.memory.empty());
       }
 
@@ -229,7 +229,7 @@ namespace casual
 
          platform::binary::type paylaod{ 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-         message::interdomain::service::call::receive::Request request;
+         common::message::service::call::callee::Request request;
          {
             request.service.name = "removed_ipc_queue";
             request.process = process::handle();
@@ -238,7 +238,7 @@ namespace casual
 
          auto reply = communication::ipc::call( domain.external.queue, request);
 
-         EXPECT_TRUE( reply.status == TPESVCERR);
+         EXPECT_TRUE( reply.status == common::code::xatmi::service_error);
          EXPECT_TRUE( reply.buffer.memory.empty());
       }
 

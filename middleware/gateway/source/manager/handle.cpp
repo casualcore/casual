@@ -54,7 +54,7 @@ namespace casual
                            ipc::device().blocking_send( device, message);
                            return true;
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            return false;
                         }
@@ -91,7 +91,7 @@ namespace casual
                                     communication::ipc::outbound::Device ipc{ connection.process.queue};
                                     ipc.send( request, communication::ipc::policy::Blocking{});
                                  }
-                                 catch( const exception::queue::Unavailable&)
+                                 catch( const exception::system::communication::Unavailable&)
                                  {
                                     connection.runlevel = state::base_connection::Runlevel::error;
                                     // no op, will be removed
@@ -100,16 +100,31 @@ namespace casual
                               else if( connection.process.pid)
                               {
                                  log << "terminate connection: " << connection << std::endl;
-                                 common::process::lifetime::terminate( { connection.process.pid});
-                                 connection.runlevel = state::base_connection::Runlevel::offline;
+
+                                 // try to fetch handle from domain manager
+                                 {
+                                    auto handle = common::process::instance::fetch::handle( 
+                                       connection.process.pid, common::process::instance::fetch::Directive::direct);
+
+                                    log << "fetched handle: " << handle << '\n';
+
+                                    if( handle)
+                                    {
+                                       connection.process = handle;
+                                       operator() ( connection);
+                                    }
+                                    else 
+                                    {
+                                       common::process::lifetime::terminate( { connection.process.pid});
+                                       connection.runlevel = state::base_connection::Runlevel::offline;
+                                    }
+                                 }
                               }
                            }
                         }
 
                      };
-
-
-                  } // connection
+                  } // shutdown
 
 
                   std::string executable( const manager::state::outbound::Connection& connection)
@@ -126,7 +141,7 @@ namespace casual
                         }
                         default:
                         {
-                           throw exception::invalid::Argument{ "invalid connection type", CASUAL_NIP( connection)};
+                           throw exception::system::invalid::Argument{ string::compose( "invalid connection type: ", connection)};
                         }
                      }
                   }
@@ -151,7 +166,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              error::handler();
+                              exception::handle();
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::error;
                            }
                         }

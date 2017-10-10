@@ -1,9 +1,6 @@
-//
-// casual_string_buffer.h
-//
-//  Created on: 22 okt 2013
-//      Author: Kristone
-//
+//!
+//! casual
+//!
 
 #ifndef CASUAL_STRING_BUFFER_H_
 #define CASUAL_STRING_BUFFER_H_

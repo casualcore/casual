@@ -37,6 +37,8 @@ namespace casual
 
          std::vector< manager::admin::Queue> queues( const std::vector< common::message::queue::information::queues::Reply>& values);
 
+         manager::admin::State::Remote remote( const manager::State& state);
+
          struct Message
          {
             queue::Message operator () ( common::message::queue::dequeue::Reply::Message& value) const;

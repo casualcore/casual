@@ -56,7 +56,7 @@ namespace casual
                   request.message.type = message.payload.type;
                   request.message.properties = message.attributes.properties;
                   request.message.reply = message.attributes.reply;
-                  request.message.avalible = message.attributes.available;
+                  request.message.available = message.attributes.available;
 
                   request.name = lookup.name();
 
@@ -64,7 +64,7 @@ namespace casual
 
                   if( ! group.process.queue)
                   {
-                     throw common::exception::invalid::Argument{ "failed to look up queue"};
+                     throw common::exception::system::invalid::Argument{ "failed to look up queue"};
                   }
                   request.queue = group.queue;
 
@@ -112,7 +112,7 @@ namespace casual
 
                         handler( ipc.blocking_next( handler.types()));
                      }
-                     catch( const common::exception::communication::Unavailable&)
+                     catch( const common::exception::system::communication::Unavailable&)
                      {
                         // queue-manager is off-line
                      }
@@ -162,7 +162,7 @@ namespace casual
 
                         if( reply.correlation != correlation)
                         {
-                           throw common::exception::invalid::Semantic{ "correlation mismatch"};
+                           throw common::exception::system::invalid::Argument{ "correlation mismatch"};
                         }
                         common::range::transform( reply.message, result, queue::transform::Message{});
 
@@ -359,7 +359,7 @@ namespace casual
 
                if( queue.order > 0)
                {
-                  throw common::exception::invalid::Argument{ "not possible to peek a remote queue"};
+                  throw common::exception::system::invalid::Argument{ "not possible to peek a remote queue"};
                }
 
                request.queue = queue.queue;
@@ -372,7 +372,7 @@ namespace casual
                   message.id = m.id;
                   message.trid = std::move( m.trid);
                   message.state = m.state;
-                  message.attributes.available = m.avalible;
+                  message.attributes.available = m.available;
                   message.attributes.reply = std::move( m.reply);
                   message.attributes.properties = std::move( m.properties);
                   message.payload.type = std::move( m.type);
@@ -404,7 +404,7 @@ namespace casual
 
                if( queue.order > 0)
                {
-                  throw common::exception::invalid::Argument{ "not possible to peek a remote queue"};
+                  throw common::exception::system::invalid::Argument{ "not possible to peek a remote queue"};
                }
 
                auto reply = common::communication::ipc::call( queue.process.queue, request);
@@ -412,7 +412,7 @@ namespace casual
                common::range::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
                   Message message;
                   message.id = m.id;
-                  message.attributes.available = m.avalible;
+                  message.attributes.available = m.available;
                   message.attributes.reply = std::move( m.reply);
                   message.attributes.properties = std::move( m.properties);
                   message.payload.type = std::move( m.type);

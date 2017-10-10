@@ -76,6 +76,7 @@ Install( gateway_admin, '$(CASUAL_HOME)/internal/bin')
 
 
 
+
 #
 # The outbound tcp connector
 #
@@ -87,7 +88,7 @@ target = LinkExecutable( 'bin/casual-gateway-outbound-tcp',
      common_archive, 
      'casual-common',  
      ])
-
+     
 install_bin.append( target)
 
 #
@@ -141,7 +142,7 @@ install_bin.append( target)
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/source/test_inbound_cache.cpp'),
-        Compile( 'unittest/source/test_message.cpp'),
+        #Compile( 'unittest/source/test_message.cpp'),
         
         # ipc
         Compile( 'unittest/source/ipc/test_manager.cpp'),

@@ -110,7 +110,7 @@ namespace casual
                         shutdown_end,
                      };
 
-                     std::size_t id = 0;
+                     platform::size::type id = 0;
                      std::string name;
                      Context context;
 

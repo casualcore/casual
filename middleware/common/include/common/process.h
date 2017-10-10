@@ -6,12 +6,9 @@
 #define CASUAL_COMMON_PROCESS_H_
 
 #include "common/platform.h"
-#include "common/exception.h"
 #include "common/file.h"
 
 #include "common/algorithm.h"
-
-#include "common/communication/ipc/handle.h"
 
 #include "common/marshal/marshal.h"
 
@@ -49,13 +46,13 @@ namespace casual
          //!
          struct Handle
          {
-            using queue_handle = communication::ipc::Handle;
+            using queue_handle = platform::ipc::id;
 
             Handle() = default;
-            Handle( platform::pid::type pid) : pid{ pid} {}
-            Handle( platform::pid::type pid, queue_handle queue) : pid( pid),  queue( queue)  {}
+            Handle( platform::process::id pid) : pid{ pid} {}
+            Handle( platform::process::id pid, queue_handle queue) : pid( pid),  queue( queue)  {}
 
-            platform::pid::type pid = 0;
+            platform::process::id pid;
             queue_handle queue;
 
 
@@ -69,10 +66,10 @@ namespace casual
             {
                struct pid
                {
-                  pid( platform::pid::type pid) : m_pid( pid) {}
+                  pid( platform::process::id pid) : m_pid( pid) {}
                   bool operator() ( const Handle& lhs) { return lhs.pid == m_pid;}
                private:
-                  platform::pid::type m_pid;
+                  platform::process::id m_pid;
                };
             };
 
@@ -89,7 +86,7 @@ namespace casual
 
             inline explicit operator bool() const
             {
-               return pid != 0 && queue;
+               return pid && queue;
             }
 
             CASUAL_CONST_CORRECT_MARSHAL(
@@ -107,10 +104,10 @@ namespace casual
          //!
          //! @return process id (pid) for current process.
          //!
-         platform::pid::type id();
+         platform::process::id id();
 
-         inline platform::pid::type id( const Handle& handle) { return handle.pid;}
-         inline platform::pid::type id( platform::pid::type pid) { return pid;}
+         inline platform::process::id id( const Handle& handle) { return handle.pid;}
+         inline platform::process::id id( platform::process::id pid) { return pid;}
 
          namespace instance
          {
@@ -172,7 +169,7 @@ namespace casual
                //! @param directive if caller waits for the process to register or not
                //! @return handle to the process
                //!
-               Handle handle( platform::pid::type pid , Directive directive = Directive::wait);
+               Handle handle( platform::process::id pid , Directive directive = Directive::wait);
 
 
             } // fetch
@@ -230,10 +227,10 @@ namespace casual
                struct Pattern
                {
 
-                  Pattern( std::chrono::microseconds time, std::size_t quantity);
+                  Pattern( std::chrono::microseconds time, platform::size::type quantity);
 
                   template< typename R, typename P>
-                  Pattern( std::chrono::duration< R, P> time, std::size_t quantity)
+                  Pattern( std::chrono::duration< R, P> time, platform::size::type quantity)
                    : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
                   {}
 
@@ -244,10 +241,9 @@ namespace casual
 
                private:
                   std::chrono::microseconds m_time;
-                  std::size_t m_quantity = 0;
+                  platform::size::type m_quantity = 0;
                };
-
-               //Sleep( std::vector< Pattern> pattern);
+               
                Sleep( std::initializer_list< Pattern> pattern);
 
                bool operator () ();
@@ -270,10 +266,10 @@ namespace casual
          //! @param arguments 0..N arguments that is passed to the application
          //! @return process id of the spawned process
          //!
-         platform::pid::type spawn( const std::string& path, std::vector< std::string> arguments);
+         platform::process::id spawn( const std::string& path, std::vector< std::string> arguments);
 
 
-         platform::pid::type spawn(
+         platform::process::id spawn(
             std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment);
@@ -295,7 +291,7 @@ namespace casual
          //!
          //! @return return code from process
          //!
-         int wait( platform::pid::type pid);
+         int wait( platform::process::id pid);
 
 
          //!
@@ -303,12 +299,12 @@ namespace casual
          //!
          //! @return pids that did received the signal
          //!
-         std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids);
+         std::vector< platform::process::id> terminate( const std::vector< platform::process::id>& pids);
 
          //!
          //! Tries to terminate pid
          //!
-         bool terminate( platform::pid::type pid);
+         bool terminate( platform::process::id pid);
 
 
          //!
@@ -327,7 +323,7 @@ namespace casual
          //!
          //! @return the process handle
          //!
-         Handle ping( communication::ipc::Handle queue);
+         Handle ping( platform::ipc::id queue);
 
          namespace lifetime
          {
@@ -343,7 +339,7 @@ namespace casual
                   unknown,
                };
 
-               platform::pid::type pid = 0;
+               platform::process::id pid;
                int status = 0;
                Reason reason = Reason::unknown;
 
@@ -355,8 +351,8 @@ namespace casual
                bool deceased() const;
 
 
-               friend bool operator == ( platform::pid::type pid, const Exit& rhs);
-               friend bool operator == ( const Exit& lhs, platform::pid::type pid);
+               friend bool operator == ( platform::process::id pid, const Exit& rhs);
+               friend bool operator == ( const Exit& lhs, platform::process::id pid);
                friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
                friend std::ostream& operator << ( std::ostream& out, const Reason& value);
@@ -377,8 +373,8 @@ namespace casual
             //!
             //!
             //!
-            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids);
-            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout);
+            std::vector< Exit> wait( const std::vector< platform::process::id>& pids);
+            std::vector< Exit> wait( const std::vector< platform::process::id>& pids, std::chrono::microseconds timeout);
 
 
             //!
@@ -387,8 +383,8 @@ namespace casual
             //! @return the terminated l
             //!
             //
-            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids);
-            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( const std::vector< platform::process::id>& pids);
+            std::vector< Exit> terminate( const std::vector< platform::process::id>& pids, std::chrono::microseconds timeout);
 
          } // lifetime
 
@@ -404,7 +400,7 @@ namespace casual
             //! @param pids to terminate
             //!
             template< typename C>
-            void terminate( C&& callback, std::vector< platform::pid::type> pids)
+            void terminate( C&& callback, std::vector< platform::process::id> pids)
             {
                for( auto& death : lifetime::terminate( std::move( pids)))
                {

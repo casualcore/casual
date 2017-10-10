@@ -6,8 +6,8 @@
 #include "queue/common/log.h"
 #include "queue/manager/admin/server.h"
 
-#include "common/error.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/exception/casual.h"
 #include "common/process.h"
 #include "common/server/lifetime.h"
 #include "common/server/handle/call.h"
@@ -88,7 +88,7 @@ namespace casual
                            ipc::device().blocking_send( device, std::forward< M>( message));
                            return true;
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            return false;
                         }
@@ -136,7 +136,7 @@ namespace casual
                         common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)),
                         std::bind( &process::Exit::apply, process::Exit{ m_state}, std::placeholders::_1));
 
-                  throw common::exception::Shutdown{ "shutting down", __FILE__, __LINE__};
+                  throw common::exception::casual::Shutdown{};
                }
 
             } // shutdown
@@ -250,9 +250,9 @@ namespace casual
                      // Queues has been added, we check if there are any pending
                      //
 
-                     auto split = common::range::stable_partition( m_state.pending,[&]( decltype( m_state.pending.front()) p){
+                     auto split = common::range::stable_partition( m_state.pending,[&]( auto& p){
 
-                        return ! common::range::any_of( message.queues, [&]( decltype( message.queues.front()) q){
+                        return ! common::range::any_of( message.queues, [&]( auto& q){
                            return q.name == p.name;});
                      });
 
@@ -263,7 +263,7 @@ namespace casual
 
                      log << "pending to lookup: " << common::range::make( pending) << '\n';
 
-                     common::range::for_each( pending, [&]( decltype( pending.front()) pending){
+                     common::range::for_each( pending, [&]( auto& pending){
                         lookup::Request{ m_state}( pending);
                      });
                   }
@@ -301,7 +301,7 @@ namespace casual
                      // check if there are any pending lookups for this reply
                      //
 
-                     auto found = common::range::find_if( m_state.pending, [&]( const common::message::queue::lookup::Request& r){
+                     auto found = common::range::find_if( m_state.pending, [&]( const auto& r){
                         return r.correlation == message.correlation;
                      });
 

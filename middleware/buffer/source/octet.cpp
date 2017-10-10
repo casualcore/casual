@@ -17,9 +17,9 @@ namespace casual
          namespace
          {
 
-            typedef common::platform::binary::type::size_type size_type;
-            typedef common::platform::binary::type::const_pointer const_data_type;
-            typedef common::platform::binary::type::pointer data_type;
+            using size_type = common::platform::size::type;
+            using const_data_type = common::platform::binary::type::const_pointer;
+            using data_type = common::platform::binary::type::pointer;
 
 
             struct Buffer : common::buffer::Buffer
@@ -29,7 +29,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               auto transport( const size_type user_size) const -> decltype( payload.memory.size())
+               size_type transport( const size_type user_size) const
                {
                   //
                   // Just ignore user-size all together
@@ -127,13 +127,13 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   return CASUAL_OCTET_INTERNAL_FAILURE;
                }
             }
 
 
-            int explore( const char* const handle, const char** name, long* size) noexcept
+            int explore( const char* const handle, const char** name, size_type* const size) noexcept
             {
                //const trace trace( "octet::explore");
 
@@ -157,7 +157,7 @@ namespace casual
             }
 
 
-            int set( char** const handle, const_data_type data, const long size) noexcept
+            int set( char** const handle, const_data_type data, const size_type size) noexcept
             {
                //const trace trace( "string::set");
 
@@ -183,7 +183,7 @@ namespace casual
 
             }
 
-            int get( const char* const handle, const_data_type& data, long& size) noexcept
+            int get( const char* const handle, const_data_type& data, size_type& size) noexcept
             {
                //const trace trace( "octet::get");
 
@@ -234,7 +234,7 @@ const char* casual_octet_description( const int code)
 
 }
 
-int casual_octet_explore_buffer( const char* const handle, const char** name, long* size)
+int casual_octet_explore_buffer( const char* const handle, const char** name, long* const size)
 {
    return casual::buffer::octet::explore( handle, name, size);
 }
@@ -251,10 +251,7 @@ int casual_octet_set( char** handle, const char* const data, const long size)
 
 }
 
-int casual_octet_get( const char* const handle, const char** data, long* size)
+int casual_octet_get( const char* const handle, const char** data, long* const size)
 {
    return casual::buffer::octet::get( handle, *data, *size);
 }
-
-
-

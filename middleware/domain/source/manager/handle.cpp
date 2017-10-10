@@ -55,7 +55,7 @@ namespace casual
                            state.pending.replies.emplace_back( std::forward< M>( message), process.queue);
                         }
                      }
-                     catch( const exception::communication::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         log << "failed to send message - type: " << common::message::type( message) << " to: " << process << " - action: ignore\n";
                      }
@@ -104,7 +104,7 @@ namespace casual
                         }
 
                      }
-                     catch( const exception::invalid::Argument& e)
+                     catch( const exception::system::invalid::Argument& e)
                      {
                         log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
 
@@ -116,7 +116,7 @@ namespace casual
                         {
                            common::message::event::domain::Error message;
                            message.severity = common::message::event::domain::Error::Severity::error;
-                           message.message = "failed to spawn '" + executable.path + "' - " + e.description();
+                           message.message = string::compose( "failed to spawn '", executable.path, "' - ", e);
 
                            manager::local::ipc::send( state, state.event( message));
                         }
@@ -180,7 +180,7 @@ namespace casual
                      {
                         manager::ipc::device().blocking_send( service_manager.queue, prepare);
                      }
-                     catch( const exception::communication::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         //
                         // broker is not online, we simulate the reply from the broker
@@ -258,7 +258,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 
@@ -309,7 +309,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                         }
                      }
 
@@ -741,6 +741,22 @@ namespace casual
                {
                   namespace
                   {
+                     namespace lookup
+                     {
+                        common::process::Handle pid( const State& state, platform::pid::type pid)
+                        {
+                           auto server = state.server( pid);
+                           
+                           if( server)
+                           {
+                              return server->instance( pid).handle;
+                           }
+                           else
+                           {
+                              return state.grandchild( pid);
+                           }
+                        }
+                     } // lookup
                      struct Lookup : Base
                      {
                         using Base::Base;
@@ -754,7 +770,7 @@ namespace casual
 
                            if( message.identification)
                            {
-                              auto found = range::find( state().singeltons, message.identification);
+                              auto found = range::find( state().singletons, message.identification);
 
                               if( found)
                               {
@@ -772,11 +788,10 @@ namespace casual
                            }
                            else if( message.pid)
                            {
-                              auto server = state().server( message.pid);
+                              reply.process = local::lookup::pid( state(), message.pid);
 
-                              if( server)
+                              if( reply.process)
                               {
-                                 reply.process = server->instance( message.pid).handle;
                                  manager::local::ipc::send( state(), message.process, reply);
                               }
                               else if( message.directive == Directive::direct)
@@ -876,7 +891,7 @@ namespace casual
 
                   if( message.identification)
                   {
-                     auto found = range::find( state().singeltons, message.identification);
+                     auto found = range::find( state().singletons, message.identification);
 
 
                      if( found)
@@ -921,7 +936,7 @@ namespace casual
                      }
 
 
-                     state().singeltons[ message.identification] = message.process;
+                     state().singletons[ message.identification] = message.process;
 
                      local::singleton::connect( state(), message);
                   }
@@ -934,6 +949,11 @@ namespace casual
                   {
                      server->connect( message.process);
                      log << "added process: " << message.process << " to " << *server << '\n';
+                  }
+                  else 
+                  {
+                     // we assume it's a grandchild
+                     state().grandchildren.push_back( message.process);
                   }
 
                   auto& pending = state().pending.lookup;

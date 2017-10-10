@@ -8,7 +8,7 @@
 #include "queue/common/transform.h"
 
 #include "common/arguments.h"
-#include "common/exception.h"
+#include "common/exception/handle.h"
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"
@@ -126,7 +126,7 @@ namespace casual
             }
             catch( ...)
             {
-               return common::error::handler();
+               return common::exception::handle();
 
             }
             return 0;

@@ -9,7 +9,7 @@
 #include "common/flag.h"
 #include "common/service/header.h"
 
-#include "xatmi/defines.h"
+#include "common/flag/xatmi.h"
 
 namespace casual
 {
@@ -27,10 +27,10 @@ namespace casual
             {
                enum class Flag : long
                {
-                  no_transaction = TPNOTRAN,
-                  send_only = TPSENDONLY,
-                  receive_only = TPRECVONLY,
-                  no_time = TPNOTIME,
+                  no_transaction = cast::underlying( flag::xatmi::Flag::no_transaction),
+                  send_only = cast::underlying( flag::xatmi::Flag::send_only),
+                  receive_only = cast::underlying( flag::xatmi::Flag::receive_only),
+                  no_time = cast::underlying( flag::xatmi::Flag::no_time),
                };
                using Flags = common::Flags< Flag>;
 
@@ -48,8 +48,8 @@ namespace casual
             {
                enum class Transaction : int
                {
-                  commit = TPSUCCESS,
-                  rollback = TPFAIL
+                  commit = cast::underlying( flag::xatmi::Return::success),
+                  rollback = cast::underlying( flag::xatmi::Return::fail)
                };
 
                Result() = default;

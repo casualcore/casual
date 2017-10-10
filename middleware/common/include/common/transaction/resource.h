@@ -9,6 +9,8 @@
 #include "tx.h"
 
 #include "common/platform.h"
+#include "common/code/xa.h"
+#include "common/flag/xa.h"
 
 #include <string>
 #include <ostream>
@@ -25,19 +27,22 @@ namespace casual
          {
 
             using id_type = common::platform::resource::id::type;
+            using code = code::xa;
+            using Flag = flag::xa::Flag;
+            using Flags = flag::xa::Flags;
 
             Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
             Resource( std::string key, xa_switch_t* xa);
 
 
-            int start( const Transaction& transaction, long flags);
-            int end( const Transaction& transaction, long flags);
+            code start( const Transaction& transaction, Flags flags);
+            code end( const Transaction& transaction, Flags flags);
 
-            int open( long flags);
-            int close( long flags);
+            code open( Flags flags = Flag::no_flags);
+            code close( Flags flags = Flag::no_flags);
 
-            int commit( const Transaction& transaction, long flags);
-            int rollback( const Transaction& transaction, long flags);
+            code commit( const Transaction& transaction, Flags flags);
+            code rollback( const Transaction& transaction, Flags flags);
 
             bool dynamic() const;
 

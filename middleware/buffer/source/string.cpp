@@ -32,13 +32,13 @@ namespace casual
             };
 */
 
-            typedef common::platform::binary::type::size_type size_type;
-            typedef common::platform::buffer::raw::type data_type;
+            using size_type = common::platform::size::type;
+            using data_type = common::platform::buffer::raw::type;
 
 
             namespace local
             {
-               size_type validate( const common::buffer::Payload& payload)
+               auto validate( const common::buffer::Payload& payload)
                {
                   const auto size = payload.memory.size();
                   const auto used = std::strlen( payload.memory.data()) + 1;
@@ -67,7 +67,7 @@ namespace casual
                //!
                //! Implement Buffer::transport
                //!
-               size_type transport( const size_type user_size) const
+               common::platform::binary::size::type transport( const common::platform::binary::size::type user_size) const
                {
                   //
                   // Just ignore user-size all together
@@ -172,13 +172,13 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   return CASUAL_STRING_INTERNAL_FAILURE;
                }
             }
 
 
-            int explore( const char* const handle, long* const size, long* const used)
+            int explore( const char* const handle, size_type* const size, size_type* const used)
             {
                //const trace trace( "string::explore");
 

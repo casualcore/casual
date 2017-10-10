@@ -256,7 +256,7 @@ namespace casual
          EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_MAKE_NVP( info);
          EXPECT_TRUE( info.attributes.reply == "queueA2");
          EXPECT_TRUE( info.payload.type == common::buffer::type::binary());
-         EXPECT_TRUE( info.payload.size == payload.size());
+         EXPECT_TRUE( info.payload.size == common::range::size( payload));
 
          // message should still be there
          {
@@ -324,8 +324,8 @@ namespace casual
          {
             common::message::gateway::domain::Advertise remote;
 
-            remote.process.pid = 666;
-            remote.process.queue = common::communication::ipc::Handle{ 777};
+            remote.process.pid = common::platform::process::id{ 666};
+            remote.process.queue = common::platform::ipc::id{ 777};
 
             remote.queues.push_back( { "remote-queue"});
 
@@ -334,7 +334,7 @@ namespace casual
 
          EXPECT_THROW({
             queue::peek::information( "remote-queue");
-         }, common::exception::invalid::Argument);
+         }, common::exception::system::invalid::Argument);
       }
 
    } // queue

@@ -9,7 +9,6 @@
 #include <cstring>
 
 #include "xatmi.h"
-#include "common/error.h"
 #include "common/arguments.h"
 
 std::string type_from_input( const std::string& input)
@@ -156,16 +155,9 @@ int main( int argc, char* argv[])
       return 0;
 
    }
-   catch( const casual::common::argument::exception::Help&)
+   catch( ...)
    {
-
+      return casual::common::exception::handle( std::cerr);
    }
-   catch( const std::exception& e)
-   {
-      std::cerr << e.what() << std::endl;
-   }
-
-   return -1;
-
 }
 

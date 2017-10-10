@@ -1,9 +1,6 @@
-//
-// casual_octet_buffer.h
-//
-//  Created on: 22 okt 2013
-//      Author: Kristone
-//
+//!
+//! casal
+//!
 
 #ifndef CASUAL_OCTET_BUFFER_H_
 #define CASUAL_OCTET_BUFFER_H_

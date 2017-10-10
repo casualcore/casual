@@ -21,6 +21,8 @@ namespace casual
    {
       namespace manager
       {
+         using size_type = common::platform::size::type;
+
          struct State
          {
 
@@ -48,35 +50,35 @@ namespace casual
             //!
             //! Represent a remote gateway that exports 0..* queues
             //!
-            struct Gateway
+            struct Remote
             {
-               Gateway();
-               Gateway( common::domain::Identity id, common::process::Handle process);
+               Remote();
+               Remote( common::domain::Identity id, common::process::Handle process);
 
                common::domain::Identity id;
                common::process::Handle process;
-               std::size_t order = 0;
+               size_type order = 0;
 
-               friend bool operator == ( const Gateway& lhs, const common::domain::Identity& rhs);
+               friend bool operator == ( const Remote& lhs, const common::domain::Identity& rhs);
 
             };
 
             struct Queue
             {
                Queue() = default;
-               Queue( common::process::Handle process, std::size_t queue, std::size_t order = 0)
+               Queue( common::process::Handle process, size_type queue, size_type order = 0)
                   : process{ std::move( process)}, queue{ queue}, order{ order} {}
 
                common::process::Handle process;
-               std::size_t queue = 0;
-               std::size_t order = 0;
+               size_type queue = 0;
+               size_type order = 0;
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
                friend std::ostream& operator << ( std::ostream& out, const Queue& value);
             };
 
 
-            std::vector< common::platform::pid::type> processes() const;
+            
 
             std::unordered_map< std::string, std::vector< Queue>> queues;
 
@@ -86,9 +88,12 @@ namespace casual
             std::string configuration;
 
             std::vector< Group> groups;
-            std::vector< Gateway> gateways;
+            std::vector< Remote> remotes;
 
             std::string group_executable;
+
+
+            std::vector< common::platform::pid::type> processes() const;
 
             //!
             //! Removes all queues associated with the process

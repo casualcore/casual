@@ -11,6 +11,7 @@
 #include "common/transaction/id.h"
 #include "common/algorithm.h"
 #include "common/optional.h"
+#include "common/string.h"
 
 
 
@@ -38,12 +39,27 @@ namespace casual
    {
       using common::optional;
 
+      namespace string
+      {
+         using namespace common::string;   
+      } // string
+      
       namespace platform
       {
+         namespace size 
+         {
+             using namespace common::platform::size;
+         } // size 
          namespace buffer
          {
             using namespace common::platform::buffer;
          } // buffer
+
+         namespace process
+         {
+            using id = common::platform::process::id;
+         } // process
+
 
 
          namespace binary
@@ -73,17 +89,9 @@ namespace casual
          } // time
 
 
-         namespace pid
-         {
-            using type = common::platform::pid::type;
-         } // pid
-
          namespace ipc
          {
-            namespace handle
-            {
-               using type = common::platform::ipc::handle::type;
-            } // id
+            using id = common::platform::ipc::id;
          } // ipc
 
       } // platform
@@ -95,6 +103,12 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name);
          void serialize( Writer& archive, const platform::Uuid& value, const char* name);
+
+         void serialize( Reader& archive, platform::process::id& value, const char* name);
+         void serialize( Writer& archive, const platform::process::id& value, const char* name);
+
+         void serialize( Reader& archive, platform::ipc::id& value, const char* name);
+         void serialize( Writer& archive, const platform::ipc::id& value, const char* name);
 
          void serialize( Reader& archive, common::process::Handle& value, const char* name);
          void serialize( Writer& archive, const common::process::Handle& value, const char* name);

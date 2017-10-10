@@ -8,6 +8,7 @@
 
 #include "sf/namevaluepair.h"
 #include "sf/platform.h"
+#include "common/domain.h"
 
 
 
@@ -19,21 +20,12 @@ namespace casual
       {
          namespace admin
          {
+            using size_type = sf::platform::size::type;
 
 
             struct Group
             {
-               struct
-               {
-                  sf::platform::pid::type pid;
-                  sf::platform::ipc::handle::type queue;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                  {
-                     archive & CASUAL_MAKE_NVP( pid);
-                     archive & CASUAL_MAKE_NVP( queue);
-                  })
-               } process;
+               common::process::Handle process;
 
                std::string name;
                std::string queuebase;
@@ -46,6 +38,43 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( queuebase);
                })
             };
+            namespace remote
+            {
+               struct Domain
+               {
+                  common::domain::Identity id;
+                  common::process::Handle process;
+                  size_type order = 0;
+   
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( id);
+                     archive & CASUAL_MAKE_NVP( process);
+                     archive & CASUAL_MAKE_NVP( order);
+                  })
+               };
+
+               struct Queue
+               {
+                  std::string name;
+                  common::platform::process::id pid;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( name);
+                     archive & CASUAL_MAKE_NVP( pid);
+                  })
+
+                  inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
+                  {
+                     return std::tie( lhs.name, lhs.pid) 
+                          < std::tie( rhs.name, rhs.pid);
+                  }
+               };
+               
+            } // remote
+
+
 
             struct Queue
             {
@@ -57,16 +86,16 @@ namespace casual
                };
 
 
-               sf::platform::pid::type group;
-               std::size_t id;
+               sf::platform::process::id group;
+               size_type id;
                std::string name;
                Type type;
-               std::size_t retries;
-               std::size_t error;
+               size_type retries;
+               size_type error;
 
-               std::size_t count;
-               std::size_t size;
-               std::size_t uncommitted;
+               size_type count;
+               size_type size;
+               size_type uncommitted;
                sf::platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -83,9 +112,14 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( timestamp);
                })
 
-               friend bool operator < ( const Queue& lhs, const Queue& rhs)
+               inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
                {
-                  return lhs.id < rhs.id;
+                  auto type_order = []( auto& q){ return q.type == Type::group_error_queue ? 1 : 0;};
+
+                  if( type_order( lhs) == type_order( rhs))
+                     return lhs.name < rhs.name;
+
+                  return type_order( lhs) < type_order( rhs);
                }
             };
 
@@ -94,18 +128,18 @@ namespace casual
 
 
                sf::platform::Uuid id;
-               std::size_t queue;
-               std::size_t origin;
+               size_type queue;
+               size_type origin;
                sf::platform::binary::type trid;
-               std::size_t state;
+               size_type state;
                std::string reply;
-               std::size_t redelivered;
+               size_type redelivered;
                std::string type;
 
-               sf::platform::time::point::type avalible;
+               sf::platform::time::point::type available;
                sf::platform::time::point::type timestamp;
 
-               std::size_t size;
+               size_type size;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -118,7 +152,7 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( reply);
                   archive & CASUAL_MAKE_NVP( redelivered);
                   archive & CASUAL_MAKE_NVP( type);
-                  archive & CASUAL_MAKE_NVP( avalible);
+                  archive & CASUAL_MAKE_NVP( available);
                   archive & CASUAL_MAKE_NVP( timestamp);
                   archive & CASUAL_MAKE_NVP( size);
                })
@@ -132,10 +166,24 @@ namespace casual
                std::vector< Group> groups;
                std::vector< Queue> queues;
 
+               struct Remote
+               {
+                  std::vector< remote::Domain> domains;
+                  std::vector< remote::Queue> queues;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                  {
+                     archive & CASUAL_MAKE_NVP( domains);
+                     archive & CASUAL_MAKE_NVP( queues);
+                  })
+
+               } remote;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   archive & CASUAL_MAKE_NVP( groups);
                   archive & CASUAL_MAKE_NVP( queues);
+                  archive & CASUAL_MAKE_NVP( remote);
                })
 
             };
@@ -145,7 +193,7 @@ namespace casual
             {
                struct
                {
-                  std::size_t id;
+                  size_type id;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -156,7 +204,7 @@ namespace casual
                } queue;
 
 
-               std::size_t restored = 0;
+               size_type restored = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {

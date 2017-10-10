@@ -130,7 +130,7 @@ namespace casual
 
                   }
 
-                  void Default::reply( communication::ipc::Handle id, message::service::call::Reply& message)
+                  void Default::reply( platform::ipc::id id, message::service::call::Reply& message)
                   {
                      Trace trace{ "server::handle::policy::Default::reply"};
 
@@ -139,7 +139,7 @@ namespace casual
                      communication::ipc::blocking::send( id, message);
                   }
 
-                  void Default::reply( communication::ipc::Handle id, message::conversation::caller::Send& message)
+                  void Default::reply( platform::ipc::id id, message::conversation::caller::Send& message)
                   {
                      Trace trace{ "server::handle::policy::Default::conversation::reply"};
 
@@ -159,7 +159,7 @@ namespace casual
                      communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   }
 
-                  void Default::statistics( communication::ipc::Handle id,  message::event::service::Call& event)
+                  void Default::statistics( platform::ipc::id id,  message::event::service::Call& event)
                   {
                      Trace trace{ "server::handle::policy::Default::statistics"};
 
@@ -171,7 +171,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        exception::handle();
                      }
                   }
 
@@ -372,14 +372,14 @@ namespace casual
 
                      if( ! arguments.resources.empty())
                      {
-                        throw common::exception::invalid::Semantic{ "can't build and link an administration server with resources"};
+                        throw exception::system::invalid::Argument{ "can't build and link an administration server with resources"};
                      }
 
                      policy::local::configure::services( arguments.services, {});
 
                   }
 
-                  void Admin::reply( communication::ipc::Handle id, message::service::call::Reply& message)
+                  void Admin::reply( platform::ipc::id id, message::service::call::Reply& message)
                   {
                      communication::ipc::blocking::send( id, message, m_error_handler);
                   }
@@ -393,7 +393,7 @@ namespace casual
                   }
 
 
-                  void Admin::statistics( communication::ipc::Handle id, message::event::service::Call& event)
+                  void Admin::statistics( platform::ipc::id id, message::event::service::Call& event)
                   {
                      // no-op
                   }

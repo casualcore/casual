@@ -23,7 +23,8 @@ namespace casual
                message.execution = execution::id();
             }
 
-            communication::message::Complete complete( message.type(), message.correlation ? message.correlation : uuid::make());
+            using casual::common::message::type;
+            communication::message::Complete complete( type( message), message.correlation ? message.correlation : uuid::make());
 
             auto marshal = creator( complete.payload);
             marshal << message;
@@ -34,7 +35,8 @@ namespace casual
          template< typename M, typename C = binary::create::Input>
          void complete( communication::message::Complete& complete, M& message, C creator = binary::create::Input{})
          {
-            assert( complete.type == message.type());
+            using casual::common::message::type;
+            assert( complete.type == type( message));
 
             message.correlation = complete.correlation;
 

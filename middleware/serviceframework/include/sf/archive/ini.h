@@ -46,7 +46,7 @@ namespace casual
                const tree& operator() ( std::istream& stream);
                const tree& operator() ( const std::string& ini);
                const tree& operator() ( const platform::binary::type& ini);
-               const tree& operator() ( const char* ini, std::size_t size);
+               const tree& operator() ( const char* ini, platform::size::type size);
 
             private:
 
@@ -64,7 +64,7 @@ namespace casual
 
                   explicit Implementation( const tree& document);
 
-                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
+                  std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
                   void container_end( const char* name);
 
                   bool serialtype_start( const char* name);
@@ -142,7 +142,7 @@ namespace casual
 
                   explicit Implementation( tree& document);
 
-                  std::size_t container_start( const std::size_t size, const char* name);
+                  platform::size::type container_start( const platform::size::type size, const char* name);
 
                   void container_end( const char* name);
 

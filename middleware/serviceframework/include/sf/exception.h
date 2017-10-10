@@ -6,7 +6,9 @@
 #define CASUAL_SF_EXCEPTION_H_
 
 
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/exception/xatmi.h"
+#include "common/exception/casual.h"
 
 #include <string>
 #include <stdexcept>
@@ -17,8 +19,10 @@ namespace casual
 {
    namespace sf
    {
-      namespace exception
+      namespace exception 
       {
+         using namespace common::exception;
+
          class Base : public common::exception::base
          {
          public:
@@ -28,74 +32,22 @@ namespace casual
             ~Base() = default;
          };
 
-         struct Validation : public Base
-         {
-            using Base::Base;
-         };
-
-
-         struct NotReallySureWhatToCallThisExcepion : public Base
-         {
-            using Base::Base;
-            NotReallySureWhatToCallThisExcepion() : Base( "NotRealllySureWhatToCallThisExcepion") {}
-         };
-
-         namespace invalid
-         {
-            struct File : Base
-            {
-               using Base::Base;
-            };
-
-
-         } // invalid
-
-         namespace memory
-         {
-            struct Allocation : public Base
-            {
-               using Base::Base;
-            };
-
-         } // memory
+         using Validation =  common::exception::casual::base< common::code::casual::validation>;
 
          namespace archive
          {
             namespace invalid
             {
-               struct Document : Base
-               {
-                  using Base::Base;
-               };
+               using Document = common::exception::casual::base< common::code::casual::invalid_document>;
 
-               struct Node : Base
-               {
-                  using Base::Base;
-               };
+               using Node = common::exception::casual::base< common::code::casual::invalid_node>;
 
             } // invalid
          } // archive
 
-         namespace xatmi
-         {
-            struct Timeout : Base
-            {
-               using Base::Base;
-            };
-
-            struct System : Base
-            {
-               using Base::Base;
-            };
-
-         } // xatmi
-
-      }
-
-   }
-
-
-}
+      } // exception
+   } // sf
+} // casual
 
 
 

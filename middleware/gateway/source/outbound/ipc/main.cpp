@@ -11,11 +11,11 @@
 #include "gateway/outbound/routing.h"
 
 #include "common/arguments.h"
-#include "common/communication/ipc.h"
-#include "common/marshal/network.h"
-#include "common/marshal/binary.h"
+
+
 #include "common/message/domain.h"
 #include "common/environment.h"
+#include "common/communication/ipc.h"
 
 
 #include <fstream>
@@ -31,13 +31,21 @@ namespace casual
       {
          namespace ipc
          {
+            using size_type = common::platform::size::type;
+
+            using outbound_device_type = common::communication::ipc::outbound::Device;
+            using inbound_device_type = common::communication::ipc::inbound::Device;
+
+            static_assert( ! common::marshal::is_network_normalizing< inbound_device_type>::value, "inbound device does not need to normalize network representation");
+            static_assert( ! common::marshal::is_network_normalizing< outbound_device_type>::value, "outbound device does not need to normalize network representation");
+
 
             namespace local
             {
                namespace
                {
 
-                  process::Handle lookup_gateway( communication::ipc::inbound::Device& ipc, common::communication::ipc::Handle broker)
+                  process::Handle lookup_gateway( inbound_device_type& ipc, common::platform::ipc::id broker)
                   {
                      Trace trace{ "outbound::ipc::local::lookup_gateway"};
 
@@ -53,7 +61,7 @@ namespace casual
                            ipc).process;
                   }
 
-                  message::ipc::connect::Reply lookup_inbound( communication::ipc::inbound::Device& ipc, common::communication::ipc::Handle gateway)
+                  message::ipc::connect::Reply lookup_inbound( inbound_device_type& ipc, common::platform::ipc::id gateway)
                   {
                      Trace trace{ "outbound::ipc::local::lookup_inbound"};
 
@@ -74,7 +82,7 @@ namespace casual
                   }
 
 
-                  message::ipc::connect::Reply connect_domain( communication::ipc::inbound::Device& ipc, const std::string& path)
+                  message::ipc::connect::Reply connect_domain( inbound_device_type& ipc, const std::string& path)
                   {
                      Trace trace{ "outbound::ipc::local::connect_domain"};
 
@@ -99,19 +107,16 @@ namespace casual
             {
                std::string domain_path;
                std::string domain_file;
-               std::size_t order = 0;
+               size_type order = 0;
             };
 
 
             struct Policy
             {
 
-               using outbound_device_type = communication::ipc::outbound::Device;
-               using inbound_device_type = communication::ipc::inbound::Device;
-
                struct configuration_type
                {
-                  communication::ipc::Handle id;
+                  platform::ipc::id id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -141,7 +146,7 @@ namespace casual
 
                private:
 
-                  communication::ipc::Handle m_outbound;
+                  platform::ipc::id m_outbound;
                };
 
                struct external_type
@@ -209,8 +214,6 @@ namespace casual
          } // ipc
       } // outbound
    } // gateway
-
-
 } // casual
 
 
@@ -234,7 +237,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
    return 0;
 }

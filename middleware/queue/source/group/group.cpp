@@ -234,7 +234,7 @@ namespace casual
             }
             catch( ...)
             {
-               common::error::handler();
+               common::exception::handle();
             }
          }
 
@@ -247,7 +247,7 @@ namespace casual
             }
             catch( ...)
             {
-               return common::error::handler();
+               return common::exception::handle();
             }
             return 0;
          }

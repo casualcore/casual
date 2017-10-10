@@ -3,8 +3,9 @@
 //!
 
 #include "common/process.h"
-#include "common/exception.h"
-#include "common/error.h"
+#include "common/exception/system.h"
+#include "common/exception/casual.h"
+
 #include "common/file.h"
 #include "common/log.h"
 #include "common/signal.h"
@@ -64,7 +65,7 @@ namespace casual
                   std::vector< char> path( platform::size::max::path);
                   if( ::_NSGetExecutablePath( path.data(), &size) != 0)
                   {
-                     throw exception::invalid::Argument{ "failed to get the path to the current executable"};
+                     throw exception::system::invalid::Argument{ "failed to get the path to the current executable"};
                   }
                   if( path.data()) { return path.data();}
                   return {};
@@ -115,9 +116,9 @@ namespace casual
          }
 
 
-         platform::pid::type id()
+         platform::process::id id()
          {
-            static const platform::pid::type pid = getpid();
+            static const platform::process::id pid{ getpid()};
             return pid;
          }
 
@@ -268,12 +269,12 @@ namespace casual
                         case M::Directive::singleton:
                         {
                            log::category::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
-                           throw exception::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
+                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
                         }
                         case M::Directive::shutdown:
                         {
                            log::category::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
-                           throw exception::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
+                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
                         }
                         default:
                         {
@@ -368,20 +369,16 @@ namespace casual
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
-               switch( std::errc( error::last()))
+               switch( code::last::system::error())
                {
-                  case std::errc::interrupted:
+                  case code::system::interrupted:
                   {
                      signal::handle();
                      break;
                   }
-                  case std::errc::invalid_argument:
-                  {
-                     throw exception::invalid::Argument{ error::string()};
-                  }
                   default:
                   {
-                     throw std::system_error{ error::last(), std::system_category()};
+                     exception::system::throw_from_errno();
                   }
                }
             }
@@ -393,15 +390,15 @@ namespace casual
             {
                namespace
                {
-                  std::size_t check_infinity( std::size_t quantity)
+                  platform::size::type check_infinity( platform::size::type quantity)
                   {
-                     return quantity ==  0 ? std::numeric_limits< std::size_t>::max() : quantity;
+                     return quantity ==  0 ? std::numeric_limits< platform::size::type>::max() : quantity;
                   }
                } // <unnamed>
             } // local
 
 
-            Sleep::Pattern::Pattern( std::chrono::microseconds time, std::size_t quantity)
+            Sleep::Pattern::Pattern( std::chrono::microseconds time, platform::size::type quantity)
                : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
@@ -409,7 +406,7 @@ namespace casual
             {
                sleep( m_time);
 
-               if( m_quantity == std::numeric_limits< std::size_t>::max())
+               if( m_quantity == std::numeric_limits< platform::size::type>::max())
                {
                   return false;
                }
@@ -457,61 +454,84 @@ namespace casual
                namespace current
                {
 
-                  namespace internal
+                  namespace copy
                   {
-                     std::vector< const char*> environment()
+                     //
+                     // Appends from current process environment, if it's not
+                     // already overridden.
+                     //
+                     void environment( std::vector< std::string>& variables)
                      {
-                        std::vector< const char*> result;
+                        //
+                        // Since we're reading environment variables we need to lock
+                        //
+                        std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
 
                         auto current = local::environment();
 
                         while( (*current) != nullptr)
                         {
-                           result.push_back( *current);
+                           std::string variable{ *current};
+
+                           auto found =  range::find_if( variables, [&variable]( const std::string& v){
+                              return range::equal(
+                                 std::get< 0>( range::divide( variable, '=')),
+                                 std::get< 0>( range::divide( v, '='))
+                              );
+                           });
+
+                           if( ! found)
+                           {
+                              variables.push_back( std::move( variable));
+                           }
+
                            ++current;
                         }
-
-                        return result;
                      }
-                  } // internal
+                  } // copy
 
 
+               } // current
+
+               namespace C
+               {
                   std::vector< const char*> environment( std::vector< std::string>& environment)
                   {
-
-                     auto result = internal::environment();
+                     std::vector< const char*> result;
+                     result.resize( environment.size() + 1);
 
                      std::transform(
                         std::begin( environment),
                         std::end( environment),
-                        std::back_inserter( result),
+                        std::begin( result),
                         std::mem_fn( &std::string::data));
 
                      result.push_back( nullptr);
+
                      return result;
                   }
 
-               } // current
+                  std::vector< const char*> arguments( const std::string& path, std::vector< std::string>& arguments)
+                  {
+                     std::vector< const char*> c_arguments;
 
-               std::vector< const char*> arguments( const std::string& path, std::vector< std::string>& arguments)
-               {
-                  std::vector< const char*> c_arguments;
-
-                  //
-                  // think we must add application-name as first argument...
-                  //
-                  c_arguments.push_back( path.c_str());
+                     //
+                     // think we must add application-name as first argument...
+                     //
+                     c_arguments.push_back( path.c_str());
 
 
-                  range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
+                     range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
 
-                  //
-                  // Null end
-                  //
-                  c_arguments.push_back( nullptr);
+                     //
+                     // Null end
+                     //
+                     c_arguments.push_back( nullptr);
 
-                  return c_arguments;
-               }
+                     return c_arguments;
+                  }
+
+               } // C
 
                namespace spawn
                {
@@ -540,7 +560,7 @@ namespace casual
                      void check_error( int code, const char* message)
                      {
                         if( code != 0)
-                           throw exception::invalid::Argument{ message, CASUAL_NIP( error::string( code))};
+                           exception::system::throw_from_code( code);
                      };
 
                      posix_spawnattr_t m_attributes;
@@ -567,9 +587,9 @@ namespace casual
             //
             if( ! file::permission::execution( path))
             {
-               throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
-                  exception::make_nip( "arguments", range::make( arguments)),
-                  exception::make_nip( "environment", range::make( environment)));
+               throw exception::system::invalid::Argument( string::compose( "spawn failed - path: ", path,
+                  " arguments: ", range::make( arguments),
+                  " environment: ", range::make( environment)));
             }
 
             //
@@ -580,6 +600,7 @@ namespace casual
                {
                   argument = environment::string( argument);
                }
+
                for( auto& variable : environment)
                {
                   variable = environment::string( variable);
@@ -588,27 +609,29 @@ namespace casual
 
 
 
-            platform::pid::type pid = 0;
-
             log::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+
+            //
+            // Append current, if not "overridden"
+            //
+            local::current::copy::environment( environment);
+
+
+            platform::process::id pid;
 
             {
                local::spawn::Attributes attributes;
 
                //
-               // Since we're reading environment variables we need to lock
-               //
-               std::unique_lock< std::mutex> lock{ environment::variable::mutex()};
-
-
-               //
                // prepare c-style arguments and environment
                //
-               auto c_arguments = local::arguments( path, arguments);
-               auto c_environment = local::current::environment( environment);
+               auto c_arguments = local::C::arguments( path, arguments);
+               auto c_environment = local::C::environment( environment);
+
+               platform::process::native::type native_pid;
 
                auto status =  posix_spawnp(
-                     &pid,
+                     &native_pid,
                      path.c_str(),
                      nullptr,
                      attributes.get(),
@@ -620,11 +643,10 @@ namespace casual
                   case 0:
                      break;
                   default:
-                     throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
-                           exception::make_nip( "arguments", range::make( arguments)),
-                           exception::make_nip( "environment", range::make( environment)),
-                           CASUAL_NIP( error::string( status)));
+                     exception::system::throw_from_code( status);
                }
+
+               pid = platform::process::id{ native_pid};
             }
 
             //
@@ -650,7 +672,7 @@ namespace casual
                {
                   auto& reason = deaths.front();
 
-                  throw exception::invalid::Argument( "spawn failed", CASUAL_NIP( path),
+                  throw exception::system::invalid::Argument( "spawn failed", CASUAL_NIP( path),
                         exception::make_nip( "arguments", range::make( arguments)),
                         exception::make_nip( "environment", range::make( environment)),
                         CASUAL_NIP( reason));
@@ -701,18 +723,18 @@ namespace casual
                   {
                      handle_signal();
 
-                     auto result = waitpid( pid, &exit.status, flags);
+                     auto result = waitpid( pid.native(), &exit.status, flags);
 
                      if( result == -1)
                      {
-                        switch( std::errc( error::last()))
+                        switch( code::last::system::error())
                         {
-                           case std::errc::no_child_process:
+                           case code::system::no_child_process:
                            {
                               // no child
                               break;
                            }
-                           case std::errc::interrupted:
+                           case code::system::interrupted:
                            {
                               handle_signal();
 
@@ -723,14 +745,14 @@ namespace casual
                            }
                            default:
                            {
-                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << error::string() << std::endl;
-                              throw std::system_error{ error::last(), std::system_category()};
+                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << code::last::system::error() << '\n';
+                              exception::system::throw_from_errno();
                            }
                         }
                      }
                      else if( result != 0)
                      {
-                        exit.pid = result;
+                        exit.pid = platform::process::id{ result};
 
 
                         if( WIFEXITED( exit.status))
@@ -776,13 +798,13 @@ namespace casual
                {
                   while( result.size() < pids.size())
                   {
-                     auto exit = local::wait( -1, 0);
+                     auto exit = local::wait( platform::process::id{ -1}, 0);
 
                      if( range::find( pids, exit.pid))
                      {
                         result.push_back( std::move( exit));
                      }
-                     else if( exit.pid == 0)
+                     else if( ! exit.pid)
                      {
                         //
                         // No children exists
@@ -852,7 +874,7 @@ namespace casual
 
 
 
-         Handle ping( communication::ipc::Handle queue)
+         Handle ping( platform::ipc::id queue)
          {
             Trace trace{ "process::ping"};
 
@@ -864,7 +886,7 @@ namespace casual
 
          namespace lifetime
          {
-            Exit::operator bool () const { return pid != 0;}
+            Exit::operator bool () const { return pid.valid();}
 
             bool Exit::deceased() const
             {
@@ -907,7 +929,7 @@ namespace casual
 
                while( true)
                {
-                  auto exit = local::wait( -1);
+                  auto exit = local::wait( platform::process::id{ -1});
                   if( exit)
                   {
                      terminations.push_back( exit);

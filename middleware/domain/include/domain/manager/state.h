@@ -57,13 +57,14 @@ namespace casual
 
          namespace state
          {
+            using size_type = common::platform::size::type;
             namespace internal
             {
 
                template< typename T>
                struct Id
                {
-                  using id_type = common::id::basic< std::size_t, T>;
+                  using id_type = common::id::basic< size_type, T>;
 
                   id_type id = id_type::next();
 
@@ -149,7 +150,7 @@ namespace casual
                //!
                //! Number of instances that has been restarted
                //!
-               std::size_t restarts = 0;
+               size_type restarts = 0;
 
                //!
                //! For persistent state
@@ -240,7 +241,7 @@ namespace casual
                const_instances_range spawnable() const;
                const_instances_range shutdownable() const;
 
-               void scale( std::size_t instances);
+               void scale( size_type instances);
 
                void remove( pid_type instance);
 
@@ -291,18 +292,13 @@ namespace casual
                const_instances_range spawnable() const;
                const_instances_range shutdownable() const;
 
-               void scale( std::size_t instances);
+               void scale( size_type instances);
 
 
                instance_type instance( common::platform::pid::type pid) const;
                instance_type remove( common::platform::pid::type pid);
 
                bool connect( common::process::Handle process);
-
-               //!
-               //! @return true if number of instances >= configured_instances
-               //!
-               //bool complete() const;
 
                friend std::ostream& operator << ( std::ostream& out, const Server& value);
 
@@ -369,7 +365,9 @@ namespace casual
             std::vector< state::Executable> executables;
             std::vector< state::Group> groups;
 
-            std::map< common::Uuid, common::process::Handle> singeltons;
+            std::map< common::Uuid, common::process::Handle> singletons;
+
+            
 
             struct
             {
@@ -383,6 +381,12 @@ namespace casual
             //!
             bool execute();
             task::Queue tasks;
+
+            //!
+            //! Processes that register but is not direct children of
+            //! this process.
+            //!
+            std::vector< common::process::Handle> grandchildren;
 
 
             //!
@@ -474,12 +478,15 @@ namespace casual
             const state::Group& group( state::Group::id_type id) const;
 
             state::Server* server( common::platform::pid::type pid);
+            const state::Server* server( common::platform::pid::type pid) const;
             state::Server& server( state::Server::id_type id);
             const state::Server& server( state::Server::id_type id) const;
 
             state::Executable* executable( common::platform::pid::type pid);
             state::Executable& executable( state::Executable::id_type id);
             const state::Executable& executable( state::Executable::id_type id) const;
+
+            common::process::Handle grandchild( common::platform::pid::type pid) const;
 
 
             common::process::Handle singleton( const common::Uuid& id) const;

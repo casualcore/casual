@@ -8,7 +8,6 @@
 
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
-#include "common/exception.h"
 #include "common/algorithm.h"
 
 #include "common/process.h"
@@ -42,7 +41,7 @@ namespace casual
                   {
                      return found->second;
                   }
-                  throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
+                  throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
                }
 
                template< typename C, typename ID>
@@ -55,7 +54,7 @@ namespace casual
                   {
                      return *found;
                   }
-                  throw state::exception::Missing{ "missing", CASUAL_NIP( id)};
+                  throw state::exception::Missing{ common::string::compose( "missing id: ", id)};
                }
 
             } // <unnamed>
@@ -207,7 +206,7 @@ namespace casual
                instance.add( *this);
             }
 
-            void Service::add( state::instance::Remote& instance, std::size_t hops)
+            void Service::add( state::instance::Remote& instance, size_type hops)
             {
                instances.remote.emplace_back( instance, hops);
                partition_remote_instances();
@@ -276,7 +275,7 @@ namespace casual
             return local::get( services, name);
          }
 
-         std::vector< common::communication::ipc::Handle> State::subscribers() const
+         std::vector< common::platform::ipc::id> State::subscribers() const
          {
             return range::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
                return v.queue;

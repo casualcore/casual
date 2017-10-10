@@ -9,6 +9,7 @@
 
 #include "common/marshal/marshal.h"
 #include "common/algorithm.h"
+#include "common/network/byteorder.h"
 
 
 #include <string>
@@ -106,10 +107,7 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Send& value);
 
             private:
-               // gcc 4.9.4 requires Payload to be defined, switch to pointer untill we can use a better compiler
-               //const Payload* m_payload;
                std::reference_wrapper< const Payload> m_payload;
-
             };
 
          } // payload
@@ -125,7 +123,7 @@ namespace casual
             Buffer( const Buffer&) = delete;
             Buffer& operator = ( const Buffer&) = delete;
 
-            platform::binary::size::type transport(  platform::binary::size::type user_size) const;
+            platform::binary::size::type transport( platform::binary::size::type user_size) const;
 
             platform::binary::size::type reserved() const;
 

@@ -5,9 +5,9 @@
 #include "common/communication/ipc.h"
 #include "common/communication/log.h"
 #include "common/environment.h"
-#include "common/error.h"
 #include "common/log.h"
 #include "common/domain.h"
+#include "common/exception/system.h"
 
 
 #include <fstream>
@@ -29,8 +29,8 @@ namespace casual
                {
                   return out << "{ type: " << value.type()
                         << ", correlation: " << uuid::string( value.correlation())
-                        << ", offset: " << value.pyaload_offset()
-                        << ", payload.size: " << value.pyaload_size()
+                        << ", offset: " << value.payload_offset()
+                        << ", payload.size: " << value.payload_size()
                         << ", complete_size: " << value.complete_size()
                         << ", header-size: " << transport::header_size()
                         << ", transport-size: " <<  value.size()
@@ -53,15 +53,15 @@ namespace casual
 
                   if( result == -1)
                   {
-                     auto code = errno;
-
-                     switch( code)
+                     switch( common::code::last::system::error())
                      {
-                        case EAGAIN:
+                        using sys = common::code::system;
+
+                        case sys::resource_unavailable_try_again:
                         {
                            return false;
                         }
-                        case EINTR:
+                        case sys::interrupted:
                         {
                            log << "ipc::native::send - signal received\n";
                            common::signal::handle();
@@ -72,15 +72,7 @@ namespace casual
                            //
                            return send( id, transport, flags);
                         }
-                        case EIDRM:
-                        {
-                           throw exception::queue::Unavailable{ string::compose( "queue unavailable - id: ", id, " - ",  common::error::string())};
-                        }
-                        case ENOMEM:
-                        {
-                           throw exception::limit::Memory{ string::compose(  "id: ", id, " - ", common::error::string())};
-                        }
-                        case EINVAL:
+                        case sys::invalid_argument:
                         {
                            //if( /* message.size() < MSGMAX  && */ transport.message.header.type != common::message::Type::absent_message)
                            if( cast::underlying( transport.type()) > 0)
@@ -88,15 +80,14 @@ namespace casual
                               //
                               // The problem is with queue-id. We guess that it has been removed.
                               //
-                              throw exception::queue::Unavailable{ string::compose( "queue unavailable - id: ", id, " - ", common::error::string())};
+                              throw exception::system::communication::unavailable::Removed{ string::compose( "queue unavailable - id: ", id)};
                            }
                            // we let it fall through to default
                         }
                         // no break
-                        case EFAULT:
                         default:
                         {
-                           throw common::exception::invalid::Argument{ string::compose(  "invalid queue arguments - id: ", id, " - ", common::error::string())};
+                           exception::system::throw_from_errno( string::compose(  "queue-id: ", id));
                         }
                      }
                   }
@@ -116,11 +107,11 @@ namespace casual
 
                   if( result == -1)
                   {
-                     auto code = errno;
-
-                     switch( code)
+                     switch( common::code::last::system::error())
                      {
-                        case EINTR:
+                        using sys = common::code::system;
+
+                        case sys::interrupted:
                         {
                            log << "ipc::native::receive - signal received\n";
 
@@ -132,20 +123,15 @@ namespace casual
                            //
                            return receive( id, transport, flags);
                         }
-                        case ENOMSG:
-                        case EAGAIN:
+                        case sys::no_message:
+                        case sys::resource_unavailable_try_again:
                         {
                            return false;
                         }
-                        case EIDRM:
-                        {
-                           throw exception::queue::Unavailable{ string::compose( "queue removed - id: ", id, " - ", common::error::string())};
-                        }
                         default:
                         {
-                           auto msg = string::compose( "ipc < [", id, "] receive failed - transport: ", transport, " - flags: ", flags, " - ", common::error::string());
-                           log << msg << std::endl;
-                           throw exception::invalid::Argument( msg, __FILE__, __LINE__);
+                           log << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: "<< flags << " - " << common::code::last::system::error();
+                           exception::system::throw_from_errno( string::compose(  "ipc: ", id));
                         }
                      }
                   }
@@ -197,7 +183,7 @@ namespace casual
 
                Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags)
                {
-                  message::Transport transport{ complete.type, complete.payload.size()};
+                  message::Transport transport{ complete.type, complete.size()};
 
                   complete.correlation.copy( transport.correlation());
 
@@ -236,9 +222,9 @@ namespace casual
                Connector::Connector()
                 : m_id( msgget( IPC_PRIVATE, IPC_CREAT | 0660))
                {
-                  if( ! m_id)
+                  if( ! m_id )
                   {
-                     throw exception::invalid::Argument( "ipc queue create failed - " + common::error::string(), __FILE__, __LINE__);
+                     exception::system::throw_from_errno( "ipc queue create failed");
                   }
                   log << "queue id: " << m_id << " created\n";
                }
@@ -335,7 +321,7 @@ namespace casual
                               }
                               return process;
                            }
-                           catch( const exception::communication::Unavailable&)
+                           catch( const exception::system::communication::Unavailable&)
                            {
                               log << "failed to fetch instance with identity: " << identity << '\n';
                               return {};
@@ -365,7 +351,8 @@ namespace casual
                      if( ! communication::ipc::exists( m_process.queue))
                      {
                         auto& instance = *this;
-                        throw exception::communication::Unavailable{ "failed to fetch ipc-queue - is there a domain running?", CASUAL_NIP( instance)};
+                        throw exception::system::communication::unavailable::Removed{ 
+                           string::compose( "failed to fetch ipc-queue - is there a domain running? - instance: ", instance)};
                      }
                   }
 
@@ -391,7 +378,7 @@ namespace casual
                      {
 
                         template< typename R>
-                        communication::ipc::Handle reconnect( R&& singleton_policy)
+                        platform::ipc::id reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -418,7 +405,7 @@ namespace casual
 
                            if( ! ipc::exists( process.queue))
                            {
-                              throw exception::communication::Unavailable{ "failed to locate domain manager"};
+                              throw exception::system::communication::unavailable::Removed{ "failed to locate domain manager"};
                            }
 
                            return process.queue;
@@ -598,7 +585,7 @@ namespace casual
                   }
                   else
                   {
-                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::error::string() << "\n";
+                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::code::last::system::error() << "\n";
                   }
                }
                return false;
@@ -612,7 +599,7 @@ namespace casual
                {
                   return false;
                }
-               if( info.msg_lrpid == owner.pid)
+               if( info.msg_lrpid == owner.pid.native())
                {
                   return remove( owner.queue);
                }

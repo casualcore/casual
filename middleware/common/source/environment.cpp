@@ -3,10 +3,11 @@
 //!
 
 #include "common/environment.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "common/file.h"
 #include "common/algorithm.h"
 #include "common/log.h"
+#include "common/string.h"
 
 #include <memory>
 
@@ -65,7 +66,7 @@ namespace casual
 
                         if( setenv( name, value.c_str(), 1) == -1)
                         {
-                           throw std::system_error { error::last(), std::system_category()};
+                           exception::system::throw_from_errno();
                         }
                      }
 
@@ -100,7 +101,7 @@ namespace casual
             {
                if( ! exists( name))
                {
-                  throw exception::invalid::environment::Variable( "failed to get variable", CASUAL_NIP( name));
+                  throw exception::system::invalid::Argument( string::compose( "failed to get variable: ",name));
                }
                return local::native::Variable::instance().get( name);
             }
@@ -133,14 +134,14 @@ namespace casual
                      auto& pid = std::get < 0 > ( split);
                      if( !pid.empty())
                      {
-                        result.pid = std::stoi( std::string( std::begin(pid), std::end(pid)));
+                        result.pid = platform::process::id{ std::stoi( std::string( std::begin(pid), std::end(pid)))};
                      }
 
                      auto queue = std::get < 1 > ( split);
                      if( ! queue.empty())
                      {
                         ++queue;
-                        result.queue = communication::ipc::Handle{ 
+                        result.queue = platform::ipc::id{ 
                            common::from_string< decltype( result.queue.native())>( std::string( std::begin(queue), std::end(queue)))};
                      }
                   }
@@ -215,55 +216,6 @@ namespace casual
 
          } // domain
 
-         //
-         // wordexp is way to slow, 10-30ms which quickly adds up...
-         // we roll our own until we find something better
-         // 
-         /*
-          std::string string( const std::string& value)
-          {
-          wordexp_t holder;
-          common::initialize( holder);
-
-          scope::Execute deleter{ [&](){ wordfree( &holder);}};
-
-
-          auto result = wordexp( value.c_str(), &holder, WRDE_UNDEF | WRDE_NOCMD);
-
-          switch( result)
-          {
-          case 0:
-          break;
-          case WRDE_BADCHAR:
-          {
-          throw exception::invalid::Argument{ "Illegal occurrence of newline or one of |, &, ;, <, >, (, ), {, }", CASUAL_NIP( value)};
-          }
-          case WRDE_BADVAL:
-          {
-          throw exception::invalid::Argument{ "An undefined shell variable was referenced", CASUAL_NIP( value)};
-          }
-          case WRDE_CMDSUB:
-          {
-          throw exception::invalid::Argument{ "Command substitution occurred", CASUAL_NIP( value)};
-          }
-          case WRDE_NOSPACE:
-          {
-          throw exception::limit::Memory{ "Out of memory", CASUAL_NIP( value)};
-          }
-          case WRDE_SYNTAX:
-          {
-          throw exception::invalid::Argument{ "Shell syntax error, such as unbalanced parentheses or unmatched quotes", CASUAL_NIP( value)};
-          }
-          }
-
-          log::debug << "environment::string - we_wordc: " << holder.we_wordc << " we_offs: " << holder.we_offs << '\n';
-
-          //
-          // We join with ' '. Not sure if this is what we always want
-          //
-          return string::join( range::make( holder.we_wordv, holder.we_wordv + holder.we_wordc), " ");
-          }
-          */
 
          namespace local
          {
@@ -316,8 +268,8 @@ namespace casual
                         //
                         // We did not find the 'last-delimiter'
                         //
-                        throw exception::invalid::Argument { "syntax error, such as unbalanced parentheses", exception::make_nip("value", std::string {
-                           std::begin(range), std::end(range)})};
+                        throw exception::system::invalid::Argument{ 
+                           string::compose( "syntax error, such as unbalanced parentheses: ", std::string{ std::begin(range), std::end(range)})};
                      }
 
                      result.emplace_back(std::get < 0 > ( splitted), Type::token);

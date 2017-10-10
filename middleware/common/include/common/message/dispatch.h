@@ -54,7 +54,7 @@ namespace casual
                   return dispatch( complete);
                }
 
-               std::size_t size() const { return m_handlers.size();}
+               platform::size::type size() const { return m_handlers.size();}
 
                //!
                //! @return all message-types that this instance handles
@@ -186,6 +186,7 @@ namespace casual
 
                   result[ handle_type::message_type::type()] = std::move( holder);
                }
+
 
                static void add( handlers_type& result, basic_handler&& holder)
                {

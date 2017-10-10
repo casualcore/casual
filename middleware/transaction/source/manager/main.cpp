@@ -1,15 +1,12 @@
 //!
-//! transaction_monitor_main.cpp
-//!
-//! Created on: Jul 15, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 
 
-#include "common/error.h"
 #include "common/arguments.h"
 #include "common/process.h"
+#include "common/exception/handle.h"
 
 #include "common/environment.h"
 
@@ -37,13 +34,9 @@ int main( int argc, char** argv)
       manager.start();
 
    }
-   catch( const std::exception& exception)
-   {
-
-   }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
 
    }
    return 0;

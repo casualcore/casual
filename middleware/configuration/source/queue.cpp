@@ -10,7 +10,7 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/file.h"
-#include "common/exception.h"
+#include "common/exception/casual.h"
 
 
 
@@ -80,7 +80,7 @@ namespace casual
                   {
                      if( queue.name.empty())
                      {
-                        throw common::exception::invalid::Configuration{ "queue has to have a name"};
+                        throw common::exception::casual::invalid::Configuration{ "queue has to have a name"};
                      }
                   }
 
@@ -88,12 +88,12 @@ namespace casual
                   {
                      if( group.name.empty())
                      {
-                        throw common::exception::invalid::Configuration{ "queue group has to have a name"};
+                        throw common::exception::casual::invalid::Configuration{ "queue group has to have a name"};
                      }
 
                      if( group.queuebase.value_or( "").empty())
                      {
-                        throw common::exception::invalid::Configuration{ "queue group has to have a queuebase path"};
+                        throw common::exception::casual::invalid::Configuration{ "queue group has to have a queuebase path"};
                      }
                      common::range::for_each( group.queues, *this);
                   }
@@ -116,7 +116,7 @@ namespace casual
 
                      if( common::range::adjacent_find( common::range::sort( groups, order_group_name), equality_group_name))
                      {
-                        throw common::exception::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
+                        throw common::exception::casual::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
                      }
 
                      auto order_group_qb = []( G lhs, G rhs){ return lhs.queuebase < rhs.queuebase;};
@@ -127,7 +127,7 @@ namespace casual
 
                      if( common::range::adjacent_find( common::range::sort( persitent_groups, order_group_qb), equality_group_gb))
                      {
-                        throw common::exception::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
+                        throw common::exception::casual::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
                      }
                   }
 
@@ -145,7 +145,7 @@ namespace casual
 
                      if( common::range::adjacent_find( common::range::sort( queues)))
                      {
-                        throw common::exception::invalid::Configuration{ "queues has to be unique"};
+                        throw common::exception::casual::invalid::Configuration{ "queues has to be unique"};
                      }
 
                   }

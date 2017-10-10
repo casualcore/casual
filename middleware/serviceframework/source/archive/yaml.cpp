@@ -87,7 +87,7 @@ namespace casual
                return (*this)( stream);
             }
 
-            const YAML::Node& Load::operator() ( const char* const yaml, const std::size_t size)
+            const YAML::Node& Load::operator() ( const char* const yaml, const platform::size::type size)
             {
                std::istringstream stream{ local::stream( std::string( yaml, size))};
                return (*this)( stream);
@@ -104,7 +104,7 @@ namespace casual
             {
                Implementation::Implementation( const YAML::Node& node) : m_stack{ &node} {}
 
-               std::tuple< std::size_t, bool> Implementation::container_start( std::size_t size, const char* const name)
+               std::tuple< platform::size::type, bool> Implementation::container_start( platform::size::type size, const char* const name)
                {
                   if( ! start( name))
                   {
@@ -281,7 +281,7 @@ namespace casual
                }
 
 
-               std::size_t Implementation::container_start( const std::size_t size, const char* const name)
+               platform::size::type Implementation::container_start( const platform::size::type size, const char* const name)
                {
                   if( name)
                   {

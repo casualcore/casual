@@ -10,8 +10,9 @@
 
 
 #include "common/algorithm.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 #include "common/file.h"
+#include "common/string.h"
 
 //
 // std
@@ -31,9 +32,9 @@ namespace sql
    {
       namespace exception
       {
-         struct Base : public casual::common::exception::base
+         struct Base : public casual::common::exception::system::invalid::Argument
          {
-            using casual::common::exception::base::base;
+            using casual::common::exception::system::invalid::Argument::Argument;
          };
 
          struct Connection : Base
@@ -271,7 +272,7 @@ namespace sql
                  case SQLITE_DONE:
                     break;
                  default:
-                    throw exception::Query{ sqlite3_errmsg( m_handle.get()), __FILE__, __LINE__};
+                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
               }
 
               return result;
@@ -291,7 +292,7 @@ namespace sql
                  case SQLITE_DONE:
                     return false;
                  default:
-                    throw exception::Query{ sqlite3_errmsg( m_handle.get()), __FILE__, __LINE__};
+                    throw exception::Query{ sqlite3_errmsg( m_handle.get())};
               }
            }
 
@@ -299,7 +300,7 @@ namespace sql
             {
                if( sqlite3_step( m_statement.get()) != SQLITE_DONE)
                {
-                  throw exception::Query{ sqlite3_errmsg( m_handle.get()), __FILE__, __LINE__};
+                  throw exception::Query{ sqlite3_errmsg( m_handle.get())};
                }
             }
 
@@ -312,7 +313,7 @@ namespace sql
            {
               if( ! parameter_bind( m_statement.get(), index, std::forward< T>( value)))
               {
-                 throw exception::Query{ sqlite3_errmsg( m_handle.get()) + std::string{ " index: "} + std::to_string( index), __FILE__, __LINE__};
+                 throw exception::Query{ sqlite3_errmsg( m_handle.get()) + std::string{ " index: "} + std::to_string( index)};
               }
               bind( index + 1, std::forward< Params>( params)...);
            }
@@ -329,7 +330,7 @@ namespace sql
 
             if( sqlite3_prepare_v2( m_handle.get(), statement.data(), -1, &stmt, nullptr) != SQLITE_OK)
             {
-               throw exception::Query{ sqlite3_errmsg( handle.get()), __FILE__, __LINE__};
+               throw exception::Query{ sqlite3_errmsg( handle.get())};
             }
             m_statement = std::shared_ptr< sqlite3_stmt>( stmt, sqlite3_finalize);
          }
@@ -375,7 +376,7 @@ namespace sql
                {
                   if( casual::common::file::exists( file))
                   {
-                     throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+                     throw exception::Connection( casual::common::string::compose( sqlite3_errmsg( handle.get())," file: ", file, " result: ", result));
                   }
                   else
                   {
@@ -383,7 +384,7 @@ namespace sql
 
                      if (!created)
                      {
-                        throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+                        throw exception::Connection( casual::common::string::compose( sqlite3_errmsg( handle.get())," file: ", file, " result: ", result));
                      }
 
                      return open( file);
@@ -392,7 +393,7 @@ namespace sql
                }
                default:
                {
-                  throw exception::Connection( sqlite3_errmsg( handle.get()), CASUAL_NIP( file), CASUAL_NIP( result));
+                  throw exception::Connection( casual::common::string::compose( sqlite3_errmsg( handle.get())," file: ", file, " result: ", result));
                }
 
 

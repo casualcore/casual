@@ -22,7 +22,7 @@ namespace casual
             struct Default
             {
                sf::optional< std::string> key;
-               sf::optional< std::size_t> instances;
+               sf::optional< sf::platform::size::type> instances;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (

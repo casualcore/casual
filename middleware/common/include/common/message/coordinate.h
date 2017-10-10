@@ -7,7 +7,6 @@
 
 
 #include "common/uuid.h"
-#include "common/exception.h"
 #include "common/process.h"
 
 #include <vector>
@@ -24,11 +23,11 @@ namespace casual
             {
                struct Message
                {
-                  inline Message( std::vector< platform::pid::type> pids) : m_pids{ std::move( pids)} {}
+                  inline Message( std::vector< platform::process::id> pids) : m_pids{ std::move( pids)} {}
                   inline Message( const std::vector< common::process::Handle>& processes)
                      : m_pids{ range::transform( processes, []( const common::process::Handle& h){ return h.pid;})} {}
 
-                  inline bool consume( platform::pid::type pid)
+                  inline bool consume( platform::process::id pid)
                   {
                      auto found = range::find( m_pids, pid);
 
@@ -46,8 +45,14 @@ namespace casual
                      return m_pids.empty();
                   }
 
+                  friend std::ostream& operator << ( std::ostream& out, const Message& value)
+                  {
+                     return out << "{ pids: " << range::make( value.m_pids)
+                        << '}';
+                  }
+
                private:
-                  std::vector< platform::pid::type> m_pids;
+                  std::vector< platform::process::id> m_pids;
                };
 
             } // policy
@@ -66,7 +71,7 @@ namespace casual
 
 
             template< typename... Requested>
-            void add( const Uuid& correlation, communication::ipc::Handle destination, Requested&&... requested)
+            void add( const Uuid& correlation, platform::ipc::id destination, Requested&&... requested)
             {
                m_messages.emplace_back(
                      destination,
@@ -110,7 +115,7 @@ namespace casual
                return false;
             }
 
-            void remove( platform::pid::type pid)
+            void remove( platform::process::id pid)
             {
                range::trim( m_messages, range::remove_if( m_messages, [=]( holder_type& h){
                   if( h.policy.consume( pid) && h.policy.done())
@@ -125,7 +130,7 @@ namespace casual
             Policy& policy() { return m_policy;}
             const Policy& policy() const { return m_policy;}
 
-            std::size_t size() const { return m_messages.size();}
+            platform::size::type size() const { return m_messages.size();}
 
             friend std::ostream& operator << ( std::ostream& out, const Coordinate& value)
             {
@@ -138,7 +143,7 @@ namespace casual
             struct holder_type
             {
                template< typename... Args>
-               holder_type( communication::ipc::Handle queue, const Uuid& correlation, Args&&... args)
+               holder_type( platform::ipc::id queue, const Uuid& correlation, Args&&... args)
                   : queue{ queue}, policy{ std::forward< Args>( args)...}
                {
                   message.correlation = correlation;
@@ -146,7 +151,7 @@ namespace casual
 
                bool done() const { return policy.done();}
 
-               communication::ipc::Handle queue;
+               platform::ipc::id queue;
                message_policy_type policy;
                message_type message;
 
@@ -154,6 +159,7 @@ namespace casual
                {
                   return out << "{ queue: " << value.queue
                      << ", message: " << value.message
+                     << ", policy: " << value.policy
                      << '}';
                }
             };

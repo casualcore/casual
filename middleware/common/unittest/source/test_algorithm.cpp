@@ -260,7 +260,7 @@ namespace casual
 
          ASSERT_TRUE( std::get< 0>( part).size() == 2);
          EXPECT_TRUE( *std::get< 0>( part) == 3);
-         EXPECT_TRUE( std::get< 0>( part).size() + std::get< 1>( part).size() == us.size());
+         EXPECT_TRUE( std::get< 0>( part).size() + std::get< 1>( part).size() == range::size( us));
       }
 
       TEST( casual_common_algorithm, partition_reverse)
@@ -273,7 +273,7 @@ namespace casual
 
          ASSERT_TRUE( std::get< 0>( part).size() == 2);
          EXPECT_TRUE( *std::get< 0>( part) == 3);
-         EXPECT_TRUE( std::get< 0>( part).size() + std::get< 1>( part).size() == us.size());
+         EXPECT_TRUE( std::get< 0>( part).size() + std::get< 1>( part).size() == range::size( us));
       }
 
       TEST( casual_common_algorithm, find_value)

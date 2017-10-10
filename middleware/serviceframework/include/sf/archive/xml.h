@@ -50,7 +50,7 @@ namespace casual
                const pugi::xml_document& operator() ( std::istream& stream);
                const pugi::xml_document& operator() ( const std::string& xml);
                const pugi::xml_document& operator() ( const platform::binary::type& xml);
-               const pugi::xml_document& operator() ( const char* xml, std::size_t size);
+               const pugi::xml_document& operator() ( const char* xml, platform::size::type size);
                const pugi::xml_document& operator() ( const char* xml);
 
             private:
@@ -74,7 +74,7 @@ namespace casual
                   //!
                   explicit Implementation( pugi::xml_node node );
 
-                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
+                  std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
 
                   void container_end( const char* name);
 
@@ -159,7 +159,7 @@ namespace casual
                   //!
                   explicit Implementation( pugi::xml_node node);
 
-                  std::size_t container_start( const std::size_t size, const char* name);
+                  platform::size::type container_start( const platform::size::type size, const char* name);
 
                   void container_end( const char* name);
 

@@ -130,7 +130,7 @@ namespace casual
                }
                catch( ...)
                {
-                  return casual::common::error::handler();
+                  return common::exception::handle();
                }
             }
 

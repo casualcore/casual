@@ -78,6 +78,16 @@ LinkUnittest( 'bin/test-buffer',
 # Sample
 #
 
+exe_field_sample = LinkExecutable( 'bin/casual_buffer_protocol_sample',
+    [
+     Compile( 'sample/protocol/source/field.cpp'),
+    ],
+    [
+     lib_buffer, 'casual-xatmi', 'casual-common'
+    ])
+    
+    
+
 lib_casual_buffer_sample = LinkLibrary( 'bin/casual_buffer_sample',
     [
      Compile( 'sample/client/source/field.cpp'),

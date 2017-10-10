@@ -22,8 +22,7 @@ struct casual_resource_proxy_service_argument
    struct casual_xa_switch_mapping* xaSwitches;
 };
 
-int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* serverArguments);
-
+int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* serverArguments);
 
 
 #ifdef __cplusplus

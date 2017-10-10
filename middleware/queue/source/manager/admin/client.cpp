@@ -105,7 +105,7 @@ namespace casual
             auto format_trid = []( const manager::admin::Message& v) { return transcode::hex::encode( v.trid);};
             auto format_type = []( const manager::admin::Message& v) { return v.type;};
             auto format_timestamp = []( const manager::admin::Message& v) { return normalize::timestamp( v.timestamp);};
-            auto format_avalible = []( const manager::admin::Message& v) { return normalize::timestamp( v.avalible);};
+            auto format_available = []( const manager::admin::Message& v) { return normalize::timestamp( v.available);};
 
             return {
                { global::porcelain, global::color, global::header},
@@ -117,7 +117,7 @@ namespace casual
                terminal::format::column( "type", format_type, terminal::color::no_color),
                terminal::format::column( "reply", std::mem_fn( &manager::admin::Message::reply), terminal::color::no_color),
                terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "avalible", format_avalible, terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
 
             };
          }
@@ -154,8 +154,20 @@ namespace casual
             using q_type = manager::admin::Queue;
 
 
+            /*
             auto format_error = [&]( const q_type& q){
                return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
+            };
+            */
+
+            auto format_type = [&]( const q_type& q){
+               switch( q.type)
+               {
+                  case q_type::Type::group_error_queue: return 'g';
+                  case q_type::Type::error_queue: return 'e';
+                  case q_type::Type::queue: return 'q';
+               }
+               return '-';
             };
 
             auto format_group = [&]( const q_type& q){
@@ -166,17 +178,42 @@ namespace casual
             return {
                { global::porcelain, global::color, global::header},
                terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
-               terminal::format::column( "count", []( const q_type& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
-               terminal::format::column( "size", []( const q_type& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "avg", []( const q_type& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
-               terminal::format::column( "uc", []( const q_type& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
+               terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
+               terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "avg", []( const auto& q){ return q.count == 0 ? 0 : q.size / q.count;}, common::terminal::color::cyan, terminal::format::Align::right),
+               terminal::format::column( "uc", []( const auto& q){ return q.uncommitted;}, common::terminal::color::grey, terminal::format::Align::right),
                terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}),
-               terminal::format::column( "r", []( const q_type& q){ return q.retries;}, common::terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "error queue", format_error, common::terminal::color::blue),
+               terminal::format::column( "r", []( const auto& q){ return q.retries;}, common::terminal::color::blue, terminal::format::Align::right),
+               terminal::format::column( "t", format_type, common::terminal::color::blue),
                terminal::format::column( "group", format_group),
 
             };
          }
+
+         namespace remote
+         {
+            terminal::format::formatter< manager::admin::remote::Queue> queues( const manager::admin::State& state)
+            {
+               auto format_domain_id = [&]( const auto& q){
+                  return uuid::string( range::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.id);
+               };
+   
+               auto format_domain_name = [&]( const auto& q){
+                  return range::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.name;
+               };
+   
+   
+               return {
+                  { global::porcelain, global::color, global::header},
+                  terminal::format::column( "name", std::mem_fn( &manager::admin::remote::Queue::name), terminal::color::yellow),
+                  terminal::format::column( "domain name", format_domain_name, common::terminal::color::blue),
+                  terminal::format::column( "domain id", format_domain_id, common::terminal::color::blue),
+
+   
+               };
+            }
+            
+         } // remote
 
       } // format
 
@@ -188,13 +225,17 @@ namespace casual
 
          auto formatter = format::queues( state);
 
-         using q_t = manager::admin::Queue;
+         formatter.print( std::cout, range::sort( state.queues));
+      }
 
-         formatter.print( std::cout, range::sort( state.queues, []( const q_t& l, const q_t& r){
-            if( l.type > r.type) return true;
-            if( r.type > l.type) return false;
-            return l.name < r.name;
-         }));
+      void list_remote_queues()
+      {
+         auto state = call::state();
+         
+         auto formatter = format::remote::queues( state);
+
+         formatter.print( std::cout, range::sort( state.remote.queues));
+
       }
 
       void list_groups()
@@ -313,6 +354,7 @@ namespace casual
             common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
             common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
             common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::list_queues),
+            common::argument::directive( {"-r", "--list-remote"}, "list all remote discovered queues", &queue::list_remote_queues),
             common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
             common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
             common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual-admin queue --restore <queue-name>", &queue::local::restore),
@@ -341,14 +383,9 @@ int main( int argc, char **argv)
       //std::cerr << exception.what() << std::endl;
       return 10;
    }
-   catch( const casual::common::argument::exception::Help&)
+   catch( ...)
    {
-      
-   }
-   catch( const std::exception& exception)
-   {
-      std::cerr << "exception: " << exception.what() << std::endl;
-      return 20;
+      return casual::common::exception::handle( std::cerr);
    }
 
 

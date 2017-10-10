@@ -20,6 +20,8 @@ namespace casual
          {
             namespace network
             {
+               using size_type = platform::size::type;
+               
                namespace detail
                {
 
@@ -67,10 +69,17 @@ namespace casual
                      memory::append( value, buffer);
                   }
 
+                  template<typename T>
+                  static void write_size( const T& size, platform::binary::type& buffer)
+                  {
+                     const auto encoded = common::network::byteorder::size::encode( size);
+                     memory::append( encoded, buffer);
+                  }
+
 
                   template< typename T>
-                  static typename std::enable_if< ! detail::is_network_array< T>::value, std::size_t>::type
-                  read( const platform::binary::type& buffer, std::size_t offset, T& value)
+                  static std::enable_if_t< ! detail::is_network_array< T>::value, size_type>
+                  read( const platform::binary::type& buffer, size_type offset, T& value)
                   {
                      using value_type = decltype( detail::cast( value));
                      common::network::byteorder::type< value_type> net_value;
@@ -81,11 +90,22 @@ namespace casual
                   }
 
                   template< typename T>
-                  static typename std::enable_if< detail::is_network_array< T>::value, std::size_t>::type
-                  read( const platform::binary::type& buffer, std::size_t offset, T& value)
+                  static std::enable_if_t< detail::is_network_array< T>::value, size_type>
+                  read( const platform::binary::type& buffer, size_type offset, T& value)
                   {
                      return memory::copy( buffer, offset, value);
                   }
+
+                  template<typename T>
+                  static size_type read_size( const platform::binary::type& buffer, size_type offset, T& value)
+                  {
+                     decltype(common::network::byteorder::size::encode( value)) encoded;
+                     offset = memory::copy( buffer, offset, encoded);
+                     value = common::network::byteorder::size::decode<T>( encoded);
+                     return offset;
+                  }
+
+
                };
 
                using Input = basic_input< Policy>;
@@ -115,6 +135,12 @@ namespace casual
             } // network
 
          } // binary
+
+         template<>
+         struct is_network_normalizing< binary::network::Input>: std::true_type {};
+
+         template<>
+         struct is_network_normalizing< binary::network::Output>: std::true_type {};
 
       } // marshal
    } // common

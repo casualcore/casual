@@ -57,7 +57,7 @@ namespace casual
                         communication::ipc::blocking::send( local::process::get().queue, request, error_handler);
                         return;
                      }
-                     catch( const exception::queue::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         local::process::reset();
                      }

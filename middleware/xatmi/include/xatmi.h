@@ -10,6 +10,8 @@
 
 #include "xatmi/defines.h"
 #include "xatmi/extended.h"
+#include "xatmi/flag.h"
+#include "xatmi/code.h"
 
 
 

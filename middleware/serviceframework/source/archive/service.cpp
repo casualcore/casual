@@ -1,5 +1,5 @@
 //!
-//!
+//! casual
 //!
 
 #include "sf/archive/service.h"
@@ -30,7 +30,7 @@ namespace casual
 
                   Writer::~Writer() = default;
 
-                  std::size_t Writer::container_start( const std::size_t size, const char* name)
+                  platform::size::type Writer::container_start( const platform::size::type size, const char* name)
                   {
                     auto& current = *m_stack.back();
 
@@ -65,7 +65,7 @@ namespace casual
 
                   bool Prepare::serialtype_start( const char*) { return true;}
 
-                  std::tuple< std::size_t, bool> Prepare::container_start( std::size_t size, const char*)
+                  std::tuple< platform::size::type, bool> Prepare::container_start( platform::size::type size, const char*)
                   {
                      if( size == 0)
                      {

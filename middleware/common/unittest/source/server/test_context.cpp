@@ -52,17 +52,17 @@ namespace casual
                std::copy( replyMessage().begin(), replyMessage().end(), buffer);
                buffer[ replyMessage().size()] = '\0';
 
-               server::context().jump_return( TPSUCCESS, 0, buffer, replyMessage().size(), 0);
+               server::context().jump_return( flag::xatmi::Return::success, 0, buffer, replyMessage().size());
             }
 
             void test_service_TPFAIL( TPSVCINFO *serviceInfo)
             {
-               server::context().jump_return( TPFAIL, 0, serviceInfo->data, serviceInfo->len, 0);
+               server::context().jump_return( flag::xatmi::Return::fail, 0, serviceInfo->data, serviceInfo->len);
             }
 
             void test_service_TPSUCCESS( TPSVCINFO *serviceInfo)
             {
-               server::context().jump_return( TPSUCCESS, 42, serviceInfo->data, serviceInfo->len, 0);
+               server::context().jump_return( flag::xatmi::Return::success, 42, serviceInfo->data, serviceInfo->len);
             }
 
             server::Arguments arguments()
@@ -84,7 +84,7 @@ namespace casual
             }
 
 
-            message::service::call::callee::Request call_request( communication::ipc::Handle id)
+            message::service::call::callee::Request call_request( platform::ipc::id id)
             {
                message::service::call::callee::Request message;
 
@@ -202,7 +202,7 @@ namespace casual
             namespace call
             {
                message::service::call::callee::Request request(
-                     communication::ipc::Handle queue,
+                     platform::ipc::id queue,
                      std::string service,
                      common::transaction::ID trid = common::transaction::ID{})
                {
@@ -235,7 +235,7 @@ namespace casual
                const common::transaction::ID& ongoing()
                {
                   static auto singleton = common::transaction::ID::create(
-                        process::Handle{ process::handle().pid + 1, process::handle().queue});
+                        process::Handle{ platform::process::id( process::handle().pid.native() + 1), process::handle().queue});
 
                   return singleton;
                }
@@ -287,7 +287,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCERR) << "error: " << reply.status << " - "<< common::error::xatmi::error( reply.status);
+         EXPECT_TRUE( reply.status == code::xatmi::service_error) << "error: " << std::error_code( reply.status);
       }
 
 
@@ -307,7 +307,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0) << "reply: " << reply;
+         EXPECT_TRUE( reply.status == code::xatmi::ok) << "reply: " << reply;
       }
 
       TEST( common_server_context, call_server__test_service_atomic_TPSUCCESS)
@@ -325,7 +325,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0) << "reply.error: " << reply.status;
+         EXPECT_TRUE( reply.status == code::xatmi::ok) << "reply.error: " << reply.status;
       }
 
 
@@ -346,7 +346,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0);
+         EXPECT_TRUE( reply.status == code::xatmi::ok);
       }
 
       TEST( common_server_context, call_server__test_service_auto_TPSUCCESS)
@@ -365,7 +365,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0);
+         EXPECT_TRUE( reply.status == code::xatmi::ok);
       }
 
 
@@ -385,7 +385,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0);
+         EXPECT_TRUE( reply.status == code::xatmi::ok);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -406,7 +406,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0) << "reply.error: " << reply.status;
+         EXPECT_TRUE( reply.status == code::xatmi::ok) << "reply.error: " << std::error_code( reply.status);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -427,7 +427,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0);
+         EXPECT_TRUE( reply.status == code::xatmi::ok);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -448,7 +448,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == 0);
+         EXPECT_TRUE( reply.status == code::xatmi::ok);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( transaction::Transaction::State( reply.transaction.state) == transaction::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -468,7 +468,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail);
       }
 
       TEST( common_server_context, call_server__test_service_atomic_TPFAIL)
@@ -487,7 +487,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL) << "reply.error: " << reply.status;
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail) << "reply.error: " << reply.status;
       }
 
       TEST( common_server_context, call_server__test_service_join_TPFAIL)
@@ -506,7 +506,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail);
       }
 
       TEST( common_server_context, call_server__test_service_auto_TPFAIL)
@@ -525,7 +525,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail);
       }
 
 
@@ -543,7 +543,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -564,7 +564,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL) << "reply.error: " << reply.status;
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail) << "reply.error: " << std::error_code( reply.status);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::active) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -583,7 +583,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
       }
@@ -603,7 +603,7 @@ namespace casual
 
          auto reply = local::call::reply( caller.output(), message.correlation);
 
-         EXPECT_TRUE( reply.status == TPESVCFAIL);
+         EXPECT_TRUE( reply.status == code::xatmi::service_fail);
          EXPECT_TRUE( reply.transaction.trid == local::transaction::ongoing());
          EXPECT_TRUE( reply.transaction.state == message::service::Transaction::State::rollback) << "reply.transaction.state: " << reply.transaction.state;
       }

@@ -25,32 +25,29 @@ namespace casual
                   {
                      namespace header
                      {
-                        common::message::Type type( const network::Header& value)
+                        auto type( const network::Header& value)
                         {
-                           return static_cast< common::message::Type>(
-                                 common::network::byteorder::decode<
-                                    traits::underlying_type_t< common::message::Type>>( value.type));
+                           return static_cast< common::message::Type>( common::network::byteorder::decode<network::Header::host_type_type>( value.type));
                         }
 
-                        std::size_t size( const network::Header& value)
+                        auto size( const network::Header& value)
                         {
-                           return common::network::byteorder::decode< std::size_t>( value.size);
+                           return common::network::byteorder::size::decode<network::Header::host_size_type>( value.size);
                         }
 
                      } // header
-                  }
+                  } // <unnamed>
                } // host
 
                namespace network
                {
                   std::ostream& operator << ( std::ostream& out, const Header& value)
                   {
-
-                     return out << "{ type: " << host::header::type( value)
-                           << ", correlation: " << uuid::string( value.correlation)
-                           << ", size: " << host::header::size( value)
-                           << '}';
-
+                     return out  <<
+                        "{ type: " << host::header::type( value) <<
+                        ", correlation: " << uuid::string( value.correlation) <<
+                        ", size: " << host::header::size( value) <<
+                        '}';
                   }
 
                } // network
@@ -73,7 +70,7 @@ namespace casual
 
                correlation.copy( header.correlation);
                header.type = network::byteorder::encode( cast::underlying( type));
-               header.size = network::byteorder::encode( payload.size());
+               header.size = network::byteorder::size::encode( payload.size());
 
                return header;
             }

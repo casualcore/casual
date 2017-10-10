@@ -6,7 +6,6 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_IPC_H_
 
 
-#include "common/communication/ipc/handle.h"
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 
@@ -23,6 +22,7 @@ namespace casual
       {
          namespace ipc
          {
+            using size_type = platform::size::type;
 
             //
             // Forwards
@@ -103,7 +103,7 @@ namespace casual
 
                   inline Transport() { memory::set( message);}
 
-                  inline Transport( common::message::Type type, std::size_t complete_size) : Transport()
+                  inline Transport( common::message::Type type, size_type complete_size) : Transport()
                   {
                      Transport::type( type);
                      message.header.complete_size = complete_size;
@@ -138,25 +138,25 @@ namespace casual
                   //!
                   //! @return payload size
                   //!
-                  inline std::size_t pyaload_size() const { return message.header.count;}
+                  inline size_type payload_size() const { return message.header.count;}
 
                   //!
                   //! @return the offset of the logical complete message this transport
                   //!    message represent.
                   //!
-                  inline std::size_t pyaload_offset() const { return message.header.offset;}
+                  inline size_type payload_offset() const { return message.header.offset;}
 
 
                   //!
                   //! @return the size of the complete logical message
                   //!
-                  inline std::size_t complete_size() const { return message.header.complete_size;}
+                  inline size_type complete_size() const { return message.header.complete_size;}
 
 
                   //!
                   //! @return the total size of the transport message including header.
                   //!
-                  inline std::size_t size() const { return transport::header_size() + pyaload_size();}
+                  inline size_type size() const { return transport::header_size() + payload_size();}
 
 
                   //!
@@ -187,12 +187,12 @@ namespace casual
                };
 
 
-               inline std::size_t offset( const Transport& value) { return value.message.header.offset;}
+               inline size_type offset( const Transport& value) { return value.message.header.offset;}
 
             } // message
 
 
-            using handle_type = ipc::Handle;
+            using handle_type = platform::ipc::id;
 
 
 
@@ -323,6 +323,9 @@ namespace casual
                protected:
                   handle_type m_id;
                };
+
+               template< typename S>
+               using basic_device = communication::outbound::Device< Connector, S>;
 
                using Device = communication::outbound::Device< Connector>;
 
@@ -500,13 +503,13 @@ namespace casual
 
             } // receive
 
-            template< typename D, typename M, typename Policy = policy::Blocking>
+            template< typename D, typename M, typename Policy = policy::Blocking, typename Device = inbound::Device>
             auto call(
                   D&& destination,
                   M&& message,
                   Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
-                  inbound::Device& device = ipc::inbound::device())
+                  Device& device = ipc::inbound::device())
             {
                auto correlation = ipc::send( std::forward< D>( destination), message, policy, handler);
 

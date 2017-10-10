@@ -56,7 +56,7 @@ namespace casual
             }
             catch( ...)
             {
-               error::handler();
+               exception::handle();
             }
          }
 
@@ -119,21 +119,21 @@ namespace casual
                               }
                            }
                         }
-                        catch( const exception::Shutdown&)
+                        catch( const exception::casual::Shutdown&)
                         {
                            state.runlevel( State::Runlevel::shutdown);
                            handle::shutdown( state);
                         }
-                        catch( const exception::queue::Unavailable&)
+                        catch( const exception::system::communication::Unavailable&)
                         {
-                           error::handler();
+                           exception::handle();
                            state.runlevel( State::Runlevel::error);
                            handle::shutdown( state);
                            throw;
                         }
                         catch( ...)
                         {
-                           error::handler();
+                           exception::handle();
                            state.runlevel( State::Runlevel::error);
                            handle::shutdown( state);
                         }
@@ -151,13 +151,13 @@ namespace casual
             {
                local::message::pump( m_state);
             }
-            catch( const exception::Shutdown&)
+            catch( const exception::casual::Shutdown&)
             {
                m_state.runlevel( State::Runlevel::shutdown);
             }
             catch( ...)
             {
-               error::handler();
+               exception::handle();
                m_state.runlevel( State::Runlevel::error);
             }
          }

@@ -14,5 +14,5 @@ echo "markdown"
 $GATEWAY/documentation/protocol/bin/markdown-protocol > $GATEWAY/documentation/protocol/protocol.md
 
 echo "binary"
-$GATEWAY/documentation/protocol/bin/binary-protocol --base $GATEWAY/documentation/protocol/example/
+$GATEWAY/documentation/protocol/bin/binary-protocol --base $GATEWAY/documentation/protocol/example
 

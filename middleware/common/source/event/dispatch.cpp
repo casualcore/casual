@@ -35,7 +35,7 @@ namespace casual
             range::erase( m_subscribers, std::get< 1>( split));
          }
 
-         bool base_dispatch::exists( communication::ipc::Handle queue) const
+         bool base_dispatch::exists( platform::ipc::id queue) const
          {
             return range::find_if( m_subscribers, [queue]( auto& s){
                return s.queue == queue;

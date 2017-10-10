@@ -202,17 +202,10 @@ int main( int argc, char **argv)
       parser.parse( argc, argv);
 
    }
-   catch( const casual::common::argument::exception::Help&)
+   catch( ...)
    {
-      
+      return casual::common::exception::handle( std::cerr);
    }
-   catch( const std::exception& exception)
-   {
-      std::cerr << "exception: " << exception.what() << std::endl;
-      return 20;
-   }
-
-
    return 0;
 }
 

@@ -132,38 +132,42 @@ namespace casual
          {
             namespace detail
             {
+               std::uint8_t transcode<bool>::encode( const bool value) noexcept
+               { return value;}
 
-               std::uint16_t transcode< 2, false, false>::encode( std::uint16_t value) noexcept
-               {
-                  return HTOBE16(value);
-               }
+               bool transcode<bool>::decode( const std::uint8_t value) noexcept
+               { return value;}
 
-               std::uint16_t transcode< 2, false, false>::decode( std::uint16_t value) noexcept
-               {
-                  return BE16TOH(value);
-               }
+               std::uint8_t transcode<char>::encode( const char value) noexcept
+               { return value;}
 
-               std::uint32_t transcode< 4, false, false>::encode( std::uint32_t value) noexcept
-               {
-                  return HTOBE32(value);
-               }
+               char transcode<char>::decode( const std::uint8_t value) noexcept
+               { return value;}
 
-               std::uint32_t transcode< 4, false, false>::decode( std::uint32_t value) noexcept
-               {
-                  return BE32TOH( value);
-               }
+               std::uint16_t transcode<short>::encode( const short value) noexcept
+               { return HTOBE16( value);}
+
+               short transcode<short>::decode( const std::uint16_t value) noexcept
+               { return BE16TOH( value);}
 
 
-               std::uint64_t transcode< 8, false, false>::encode( std::uint64_t value) noexcept
-               {
-                  return HTOBE64( value);
-               }
+               std::uint32_t transcode<int>::encode( const int value) noexcept
+               { return HTOBE32( value);}
 
-               std::uint64_t transcode< 8, false, false>::decode( std::uint64_t value) noexcept
-               {
-                  return BE64TOH( value);
-               }
+               int transcode<int>::decode( const std::uint32_t value) noexcept
+               { return BE32TOH(value);}
 
+               std::uint64_t transcode<long>::encode( const long value) noexcept
+               { return HTOBE64( value);}
+
+               long transcode<long>::decode( const std::uint64_t value) noexcept
+               { return BE64TOH( value);}
+
+               std::uint64_t transcode<long long>::encode( const long long value) noexcept
+               { return HTOBE64( value);}
+
+               long long transcode<long long>::decode( const std::uint64_t value) noexcept
+               { return BE64TOH( value);}
 
 
                //
@@ -171,14 +175,14 @@ namespace casual
                //
                static_assert( sizeof( float) == 4, "Unexpected size of float");
 
-               std::uint32_t transcode< 4, true, true>::encode( float value) noexcept
+               std::uint32_t transcode< float>::encode( const float value) noexcept
                {
-                  return HTOBE32( *reinterpret_cast<const uint32_t*>(std::addressof( value)));
+                  return HTOBE32( *reinterpret_cast<const std::uint32_t*>(std::addressof( value)));
                }
 
-               float transcode< 4, true, true>::decode( std::uint32_t value) noexcept
+               float transcode<float>::decode( const std::uint32_t value) noexcept
                {
-                  const auto host = BE32TOH(value);
+                  const auto host = BE32TOH( value);
                   return *reinterpret_cast< const float*>(std::addressof( host));
                }
 
@@ -188,19 +192,16 @@ namespace casual
                //
                static_assert( sizeof( double) == 8, "Unexpected size of double");
 
-               std::uint64_t transcode< 8, true, true>::encode( double value) noexcept
+               std::uint64_t transcode<double>::encode( const double value) noexcept
                {
-                  return HTOBE64(*reinterpret_cast<const uint64_t*>(std::addressof( value)));
+                  return HTOBE64(*reinterpret_cast<const std::uint64_t*>(std::addressof( value)));
                }
 
-               double transcode< 8, true, true>::decode( std::uint64_t value) noexcept
+               double transcode<double>::decode( const std::uint64_t value) noexcept
                {
-                  const auto host = BE64TOH(value);
+                  const auto host = BE64TOH( value);
                   return *reinterpret_cast< const double*>( std::addressof( host));
                }
-
-
-
 
             } // detail
          } // byteorder

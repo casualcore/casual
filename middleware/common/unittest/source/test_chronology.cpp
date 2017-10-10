@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "common/chronology.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
 
 
 namespace casual
@@ -16,7 +16,7 @@ namespace casual
       {
          TEST( common_chronology, from_string__invalid_unit)
          {
-            EXPECT_THROW( from::string( "42ps"), exception::invalid::Argument);
+            EXPECT_THROW( from::string( "42ps"), exception::system::invalid::Argument);
          }
 
          TEST( common_chronology, from_string__ms)

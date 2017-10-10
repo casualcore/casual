@@ -7,7 +7,6 @@
 
 #include "common/algorithm.h"
 
-#include "common/exception.h"
 
 // temp
 #include "common/chronology.h"
@@ -41,7 +40,7 @@ namespace casual
                      row.get( 6, message.reply);
                      row.get( 7, message.redelivered);
                      row.get( 8, message.type);
-                     row.get( 9, message.avalible);
+                     row.get( 9, message.available);
                      row.get( 10, message.timestamp);
                      row.get( 11, message.size);
                   }
@@ -54,7 +53,7 @@ namespace casual
                      row.get( offset + 3, message.redelivered);
                      row.get( offset + 4, message.type);
 
-                     message.avalible = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 5)}};
+                     message.available = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 5)}};
                      message.timestamp = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( offset + 6)}};
                      row.get( offset + 7, message.payload);
                   }
@@ -532,7 +531,7 @@ namespace casual
                   message.message.reply,
                   0,
                   message.message.type,
-                  message.message.avalible,
+                  message.message.available,
                   common::platform::time::clock::type::now(),
                   message.message.payload);
 
@@ -668,7 +667,7 @@ namespace casual
             return reply;
          }
 
-         std::size_t Database::restore( Queue::id_type queue)
+         size_type Database::restore( Queue::id_type queue)
          {
             Trace trace{ "queue::Database::restore"};
 
@@ -790,7 +789,7 @@ namespace casual
          }
 
 
-         std::size_t Database::affected() const
+         size_type Database::affected() const
          {
             return m_connection.affected();
          }

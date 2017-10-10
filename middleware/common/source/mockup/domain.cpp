@@ -9,6 +9,8 @@
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/message/gateway.h"
+#include "common/message/transaction.h"
+#include "common/message/queue.h"
 
 #include "common/event/dispatch.h"
 
@@ -82,47 +84,51 @@ namespace casual
                {
                   namespace
                   {
-                     constexpr int success = 420000;
+                     // using limit as a "success"
+                     constexpr auto success = code::xatmi::limit;
 
-                     int reply_error( const std::string& service)
+                     auto reply_error( const std::string& service)
                      {
-                        if( range::search( service, std::string{ "TPEOS"})) { return TPEOS;}
-                        if( range::search( service, std::string{ "TPEPROTO"})) { return TPEPROTO;}
-                        if( range::search( service, std::string{ "TPESVCERR"})) { return TPESVCERR;}
-                        if( range::search( service, std::string{ "TPESVCFAIL"})) { return TPESVCFAIL;}
-                        if( range::search( service, std::string{ "TPESYSTEM"})) { return TPESYSTEM;}
+                        if( range::search( service, std::string{ "TPEOS"})) { return code::xatmi::os;}
+                        if( range::search( service, std::string{ "TPEPROTO"})) { return code::xatmi::protocol;}
+                        if( range::search( service, std::string{ "TPESVCERR"})) { return code::xatmi::service_error;}
+                        if( range::search( service, std::string{ "TPESVCFAIL"})) { return code::xatmi::service_fail;}
+                        if( range::search( service, std::string{ "TPESYSTEM"})) { return code::xatmi::system;}
                         if( range::search( service, std::string{ "SUCCESS"})) { return success;}
-                        return 0;
+                        return code::xatmi::ok;
                      }
 
                   } // <unnamed>
                } // local
 
-               void Echo::operator()( message::service::call::callee::Request& request)
+               struct Echo
                {
-                  Trace trace{ "mockup domain::service::Echo"};
-
-                  if( ! request.flags.exist( message::service::call::request::Flag::no_reply))
+                  void operator()( message::service::call::callee::Request& request)
                   {
-                     auto reply = message::reverse::type( request);
+                     Trace trace{ "mockup domain::service::Echo"};
 
-                     reply.buffer = std::move( request.buffer);
-                     reply.transaction.trid = request.trid;
-
-                     if( range::search( request.service.name, std::string{ "urcode"}))
+                     if( ! request.flags.exist( message::service::call::request::Flag::no_reply))
                      {
-                        reply.code = 42;
+                        auto reply = message::reverse::type( request);
+
+                        reply.buffer = std::move( request.buffer);
+                        reply.transaction.trid = request.trid;
+
+                        if( range::search( request.service.name, std::string{ "urcode"}))
+                        {
+                           reply.code = 42;
+                        }
+
+                        reply.status = local::reply_error( request.service.name);
+
+                        ipc::eventually::send( request.process.queue, reply);
                      }
-
-                     reply.status = local::reply_error( request.service.name);
-
-                     ipc::eventually::send( request.process.queue, reply);
+                     else
+                     {
+                        log << "TPNOREPLY was set, no echo\n";
+                     }
                   }
-                  else
-                  {
-                     log << "TPNOREPLY was set, no echo\n";
-                  }
-               }
+               };
 
                namespace conversation
                {
@@ -136,15 +142,14 @@ namespace casual
                            common::message::conversation::Route route;
                         };
 
-                        common::service::conversation::Events event_from_error( int error)
+                        flag::service::conversation::Events event_from_error( code::xatmi error)
                         {
                            switch( error)
                            {
-                              case service::local::success: return common::service::conversation::Event::service_success;
-                              case TPESVCFAIL: return common::service::conversation::Event::service_fail;
-                              case TPESVCERR: return common::service::conversation::Event::service_error;
+                              case service::local::success: return flag::service::conversation::Event::service_success;
+                              case code::xatmi::service_fail: return flag::service::conversation::Event::service_fail;
+                              default: return flag::service::conversation::Event::service_error;
                            }
-                           return {};
                         }
 
                      } // <unnamed>
@@ -173,9 +178,9 @@ namespace casual
                            // emulate errors from the service
                            const auto error = service::local::reply_error( request.service.name);
 
-                           log << "error based on service name: " << error << '\n';
+                           log << "mockup: error based on service name: " << error << '\n';
 
-                           if( request.flags & message::conversation::connect::Flag::receive_only)
+                           if( request.flags & flag::service::conversation::connect::Flag::receive_only)
                            {
                               message::conversation::caller::Send message{ request.buffer};
                               message.correlation = request.correlation;
@@ -183,13 +188,13 @@ namespace casual
                               message.process = state->process;
                               message.route = request.recording;
 
-                              if( error)
+                              if( error != code::xatmi::ok)
                               {
                                  message.events = local::event_from_error( error);
                               }
                               else
                               {
-                                 message.events = common::service::conversation::Event::send_only;
+                                 message.events = flag::service::conversation::Event::send_only;
                               }
 
                               auto node = message.route.next();
@@ -198,7 +203,7 @@ namespace casual
 
                               ipc::eventually::send( node.address, message);
                            }
-                           else if( error)
+                           else if( error != code::xatmi::ok)
                            {
                               message::conversation::Disconnect message;
                               message.correlation = request.correlation;
@@ -236,7 +241,7 @@ namespace casual
 
                            log << "message: " << request << '\n';
 
-                           if( request.events & common::service::conversation::Event::send_only)
+                           if( request.events & flag::service::conversation::Event::send_only)
                            {
                               // echo the message
                               request.route = state->route;
@@ -258,162 +263,189 @@ namespace casual
                } // conversation
 
 
-
-               Manager::Manager() : Manager( dispatch_type{})
+               struct Manager::Implementation
                {
-               }
+
+                  Implementation( dispatch_type&& handler)
+                     : m_replier{  default_handler() + std::move( handler)}
+                  {
+                     Trace trace{ "mockup domain::Manager::Implementation::Implementation"};
+
+                     //
+                     // Connect to the domain
+                     //
+                     domain::local::send::connect::domain( m_replier, process::instance::identity::service::manager());
+
+                     //
+                     // Set environment variable to make it easier for other processes to
+                     // reach this broker (should work any way...)
+                     //
+                     common::environment::variable::process::set(
+                           common::environment::variable::name::ipc::service::manager(),
+                           m_replier.process());
+
+                     //
+                     // Make sure we're up'n running before we let unittest-stuff interact with us...
+                     //
+                     process::instance::fetch::handle( process::instance::identity::service::manager());
+                     }
+
+                  Implementation() : Implementation( dispatch_type{}) {}
+
+                  struct State
+                  {
+                     std::map< std::string, common::message::service::lookup::Reply> services;
+                     std::vector< platform::ipc::id> traffic_monitors;
+                  };
+
+
+                  dispatch_type default_handler()
+                  {
+                     return dispatch_type{
+
+                        [&]( message::service::lookup::Request& r)
+                        {
+                           Trace trace{ "mockup service::lookup::Request"};
+
+                           log  << "request: " << r << '\n';
+
+                           auto reply = message::reverse::type( r);
+
+                           auto found = range::find( m_state.services, r.requested);
+
+                           if( found)
+                           {
+                              reply = found->second;
+                              reply.correlation = r.correlation;
+                              reply.execution = r.execution;
+                           }
+                           else
+                           {
+                              reply.service.name = r.requested;
+                              reply.state = decltype( reply)::State::absent;
+                           }
+
+                           log  << "reply: " << reply << '\n';
+
+                           ipc::eventually::send( r.process.queue, reply);
+                        },
+                        [&]( message::service::call::ACK& m)
+                        {
+                           Trace trace{ "mockup service::call::ACK"};
+
+                        },
+                        [&]( message::service::remote::Metric& m)
+                        {
+                           Trace trace{ "mockup service::remote::Metric"};
+
+                        },
+                        [&]( message::domain::process::prepare::shutdown::Request& m)
+                        {
+                           Trace trace{ "mockup domain::process::prepare::shutdown::Request"};
+
+                           auto reply = message::reverse::type( m);
+                           reply.processes = std::move( m.processes);
+
+                           ipc::eventually::send( m.process.queue, reply);
+                        },
+                        [&]( message::service::Advertise& m)
+                        {
+                           Trace trace{ "mockup service::Advertise"};
+
+                           log  << "message: " << m << '\n';
+
+                           for( auto& service : m.services)
+                           {
+                              auto& lookup = m_state.services[ service.name];
+                              lookup.service.name = service.name;
+                              lookup.service.category = service.category;
+                              lookup.service.transaction = service.transaction;
+                              lookup.process = m.process;
+                           }
+                           //log << "services: " << range::make( m_state.services) << '\n';
+                        },
+                        [&]( message::gateway::domain::Advertise& m)
+                        {
+                           Trace trace{ "mockup gateway::domain::service::Advertise"};
+
+                           log  << "message: " << m << '\n';
+
+
+                           for( auto& service : m.services)
+                           {
+                              auto& lookup = m_state.services[ service.name];
+                              lookup.service.name = service.name;
+                              lookup.service.category = service.category;
+                              lookup.service.transaction = service.transaction;
+                              lookup.process = m.process;
+                           }
+
+                           //log << "services: " << range::make( m_state.services) << '\n';
+                        },
+                        [&]( message::event::subscription::Begin& m)
+                        {
+                           m_state.traffic_monitors.push_back( m.process.queue);
+                        },
+                        [&]( message::event::subscription::End& m)
+                        {
+                           range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
+                        },
+                        [&]( message::gateway::domain::discover::Request& m)
+                        {
+                           Trace trace{ "mockup gateway::domain::discover::Request"};
+
+                           log << "request: " << m << '\n';
+
+                           auto reply = message::reverse::type( m);
+
+                           reply.domain = m.domain;
+                           reply.process = m_replier.process();
+
+                           for( auto&& s : m.services)
+                           {
+                              auto found = range::find( m_state.services, s);
+
+                              if( found)
+                              {
+                                 traits::concrete::type_t< decltype( reply.services.front())> service;
+
+                                 service.name = found->second.service.name;
+                                 service.timeout = found->second.service.timeout;
+                                 service.transaction = found->second.service.transaction;
+                                 service.category = found->second.service.category;
+
+                                 reply.services.push_back( std::move( service));
+                              }
+                           }
+
+                           log << "reply: " << reply << '\n';
+
+                           ipc::eventually::send( m.process.queue, reply);
+
+                        },
+                        domain::local::handle::connect::Reply{ "broker"},
+
+                     };
+                  }
+
+                  State m_state;
+                  ipc::Replier m_replier;
+
+               };
+
+
+               Manager::Manager() = default;
+
 
                Manager::Manager( dispatch_type&& handler)
-                  : m_replier{  default_handler() + std::move( handler)}
+                  : m_implementation{ std::move( handler)}
                {
-                  Trace trace{ "mockup domain::Broker::Broker"};
 
-                  //
-                  // Connect to the domain
-                  //
-                  domain::local::send::connect::domain( m_replier, process::instance::identity::service::manager());
-
-                  //
-                  // Set environment variable to make it easier for other processes to
-                  // reach this broker (should work any way...)
-                  //
-                  common::environment::variable::process::set(
-                        common::environment::variable::name::ipc::service::manager(),
-                        m_replier.process());
-
-                  //
-                  // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  //
-                  process::instance::fetch::handle( process::instance::identity::service::manager());
 
                }
 
                Manager::~Manager() = default;
 
-
-               dispatch_type Manager::default_handler()
-               {
-                  return dispatch_type{
-
-                     [&]( message::service::lookup::Request& r)
-                     {
-                        Trace trace{ "mockup service::lookup::Request"};
-
-                        log  << "request: " << r << '\n';
-
-                        auto reply = message::reverse::type( r);
-
-                        auto found = range::find( m_state.services, r.requested);
-
-                        if( found)
-                        {
-                           reply = found->second;
-                           reply.correlation = r.correlation;
-                           reply.execution = r.execution;
-                        }
-                        else
-                        {
-                           reply.service.name = r.requested;
-                           reply.state = decltype( reply)::State::absent;
-                        }
-
-                        log  << "reply: " << reply << '\n';
-
-                        ipc::eventually::send( r.process.queue, reply);
-                     },
-                     [&]( message::service::call::ACK& m)
-                     {
-                        Trace trace{ "mockup service::call::ACK"};
-
-                     },
-                     [&]( message::domain::process::prepare::shutdown::Request& m)
-                     {
-                        Trace trace{ "mockup domain::process::prepare::shutdown::Request"};
-
-                        auto reply = message::reverse::type( m);
-                        reply.processes = std::move( m.processes);
-
-                        ipc::eventually::send( m.process.queue, reply);
-                     },
-                     [&]( message::service::Advertise& m)
-                     {
-                        Trace trace{ "mockup service::Advertise"};
-
-                        log  << "message: " << m << '\n';
-
-                        for( auto& service : m.services)
-                        {
-                           auto& lookup = m_state.services[ service.name];
-                           lookup.service.name = service.name;
-                           lookup.service.category = service.category;
-                           lookup.service.transaction = service.transaction;
-                           lookup.process = m.process;
-                        }
-                        //log << "services: " << range::make( m_state.services) << '\n';
-                     },
-                     [&]( message::gateway::domain::Advertise& m)
-                     {
-                        Trace trace{ "mockup gateway::domain::service::Advertise"};
-
-                        log  << "message: " << m << '\n';
-
-
-                        for( auto& service : m.services)
-                        {
-                           auto& lookup = m_state.services[ service.name];
-                           lookup.service.name = service.name;
-                           lookup.service.category = service.category;
-                           lookup.service.transaction = service.transaction;
-                           lookup.process = m.process;
-                        }
-
-                        //log << "services: " << range::make( m_state.services) << '\n';
-                     },
-                     [&]( message::event::subscription::Begin& m)
-                     {
-                        m_state.traffic_monitors.push_back( m.process.queue);
-                     },
-                     [&]( message::event::subscription::End& m)
-                     {
-                        range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
-                     },
-                     [&]( message::gateway::domain::discover::Request& m)
-                     {
-                        Trace trace{ "mockup gateway::domain::discover::Request"};
-
-                        log << "request: " << m << '\n';
-
-                        auto reply = message::reverse::type( m);
-
-                        reply.domain = m.domain;
-                        reply.process = m_replier.process();
-
-                        for( auto&& s : m.services)
-                        {
-                           auto found = range::find( m_state.services, s);
-
-                           if( found)
-                           {
-                              traits::concrete::type_t< decltype( reply.services.front())> service;
-
-                              service.name = found->second.service.name;
-                              service.timeout = found->second.service.timeout;
-                              service.transaction = found->second.service.transaction;
-                              service.category = found->second.service.category;
-
-                              reply.services.push_back( std::move( service));
-                           }
-                        }
-
-                        log << "reply: " << reply << '\n';
-
-                        ipc::eventually::send( m.process.queue, reply);
-
-                     },
-                     domain::local::handle::connect::Reply{ "broker"},
-
-                  };
-               }
 
             } // service
 
@@ -645,7 +677,7 @@ namespace casual
 
                         reply.correlation = message.correlation;
                         reply.process = m_replier.process();
-                        reply.state = XA_OK;
+                        reply.state = code::tx::ok;
                         reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
                         reply.trid = message.trid;
 
@@ -663,7 +695,7 @@ namespace casual
 
                         reply.correlation = message.correlation;
                         reply.process = m_replier.process();
-                        reply.state = XA_OK;
+                        reply.state = code::tx::ok;;
                         reply.trid = message.trid;
 
                         ipc::eventually::send( message.process.queue, reply);
@@ -703,78 +735,83 @@ namespace casual
 
             namespace queue
             {
-               Broker::Broker() : Broker( dispatch_type{})
+               struct Manager::Implementation
                {
+                  Implementation() : Implementation{ dispatch_type{}} {}
+                  Implementation( dispatch_type&& handler)
+                     : m_replier{ default_handler() + std::move( handler)}
+                  {
+                     //
+                     // Connect to the domain
+                     //
+                     local::send::connect::domain( m_replier, process::instance::identity::queue::manager());
 
+                     //
+                     // Set environment variable to make it easier for other processes to
+                     // reach this broker (should work any way...)
+                     //
+                     environment::variable::set( environment::variable::name::ipc::queue::manager(), m_replier.input());
 
-               }
+                     //
+                     // Make sure we're up'n running before we let unittest-stuff interact with us...
+                     //
+                     process::instance::fetch::handle( process::instance::identity::queue::manager());
+                  }
 
-               Broker::Broker( dispatch_type&& handler)
-                  : m_replier{ default_handler() + std::move( handler)}
-               {
-                  //
-                  // Connect to the domain
-                  //
-                  local::send::connect::domain( m_replier, process::instance::identity::queue::manager());
-
-                  //
-                  // Set environment variable to make it easier for other processes to
-                  // reach this broker (should work any way...)
-                  //
-                  environment::variable::set( environment::variable::name::ipc::queue::manager(), m_replier.input());
-
-                  //
-                  // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  //
-                  process::instance::fetch::handle( process::instance::identity::queue::manager());
-               }
-
-               dispatch_type Broker::default_handler()
-               {
-                  return {
-                     [&]( message::queue::lookup::Request& r)
-                     {
-                        Trace trace{ "mockup::queue::lookup::Request"};
-
-                        auto reply = message::reverse::type( r);
-                        reply.process = m_replier.process();
-                        reply.queue = 42;
-
-                        ipc::eventually::send( r.process.queue, reply);
-                     },
-                     [&]( message::queue::enqueue::Request& r)
-                     {
-                        Trace trace{ "mockup::queue::enqueue::Request"};
-
-                        auto reply = message::reverse::type( r);
-                        reply.id = uuid::make();
-
-                        Broker::Message message{ r.message};
-                        message.timestamp = platform::time::clock::type::now();
-                        message.id = reply.id;
-
-                        m_queues[ r.name].push( std::move( message));
-
-                        ipc::eventually::send( r.process.queue, reply);
-                     },
-                     [&]( message::queue::dequeue::Request& r)
-                     {
-                        Trace trace{ "mockup::queue::dequeue::Request"};
-
-                        auto reply = message::reverse::type( r);
-
-                        auto& queue = m_queues[ r.name];
-
-                        if( ! queue.empty())
+                  dispatch_type default_handler()
+                  {
+                     return {
+                        [&]( message::queue::lookup::Request& r)
                         {
-                           reply.message.push_back( std::move( queue.front()));
-                           queue.pop();
-                        }
+                           Trace trace{ "mockup::queue::lookup::Request"};
 
-                        ipc::eventually::send( r.process.queue, reply);
-                     }
-                  };
-               }
+                           auto reply = message::reverse::type( r);
+                           reply.process = m_replier.process();
+                           reply.queue = 42;
+
+                           ipc::eventually::send( r.process.queue, reply);
+                        },
+                        [&]( message::queue::enqueue::Request& r)
+                        {
+                           Trace trace{ "mockup::queue::enqueue::Request"};
+
+                           auto reply = message::reverse::type( r);
+                           reply.id = uuid::make();
+
+                           message::queue::dequeue::Reply::Message message{ r.message};
+                           message.timestamp = platform::time::clock::type::now();
+                           message.id = reply.id;
+
+                           m_queues[ r.name].push( std::move( message));
+
+                           ipc::eventually::send( r.process.queue, reply);
+                        },
+                        [&]( message::queue::dequeue::Request& r)
+                        {
+                           Trace trace{ "mockup::queue::dequeue::Request"};
+
+                           auto reply = message::reverse::type( r);
+
+                           auto& queue = m_queues[ r.name];
+
+                           if( ! queue.empty())
+                           {
+                              reply.message.push_back( std::move( queue.front()));
+                              queue.pop();
+                           }
+
+                           ipc::eventually::send( r.process.queue, reply);
+                        }
+                     };
+                  }
+
+                  std::unordered_map< std::string, std::queue< message::queue::dequeue::Reply::Message>> m_queues;
+                  ipc::Replier m_replier;
+               };
+
+               Manager::Manager() = default;
+               Manager::Manager( dispatch_type&& handler) : m_implementation{ std::move( handler)} {}
+               Manager::~Manager() = default;
 
             } // queue
 

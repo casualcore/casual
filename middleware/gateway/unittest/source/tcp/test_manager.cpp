@@ -16,6 +16,7 @@
 #include "common/service/lookup.h"
 
 #include "common/message/domain.h"
+#include "common/message/queue.h"
 
 #include "sf/service/protocol/call.h"
 #include "sf/log.h"
@@ -139,13 +140,9 @@ namespace casual
                         if( state.connections.empty())
                            return false;
 
-                        return range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+                        return range::all_of( state.connections, []( const manager::admin::vo::Connection& c){
                            return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
-                                 c.bound == manager::admin::vo::Connection::Bound::out;
-                        })
-                        && range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
-                           return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
-                                 c.bound == manager::admin::vo::Connection::Bound::in;
+                              c.process == process::ping( c.process.queue);
                         });
                      }
 
@@ -218,33 +215,13 @@ namespace casual
          }));
       }
 
-      namespace local
-      {
-         namespace
-         {
-            namespace configuration
-            {
-
-               config_domain connect_to_our_self_services_service1()
-               {
-                  auto domain = local::one_listener_configuration();
-
-                  domain.gateway.connections.front().services.push_back( "remote1");
-
-                  return domain;
-               }
-
-            } // configuration
-         } // <unnamed>
-      } // local
-
 
       TEST( casual_gateway_manager_tcp,  connect_to_our_self__remote1_advertise__expect_service_remote1)
       {
          common::unittest::Trace trace;
 
          // exposes service "remote1"
-         local::domain::Service domain{ local::configuration::connect_to_our_self_services_service1()};
+         local::domain::Service domain{ local::one_listener_configuration()};
 
          common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
@@ -257,16 +234,25 @@ namespace casual
 
          range::sort( state.connections);
 
+         auto data = common::unittest::random::binary( 128);
 
          //
-         // Expect service domain1 to be available from the outbound connection
+         // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
          //
          {
-            auto reply = common::service::Lookup{ "remote1"}();
+            {
+               common::message::service::call::callee::Request request;
+               request.process = common::process::handle();
+               request.service.name = "remote1";
+               request.buffer.memory = data;
+               
+               common::communication::ipc::blocking::send( state.connections.at( 0).process.queue, request);
+            }
 
-            EXPECT_TRUE( reply.service.name == "remote1");
-            EXPECT_TRUE( reply.process == state.connections.at( 0).process) << "reply.process: "
-                  << reply.process << " - state.connections.at( 0).process: " << state.connections.at( 0).process;
+            common::message::service::call::Reply reply;
+            common::communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), reply);
+
+            EXPECT_TRUE( reply.buffer.memory ==  data);
          }
 
       }
@@ -288,7 +274,7 @@ namespace casual
                   mockup::domain::Manager manager;
                   mockup::domain::service::Manager service;
                   mockup::domain::transaction::Manager tm;
-                  mockup::domain::queue::Broker queue;
+                  mockup::domain::queue::Manager queue;
 
                   Gateway gateway;
 

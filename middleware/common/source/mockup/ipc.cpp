@@ -13,7 +13,9 @@
 #include "common/environment.h"
 #include "common/file.h"
 #include "common/signal.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/exception/casual.h"
+#include "common/exception/handle.h"
 
 #include "common/log.h"
 
@@ -69,10 +71,10 @@ namespace casual
 
          namespace pid
          {
-            platform::pid::type next()
+            platform::process::id next()
             {
-               static auto pid = process::id() + 1000;
-               return ++pid;
+               static auto pid = process::id().native() + 1000;
+               return platform::process::id{ ++pid};
             }
 
          } // pid
@@ -148,7 +150,7 @@ namespace casual
 
                         if( m_state == State::terminate)
                         {
-                           throw exception::Shutdown{ "conditional variable wants to shutdown..."};
+                           throw exception::casual::Shutdown{ "conditional variable wants to shutdown..."};
                         }
 
                         auto result = std::move( m_queue.front());
@@ -209,7 +211,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        exception::handle();
                      }
 
                      try
@@ -283,7 +285,7 @@ namespace casual
 
                                     ipc.put( message.message, communication::ipc::policy::Blocking{});
                                  }
-                                 catch( const exception::queue::Unavailable&)
+                                 catch( const exception::system::communication::Unavailable&)
                                  {
                                     // no-op we just ignore it
                                  }
@@ -291,7 +293,7 @@ namespace casual
                            }
                            catch( ...)
                            {
-                              error::handler();
+                              exception::handle();
                            }
                         }
 
@@ -384,7 +386,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        exception::handle();
                      }
                   }, input, std::ref( m_queue)};
 
@@ -417,7 +419,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        error::handler();
+                        exception::handle();
                      }
                   }, output, std::ref( m_queue)};
                }
@@ -557,7 +559,7 @@ namespace casual
 
                      replier.insert( []( message::mockup::Disconnect&){
                         log << "Replier::worker_thread disconnect\n";
-                        throw exception::Shutdown{ "worker_thread disconnect"};
+                        throw exception::casual::Shutdown{ "worker_thread disconnect"};
                      });
 
                      log << "dispatch handler: " << replier << '\n';
@@ -566,7 +568,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     error::handler();
+                     exception::handle();
                   }
                }
 

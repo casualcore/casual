@@ -11,6 +11,8 @@
 #include "common/message/dispatch.h"
 #include "common/marshal/binary.h"
 #include "common/marshal/complete.h"
+#include "common/exception/signal.h"
+#include "common/exception/system.h"
 
 #include "common/log.h"
 
@@ -120,8 +122,8 @@ namespace casual
                Device( Device&&) = default;
                Device& operator = ( Device&&) = default;
 
-               blocking_policy policy_blocking() const { return blocking_policy{};}
-               non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
+               constexpr blocking_policy policy_blocking() const { return blocking_policy{};}
+               constexpr non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
 
 
                //!
@@ -213,7 +215,7 @@ namespace casual
 
 
                //!
-               //! Tries to find a message whith the same type as @p message
+               //! Tries to find a message with the same type as @p message
                //!
                //! @return true if we found one, and message is unmarshaled. false otherwise.
                //! @note depending on the policy it may not ever return false (ie with a blocking policy)
@@ -483,7 +485,9 @@ namespace casual
                      message.execution = execution::id();
                   }
 
-                  message::Complete complete( message.type(), message.correlation ? message.correlation : uuid::make());
+                  message::Complete complete( 
+                     common::message::type( message), 
+                     message.correlation ? message.correlation : uuid::make());
 
                   auto marshal = marshal_type()( complete.payload);
                   marshal << message;
@@ -525,7 +529,7 @@ namespace casual
                         //
                         return policy.send( m_connector, complete);
                      }
-                     catch( const exception::communication::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         //
                         // Let connector take a crack at resolving this problem...

@@ -25,6 +25,8 @@ namespace casual
       {
          namespace tcp
          {
+            using size_type = platform::size::type;
+
             class Socket;
 
 
@@ -123,7 +125,7 @@ namespace casual
             private:
                Socket( descriptor_type descriptor) noexcept;
 
-               void option( int optname, const void *optval, std::size_t optlen);
+               void option( int optname, const void *optval, size_type optlen);
 
                descriptor_type m_descriptor = -1;
                move::Moved m_moved;
@@ -187,8 +189,8 @@ namespace casual
             {
                struct Policy
                {
-                  static constexpr std::size_t message_size() { return platform::tcp::message::size;}
-                  static constexpr std::size_t header_size( std::size_t header_size, std::size_t type_size) { return header_size + type_size;}
+                  static constexpr size_type message_size() { return platform::tcp::message::size;}
+                  static constexpr size_type header_size( size_type header_size, size_type type_size) { return header_size + type_size;}
                };
 
             } // message
@@ -247,6 +249,9 @@ namespace casual
                base_connector( const base_connector&) = delete;
                base_connector& operator = ( const base_connector&) = delete;
 
+               base_connector( base_connector&&) = default;
+               base_connector& operator = ( base_connector&&) = default;
+
                const handle_type& socket() const;
 
                friend std::ostream& operator << ( std::ostream& out, const base_connector& rhs);
@@ -286,6 +291,17 @@ namespace casual
 
          } // tcp
       } // communication
+
+      namespace marshal
+      {
+         template<>
+         struct is_network_normalizing< communication::tcp::inbound::Device> : std::true_type {};
+
+         template<>
+         struct is_network_normalizing< communication::tcp::outbound::Device> : std::true_type {};
+
+      } // marshal
+
    } // common
 } // casual
 

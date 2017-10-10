@@ -6,6 +6,7 @@
 #define SF_LOG_H_
 
 #include "common/log/category.h"
+#include "common/log.h"
 #include "common/traits.h"
 
 #include "sf/namevaluepair.h"

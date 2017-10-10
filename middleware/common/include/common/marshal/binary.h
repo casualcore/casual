@@ -26,6 +26,7 @@ namespace casual
       {
          namespace binary
          {
+            using size_type = platform::size::type;
             namespace detail
             {
 
@@ -48,9 +49,21 @@ namespace casual
                }
 
                template< typename T>
-               static std::size_t read( const platform::binary::type& buffer, std::size_t offset, T& value)
+               static void write_size( const T& value, platform::binary::type& buffer)
+               {
+                  write( value, buffer);
+               }
+
+               template< typename T>
+               static size_type read( const platform::binary::type& buffer, const size_type offset, T& value)
                {
                   return memory::copy( buffer, offset, value);
+               }
+
+               template< typename T>
+               static size_type read_size( const platform::binary::type& buffer, const size_type offset, T& value)
+               {
+                  return read( buffer, offset, value);
                }
 
             };
@@ -121,9 +134,15 @@ namespace casual
                }
 
                template< typename T>
+               void write_size( T&& value)
+               {
+                  policy_type::write_size( value, m_buffer);
+               }
+
+               template< typename T>
                void write( const std::vector< T>& value)
                {
-                  write_pod( value.size());
+                  write_size( value.size());
 
                   for( auto& current : value)
                   {
@@ -133,7 +152,7 @@ namespace casual
 
                void write( const std::string& value)
                {
-                  write_pod( value.size());
+                  write_size( value.size());
 
                   append(
                      std::begin( value),
@@ -142,7 +161,7 @@ namespace casual
 
                void write( const platform::binary::type& value)
                {
-                  write_pod( value.size());
+                  write_size( value.size());
 
                   append(
                      std::begin( value),
@@ -182,7 +201,7 @@ namespace casual
 
 
                template< typename Iter>
-               void consume( Iter out, std::size_t size)
+               void consume( Iter out, size_type size)
                {
                   assert( m_offset + size <= m_buffer.size());
 
@@ -218,7 +237,7 @@ namespace casual
                void read( std::vector< T>& value)
                {
                   decltype( value.size()) size;
-                  *this >> size;
+                  read_size( size);
 
                   value.resize( size);
 
@@ -230,8 +249,8 @@ namespace casual
 
                void read( std::string& value)
                {
-                  std::string::size_type size;
-                  *this >> size;
+                  decltype( value.size()) size;
+                  read_size( size);
 
                   value.resize( size);
 
@@ -240,8 +259,8 @@ namespace casual
 
                void read( platform::binary::type& value)
                {
-                  std::string::size_type size;
-                  *this >> size;
+                  decltype( value.size()) size;
+                  read_size( size);
 
                   value.resize( size);
 
@@ -253,6 +272,14 @@ namespace casual
                {
                   m_offset = policy_type::read( m_buffer, m_offset, value);
                }
+
+               template< typename T>
+               void read_size( T& value)
+               {
+                  m_offset = policy_type::read_size( m_buffer, m_offset, value);
+               }
+
+            private:
 
                platform::binary::type& m_buffer;
                platform::binary::type::size_type m_offset;
@@ -302,6 +329,10 @@ namespace casual
             using reverse_t = typename reverse< T>::type;
 
          } // create
+
+
+         template< typename A>
+         struct is_network_normalizing : std::false_type {};
 
 
 

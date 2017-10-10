@@ -6,10 +6,10 @@
 #include "common/process.h"
 #include "common/arguments.h"
 #include "common/file.h"
-#include "common/error.h"
 #include "common/uuid.h"
 #include "common/environment.h"
 #include "common/server/service.h"
+#include "common/exception/system.h"
 
 #include "configuration/build/server.h"
 #include "configuration/resource/property.h"
@@ -108,7 +108,7 @@ struct Settings
                }
                else
                {
-                  throw common::exception::invalid::Argument{ "invalid resource key - " + resource };
+                  throw common::exception::system::invalid::Argument{ "invalid resource key - " + resource };
                }
             }
          }
@@ -167,7 +167,7 @@ struct Settings
    friend void validate( const Settings& settings)
    {
       auto throw_error = []( auto error){
-         throw common::exception::invalid::Argument{ error};
+         throw common::exception::system::invalid::Argument{ error};
       };
 
       if( settings.compiler.empty()) throw_error( "compiler not set");
@@ -384,7 +384,7 @@ void build( const std::string& c_file, const Settings& settings)
       trace::Exit log( "execute " + settings.compiler, settings.verbose);
       
       if( common::process::execute( settings.compiler, arguments) != 0)
-         throw common::exception::invalid::Semantic{ "failed to compile"};
+         throw common::exception::system::invalid::Argument{ "failed to compile"};
 
    }
 
@@ -446,7 +446,7 @@ int main( int argc, char **argv)
    catch( const std::exception& exception)
    {
       std::cerr << "error: " << exception.what() << std::endl;
-      return common::error::handler();
+      return common::exception::handle();
    }
    catch( ...)
    {

@@ -30,7 +30,7 @@ namespace casual
 
             struct Message
             {
-               common::communication::ipc::Handle destination;
+               common::platform::ipc::id destination;
                common::communication::message::Complete message;
                common::platform::time::point::type deadline;
 

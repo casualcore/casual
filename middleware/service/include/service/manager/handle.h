@@ -223,7 +223,7 @@ namespace casual
 
                void configure( common::server::Arguments&);
 
-               void reply( common::communication::ipc::Handle id, common::message::service::call::Reply& message);
+               void reply( common::platform::ipc::id id, common::message::service::call::Reply& message);
 
                void ack();
 
@@ -238,7 +238,7 @@ namespace casual
 
                void forward( common::service::invoke::Forward&& forward, const common::message::service::call::callee::Request& message);
 
-               void statistics( common::communication::ipc::Handle, common::message::event::service::Call&);
+               void statistics( common::platform::ipc::id, common::message::event::service::Call&);
 
             private:
 

@@ -11,6 +11,7 @@
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 #include "common/server/handle/call.h"
+#include "common/code/convert.h"
 
 
 namespace casual
@@ -51,7 +52,7 @@ namespace casual
                   {
                      ipc::device().blocking_send( device, message);
                   }
-                  catch( const common::exception::communication::Unavailable&)
+                  catch( const common::exception::system::communication::Unavailable&)
                   {
                      log << "failed to send message to queue: " << device << '\n';
                   }
@@ -181,7 +182,7 @@ namespace casual
                   void read_only( State& state, R&& message)
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = XA_RDONLY;
+                     reply.state = common::code::xa::read_only;
                      reply.resource = message.resource;
 
                      send::reply( state, std::move( reply), message.process);
@@ -196,7 +197,10 @@ namespace casual
                      namespace persistent
                      {
                         template< typename M, typename F>
-                        void request( State& state, Transaction& transaction, F&& filter, long flags = TMNOFLAGS)
+                        void request( State& state, 
+                           Transaction& transaction, 
+                           F&& filter, 
+                           common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                         {
                            auto resources = common::range::partition(
                               transaction.resources,
@@ -220,7 +224,11 @@ namespace casual
 
 
                      template< typename M, typename F>
-                     void request( State& state, Transaction& transaction, F&& filter, Transaction::Resource::Stage new_stage, long flags = TMNOFLAGS)
+                     void request( State& state, 
+                        Transaction& transaction, 
+                        F&& filter, 
+                        Transaction::Resource::Stage new_stage, 
+                        common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                      {
                         Trace trace{ "transaction::handle::send::resource::request"};
 
@@ -373,7 +381,9 @@ namespace casual
 
                         switch( result)
                         {
-                           case Transaction::Resource::Result::xa_RDONLY:
+                           using xa = common::code::xa;
+
+                           case xa::read_only:
                            {
                               log << "prepare completed - " << transaction << " XA_RDONLY\n";
 
@@ -390,7 +400,8 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::commit;
-                                 reply.state = XA_RDONLY;
+                                 //reply.state = common::code::tx::read_only;
+                                 reply.state = common::code::tx::ok;
 
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -400,7 +411,7 @@ namespace casual
                               //
                               return true;
                            }
-                           case Transaction::Resource::Result::xa_OK:
+                           case xa::ok:
                            {
                               log << "prepare completed - " << transaction << " XA_OK\n";
 
@@ -416,7 +427,7 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::prepare;
-                                 reply.state = XA_OK;
+                                 reply.state = common::code::tx::ok;
 
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -426,7 +437,7 @@ namespace casual
                               //
 
                               //
-                              // We only want to send to resorces that has reported ok, and is in prepared state
+                              // We only want to send to resources that has reported ok, and is in prepared state
                               // (could be that some has read-only)
                               //
                               auto filter = common::chain::And::link(
@@ -476,14 +487,17 @@ namespace casual
 
                         switch( result)
                         {
-                           case Transaction::Resource::Result::xa_OK:
+                           using xa = common::code::xa;
+                           
+                           case xa::ok:
+                           case xa::read_only:
                            {
                               log << "commit completed - " << transaction << " XA_OK\n";
 
                               auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
                               reply.stage = reply_type::Stage::commit;
-                              reply.state = XA_OK;
+                              reply.state = common::code::tx::ok;
 
                               if( transaction.resources.size() <= 1)
                               {
@@ -512,7 +526,8 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << "TODO: something has gone wrong...\n";
+                              common::log::category::error << std::error_code( result) <<  " TODO: commit gone wrong for transaction: " << transaction << "\n";
+                              
 
                               //
                               // prepare send reply. Will be sent after persistent write to file.
@@ -523,7 +538,7 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::commit;
-                                 reply.state = Transaction::Resource::convert( result);
+                                 reply.state = common::code::convert::to::tx( result);
 
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -547,11 +562,13 @@ namespace casual
 
                         switch( result)
                         {
-                           case Transaction::Resource::Result::xa_OK:
-                           case Transaction::Resource::Result::xaer_NOTA:
-                           case Transaction::Resource::Result::xa_RDONLY:
+                           using xa = common::code::xa;
+
+                           case xa::ok:
+                           case xa::invalid_xid:
+                           case xa::read_only:
                            {
-                              log << "rollback completed - " << transaction << " XA_OK\n";
+                              log << std::error_code( result) << " rollback completed - " << transaction << '\n';
 
                               //
                               // Send reply
@@ -559,7 +576,7 @@ namespace casual
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
-                                 reply.state = XA_OK;
+                                 reply.state = common::code::tx::ok;
 
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -575,7 +592,7 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << "TODO: resource rollback - something has gone wrong...\n";
+                              common::log::category::error << std::error_code( result) << " TODO: resource rollback for transaction: " << transaction << "\n";
 
                               //
                               // prepare send reply. Will be sent after persistent write to file
@@ -586,7 +603,7 @@ namespace casual
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
-                                 reply.state = Transaction::Resource::convert( result);
+                                 reply.state = common::code::convert::to::tx( result);
 
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
@@ -624,7 +641,7 @@ namespace casual
 
                         {
                            auto reply = local::transform::message< reply_type>( message);
-                           reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.state = transaction.results();
                            reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
@@ -648,7 +665,7 @@ namespace casual
 
                         {
                            auto reply = local::transform::message< reply_type>( message);
-                           reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.state = transaction.results();
                            reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
@@ -672,7 +689,7 @@ namespace casual
 
                         {
                            auto reply = local::transform::message< reply_type>( message);
-                           reply.state = Transaction::Resource::convert( transaction.results());
+                           reply.state = transaction.results();
                            reply.correlation = transaction.correlation;
                            reply.resource = transaction.resource;
 
@@ -718,9 +735,11 @@ namespace casual
 
                                  switch( result)
                                  {
-                                    case Transaction::Resource::Result::xa_RDONLY:
+                                    using xa = common::code::xa;
+
+                                    case xa::read_only:
                                     {
-                                       log << "prepare completed - " << transaction << " XA_RDONLY\n";
+                                       log << std::error_code( result) << " prepare completed - " << transaction << '\n';
 
                                        //
                                        // Read-only optimization. We can send the reply directly and
@@ -735,7 +754,7 @@ namespace casual
                                           auto reply = local::transform::message< reply_type>( message);
                                           reply.correlation = transaction.correlation;
                                           reply.resource = transaction.resource;
-                                          reply.state = XA_RDONLY;
+                                          reply.state = result;
 
                                           local::send::reply( state, std::move( reply), transaction.trid.owner());
                                        }
@@ -745,9 +764,9 @@ namespace casual
                                        //
                                        return true;
                                     }
-                                    case Transaction::Resource::Result::xa_OK:
+                                    case xa::ok:
                                     {
-                                       log << "prepare completed - " << transaction << " XA_OK\n";
+                                       log << std::error_code( result) << " prepare completed - " << transaction << '\n';
 
                                        //
                                        // Prepare has gone ok. Log state
@@ -760,7 +779,7 @@ namespace casual
                                        //
 
                                        //
-                                       // We only want to send to resorces that has reported ok, and is in prepared state
+                                       // We only want to send to resources that has reported ok, and is in prepared state
                                        // (could be that some has read-only)
                                        //
                                        auto filter = common::chain::And::link(
@@ -779,7 +798,7 @@ namespace casual
                                        //
                                        // Something has gone wrong.
                                        //
-                                       common::log::category::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                                       common::log::category::error << std::error_code( result) << " prepare phase failed for transaction: " << transaction << " - action: rollback\n";
 
                                        local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                           state,
@@ -806,7 +825,7 @@ namespace casual
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
                                     reply.resource = transaction.resource;
-                                    reply.state = XA_RBOTHER;
+                                    reply.state = common::code::xa::rollback_other;
 
                                     local::send::reply( state, std::move( reply), transaction.trid.owner());
                                  }
@@ -1002,7 +1021,7 @@ namespace casual
                   {
                      auto& instance = m_state.get_instance( message.resource, message.process.pid);
 
-                     if( message.state == XA_OK)
+                     if( message.state == common::code::xa::ok)
                      {
                         instance.process = std::move( message.process);
 
@@ -1018,7 +1037,7 @@ namespace casual
                      }
 
                   }
-                  catch( common::exception::invalid::Argument&)
+                  catch( common::exception::system::invalid::Argument&)
                   {
                      common::log::category::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
 
@@ -1118,11 +1137,11 @@ namespace casual
             }
             catch( const user::error& exception)
             {
-               common::error::handler();
+               common::exception::handle();
 
                auto reply = local::transform::reply( message);
                reply.stage = decltype( reply)::Stage::error;
-               reply.state = exception.code();
+               reply.state = exception.type();
 
                local::send::reply( Handler::m_state, std::move( reply), message.process);
             }
@@ -1132,13 +1151,14 @@ namespace casual
             }
             catch( ...)
             {
-               common::log::category::error << "unexpected error - action: send reply XAER_RMERR\n";
+               auto fail = common::code::tx::fail;
+               common::log::category::error << "unexpected error - action: send reply " << std::error_code( fail) << '\n';
 
-               common::error::handler();
+               common::exception::handle();
 
                auto reply = local::transform::reply( message);
                reply.stage = decltype( reply)::Stage::error;
-               reply.state = XAER_RMERR;
+               reply.state = fail;
 
                local::send::reply( Handler::m_state, std::move( reply), message.process);
             }
@@ -1159,6 +1179,7 @@ namespace casual
             //
             local::resource::involved( m_state, transaction, message);
 
+            
             switch( transaction.stage())
             {
                case Transaction::Resource::Stage::involved:
@@ -1168,7 +1189,7 @@ namespace casual
                }
                default:
                {
-                  throw user::error{ XAER_PROTO, "Attempt to commit transaction, which is not in a state for commit", CASUAL_NIP( message.trid)};
+                  throw user::error{ common::code::tx::protocol, common::string::compose( "Attempt to commit transaction, which is not in a state for commit - trid: ",message.trid)};
                }
             }
 
@@ -1199,7 +1220,8 @@ namespace casual
                   //
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = XA_RDONLY;
+                     //reply.state = common::code::xa::read_only;
+                     reply.state = common::code::tx::ok;
                      reply.stage = reply_type::Stage::commit;
 
                      local::send::reply( m_state, std::move( reply), message.process);
@@ -1224,7 +1246,7 @@ namespace casual
                      transaction,
                      Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
                      Transaction::Resource::Stage::commit_requested,
-                     TMONEPHASE
+                     common::flag::xa::Flag::one_phase
                   );
 
                   break;
@@ -1289,7 +1311,7 @@ namespace casual
                //
                {
                   auto reply = local::transform::reply( message);
-                  reply.state = XA_OK;
+                  reply.state = common::code::tx::ok;
 
                   local::send::reply( m_state, std::move( reply), message.process);
                }
@@ -1478,10 +1500,10 @@ namespace casual
                   //
                   // It has to be a one phase commit optimization.
                   //
-                  if( ! common::flag< TMONEPHASE>( message.flags))
+                  if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = XAER_PROTO;
+                     reply.state = common::code::xa::protocol;
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
@@ -1521,10 +1543,10 @@ namespace casual
                   //
                   // It has to be a one phase commit optimization.
                   //
-                  if( ! common::flag< TMONEPHASE>( message.flags))
+                  if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = XAER_PROTO;
+                     reply.state = common::code::xa::protocol;
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
@@ -1547,8 +1569,7 @@ namespace casual
                         m_state,
                         transaction,
                         Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                        Transaction::Resource::Stage::prepare_requested,
-                        TMNOFLAGS
+                        Transaction::Resource::Stage::prepare_requested
                      );
                   }
                   else

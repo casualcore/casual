@@ -3,6 +3,7 @@
 //!
 
 #include "common/arguments.h"
+#include "common/exception/system.h"
 
 
 namespace casual
@@ -317,7 +318,7 @@ namespace casual
                };
 
                template< typename Range>
-               bool completion( const Group& group, Range&& arguments)
+               void completion( const Group& group, Range&& arguments)
                {
                   auto found = range::find( arguments, "casual-bash-completion");
 
@@ -329,9 +330,8 @@ namespace casual
 
                      visitor( arguments);
 
-                     return true;
+                     throw exception::bash::Completion{ "built in bash-completion was invoked"};
                   }
-                  return false;
                }
 
             } // <unnamed>
@@ -361,7 +361,7 @@ namespace casual
       {
       }
 
-      void Arguments::parse( int argc, char** argv)
+      void Arguments::parse( int argc, char* argv[])
       {
          if( argc > 0)
          {
@@ -383,8 +383,7 @@ namespace casual
          //
          // check special completion case
          //
-         if( argument::local::completion( *this, argumentRange))
-            return;
+         argument::local::completion( *this, argumentRange);
 
          while( argumentRange)
          {
@@ -396,7 +395,7 @@ namespace casual
 
             if( ! found)
             {
-               throw exception::invalid::Argument{ "invalid argument: " + *argumentRange};
+               throw exception::system::invalid::Argument{ "invalid argument: " + *argumentRange};
             }
 
             //
@@ -418,7 +417,7 @@ namespace casual
 
             if( ! found->valid())
             {
-               throw exception::invalid::Argument{ "invalid values for: " + argument};
+               throw exception::system::invalid::Argument{ "invalid values for: " + argument};
             }
 
             argumentRange = std::get< 1>( slice);

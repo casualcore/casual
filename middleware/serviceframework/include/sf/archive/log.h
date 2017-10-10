@@ -34,7 +34,7 @@ namespace casual
 
                ~Implementation();
 
-               std::size_t container_start( const std::size_t size, const char* name);
+               platform::size::type container_start( const platform::size::type size, const char* name);
                void container_end( const char*);
 
                void serialtype_start( const char* name);
@@ -70,19 +70,19 @@ namespace casual
 
                struct buffer_type
                {
-                  buffer_type( std::size_t indent, const char* name) : indent( indent), name( name) {}
+                  buffer_type( platform::size::type indent, const char* name) : indent( indent), name( name) {}
                   buffer_type( buffer_type&&) = default;
 
-                  std::size_t indent;
+                  platform::size::type indent;
                   std::string name;
                   std::string value;
-                  std::size_t size = 0;
+                  platform::size::type size = 0;
                   Type type = Type::value;
                };
 
                std::ostream& m_output;
                std::vector< buffer_type> m_buffer;
-               std::size_t m_indent = 1;
+               platform::size::type m_indent = 1;
             };
 
 

@@ -11,6 +11,8 @@
 #include "common/memory.h"
 #include "common/log/category.h"
 #include "common/network/byteorder.h"
+#include "common/exception/system.h"
+#include "common/string.h"
 
 
 #include <cstdint>
@@ -24,24 +26,41 @@ namespace casual
       {
          namespace message
          {
+            using size_type = platform::size::type;
+
             namespace complete
             {
                namespace network
                {
                   struct Header
                   {
-                     platform::ipc::message::type type = 0;
-                     Uuid::uuid_type correlation;
-                     platform::binary::size::type size = 0;
+                     using host_type_type = platform::ipc::message::type;
+                     using network_type_type = common::network::byteorder::type<host_type_type>;
+
+                     using host_uuid_type = Uuid::uuid_type;
+                     using network_uuid_type = host_uuid_type;
+
+                     using host_size_type = platform::size::type;
+                     using network_size_type = common::network::byteorder::type<host_size_type>;
+
+                     network_type_type type = 0;
+                     network_uuid_type correlation;
+                     network_size_type size = 0;
+
+                     static_assert( sizeof( network_type_type) ==  8, "Wrong size for type");
+                     static_assert( sizeof( network_uuid_type) == 16, "Wrong size for uuid");
+                     static_assert( sizeof( network_size_type) ==  8, "Wrong size for size");
 
                      friend std::ostream& operator << ( std::ostream& out, const Header& value);
 
                   };
+
                   static_assert( std::is_trivially_copyable< Header>::value, "Complete::Header needs to be trivially copyable" );
 
                   namespace header
                   {
                      constexpr auto size() { return sizeof( Header);}
+                     static_assert( size() == 32, "Wrong size for header");
                   } // header
 
                } // network
@@ -60,7 +79,7 @@ namespace casual
                Complete( const complete::network::Header& header);
 
                template< typename Chunk>
-               Complete( common::message::Type type, const Uuid& correlation, std::size_t size, Chunk&& chunk) :
+               Complete( common::message::Type type, const Uuid& correlation, size_type size, Chunk&& chunk) :
                   type{ type}, correlation{ correlation},
                   payload( size), m_unhandled{ range::make( payload)}
                {
@@ -83,6 +102,8 @@ namespace casual
 
                bool complete() const;
 
+               inline size_type size() const { return payload.size();}
+
                message_type_type type = message_type_type::absent_message;
                Uuid correlation;
                payload_type payload;
@@ -100,10 +121,10 @@ namespace casual
                   //
                   // Some sanity checks
                   //
-                  if( payload.size() < offset( chunk) + size)
+                  if( Complete::size() < offset( chunk) + size)
                   {
-                     throw exception::invalid::Argument{
-                        "communication::message::Complete: added chunk is out of bounds", CASUAL_NIP( payload.size())
+                     throw exception::system::invalid::Argument{
+                        string::compose( "added chunk is out of bounds - size: ", payload.size())
                      };
                   }
 

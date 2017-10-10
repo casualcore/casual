@@ -30,6 +30,8 @@ namespace casual
    {
       namespace outbound
       {
+         using size_type = common::platform::size::type;
+         
          namespace ipc
          {
             namespace optional
@@ -42,7 +44,7 @@ namespace casual
                      common::communication::ipc::blocking::send( destination, message);
                      return true;
                   }
-                  catch( const common::exception::queue::Unavailable&)
+                  catch( const common::exception::system::communication::Unavailable&)
                   {
                      log << "destination queue unavailable for correlation: " << message.correlation << " - action: discard\n";
                   }
@@ -102,20 +104,14 @@ namespace casual
 
                void operator() ( message_type& message)
                {
-
-
                   routing.add( message);
 
-                  auto&& request = message::interdomain::send::wrap( message);
-
-                  // todo: temp
                   if( log)
                   {
                      log << "basic_request::operator() - message: " << message << '\n';
-                     log << "basic_request::operator() - request: " << request << '\n';
                   }
 
-                  device.blocking_send( request);
+                  device.blocking_send( message);
                }
 
                const Routing& routing;
@@ -174,8 +170,7 @@ namespace casual
                            );
                         }
 
-                        auto&& request = message::interdomain::send::wrap( message);
-                        device.blocking_send( request);
+                        device.blocking_send( message);
                      }
 
                   private:
@@ -214,9 +209,7 @@ namespace casual
 
                            this->routing.add( message);
 
-
-                           auto&& request = message::interdomain::send::wrap( message);
-                           this->device.blocking_send( request);
+                           this->device.blocking_send( message);
                         }
                      };
 
@@ -256,8 +249,7 @@ namespace casual
 
                      this->routing.add( message);
 
-                     auto&& request = message::interdomain::send::wrap( message);
-                     this->device.blocking_send( request);
+                     this->device.blocking_send( message);
                   }
                };
 
@@ -282,10 +274,8 @@ namespace casual
                using message_type = M;
                using Base::Base;
 
-               void operator() ( message_type& message) const
+               void operator() ( message_type& reply) const
                {
-                  auto&& reply = message.get();
-
                   log << "reply: " << reply << '\n';
 
                   try
@@ -296,7 +286,7 @@ namespace casual
 
                      ipc::optional::send( destination.destination.queue, reply);
                   }
-                  catch( const common::exception::invalid::Argument&)
+                  catch( const common::exception::system::invalid::Argument&)
                   {
                      common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                   }
@@ -316,12 +306,12 @@ namespace casual
             {
                namespace discover
                {
-                  using base_type = basic_reply< message::interdomain::domain::discovery::receive::Reply>;
+                  using base_type = basic_reply< common::message::gateway::domain::discover::Reply>;
                   struct Reply : base_type
                   {
-                     Reply( const Routing& routing, std::size_t order) : base_type{ routing}, m_order{ order} {}
+                     Reply( const Routing& routing, size_type order) : base_type{ routing}, m_order{ order} {}
 
-                     void operator () ( message::interdomain::domain::discovery::receive::Reply& reply) const
+                     void operator () ( common::message::gateway::domain::discover::Reply& reply) const
                      {
                         Trace trace{ "gateway::outbound::handle::domain::discover::Reply"};
 
@@ -358,7 +348,7 @@ namespace casual
                                        common::communication::ipc::queue::manager::optional::device(),
                                        advertise);
                               }
-                              catch( const common::exception::communication::Unavailable&)
+                              catch( const common::exception::system::communication::Unavailable&)
                               {
                                  common::log::category::error << "failed to advertise queues to queue-broker: " << common::range::make( advertise.queues) << '\n';
                               }
@@ -369,7 +359,7 @@ namespace casual
                         base_type::operator() ( reply);
                      }
                   private:
-                     std::size_t m_order;
+                     size_type m_order;
 
                   };
 
@@ -386,10 +376,8 @@ namespace casual
                      Reply( const outbound::service::Routing& routing, common::message::service::remote::Metric& metric)
                         : routing( routing), metric( metric) {}
 
-                     void operator() ( message::interdomain::service::call::receive::Reply& message) const
+                     void operator() ( common::message::service::call::Reply& reply) const
                      {
-                        auto&& reply = message.get();
-
                         log << "reply: " << reply << '\n';
 
                         try
@@ -404,7 +392,7 @@ namespace casual
 
                            ipc::optional::send( destination.destination.queue, reply);
                         }
-                        catch( const common::exception::invalid::Argument&)
+                        catch( const common::exception::system::invalid::Argument&)
                         {
                            common::log::category::error << "failed to correlate ["  << reply.correlation << "] reply with a destination - action: ignore\n";
                         }
@@ -446,6 +434,8 @@ namespace casual
             using external_policy_type = typename policy_type::external_type;
 
             using ipc_policy = common::communication::ipc::policy::Blocking;
+
+            using version_type = common::message::gateway::domain::protocol::Version;
 
 
             template< typename S>
@@ -498,7 +488,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                }
 
             }
@@ -513,19 +503,30 @@ namespace casual
                common::signal::thread::scope::Block block{ { common::signal::Type::user}};
 
                //
-               // Now we wait for the worker to establish connection with
-               // the other domain. We're still active and can be shut down
+               // Wait for worker to connect.
+               // We're still active and can be shut down
                //
-               internal_policy_type policy{ connect()};
+               auto policy = worker_connect();
 
                auto&& outbound_device = policy.outbound();
 
                log << "internal policy: " << policy << '\n';
 
                //
-               // Make the initializing dance with remote domain
+               // connect to the other domain
                //
-               initialize( outbound_device, policy.address( outbound_device));
+               auto version = domain_connect( outbound_device, policy.address( outbound_device));
+
+               if( version == version_type::invalid)
+               {
+                  throw common::exception::system::invalid::Argument{ "invalid protocol"};
+               }
+
+               //
+               // Discover the other domain based on the configuration
+               //
+               discover( outbound_device);
+
 
 
                using outbound_device_type = decltype( outbound_device);
@@ -560,72 +561,68 @@ namespace casual
 
          private:
 
-            configuration_type connect()
+
+            auto worker_connect()
             {
-               Trace trace{ "gateway::outbound::Gateway::connect"};
+               Trace trace{ "gateway::outbound::Gateway::worker_connect"};
 
-               message::worker::Connect message;
-
-               auto handler = common::communication::ipc::inbound::device().handler(
-                  gateway::handle::Disconnect{ m_reply_thread},
-                  common::message::handle::Shutdown{},
-                  common::message::handle::ping(),
-                  common::message::handle::assign( message)
-               );
-
-               while( ! message.correlation)
-               {
-                  handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
-               }
+               auto message = inbound_message< message::worker::Connect>();
 
                configuration_type configuration;
-
+               
                common::marshal::binary::Input marshal{ message.information};
                marshal >> configuration;
 
-               return configuration;
+
+               return internal_policy_type{ std::move( configuration)};
+
             }
 
-            template< typename D, typename A>
-            void initialize( D& device, A&& address)
+            template< typename D>
+            auto domain_connect( D& device, std::vector< std::string> address)
             {
-               Trace trace{ "gateway::outbound::Gateway::initialize"};
-
-               //
-               // Get the configuration for this outbound
-               //
-
-               auto get_configuration = [&]()
+               Trace trace{ "gateway::outbound::Gateway::domain_connect"};
+    
                {
-                  Trace trace{ "gateway::outbound::Gateway::initialize get_configuration"};
+                  common::message::gateway::domain::connect::Request request;
+                  request.domain = common::domain::identity();
+                  request.versions = { version_type::version_1};
 
-                  message::outbound::configuration::Request request;
-                  request.process = common::process::handle();
+                  log << "request: " << request << '\n';
+
+                  device.blocking_send( request);
+               }
+
+               auto reply = inbound_message< common::message::gateway::domain::connect::Reply>();
+
+               log << "request: " << reply << '\n';
+
+               //
+               // connect to gateway
+               //
+               {
+                  Trace trace{ "gateway::outbound::Gateway::domain_connect send connect to gateway"};
+                  
+                  message::outbound::Connect connect;
+                  connect.process = common::process::handle();
+                  connect.domain = reply.domain;
+                  connect.version = reply.version;
+                  connect.address = std::move( address);
 
                   common::communication::ipc::blocking::send(
-                        common::communication::ipc::gateway::manager::device(),
-                        request);
+                     common::communication::ipc::gateway::manager::device(),
+                     connect);
+               }
 
-                  //
-                  // We need to be able to response to other messages so we don't block "for ever"
-                  //
-                  message::outbound::configuration::Reply reply;
+               return reply.version;
 
-                  auto handler = common::communication::ipc::inbound::device().handler(
-                     gateway::handle::Disconnect{ m_reply_thread},
-                     common::message::handle::Shutdown{},
-                     common::message::handle::ping(),
-                     common::message::handle::assign( reply));
+            }
+            
 
-
-                  while( ! reply.correlation)
-                  {
-                     handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
-                  }
-
-                  return reply;
-               };
-
+            template< typename D>
+            void discover( D& device)
+            {
+               Trace trace{ "gateway::outbound::Gateway::discover"};
 
                const auto correlation = common::uuid::make();
 
@@ -633,66 +630,68 @@ namespace casual
                // Send discovery to remote
                //
                {
-                  Trace trace{ "gateway::outbound::Gateway::initialize send discovery request"};
+                  Trace trace{ "gateway::outbound::Gateway::discover request"};
 
-                  auto configuration = get_configuration();
+                  auto configuration = Gateway::configuration();
                   common::message::gateway::domain::discover::Request request;
 
-                  request.correlation = correlation;
+                  // We make sure we get the reply
                   request.process = common::process::handle();
+                  request.correlation = correlation;
                   request.domain = common::domain::identity();
                   request.services = configuration.services;
                   request.queues = configuration.queues;
 
                   //
-                  // Use regular handler, that will advertise services and queues if found in the other domain.
+                  // Use regular handler to manage the "routing"
                   //
                   handle::create< common::message::gateway::domain::discover::Request>( m_routing, device)( request);
-
                }
 
-               common::message::gateway::domain::discover::Reply reply;
 
-               //
-               // wait for the reply
-               //
                {
-                  Trace trace{ "gateway::outbound::Gateway::initialize get discovery reply"};
-
                   //
-                  // We need to be able to response to other messages so we don't block "for ever"
+                  // The worker has already advertised all the stuff, so we can just discard the message
                   //
+                  inbound_message< common::message::gateway::domain::discover::Reply>();
+               }
 
+            }
+
+            auto configuration()
+            {
+               Trace trace{ "gateway::outbound::Gateway::configuration"};
+               
+               message::outbound::configuration::Request request;
+               request.process = common::process::handle();
+
+               common::communication::ipc::blocking::send(
+                     common::communication::ipc::gateway::manager::device(),
+                     request);
+
+               return inbound_message< message::outbound::configuration::Reply>();
+            }
+
+            template< typename Message>
+            auto inbound_message()
+            {
+               Trace trace{ "gateway::outbound::Gateway::inbound_message"};
+
+               Message message;
+               
+               {
                   auto handler = common::communication::ipc::inbound::device().handler(
                      gateway::handle::Disconnect{ m_reply_thread},
                      common::message::handle::Shutdown{},
-                     common::message::handle::ping(),
-                     common::message::handle::assign( reply)
-                  );
+                     // we don't handle ping until we're up'n running common::message::handle::ping(),
+                     common::message::handle::assign( message));
 
-                  while( ! reply.correlation)
+                  while( ! message.correlation)
                   {
                      handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
                   }
-
-
                }
-
-               //
-               // Send connect to gateway
-               //
-               {
-                  Trace trace{ "gateway::outbound::Gateway::initialize send connect to gatewawy"};
-
-                  message::outbound::Connect connect;
-                  connect.process = common::process::handle();
-                  connect.domain = reply.domain;
-                  connect.address = std::forward< A>( address);
-
-                  common::communication::ipc::blocking::send(
-                        common::communication::ipc::gateway::manager::device(),
-                        connect);
-               }
+               return message;
             }
 
             template< typename S>
@@ -725,7 +724,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        common::exception::handle();
                      }
                   };
 
@@ -744,24 +743,50 @@ namespace casual
 
                   auto&& inbound = policy.inbound();
 
-
                   //
-                  // Send connection to the main thread so it knows how to communicate with the other
-                  // domain
+                  // connect to main thread
                   //
                   {
-
                      Trace trace{ "gateway::outbound::Gateway::reply_thread main thread connect"};
 
                      message::worker::Connect message;
-
-                     {
-                        auto configuration = policy.configuration();
-                        common::marshal::binary::Output marshal{ message.information};
-                        marshal << configuration;
-                     }
+                     
+                     auto configuration = policy.configuration();
+                     common::marshal::binary::Output marshal{ message.information};
+                     marshal << configuration;
 
                      common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
+                  }
+
+                  auto remote_connect_reply = []( auto& inbound){
+                     Trace trace{ "gateway::outbound::Gateway::reply_thread remote_connect_reply"};
+
+                     common::message::gateway::domain::connect::Reply reply;
+                     {
+                        auto handler = inbound.handler(
+                           common::message::handle::assign( reply)
+                        );
+
+                        while( ! reply.correlation)
+                        {
+                           handler( inbound.next( inbound.policy_blocking()));
+                        }
+                     }
+
+                     //
+                     // Forward to main thread
+                     //
+                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), reply);
+
+                     return reply.version;
+                  };
+
+                  auto version = remote_connect_reply( inbound);
+
+
+                  if( version == version_type::invalid)
+                  {
+                     throw common::exception::system::invalid::Argument{ "invalid protocol"};
                   }
 
 
@@ -783,12 +808,13 @@ namespace casual
                      //
                      handle::service::call::Reply{ service_routing, metric},
 
-                     handle::basic_reply< message::interdomain::queue::enqueue::receive::Reply>{ routing},
-                     handle::basic_reply< message::interdomain::queue::dequeue::receive::Reply>{ routing},
+                     handle::basic_reply< common::message::queue::enqueue::Reply>{ routing},
+                     handle::basic_reply< common::message::queue::dequeue::Reply>{ routing},
 
-                     handle::basic_reply< message::interdomain::transaction::resource::receive::prepare::Reply>{ routing},
-                     handle::basic_reply< message::interdomain::transaction::resource::receive::commit::Reply>{ routing},
-                     handle::basic_reply< message::interdomain::transaction::resource::receive::rollback::Reply>{ routing},
+                     handle::basic_reply< common::message::transaction::resource::prepare::Reply>{ routing},
+                     handle::basic_reply< common::message::transaction::resource::commit::Reply>{ routing},
+                     handle::basic_reply< common::message::transaction::resource::rollback::Reply>{ routing},
+
                      handle::domain::discover::Reply{ routing, order}
                   );
 
@@ -806,7 +832,7 @@ namespace casual
                      //
                      // consume until queue is empty or we reach batch limit
                      //
-                     while( ! handler( inbound.next( inbound.policy_non_blocking()))
+                     while( handler( inbound.next( inbound.policy_non_blocking()))
                            && metric.services.size() < common::platform::batch::gateway::metrics())
                      {
                         ;
@@ -827,7 +853,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   send_disconnect( message::worker::Disconnect::Reason::disconnect);
                }
             }

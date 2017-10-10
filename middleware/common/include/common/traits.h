@@ -5,6 +5,8 @@
 #ifndef COMMON_TRAITS_H_
 #define COMMON_TRAITS_H_
 
+#include "common/platform.h"
+
 #include <type_traits>
 
 
@@ -81,7 +83,7 @@ namespace casual
 
                using result_type = R;
 
-               template< std::size_t index>
+               template< platform::size::type index>
                struct argument
                {
                   using type = std::tuple_element_t< index, std::tuple< Args...>>;

@@ -2,10 +2,13 @@
 //! casual
 //!
 
+//
+// to be able to use 'raw' flags and codes
+// since we undefine 'all' of them in common
+//
+#define CASUAL_NO_XATMI_UNDEFINE
+
 #include "common/unittest.h"
-
-#include "xatmi.h"
-
 
 
 #include "common/mockup/ipc.h"
@@ -16,6 +19,10 @@
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+
+
+#include "xatmi.h"
+
 
 #include <map>
 #include <vector>
@@ -161,7 +168,7 @@ namespace casual
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          EXPECT_TRUE( tpacall( "XXX", buffer, 128, 0) == -1);
-         EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << tperrnostring( tperrno);
 
 
          tpfree( buffer);
@@ -187,7 +194,7 @@ namespace casual
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
-         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY | TPNOTRAN) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY | TPNOTRAN) == 0) << "tperrno: " << tperrnostring( tperrno);
 
          tpfree( buffer);
       }
@@ -200,7 +207,7 @@ namespace casual
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
-         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == 0) << "tperrno: " << tperrnostring( tperrno);
 
          tpfree( buffer);
       }
@@ -215,7 +222,7 @@ namespace casual
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
-         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == -1) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, TPNOREPLY ) == -1) << "tperrno: " << tperrnostring( tperrno);
          EXPECT_TRUE( tperrno == TPEINVAL);
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -233,7 +240,7 @@ namespace casual
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          auto len = tptypes( buffer, nullptr, nullptr);
 
-         EXPECT_TRUE( tpcall( "service_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpcall( "service_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
 
          tpfree( buffer);
       }
@@ -248,8 +255,8 @@ namespace casual
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          auto descriptor = tpacall( "service_1", buffer, 128, 0);
-         EXPECT_TRUE( descriptor == 1) << "desc: " << descriptor << " tperrno: " << common::error::xatmi::error( tperrno);
-         EXPECT_TRUE( tpcancel( descriptor) != -1)  << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( descriptor == 1) << "desc: " << descriptor << " tperrno: " << tperrnostring( tperrno);
+         EXPECT_TRUE( tpcancel( descriptor) != -1)  << "tperrno: " << tperrnostring( tperrno);
 
          tpfree( buffer);
       }
@@ -268,7 +275,7 @@ namespace casual
          for( auto& desc : descriptors)
          {
             desc = tpacall( "service_1", buffer, 128, 0);
-            EXPECT_TRUE( desc > 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+            EXPECT_TRUE( desc > 0) << "tperrno: " << tperrnostring( tperrno);
          }
 
          std::vector< int> expected_descriptors{ 1, 2, 3, 4, 5, 6, 7 ,8 , 9, 10};
@@ -276,7 +283,7 @@ namespace casual
 
          for( auto& desc : descriptors)
          {
-            EXPECT_TRUE( tpcancel( desc) != -1)  << "tperrno: " << common::error::xatmi::error( tperrno);
+            EXPECT_TRUE( tpcancel( desc) != -1)  << "tperrno: " << tperrnostring( tperrno);
          }
 
          tpfree( buffer);
@@ -297,7 +304,7 @@ namespace casual
          for( auto& desc : descriptors)
          {
             desc = tpacall( "service_1", buffer, 128, 0);
-            EXPECT_TRUE( desc > 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+            EXPECT_TRUE( desc > 0) << "tperrno: " << tperrnostring( tperrno);
          }
 
          std::vector< int> expected_descriptors{ 1, 2, 3, 4, 5, 6, 7 ,8 , 9, 10};
@@ -308,7 +315,7 @@ namespace casual
          for( auto& fetch : fetched)
          {
             auto len = tptypes( buffer, nullptr, nullptr);
-            EXPECT_TRUE( tpgetrply( &fetch, &buffer, &len, TPGETANY) != -1)  << "tperrno: " << common::error::xatmi::error( tperrno);
+            EXPECT_TRUE( tpgetrply( &fetch, &buffer, &len, TPGETANY) != -1)  << "tperrno: " << tperrnostring( tperrno);
          }
 
          EXPECT_TRUE( descriptors == fetched) << "descriptors: " << common::range::make( descriptors) << " fetched: " << common::range::make( fetched);
@@ -332,7 +339,7 @@ namespace casual
          for( auto& desc : descriptors)
          {
             desc = tpacall( "service_1", buffer, 128, 0);
-            EXPECT_TRUE( desc > 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+            EXPECT_TRUE( desc > 0) << "tperrno: " << tperrnostring( tperrno);
          }
 
          std::vector< int> expected_descriptors{ 1, 2, 3, 4, 5, 6, 7 ,8 , 9, 10};
@@ -343,7 +350,7 @@ namespace casual
          for( auto& desc : descriptors)
          {
             auto len = tptypes( buffer, nullptr, nullptr);
-            EXPECT_TRUE( tpgetrply( &desc, &buffer, &len, 0) != -1)  << "tperrno: " << common::error::xatmi::error( tperrno);
+            EXPECT_TRUE( tpgetrply( &desc, &buffer, &len, 0) != -1)  << "tperrno: " << tperrnostring( tperrno);
          }
 
          EXPECT_TRUE( tx_commit() == TX_OK);
@@ -363,7 +370,7 @@ namespace casual
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
          auto len = tptypes( buffer, nullptr, nullptr);
-         EXPECT_TRUE( tpcall( "service_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpcall( "service_1", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
 
          EXPECT_TRUE( tx_commit() == TX_OK);
 
@@ -381,7 +388,7 @@ namespace casual
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
 
-         EXPECT_TRUE( tpacall( "service_1", buffer, 128, 0) != 0) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( tpacall( "service_1", buffer, 128, 0) != 0) << "tperrno: " << tperrnostring( tperrno);
 
          // can't commit when there are pending replies
          EXPECT_TRUE( tx_commit() == TX_PROTOCOL_ERROR);
@@ -418,7 +425,7 @@ namespace casual
 
          local::Domain domain;
 
-         EXPECT_TRUE( local::call( "service_urcode")) << "tperrno: " << common::error::xatmi::error( tperrno);
+         EXPECT_TRUE( local::call( "service_urcode")) << "tperrno: " << tperrnostring( tperrno);
          EXPECT_TRUE( tpurcode == 42) << "urcode: " << tpurcode;
       }
 

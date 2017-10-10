@@ -120,7 +120,7 @@ def format( input, output):
             output.write( '|');
             output.write( color.yellow( truncateXID( rows[ 6])));
             output.write( '|');
-            output.write( color.grey( rows[ 7]));
+            output.write( rows[ 7]);
             output.write( '|');
             output.write( color.yellow( rows[ 8]));
             output.write( '|');

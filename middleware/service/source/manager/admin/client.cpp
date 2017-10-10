@@ -410,9 +410,9 @@ namespace casual
                   terminal::format::column( "category", std::mem_fn( &admin::ServiceVO::category), terminal::color::no_color, terminal::format::Align::left),
                   terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
-                  terminal::format::column( "LI", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
-                  terminal::format::column( "LC", format_invoked, terminal::color::white, terminal::format::Align::right),
-                  terminal::format::column( "LAT", format_avg_time, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "C", format_invoked, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "AT", format_avg_time, terminal::color::white, terminal::format::Align::right),
                   terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
@@ -427,10 +427,7 @@ namespace casual
                using value_type = normalized::service::Instance;
 
 
-               struct format_pid
-               {
-                  platform::pid::type operator () ( const value_type& v) const { return v.process.pid;}
-               };
+               auto format_pid = []( auto& v){ return v.process.pid;};
 
                auto format_service_name = []( const value_type& v){
                   return v.service.get().name;
@@ -492,18 +489,10 @@ namespace casual
                };
 
 
-               /*
-               struct format_last
-               {
-                  std::string operator () ( const value_type& v) const { return chronology::local( v..last);}
-               };
-               */
-
-
                return {
                   { global::porcelain, ! global::no_colors, ! global::no_header},
                   terminal::format::column( "service", format_service_name, terminal::color::yellow),
-                  terminal::format::column( "pid", format_pid{}, terminal::color::white, terminal::format::Align::right),
+                  terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                   //terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::custom_column( "state", format_state{}),
                   terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
@@ -661,15 +650,10 @@ namespace casual
             try
             {
                parser.parse( argc, argv);
-
             }
-            catch( const common::argument::exception::Help&)
+            catch( ...)
             {
-               
-            }
-            catch( const std::exception& exception)
-            {
-               std::cerr << "error: " << exception.what() << std::endl;
+               return casual::common::exception::handle( std::cerr);
             }
             return 0;
          }

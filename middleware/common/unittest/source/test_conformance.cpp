@@ -190,7 +190,7 @@ namespace casual
             {
                auto result = waitpid( pid, nullptr, 0);
 
-               EXPECT_TRUE( result == pid) << "result: " << result << " - pid: " << pid << " - errno: " << common::error::string();
+               EXPECT_TRUE( result == pid) << "result: " << result << " - pid: " << pid << " - errno: " << common::code::last::system::error();
 
                if( result == pid)
                {

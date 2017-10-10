@@ -6,7 +6,8 @@
 #include "common/uuid.h"
 #include "common/transcode.h"
 #include "common/memory.h"
-#include "common/exception.h"
+#include "common/exception/system.h"
+#include "common/string.h"
 
 #include <cassert>
 #include <ostream>
@@ -62,7 +63,7 @@ namespace casual
 		   {
 	         if( uuid.size() !=  sizeof( uuid_type) * 2)
 	         {
-	            throw exception::invalid::Argument{ "invalid uuid string representation", CASUAL_NIP( uuid)};
+	            throw exception::system::invalid::Argument{ string::compose( "invalid uuid string representation: ", uuid)};
 	         }
 
 	         transcode::hex::decode( uuid, m_uuid);

@@ -2,8 +2,9 @@
 //! casual
 //!
 
-#ifndef BROKERVO_H_
-#define BROKERVO_H_
+#ifndef CASUAL_SERVICE_MANAGER_ADMIN_MANAGERVO_H_
+#define CASUAL_SERVICE_MANAGER_ADMIN_MANAGERVO_H_
+
 #include "sf/namevaluepair.h"
 #include "sf/platform.h"
 
@@ -65,7 +66,7 @@ namespace casual
 
                struct Metric
                {
-                  std::size_t count = 0;
+                  sf::platform::size::type count = 0;
                   std::chrono::microseconds total;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -80,7 +81,7 @@ namespace casual
 
                   struct Local
                   {
-                     sf::platform::pid::type pid;
+                     sf::platform::process::id pid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -90,8 +91,8 @@ namespace casual
 
                   struct Remote
                   {
-                     sf::platform::pid::type pid;
-                     std::size_t hops;
+                     sf::platform::process::id pid;
+                     sf::platform::size::type hops;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -110,12 +111,12 @@ namespace casual
                std::string name;
                std::chrono::microseconds timeout;
                std::string category;
-               std::size_t transaction = 0;
+               sf::platform::size::type transaction = 0;
 
                service::Metric metrics;
                service::Metric pending;
 
-               std::size_t remote_invocations = 0;
+               sf::platform::size::type remote_invocations = 0;
                common::platform::time::point::type last;
 
 

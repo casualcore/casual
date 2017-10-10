@@ -48,7 +48,7 @@ namespace casual
                      blocking::send( std::forward< D>( device), std::forward< M>( message));
                      return true;
                   }
-                  catch( const common::exception::communication::Unavailable&)
+                  catch( const common::exception::system::communication::Unavailable&)
                   {
                      return false;
                   }
@@ -69,7 +69,7 @@ namespace casual
                   // Set 'sender' so we (our main thread) get the reply
                   //
                   message.process = common::process::handle();
-                  blocking::send( common::communication::ipc::transaction::manager::device(), message.get());
+                  blocking::send( common::communication::ipc::transaction::manager::device(), message);
                }
             };
 
@@ -89,7 +89,7 @@ namespace casual
             {
                struct Request : cache::Base
                {
-                  using message_type = message::interdomain::service::call::receive::Request;
+                  using message_type = common::message::service::call::callee::Request;
 
                   using cache::Base::Base;
 
@@ -117,7 +117,7 @@ namespace casual
                      //
                      // Add message to cache, this could block
                      //
-                     m_cache.add( common::marshal::complete( std::move( message.get())));
+                     m_cache.add( common::marshal::complete( std::move( message)));
 
                      //
                      // Send lookup
@@ -149,7 +149,7 @@ namespace casual
                                  common::communication::ipc::outbound::Device ipc{ message.process.queue};
                                  ipc.put( request, common::communication::ipc::policy::Blocking{});
                               }
-                              catch( const common::exception::queue::Unavailable&)
+                              catch( const common::exception::system::communication::Unavailable&)
                               {
                                  common::log::category::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
                                  send_error_reply( message);
@@ -175,7 +175,7 @@ namespace casual
                      {
                         common::message::service::call::Reply reply;
                         reply.correlation = message.correlation;
-                        reply.status = TPESVCERR;
+                        reply.status = common::code::xatmi::service_error;
                         common::communication::ipc::inbound::device().push( reply);
                      }
                   };
@@ -210,7 +210,7 @@ namespace casual
                      //
                      // Add message to cache, this could block
                      //
-                     cache.add( common::marshal::complete( std::move( message.get())));
+                     cache.add( common::marshal::complete( std::move( message)));
 
                      auto remove = common::scope::execute( [&](){
                         cache.get( request.correlation);
@@ -291,7 +291,7 @@ namespace casual
                {
                   struct Request : cache::Base
                   {
-                     using message_type = message::interdomain::queue::enqueue::receive::Request;
+                     using message_type = common::message::queue::enqueue::Request;
 
                      using cache::Base::Base;
 
@@ -306,7 +306,7 @@ namespace casual
                         {
                            queue::lookup::send( m_cache, message);
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
@@ -329,7 +329,7 @@ namespace casual
                {
                   struct Request : cache::Base
                   {
-                     using message_type = message::interdomain::queue::dequeue::receive::Request;
+                     using message_type = common::message::queue::dequeue::Request;
 
                      using cache::Base::Base;
 
@@ -344,7 +344,7 @@ namespace casual
                         {
                            queue::lookup::send( m_cache, message);
                         }
-                        catch( const common::exception::communication::Unavailable&)
+                        catch( const common::exception::system::communication::Unavailable&)
                         {
                            common::log::category::error << "failed to lookup queue - action: send error reply\n";
 
@@ -376,11 +376,9 @@ namespace casual
                {
                   Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
 
-                  auto&& wrapper = message::interdomain::send::wrap( message);
-
                   log << "forward message: " << message << '\n';
 
-                  m_device.blocking_send( wrapper);
+                  m_device.blocking_send( message);
                }
 
             private:
@@ -430,7 +428,7 @@ namespace casual
 
                         }
 
-                        inline void send( common::communication::ipc::Handle queue, message_type& message)
+                        inline void send( common::platform::ipc::id queue, message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
 
@@ -440,11 +438,9 @@ namespace casual
                            message.domain = common::domain::identity();
                            message.process = common::process::handle();
 
-                           auto&& wrapper = gateway::message::interdomain::send::wrap( message);
-
                            log << "forward message: " << message << '\n';
 
-                           m_device.blocking_send( wrapper);
+                           m_device.blocking_send( message);
                         }
                      private:
                         device_type& m_device;
@@ -459,7 +455,7 @@ namespace casual
                   {
                      struct Request
                      {
-                        void operator () ( message::interdomain::domain::discovery::receive::Request& message) const
+                        void operator () ( common::message::gateway::domain::discover::Request& message) const
                         {
                            Trace trace{ "gateway::inbound::handle::connection::discover::forward::Request"};
 
@@ -470,7 +466,7 @@ namespace casual
                            // We forward it to main thread (for async ordering reasons)
                            //
 
-                           blocking::send( common::communication::ipc::inbound::id(), message.get());
+                           blocking::send( common::communication::ipc::inbound::id(), message);
                         }
                      };
                   } // forward
@@ -570,6 +566,8 @@ namespace casual
 
             using ipc_policy = common::communication::ipc::policy::Blocking;
 
+            using version_type = common::message::gateway::domain::protocol::Version;
+
             template< typename S>
             Gateway( S&& settings)
               : m_cache{ policy_type::limits( settings)}
@@ -616,7 +614,7 @@ namespace casual
                }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                }
             }
 
@@ -634,12 +632,11 @@ namespace casual
                // Now we wait for the worker to establish connection with
                // the other domain. We're still active and can be shut down
                //
-               internal_policy_type policy{ connect()};
-
+               auto policy = worker_connect();
 
                auto&& outbound_device = policy.outbound();
 
-
+               domain_connect( outbound_device, policy.address( outbound_device));
 
                using outbound_type = common::traits::concrete::type_t< decltype( outbound_device)>;
 
@@ -647,13 +644,6 @@ namespace casual
                // Coordinates discover replies
                //
                handle::domain::discover::coordinate::Discover< outbound_type> discover{ outbound_device};
-
-
-               //
-               // Initialize and connect to gateway
-               //
-               initialize( discover, policy.address( outbound_device));
-
 
 
                auto handler = common::communication::ipc::inbound::device().handler(
@@ -695,78 +685,87 @@ namespace casual
 
          private:
 
-            configuration_type connect()
+            auto worker_connect()
             {
-               Trace trace{ "gateway::inbound::Gateway::connect"};
+               Trace trace{ "gateway::inbound::Gateway::worker_connect"};
 
-               message::worker::Connect message;
-
-               auto handler = common::communication::ipc::inbound::device().handler(
-                  common::message::handle::Shutdown{},
-                  common::message::handle::ping(),
-                  gateway::handle::Disconnect{ m_request_thread},
-                  common::message::handle::assign( message)
-               );
-
-               while( ! message.correlation)
-               {
-                  handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
-               }
+               auto message = worker_message< message::worker::Connect>();
 
                configuration_type configuration;
-
+               
                common::marshal::binary::Input marshal{ message.information};
                marshal >> configuration;
 
-               return configuration;
+               internal_policy_type policy( std::move( configuration));
+
+               return policy;
             }
 
-            template< typename D, typename A>
-            void initialize( D&& discover, A&& address)
+            template< typename Device>
+            auto domain_connect( Device& outbound, std::vector< std::string> address)
             {
-               Trace trace{ "gateway::inbound::Gateway::initialize"};
+               Trace trace{ "gateway::inbound::Gateway::domain_connect"};
+
+               auto request = worker_message< common::message::gateway::domain::connect::Request>();
+
+               log << "request: " << request << '\n';
+               
+               version_type version = version_type::invalid;
 
                //
-               // We wait for the remote outbound domain to send discover, and for our inbound thread to
-               // forward it.
-               // This is part of the outbound initialization dance, and we use it to initialize the inbound
-               // part as well.
-               // The objective is to get the remote-id
+               // Reply to other domain
                //
-
-               common::message::gateway::domain::discover::Request message;
-
-               auto handler = common::communication::ipc::inbound::device().handler(
-                  common::message::handle::Shutdown{},
-                  common::message::handle::ping(),
-                  gateway::handle::Disconnect{ m_request_thread},
-                  common::message::handle::assign( message)
-               );
-
-               while( ! message.correlation)
                {
-                  handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
+                  Trace trace{ "gateway::inbound::Gateway::domain_connect external"};
+
+                  auto reply = common::message::reverse::type( request);
+
+
+                  version = validate( request.versions);
+
+                  reply.version = version;
+                  reply.domain = common::domain::identity();
+
+                  log << "reply: " << reply << '\n';
+
+                  outbound.blocking_send( reply);
                }
-
-               //
-               // Send connect to gateway
-               //
+               
                {
-                  Trace trace{ "gateway::inbound::Gateway::operator() gateway connect"};
+                  Trace trace{ "gateway::inbound::Gateway::domain_connect internal"};
 
                   message::inbound::Connect connect;
-                  connect.domain = message.domain;
+
+                  connect.domain = request.domain;
                   connect.process = common::process::handle();
-                  connect.address = std::forward< A>( address);
+                  connect.version = version;
+                  connect.address = std::move( address);
                   common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
                }
 
-               //
-               // Handle the message, so the remote outbound gets what it wants.
-               //
+               return version;
+            }
+
+
+            template< typename Message>
+            auto worker_message()
+            {
+               Message message;
+               
                {
-                  handle::domain::discover::request::make( discover)( message);
+                  auto handler = common::communication::ipc::inbound::device().handler(
+                     common::message::handle::Shutdown{},
+                     // we don't handle ping until we're up'n running common::message::handle::ping(),
+                     gateway::handle::Disconnect{ m_request_thread},
+                     common::message::handle::assign( message)
+                  );
+
+                  while( ! message.correlation)
+                  {
+                     handler( common::communication::ipc::inbound::device().next( handler.types(), ipc_policy{}));
+                  }
                }
+               return message;
             }
 
             template< typename S>
@@ -794,7 +793,7 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        common::error::handler();
+                        common::exception::handle();
                      }
                   };
 
@@ -808,10 +807,8 @@ namespace casual
 
                   auto&& device = policy.device();
 
-
                   //
-                  // Send connection to the main thread so it knows how to communicate with the other
-                  // domain
+                  // "connect to main thread"
                   //
                   {
                      Trace trace{ "gateway::inbound::Gateway::request_thread main thread connect"};
@@ -822,8 +819,38 @@ namespace casual
                         common::marshal::binary::Output marshal{ message.information};
                         marshal << configuration;
                      }
-
                      common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
+                  }
+
+                  //
+                  // Wait for the other domain to connect.
+                  //
+                  {
+                     Trace trace{ "gateway::inbound::Gateway::request_thread remote domain connect"};
+
+                     common::message::gateway::domain::connect::Request request;
+
+                     {
+                        auto handler = device.handler(
+                           common::message::handle::assign( request)
+                        );
+
+                        while( ! request.correlation)
+                        {
+                           handler( device.next( device.policy_blocking()));
+                        }
+                     }
+
+                     auto version = validate( request.versions);
+
+
+                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), request);
+
+                     if( version == version_type::invalid)
+                     {
+                        throw common::exception::system::invalid::Argument{ common::string::compose( "no compatable protocol in connect: ", common::range::make( request.versions))};
+                     }
+
                   }
 
                   common::log::category::information << "connection established - policy: " << policy << "\n";
@@ -834,9 +861,10 @@ namespace casual
                   //
                   auto handler = device.handler(
                      handle::call::Request{ cache},
-                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::prepare::Request>{},
-                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::commit::Request>{},
-                     handle::basic_transaction_request< message::interdomain::transaction::resource::receive::rollback::Request>{},
+
+                     handle::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
+                     handle::basic_transaction_request< common::message::transaction::resource::rollback::Request>{},
                      handle::domain::discover::forward::Request{},
 
                      handle::queue::dequeue::Request{ cache},
@@ -850,12 +878,24 @@ namespace casual
                {
                   send_disconnect( message::worker::Disconnect::Reason::signal);
                }
+               catch( const common::exception::system::invalid::Argument&)
+               {
+                  common::exception::handle();
+                  send_disconnect( message::worker::Disconnect::Reason::invalid);
+               }
                catch( ...)
                {
-                  common::error::handler();
+                  common::exception::handle();
                   send_disconnect( message::worker::Disconnect::Reason::disconnect);
                }
+            }
 
+            static version_type validate( const std::vector< version_type>& versions)
+            {
+               if( common::range::find( versions, version_type::version_1))
+                  return version_type::version_1;
+
+               return version_type::invalid;
             }
 
             Cache m_cache;

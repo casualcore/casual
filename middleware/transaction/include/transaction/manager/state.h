@@ -27,6 +27,8 @@ namespace casual
 
    namespace transaction
    {
+      using size_type = common::platform::size::type;
+
       namespace handle
       {
          namespace implementation
@@ -46,7 +48,7 @@ namespace casual
             std::chrono::microseconds min;
             std::chrono::microseconds max;
             std::chrono::microseconds total;
-            std::size_t invoked;
+            size_type invoked;
 
             void start( const common::platform::time::point::type& start);
             void end( const common::platform::time::point::type& end);
@@ -117,7 +119,7 @@ namespace casual
                std::string key;
                std::string openinfo;
                std::string closeinfo;
-               std::size_t concurency = 0;
+               size_type concurency = 0;
 
                //!
                //! This 'counter' keep track of statistics for removed
@@ -152,9 +154,9 @@ namespace casual
 
             private:
 
-               inline static std::size_t next_id()
+               inline static size_type next_id()
                {
-                  static std::size_t id = 1;
+                  static size_type id = 1;
                   return id++;
                }
 
@@ -220,7 +222,7 @@ namespace casual
 
             struct Reply : base_message
             {
-               using queue_id_type = common::communication::ipc::Handle;
+               using queue_id_type = common::platform::ipc::id;
 
                template< typename M>
                Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}
@@ -286,7 +288,7 @@ namespace casual
             //! Used to rank the return codes from the resources, the lower the enum value (higher up),
             //! the more severe...
             //!
-            enum class Result : std::uint16_t
+            enum class Result : int
             {
                xa_HEURHAZ,
                xa_HEURMIX,
@@ -322,10 +324,10 @@ namespace casual
             Stage stage = Stage::involved;
             Result result = Result::xa_OK;
 
-            static Result convert( int value);
-            static int convert( Result value);
+            static Result convert( common::code::xa value);
+            static common::code::xa convert( Result value);
 
-            void set_result( int value);
+            void set_result( common::code::xa value);
 
             //!
             //! @return true if there's nothing more to do, hence this resource can be removed
@@ -430,7 +432,7 @@ namespace casual
          //!
          //! @return the most severe result from the resources
          //!
-         Resource::Result results() const;
+         common::code::xa results() const;
 
          friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
       };
@@ -559,7 +561,7 @@ namespace casual
          //!
          //! @return number of total instances
          //!
-         std::size_t instances() const;
+         size_type instances() const;
 
          std::vector< common::platform::pid::type> processes() const;
 

@@ -19,10 +19,16 @@ namespace casual
       namespace log
       {
 
+         struct Settings
+         {
+            std::string file = "statistics.log";
+            std::string delimiter = "|";
+         };
 
          struct Handler
          {
-            Handler( const std::string& file) : m_logfile{ file}
+            Handler( Settings settings) 
+               : m_logfile{ settings.file, std::ios::app}, m_delimiter{ std::move( settings.delimiter)}
             {
 
             }
@@ -30,12 +36,12 @@ namespace casual
             void log( const common::message::event::service::Call& event)
             {
                m_logfile << event.service
-                     << "|" << event.parent
-                     << "|" << event.process.pid
-                     << "|" << event.execution
-                     << "|" << event.trid
-                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( event.start.time_since_epoch()).count()
-                     << "|" << std::chrono::duration_cast< std::chrono::microseconds>( event.end.time_since_epoch()).count()
+                     << m_delimiter << event.parent
+                     << m_delimiter << event.process.pid
+                     << m_delimiter << event.execution
+                     << m_delimiter << event.trid
+                     << m_delimiter << std::chrono::duration_cast< std::chrono::microseconds>( event.start.time_since_epoch()).count()
+                     << m_delimiter << std::chrono::duration_cast< std::chrono::microseconds>( event.end.time_since_epoch()).count()
                      << '\n';
             }
 
@@ -46,17 +52,19 @@ namespace casual
 
          private:
             std::ofstream m_logfile;
+            std::string m_delimiter;
          };
 
 
          void main(int argc, char **argv)
          {
-            // get log-file from arguments
-            std::string file{"statistics.log"};
+            Settings settings;
+
             {
-               casual::common::Arguments parser{
-                  { casual::common::argument::directive( { "-f", "--file"}, "path to log-file", file)}
-               };
+               casual::common::Arguments parser{{ 
+                  casual::common::argument::directive( { "-f", "--file"}, "path to log-file (default: '" + settings.file + "'", settings.file),
+                  casual::common::argument::directive( { "-d", "--delimiter"}, "delimiter between columns (default: '" + settings.delimiter + "'" , settings.delimiter),
+               }};
 
                parser.parse( argc, argv);
             }
@@ -67,7 +75,7 @@ namespace casual
             common::process::instance::connect( common::Uuid{ "c9d132c7249241c8b4085cc399b19714"});
 
             {
-               Handler handler{ file};
+               Handler handler{ std::move( settings)};
 
                common::event::idle::listen(
                      [&](){
@@ -96,7 +104,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
 
 }

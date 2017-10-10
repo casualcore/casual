@@ -43,7 +43,7 @@ namespace casual
             };
 
 
-            file::scoped::Path create_domain_file( communication::ipc::Handle queue)
+            file::scoped::Path create_domain_file( platform::ipc::id queue)
             {
                Trace trace{ "create_domain_file"};
 
@@ -96,8 +96,29 @@ namespace casual
                      //
                      // Act as the local gateway
                      //
+
+
+                     //
+                     // connect the remote domain
+                     //
                      {
-                        Trace trace{ "local - wait for connect from outbound to local domain"};
+                        Trace trace{ "remote - wait for connect from outbound to 'local' inbound"};
+
+                        common::message::gateway::domain::connect::Request request;
+                        communication::ipc::blocking::receive( remote.output(), request);
+
+                        log::debug << "request: " << request << '\n';
+
+                        auto reply = common::message::reverse::type( request);
+                        reply.version = common::message::gateway::domain::protocol::Version::version_1;
+
+
+                        communication::ipc::blocking::send(
+                              external.queue, reply);
+                     }
+
+                     {
+                        Trace trace{ "local - wait for configuration request from outbound to local domain"};
 
                         message::outbound::configuration::Request request;
                         communication::ipc::blocking::receive( communication::ipc::inbound::device(), request);
@@ -111,17 +132,18 @@ namespace casual
                      }
 
                      //
-                     // Act as the remote domain
+                     // discover from the remote domain
                      //
                      {
-                        Trace trace{ "remote - wait for discovery from outbound to 'local' inbound"};
+                        Trace trace{ "remote - wait for discover from outbound to 'local' inbound"};
 
-                        message::interdomain::domain::discovery::receive::Request request;
+                        common::message::gateway::domain::discover::Request request;
                         communication::ipc::blocking::receive( remote.output(), request);
 
                         log::debug << "request: " << request << '\n';
 
-                        message::interdomain::domain::discovery::receive::Reply reply;
+                        auto reply = common::message::reverse::type( request);
+
                         reply.correlation = request.correlation;
                         reply.execution = request.execution;
                         reply.process = remote.process();
@@ -134,12 +156,11 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     common::exception::handle();
                      throw;
                   }
 
                }
-
 
                common::mockup::domain::Manager manager;
 
@@ -235,7 +256,7 @@ namespace casual
          //
          {
 
-            message::interdomain::service::call::receive::Request message;
+            common::message::service::call::callee::Request message;
             communication::ipc::blocking::receive( domain.remote.output(), message);
 
             EXPECT_TRUE( message.correlation == correlation);

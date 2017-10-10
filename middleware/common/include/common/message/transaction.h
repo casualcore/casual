@@ -2,10 +2,13 @@
 //! casual
 //!
 
-#ifndef TRANSACTION_H_
-#define TRANSACTION_H_
+#ifndef COMMON_MESSAGE_TRANSACTION_H_
+#define COMMON_MESSAGE_TRANSACTION_H_
 
 #include "common/message/type.h"
+#include "common/code/xa.h"
+#include "common/code/tx.h"
+#include "common/flag/xa.h"
 
 
 namespace casual
@@ -43,10 +46,10 @@ namespace casual
 
             };
 
-            template< message::Type type>
+            template< typename State, message::Type type>
             struct basic_reply : basic_transaction< type>
             {
-               int state = 0;
+               State state = State::ok;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {
@@ -75,8 +78,7 @@ namespace casual
                };
                static_assert( traits::is_movable< Request>::value, "not movable");
 
-               using base_reply = basic_reply< Type::transaction_commit_reply>;
-
+               using base_reply = basic_reply< code::tx, Type::transaction_commit_reply>;
                struct Reply : base_reply
                {
                   enum class Stage : char
@@ -120,7 +122,7 @@ namespace casual
                static_assert( traits::is_movable< Request>::value, "not movable");
 
 
-               using base_reply = basic_reply< Type::transaction_rollback_reply>;
+               using base_reply = basic_reply< code::tx, Type::transaction_rollback_reply>;
 
                struct Reply : base_reply
                {
@@ -201,17 +203,17 @@ namespace casual
 
                } // lookup
 
-
                template< message::Type type>
-               struct basic_reply : transaction::basic_reply< type>
+               struct basic_reply : transaction::basic_reply< code::xa, type>
                {
+                  using base_type = transaction::basic_reply< code::xa, type>;
                   id::type resource = 0;
                   Statistics statistics;
 
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
-                     transaction::basic_reply< type>::marshal( archive);
+                     base_type::marshal( archive);
                      archive & resource;
                      archive & statistics;
                   })
@@ -248,7 +250,7 @@ namespace casual
                   using base_type = basic_request;
 
                   id::type resource = 0;
-                  int flags = 0;
+                  flag::xa::Flags flags = flag::xa::Flag::no_flags;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -272,11 +274,11 @@ namespace casual
                   //!
                   //! Used to notify the TM that a resource proxy is up and running, or not...
                   //!
-                  struct Reply : basic_message< Type::transaction_resurce_connect_reply>
+                  struct Reply : basic_message< Type::transaction_resource_connect_reply>
                   {
                      common::process::Handle process;
                      id::type resource = 0;
-                     int state = 0;
+                     code::xa state = code::xa::ok;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

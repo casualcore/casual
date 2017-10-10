@@ -9,6 +9,8 @@
 #include "common/message/event.h"
 #include "common/message/handle.h"
 
+#include "common/exception/casual.h"
+
 
 #include <random>
 
@@ -31,13 +33,13 @@ namespace casual
          {
             namespace
             {
-               std::size_t transform_size( std::size_t size)
+               size_type transform_size( size_type size)
                {
-                  const auto size_type_size = sizeof( platform::binary::type::size_type);
+                  const size_type size_type_size = sizeof( platform::binary::type::size_type);
 
                   if( size < size_type_size)
                   {
-                     throw exception::invalid::Argument{ "mockup message size is to small"};
+                     throw exception::system::invalid::Argument{ "mockup message size is to small"};
                   }
                   return size - size_type_size;
                }
@@ -45,9 +47,9 @@ namespace casual
          } // local
 
          Message::Message() = default;
-         Message::Message( std::size_t size) : payload( local::transform_size( size)) {}
+         Message::Message( size_type size) : payload( local::transform_size( size)) {}
 
-         std::size_t Message::size() const { return payload.size() + sizeof( platform::binary::type::size_type);}
+         size_type Message::size() const { return payload.size() + sizeof( platform::binary::type::size_type);}
 
          namespace random
          {
@@ -93,7 +95,7 @@ namespace casual
                return distribution( local::engine());
             }
 
-            platform::binary::type binary( std::size_t size)
+            platform::binary::type binary( size_type size)
             {
                platform::binary::type result( size);
 
@@ -102,7 +104,7 @@ namespace casual
                return result;
             }
 
-            unittest::Message message( std::size_t size)
+            unittest::Message message( size_type size)
             {
                unittest::Message result( size);
 
@@ -128,7 +130,7 @@ namespace casual
                      []( const message::event::domain::Error& error){
                         if( error.severity == message::event::domain::Error::Severity::fatal)
                         {
-                           throw exception::Shutdown{ "fatal error", CASUAL_NIP( error)};
+                           throw exception::casual::Shutdown{ string::compose( "fatal error: ", error)};
                         }
                      },
                      common::message::handle::Discard< common::message::event::domain::Group>{},

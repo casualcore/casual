@@ -14,8 +14,7 @@
 
 #include "common/environment.h"
 #include "common/flag.h"
-#include "common/error.h"
-#include "common/exception.h"
+#include "common/exception/xatmi.h"
 #include "common/signal.h"
 
 #include "common/transaction/context.h"
@@ -327,10 +326,7 @@ namespace casual
                auto& reply = std::get< 0>( prepared);
                result.descriptor = std::get< 1>( prepared);
                result.user = reply.code;
-
                result.buffer = std::move( reply.buffer);
-               result.state = reply.status == TPESVCFAIL ? reply::State::service_fail : reply::State::service_success;
-
 
 
                //
@@ -347,11 +343,21 @@ namespace casual
                //
                // Check any errors
                //
-               if( reply.status != 0 && reply.status != TPESVCFAIL)
+               switch( reply.status)
                {
-                  exception::xatmi::propagate( reply.status);
+                  case code::xatmi::ok:
+                     break;
+                  case code::xatmi::service_fail:
+                  {
+                     call::Fail exception;
+                     exception.result = std::move( result);
+                     throw exception;
+                  }
+                  default: 
+                  {
+                     throw exception::xatmi::exception{ reply.status};
+                  }
                }
-
                return result;
             }
 
@@ -370,7 +376,7 @@ namespace casual
                constexpr auto reply_flags = ~reply::Flags{};
                auto result = reply( descriptor, reply_flags.convert( flags));
 
-               return { std::move( result.buffer), result.user, result.state};
+               return { std::move( result.buffer), result.user};
             }
 
 

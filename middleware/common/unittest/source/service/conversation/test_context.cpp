@@ -32,7 +32,7 @@ namespace casual
                      mockup::domain::echo::Server server;
                   };
 
-                  buffer::Payload paload( std::size_t size = 128)
+                  buffer::Payload payload( platform::size::type size = 128)
                   {
                      buffer::Payload result{ "string/", size};
 
@@ -59,7 +59,7 @@ namespace casual
 
                local::Domain domain;
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                EXPECT_THROW({
                   conversation::Context::instance().connect( "echo.conversation", payload, {});
@@ -72,7 +72,7 @@ namespace casual
 
                local::Domain domain;
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                EXPECT_THROW({
                   conversation::Context::instance().connect(
@@ -86,7 +86,7 @@ namespace casual
 
                local::Domain domain;
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                auto descriptor = conversation::Context::instance().connect( "echo.conversation", payload, { connect::Flag::send_only});
 
@@ -99,7 +99,7 @@ namespace casual
 
                local::Domain domain;
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                auto descriptor = conversation::Context::instance().connect( "echo.conversation", payload, { connect::Flag::receive_only});
 
@@ -121,7 +121,7 @@ namespace casual
                const auto descriptor = conversation::Context::instance().connect( "echo.conversation", null, { connect::Flag::send_only});
 
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                auto event = conversation::Context::instance().send( descriptor, payload, { send::Flag::receive_only});
                EXPECT_TRUE( event.empty());
@@ -138,13 +138,13 @@ namespace casual
 
 
 
-            TEST( common_service_conversation, connect_receivce_only___disconnect)
+            TEST( common_service_conversation, connect_receive_only___disconnect)
             {
                common::unittest::Trace trace;
 
                local::Domain domain;
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                auto descriptor = conversation::Context::instance().connect( "echo.conversation", payload, { connect::Flag::receive_only});
 
@@ -159,7 +159,7 @@ namespace casual
 
                local::Domain domain;
 
-               auto payload = local::paload();
+               auto payload = local::payload();
 
                auto descriptor = conversation::Context::instance().connect( "echo.conversation", payload, { connect::Flag::send_only});
 

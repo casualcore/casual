@@ -5,7 +5,8 @@
 #include "common/communication/tcp.h"
 #include "common/communication/log.h"
 
-#include "common/error.h"
+#include "common/exception/system.h"
+#include "common/exception/handle.h"
 
 #include "common/log.h"
 
@@ -35,26 +36,12 @@ namespace casual
 
                      namespace check
                      {
-                        void error( const decltype( common::error::last()) last_error)
+                        void error( common::code::system last_error)
                         {
+                           using system = common::code::system;
                            switch( last_error)
                            {
-                              case EPIPE:
-                              case ECONNRESET:
-                              case ENOTCONN:
-                                 throw common::exception::communication::Unavailable( common::error::string());
-                              case ENOMEM:
-                                 throw common::exception::limit::Memory( common::error::string());
-                              case EAGAIN:
-#if EAGAIN != EWOULDBLOCK
-                              case EWOULDBLOCK:
-#endif
-                                 throw common::exception::communication::no::Message{ common::error::string( last_error)};
-                              case EINVAL:
-                                 throw common::exception::invalid::Argument{ common::error::string( last_error)};
-                              case ENOTSOCK:
-                                 throw common::exception::invalid::Argument{ common::error::string( last_error)};
-                              case EINTR:
+                              case system::interrupted:
                               {
                                  common::signal::handle();
 
@@ -66,7 +53,7 @@ namespace casual
                               } // @fallthrough
                               default:
                               {
-                                 throw std::system_error{ last_error, std::system_category()};
+                                 exception::system::throw_from_errno();
                               }
                            }
                         }
@@ -75,7 +62,7 @@ namespace casual
                         {
                            if( result == -1)
                            {
-                              check::error( common::error::last());
+                              check::error( common::code::last::system::error());
                            }
                            return result;
                         }
@@ -133,7 +120,8 @@ namespace casual
 
                            if( const int result = getaddrinfo( address::host( address), address::port( address), &hints, &information))
                            {
-                              throw exception::communication::Unavailable( gai_strerror( result), CASUAL_NIP( result), CASUAL_NIP( address));
+                              throw exception::system::invalid::Argument( string::compose( 
+                                 gai_strerror( result), " address: ", address));
                            }
                         }
 
@@ -150,15 +138,17 @@ namespace casual
                         }
 
 
-                        switch( common::error::last())
+                        switch( common::code::last::system::error())
                         {
-                           case ECONNREFUSED:
-                              throw exception::communication::Refused{ "connection refused", CASUAL_NIP( address)};
+                           case common::code::system::connection_refused:
+                              throw exception::system::communication::Refused( string::compose( address));
                            default:
                            {
-                              throw std::system_error{ common::error::last(), std::system_category()};
+                              exception::system::throw_from_errno();
                            }
                         }
+                        // will never be reached...
+                        return {};
                      }
 
                      Socket connect( const Address& address)
@@ -276,7 +266,7 @@ namespace casual
                   }
                   default:
                   {
-                     throw exception::invalid::Argument{ "invalid address", CASUAL_NIP( address)};
+                     throw exception::system::invalid::Argument{ string::compose( "invalid address: ", address)};
                   }
                }
             }
@@ -356,7 +346,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::error::handler();
+                     exception::handle();
                   }
                }
             }
@@ -377,7 +367,7 @@ namespace casual
                option( Option::linger, linger);
             }
 
-            void Socket::option( int optname, const void *optval, std::size_t optlen)
+            void Socket::option( int optname, const void *optval, size_type optlen)
             {
                local::socket::check::result( ::setsockopt( descriptor(), SOL_SOCKET, optname, optval, optlen));
             }
@@ -447,7 +437,7 @@ namespace casual
                      {
                         return tcp::connect( address);
                      }
-                     catch( const exception::communication::Refused&)
+                     catch( const exception::system::communication::Refused&)
                      {
                         sleep();
                      }
@@ -489,7 +479,7 @@ namespace casual
                   namespace
                   {
 
-                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, std::size_t const size, common::Flags< Flag> flags)
+                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, size_type const size, common::Flags< Flag> flags)
                      {
                         common::signal::handle();
 
@@ -521,7 +511,7 @@ namespace casual
                               //
                               // Fake an error-description
                               //
-                              throw common::exception::communication::Unavailable( common::error::string( EPIPE));
+                              throw exception::system::communication::unavailable::Pipe{};
                            }
 
                            first += bytes;
@@ -547,7 +537,7 @@ namespace casual
 
                            if( bytes > std::distance( first, last))
                            {
-                              throw exception::Casual( "somehow more bytes was sent over the socket than requested");
+                              throw exception::system::communication::Protocol( "somehow more bytes was sent over the socket than requested");
                            }
 
                            first += bytes;
@@ -577,7 +567,7 @@ namespace casual
 
                      return complete.correlation;
                   }
-                  catch( const exception::communication::no::Message&)
+                  catch( const exception::system::communication::no::Message&)
                   {
                      return uuid::empty();
                   }
@@ -617,7 +607,7 @@ namespace casual
 
                      return message;
                   }
-                  catch( const exception::communication::no::Message&)
+                  catch( const exception::system::communication::no::Message&)
                   {
                      return {};
                   }
@@ -629,7 +619,7 @@ namespace casual
                   {
                      policy::cache_range_type receive( const inbound::Connector& tcp, policy::cache_type& cache, common::Flags< Flag> flags)
                      {
-                        auto message = native::receive( tcp.socket(), {});
+                        auto message = native::receive( tcp.socket(), flags);
 
                         if( message)
                         {

@@ -37,7 +37,7 @@ namespace casual
                const YAML::Node& operator() ( std::istream& stream);
                const YAML::Node& operator() ( const platform::binary::type& yaml);
                const YAML::Node& operator() ( const std::string& yaml);
-               const YAML::Node& operator() ( const char* yaml, std::size_t size);
+               const YAML::Node& operator() ( const char* yaml, platform::size::type size);
                const YAML::Node& operator() ( const char* yaml);
 
             private:
@@ -56,7 +56,7 @@ namespace casual
 
                   Implementation( const YAML::Node& node);
 
-                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
+                  std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
 
                   void container_end( const char* name);
 
@@ -141,7 +141,7 @@ namespace casual
 
                   Implementation( YAML::Emitter& output);
 
-                  std::size_t container_start( std::size_t size, const char* name);
+                  platform::size::type container_start( platform::size::type size, const char* name);
                   void container_end( const char* name);
 
                   void serialtype_start( const char* name);

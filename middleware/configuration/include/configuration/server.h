@@ -20,7 +20,7 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< std::size_t> instances;
+               sf::optional< sf::platform::size::type> instances;
                sf::optional< bool> restart;
                sf::optional< std::vector< std::string>> memberships;
 

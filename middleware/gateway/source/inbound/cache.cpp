@@ -5,6 +5,8 @@
 #include "gateway/inbound/cache.h"
 #include "gateway/common.h"
 
+#include "common/exception/casual.h"
+#include "common/exception/system.h"
 #include "common/algorithm.h"
 
 namespace casual
@@ -18,7 +20,7 @@ namespace casual
 
 
          Cache::Limit::Limit() = default;
-         Cache::Limit::Limit( std::size_t size, std::size_t messages) : size( size), messages( messages) {}
+         Cache::Limit::Limit( size_type size, size_type messages) : size( size), messages( messages) {}
 
 
          Cache::Cache() = default;
@@ -64,7 +66,7 @@ namespace casual
 
             if( m_state == State::terminate)
             {
-               throw exception::Shutdown{ "conditional variable wants to shutdown..."};
+               throw exception::casual::Shutdown{ "conditional variable wants to shutdown..."};
             }
 
             m_size += message.payload.size();
@@ -92,7 +94,7 @@ namespace casual
 
             if( ! found)
             {
-               throw common::exception::invalid::Argument{ "failed to find correlation - Cache::get", CASUAL_NIP( correlation)};
+               throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find correlation: ", correlation)};
             }
 
             auto result = std::move( *found);
@@ -123,7 +125,7 @@ namespace casual
 
          bool Cache::vacant( const lock_type&) const
          {
-            if( m_limit.messages && m_messages.size() >= m_limit.messages)
+            if( m_limit.messages && common::range::size( m_messages) >= m_limit.messages)
             {
                return false;
             }
@@ -137,7 +139,7 @@ namespace casual
          Cache::Limit Cache::size() const
          {
             lock_type lock{ m_mutex};
-            return { m_size, m_messages.size()};
+            return { m_size, common::range::size( m_messages)};
          }
 
          std::ostream& operator << ( std::ostream& out, const Cache& value)

@@ -104,7 +104,7 @@ namespace casual
                      message.replies.push_back( std::move( reply));
                   }
 
-                  void Policy::send( common::communication::ipc::Handle queue, message_type& message)
+                  void Policy::send( common::platform::ipc::id queue, message_type& message)
                   {
                      Trace trace{ "manager::state::coordinate::outbound::Policy send"};
 
@@ -138,7 +138,7 @@ namespace casual
             }
             else
             {
-               throw exception::invalid::Argument{ "failed to correlate listener to event", CASUAL_NIP( event)};
+               throw exception::system::invalid::Argument{ string::compose( "failed to correlate listener to event: ", event)};
             }
          }
 

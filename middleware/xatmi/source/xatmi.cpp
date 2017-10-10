@@ -11,8 +11,6 @@
 #include "common/memory.h"
 
 #include "common/string.h"
-#include "common/error.h"
-
 
 #include <array>
 #include <stdarg.h>
@@ -24,7 +22,7 @@
 
 int casual_get_tperrno()
 {
-   return casual::xatmi::internal::error::get();
+   return static_cast< int>( casual::xatmi::internal::error::get());
 }
 
 long casual_get_tpurcode()
@@ -36,7 +34,7 @@ long casual_get_tpurcode()
 
 char* tpalloc( const char* type, const char* subtype, long size)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
 
    try
    {
@@ -47,14 +45,14 @@ char* tpalloc( const char* type, const char* subtype, long size)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
       return nullptr;
    }
 }
 
 char* tprealloc( const char* ptr, long size)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
 
    try
    {
@@ -65,7 +63,7 @@ char* tprealloc( const char* ptr, long size)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
       return nullptr;
    }
 
@@ -74,7 +72,7 @@ char* tprealloc( const char* ptr, long size)
 
 long tptypes( const char* const ptr, char* const type, char* const subtype)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
 
    try
    {
@@ -107,7 +105,7 @@ long tptypes( const char* const ptr, char* const type, char* const subtype)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
       return -1;
    }
 
@@ -121,14 +119,15 @@ void tpfree( const char* const ptr)
    }
    catch( ...)
    {
-      casual::xatmi::internal::error::set( casual::common::error::handler());
+      casual::xatmi::internal::error::set( casual::common::exception::xatmi::handle());
    }
 }
 
-void tpreturn( const int rval, const long rcode, char* const data, const long len, const long flags)
+void tpreturn( const int rval, const long rcode, char* const data, const long len, const long /* flags for future use */)
 {
    casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::Context::instance().jump_return( rval, rcode, data, len, flags);
+      casual::common::server::context().jump_return( 
+         static_cast< casual::common::flag::xatmi::Return>( rval), rcode, data, len);
    });
 }
 
@@ -140,14 +139,14 @@ void tpreturn( const int rval, const long rcode, char* const data, const long le
 int tpadvertise( const char* service, void (*function)( TPSVCINFO *))
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::Context::instance().advertise( service, function);
+      casual::common::server::context().advertise( service, function);
    });
 }
 
 int tpunadvertise( const char* const service)
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::server::Context::instance().unadvertise( service);
+      casual::common::server::context().unadvertise( service);
    });
 }
 
@@ -157,26 +156,25 @@ int tpunadvertise( const char* const service)
 
 const char* tperrnostring( int error)
 {
-
-   return casual::common::error::xatmi::error( error).c_str();
+   return casual::common::code::message( static_cast< casual::common::code::xatmi>( error));
 }
 
 int tpsvrinit( int argc, char **argv)
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
    return tx_open() == TX_OK ? 0 : -1;
 }
 
 void tpsvrdone()
 {
-   casual::xatmi::internal::error::set( 0);
+   casual::xatmi::internal::error::clear();
    tx_close();
 }
 
 
 void casual_service_forward( const char* service, char* data, long size)
 {
-   casual::common::server::Context::instance().forward( service, data, size);
+   casual::common::server::context().forward( service, data, size);
 }
 
 namespace local

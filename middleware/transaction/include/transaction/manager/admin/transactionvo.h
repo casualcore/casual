@@ -23,7 +23,7 @@ namespace casual
             std::chrono::microseconds min = std::chrono::microseconds::max();
             std::chrono::microseconds max = std::chrono::microseconds{ 0};
             std::chrono::microseconds total = std::chrono::microseconds{ 0};
-            std::size_t invoked = 0;
+            sf::platform::size::type invoked = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -113,7 +113,7 @@ namespace casual
                std::string key;
                std::string openinfo;
                std::string closeinfo;
-               std::size_t concurency;
+               sf::platform::size::type concurency;
                Stats statistics;
 
                std::vector< Instance> instances;
@@ -153,7 +153,7 @@ namespace casual
 
             struct Reply
             {
-               sf::platform::ipc::handle::type queue;
+               sf::platform::ipc::id queue;
                sf::platform::Uuid correlation;
                long type;
 
@@ -202,8 +202,8 @@ namespace casual
          {
             struct update_t
             {
-               std::size_t prepare = 0;
-               std::size_t remove = 0;
+               sf::platform::size::type prepare = 0;
+               sf::platform::size::type remove = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -213,7 +213,7 @@ namespace casual
 
             } update;
 
-            std::size_t writes = 0;
+            sf::platform::size::type writes = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -257,7 +257,7 @@ namespace casual
             struct Instances
             {
                resource::id_type id;
-               std::size_t instances;
+               sf::platform::size::type instances;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {

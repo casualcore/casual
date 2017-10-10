@@ -42,7 +42,7 @@ namespace casual
                const rapidjson::Document& operator() ( std::istream& stream);
                const rapidjson::Document& operator() ( const std::string& json);
                const rapidjson::Document& operator() ( const platform::binary::type& json);
-               const rapidjson::Document& operator() ( const char* json, std::size_t size);
+               const rapidjson::Document& operator() ( const char* json, platform::size::type size);
                const rapidjson::Document& operator() ( const char* json);
 
 
@@ -63,7 +63,7 @@ namespace casual
                   explicit Implementation( const rapidjson::Value& object);
                   ~Implementation();
 
-                  std::tuple< std::size_t, bool> container_start( std::size_t size, const char* name);
+                  std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
                   void container_end( const char* name);
 
                   bool serialtype_start( const char* name);
@@ -148,7 +148,7 @@ namespace casual
                   Implementation( rapidjson::Value& object, rapidjson::Document::AllocatorType& allocator);
                   ~Implementation();
 
-                  std::size_t container_start( std::size_t size, const char* name);
+                  platform::size::type container_start( platform::size::type size, const char* name);
                   void container_end( const char* name);
 
                   void serialtype_start( const char* name);

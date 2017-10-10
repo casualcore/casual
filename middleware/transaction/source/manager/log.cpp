@@ -49,7 +49,7 @@ namespace casual
             common::transaction::global( transaction.trid),
             common::transaction::branch( transaction.trid),
             transaction.trid.xid.formatID,
-            transaction.trid.owner().pid,
+            transaction.trid.owner().pid.native(),
             State::prepared,
             transaction.started,
             transaction.deadline
@@ -129,7 +129,7 @@ namespace casual
                   result.trid = transform::trid( row);
 
 
-                  result.pid = row.get< common::platform::pid::type>( 3);
+                  result.pid = common::platform::process::id{ row.get< common::platform::process::native::type>( 3)};
                   result.state = static_cast< Log::State>( row.get< long>( 4));
 
                   result.started = common::platform::time::point::type{ std::chrono::microseconds{ row.get< common::platform::time::point::type::rep>( 5)}};

@@ -41,7 +41,7 @@ namespace casual
                            requested.push_back( handle.pid);
                         }
                      }
-                     catch( exception::queue::Unavailable&)
+                     catch( const exception::system::communication::Unavailable&)
                      {
                         //
                         // The server's queue is absent...

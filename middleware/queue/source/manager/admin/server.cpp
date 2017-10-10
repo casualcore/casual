@@ -77,6 +77,7 @@ namespace casual
 
                result.queues = transform::queues( manager::queues( state));
                result.groups = transform::groups( state);
+               result.remote = transform::remote( state);
 
                return result;
             }

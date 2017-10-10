@@ -18,7 +18,7 @@ namespace casual
    {
       namespace inbound
       {
-
+         using size_type = common::platform::size::type;
 
          struct Cache
          {
@@ -28,10 +28,10 @@ namespace casual
             struct Limit
             {
                Limit();
-               Limit( std::size_t size, std::size_t messages);
+               Limit( size_type size, size_type messages);
 
-               std::size_t size = 0;
-               std::size_t messages = 0;
+               size_type size = 0;
+               size_type messages = 0;
             };
 
             Cache();
@@ -70,7 +70,7 @@ namespace casual
             mutable Limit m_limit;
             mutable std::condition_variable m_condition;
             mutable std::vector< complete_type> m_messages;
-            mutable std::size_t m_size = 0;
+            mutable size_type m_size = 0;
             mutable State m_state = State::vacant;
 
          };

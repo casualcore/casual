@@ -22,6 +22,8 @@ namespace casual
    {
       namespace unittest
       {
+         using size_type = platform::size::type;
+
          namespace clean
          {
             //!
@@ -63,14 +65,14 @@ namespace casual
             //!
             //! @param size the size of what is transported.
             //!
-            Message( std::size_t size);
+            Message( size_type size);
 
 
             //!
             //! @return the transport size
             //!   ( payload-size + sizeof( platform::binary::type::size_type)
             //!
-            std::size_t size() const;
+            size_type size() const;
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -90,9 +92,9 @@ namespace casual
 
          namespace random
          {
-            unittest::Message message( std::size_t size);
+            unittest::Message message( size_type size);
 
-            platform::binary::type binary( std::size_t size);
+            platform::binary::type binary( size_type size);
 
 
             platform::binary::type::value_type byte();

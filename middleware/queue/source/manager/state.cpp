@@ -25,17 +25,17 @@ namespace casual
 
          static_assert( common::traits::is_movable< State::Group>::value, "not movable");
 
-         State::Gateway::Gateway() = default;
-         State::Gateway::Gateway( common::domain::Identity id, common::process::Handle process)
+         State::Remote::Remote() = default;
+         State::Remote::Remote( common::domain::Identity id, common::process::Handle process)
             : id{ std::move( id)}, process{ std::move( process)} {}
 
 
-         bool operator == ( const State::Gateway& lhs, const common::domain::Identity& rhs)
+         bool operator == ( const State::Remote& lhs, const common::domain::Identity& rhs)
          {
             return lhs.id == rhs;
          }
 
-         static_assert( common::traits::is_movable< State::Gateway>::value, "not movable");
+         static_assert( common::traits::is_movable< State::Remote>::value, "not movable");
 
 
          bool operator < ( const State::Queue& lhs, const State::Queue& rhs)
@@ -93,12 +93,12 @@ namespace casual
 
             remove_queues( pid);
 
-            common::range::trim( groups, common::range::remove_if( groups, [pid]( const Group& g){
+            common::range::trim( groups, common::range::remove_if( groups, [pid]( const auto& g){
                return pid == g.process.pid;
             }));
 
 
-            common::range::trim( gateways, common::range::remove_if( gateways, [pid]( const Gateway& g){
+            common::range::trim( remotes, common::range::remove_if( remotes, [pid]( const auto& g){
                return pid == g.process.pid;
             }));
 
@@ -108,9 +108,11 @@ namespace casual
          {
             Trace trace{ "queue::broker::State::update"};
 
+            using directive_type = decltype(message.directive);
+
             switch( message.directive)
             {
-               case decltype(message.directive)::replace:
+               case directive_type::replace:
                {
                   remove_queues( message.process.pid);
 
@@ -119,7 +121,7 @@ namespace casual
                   //
                }
                // no break
-               case decltype(message.directive)::add:
+               case directive_type::add:
                {
                   if( ! message.queues.empty())
                   {
@@ -127,9 +129,9 @@ namespace casual
                      // We only add gateway and queues if there are any.
                      //
 
-                     if( ! common::range::find( gateways, message.domain))
+                     if( ! common::range::find( remotes, message.domain))
                      {
-                        gateways.emplace_back( message.domain, message.process);
+                        remotes.emplace_back( message.domain, message.process);
                      }
 
                      for( const auto& queue : message.queues)
@@ -150,7 +152,7 @@ namespace casual
 
                   break;
                }
-               case decltype(message.directive)::remove:
+               case directive_type::remove:
                {
                   for( const auto& queue : message.queues)
                   {

@@ -21,6 +21,8 @@ namespace casual
       {
          namespace state
          {
+            using size_type = common::platform::size::type;
+            
             struct base_connection
             {
                enum class Type
@@ -86,7 +88,7 @@ namespace casual
                   //!
                   std::vector< std::string> queues;
 
-                  std::size_t order = 0;
+                  size_type order = 0;
                   bool restart = false;
 
                   void reset();
@@ -114,7 +116,7 @@ namespace casual
 
                      void accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply);
 
-                     void send( common::communication::ipc::Handle queue, message_type& message);
+                     void send( common::platform::ipc::id queue, message_type& message);
                   };
 
                   using Discover = common::message::Coordinate< Policy>;

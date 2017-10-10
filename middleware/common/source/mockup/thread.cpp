@@ -6,7 +6,6 @@
 #include "common/mockup/log.h"
 
 
-#include "common/error.h"
 #include "common/signal.h"
 
 namespace casual
@@ -35,7 +34,7 @@ namespace casual
             }
             catch( ...)
             {
-               common::error::handler();
+               exception::handle();
             }
          }
 

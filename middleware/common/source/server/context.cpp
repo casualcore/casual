@@ -16,7 +16,6 @@
 
 #include "common/log.h"
 #include "common/log/category.h"
-#include "common/error.h"
 #include "common/log.h"
 
 
@@ -60,7 +59,7 @@ namespace casual
          }
 
 
-         void Context::jump_return( int rval, long rcode, char* data, long len, long flags)
+         void Context::jump_return( flag::xatmi::Return rval, long rcode, char* data, long len)
          {
             //
             // Prepare buffer.
@@ -82,7 +81,7 @@ namespace casual
 
          void Context::forward( const char* service, char* data, long size)
          {
-            m_state.jump.state.value = 0;
+            m_state.jump.state.value = flag::xatmi::Return::success;
             m_state.jump.state.code = 0;
             m_state.jump.buffer.data = data;
             m_state.jump.buffer.size = size;

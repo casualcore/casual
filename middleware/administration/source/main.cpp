@@ -22,11 +22,11 @@ namespace casual
 
       namespace dispatch
       {
-         void execute( const std::string& command, const std::vector< std::string>& arguments)
+         void execute( const std::string& command, const std::vector< std::string>& arguments, const std::string& subpath = "/internal/bin/")
          {
-            static const auto path = common::environment::variable::get( "CASUAL_HOME") + "/internal/bin/";
+            static const auto path = common::environment::variable::get( "CASUAL_HOME");
 
-            if( common::process::execute( path + command, arguments) != 0)
+            if( common::process::execute( path + subpath + command, arguments) != 0)
             {
                // TODO: throw?
             }
@@ -64,6 +64,15 @@ namespace casual
             execute( "casual-gateway-admin", arguments);
          }
 
+         void call( const std::vector< std::string>& arguments)
+         {
+            execute( "casual-service-call", arguments, "/bin/");
+         }
+
+         void describe( const std::vector< std::string>& arguments)
+         {
+            execute( "casual-service-describe", arguments, "/bin/");
+         }
 
 
       } // dispatch
@@ -90,7 +99,9 @@ The following categories are supported:
                common::argument::directive( { "service" }, "service related administration", &dispatch::service),
                common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue),
                common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction),
-               common::argument::directive( { "gateway" }, "gateway related administration", &dispatch::gateway)
+               common::argument::directive( { "gateway" }, "gateway related administration", &dispatch::gateway),
+               common::argument::directive( { "call" }, "generic service call", &dispatch::call),
+               common::argument::directive( { "describe" }, "describes services", &dispatch::describe),
             }};
 
             arguments.parse( argc, argv);
@@ -98,16 +109,12 @@ The following categories are supported:
          }
          catch( const common::argument::exception::Help&)
          {
-            
          }
-         catch( const common::exception::base& exception)
+         catch( ...)
          {
-            std::cerr << exception << std::endl;
+            return common::exception::handle( std::cerr);
          }
-         catch( const std::exception& exception)
-         {
-            std::cerr << exception.what() << std::endl;
-         }
+
          return 0;
       }
 

@@ -65,7 +65,7 @@ namespace casual
                });
 
                result.trid = ID{}( transaction.trid);
-               result.state = transaction::Transaction::Resource::convert( transaction.results());
+               result.state = static_cast< long>( transaction.results());
 
                return result;
             }
@@ -127,7 +127,7 @@ namespace casual
                {
                   vo::pending::Reply result;
 
-                  result.queue = value.target.native();
+                  result.queue = value.target;
                   result.type = common::message::convert::type( value.message.type);
                   result.correlation = value.message.correlation;
 

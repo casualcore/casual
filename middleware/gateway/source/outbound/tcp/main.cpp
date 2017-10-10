@@ -22,10 +22,12 @@ namespace casual
       {
          namespace tcp
          {
+            using size_type = common::platform::size::type;
+            
             struct Settings
             {
                std::string address;
-               std::size_t order = 0;
+               size_type order = 0;
             };
 
 
@@ -35,6 +37,9 @@ namespace casual
 
                using outbound_device_type = communication::tcp::outbound::Device;
                using inbound_device_type = communication::tcp::inbound::Device;
+
+               static_assert( common::marshal::is_network_normalizing< inbound_device_type>::value, "inbound device has to normalize network representation");
+               static_assert( common::marshal::is_network_normalizing< outbound_device_type>::value, "outbound device has to normalize network representation");
 
                struct configuration_type
                {
@@ -146,7 +151,7 @@ int main( int argc, char **argv)
    }
    catch( ...)
    {
-      return casual::common::error::handler();
+      return casual::common::exception::handle();
    }
    return 0;
 }
