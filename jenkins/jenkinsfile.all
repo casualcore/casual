@@ -3,20 +3,12 @@
 //
 // Use this to set version of casual
 //
-if ( "${env.BRANCH_NAME}" ==~ "^.*0.50.*" )
-{
-   //
-   // Next version
-   //
-   env.CASUAL_VERSION="0.50"
-}
-else
-{
-   //
-   // Current version
-   //
-   env.CASUAL_VERSION="0.42"
-}
+
+//
+// Current version
+//
+env.CASUAL_VERSION="0.50"
+
 
 def isPublishable()
 {
