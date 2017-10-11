@@ -40,6 +40,16 @@ namespace casual
             //!
             extern Stream error;
 
+            namespace verbose
+            {
+
+               //!
+               //! Log with category 'error.verbose'
+               //!
+               extern Stream error;
+
+            } // verbose
+
 
             //!
             //! Log with category 'casual.transaction'

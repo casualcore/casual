@@ -361,6 +361,8 @@ namespace casual
 
                      auto transcode_base64 = [&]( const payload::Request& payload){
 
+                        Trace trace{ "http::request::local::Connection::transcode transcode_base64"};
+
                         auto content_type = content( payload.payload().type);
 
                         verbose::log << "added header: " << content_type << '\n';
@@ -371,16 +373,35 @@ namespace casual
                         return payload_const_view( m_transcoded_payload.data(), m_transcoded_payload.size());
                      };
 
+                     auto transcode_none = [&]( const payload::Request& payload){
+
+                        Trace trace{ "http::request::local::Connection::transcode transcode_none"};
+
+                        auto content_type = content( payload.payload().type);
+
+                        m_header.reset( curl_slist_append( m_header.release(), content_type.c_str()));
+                        verbose::log << "added header: " << content_type << '\n';
+
+                        return payload_const_view( payload.payload().memory.data(), payload.payload().memory.size());
+                     };
+
                      const auto mapping = std::map< std::string, std::function<payload_const_view(const payload::Request&)>>{
                         {
                            "CFIELD/",
                            transcode_base64
                         },
                         {
-                           ".binary/",
+                           common::buffer::type::binary(),
                            transcode_base64
+                        },
+                        {
+                           common::buffer::type::x_octet(),
+                           transcode_base64
+                        },
+                        {
+                           common::buffer::type::json(),
+                           transcode_none
                         }
-
                      };
 
                      auto found = common::range::find( mapping, payload.payload().type);
@@ -392,9 +413,9 @@ namespace casual
                      }
                      else
                      {
-                        common::log::category::error << "failed to find a transcoder for buffertype: " << payload.payload().type << '\n';
+                        common::log::category::warning << "failed to find a transcoder for buffertype: " << payload.payload().type << '\n';
                         verbose::log << "payload: " << payload.payload() << '\n';
-                        return transcode_base64( payload);
+                        return transcode_none( payload);
                      }
                   }
 

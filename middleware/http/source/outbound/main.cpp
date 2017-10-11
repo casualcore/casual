@@ -34,7 +34,12 @@ namespace casual
                std::shared_ptr< std::vector< std::string>> headers;
             };
 
-
+            inline friend std::ostream& operator << ( std::ostream& out, const Node& value)
+            {
+               return out << "{ url: " << value.url
+                  << ", headers: " << common::range::make( *value.headers)
+                  << "}";
+            }
 
             std::unordered_map< std::string, Node> lookup;
          };
@@ -123,12 +128,32 @@ namespace casual
                      common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), ack);
                   });
 
+
                   auto& node = state.lookup.at( message.service.name);
+
+                  // we can't allow this forward to be in a transaction
+
+                  if( message.trid)
+                  {
+                     common::log::category::error << common::code::xatmi::protocol << " - http-outbound can't be used in transaction - service: " << message.service.name << '\n';
+                     common::log::category::verbose::error << common::code::xatmi::protocol << " - message: " << message << '\n';
+                     common::log::category::verbose::error << common::code::xatmi::protocol << " - node: " << node << '\n';
+                     reply.status = common::code::xatmi::protocol;
+                     return;
+                  }
 
                   auto respons = http::request::post( node.url, message.buffer, *node.headers.get());
 
-                  reply.buffer = std::move( respons.payload);
-                  reply.status = common::code::xatmi::ok;
+                  if( message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                  {
+                     // we don't send reply
+                     send_reply.release();
+                  }
+                  else
+                  {
+                     reply.buffer = std::move( respons.payload);
+                     reply.status = common::code::xatmi::ok;
+                  }
                }
             };
 
