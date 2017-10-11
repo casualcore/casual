@@ -36,6 +36,19 @@ namespace casual
          const std::string& json();
          const std::string& xml();
 
+         namespace convert
+         {
+            namespace from
+            {
+               std::string buffer( const std::string& buffer);
+            } // from
+
+            namespace to
+            {
+               std::string buffer( const std::string& content);
+            } // to
+         } // convert
+
       } //protocol
    } // http
 } // casual

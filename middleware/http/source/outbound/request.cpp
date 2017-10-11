@@ -276,7 +276,7 @@ namespace casual
                   {
                      Trace trace{ "http::request::local::Connection::transform"};
 
-                     auto get_buffer_type = []( const std::vector< std::string>& header){
+                     auto get_content_type = []( const std::vector< std::string>& header){
 
                         for( auto& field : header)
                         {
@@ -317,14 +317,28 @@ namespace casual
                            transcode_base64
                         },
                         {
-                           ".binary/",
+                           common::buffer::type::binary(),
                            transcode_base64
+                        },
+                        {
+                           common::buffer::type::x_octet(),
+                           transcode_base64
+                        },
+                        {
+                           common::buffer::type::json(),
+                           transcode_none
+                        },
+                        {
+                           common::buffer::type::xml(),
+                           transcode_none
                         }
                      };
 
-                     auto type = get_buffer_type( reply.header);
+                     auto content = get_content_type( reply.header);
 
-                     verbose::log << "buffer type: " << type << '\n';
+                     verbose::log << "content: " << content << '\n';
+
+                     auto type = protocol::convert::to::buffer( content);
 
                      auto found = common::range::find( mapping, type);
 
@@ -340,34 +354,30 @@ namespace casual
                      }
                   }
 
-                  std::string content( const std::string& buffertype)
-                  {
-                     const static auto mapping = std::map< std::string, std::string>{
-                        { common::buffer::type::binary(), "content-type: " + http::protocol::binary()},
-                        { common::buffer::type::x_octet(), "content-type: " + http::protocol::x_octet()},
-                        { common::buffer::type::json(), "content-type: " + http::protocol::json()},
-                        { common::buffer::type::xml(), "content-type: " + http::protocol::xml()}
-                     };
-
-                     auto found = common::range::find( mapping, buffertype);
-                     if( found) return found->second;
-
-                     return {};
-                  }
 
                   payload_const_view transcode( const payload::Request& payload)
                   {
                      Trace trace{ "http::request::local::Connection::transcode"};
 
+                     auto add_content_header = [&]( const std::string& buffertype){
+                        auto content = protocol::convert::from::buffer( buffertype);
+
+                        verbose::log << "content: " << content << '\n';
+
+                        if( ! content.empty())
+                        {
+                           auto header = "content-type: " + content;
+                           verbose::log << "header: " << header << '\n';
+                           m_header.reset( curl_slist_append( m_header.release(), header.c_str()));
+                        }
+                     };
+
+
                      auto transcode_base64 = [&]( const payload::Request& payload){
 
                         Trace trace{ "http::request::local::Connection::transcode transcode_base64"};
 
-                        auto content_type = content( payload.payload().type);
-
-                        verbose::log << "added header: " << content_type << '\n';
-
-                        m_header.reset( curl_slist_append( m_header.release(), content_type.c_str()));
+                        add_content_header( payload.payload().type);
 
                         m_transcoded_payload = common::transcode::base64::encode( payload.payload().memory);
                         return payload_const_view( m_transcoded_payload.data(), m_transcoded_payload.size());
@@ -377,11 +387,7 @@ namespace casual
 
                         Trace trace{ "http::request::local::Connection::transcode transcode_none"};
 
-                        auto content_type = content( payload.payload().type);
-
-                        m_header.reset( curl_slist_append( m_header.release(), content_type.c_str()));
-                        verbose::log << "added header: " << content_type << '\n';
-
+                        add_content_header( payload.payload().type);
                         return payload_const_view( payload.payload().memory.data(), payload.payload().memory.size());
                      };
 
@@ -400,6 +406,10 @@ namespace casual
                         },
                         {
                            common::buffer::type::json(),
+                           transcode_none
+                        },
+                        {
+                           common::buffer::type::xml(),
                            transcode_none
                         }
                      };
