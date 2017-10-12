@@ -1602,21 +1602,28 @@ namespace casual
                {
                   auto& transaction = *found;
 
-                  transaction.correlation = message.correlation;
+                  if( ! transaction.implementation)
+                  {
+                     //
+                     // We are not in a preparephase
+                     //
+                     transaction.implementation = local::implementation::Remote::instance();
+                     transaction.correlation = message.correlation;
+                  }
 
                   log << "transaction: " << transaction << '\n';
 
                   local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                     []( auto& r){ return r.stage < Transaction::Resource::Stage::rollback_requested;},
                      Transaction::Resource::Stage::rollback_requested,
                      message.flags
                   );
+
                }
                else
                {
-
                   log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
 
                   local::send::read_only( m_state, message);

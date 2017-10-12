@@ -676,7 +676,7 @@ resources:
          auto trid = common::transaction::ID::create();
 
 
-         // remote commit
+         // remote rollback
          {
             common::message::transaction::resource::rollback::Request message;
             message.trid = trid;
@@ -695,6 +695,47 @@ resources:
             EXPECT_TRUE( message.state == common::code::xa::read_only);
          }
       }
+
+
+      TEST( casual_transaction_manager, remote_owner__resource_involved__remote_rollback____expect_rollback)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto trid = common::transaction::ID::create();
+
+
+         // involved
+         {
+            common::message::transaction::resource::Involved message;
+            message.trid = trid;
+            message.process = process::handle();
+            message.resources = { 1};
+
+            local::send::tm( message);
+         }
+
+         // remote rollback
+         {
+            common::message::transaction::resource::rollback::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         // rollback reply
+         {
+            common::message::transaction::resource::rollback::Reply message;
+
+            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == common::code::xa::ok);
+         }
+      }
+
 
       TEST( casual_transaction_manager, begin_transaction__1_remote_resource_involved___expect_one_phase_optimization)
       {
