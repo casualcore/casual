@@ -47,7 +47,7 @@ namespace casual
             //!
             //! associated rm:s to this transaction
             //!
-            std::vector< platform::resource::id::type> resources;
+            std::vector< strong::resource::id> resources;
 
 
             State state = State::active;

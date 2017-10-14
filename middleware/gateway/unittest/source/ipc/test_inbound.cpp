@@ -33,7 +33,7 @@ namespace casual
             struct Inbound
             {
 
-               Inbound( platform::ipc::id ipc)
+               Inbound( strong::ipc::id ipc)
                  : process{ "./bin/casual-gateway-inbound-ipc",
                   {
                      "--remote-ipc-queue", common::string::compose( ipc),

@@ -743,7 +743,7 @@ namespace casual
                   {
                      namespace lookup
                      {
-                        common::process::Handle pid( const State& state, platform::pid::type pid)
+                        common::process::Handle pid( const State& state, strong::process::id pid)
                         {
                            auto server = state.server( pid);
                            

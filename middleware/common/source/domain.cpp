@@ -161,13 +161,13 @@ namespace casual
                   {
                      Result result;
                      {
-                        auto queue = result.process.queue.native();
+                        auto queue = result.process.queue.value();
                         file >> queue;
-                        result.process.queue = platform::ipc::id{ queue};
+                        result.process.queue = strong::ipc::id{ queue};
                         
-                        auto pid = result.process.pid.native();
+                        auto pid = result.process.pid.value();
                         file >> pid;
-                        result.process.pid = platform::process::id{ pid};
+                        result.process.pid = strong::process::id{ pid};
 
                         file >> result.identity.name;
                         std::string uuid;

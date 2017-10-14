@@ -170,7 +170,7 @@ namespace casual
 
             } // service
 
-            void Service::remove( common::platform::pid::type instance)
+            void Service::remove( common::strong::process::id instance)
             {
                {
                   auto found = range::find( instances.local, instance);
@@ -193,7 +193,7 @@ namespace casual
                }
             }
 
-            state::instance::Local& Service::local( common::platform::pid::type instance)
+            state::instance::Local& Service::local( common::strong::process::id instance)
             {
                return local::get( instances.local, instance);
             }
@@ -275,7 +275,7 @@ namespace casual
             return local::get( services, name);
          }
 
-         std::vector< common::platform::ipc::id> State::subscribers() const
+         std::vector< common::strong::ipc::id> State::subscribers() const
          {
             return range::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
                return v.queue;
@@ -289,7 +289,7 @@ namespace casual
             namespace
             {
                template< typename I, typename S>
-               void remove_process( I& instances, S& services, common::platform::pid::type pid)
+               void remove_process( I& instances, S& services, common::strong::process::id pid)
                {
                   Trace trace{ "service::manager::local::remove_process"};
 
@@ -400,7 +400,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void State::remove_process( common::platform::pid::type pid)
+         void State::remove_process( common::strong::process::id pid)
          {
             Trace trace{ "service::manager::State::remove_process"};
 
@@ -415,7 +415,7 @@ namespace casual
             local::remove_process( instances.remote, services, pid);
          }
 
-         void State::prepare_shutdown( common::platform::pid::type pid)
+         void State::prepare_shutdown( common::strong::process::id pid)
          {
             Trace trace{ "service::manager::State::prepare_shutdown"};
 
@@ -554,7 +554,7 @@ namespace casual
             return result;
          }
 
-         state::instance::Local& State::local( common::platform::pid::type pid)
+         state::instance::Local& State::local( common::strong::process::id pid)
          {
             return local::get( instances.local, pid);
          }

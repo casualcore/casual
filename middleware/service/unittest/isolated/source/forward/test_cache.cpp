@@ -44,7 +44,7 @@ namespace casual
          message::service::call::callee::Request request;
 
          {
-            request.process.pid = common::platform::process::id{ 1};
+            request.process.pid = common::strong::process::id{ 1};
             request.process.queue = caller.id();
             request.service.name = "service2";
             request.trid = transaction::ID::create( process::handle());
@@ -94,7 +94,7 @@ namespace casual
          message::service::call::callee::Request request;
 
          {
-            request.process.pid = common::platform::process::id{ 1};
+            request.process.pid = common::strong::process::id{ 1};
             request.process.queue = caller.id();;
             request.service.name = "removed_ipc_queue";
             request.trid = transaction::ID::create( process::handle());

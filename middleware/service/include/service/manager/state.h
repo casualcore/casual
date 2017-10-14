@@ -197,7 +197,7 @@ namespace casual
                      inline auto state() const { return get().state();}
 
 
-                     inline friend bool operator == ( const Local& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+                     inline friend bool operator == ( const Local& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
                   };
 
                   using remote_base = std::reference_wrapper< state::instance::Remote>;
@@ -213,7 +213,7 @@ namespace casual
 
                      inline size_type hops() const { return m_hops;}
 
-                     inline friend bool operator == ( const Remote& lhs, common::platform::pid::type rhs) { return lhs.process().pid == rhs;}
+                     inline friend bool operator == ( const Remote& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
                      friend bool operator < ( const Remote& lhs, const Remote& rhs);
 
                   private:
@@ -268,9 +268,9 @@ namespace casual
                void add( state::instance::Local& instance);
                void add( state::instance::Remote& instance, size_type hops);
 
-               void remove( common::platform::pid::type instance);
+               void remove( common::strong::process::id instance);
 
-               state::instance::Local& local( common::platform::pid::type instance);
+               state::instance::Local& local( common::strong::process::id instance);
 
 
                friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.information.name == rhs.information.name;}
@@ -315,7 +315,7 @@ namespace casual
 
 
             template< typename T>
-            using instance_mapping_type = std::unordered_map< common::platform::pid::type, T>;
+            using instance_mapping_type = std::unordered_map< common::strong::process::id, T>;
             using service_mapping_type = std::unordered_map< std::string, state::Service>;
 
             service_mapping_type services;
@@ -338,7 +338,7 @@ namespace casual
             common::event::dispatch::Collection<
                common::message::event::service::Call> events;
 
-            std::vector< common::platform::ipc::id> subscribers() const;
+            std::vector< common::strong::ipc::id> subscribers() const;
 
 
             common::process::Handle forward;
@@ -348,8 +348,8 @@ namespace casual
 
             state::Service& service( const std::string& name);
 
-            void remove_process( common::platform::pid::type pid);
-            void prepare_shutdown( common::platform::pid::type pid);
+            void remove_process( common::strong::process::id pid);
+            void prepare_shutdown( common::strong::process::id pid);
 
 
             void update( common::message::service::Advertise& message);
@@ -373,7 +373,7 @@ namespace casual
             //!
             state::Service* find_service( const std::string& name);
 
-            state::instance::Local& local( common::platform::pid::type pid);
+            state::instance::Local& local( common::strong::process::id pid);
 
             void connect_manager( std::vector< common::server::Service> services);
 

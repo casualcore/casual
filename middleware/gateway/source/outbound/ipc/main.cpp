@@ -45,7 +45,7 @@ namespace casual
                namespace
                {
 
-                  process::Handle lookup_gateway( inbound_device_type& ipc, common::platform::ipc::id broker)
+                  process::Handle lookup_gateway( inbound_device_type& ipc, common::strong::ipc::id broker)
                   {
                      Trace trace{ "outbound::ipc::local::lookup_gateway"};
 
@@ -61,7 +61,7 @@ namespace casual
                            ipc).process;
                   }
 
-                  message::ipc::connect::Reply lookup_inbound( inbound_device_type& ipc, common::platform::ipc::id gateway)
+                  message::ipc::connect::Reply lookup_inbound( inbound_device_type& ipc, common::strong::ipc::id gateway)
                   {
                      Trace trace{ "outbound::ipc::local::lookup_inbound"};
 
@@ -116,7 +116,7 @@ namespace casual
 
                struct configuration_type
                {
-                  platform::ipc::id id;
+                  strong::ipc::id id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -146,7 +146,7 @@ namespace casual
 
                private:
 
-                  platform::ipc::id m_outbound;
+                  strong::ipc::id m_outbound;
                };
 
                struct external_type

@@ -22,7 +22,7 @@ namespace casual
 
          struct base_dispatch
          {
-            void remove( platform::pid::type pid);
+            void remove( strong::process::id pid);
 
             inline const std::vector< common::process::Handle>& subscribers() const { return m_subscribers;}
 
@@ -32,7 +32,7 @@ namespace casual
 
             std::vector< common::process::Handle> m_subscribers;
 
-            bool exists( platform::ipc::id queue) const;
+            bool exists( strong::ipc::id queue) const;
          };
 
          template< typename Event>
@@ -56,14 +56,14 @@ namespace casual
                }));
             }
 
-            void remove( platform::pid::type pid)
+            void remove( strong::process::id pid)
             {
                range::trim( m_subscribers, range::remove_if( m_subscribers, [pid]( auto& v){
                   return pid == v.pid;
                }));
             }
 
-            void subscription( platform::ipc::id queue)
+            void subscription( strong::ipc::id queue)
             {
                if( ! exists( queue))
                {
@@ -121,7 +121,7 @@ namespace casual
                   do_subscription( message, Events{}...);
                }
 
-               void remove( platform::pid::type pid)
+               void remove( strong::process::id pid)
                {
                   do_remove( pid, Events{}...);
                }
@@ -154,11 +154,11 @@ namespace casual
                   do_subscription( message, Es{}...);
                }
 
-               void do_remove( platform::pid::type pid) { }
+               void do_remove( strong::process::id pid) { }
 
 
                template< typename E, typename... Es>
-               void do_remove( platform::pid::type pid, E&&, Es&&...)
+               void do_remove( strong::process::id pid, E&&, Es&&...)
                {
                   event< E>().remove( pid);
                   do_remove( pid, Es{}...);

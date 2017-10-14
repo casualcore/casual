@@ -192,7 +192,7 @@ namespace casual
             } // message
 
 
-            using handle_type = platform::ipc::id;
+            using handle_type = strong::ipc::id;
 
 
 

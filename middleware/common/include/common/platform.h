@@ -48,7 +48,6 @@
 #endif
 
 
-#include "common/safe/handle.h"
 
 //
 // std
@@ -56,6 +55,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <iosfwd>
 
 namespace casual
 {
@@ -119,16 +119,10 @@ namespace casual
          {
             namespace native
             {
+               //! @attention do not use directly - use string::ipc::id
                using type = long;
                constexpr type invalid = -1;
             } // native
-
-            namespace tag
-            {
-               struct type{};
-            } // tag
-
-            using id = safe::basic_handle< native::type, tag::type, native::invalid>;
 
             namespace message
             {
@@ -176,23 +170,11 @@ namespace casual
          {
             namespace native
             {
+               //! @attention do not use directly - use strong::process::id
                using type = pid_t;
-               constexpr type invalid = -1;
             } // native
-
-            namespace tag
-            {
-               struct type{};
-            } // tag
-
-            using id = safe::basic_handle< native::type, tag::type, native::invalid>;
-
          } // process
 
-			namespace pid
-         {
-			   using type = process::id;
-         } // pid
 
 			//
 			// uuid
@@ -246,10 +228,12 @@ namespace casual
 
 			namespace resource
          {
-			   namespace id
+            namespace native
             {
-			      using type = int;
-            } // id
+               //! @attention do not use directly - use strong::resource::id
+               using type = int;
+               constexpr type invalid = 0;
+            } // native
          } // resource
 
 			namespace binary

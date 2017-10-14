@@ -179,7 +179,7 @@ namespace casual
                   {
                      namespace lookup
                      {
-                        const casual::domain::manager::admin::vo::Executable* executable( const call::State& state, platform::pid::type pid)
+                        const casual::domain::manager::admin::vo::Executable* executable( const call::State& state, strong::process::id pid)
                         {
                            auto found = range::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::vo::Executable& e){
                               return range::find( e.instances, pid);
@@ -437,7 +437,7 @@ namespace casual
                /*
                struct format_queue
                {
-                  platform::ipc::id::type operator () ( const value_type& v) const { return v.process.queue;}
+                  strong::ipc::id::type operator () ( const value_type& v) const { return v.process.queue;}
                };
                */
 

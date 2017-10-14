@@ -37,12 +37,12 @@ namespace casual
             namespace
             {
 
-               bool send( platform::pid::type pid, platform::signal::type signal)
+               bool send( strong::process::id pid, platform::signal::type signal)
                {
 
                   log::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
 
-                  if( ::kill( pid.native(), signal) != 0)
+                  if( ::kill( pid.value(), signal) != 0)
                   {
                      switch( errno)
                      {
@@ -486,7 +486,7 @@ namespace casual
          } // timer
 
 
-         bool send( platform::pid::type pid, Type signal)
+         bool send( strong::process::id pid, Type signal)
          {
             return local::send( pid, cast::underlying( signal));
          }

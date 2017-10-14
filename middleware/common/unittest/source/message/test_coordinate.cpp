@@ -31,7 +31,7 @@ namespace casual
                   }
 
                   template< typename M>
-                  void send( platform::ipc::id queue, M&& message)
+                  void send( strong::ipc::id queue, M&& message)
                   {
                      sent = true;
                   }
@@ -63,7 +63,7 @@ namespace casual
             auto correlation = uuid::make();
 
             local::Coordinate coordinate;
-            coordinate.add( correlation, platform::ipc::id{ 666}, std::vector< common::process::Handle>{ { platform::process::id{ 10}, platform::ipc::id{ 10}}});
+            coordinate.add( correlation, strong::ipc::id{ 666}, std::vector< common::process::Handle>{ { strong::process::id{ 10}, strong::ipc::id{ 10}}});
 
             EXPECT_TRUE( coordinate.policy().sent == false);
          }
@@ -77,13 +77,13 @@ namespace casual
             auto correlation = uuid::make();
 
             {
-               coordinate.add( correlation, platform::ipc::id{ 666}, std::vector< common::process::Handle>{ { platform::process::id{ 42}, platform::ipc::id{ 42}}});
+               coordinate.add( correlation, strong::ipc::id{ 666}, std::vector< common::process::Handle>{ { strong::process::id{ 42}, strong::ipc::id{ 42}}});
             }
 
             {
                gateway::domain::discover::Reply reply;
-               reply.process.pid = platform::process::id{ 42};
-               reply.process.queue = platform::ipc::id{ 42};
+               reply.process.pid = strong::process::id{ 42};
+               reply.process.queue = strong::ipc::id{ 42};
                reply.correlation = correlation;
                coordinate.accumulate( reply);
             }
@@ -100,14 +100,14 @@ namespace casual
             auto correlation = uuid::make();
 
             {
-               coordinate.add( correlation, platform::ipc::id{ 666}, std::vector< common::process::Handle>{ 
-                  {  platform::process::id{ 42}, platform::ipc::id{ 42}}, {  platform::process::id{ 77}, platform::ipc::id{ 77}}});
+               coordinate.add( correlation, strong::ipc::id{ 666}, std::vector< common::process::Handle>{ 
+                  {  strong::process::id{ 42}, strong::ipc::id{ 42}}, {  strong::process::id{ 77}, strong::ipc::id{ 77}}});
             }
 
             {
                gateway::domain::discover::Reply reply;
-               reply.process.pid = platform::process::id{ 42};
-               reply.process.queue = platform::ipc::id{ 42};
+               reply.process.pid = strong::process::id{ 42};
+               reply.process.queue = strong::ipc::id{ 42};
                reply.correlation = correlation;
                coordinate.accumulate( reply);
             }
@@ -125,24 +125,24 @@ namespace casual
             auto correlation = uuid::make();
 
             {
-               coordinate.add( correlation, platform::ipc::id{ 666}, 
+               coordinate.add( correlation, strong::ipc::id{ 666}, 
                   std::vector< common::process::Handle>{ 
-                     {  platform::process::id{ 42}, platform::ipc::id{ 42}}, 
-                     {  platform::process::id{ 77}, platform::ipc::id{ 77}}});
+                     {  strong::process::id{ 42}, strong::ipc::id{ 42}}, 
+                     {  strong::process::id{ 77}, strong::ipc::id{ 77}}});
             }
 
             {
                gateway::domain::discover::Reply reply;
-               reply.process.pid = platform::process::id{ 42};
-               reply.process.queue = platform::ipc::id{ 42};
+               reply.process.pid = strong::process::id{ 42};
+               reply.process.queue = strong::ipc::id{ 42};
                reply.correlation = correlation;
                coordinate.accumulate( reply);
 
                EXPECT_TRUE( coordinate.policy().sent == false);
                EXPECT_TRUE( coordinate.size() == 1);
 
-               reply.process.pid = platform::process::id{ 77};
-               reply.process.queue = platform::ipc::id{ 77};
+               reply.process.pid = strong::process::id{ 77};
+               reply.process.queue = strong::ipc::id{ 77};
                coordinate.accumulate( reply);
 
                EXPECT_TRUE( coordinate.policy().sent == true);
@@ -162,12 +162,12 @@ namespace casual
             auto correlation = uuid::make();
 
             {
-               coordinate.add( correlation, platform::ipc::id{ 666}, std::vector< platform::process::id>{ platform::process::id{ 42}}) ;
+               coordinate.add( correlation, strong::ipc::id{ 666}, std::vector< strong::process::id>{ strong::process::id{ 42}}) ;
                EXPECT_TRUE( coordinate.policy().sent == false);
             }
 
             {
-               coordinate.remove( platform::process::id{ 42});
+               coordinate.remove( strong::process::id{ 42});
                EXPECT_TRUE( coordinate.policy().sent == true) << "coordinate: " << coordinate;
             }
 

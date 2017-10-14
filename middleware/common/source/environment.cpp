@@ -134,15 +134,15 @@ namespace casual
                      auto& pid = std::get < 0 > ( split);
                      if( !pid.empty())
                      {
-                        result.pid = platform::process::id{ std::stoi( std::string( std::begin(pid), std::end(pid)))};
+                        result.pid = strong::process::id{ std::stoi( std::string( std::begin(pid), std::end(pid)))};
                      }
 
                      auto queue = std::get < 1 > ( split);
                      if( ! queue.empty())
                      {
                         ++queue;
-                        result.queue = platform::ipc::id{ 
-                           common::from_string< decltype( result.queue.native())>( std::string( std::begin(queue), std::end(queue)))};
+                        result.queue = strong::ipc::id{ 
+                           common::from_string< decltype( result.queue.value())>( std::string( std::begin(queue), std::end(queue)))};
                      }
                   }
 

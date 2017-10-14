@@ -51,9 +51,9 @@ namespace casual
                   << '}';
          }
 
-         std::vector< common::platform::pid::type> State::processes() const
+         std::vector< common::strong::process::id> State::processes() const
          {
-            std::vector< common::platform::pid::type> result;
+            std::vector< common::strong::process::id> result;
 
             for( auto& group : groups)
             {
@@ -64,7 +64,7 @@ namespace casual
          }
 
 
-         void State::remove_queues( common::platform::pid::type pid)
+         void State::remove_queues( common::strong::process::id pid)
          {
             Trace trace{ "queue::broker::State::remove_queues"};
 
@@ -87,7 +87,7 @@ namespace casual
 
          }
 
-         void State::remove( common::platform::pid::type pid)
+         void State::remove( common::strong::process::id pid)
          {
             Trace trace{ "queue::broker::State::remove"};
 

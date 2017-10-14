@@ -428,7 +428,7 @@ namespace casual
 
                         }
 
-                        inline void send( common::platform::ipc::id queue, message_type& message)
+                        inline void send( common::strong::ipc::id queue, message_type& message)
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::send"};
 
@@ -493,7 +493,7 @@ namespace casual
                         //
                         // Forward to broker and possible casual-queue
                         //
-                        std::vector< common::platform::pid::type> pids;
+                        std::vector< common::strong::process::id> pids;
 
                         if( ! message.services.empty())
                         {

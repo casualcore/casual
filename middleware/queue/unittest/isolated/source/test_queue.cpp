@@ -324,8 +324,8 @@ namespace casual
          {
             common::message::gateway::domain::Advertise remote;
 
-            remote.process.pid = common::platform::process::id{ 666};
-            remote.process.queue = common::platform::ipc::id{ 777};
+            remote.process.pid = common::strong::process::id{ 666};
+            remote.process.queue = common::strong::ipc::id{ 777};
 
             remote.queues.push_back( { "remote-queue"});
 

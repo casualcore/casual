@@ -30,7 +30,7 @@ namespace casual
 
                   friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
                   friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.process.pid == rhs.process.pid;}
-                  friend bool operator == ( const Base& lhs, common::platform::pid::type rhs) { return lhs.process.pid == rhs;}
+                  friend bool operator == ( const Base& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
                };
 
@@ -81,7 +81,7 @@ namespace casual
 
                   struct Local
                   {
-                     sf::platform::process::id pid;
+                     sf::strong::process::id pid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -91,7 +91,7 @@ namespace casual
 
                   struct Remote
                   {
-                     sf::platform::process::id pid;
+                     sf::strong::process::id pid;
                      sf::platform::size::type hops;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(

@@ -84,7 +84,7 @@ namespace casual
             }
 
 
-            message::service::call::callee::Request call_request( platform::ipc::id id)
+            message::service::call::callee::Request call_request( strong::ipc::id id)
             {
                message::service::call::callee::Request message;
 
@@ -202,7 +202,7 @@ namespace casual
             namespace call
             {
                message::service::call::callee::Request request(
-                     platform::ipc::id queue,
+                     strong::ipc::id queue,
                      std::string service,
                      common::transaction::ID trid = common::transaction::ID{})
                {
@@ -235,7 +235,7 @@ namespace casual
                const common::transaction::ID& ongoing()
                {
                   static auto singleton = common::transaction::ID::create(
-                        process::Handle{ platform::process::id( process::handle().pid.native() + 1), process::handle().queue});
+                        process::Handle{ strong::process::id( process::handle().pid.value() + 1), process::handle().queue});
 
                   return singleton;
                }

@@ -211,9 +211,9 @@ namespace casual
             } // <unnamed>
          } // local
 
-         std::vector< int> Context::resources() const
+         std::vector< resource::id> Context::resources() const
          {
-            std::vector< int> result;
+            std::vector< resource::id> result;
 
             for( auto& resource : m_resources.fixed)
             {
@@ -222,7 +222,7 @@ namespace casual
             return result;
          }
 
-         void Context::involved( const transaction::ID& trid, std::vector< int> resources)
+         void Context::involved( const transaction::ID& trid, std::vector< resource::id> resources)
          {
             Trace trace{ "transaction::Context::involved"};
 
@@ -481,7 +481,7 @@ namespace casual
             }
          }
 
-         void Context::resource_registration( int rmid, XID* xid)
+         void Context::resource_registration( resource::id rmid, XID* xid)
          {
             Trace trace{ "transaction::Context::resourceRegistration"};
 
@@ -515,7 +515,7 @@ namespace casual
             transaction.resources.push_back( rmid);
          }
 
-         void Context::resource_unregistration( int rmid)
+         void Context::resource_unregistration( resource::id rmid)
          {
             Trace trace{ "transaction::Context::resourceUnregistration"};
 
@@ -1011,7 +1011,7 @@ namespace casual
             }
          }
 
-         code::tx Context::resource_commit( platform::resource::id::type rm, const Transaction& transaction, flag::xa::Flags flags)
+         code::tx Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
 

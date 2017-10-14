@@ -312,7 +312,7 @@ namespace casual
 
                      log << "message: " << message << '\n';
 
-                     std::vector< platform::pid::type> requested;
+                     std::vector< strong::process::id> requested;
 
                      auto destination = message.process.queue;
 

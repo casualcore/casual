@@ -408,7 +408,7 @@ namespace casual
                      };
 
                      Uuid identification;
-                     platform::process::id pid;
+                     strong::process::id pid;
                      Directive directive = Directive::wait;
 
                      CASUAL_CONST_CORRECT_MARSHAL(

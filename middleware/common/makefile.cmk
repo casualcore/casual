@@ -43,6 +43,8 @@ install_headers = []
 
 casual_common_objectfiles = [
 
+    Compile( 'source/strong/id.cpp'),
+
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/service.cpp'),
@@ -266,6 +268,10 @@ unittest_objectfiles = [
     Compile( 'unittest/source/event/test_listen.cpp'),
     
     Compile( 'unittest/source/test_domain.cpp'),
+
+    Compile( 'unittest/source/test_optional.cpp'),
+
+    
 ]
 
 

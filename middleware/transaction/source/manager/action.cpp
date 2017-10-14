@@ -76,7 +76,7 @@ namespace casual
                                     "--rm-key", info.key,
                                     "--rm-openinfo", proxy.openinfo,
                                     "--rm-closeinfo", proxy.closeinfo,
-                                    "--rm-id", std::to_string( proxy.id),
+                                    "--rm-id", std::to_string( proxy.id.value()),
                               }
                            );
 

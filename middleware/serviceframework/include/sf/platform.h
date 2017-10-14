@@ -8,6 +8,7 @@
 
 #include "common/uuid.h"
 #include "common/platform.h"
+#include "common/strong/id.h"
 #include "common/transaction/id.h"
 #include "common/algorithm.h"
 #include "common/optional.h"
@@ -55,12 +56,6 @@ namespace casual
             using namespace common::platform::buffer;
          } // buffer
 
-         namespace process
-         {
-            using id = common::platform::process::id;
-         } // process
-
-
 
          namespace binary
          {
@@ -88,13 +83,21 @@ namespace casual
             using namespace common::platform::time;
          } // time
 
+      } // platform
 
+      namespace strong
+      {
          namespace ipc
          {
-            using id = common::platform::ipc::id;
+            using id = common::strong::ipc::id;
          } // ipc
 
-      } // platform
+         namespace process
+         {
+            using id = common::strong::process::id;
+         } // process
+         
+      } // strong
 
       namespace archive
       {
@@ -103,12 +106,6 @@ namespace casual
 
          void serialize( Reader& archive, platform::Uuid& value, const char* name);
          void serialize( Writer& archive, const platform::Uuid& value, const char* name);
-
-         void serialize( Reader& archive, platform::process::id& value, const char* name);
-         void serialize( Writer& archive, const platform::process::id& value, const char* name);
-
-         void serialize( Reader& archive, platform::ipc::id& value, const char* name);
-         void serialize( Writer& archive, const platform::ipc::id& value, const char* name);
 
          void serialize( Reader& archive, common::process::Handle& value, const char* name);
          void serialize( Writer& archive, const common::process::Handle& value, const char* name);
@@ -135,6 +132,19 @@ namespace casual
          void serialize( Writer& archive, const std::chrono::duration< R, P>& value, const char* name)
          {
             serialize( archive, std::chrono::duration_cast<std::chrono::nanoseconds>( value), name);
+         }
+
+
+         template< typename T, typename P, typename S>
+         void serialize( Reader& archive, common::value::basic_optional< T, P, S>& value, const char* name)
+         {
+            serialize( archive, value.front(), name);
+         }
+
+         template< typename T, typename P, typename S>
+         void serialize( Writer& archive, const common::value::basic_optional< T, P, S>& value, const char* name)
+         {
+            serialize( archive, value.front(), name);
          }
 
 

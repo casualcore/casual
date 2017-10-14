@@ -67,7 +67,7 @@ namespace casual
 
          namespace resource
          {
-            using id_type = common::platform::resource::id::type;
+            using id_type = common::strong::resource::id;
 
             struct Instance
             {
@@ -153,7 +153,7 @@ namespace casual
 
             struct Reply
             {
-               sf::platform::ipc::id queue;
+               sf::strong::ipc::id queue;
                sf::platform::Uuid correlation;
                long type;
 

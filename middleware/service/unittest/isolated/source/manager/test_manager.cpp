@@ -89,7 +89,7 @@ namespace casual
 
             namespace instance
             {
-               const manager::admin::instance::LocalVO* find( const manager::admin::StateVO& state, common::platform::pid::type pid)
+               const manager::admin::instance::LocalVO* find( const manager::admin::StateVO& state, common::strong::process::id pid)
                {
                   auto found = common::range::find_if( state.instances.local, [pid]( auto& i){
                      return i.process.pid == pid;

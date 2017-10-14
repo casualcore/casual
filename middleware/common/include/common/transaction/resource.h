@@ -8,7 +8,7 @@
 
 #include "tx.h"
 
-#include "common/platform.h"
+#include "common/strong/id.h"
 #include "common/code/xa.h"
 #include "common/flag/xa.h"
 
@@ -26,12 +26,12 @@ namespace casual
          struct Resource
          {
 
-            using id_type = common::platform::resource::id::type;
+            using id_type = common::strong::resource::id;
             using code = code::xa;
             using Flag = flag::xa::Flag;
             using Flags = flag::xa::Flags;
 
-            Resource( std::string key, xa_switch_t* xa, int id, std::string openinfo, std::string closeinfo);
+            Resource( std::string key, xa_switch_t* xa, id_type id, std::string openinfo, std::string closeinfo);
             Resource( std::string key, xa_switch_t* xa);
 
 
@@ -48,7 +48,7 @@ namespace casual
 
             std::string key;
             xa_switch_t* xa_switch;
-            id_type id = 0;
+            id_type id;
 
             std::string openinfo;
             std::string closeinfo;

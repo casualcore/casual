@@ -22,7 +22,7 @@ namespace casual
             {
                namespace remove
                {
-                  void ipc( platform::ipc::id ipc)
+                  void ipc( strong::ipc::id ipc)
                   {
                      if( communication::ipc::exists( ipc))
                      {
@@ -201,7 +201,7 @@ namespace casual
                   }
                   else
                   {
-                     found->handle = common::platform::process::id{};
+                     found->handle = common::strong::process::id{};
                      found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
                   }
                }
@@ -215,7 +215,7 @@ namespace casual
                return out << '}';
             }
 
-            Server::instance_type Server::instance( common::platform::pid::type pid) const
+            Server::instance_type Server::instance( common::strong::process::id pid) const
             {
                auto found = range::find_if( instances, [pid]( auto& p){
                   return p.handle.pid == pid;
@@ -228,7 +228,7 @@ namespace casual
                return {};
             }
 
-            Server::instance_type Server::remove( common::platform::pid::type pid)
+            Server::instance_type Server::remove( common::strong::process::id pid)
             {
                auto found = range::find_if( instances, [pid]( auto& p){
                   return p.handle.pid == pid;
@@ -300,7 +300,7 @@ namespace casual
                   << '}';
             }
 
-            bool operator == ( const Server& lhs, common::platform::pid::type rhs)
+            bool operator == ( const Server& lhs, common::strong::process::id rhs)
             {
                return lhs.instance( rhs).handle.pid == rhs;
             }
@@ -407,7 +407,7 @@ namespace casual
 
 
 
-         std::tuple< state::Server*, state::Executable*> State::exited( common::platform::pid::type pid)
+         std::tuple< state::Server*, state::Executable*> State::exited( common::strong::process::id pid)
          {
             Trace trace{ "domain::manager::State::exited"};
 
@@ -506,7 +506,7 @@ namespace casual
             namespace
             {
                template< typename S>
-               auto server( S& servers, common::platform::pid::type pid)
+               auto server( S& servers, common::strong::process::id pid)
                {
                   return range::find_if( servers, [pid]( const auto& s){
                      return s.instance( pid).handle.pid == pid;
@@ -515,18 +515,18 @@ namespace casual
             } // <unnamed>
          } // local
 
-         state::Server* State::server( common::platform::pid::type pid)
+         state::Server* State::server( common::strong::process::id pid)
          {
             return local::server( servers, pid);
          }
 
-         const state::Server* State::server( common::platform::pid::type pid) const
+         const state::Server* State::server( common::strong::process::id pid) const
          {
             return local::server( servers, pid);
          }
 
 
-         state::Executable* State::executable( common::platform::pid::type pid)
+         state::Executable* State::executable( common::strong::process::id pid)
          {
             return range::find_if( executables, [=]( const auto& e){
                return range::find( e.instances, pid) == true;
@@ -580,7 +580,7 @@ namespace casual
             return local::executable( executables, id);
          }
 
-         common::process::Handle State::grandchild( common::platform::pid::type pid) const
+         common::process::Handle State::grandchild( common::strong::process::id pid) const
          {
             auto found = range::find_if( grandchildren, [=]( auto& v){
                return v.pid == pid;
@@ -619,7 +619,7 @@ namespace casual
          }
 
 
-         std::vector< std::string> State::resources( common::platform::pid::type pid)
+         std::vector< std::string> State::resources( common::strong::process::id pid)
          {
             auto process = server( pid);
 

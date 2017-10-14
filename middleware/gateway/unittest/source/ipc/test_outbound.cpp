@@ -43,7 +43,7 @@ namespace casual
             };
 
 
-            file::scoped::Path create_domain_file( platform::ipc::id queue)
+            file::scoped::Path create_domain_file( strong::ipc::id queue)
             {
                Trace trace{ "create_domain_file"};
 

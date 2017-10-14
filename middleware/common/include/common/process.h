@@ -5,7 +5,7 @@
 #ifndef CASUAL_COMMON_PROCESS_H_
 #define CASUAL_COMMON_PROCESS_H_
 
-#include "common/platform.h"
+#include "common/strong/id.h"
 #include "common/file.h"
 
 #include "common/algorithm.h"
@@ -46,13 +46,13 @@ namespace casual
          //!
          struct Handle
          {
-            using queue_handle = platform::ipc::id;
+            using queue_handle = strong::ipc::id;
 
             Handle() = default;
-            Handle( platform::process::id pid) : pid{ pid} {}
-            Handle( platform::process::id pid, queue_handle queue) : pid( pid),  queue( queue)  {}
+            Handle( strong::process::id pid) : pid{ pid} {}
+            Handle( strong::process::id pid, queue_handle queue) : pid( pid),  queue( queue)  {}
 
-            platform::process::id pid;
+            strong::process::id pid;
             queue_handle queue;
 
 
@@ -66,10 +66,10 @@ namespace casual
             {
                struct pid
                {
-                  pid( platform::process::id pid) : m_pid( pid) {}
+                  pid( strong::process::id pid) : m_pid( pid) {}
                   bool operator() ( const Handle& lhs) { return lhs.pid == m_pid;}
                private:
-                  platform::process::id m_pid;
+                  strong::process::id m_pid;
                };
             };
 
@@ -104,10 +104,10 @@ namespace casual
          //!
          //! @return process id (pid) for current process.
          //!
-         platform::process::id id();
+         strong::process::id id();
 
-         inline platform::process::id id( const Handle& handle) { return handle.pid;}
-         inline platform::process::id id( platform::process::id pid) { return pid;}
+         inline strong::process::id id( const Handle& handle) { return handle.pid;}
+         inline strong::process::id id( strong::process::id pid) { return pid;}
 
          namespace instance
          {
@@ -169,7 +169,7 @@ namespace casual
                //! @param directive if caller waits for the process to register or not
                //! @return handle to the process
                //!
-               Handle handle( platform::process::id pid , Directive directive = Directive::wait);
+               Handle handle( strong::process::id pid , Directive directive = Directive::wait);
 
 
             } // fetch
@@ -266,10 +266,10 @@ namespace casual
          //! @param arguments 0..N arguments that is passed to the application
          //! @return process id of the spawned process
          //!
-         platform::process::id spawn( const std::string& path, std::vector< std::string> arguments);
+         strong::process::id spawn( const std::string& path, std::vector< std::string> arguments);
 
 
-         platform::process::id spawn(
+         strong::process::id spawn(
             std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment);
@@ -291,7 +291,7 @@ namespace casual
          //!
          //! @return return code from process
          //!
-         int wait( platform::process::id pid);
+         int wait( strong::process::id pid);
 
 
          //!
@@ -299,12 +299,12 @@ namespace casual
          //!
          //! @return pids that did received the signal
          //!
-         std::vector< platform::process::id> terminate( const std::vector< platform::process::id>& pids);
+         std::vector< strong::process::id> terminate( const std::vector< strong::process::id>& pids);
 
          //!
          //! Tries to terminate pid
          //!
-         bool terminate( platform::process::id pid);
+         bool terminate( strong::process::id pid);
 
 
          //!
@@ -323,7 +323,7 @@ namespace casual
          //!
          //! @return the process handle
          //!
-         Handle ping( platform::ipc::id queue);
+         Handle ping( strong::ipc::id queue);
 
          namespace lifetime
          {
@@ -339,7 +339,7 @@ namespace casual
                   unknown,
                };
 
-               platform::process::id pid;
+               strong::process::id pid;
                int status = 0;
                Reason reason = Reason::unknown;
 
@@ -351,8 +351,8 @@ namespace casual
                bool deceased() const;
 
 
-               friend bool operator == ( platform::process::id pid, const Exit& rhs);
-               friend bool operator == ( const Exit& lhs, platform::process::id pid);
+               friend bool operator == ( strong::process::id pid, const Exit& rhs);
+               friend bool operator == ( const Exit& lhs, strong::process::id pid);
                friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
                friend std::ostream& operator << ( std::ostream& out, const Reason& value);
@@ -373,8 +373,8 @@ namespace casual
             //!
             //!
             //!
-            std::vector< Exit> wait( const std::vector< platform::process::id>& pids);
-            std::vector< Exit> wait( const std::vector< platform::process::id>& pids, std::chrono::microseconds timeout);
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids);
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout);
 
 
             //!
@@ -383,8 +383,8 @@ namespace casual
             //! @return the terminated l
             //!
             //
-            std::vector< Exit> terminate( const std::vector< platform::process::id>& pids);
-            std::vector< Exit> terminate( const std::vector< platform::process::id>& pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids);
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout);
 
          } // lifetime
 
@@ -400,7 +400,7 @@ namespace casual
             //! @param pids to terminate
             //!
             template< typename C>
-            void terminate( C&& callback, std::vector< platform::process::id> pids)
+            void terminate( C&& callback, std::vector< strong::process::id> pids)
             {
                for( auto& death : lifetime::terminate( std::move( pids)))
                {
