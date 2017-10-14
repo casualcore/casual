@@ -12,7 +12,7 @@ endif
 
 COMPILER = $(CXX)
 
-WARNING_DIRECTIVE = -Wall -Wextra -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wmissing-declarations -Wno-unused-parameter 
+WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wno-missing-declarations -Wno-unused-parameter 
 
 #
 # Linkers
@@ -42,7 +42,7 @@ export EXECUTABLE_LINKER
 GENERAL_LINK_DIRECTIVE = -fPIC
 
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -ggdb -c -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) 
+   COMPILE_DIRECTIVES = -ggdb -c -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -fcolor-diagnostics
    LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
    LINK_DIRECTIVES_EXE =  -ggdb $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE =  -ggdb $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
@@ -54,7 +54,7 @@ ifdef DEBUG
    endif
    
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -pthread 
+   COMPILE_DIRECTIVES =  -c -O3 -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -pthread -fcolor-diagnostics
    LINK_DIRECTIVES_LIB =  -dynamiclib -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_EXE =  -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE = -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) -$(STD_DIRECTIVE) -pthread
