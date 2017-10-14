@@ -57,6 +57,9 @@ We've done some field tests
 
 * casual@laz.se
 
+### Buildstatus - develop ###
+
+[![Build Status](http://casual.laz.se/jenkins/buildStatus/icon?job=casual/casual/develop)](http://casual.laz.se/jenkins/job/casual/job/casual/job/develop/)
 
 ### License
 Our intention is that everything in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT),
