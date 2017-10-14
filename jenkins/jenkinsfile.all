@@ -263,10 +263,6 @@ try
                      thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
                      tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
-                  sh """
-                  awk -v branch="feature/olle" '{ gsub("/", "-", branch); platform=".x86_64.";split($0, part, platform); print part[1] "-" branch platform part[2]}' 
-                  """
-
                   archive includes: '**/casual-middleware*.rpm'
 
                   stash includes: '**/casual-middleware*.rpm', name: 'centos_backend'
