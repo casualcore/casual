@@ -12,7 +12,7 @@ env.CASUAL_VERSION="0.50"
 
 def isPublishable()
 {
-   if ( "${env.BRANCH_NAME}" == "develop" || "${env.BRANCH_NAME}" == "version/0.50")
+   if ( "${env.BRANCH_NAME}" == "develop")
    {
       return true
    }
@@ -50,7 +50,14 @@ casual-make --no-colors -d -a --use-valgrind make && \
    performCoverageMeasuring 
    returncode=$?
 
-   find /git/casual -user root | xargs chmod 777   
+   cd /git/casual/
+   find /git/casual -user root | xargs chmod 777
+   f=$( ls casual-middleware-*.rpm )
+   regexp="(casual-middleware-)(.*)(.x86_64.rpm)"
+   if [[ $f =~ $regexp && $BRANCH != "develop" ]]
+   then
+      mv $f ${BASH_REMATCH[1]}${BASH_REMATCH[2]}-${BRANCH/\\//-}${BASH_REMATCH[3]}
+   fi
    exit $returncode
 '''
 
@@ -61,6 +68,7 @@ def backend_builder_centos = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 DISTRIBUTION="centos"
+BRANCH=''' + env.BRANCH_NAME + '''
 
 performCoverageMeasuring()
 {
@@ -80,6 +88,7 @@ def backend_builder_suse = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
 CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
 DISTRIBUTION="suse"
+BRANCH=''' + env.BRANCH_NAME + '''
 
 performCoverageMeasuring()
 {
@@ -314,7 +323,7 @@ try
       }
    )
 
-   node( "documentation")
+   node( "publishing")
    {
       if ( isPublishable() )
       {
