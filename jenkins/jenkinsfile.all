@@ -56,7 +56,7 @@ casual-make --no-colors -d -a --use-valgrind make && \
    regexp="(casual-middleware-)(.*)(.x86_64.rpm)"
    if [[ $f =~ $regexp && $BRANCH != "develop" ]]
    then
-      mv $f ${BASH_REMATCH[1]}${BASH_REMATCH[2]}-${BRANCH/\//-}${BASH_REMATCH[3]}
+      mv $f ${BASH_REMATCH[1]}${BASH_REMATCH[2]}-${BRANCH/\\//-}${BASH_REMATCH[3]}
    fi
    exit $returncode
 '''
