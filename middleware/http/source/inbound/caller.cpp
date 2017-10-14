@@ -207,21 +207,6 @@ namespace casual
                   }
                }
 
-               std::string type( const std::string& protocol)
-               {
-                  const static auto mapping = std::map< std::string, std::string>{
-                   { http::protocol::binary(), common::buffer::type::binary()},
-                   { http::protocol::x_octet(), common::buffer::type::x_octet()},
-                   { http::protocol::json(), common::buffer::type::json()},
-                   { http::protocol::xml(), common::buffer::type::xml()}
-                  };
-
-                  auto found = common::range::find( mapping, protocol);
-                  if( found) return found->second;
-
-                  throw common::exception::xatmi::buffer::type::Input();
-               }
-
                template< typename Type>
                Buffer copy( const Type& input)
                {
@@ -309,7 +294,7 @@ namespace casual
                   // Handle buffer
                   //
                   auto buffer = buffer::assemble( transport, parameters, protocol);
-                  common::buffer::Payload payload( buffer::type( protocol), buffer);
+                  common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer);
                   payload = buffer::input::transform( std::move( payload), protocol);
 
                   //
