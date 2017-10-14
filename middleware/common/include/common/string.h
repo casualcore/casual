@@ -2,10 +2,11 @@
 //! casual
 //!
 
-#ifndef CASUAL_UTILITY_STRING_H_
-#define CASUAL_UTILITY_STRING_H_
+#ifndef CASUAL_COMMON_STRING_H_
+#define CASUAL_COMMON_STRING_H_
 
 #include "common/platform.h"
+#include "common/traits.h"
 
 #include <string>
 #include <locale>
@@ -93,6 +94,22 @@ namespace casual
          }
 
 			std::string trim( const std::string& value);
+
+			template< typename R>
+         auto trim( R&& range) -> common::traits::concrete::type_t< decltype( range)>
+         {
+            const auto ws = [] (const auto character)
+            { return std::isspace( character, std::locale::classic()); };
+
+            auto last = std::end( range);
+            const auto first = std::find_if_not( std::begin( range), last, ws);
+
+            for( ; last != first && ws( *( last -1)); --last)
+               ;
+
+            return { first, last};
+         }
+
 
 			std::string lower( std::string value);
 
@@ -220,4 +237,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_UTILITY_STRING_H_ */
+#endif /* CASUAL_COMMON_STRING_H_ */

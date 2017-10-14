@@ -173,6 +173,65 @@ namespace casual
          EXPECT_TRUE( hello == "hello");
       }
 
+      TEST( casual_common_string, trim_range)
+      {
+         common::unittest::Trace trace;
+
+         auto trimmed = string::trim( range::make( "  1 2 3 4 5   "));
+
+         EXPECT_TRUE( trimmed.size() == 9) << "trimmed: " << trimmed;
+         EXPECT_TRUE( trimmed.at( 0) == '1');
+         EXPECT_TRUE( trimmed.at( 8) == '5');
+      }
+
+      TEST( casual_common_string, trim_empty_range)
+      {
+         common::unittest::Trace trace;
+
+         auto trimmed = string::trim( range::make( ""));
+
+         EXPECT_TRUE( trimmed.size() == 0) << "trimmed: " << trimmed;
+      }
+
+      TEST( casual_common_string, trim_ws_only_range)
+      {
+         common::unittest::Trace trace;
+
+         {
+            auto trimmed = string::trim( range::make( " "));
+            EXPECT_TRUE( trimmed.empty()) << "trimmed: " << trimmed;
+         }
+         {
+            auto trimmed = string::trim( range::make( "       "));
+            EXPECT_TRUE( trimmed.empty()) << "trimmed: " << trimmed;
+         }
+         {
+            auto trimmed = string::trim( range::make( "                       "));
+            EXPECT_TRUE( trimmed.empty()) << "trimmed: " << trimmed;
+         }
+      }
+
+      TEST( casual_common_string, trim_ws_right_range)
+      {
+         common::unittest::Trace trace;
+
+         {
+            auto trimmed = string::trim( range::make( "a  "));
+            EXPECT_TRUE( trimmed.size() == 1) << "trimmed: " << trimmed;
+         }
+      }
+
+      TEST( casual_common_string, trim_ws_left_range)
+      {
+         common::unittest::Trace trace;
+
+         {
+            auto trimmed = string::trim( range::make( "          a"));
+            EXPECT_TRUE( trimmed.size() == 1) << "trimmed: " << trimmed;
+         }
+      }
+
+
       TEST( casual_common_type, type)
       {
          common::unittest::Trace trace;

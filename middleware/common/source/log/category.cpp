@@ -23,6 +23,12 @@ namespace casual
             //
             Stream error{ "error"};
 
+            namespace verbose
+            {
+               Stream error{ "error.verbose"};
+
+            } // verbose
+
 
             Stream transaction{ "casual.transaction"};
             Stream buffer{ "casual.buffer"};

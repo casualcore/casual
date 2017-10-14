@@ -22,7 +22,7 @@ with Scope():
     Build( 'queue/makefile.cmk')  
 
     Build( 'binding/makefile.cmk')  
-    
+    Build( 'http/makefile.cmk')    
 
 
 

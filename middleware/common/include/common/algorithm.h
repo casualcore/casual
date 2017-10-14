@@ -509,6 +509,19 @@ namespace casual
             return make( std::begin( container), std::end( container));
          }
 
+         //!
+         //! specialization for literal strings
+         //!
+         //! @attention omits the null terminator
+         //!
+         //! @param container
+         //! @return
+         template< std::size_t size>
+         auto make( const char (&container)[ size])
+         {
+            return make( std::begin( container), size - 1);
+         }
+
 
          template< typename C, typename = std::enable_if_t<std::is_lvalue_reference< C>::value && common::traits::is::reverse::iterable< C>::value>>
          auto make_reverse( C&& container)
