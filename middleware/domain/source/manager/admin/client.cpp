@@ -41,7 +41,7 @@ namespace casual
 
                   struct Handler
                   {
-                     using mapping_type = std::map< platform::pid::type, std::string>;
+                     using mapping_type = std::map< strong::process::id, std::string>;
 
                      Handler() = default;
                      Handler( mapping_type mapping) : m_alias_mapping{ std::move( mapping)} {}
@@ -200,7 +200,7 @@ namespace casual
                         return out;
                      }
 
-                     std::map< platform::pid::type, std::string> m_alias_mapping;
+                     std::map< strong::process::id, std::string> m_alias_mapping;
                      std::string m_group;
                   };
 
@@ -273,7 +273,7 @@ namespace casual
                   {
                      auto state = call::state();
 
-                     std::map< platform::pid::type, std::string> mapping;
+                     std::map< strong::process::id, std::string> mapping;
 
                      for( auto& s : state.servers)
                      {

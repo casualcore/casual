@@ -39,14 +39,14 @@ namespace casual
       {
          namespace pid
          {
-            platform::pid::type next();
+            strong::process::id next();
 
          } // pid
 
          namespace ipc
          {
 
-            using id_type = platform::ipc::id;
+            using id_type = strong::ipc::id;
 
             using transform_type = std::function< std::vector< communication::message::Complete>( communication::message::Complete&)>;
 

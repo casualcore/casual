@@ -47,7 +47,7 @@ namespace casual
 
                   struct Process
                   {
-                     using pid_type = common::platform::pid::type;
+                     using pid_type = common::strong::process::id;
 
                      id_type id;
                      std::string alias;
@@ -114,7 +114,7 @@ namespace casual
 
                   struct Executable : Process
                   {
-                     using instance_type = Instance< common::platform::pid::type>;
+                     using instance_type = Instance< common::strong::process::id>;
                      std::vector< instance_type> instances;
 
                      CASUAL_CONST_CORRECT_SERIALIZE({

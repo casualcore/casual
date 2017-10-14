@@ -105,7 +105,7 @@ namespace casual
 
                   struct format_owner
                   {
-                     std::string operator () ( const vo::Transaction& value) const { return std::to_string( value.trid.owner.pid.native()); }
+                     auto operator () ( const vo::Transaction& value) const { return value.trid.owner.pid;}
                   };
 
                   auto format_state = []( const vo::Transaction& value){
@@ -203,7 +203,7 @@ namespace casual
                {
                   struct format_pid
                   {
-                     platform::pid::type operator() ( const vo::resource::Instance& value) const
+                     strong::process::id operator() ( const vo::resource::Instance& value) const
                      {
                         return value.process.pid;
                      }

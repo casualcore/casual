@@ -52,8 +52,8 @@ namespace casual
 
 
 
-               friend bool operator == ( const base_connection& lhs, common::platform::pid::type rhs);
-               inline friend bool operator == ( common::platform::pid::type lhs, const base_connection& rhs)
+               friend bool operator == ( const base_connection& lhs, common::strong::process::id rhs);
+               inline friend bool operator == ( common::strong::process::id lhs, const base_connection& rhs)
                {
                   return rhs == lhs;
                }
@@ -116,7 +116,7 @@ namespace casual
 
                      void accumulate( message_type& message, common::message::gateway::domain::discover::Reply& reply);
 
-                     void send( common::platform::ipc::id queue, message_type& message);
+                     void send( common::strong::ipc::id queue, message_type& message);
                   };
 
                   using Discover = common::message::Coordinate< Policy>;
@@ -151,7 +151,7 @@ namespace casual
             struct Discover
             {
                state::coordinate::outbound::Discover outbound;
-               void remove( common::platform::pid::type pid);
+               void remove( common::strong::process::id pid);
 
             } discover;
 

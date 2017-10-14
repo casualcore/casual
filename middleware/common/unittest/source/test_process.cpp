@@ -88,7 +88,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         std::vector< platform::pid::type> pids( 10);
+         std::vector< strong::process::id> pids( 10);
 
          for( auto& pid : pids)
          {
@@ -106,7 +106,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto terminated = process::lifetime::wait( { platform::process::id{ 666}});
+         auto terminated = process::lifetime::wait( { strong::process::id{ 666}});
 
          EXPECT_TRUE( terminated.empty());
       }

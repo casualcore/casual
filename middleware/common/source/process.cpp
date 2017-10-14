@@ -116,9 +116,9 @@ namespace casual
          }
 
 
-         platform::process::id id()
+         strong::process::id id()
          {
-            static const platform::process::id pid{ getpid()};
+            static const strong::process::id pid{ getpid()};
             return pid;
          }
 
@@ -242,7 +242,7 @@ namespace casual
                   return local::call( request);
                }
 
-               Handle handle( platform::pid::type pid , Directive directive)
+               Handle handle( strong::process::id pid , Directive directive)
                {
                   Trace trace{ "instance::handle::fetch (pid)"};
 
@@ -571,7 +571,7 @@ namespace casual
          } // local
 
 
-      platform::pid::type spawn(
+      strong::process::id spawn(
             std::string path,
             std::vector< std::string> arguments,
             std::vector< std::string> environment)
@@ -617,7 +617,7 @@ namespace casual
             local::current::copy::environment( environment);
 
 
-            platform::process::id pid;
+            strong::process::id pid;
 
             {
                local::spawn::Attributes attributes;
@@ -646,7 +646,7 @@ namespace casual
                      exception::system::throw_from_code( status);
                }
 
-               pid = platform::process::id{ native_pid};
+               pid = strong::process::id{ native_pid};
             }
 
             //
@@ -685,7 +685,7 @@ namespace casual
          }
 
 
-         platform::pid::type spawn( const std::string& path, std::vector< std::string> arguments)
+         strong::process::id spawn( const std::string& path, std::vector< std::string> arguments)
          {
             return spawn( path, std::move( arguments), {});
          }
@@ -702,7 +702,7 @@ namespace casual
          {
             namespace
             {
-               lifetime::Exit wait( platform::pid::type pid, int flags = WNOHANG)
+               lifetime::Exit wait( strong::process::id pid, int flags = WNOHANG)
                {
 
 
@@ -723,7 +723,7 @@ namespace casual
                   {
                      handle_signal();
 
-                     auto result = waitpid( pid.native(), &exit.status, flags);
+                     auto result = waitpid( pid.value(), &exit.status, flags);
 
                      if( result == -1)
                      {
@@ -752,7 +752,7 @@ namespace casual
                      }
                      else if( result != 0)
                      {
-                        exit.pid = platform::process::id{ result};
+                        exit.pid = strong::process::id{ result};
 
 
                         if( WIFEXITED( exit.status))
@@ -794,11 +794,11 @@ namespace casual
                   return exit;
                }
 
-               void wait( const std::vector< platform::pid::type>& pids, std::vector< lifetime::Exit>& result)
+               void wait( const std::vector< strong::process::id>& pids, std::vector< lifetime::Exit>& result)
                {
                   while( result.size() < pids.size())
                   {
-                     auto exit = local::wait( platform::process::id{ -1}, 0);
+                     auto exit = local::wait( strong::process::id{ -1}, 0);
 
                      if( range::find( pids, exit.pid))
                      {
@@ -818,7 +818,7 @@ namespace casual
 
          } // local
 
-         int wait( platform::pid::type pid)
+         int wait( strong::process::id pid)
          {
             //
             // We'll only handle child signals.
@@ -831,11 +831,11 @@ namespace casual
 
 
 
-         std::vector< platform::pid::type> terminate( const std::vector< platform::pid::type>& pids)
+         std::vector< strong::process::id> terminate( const std::vector< strong::process::id>& pids)
          {
             log::debug << "process::terminate pids: " << range::make( pids) << '\n';
 
-            std::vector< platform::pid::type> result;
+            std::vector< strong::process::id> result;
             for( auto pid : pids)
             {
                if( terminate( pid))
@@ -848,7 +848,7 @@ namespace casual
 
 
 
-         bool terminate( platform::pid::type pid)
+         bool terminate( strong::process::id pid)
          {
             return signal::send( pid, signal::Type::terminate);
          }
@@ -874,7 +874,7 @@ namespace casual
 
 
 
-         Handle ping( platform::ipc::id queue)
+         Handle ping( strong::ipc::id queue)
          {
             Trace trace{ "process::ping"};
 
@@ -886,15 +886,15 @@ namespace casual
 
          namespace lifetime
          {
-            Exit::operator bool () const { return pid.valid();}
+            Exit::operator bool () const { return ! pid.empty();}
 
             bool Exit::deceased() const
             {
                return reason == Reason::core || reason == Reason::exited || reason == Reason::signaled;
             }
 
-            bool operator == ( platform::pid::type pid, const Exit& rhs) { return pid == rhs.pid;}
-            bool operator == ( const Exit& lhs, platform::pid::type pid) { return pid == lhs.pid;}
+            bool operator == ( strong::process::id pid, const Exit& rhs) { return pid == rhs.pid;}
+            bool operator == ( const Exit& lhs, strong::process::id pid) { return pid == lhs.pid;}
             bool operator < ( const Exit& lhs, const Exit& rhs) { return lhs.pid < rhs.pid;}
 
             std::ostream& operator << ( std::ostream& out, const Exit::Reason& value)
@@ -929,7 +929,7 @@ namespace casual
 
                while( true)
                {
-                  auto exit = local::wait( platform::process::id{ -1});
+                  auto exit = local::wait( strong::process::id{ -1});
                   if( exit)
                   {
                      terminations.push_back( exit);
@@ -944,7 +944,7 @@ namespace casual
 
 
 
-            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids)
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids)
             {
                log::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
 
@@ -955,7 +955,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout)
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout)
             {
                Trace trace{ "common::process::lifetime::wait"};
 
@@ -981,12 +981,12 @@ namespace casual
             }
 
 
-            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids)
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids)
             {
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( const std::vector< platform::pid::type>& pids, std::chrono::microseconds timeout)
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

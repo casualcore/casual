@@ -3,6 +3,7 @@
 //!
 
 #include "buffer/field.h"
+#include "buffer/internal/field.h"
 
 #include "common/environment.h"
 #include "common/exception/xatmi.h"
@@ -12,6 +13,7 @@
 #include "common/log.h"
 #include "common/platform.h"
 #include "common/algorithm.h"
+#include "common/transcode.h"
 
 
 #include "sf/namevaluepair.h"
@@ -21,6 +23,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <unordered_map>
 
 #include <algorithm>
@@ -47,42 +50,6 @@ namespace casual
             using data_type = common::platform::binary::type::pointer;
 
 
-            struct compare_first
-            {
-               const size_type first;
-               template<typename T>
-               bool operator()( const T& pair) const { return pair.first == first;}
-            };
-
-            struct update_second
-            {
-               const size_type value;
-               template<typename T>
-               void operator()( T& pair) const { pair.second += value;}
-            };
-
-
-            // TODO: Perhaps move this to common/algorithm.h
-            template<typename Iterator, typename Predicate, typename Index>
-            Iterator find_if_index( Iterator first, Iterator last, Predicate p, Index i) noexcept
-            {
-               using Reference = typename std::iterator_traits<Iterator>::reference;
-               return std::find_if( first, last, [&]( Reference item) { return p( item) && ! ( i--);});
-            }
-
-            template<typename Container, typename Predicate, typename Index>
-            auto find_if_index( Container& c, Predicate p, Index i) noexcept -> decltype( c.begin())
-            {
-               return find_if_index( std::begin( c), std::end( c), p, i);
-            }
-
-            template<typename Container, typename Integer>
-            auto find_index( Container& c, Integer id, Integer index) noexcept -> decltype( c.begin())
-            {
-               return find_if_index( c, compare_first{ id}, index);
-            }
-
-
             template<typename T>
             T decode( const_data_type where) noexcept
             {
@@ -101,7 +68,7 @@ namespace casual
 
             struct Buffer : common::buffer::Buffer
             {
-               std::vector<std::pair<item_type, size_type>> index;
+               std::map<item_type,std::vector<size_type>> index;
 
                template<typename... A>
                Buffer( A&&... arguments) : common::buffer::Buffer( std::forward<A>( arguments)...)
@@ -119,7 +86,7 @@ namespace casual
                      const auto item = decode<item_type>( &*cursor + item_offset);
                      const auto size = decode<size_type>( &*cursor + size_offset);
 
-                     index.emplace_back( item, std::distance( begin, cursor));
+                     index[item].push_back( std::distance( begin, cursor));
 
                      std::advance( cursor, data_offset + size);
                   }
@@ -332,7 +299,7 @@ namespace casual
                      //
                      // Append current offset to index
                      //
-                     buffer.index.emplace_back( id, used);
+                     buffer.index[id].push_back( used);
 
                   }
                   catch( ...)
@@ -399,9 +366,7 @@ namespace casual
                template<typename I>
                size_type offset( const I& index, const item_type id, const size_type occurrence)
                {
-                  const auto iterator = find_index( index, id, occurrence);
-
-                  return index.at( std::distance( index.begin(), iterator)).second;
+                  return index.at( id).at( occurrence);
                }
 
                template<typename B>
@@ -468,29 +433,50 @@ namespace casual
                template<typename B>
                void remove( B& buffer, const item_type id, const size_type occurrence)
                {
-                  const auto iterator = find_index( buffer.index, id, occurrence);
+                  auto& occurrences = buffer.index.at( id);
 
-                  const auto field_offset = buffer.index.at( std::distance( buffer.index.begin(), iterator)).second;
+                  const auto offset = occurrences.at( occurrence);
 
                   //
                   // Get the size of the value
                   //
-                  const auto size = decode<size_type>( buffer.handle() + field_offset + size_offset);
+                  const auto size = decode<size_type>( buffer.handle() + offset + size_offset);
 
                   //
                   // Remove the data from the buffer
                   //
                   buffer.payload.memory.erase(
-                     buffer.payload.memory.begin() + field_offset,
-                     buffer.payload.memory.begin() + field_offset + data_offset + size);
+                     buffer.payload.memory.begin() + offset,
+                     buffer.payload.memory.begin() + offset + data_offset + size);
 
                   //
-                  // Remove entry and update offsets
+                  // Remove entry from index
                   //
-                  std::for_each(
-                     buffer.index.erase( iterator),
-                     buffer.index.end(),
-                     update_second{0 - data_offset - size});
+
+                  occurrences.erase( occurrences.begin() + occurrence);
+
+                  if( occurrences.empty())
+                  {
+                     buffer.index.erase( id);
+                  }
+
+                  //
+                  // Update offsets beyond this one
+                  //
+                  // The index and the actual buffer may not be in same order
+                  // and thus we need to go through the whole index
+                  //
+
+                  for( auto& field : buffer.index)
+                  {
+                     for( auto& occurrence : field.second)
+                     {
+                        if( occurrence > offset)
+                        {
+                           occurrence += (0 - data_offset - size);
+                        }
+                     }
+                  }
 
                }
 
@@ -547,14 +533,12 @@ namespace casual
                template<typename M, typename I>
                void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
                {
-                  const auto iterator = find_index( index, id, occurrence);
-
                   //
                   // Get the offset to where the field begin
                   //
-                  const auto field_offset = index.at( std::distance( index.begin(), iterator)).second;
+                  const auto offset = index.at( id).at( occurrence);
 
-                  const auto current_size = decode<size_type>( memory.data() + field_offset + size_offset);
+                  const auto current = decode<size_type>( memory.data() + offset + size_offset);
 
 
                   //
@@ -569,8 +553,8 @@ namespace casual
 
                   memory.insert(
                      memory.erase(
-                        memory.begin() + field_offset + data_offset,
-                        memory.begin() + field_offset + data_offset + current_size),
+                        memory.begin() + offset + data_offset,
+                        memory.begin() + offset + data_offset + current),
                      data, data + size);
 
                   //
@@ -581,13 +565,25 @@ namespace casual
                   std::copy(
                      reinterpret_cast<const_data_type>( &encoded),
                      reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded),
-                     memory.begin() + field_offset + size_offset);
+                     memory.begin() + offset + size_offset);
 
                   //
                   // Update offsets beyond this one
                   //
+                  // The index and the actual buffer may not be in same order
+                  // and thus we need to go through the whole index
+                  //
 
-                  std::for_each( iterator + 1, index.end(), update_second{size - current_size});
+                  for( auto& field : index)
+                  {
+                     for( auto& occurrence : field.second)
+                     {
+                        if( occurrence > offset)
+                        {
+                           occurrence += (size - current);
+                        }
+                     }
+                  }
 
                }
 
@@ -658,9 +654,7 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     const auto iterator = find_index( buffer.index, id, occurrence);
-
-                     const auto offset = buffer.index.at( std::distance( buffer.index.begin(), iterator)).second;
+                     const auto offset = buffer.index.at( id).at( occurrence);
 
                      count = decode<size_type>( buffer.payload.memory.data() + offset + size_offset);
                   }
@@ -698,15 +692,16 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     if( find_index( buffer.index, id, occurrence) != buffer.index.end())
-                        return CASUAL_FIELD_SUCCESS;
-                     else
-                        return CASUAL_FIELD_OUT_OF_BOUNDS;
+                     // Just to force an exception
+                     buffer.index.at( id).at( occurrence);
+
+                     return CASUAL_FIELD_SUCCESS;
                   }
                   catch( ...)
                   {
                      return error::handle();
                   }
+
                }
 
 
@@ -717,12 +712,7 @@ namespace casual
                   try
                   {
                      const auto& buffer = pool_type::pool.get( handle);
-
-                     occurrences =
-                        std::count_if(
-                           buffer.index.begin(),
-                           buffer.index.end(),
-                           compare_first{ id});
+                     occurrences = buffer.index.at( id).size();
                   }
                   catch( ...)
                   {
@@ -740,7 +730,11 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     occurrences = buffer.index.size();
+                     occurrences =
+                        std::accumulate(
+                           buffer.index.begin(), buffer.index.end(), 0,
+                           []( const auto count, const auto& field)
+                           { return count + field.second.size();});
                   }
                   catch( ...)
                   {
@@ -761,7 +755,13 @@ namespace casual
                   try
                   {
                      const auto& buffer = pool_type::pool.get( handle);
-                     id = buffer.index.at( 0).first;
+
+                     if( buffer.index.empty())
+                     {
+                        return CASUAL_FIELD_OUT_OF_BOUNDS;
+                     }
+
+                     id = buffer.index.begin()->first;
                      index = 0;
                   }
                   catch( ...)
@@ -781,20 +781,27 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     const auto current = find_index( buffer.index, id, index);
-
+                     const auto current = buffer.index.find( id);
                      if( current != buffer.index.end())
                      {
-                        const auto adjacent = current + 1;
-
-                        if( adjacent != buffer.index.end())
+                        if( static_cast<std::size_t>(++index) < current->second.size())
                         {
-                           id = adjacent->first;
-                           index = std::count_if( buffer.index.begin(), adjacent, compare_first{ id});
+                           //
+                           // Then we are ok
+                           //
                         }
                         else
                         {
-                           return CASUAL_FIELD_OUT_OF_BOUNDS;
+                           const auto next = std::next( current);
+                           if( next != buffer.index.end())
+                           {
+                              id = next->first;
+                              index = 0;
+                           }
+                           else
+                           {
+                              return CASUAL_FIELD_OUT_OF_BOUNDS;
+                           }
                         }
                      }
                      else
@@ -814,7 +821,6 @@ namespace casual
                   return CASUAL_FIELD_SUCCESS;
 
                }
-
 
             } // iterate
 
@@ -1262,7 +1268,7 @@ namespace casual
    {
       namespace field
       {
-         namespace repository
+         namespace internal
          {
             std::unordered_map<std::string,int> name_to_type()
             {
@@ -1436,7 +1442,6 @@ namespace casual
                }
 
                return result;
-
             }
 
 
@@ -1503,7 +1508,7 @@ int casual_field_name_of_id( const long id, const char** name)
 {
    if( id > CASUAL_FIELD_NO_ID)
    {
-      const auto result = casual::buffer::field::repository::id_to_name( id);
+      const auto result = casual::buffer::field::internal::id_to_name( id);
 
       if( result)
       {
@@ -1526,7 +1531,7 @@ int casual_field_id_of_name( const char* const name, long* const id)
 {
    if( name)
    {
-      const auto result = casual::buffer::field::repository::name_to_id( name);
+      const auto result = casual::buffer::field::internal::name_to_id( name);
 
       if( result)
       {
@@ -1573,7 +1578,7 @@ int casual_field_type_of_id( const long id, int* const type)
 
 int casual_field_name_of_type( const int type, const char** name)
 {
-   const auto result = casual::buffer::field::repository::type_to_name( type);
+   const auto result = casual::buffer::field::internal::type_to_name( type);
 
    if( result)
    {
@@ -1589,7 +1594,7 @@ int casual_field_type_of_name( const char* const name, int* const type)
 {
    if( name)
    {
-      const auto result = casual::buffer::field::repository::name_to_type( name);
+      const auto result = casual::buffer::field::internal::name_to_type( name);
 
       if( result)
       {
@@ -1694,20 +1699,12 @@ int casual_field_remove_id( char* buffer, const long id)
       return result;
    }
 
-   if( occurrences)
+   while( occurrences)
    {
-      while( occurrences)
-      {
-         casual::buffer::field::cut::data( buffer, id, --occurrences);
-      }
-   }
-   else
-   {
-      return CASUAL_FIELD_OUT_OF_BOUNDS;
+      casual::buffer::field::cut::data( buffer, id, --occurrences);
    }
 
    return CASUAL_FIELD_SUCCESS;
-
 }
 
 int casual_field_remove_occurrence( char* const buffer, const long id, long index)
@@ -1775,51 +1772,52 @@ namespace casual
 
                      stream << std::fixed;
 
-                     std::unordered_map<item_type,size_type> occurrences;
-
                      for( const auto& field : buffer.index)
                      {
-                        if( const auto name = repository::id_to_name( field.first))
+                        const auto name = internal::id_to_name( field.first);
+
+                        const auto& occurrences = field.second;
+
+                        for( decltype(occurrences.size()) idx = 0; idx < occurrences.size(); ++idx)
                         {
-                           stream << name;
+                           if( name)
+                              stream << name;
+                           else
+                              stream << field.first;
+                           stream << '[' << idx << ']' << " = ";
+
+                           const auto offset = occurrences[idx];
+
+                           const auto data = buffer.payload.memory.data() + offset + data_offset;
+
+                           switch( field.first / CASUAL_FIELD_TYPE_BASE)
+                           {
+                           case CASUAL_FIELD_SHORT:
+                              stream << pod<short>( data);
+                              break;
+                           case CASUAL_FIELD_LONG:
+                              stream << pod<long>( data);
+                              break;
+                           case CASUAL_FIELD_CHAR:
+                              stream << *data;
+                              break;
+                           case CASUAL_FIELD_FLOAT:
+                              stream << pod<float>( data);
+                              break;
+                           case CASUAL_FIELD_DOUBLE:
+                              stream << pod<double>( data);
+                              break;
+                           case CASUAL_FIELD_STRING:
+                              stream << data;
+                              break;
+                           case CASUAL_FIELD_BINARY:
+                              const auto size = buffer.payload.memory.data() + offset + size_offset;
+                              stream << common::transcode::base64::encode( data, data + pod<long>( size));
+                              break;
+                           }
+
+                           stream << '\n';
                         }
-                        else
-                        {
-                           stream << field.first;
-                        }
-
-                        stream << '[' << occurrences[field.first]++ << ']' << " = ";
-
-                        const auto data = buffer.payload.memory.data() + field.second + data_offset;
-
-                        switch( field.first / CASUAL_FIELD_TYPE_BASE)
-                        {
-                        case CASUAL_FIELD_SHORT:
-                           stream << pod<short>( data);
-                           break;
-                        case CASUAL_FIELD_LONG:
-                           stream << pod<long>( data);
-                           break;
-                        case CASUAL_FIELD_CHAR:
-                           stream << *data;
-                           break;
-                        case CASUAL_FIELD_FLOAT:
-                           stream << pod<float>( data);
-                           break;
-                        case CASUAL_FIELD_DOUBLE:
-                           stream << pod<double>( data);
-                           break;
-                        case CASUAL_FIELD_STRING:
-                        case CASUAL_FIELD_BINARY:
-                        default:
-                           //
-                           // TODO: Handle string+binary in ... some way ... do we need escaping ?
-                           //
-                           stream << data;
-                           break;
-                        }
-
-                        stream << '\n';
 
                      }
 
@@ -1833,7 +1831,7 @@ namespace casual
 
                }
 
-            }
+            } // <unnamed>
 
          } // transform
 

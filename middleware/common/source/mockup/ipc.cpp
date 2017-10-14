@@ -71,10 +71,10 @@ namespace casual
 
          namespace pid
          {
-            platform::process::id next()
+            strong::process::id next()
             {
-               static auto pid = process::id().native() + 1000;
-               return platform::process::id{ ++pid};
+               static auto pid = process::id().value() + 1000;
+               return strong::process::id{ ++pid};
             }
 
          } // pid
@@ -487,7 +487,7 @@ namespace casual
                communication::ipc::inbound::Device m_input;
                communication::ipc::inbound::Device m_output;
                Link m_link;
-               platform::pid::type m_pid;
+               strong::process::id m_pid;
             };
 
 
@@ -542,7 +542,7 @@ namespace casual
                static void worker_thread(
                      communication::ipc::inbound::Device&& ipc,
                      communication::ipc::dispatch::Handler&& replier,
-                     platform::pid::type pid)
+                     strong::process::id pid)
                {
                   Trace trace{ "Replier::worker_thread"};
 

@@ -66,7 +66,7 @@ namespace casual
 
                struct Request : base_request
                {
-                  std::vector< platform::resource::id::type> resources;
+                  std::vector< strong::resource::id> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -109,7 +109,7 @@ namespace casual
 
                struct Request : base_request
                {
-                  std::vector< platform::resource::id::type> resources;
+                  std::vector< strong::resource::id> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -148,7 +148,7 @@ namespace casual
             {
                namespace id
                {
-                  using type = platform::resource::id::type;
+                  using type = strong::resource::id;
                } // id
 
                struct Resource
@@ -232,7 +232,7 @@ namespace casual
 
                struct Involved : basic_transaction< Type::transaction_resource_involved>
                {
-                  std::vector< platform::resource::id::type> resources;
+                  std::vector< strong::resource::id> resources;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

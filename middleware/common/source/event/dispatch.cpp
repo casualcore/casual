@@ -24,7 +24,7 @@ namespace casual
             };
          }
 
-         void base_dispatch::remove( platform::pid::type pid)
+         void base_dispatch::remove( strong::process::id pid)
          {
             Trace trace{ "common::event::base_dispatch::remove"};
 
@@ -35,7 +35,7 @@ namespace casual
             range::erase( m_subscribers, std::get< 1>( split));
          }
 
-         bool base_dispatch::exists( platform::ipc::id queue) const
+         bool base_dispatch::exists( strong::ipc::id queue) const
          {
             return range::find_if( m_subscribers, [queue]( auto& s){
                return s.queue == queue;

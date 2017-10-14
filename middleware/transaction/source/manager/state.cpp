@@ -101,7 +101,7 @@ namespace casual
                });
             }
 
-            bool Proxy::remove_instance( common::platform::pid::type pid)
+            bool Proxy::remove_instance( common::strong::process::id pid)
             {
                auto found = common::range::find_if( instances, [pid]( auto& i){
                   return i.process.pid == pid;
@@ -178,9 +178,10 @@ namespace casual
                         return found->id;
                      }
 
-                     static id::type base_id = 0;
-
-                     state.externals.emplace_back( process, --base_id);
+                     static id::type base_id;
+                     
+                     --base_id.front();
+                     state.externals.emplace_back( process, base_id);
                      return state.externals.back().id;
                   }
 
@@ -409,9 +410,9 @@ namespace casual
          return result;
       }
 
-      std::vector< common::platform::pid::type> State::processes() const
+      std::vector< common::strong::process::id> State::processes() const
       {
-         std::vector< common::platform::pid::type> result;
+         std::vector< common::strong::process::id> result;
 
          for( auto& resource : resources)
          {
@@ -461,7 +462,7 @@ namespace casual
          return *found;
       }
 
-      state::resource::Proxy::Instance& State::get_instance( state::resource::id::type rm, common::platform::pid::type pid)
+      state::resource::Proxy::Instance& State::get_instance( state::resource::id::type rm, common::strong::process::id pid)
       {
          auto& resource = get_resource( rm);
 
@@ -476,7 +477,7 @@ namespace casual
          return *found;
       }
 
-      bool State::remove_instance( common::platform::pid::type pid)
+      bool State::remove_instance( common::strong::process::id pid)
       {
          return common::range::find_if( resources, [pid]( auto& r){
             return r.remove_instance( pid);

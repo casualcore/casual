@@ -49,7 +49,7 @@ namespace casual
 
                   log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
-                  auto result = ::msgsnd( id.native(), &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
+                  auto result = ::msgsnd( id.value(), &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
                   if( result == -1)
                   {
@@ -103,7 +103,7 @@ namespace casual
                   //
                   common::signal::handle();
 
-                  auto result = msgrcv( id.native(), &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
+                  auto result = msgrcv( id.value(), &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
 
                   if( result == -1)
                   {
@@ -378,7 +378,7 @@ namespace casual
                      {
 
                         template< typename R>
-                        platform::ipc::id reconnect( R&& singleton_policy)
+                        strong::ipc::id reconnect( R&& singleton_policy)
                         {
                            Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
 
@@ -571,14 +571,14 @@ namespace casual
             {
                struct msqid_ds info;
 
-               return msgctl( id.native(), IPC_STAT, &info) == 0;
+               return msgctl( id.value(), IPC_STAT, &info) == 0;
             }
 
             bool remove( handle_type id)
             {
                if( id)
                {
-                  if( msgctl( id.native(), IPC_RMID, nullptr) == 0)
+                  if( msgctl( id.value(), IPC_RMID, nullptr) == 0)
                   {
                      log << "queue id: " << id << " removed\n";
                      return true;
@@ -595,11 +595,11 @@ namespace casual
             {
                struct msqid_ds info;
 
-               if( msgctl( owner.queue.native(), IPC_STAT, &info) != 0)
+               if( msgctl( owner.queue.value(), IPC_STAT, &info) != 0)
                {
                   return false;
                }
-               if( info.msg_lrpid == owner.pid.native())
+               if( info.msg_lrpid == owner.pid.value())
                {
                   return remove( owner.queue);
                }

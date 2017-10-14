@@ -37,7 +37,7 @@ namespace casual
 
                struct configuration_type
                {
-                  platform::ipc::id id;
+                  strong::ipc::id id;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & id;
@@ -67,7 +67,7 @@ namespace casual
 
                private:
 
-                  platform::ipc::id m_outbound;
+                  strong::ipc::id m_outbound;
                };
 
                struct external_type
@@ -76,7 +76,7 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::external_type ctor"};
 
-                     m_process.queue = platform::ipc::id{ settings.ipc};
+                     m_process.queue = strong::ipc::id{ settings.ipc};
 
                      //
                      // Send the reply

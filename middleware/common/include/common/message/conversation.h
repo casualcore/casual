@@ -21,9 +21,9 @@ namespace casual
             struct Node
             {
                inline Node() = default;
-               inline Node( platform::ipc::id address) : address( address) {}
+               inline Node( strong::ipc::id address) : address( address) {}
 
-               platform::ipc::id address;
+               strong::ipc::id address;
 
                CASUAL_CONST_CORRECT_MARSHAL(
                {

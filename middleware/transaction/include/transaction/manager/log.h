@@ -71,7 +71,7 @@ namespace casual
          struct Row
          {
             common::transaction::ID trid;
-            common::platform::pid::type pid;
+            common::strong::process::id pid;
             common::platform::time::point::type started;
             common::platform::time::point::type updated;
             State state = State::prepared;

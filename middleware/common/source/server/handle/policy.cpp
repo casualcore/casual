@@ -130,7 +130,7 @@ namespace casual
 
                   }
 
-                  void Default::reply( platform::ipc::id id, message::service::call::Reply& message)
+                  void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
                   {
                      Trace trace{ "server::handle::policy::Default::reply"};
 
@@ -139,7 +139,7 @@ namespace casual
                      communication::ipc::blocking::send( id, message);
                   }
 
-                  void Default::reply( platform::ipc::id id, message::conversation::caller::Send& message)
+                  void Default::reply( strong::ipc::id id, message::conversation::caller::Send& message)
                   {
                      Trace trace{ "server::handle::policy::Default::conversation::reply"};
 
@@ -159,7 +159,7 @@ namespace casual
                      communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
                   }
 
-                  void Default::statistics( platform::ipc::id id,  message::event::service::Call& event)
+                  void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
                   {
                      Trace trace{ "server::handle::policy::Default::statistics"};
 
@@ -379,7 +379,7 @@ namespace casual
 
                   }
 
-                  void Admin::reply( platform::ipc::id id, message::service::call::Reply& message)
+                  void Admin::reply( strong::ipc::id id, message::service::call::Reply& message)
                   {
                      communication::ipc::blocking::send( id, message, m_error_handler);
                   }
@@ -393,7 +393,7 @@ namespace casual
                   }
 
 
-                  void Admin::statistics( platform::ipc::id id, message::event::service::Call& event)
+                  void Admin::statistics( strong::ipc::id id, message::event::service::Call& event)
                   {
                      // no-op
                   }

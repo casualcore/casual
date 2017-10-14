@@ -20,7 +20,7 @@ namespace casual
          namespace state
          {
 
-            bool operator == ( const base_connection& lhs, common::platform::pid::type rhs)
+            bool operator == ( const base_connection& lhs, common::strong::process::id rhs)
             {
                return lhs.process.pid == rhs;
             }
@@ -104,7 +104,7 @@ namespace casual
                      message.replies.push_back( std::move( reply));
                   }
 
-                  void Policy::send( common::platform::ipc::id queue, message_type& message)
+                  void Policy::send( common::strong::ipc::id queue, message_type& message)
                   {
                      Trace trace{ "manager::state::coordinate::outbound::Policy send"};
 
@@ -142,7 +142,7 @@ namespace casual
             }
          }
 
-         void State::Discover::remove( common::platform::pid::type pid)
+         void State::Discover::remove( common::strong::process::id pid)
          {
             outbound.remove( pid);
          }

@@ -130,7 +130,7 @@ namespace casual
 
             struct Process : internal::Id< Process>
             {
-               typedef common::platform::pid::type pid_type;
+               typedef common::strong::process::id pid_type;
 
                std::string alias;
                std::string path;
@@ -195,7 +195,7 @@ namespace casual
                handle_type handle;
                state_type state = state_type::scale_out;
 
-               void spawned( common::platform::pid::type pid)
+               void spawned( common::strong::process::id pid)
                {
                   policy_type::spawned( pid, *this);
                }
@@ -218,11 +218,11 @@ namespace casual
             {
                struct instance_policy
                {
-                  using handle_type = common::platform::pid::type;
+                  using handle_type = common::strong::process::id;
                   using state_type = instance::State;
 
                   template< typename I>
-                  static void spawned( common::platform::pid::type pid, I& instance)
+                  static void spawned( common::strong::process::id pid, I& instance)
                   {
                      instance.handle = pid;
                      instance.state = state_type::running;
@@ -263,7 +263,7 @@ namespace casual
                   using state_type = instance::State;
 
                   template< typename I>
-                  static void spawned( common::platform::pid::type pid, I& instance)
+                  static void spawned( common::strong::process::id pid, I& instance)
                   {
                      instance.handle.pid = pid;
                      instance.state = state_type::scale_out;
@@ -295,14 +295,14 @@ namespace casual
                void scale( size_type instances);
 
 
-               instance_type instance( common::platform::pid::type pid) const;
-               instance_type remove( common::platform::pid::type pid);
+               instance_type instance( common::strong::process::id pid) const;
+               instance_type remove( common::strong::process::id pid);
 
                bool connect( common::process::Handle process);
 
                friend std::ostream& operator << ( std::ostream& out, const Server& value);
 
-               friend bool operator == ( const Server& lhs, common::platform::pid::type rhs);
+               friend bool operator == ( const Server& lhs, common::strong::process::id rhs);
 
                //!
                //! For persistent state
@@ -465,7 +465,7 @@ namespace casual
             //! @param pid
             //! @return pointer to Server and Executable which is not null if we gonna restart them.
             //!
-            std::tuple< state::Server*, state::Executable*> exited( common::platform::pid::type pid);
+            std::tuple< state::Server*, state::Executable*> exited( common::strong::process::id pid);
 
             //!
             //! @return environment variables for the process, including global/default variables
@@ -477,16 +477,16 @@ namespace casual
             state::Group& group( state::Group::id_type id);
             const state::Group& group( state::Group::id_type id) const;
 
-            state::Server* server( common::platform::pid::type pid);
-            const state::Server* server( common::platform::pid::type pid) const;
+            state::Server* server( common::strong::process::id pid);
+            const state::Server* server( common::strong::process::id pid) const;
             state::Server& server( state::Server::id_type id);
             const state::Server& server( state::Server::id_type id) const;
 
-            state::Executable* executable( common::platform::pid::type pid);
+            state::Executable* executable( common::strong::process::id pid);
             state::Executable& executable( state::Executable::id_type id);
             const state::Executable& executable( state::Executable::id_type id) const;
 
-            common::process::Handle grandchild( common::platform::pid::type pid) const;
+            common::process::Handle grandchild( common::strong::process::id pid) const;
 
 
             common::process::Handle singleton( const common::Uuid& id) const;
@@ -499,7 +499,7 @@ namespace casual
             //! @param pid process id
             //! @return resource names
             //!
-            std::vector< std::string> resources( common::platform::pid::type pid);
+            std::vector< std::string> resources( common::strong::process::id pid);
 
 
             friend std::ostream& operator << ( std::ostream& out, const State& state);

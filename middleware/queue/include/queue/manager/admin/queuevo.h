@@ -57,7 +57,7 @@ namespace casual
                struct Queue
                {
                   std::string name;
-                  common::platform::process::id pid;
+                  common::strong::process::id pid;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -86,7 +86,7 @@ namespace casual
                };
 
 
-               sf::platform::process::id group;
+               sf::strong::process::id group;
                size_type id;
                std::string name;
                Type type;

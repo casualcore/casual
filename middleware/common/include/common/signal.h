@@ -9,6 +9,7 @@
 #include <cstddef>
 
 #include "common/platform.h"
+#include "common/strong/id.h"
 #include "common/move.h"
 #include "common/algorithm.h"
 #include "common/thread.h"
@@ -170,7 +171,7 @@ namespace casual
 			//!
 			//! @return true if the signal was sent
 			//!
-			bool send( platform::pid::type pid, Type signal);
+			bool send( strong::process::id pid, Type signal);
 
 			struct Set;
          namespace set

@@ -80,7 +80,7 @@ namespace casual
                {
                   using message::Service::Service;
 
-                  std::vector< platform::ipc::id> event_subscribers;
+                  std::vector< strong::ipc::id> event_subscribers;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

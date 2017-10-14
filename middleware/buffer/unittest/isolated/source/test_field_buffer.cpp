@@ -524,18 +524,23 @@ namespace casual
          EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 0) << occurrence;
-         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_LONG1) << id;
-         EXPECT_TRUE( occurrence == 0) << occurrence;
-         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
-         EXPECT_TRUE( id == FLD_LONG1) << id;
-         EXPECT_TRUE( occurrence == 1) << occurrence;
+
          EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_SHORT1) << id;
          EXPECT_TRUE( occurrence == 1) << occurrence;
+
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_LONG1) << id;
+         EXPECT_TRUE( occurrence == 0) << occurrence;
+
+         EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( id == FLD_LONG1) << id;
+         EXPECT_TRUE( occurrence == 1) << occurrence;
+
          EXPECT_TRUE( casual_field_next( buffer, &id, &occurrence) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( id == FLD_LONG1) << id;
          EXPECT_TRUE( occurrence == 2) << occurrence;
+
          const auto result = casual_field_next( buffer, &id, &occurrence);
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
 
@@ -1088,13 +1093,13 @@ namespace casual
          {
             long occurrences{};
             EXPECT_FALSE( casual_field_occurrences_of_id( buffer, FLD_STRING1, &occurrences));
-            EXPECT_TRUE( occurrences == 2);
+            EXPECT_TRUE( occurrences == 2) << occurrences;
          }
 
          {
             long occurrences{};
             EXPECT_FALSE( casual_field_occurrences_in_buffer( buffer, &occurrences));
-            EXPECT_TRUE( occurrences == 3);
+            EXPECT_TRUE( occurrences == 3) << occurrences;
          }
 
          tpfree( buffer);

@@ -93,21 +93,21 @@ namespace casual
             std::string group_executable;
 
 
-            std::vector< common::platform::pid::type> processes() const;
+            std::vector< common::strong::process::id> processes() const;
 
             //!
             //! Removes all queues associated with the process
             //!
             //! @param pid process id
             //!
-            void remove_queues( common::platform::pid::type pid);
+            void remove_queues( common::strong::process::id pid);
 
             //!
             //! Removes the process (group/gateway) and all queues associated with the process
             //!
             //! @param pid process id
             //!
-            void remove( common::platform::pid::type pid);
+            void remove( common::strong::process::id pid);
 
             void update( common::message::gateway::domain::Advertise& message);
 

@@ -74,7 +74,7 @@ namespace casual
          {
             namespace id
             {
-               using type = common::platform::resource::id::type;
+               using type = common::strong::resource::id;
 
                inline bool remote( type id) { return id < 0;}
                inline bool local( type id) { return id > 0;}
@@ -137,7 +137,7 @@ namespace casual
                //!
                bool booted() const;
 
-               bool remove_instance( common::platform::pid::type pid);
+               bool remove_instance( common::strong::process::id pid);
 
 
                friend bool operator < ( const Proxy& lhs, const Proxy& rhs)
@@ -222,7 +222,7 @@ namespace casual
 
             struct Reply : base_message
             {
-               using queue_id_type = common::platform::ipc::id;
+               using queue_id_type = common::strong::ipc::id;
 
                template< typename M>
                Reply( queue_id_type target, M&& message) : base_message( std::forward< M>( message)), target( target) {}
@@ -232,7 +232,7 @@ namespace casual
 
             struct Request : base_message
             {
-               using id_type = common::platform::resource::id::type;
+               using id_type = common::strong::resource::id;
 
                template< typename M>
                Request( id_type resource, M&& message) : base_message( std::forward< M>( message)), resource( resource) {}
@@ -245,7 +245,7 @@ namespace casual
             {
                struct Request
                {
-                  using id_type = common::platform::resource::id::type;
+                  using id_type = common::strong::resource::id;
 
                   Request( id_type id) : m_id( id) {}
 
@@ -477,7 +477,7 @@ namespace casual
             struct ID
             {
                template< typename T>
-               common::platform::resource::id::type operator () ( const T& value) const
+               common::strong::resource::id operator () ( const T& value) const
                {
                   return value.id;
                }
@@ -563,14 +563,14 @@ namespace casual
          //!
          size_type instances() const;
 
-         std::vector< common::platform::pid::type> processes() const;
+         std::vector< common::strong::process::id> processes() const;
 
          void operator () ( const common::process::lifetime::Exit& death);
 
          state::resource::Proxy& get_resource( state::resource::id::type rm);
-         state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::platform::pid::type pid);
+         state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::strong::process::id pid);
 
-         bool remove_instance( common::platform::pid::type pid);
+         bool remove_instance( common::strong::process::id pid);
 
 
          using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;
@@ -595,13 +595,13 @@ namespace casual
 
             struct Instance
             {
-               Instance( common::platform::pid::type pid) : m_pid( pid) {}
+               Instance( common::strong::process::id pid) : m_pid( pid) {}
                bool operator () ( const resource::Proxy::Instance& instance) const
                {
                   return instance.process.pid == m_pid;
                }
             private:
-               common::platform::pid::type m_pid;
+               common::strong::process::id m_pid;
 
             };
 

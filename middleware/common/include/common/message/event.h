@@ -76,7 +76,7 @@ namespace casual
                   {
                      std::string message;
                      std::string executable;
-                     platform::pid::type pid;
+                     strong::process::id pid;
 
                      enum class Severity : char
                      {
@@ -166,7 +166,7 @@ namespace casual
                   {
                      std::string alias;
                      std::string path;
-                     std::vector< platform::pid::type> pids;
+                     std::vector< strong::process::id> pids;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                         base_spawn::marshal( archive);

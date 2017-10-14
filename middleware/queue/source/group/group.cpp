@@ -106,7 +106,7 @@ namespace casual
             transactions.erase( trid);
          }
 
-         void State::Pending::erase( common::platform::pid::type pid)
+         void State::Pending::erase( common::strong::process::id pid)
          {
             auto found = std::get< 1>( common::range::stable_partition( requests, [=]( const request_type& r){
                return r.process.pid != pid;
