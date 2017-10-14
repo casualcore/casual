@@ -40,15 +40,15 @@ curl -d "Hello world" http://172.22.0.2:8080/casual?service=casual/example/echo
 curl -d "Hello world" http://172.22.0.3:8080/casual?service=casual/example/echo
 ```
 
-Attach to one of the domains, and play around with `casual-admin`. Example:
+Attach to one of the domains, and play around with `casual`. Example:
 
 ```
 > docker exec -it docker_domainA_1 bash
-[casual@domainA casual]$ casual-admin gateway --list-connections
+[casual@domainA casual]$ casual gateway --list-connections
 name     id                                bound  pid  queue   type  runlevel  address
 -------  --------------------------------  -----  ---  ------  ----  --------  -----------------------------------------
 domainB  9ace02251b6647e4838fcba25b12e47a  in      18  262151  tcp   online    docker_domainB_1.docker_isolated_nw:39094
-[casual@domainA casual]$ casual-admin service --list-services
+[casual@domainA casual]$ casual service --list-services
 name                         category  mode  timeout  LI  LC  LAT     P  PAT     RI  RC  last
 ---------------------------  --------  ----  -------  --  --  ------  -  ------  --  --  -----------------------
 casual/example/conversation  example   join   0.0000   1   0  0.0000  0  0.0000   0   0  0000-00-00T00:00:00.000

@@ -357,9 +357,9 @@ namespace casual
             common::argument::directive( {"-r", "--list-remote"}, "list all remote discovered queues", &queue::list_remote_queues),
             common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
             common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
-            common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual-admin queue --restore <queue-name>", &queue::local::restore),
-            common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual-admin queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
-            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual-admin queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_),
+            common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual queue --restore <queue-name>", &queue::local::restore),
+            common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
+            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_),
             common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "queue state in the provided format (xml|json|yaml|ini)", &queue::local::state),
       }};
 

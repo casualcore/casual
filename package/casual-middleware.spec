@@ -23,11 +23,11 @@ install -m 0755 -d $RPM_BUILD_ROOT/opt/casual
 cp -r /opt/casual/* $RPM_BUILD_ROOT/opt/casual/.
 find $RPM_BUILD_ROOT/opt/casual | xargs chmod 0755
 install -m 0755 -d $RPM_BUILD_ROOT/etc/bash_completion.d/
-ln -sf /opt/casual/etc/bash_completion.d/casual-admin $RPM_BUILD_ROOT/etc/bash_completion.d/casual-admin
+ln -sf /opt/casual/etc/bash_completion.d/casual $RPM_BUILD_ROOT/etc/bash_completion.d/casual
 
 %files
 /opt/casual
-/etc/bash_completion.d/casual-admin
+/etc/bash_completion.d/casual
 
 %changelog
 * Tue Sep  22 2015  Fredrik Eriksson <lazan@laz.se> 

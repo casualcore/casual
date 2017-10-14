@@ -22,10 +22,10 @@ __get_file_list() {
     echo "${files[*]}"
 }
 
-_casual_admin() {
+_casual() {
 
-    # do not load, if casual-admin is not in $PATH
-    which casual-admin &> /dev/null || return 0
+    # do not load, if casual is not in $PATH
+    which casual &> /dev/null || return 0
 
     local current previous arguments options i index cmd
     local parameters=("${COMP_WORDS[@]:0:COMP_CWORD}")
@@ -88,7 +88,7 @@ _casual_admin() {
 
                     options=($(__get_file_list "${current}"))
                 elif [[ "${previous}" == "--metric-reset" ]]; then
-                    options=($(casual-admin service --list-services --porcelain | awk -F\| '{print $1}'))
+                    options=($(casual service --list-services --porcelain | awk -F\| '{print $1}'))
                 fi
             fi
             # XXX: else/else if case here, to handle usage of "context" when implemented, to hopefully be able
@@ -111,4 +111,4 @@ _casual_admin() {
     return 0
 
 }
-complete -F _casual_admin casual-admin
+complete -F _casual casual

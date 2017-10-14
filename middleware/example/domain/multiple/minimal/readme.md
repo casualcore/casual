@@ -33,7 +33,7 @@ In terminal 1
     
     >$ cd $HOME/casual/example/domain/multiple/minimal/domain1
     >$ source domain.env
-    >$ casual-admin domain --boot configuration/domain.yaml
+    >$ casual domain --boot configuration/domain.yaml
     
     
 ## start domain2
@@ -42,7 +42,7 @@ In terminal 2
 
     >$ cd $HOME/casual/example/domain/multiple/minimal/domain2
     >$ source domain.env
-    >$ casual-admin domain --boot configuration/domain.yaml
+    >$ casual domain --boot configuration/domain.yaml
 
 
 ## interact with the domain
@@ -51,14 +51,14 @@ In terminal 2
     
 List the outbound connection
     
-    >$ casual-admin gateway --list-outbound
+    >$ casual gateway --list-outbound
     >$ name                             id                                pid  type  runlevel  address
     >$ -------------------------------  --------------------------------  ---  ----  --------  -------
     >$ multiple-domain-example-domain1  766d151cabaa40d584ffe7e0fd7a869f  737  tcp   online
     
 List services
 
-    >$ casual-admin broker --list-services
+    >$ casual broker --list-services
     >$ name                                  type  mode  timeout  requested  #  state
     >$ ------------------------------------  ----  ----  -------  ---------  -  -----
     >$ .casual.broker.state                    10  none        0          1  1  *    
@@ -76,7 +76,7 @@ List services
 
 ### In terminal 1
 
-    >$ casual-admin gateway --list-inbound
+    >$ casual gateway --list-inbound
     >$ name                             id                                pid  type  runlevel  address       
     >$ -------------------------------  --------------------------------  ---  ----  --------  --------------
     >$ multiple-domain-example-domain2  bdd72ed739f94420bb28b7e98ee1a472  738  tcp   online    127.0.0.1:7771 
@@ -84,7 +84,7 @@ List services
 List services
 
     
-    >$ casual-admin broker --list-services
+    >$ casual broker --list-services
     >$ name                                  type  mode  timeout  requested  #  state
     >$ ------------------------------------  ----  ----  -------  ---------  -  -----
     >$ .casual.broker.state                    10  none        0          1  1  *    

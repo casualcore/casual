@@ -81,7 +81,7 @@ host:domainA$ source domain.env
 We privide our configuration for the domain
 
 ```bash
-host:domainA$ casual-admin domain --boot configuration/domain.yaml
+host:domainA$ casual domain --boot configuration/domain.yaml
 ``` 
 
     
@@ -100,7 +100,7 @@ host:domainB$ source domain.env
 We privide our configuration for the domain
 
 ```bash
-host:domainB$ casual-admin domain --boot configuration/domain.yaml
+host:domainB$ casual domain --boot configuration/domain.yaml
 ```
 
 
@@ -116,7 +116,7 @@ View current state in the two domains
 List connections
 
 ```bash
-host:domainA$ casual-admin gateway --list-connections
+host:domainA$ casual gateway --list-connections
 name               id                                bound  pid    queue    type  runlevel  address        
 -----------------  --------------------------------  -----  -----  -------  ----  --------  ---------------
 md-medium-domainB  b0cf47002d4642f7a72913d40cde6a92  out    22351  8060933  tcp   online    localhost:7772 
@@ -129,7 +129,7 @@ We have one inbound and one outbound connection to `domain B
 
 List services
 ```bash
-host:domainA$ casual-admin broker --list-services
+host:domainA$ casual broker --list-services
 name                     type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote                 
 -----------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------ 
 casual.example.echo         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
@@ -143,7 +143,7 @@ casual.example.sink         0  join   0.0000        0      1  0.0000  0.0000    
 
 List queus
 ```bash
-host:domainA$ casual-admin queue --list-queues
+host:domainA$ casual queue --list-queues
 name                  count  size  avg  uc  updated                  r  error queue           group   
 --------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
 queueA1                   0     0    0   0  2016-11-20T15:17:34.068  0  queueA1.error         domain-A
@@ -156,7 +156,7 @@ domain-A.group.error      0     0    0   0  2016-11-20T15:17:34.062  0  domain-A
 List connections
 
 ```bash
-host:domainB$ casual-admin gateway --list-connections
+host:domainB$ casual gateway --list-connections
 name               id                                bound  pid    queue   type  runlevel  address        
 -----------------  --------------------------------  -----  -----  ------  ----  --------  ---------------
 md-medium-domainA  653081bee12347029d207e8d131cd68f  out    22375  917517  tcp   online    localhost:7771 
@@ -169,7 +169,7 @@ We have one inbound and one outbound connection to `domain A
 List services
 
 ```bash
-host:domainB$ casual-admin broker --list-services
+host:domainB$ casual broker --list-services
 name                                  type  mode  timeout  requested  local  busy  pending  load   remote
 ------------------------------------  ----  ----  -------  ---------  -----  ----  -------  -----  ------
 ```
@@ -180,7 +180,7 @@ name                                  type  mode  timeout  requested  local  bus
 
 List queus
 ```bash
-host:domainB$ casual-admin queue --list-queues
+host:domainB$ casual queue --list-queues
 name                  count  size  avg  uc  updated                  r  error queue           group   
 --------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
 queueB1                   0     0    0   0  2016-11-20T15:17:36.912  0  queueB1.error         domain-B
@@ -196,14 +196,14 @@ domain-B.group.error      0     0    0   0  2016-11-20T15:17:36.904  0  domain-B
 In `domain A`, enqueue some characters to `queueB1` that is located in `domain B`
 
 ```bash
-host:domainA$ echo "test" | casual-admin queue --enqueue queueB1
+host:domainA$ echo "test" | casual queue --enqueue queueB1
 bec3b4b3cccd4f3b89faee970518ab7d
 ```
 
 The message should be enqueued to `queueA1` and then dequeued and rollbacked, hence end up in `queueA1.error` pretty much directly
 
 ```bash
-host:domainA$ casual-admin queue --list-queues
+host:domainA$ casual queue --list-queues
 name                  count  size  avg  uc  updated                  r  error queue           group    
 --------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
 queueA1                   0     0    0   0  2016-12-17T14:45:13.119  0  queueA1.error         domain-A
@@ -217,7 +217,7 @@ The service `casual.example.echo` should be reqeusted once (the call from remote
 The service `casual.example.rollback` should be reqeusted once from the forward in this domain.
 
 ```bash
-host:domainA$ casual-admin broker --list-services
+host:domainA$ casual broker --list-services
 name                     type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote
 -----------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------
 casual.example.echo         0  join   0.0000        1      1  0.0000  0.0002              0         0.0000       0
@@ -229,7 +229,7 @@ casual.example.sink         0  join   0.0000        0      1  0.0000  0.0000    
 In `domain B`, `casual.example.echo` should be known with no local instances:
 
 ```bash
-host:domainB$ casual-admin broker --list-services
+host:domainB$ casual broker --list-services
 name                 type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote
 -------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------
 casual.example.echo     0  join   0.0000        1      0  0.0000  0.0000              0         0.0000       1

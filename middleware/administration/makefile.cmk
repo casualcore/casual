@@ -14,16 +14,16 @@ LibraryPaths(
     ])
 
 
-admin = LinkExecutable( 'bin/casual-admin', 
+casual = LinkExecutable( 'bin/casual', 
     [ 
         Compile( 'source/main.cpp'),
     ], 
     [ 'casual-common'])
 
 
-Install( admin, '$(CASUAL_HOME)/bin')
+Install( casual, '$(CASUAL_HOME)/bin')
 
-Install( 'etc/bash_completion.d/casual-admin', '$(CASUAL_HOME)/etc/bash_completion.d')
+Install( 'etc/bash_completion.d/casual', '$(CASUAL_HOME)/etc/bash_completion.d')
 
 
 

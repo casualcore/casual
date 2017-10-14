@@ -86,10 +86,10 @@ namespace casual
             common::Arguments arguments{ R"(
 usage: 
 
-casual-admin [<category> [<category-specific-directives].. ]..
+casual [<category> [<category-specific-directives].. ]..
 
 To get help for a specific category use: 
-   casual-admin <category> --help
+   casual <category> --help
 
 The following categories are supported:   
   
