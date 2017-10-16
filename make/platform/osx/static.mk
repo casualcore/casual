@@ -17,7 +17,7 @@ WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit
 #
 # Linkers
 #
-LIBRARY_LINKER = g++
+LIBRARY_LINKER = $(CXX)
 ARCHIVE_LINKER = ar rcs
 
 STD_DIRECTIVE = -std=c++14
@@ -27,6 +27,17 @@ STD_DIRECTIVE = -std=c++14
 #
 SHELL = bash
 
+#
+# Check if option is valid for compiler
+#
+COMPILER_PATTERN = int main(){return 0;}
+export COMPILER_PATTERN
+define check_supported_option
+   $(shell echo $$COMPILER_PATTERN | $(CXX) -x c++ $(1) - > /dev/null 2>&1 && echo $(1))
+endef
+
+OPTIONAL_POSSIBLE_FLAGS := -fcolor-diagnostics
+OPTIONAL_FLAGS := $(foreach flag,$(OPTIONAL_POSSIBLE_FLAGS),$(call check_supported_option, $(flag)))
 
 ifndef EXECUTABLE_LINKER
 EXECUTABLE_LINKER = g++
@@ -34,7 +45,6 @@ endif
 
 export EXECUTABLE_LINKER
 
-#
 # Compile and link directives
 #
 
@@ -42,7 +52,7 @@ export EXECUTABLE_LINKER
 GENERAL_LINK_DIRECTIVE = -fPIC
 
 ifdef DEBUG
-   COMPILE_DIRECTIVES = -ggdb -c -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -fcolor-diagnostics
+   COMPILE_DIRECTIVES = -ggdb -c -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) $(OPTIONAL_FLAGS)
    LINK_DIRECTIVES_LIB =  -ggdb -dynamiclib $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
    LINK_DIRECTIVES_EXE =  -ggdb $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE =  -ggdb $(WARNING_DIRECTIVE) $(GENERAL_LINK_DIRECTIVE)
@@ -54,7 +64,7 @@ ifdef DEBUG
    endif
    
 else
-   COMPILE_DIRECTIVES =  -c -O3 -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -pthread -fcolor-diagnostics
+   COMPILE_DIRECTIVES =  -c -O3 -fPIC $(WARNING_DIRECTIVE) $(STD_DIRECTIVE) -pthread $(OPTIONAL_FLAGS)
    LINK_DIRECTIVES_LIB =  -dynamiclib -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_EXE =  -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) $(STD_DIRECTIVE)
    LINK_DIRECTIVES_ARCHIVE = -O3 $(GENERAL_LINK_DIRECTIVE) $(WARNING_DIRECTIVE) -$(STD_DIRECTIVE) -pthread
