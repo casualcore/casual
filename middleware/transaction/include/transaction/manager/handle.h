@@ -223,9 +223,23 @@ namespace casual
          //!
          namespace domain
          {
+            enum class Directive : char
+            {
+               keep_transaction,
+               remove_transaction,
+            };
+
+            struct Base : state::Base
+            {
+               using state::Base::Base;
+
+            protected:
+               template< typename M>
+               void prepare_remote_owner( Transaction& transaction, M& message);
+            };
 
 
-            struct Prepare : public state::Base
+            struct Prepare : Base
             {
                using message_type = common::message::transaction::resource::prepare::Request;
                using reply_type = common::message::transaction::resource::prepare::Reply;
@@ -234,30 +248,33 @@ namespace casual
 
                void operator () ( message_type& message);
             private:
-               bool handle( message_type& message, Transaction& transaction);
+               Directive handle( message_type& message, Transaction& transaction);
             };
 
-            struct Commit : public state::Base
+            struct Commit : Base
             {
                using message_type = common::message::transaction::resource::commit::Request;
                using reply_type = common::message::transaction::resource::commit::Reply;
 
-               using state::Base::Base;
+               using Base::Base;
 
                void operator () ( message_type& message);
 
             private:
-               void handle( message_type& message, Transaction& transaction);
+               Directive handle( message_type& message, Transaction& transaction);
             };
 
-            struct Rollback : public state::Base
+            struct Rollback : Base
             {
                using message_type = common::message::transaction::resource::rollback::Request;
                using reply_type = common::message::transaction::resource::rollback::Reply;
 
-               using state::Base::Base;
+               using Base::Base;
 
                void operator () ( message_type& message);
+
+            private:
+               Directive handle( message_type& message, Transaction& transaction);
 
             };
 

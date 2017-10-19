@@ -178,8 +178,33 @@ namespace casual
                static const std::string result = variable::get( variable::name::home());
                return result;
             }
+         } // directory
 
-         }
+         namespace log
+         {
+            namespace local
+            {
+               namespace
+               {
+                  std::string path()
+                  {
+                     if( variable::exists( variable::name::log::path()))
+                        return variable::get( variable::name::log::path());
+
+                     if( variable::exists( variable::name::domain::home()))
+                        return variable::get( variable::name::domain::home()) + "/casual.log";
+
+                     return "./casual.log";
+                  }
+               } // <unnamed>
+            } // local
+
+            const std::string& path()
+            {
+               static const std::string result = local::path();
+               return result;
+            }
+         } // log
 
 
          namespace domain

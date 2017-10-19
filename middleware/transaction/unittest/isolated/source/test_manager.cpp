@@ -697,7 +697,7 @@ resources:
       }
 
 
-      TEST( casual_transaction_manager, remote_owner__resource_involved__remote_rollback____expect_rollback)
+      TEST( casual_transaction_manager, remote_owner__local_resource_involved__remote_rollback____expect_rollback)
       {
          common::unittest::Trace trace;
 
@@ -706,7 +706,7 @@ resources:
          auto trid = common::transaction::ID::create();
 
 
-         // involved
+         // local involved
          {
             common::message::transaction::resource::Involved message;
             message.trid = trid;
@@ -732,7 +732,45 @@ resources:
             communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::code::xa::ok);
+            EXPECT_TRUE( message.state == common::code::xa::ok) << "state: " << message.state;
+         }
+      }
+
+      TEST( casual_transaction_manager, remote_owner__same_remote_resource_involved__remote_rollback____expect_xa_read_only)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto trid = common::transaction::ID::create();
+
+
+         // remote involved
+         {
+            common::message::transaction::resource::external::Involved message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         // remote rollback
+         {
+            common::message::transaction::resource::rollback::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         // rollback reply
+         {
+            common::message::transaction::resource::rollback::Reply message;
+
+            communication::ipc::blocking::receive( common::communication::ipc::inbound::device(), message);
+
+            EXPECT_TRUE( message.trid == trid);
+            EXPECT_TRUE( message.state == common::code::xa::read_only) << "state: " << message.state;
          }
       }
 

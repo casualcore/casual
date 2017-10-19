@@ -28,6 +28,8 @@ lib_buffer = LinkLibrary( 'bin/casual-buffer',
      Compile( 'source/octet.cpp'),
      Compile( 'source/order.cpp'),
      Compile( 'source/string.cpp'),
+     
+     Compile( 'source/common.cpp'),
     ],
     [
      'casual-common', 'casual-sf'
