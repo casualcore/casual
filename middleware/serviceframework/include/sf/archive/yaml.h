@@ -8,8 +8,11 @@
 #include "sf/archive/basic.h"
 //#include "sf/reader_policy.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>
+#pragma GCC diagnostic pop
 
 #include <iosfwd>
 #include <stack>

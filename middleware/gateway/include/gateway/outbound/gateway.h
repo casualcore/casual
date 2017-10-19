@@ -437,7 +437,6 @@ namespace casual
 
             using version_type = common::message::gateway::domain::protocol::Version;
 
-
             template< typename S>
             Gateway( S&& settings)
             {
@@ -858,8 +857,8 @@ namespace casual
                }
             }
 
-            const service::Routing m_service_routing;
-            const Routing m_routing;
+            const service::Routing m_service_routing{};
+            const Routing m_routing{};
 
             std::thread m_reply_thread;
          };

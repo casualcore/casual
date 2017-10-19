@@ -117,11 +117,11 @@ reformat.ingore_filters = [
 ]
 
 reformat.filters = [ 
-    [ re.compile(r'(^(g|c)\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*'),
+    [ re.compile(r'(^(g|c|clang)\+\+).* -o (\S+\.o) (\S+\.cc|\S+\.cpp|\S+\.c).*'),
      lambda match: color.green( 'compile: ') + color.white( match.group(4)) + '\n' ],
     [ re.compile(r'(^ar) \S+ (\S+\.a).*'),  
      lambda match: color.blue( 'archive: ') + color.white( match.group(2)) + '\n' ],
-    [ re.compile(r'(^(g|c)\+\+).* -o (\S+) (?:(\S+\.o) ).*'),
+    [ re.compile(r'(^(g|c|clang)\+\+).* -o (\S+) (?:(\S+\.o) ).*'),
      lambda match: color.blue( 'link: ') + color.white( match.group(3)) + '\n' ],
     [ re.compile(r'^(.*[.]cmk )(.*)'),  
      lambda match: color.cyan( 'makefile: ') + color.blue( match.group(2) ) + ' ' + match.group(1) + '\n'],

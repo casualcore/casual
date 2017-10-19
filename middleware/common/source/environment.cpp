@@ -31,7 +31,7 @@ namespace casual
 
                      static const Variable& instance()
                      {
-                        static const Variable singleton;
+                        static const Variable singleton{};
                         return singleton;
                      }
 
