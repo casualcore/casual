@@ -4,6 +4,7 @@
 
 #include "buffer/field.h"
 #include "buffer/internal/field.h"
+#include "buffer/internal/common.h"
 
 #include "common/environment.h"
 #include "common/exception/xatmi.h"
@@ -332,6 +333,8 @@ namespace casual
 
                   if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   {
+
+                     casual::buffer::verbose::log << "buffer::field::add::data: invalid argument - id: " << id << " - type: " << type << '\n';
                      return CASUAL_FIELD_INVALID_ARGUMENT;
                   }
 
@@ -712,7 +715,13 @@ namespace casual
                   try
                   {
                      const auto& buffer = pool_type::pool.get( handle);
-                     occurrences = buffer.index.at( id).size();
+
+                     auto found = common::range::find( buffer.index, id);
+
+                     if( found)
+                        occurrences = found->second.size();
+                     else
+                        occurrences = 0;
                   }
                   catch( ...)
                   {
@@ -959,6 +968,7 @@ int casual_field_occurrences_of_id( const char* const buffer, const long id, lon
       return casual::buffer::field::explore::count( buffer, id, *occurrences);
    }
 
+   casual::buffer::verbose::log << "casual_field_occurrences_of_id: invalid argument - id: " << id << " - occurrences: " << occurrences << '\n';
    return CASUAL_FIELD_INVALID_ARGUMENT;
 }
 
@@ -1125,9 +1135,13 @@ int casual_field_get_value( const char* const buffer, const long id, const long 
    {
       if( *count < size)
       {
-         //return CASUAL_FIELD_OUT_OF_MEMORY;
+         casual::buffer::verbose::log << "casual_field_get_value: invalid argument - id: " << id
+            << " - index: " << index << " - count: " << *count
+            << " - size: " << size
+            << '\n';
          return CASUAL_FIELD_INVALID_ARGUMENT;
       }
+
 
       //
       // This is perhaps not Fget32-compatible if field is invalid
@@ -1567,6 +1581,7 @@ int casual_field_type_of_id( const long id, int* const type)
       case CASUAL_FIELD_BINARY:
          break;
       default:
+         casual::buffer::verbose::log << "invalid argument - id: " << id << '\n';
          return CASUAL_FIELD_INVALID_ARGUMENT;
    }
 

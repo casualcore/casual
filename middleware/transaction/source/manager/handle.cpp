@@ -179,16 +179,20 @@ namespace casual
                   }
 
                   template< typename R>
-                  void read_only( State& state, R&& message)
+                  void xa_result( State& state, R&& message, common::code::xa result)
                   {
                      auto reply = local::transform::reply( message);
-                     reply.state = common::code::xa::read_only;
+                     reply.state = result;
                      reply.resource = message.resource;
 
                      send::reply( state, std::move( reply), message.process);
                   }
 
-
+                  template< typename R>
+                  void read_only( State& state, R&& message)
+                  {
+                     xa_result( state, message, common::code::xa::read_only);
+                  }
 
 
                   namespace resource
@@ -1361,6 +1365,28 @@ namespace casual
          namespace domain
          {
 
+            template< typename M>
+            void Base::prepare_remote_owner( Transaction& transaction, M& message)
+            {
+               transaction.trid.owner( message.process);
+               transaction.correlation = message.correlation;
+               transaction.resource = message.resource;
+
+               //
+               // Remove resource from transaction if it's the same as the instigator for the
+               // rollback
+               //
+               {
+                  auto found = common::range::find_if( transaction.resources, [&]( auto& resource){
+                     return state::resource::id::remote( resource.id) && m_state.get_external( resource.id).process.pid == message.process.pid;
+                  });
+
+                  if( found)
+                     transaction.resources.erase( std::begin( found));
+               }
+            }
+
+
 
             void Prepare::operator () ( message_type& message)
             {
@@ -1376,7 +1402,7 @@ namespace casual
 
                if( found)
                {
-                  if( handle( message, *found))
+                  if( handle( message, *found) == Directive::remove_transaction)
                   {
                      //
                      // We remove the transaction
@@ -1400,7 +1426,7 @@ namespace casual
                }
             }
 
-            bool Prepare::handle( message_type& message, Transaction& transaction)
+            Directive Prepare::handle( message_type& message, Transaction& transaction)
             {
                Trace trace{ "transaction::handle::domain::Prepare::handle"};
 
@@ -1447,9 +1473,14 @@ namespace casual
                         // We're in the second state. We change the owner to the inbound gateway that
                         // sent the request, so we know where to send the accumulated reply.
                         //
-                        transaction.trid.owner( message.process);
-                        transaction.correlation = message.correlation;
-                        transaction.resource = message.resource;
+
+                        prepare_remote_owner( transaction, message);
+
+                        if( transaction.resources.empty())
+                        {
+                           local::send::read_only( m_state, message);
+                           return Directive::remove_transaction;
+                        }
 
                         local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                            m_state,
@@ -1464,11 +1495,7 @@ namespace casual
                      case Transaction::Resource::Stage::not_involved:
                      {
                         local::send::read_only( m_state, message);
-
-                        //
-                        // We remove the transaction
-                        //
-                        return true;
+                        return Directive::remove_transaction;
                      }
                      default:
                      {
@@ -1477,7 +1504,7 @@ namespace casual
                      }
                   }
                }
-               return false;
+               return Directive::keep_transaction;
             }
 
             void Commit::operator () ( message_type& message)
@@ -1493,7 +1520,13 @@ namespace casual
 
                if( found)
                {
-                  handle( message, *found);
+                  if( Commit::handle( message, *found) == Directive::remove_transaction)
+                  {
+                     //
+                     // We remove the transaction
+                     //
+                     m_state.transactions.erase( std::begin( found));
+                  }
                }
                else
                {
@@ -1516,7 +1549,7 @@ namespace casual
                }
             }
 
-            void Commit::handle( message_type& message, Transaction& transaction)
+            Directive Commit::handle( message_type& message, Transaction& transaction)
             {
                Trace trace{ "transaction::handle::domain::Commit::handle"};
 
@@ -1550,40 +1583,46 @@ namespace casual
                      reply.resource = message.resource;
 
                      local::send::reply( m_state, std::move( reply), message.process);
-                     return;
+                     return Directive::keep_transaction;
                   }
 
                   transaction.implementation = local::implementation::one::phase::commit::Remote::instance();
 
-                  //
-                  // Make sure we can send enough stuff so remote domain can correlate,
-                  // when we actually send the accumulated reply
-                  //
-                  transaction.trid.owner( message.process);
-                  transaction.correlation = message.correlation;
-                  transaction.resource = message.resource;
+                  prepare_remote_owner( transaction, message);
 
-                  if( transaction.resources.size() > 1)
+                  switch( transaction.resources.size())
                   {
-                     local::send::resource::request< common::message::transaction::resource::prepare::Request>(
-                        m_state,
-                        transaction,
-                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                        Transaction::Resource::Stage::prepare_requested
-                     );
-                  }
-                  else
-                  {
-                     local::send::resource::request< common::message::transaction::resource::commit::Request>(
-                        m_state,
-                        transaction,
-                        Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
-                        Transaction::Resource::Stage::commit_requested,
-                        message.flags
-                     );
-                  }
+                     case 0:
+                     {
+                        log << common::code::xa::read_only << " - no relevant resources involved\n";
+                        local::send::read_only( m_state, message);
 
+                        return Directive::remove_transaction;
+                     }
+                     case 1:
+                     {
+                        local::send::resource::request< common::message::transaction::resource::commit::Request>(
+                           m_state,
+                           transaction,
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                           Transaction::Resource::Stage::commit_requested,
+                           message.flags
+                        );
+                        break;
+                     }
+                     default:
+                     {
+                        local::send::resource::request< common::message::transaction::resource::prepare::Request>(
+                           m_state,
+                           transaction,
+                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                           Transaction::Resource::Stage::prepare_requested
+                        );
+                        break;
+                     }
+                  }
                }
+               return Directive::keep_transaction;;
             }
 
             void Rollback::operator () ( message_type& message)
@@ -1600,35 +1639,89 @@ namespace casual
 
                if( found)
                {
-                  auto& transaction = *found;
-
-                  if( ! transaction.implementation)
+                  if( Rollback::handle( message, *found) == Directive::remove_transaction)
                   {
                      //
-                     // We are not in a preparephase
+                     // We remove the transaction
                      //
-                     transaction.implementation = local::implementation::Remote::instance();
-                     transaction.correlation = message.correlation;
+                     m_state.transactions.erase( std::begin( found));
                   }
-
-                  log << "transaction: " << transaction << '\n';
-
-                  local::send::resource::request< common::message::transaction::resource::rollback::Request>(
-                     m_state,
-                     transaction,
-                     []( auto& r){ return r.stage < Transaction::Resource::Stage::rollback_requested;},
-                     Transaction::Resource::Stage::rollback_requested,
-                     message.flags
-                  );
-
                }
                else
                {
                   log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
-
                   local::send::read_only( m_state, message);
                }
             }
+
+            Directive Rollback::handle( message_type& message, Transaction& transaction)
+            {
+               Trace trace{ "transaction::handle::domain::Rollback::handle"};
+
+               using Stage = Transaction::Resource::Stage;
+
+               switch( transaction.stage())
+               {
+                  case Stage::involved:
+                  {
+                     // remote 'explicit' rollback
+
+                     transaction.implementation = local::implementation::Remote::instance();
+
+                     prepare_remote_owner( transaction, message);
+
+                     if( transaction.resources.empty())
+                     {
+                        local::send::read_only( m_state, message);
+                        return Directive::remove_transaction;
+                     }
+
+                     local::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                        m_state,
+                        transaction,
+                        []( auto& r){ return r.stage == Stage::involved;},
+                        Stage::rollback_requested,
+                        message.flags
+                     );
+
+                     break;
+                  }
+                  case Stage::prepare_replied:
+                  {
+                     // We are in a prepare phase, and owner TM has decided to rollback.
+
+                     local::send::resource::request< common::message::transaction::resource::rollback::Request>(
+                        m_state,
+                        transaction,
+                        []( auto& r){ return r.stage == Stage::prepare_replied;},
+                        Stage::rollback_requested,
+                        message.flags
+                     );
+
+                     break;
+                  }
+                  case Transaction::Resource::Stage::rollback_requested:
+                  {
+                     local::send::read_only( m_state, message);
+                     break;
+                  }
+                  case Transaction::Resource::Stage::not_involved:
+                  {
+                     local::send::read_only( m_state, message);
+                     return Directive::remove_transaction;
+                  }
+                  default:
+                  {
+                     common::log::category::error << common::code::xa::protocol << "unexpected transaction stage - action: reply with xa::protocol\n";
+                     local::send::xa_result( m_state, message, common::code::xa::protocol);
+
+                  }
+
+               }
+
+               return Directive::keep_transaction;
+            }
+
          } // domain
 
 

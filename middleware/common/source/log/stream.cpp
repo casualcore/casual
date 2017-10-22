@@ -89,11 +89,7 @@ namespace casual
 
                   void open()
                   {
-                     if( ! open( common::environment::directory::domain() + "/casual.log"))
-                     {
-                        std::cerr << "using current directory - ./casual.log" << std::endl;
-                        open( "./casual.log");
-                     }
+                     open( common::environment::log::path());
                   }
 
                   std::ofstream m_output;

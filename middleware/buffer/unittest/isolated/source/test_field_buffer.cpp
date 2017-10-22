@@ -1187,7 +1187,23 @@ namespace casual
          }
       }
 
-   }
+      TEST( casual_field_buffer, casual_field_type_of_id)
+      {
+         int type = 0;
+         EXPECT_TRUE( casual_field_type_of_id( FLD_CHAR1, &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( type == CASUAL_FIELD_CHAR);
 
-}
+         EXPECT_TRUE( casual_field_type_of_id( FLD_SHORT1, &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( type == CASUAL_FIELD_SHORT);
+
+         EXPECT_TRUE( casual_field_type_of_id( FLD_LONG1, &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( type == CASUAL_FIELD_LONG);
+
+         EXPECT_TRUE( casual_field_type_of_id( 67110000, &type) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( type == CASUAL_FIELD_LONG);
+
+      }
+
+   } // common
+} // casual
 

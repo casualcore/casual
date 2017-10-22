@@ -116,6 +116,11 @@ namespace casual
 				      constexpr auto name() { return "CASUAL_DOMAIN_NAME";}
                } // domain
 
+				   namespace log
+               {
+				      constexpr auto path() { return "CASUAL_LOG_PATH";}
+               } // log
+
 
                //!
                //! the name of the environment variables that holds ipc queue id:s
@@ -171,6 +176,10 @@ namespace casual
 			   const std::string& casual();
 			}
 
+			namespace log
+         {
+			   const std::string& path();
+         } // log
 
 			namespace domain
          {
