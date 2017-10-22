@@ -120,7 +120,7 @@ def dockerfile = '''FROM centos:latest
 MAINTAINER flurig <flurig@localhost>
 
 RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
-RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm
+RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-10.noarch.rpm
 RUN rpm -Uvh epel-release*rpm
 RUN yum -y install pugixml yaml-cpp03
 
@@ -138,7 +138,7 @@ ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
 ENV CASUAL_DOMAIN_HOME /test/casual
 ENV CASUAL_LOG '(error|warning|information)'
 
-RUN mkdir -p $CASUAL_DOMAIN_HOME
+RUN mkdir -p $CASUAL_DOMAIN_HOME/logs
 RUN cp -r /opt/casual/example/domain/single/minimal/* $CASUAL_DOMAIN_HOME/.
 RUN cp $CASUAL_HOME/configuration/example/resources.yaml $CASUAL_HOME/configuration/.
 RUN chown -R casual $CASUAL_DOMAIN_HOME
@@ -149,15 +149,7 @@ EXPOSE 8080 7771
 USER casual
 WORKDIR $CASUAL_DOMAIN_HOME
 
-ENTRYPOINT ["/opt/casual/start.sh"]
-'''
-
-//
-// Startscript for dockercontainer
-//
-def dockerstart = '''#! /bin/bash
-
-casual-domain-manager -c configuration/domain.yaml
+ENTRYPOINT ["casual-domain-manager", "-c", "configuration/domain.yaml"]
 '''
 
 def build( name, image, content)
@@ -285,7 +277,6 @@ try
                      // Setup files
                      //
                      writeFile file: 'Dockerfile', text: dockerfile
-                     writeFile file: 'start.sh', text: dockerstart
 
                      sh '''
                      docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual-middleware-*.rpm|head -1) -f Dockerfile .
