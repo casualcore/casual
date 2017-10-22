@@ -24,7 +24,7 @@ class Buffer(object):
             if self.holder:
                 self.set(data)
             else:
-                raise exception.BufferError, xatmi.tperrnostring( xatmi.tperrno)
+                raise exception.BufferError, xatmi.tperrnostring( xatmi.tperrno())
         else:
             self.size = ctypes.c_long(1024)
             self.holder=xatmi.tpalloc( buffertype, subtype, self.size)

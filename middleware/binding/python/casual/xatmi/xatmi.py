@@ -5,6 +5,9 @@ X_OCTET =  "X_OCTET"
 X_C_TYPE = "X_C_TYPE"
 X_COMMON = "X_COMMON"
 
+TPFAIL = 1
+TPSUCCESS = 2
+
 TPEBADDESC = 2
 TPEBLOCK = 3
 TPEINVAL = 4
@@ -30,14 +33,15 @@ TPEV_SVCSUCC    = 0x0008
 TPEV_SENDONLY   = 0x0020
 
 CASUAL_BUFFER_BINARY_TYPE = ".binary"
-CASUAL_BUFFER_BINARY_SUBTYPE = ""
+CASUAL_BUFFER_BINARY_SUBTYPE = None
+CASUAL_BUFFER_INI_TYPE = ".ini"
+CASUAL_BUFFER_INI_SUBTYPE = None
 CASUAL_BUFFER_JSON_TYPE = ".json"
-CASUAL_BUFFER_JSON_SUBTYPE = ""
-CASUAL_BUFFER_YAML_TYPE = ".yaml"
-CASUAL_BUFFER_YAML_SUBTYPE = ""
+CASUAL_BUFFER_JSON_SUBTYPE = None
 CASUAL_BUFFER_XML_TYPE = ".xml"
-CASUAL_BUFFER_XML_SUBTYPE = ""
-
+CASUAL_BUFFER_XML_SUBTYPE = None
+CASUAL_BUFFER_YAML_TYPE = ".yaml"
+CASUAL_BUFFER_YAML_SUBTYPE = None
 
 #
 # ctypes definitions
@@ -103,24 +107,24 @@ class TPSVCINFO(ctypes.Structure):
 tpservice = ctypes.CFUNCTYPE(None, ctypes.POINTER(TPSVCINFO))
 
 class casual_service_name_mapping(ctypes.Structure):
-    _fields_ = [("functionPointer", tpservice),
+    _fields_ = [("function_pointer", tpservice),
                ("name", ctypes.c_char_p),
-               ("type", ctypes.c_uint64),
+               ("category", ctypes.c_char_p),
                ("transaction", ctypes.c_uint64)]
 
 class casual_xa_switch_mapping( ctypes.Structure):
     _fields_ = [("key", ctypes.c_char_p),
-               ("xaSwitch", ctypes.c_void_p)]
+               ("xa_switch", ctypes.c_void_p)]
 
 tpsvrinit_type = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.POINTER( ctypes.c_char_p))
 
 class casual_server_argument( ctypes.Structure):
     _fields_ = [("services", ctypes.POINTER(casual_service_name_mapping)),
-               ("serviceInit", tpsvrinit_type),
-               ("serviceDone", ctypes.c_void_p),
+               ("server_init", tpsvrinit_type),
+               ("server_done", ctypes.c_void_p),
                ("argc", ctypes.c_int),
                ("argv", ctypes.POINTER(ctypes.c_char_p)),
-               ("xaSwitches", ctypes.POINTER(casual_xa_switch_mapping))]
+               ("xa_switches", ctypes.POINTER(casual_xa_switch_mapping))]
 
 casual_start_server = _mod.casual_start_server
 casual_start_server.argtypes = [ ctypes.POINTER(casual_server_argument),]

@@ -10,6 +10,10 @@ import os
 #
 # Public
 #
+
+SUCCESS = xatmi.TPSUCCESS
+FAIL = xatmi.TPFAIL
+
 def call( service, input, flags=0):
     """
     Use function to call casual service
@@ -19,7 +23,6 @@ def call( service, input, flags=0):
         raise exception.CallError, "No service supplied"
     
     inputbuffer = None
-    #print type(input)
     if isinstance(input, str):
         inputbuffer = buffer.JsonBuffer( input)
         outputbuffer = buffer.JsonBuffer()
@@ -32,7 +35,7 @@ def call( service, input, flags=0):
 
     result = xatmi.tpcall( service, inputbuffer.raw(), inputbuffer.size, ctypes.byref(outputbuffer.holder), ctypes.byref(outputbuffer.size), flags)
     if result == -1:
-        raise exception.CallError, xatmi.tperrnostring( xatmi.tperrno)
+        raise exception.CallError, xatmi.tperrnostring( xatmi.tperrno())
     
     return outputbuffer.data()
 
@@ -83,7 +86,7 @@ def init( argc, argv):
     
     return 0 
 
-def start_server( services, init):
+def start_server( services, init = init):
     
     maxsize = len(services) + 1
     
@@ -92,19 +95,19 @@ def start_server( services, init):
     mapping = MappingType()
     for i in range( maxsize - 1):
         mapping[i] = xatmi.casual_service_name_mapping();
-        mapping[i].type = services[i].type
+        mapping[i].category = services[i].category
         mapping[i].transaction = services[i].transaction
         mapping[i].name = ctypes.c_char_p( services[i].name)
-        mapping[i].functionPointer = xatmi.tpservice( services[i].function)
+        mapping[i].function_pointer = xatmi.tpservice( services[i].function)
 
     #
     # Empty position to mark end of structure
     #
     mapping[maxsize - 1] = xatmi.casual_service_name_mapping();
-    mapping[maxsize - 1].type = 0
+    mapping[maxsize - 1].category = ctypes.c_char_p()
     mapping[maxsize - 1].transaction = 0
     mapping[maxsize - 1].name = ctypes.c_char_p()
-    mapping[maxsize - 1].functionPointer = xatmi.tpservice()
+    mapping[maxsize - 1].function_pointer = xatmi.tpservice()
 
     ArgvType = ctypes.c_char_p * 1
     path = os.path.dirname(os.path.abspath(__file__))
@@ -112,33 +115,23 @@ def start_server( services, init):
     
     argument = xatmi.casual_server_argument()
     argument.services = mapping
-    argument.serviceInit = xatmi.tpsvrinit_type( init)
-    argument.serviceDone = ctypes.c_void_p()
+    argument.server_init = xatmi.tpsvrinit_type( init)
+    argument.server_done = ctypes.c_void_p()
     argument.argc = 1
     argument.argv = arg
-    argument.xaSwitches = ctypes.pointer( xatmi.casual_xa_switch_mapping())
+    argument.xa_switches = ctypes.pointer( xatmi.casual_xa_switch_mapping())
     
     xatmi.casual_start_server( ctypes.pointer(argument))
 
 def casual_return( state, reply):
-    
     xatmi.tpreturn( state, 0, reply.raw(), reply.size, 0)
 
 class Service(object):
     
-    def __init__(self, name, function, type = 0, transaction = 0):
+    def __init__(self, name, function, category = "", transaction = 0):
         self.name = name
         self.function = function
-        self.type = type
+        self.category = category
         self.transaction = transaction
-         
-class Server(object):
-    
-    def __init__(self):
-        self.services = list()
-        self.init = init
-        
-    def start(self):
-        start_server( self.services, self.init)
                         
  
