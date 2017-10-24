@@ -33,7 +33,7 @@ SHELL = bash
 COMPILER_PATTERN = int main(){return 0;}
 export COMPILER_PATTERN
 define check_supported_option
-   $(shell echo $$COMPILER_PATTERN | $(CXX) -x c++ $(1) - > /dev/null 2>&1 && echo $(1))
+   $(shell echo $$COMPILER_PATTERN | $(CXX) -x c++ $(1) -o /dev/null - > /dev/null 2>&1 && echo $(1))
 endef
 
 OPTIONAL_POSSIBLE_FLAGS := -fcolor-diagnostics

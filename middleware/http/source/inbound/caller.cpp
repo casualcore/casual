@@ -32,17 +32,17 @@ namespace casual
          {
             namespace header
             {
-               std::vector< common::service::header::Field> copy( CasualHeader* header, long length)
+               common::service::header::Fields copy( CasualHeader* headers, long length)
                {
                   const http::Trace trace("casual::http::inbound::header::copy");
-                  if (!header) return {};
 
-                  std::vector< common::service::header::Field> result;
-                  for (auto i = 0; i < length; i++)
+                  common::service::header::Fields result;
+
+                  for( auto& header : common::range::make( headers, length))
                   {
-                     result.push_back( common::service::header::Field( header->key, header->value));
-                     header++;
+                     result.emplace_back( header.key, header.value);
                   }
+
                   return result;
                }
             }

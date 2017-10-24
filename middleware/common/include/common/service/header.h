@@ -23,7 +23,6 @@ namespace casual
          {
             inline namespace v1
             {
-
                struct Field
                {
                   Field() = default;
@@ -31,6 +30,14 @@ namespace casual
 
                   std::string key;
                   std::string value;
+
+                  //!
+                  //! case insensitive equal on key
+                  //!
+                  bool equal( const std::string& key) const;
+
+                  //! @returns <key> : <value>  
+                  std::string http() const;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -43,63 +50,69 @@ namespace casual
 
                };
 
-
-               std::vector< header::Field>& fields();
-               void fields( std::vector< header::Field> fields);
-
-
-               //!
-               //! @param key to find
-               //! @return true if field with @p key exists
-               //!
-               bool exists( const std::string& key);
-
-
-               //!
-               //!
-               //! @param key to be found
-               //! @return the value associated with the key
-               //! @throws exception::system::invalid::Argument if key is not found.
-               //!
-               const std::string& get( const std::string& key);
-
-               template< typename T>
-               T get( const std::string& key)
+               
+               struct Fields : std::vector< header::Field>
                {
-                  return from_string< T>( get( key));
-               }
-
-
-               //!
-               //!
-               //! @param key to be found
-               //! @return the value associated with the key, if not found, @p default_value is returned
-               //!
-               std::string get( const std::string& key, const std::string& default_value);
-
-               template< typename T>
-               T get( const std::string& key, const std::string& default_value)
-               {
-                  return from_string< T>( get( key, default_value));
-               }
-
-               namespace replace
-               {
+                  using fields_type = std::vector< header::Field>;
+                  using fields_type::fields_type;
 
                   //!
-                  //! If key is found, value is replaced, otherwise field
-                  //! is appended to fields.
+                  //! @param key to find
+                  //! @return true if field with @p key exists
                   //!
-                  //! @param field
-                  void add( Field field);
+                  bool exists( const std::string& key) const; 
+               
+                  //!
+                  //!
+                  //! @param key to be found
+                  //! @return the value associated with the key
+                  //! @throws exception::system::invalid::Argument if key is not found.
+                  //!
+                  const std::string& at( const std::string& key) const;
 
-               } // replace
+                  template< typename T>
+                  T at( const std::string& key) const
+                  {
+                     return from_string< T>( at( key));
+                  }
 
 
-               //!
-               //! clears the header.
-               //!
-               void clear();
+                  //!
+                  //!
+                  //! @param key to be found
+                  //! @return the value associated with the key, if not found, @p default_value is returned
+                  //!
+                  std::string at( const std::string& key, const std::string& default_value) const;
+               
+                  template< typename T>
+                  T at( const std::string& key, const std::string& default_value) const
+                  {
+                     return from_string< T>( at( key, default_value));
+                  }
+
+                  //!
+                  //! Same semantics as std::map[]  
+                  //!
+                  std::string& operator[] ( const std::string& key );
+
+                  //!
+                  //! Same semantics as at
+                  //!
+                  const std::string& operator[]( const std::string& key ) const;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     archive & container();
+                  })
+
+                  inline fields_type& container() { return *this;}
+                  inline const fields_type& container() const { return *this;}
+               };
+
+
+               Fields& fields();
+               void fields( Fields fields);
+
             }
          } // header
       } // service

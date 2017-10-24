@@ -7,11 +7,14 @@
 
 #include "common/platform.h"
 #include "common/buffer/type.h"
+#include "common/service/header.h"
 
 namespace casual
 {
    namespace http
    {
+      using Header = common::service::header::Fields;
+
       namespace request
       {
          namespace payload
@@ -23,12 +26,12 @@ namespace casual
 
          struct Reply
          {
-            std::vector< std::string> header;
+            Header header;
             payload::Reply payload;
          };
 
          Reply post( const std::string& url, const payload::Request& payload);
-         Reply post( const std::string& url, const payload::Request& payload, const std::vector< std::string>& header);
+         Reply post( const std::string& url, const payload::Request& payload, const Header& header);
 
 
       } // request

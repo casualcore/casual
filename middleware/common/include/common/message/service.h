@@ -251,8 +251,7 @@ namespace casual
                   common::transaction::ID trid;
                   request::Flags flags;
 
-                  std::vector< common::service::header::Field> header;
-
+                  common::service::header::Fields header;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {

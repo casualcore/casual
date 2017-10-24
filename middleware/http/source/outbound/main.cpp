@@ -31,7 +31,7 @@ namespace casual
             struct Node
             {
                std::string url;
-               std::shared_ptr< std::vector< std::string>> headers;
+               std::shared_ptr< common::service::header::Fields> headers;
             };
 
             inline friend std::ostream& operator << ( std::ostream& out, const Node& value)
@@ -46,13 +46,15 @@ namespace casual
 
          namespace transform
          {
-            std::shared_ptr< std::vector< std::string>> header( const std::vector< configuration::Header>& model)
+            auto header( const std::vector< configuration::Header>& model)
             {
-               auto headers = common::range::transform( model, []( auto& h){
-                  return h.name + ':' + h.value;
+               common::service::header::Fields headers;
+
+               common::range::transform( model, headers.container(), []( auto& h){
+                  return common::service::header::Field{ h.name, h.value};
                });
 
-               return std::make_shared< std::vector< std::string>>( std::move( headers));
+               return std::make_shared< common::service::header::Fields>( std::move( headers));
             }
 
          } // transform

@@ -18,7 +18,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            header::clear();
+            header::fields().clear();
 
             EXPECT_TRUE( header::fields().empty());
          }
@@ -27,55 +27,55 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            header::clear();
+            header::Fields fields;
 
-            header::replace::add( { "casual.key.test", "42"});
+            fields[ "casual.key.test"] = "42";
 
-            EXPECT_TRUE( header::exists( "casual.key.test"));
+            EXPECT_TRUE( fields.exists( "casual.key.test"));
          }
 
          TEST( common_service_header, empty__replace_add__get_value)
          {
             common::unittest::Trace trace;
 
-            header::clear();
+            header::Fields fields;
 
-            header::replace::add( { "casual.key.test", "42"});
+            fields[ "casual.key.test"] = "42";
 
-            EXPECT_TRUE( header::get( "casual.key.test") == "42");
+            EXPECT_TRUE( fields.at( "casual.key.test") == "42");
          }
 
          TEST( common_service_header, empty__replace_add__get_int_value)
          {
             common::unittest::Trace trace;
 
-            header::clear();
+            header::Fields fields;
+            
+            fields[ "casual.key.test"] = "42";
 
-            header::replace::add( { "casual.key.test", "42"});
-
-            EXPECT_TRUE( header::get< int>( "casual.key.test") == 42);
+            EXPECT_TRUE( fields.at< int>( "casual.key.test") == 42);
          }
 
          TEST( common_service_header, empty__replace_add__get_value_with_default__expect_actual_value)
          {
             common::unittest::Trace trace;
 
-            header::clear();
+            header::Fields fields;
+            
+            fields[ "casual.key.test"] = "42";
 
-            header::replace::add( { "casual.key.test", "42"});
-
-            EXPECT_TRUE( header::get( "casual.key.test", "poop") == "42");
+            EXPECT_TRUE( fields.at( "casual.key.test", "poop") == "42");
          }
 
          TEST( common_service_header, empty__replace_add__get_value_with_default__expect_default_value)
          {
             common::unittest::Trace trace;
 
-            header::clear();
+            header::Fields fields;
+            
+            fields[ "casual.key.test"] = "42";
 
-            header::replace::add( { "casual.key.test", "42"});
-
-            EXPECT_TRUE( header::get( "non-existen-key", "poop") == "poop");
+            EXPECT_TRUE( fields.at( "non-existent-key", "poop") == "poop");
          }
 
       } // service

@@ -32,8 +32,8 @@ namespace casual
                   template< typename P>
                   bool describe( const P& header)
                   {
-                     return common::service::header::exists( "casual-service-describe") &&
-                           common::service::header::get( "casual-service-describe") != "false";
+                     return common::service::header::fields().exists( "casual-service-describe") &&
+                           common::service::header::fields().at( "casual-service-describe") != "false";
                   }
 
                } // <unnamed>
