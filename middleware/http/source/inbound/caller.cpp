@@ -1,3 +1,4 @@
+#include <vector>
 
 #include "http/common.h"
 #include "http/inbound/caller.h"
@@ -7,12 +8,10 @@
 #include "common/exception/system.h"
 #include "common/string.h"
 
-#include <map>
-#include <vector>
 
 namespace std
 {
-   std::ostream& operator<<( std::ostream& stream, std::map< std::string, std::string> input)
+   std::ostream& operator<<( std::ostream& stream, std::vector< std::pair< std::string, std::string >> input)
    {
       for (const auto data : input)
       {
@@ -49,22 +48,23 @@ namespace casual
 
             namespace parameter
             {
-               std::map< std::string, std::string> copy( const Buffer& buffer)
+               using container = std::vector< std::pair< std::string, std::string> >;
+               container copy( const Buffer& buffer)
                {
-                  std::map< std::string, std::string> result;
+                  container result;
                   auto paramters = common::string::split( buffer.data, '&');
                   for (const auto parameter : paramters)
                   {
                      const auto parts = common::string::split( parameter, '=');
                      if (parts.size() == 2)
                      {
-                        result[parts[0]] = parts[1];
+                        result.emplace_back( std::make_pair( parts[0], parts[1]));
                      }
                   }
                   return result;
                }
 
-               common::platform::binary::type make_json( const std::map< std::string, std::string>& parameters)
+               common::platform::binary::type make_json( const parameter::container& parameters)
                {
                   common::platform::binary::type buffer;
                   buffer.push_back('{');
@@ -86,7 +86,7 @@ namespace casual
                   return buffer;
                }
 
-               common::platform::binary::type make_xml( const std::map< std::string, std::string>& parameters)
+               common::platform::binary::type make_xml( const parameter::container& parameters)
                {
                   common::platform::binary::type buffer;
                   static const std::string root("root");
@@ -214,7 +214,7 @@ namespace casual
                   return output;
                }
 
-               common::platform::binary::type assemble( CasualBuffer* transport, const std::map< std::string, std::string>& parameters, const std::string& protocol)
+               common::platform::binary::type assemble( CasualBuffer* transport, const parameter::container& parameters, const std::string& protocol)
                {
                   common::platform::binary::type buffer;
                   if ( protocol == http::protocol::json() && transport->payload.size < 1)

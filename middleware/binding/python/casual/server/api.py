@@ -30,14 +30,11 @@ def call( service, input, flags=0):
         inputbuffer = input
         outputbuffer = buffer.create( input)
         
-    #print type(inputbuffer)
-    #sprint type(outputbuffer)
-
     result = xatmi.tpcall( service, inputbuffer.raw(), inputbuffer.size, ctypes.byref(outputbuffer.holder), ctypes.byref(outputbuffer.size), flags)
     if result == -1:
-        raise exception.CallError, xatmi.tperrnostring( xatmi.tperrno())
-    
-    return outputbuffer.data()
+        raise exception.CallError(xatmi.tperrnostring( xatmi.tperrno()))
+
+    return outputbuffer.data() if isinstance(input, str) else outputbuffer
 
 def send( service, input, flags=0):
     """
@@ -47,7 +44,7 @@ def send( service, input, flags=0):
     if not service:
         raise CallError, "No service supplied"
     
-    inputbuffer = buffer.JsonBuffer( input)
+    inputbuffer = buffer.JsonBuffer( input) if isinstance(input, str) else input
 
     id = xatmi.tpacall( service, inputbuffer.raw(), inputbuffer.size, flags)
     if id == -1:
@@ -68,7 +65,7 @@ def receive( id, flags=0):
     if result == -1:
         raise exception.CallError, xatmi.tperrnostring( xatmi.tperrno)
     
-    return outputbuffer.data()
+    return outputbuffer
 
 def cancel( id, flags=0):
     """

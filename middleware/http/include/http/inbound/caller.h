@@ -10,7 +10,7 @@
 
 namespace std
 {
-   std::ostream& operator<<( std::ostream& stream, std::map< std::string, std::string> input);
+   std::ostream& operator<<( std::ostream& stream, std::vector< std::pair< std::string, std::string >> input);
 }
 
 extern "C" {

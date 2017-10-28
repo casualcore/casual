@@ -97,6 +97,10 @@ tpreturn = _mod.tpreturn
 tpreturn.argtypes = (ctypes.c_int,ctypes.c_long, ctypes.c_char_p, ctypes.c_long, ctypes.c_long)
 tpreturn.restype = None
 
+casual_user_log = _mod.casual_user_log
+casual_user_log.argtypes = (ctypes.c_char_p, ctypes.c_char_p)
+casual_user_log.restype = ctypes.c_int
+
 class TPSVCINFO(ctypes.Structure):
     _fields_ = [("name", (ctypes.c_char * 128)),
                ("data", ctypes.c_char_p),

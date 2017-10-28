@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import sys
 
+from casual.server.api import (FAIL, SUCCESS, Service, casual_return,start_server)
 from casual.server.buffer import JsonBuffer
-from casual.server.api import start_server, Service, casual_return, SUCCESS, FAIL
+from casual.server.log import userlog
+
 
 def py_service_uppercase( buffer):
     """
@@ -14,6 +16,7 @@ def py_service_uppercase( buffer):
 
     try:
         data = buffer.contents.data[0:buffer.contents.len]
+        userlog(data)
         reply = JsonBuffer(data.upper())
     except:
         state = FAIL
@@ -29,7 +32,9 @@ def py_service_echo( buffer):
     reply = None
 
     try:
-        reply = JsonBuffer(buffer.contents.data[0:buffer.contents.len])
+        data = buffer.contents.data[0:buffer.contents.len]
+        reply = JsonBuffer(data)
+        
     except:
         state = FAIL
 
