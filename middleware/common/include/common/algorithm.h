@@ -1035,16 +1035,16 @@ namespace casual
          template< typename R1, typename R2, typename P>
          bool equal( R1&& lhs, R2&& rhs, P predicate)
          {
-            if( size( lhs) != size( rhs)) { return false;}
-            return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), predicate);
+            return std::equal( std::begin( lhs), std::end( lhs), 
+               std::begin( rhs), std::end( rhs), predicate);
          }
 
 
          template< typename R1, typename R2>
          bool equal( R1&& lhs, R2&& rhs)
          {
-            if( size( lhs) != size( rhs)) { return false;}
-            return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs));
+            return std::equal( std::begin( lhs), std::end( lhs), 
+               std::begin( rhs), std::end( rhs));
          }
 
 
@@ -1197,6 +1197,7 @@ namespace casual
 
             return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
          }
+         
 
          template< typename R1, typename R2>
          auto search( R1&& range, R2&& to_find)

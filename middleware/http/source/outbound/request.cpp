@@ -61,7 +61,7 @@ namespace casual
 
                   struct Reply
                   {
-                     std::vector< std::string> header;
+                     http::Header header;
                      std::string payload;
                   };
 
@@ -121,7 +121,7 @@ namespace casual
                      } // request
 
 
-                     std::size_t header( char* buffer, size_t size, size_t nitems, std::vector< std::string>* destination)
+                     std::size_t header( char* buffer, size_t size, size_t nitems, http::Header* destination)
                      {
                         Trace trace{ "http::request::local::curl::header"};
 
@@ -129,22 +129,31 @@ namespace casual
                         {
                           return 0;
                         }
-                        auto first = buffer;
-                        auto last = std::find_if( first, first + ( size * nitems), []( char c){
+
+                        auto range = common::range::make( buffer, buffer + ( size * nitems));
+
+                        range = std::get< 0>( common::range::divide_if( range, []( char c){
                            return c == '\n' || c == '\r';
-                        });
+                        }));
 
-                        //
-                        // Tror detta är en "tom header" som vi blir invokerad med som "sista header"
-                        // skulla kunna användas att detektera när anropet resulterar
-                        // i flera headers (https handskakning och whatnot..)
-                        //
-                        if( first == last)
+
+                        if( range)
                         {
-                           return size * nitems;
-                        }
+                           auto split = common::range::split( range, ':');
 
-                        destination->push_back( common::string::lower( std::string( first, last)));
+                           auto to_string = []( auto&& range){
+                              range = common::string::trim( range);
+                              return std::string( std::begin( range), std::end( range));
+                           };
+
+                           destination->emplace_back(
+                              to_string( std::get< 0>( split)),
+                              to_string( std::get< 1>( split))
+                           );
+                        }
+                        // else:
+                        // Think this is an "empty header" that we'll be invoked as the "last header"
+                        //  
 
                         return size * nitems;
                      }
@@ -187,7 +196,7 @@ namespace casual
                   using payload_const_view = local::curl::callback::payload_const_view;
 
 
-                  Connection( const std::string& url, const std::vector< std::string>& header)
+                  Connection( const std::string& url, const http::Header& header)
                     : m_handle( Curl::instance().handle())
                   {
                      Trace trace{ "http::request::local::Connection::Connection"};
@@ -209,11 +218,10 @@ namespace casual
 
                      for( auto& field : header)
                      {
-                        m_header.reset( curl_slist_append( m_header.release(), field.c_str()));
+                        auto http = field.http();
+
+                        m_header.reset( curl_slist_append( m_header.release(), http.c_str()));
                      }
-
-
-
                   }
 
 
@@ -276,20 +284,6 @@ namespace casual
                   {
                      Trace trace{ "http::request::local::Connection::transform"};
 
-                     auto get_content_type = []( const std::vector< std::string>& header){
-
-                        for( auto& field : header)
-                        {
-                           auto split = common::range::split( field, ':');
-                           if( common::range::search( std::get< 0>( split), common::range::make( "content-type")))
-                           {
-                              auto trimmed = common::string::trim( std::get< 1>( split));
-                              return std::string( std::begin( trimmed), std::end( trimmed));
-                           }
-                        }
-                        return std::string{};
-                     };
-
                      auto transcode_base64 = [&]( local::curl::Reply&& reply, const std::string& type){
 
                         request::Reply result;
@@ -334,7 +328,7 @@ namespace casual
                         }
                      };
 
-                     auto content = get_content_type( reply.header);
+                     auto content = reply.header.at( "content-type", "");
 
                      verbose::log << "content: " << content << '\n';
 
@@ -441,7 +435,7 @@ namespace casual
             return post( url, payload, {});
          }
 
-         Reply post( const std::string& url, const payload::Request& payload, const std::vector< std::string>& header)
+         Reply post( const std::string& url, const payload::Request& payload, const http::Header& header)
          {
             Trace trace{ "http::request::post"};
 

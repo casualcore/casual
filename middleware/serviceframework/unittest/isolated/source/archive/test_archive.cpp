@@ -134,12 +134,11 @@ namespace casual
       std::string someString;
       long someLong;
 
-      template< typename A>
-      void serialize( A& archive)
-      {
+      CASUAL_CONST_CORRECT_SERIALIZE
+      (
          archive & CASUAL_MAKE_NVP( someString);
          archive & CASUAL_MAKE_NVP( someLong);
-      }
+      )
    };
 
    TEST( casual_sf_binary_reader_writer, serializible)

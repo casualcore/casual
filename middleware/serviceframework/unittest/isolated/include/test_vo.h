@@ -39,9 +39,8 @@ namespace casual
 
          sf::optional< long> m_optional = 42;
 
-         template< typename A>
-         void serialize( A& archive)
-         {
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
             archive & CASUAL_MAKE_NVP( m_bool);
             archive & CASUAL_MAKE_NVP( m_long);
             archive & CASUAL_MAKE_NVP( m_string);
@@ -49,7 +48,7 @@ namespace casual
             archive & CASUAL_MAKE_NVP( m_longlong);
             archive & CASUAL_MAKE_NVP( m_time);
             archive & CASUAL_MAKE_NVP( m_optional);
-         }
+         )
 
          static std::string yaml()
          {
@@ -104,13 +103,12 @@ value:
          std::tuple< int, std::string, SimpleVO> m_tuple;
 
 
-         template< typename A>
-         void serialize( A& archive)
-         {
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
             archive & CASUAL_MAKE_NVP( m_string);
             archive & CASUAL_MAKE_NVP( m_values);
             archive & CASUAL_MAKE_NVP( m_tuple);
-         }
+         )
       };
 
 
@@ -118,12 +116,11 @@ value:
       {
          sf::platform::binary::type m_binary;
 
-         template< typename A>
-         void serialize( A& archive)
-         {
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
             SimpleVO::serialize( archive);
             archive & CASUAL_MAKE_NVP( m_binary);
-         }
+         )
       };
 
 

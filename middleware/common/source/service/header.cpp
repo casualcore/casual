@@ -16,65 +16,59 @@ namespace casual
       {
          namespace header
          {
-
             inline namespace v1
             {
                namespace local
                {
                   namespace
                   {
-                     auto find( const std::string& key) -> decltype( range::make( header::fields()))
+                     template< typename F>
+                     auto find( F& fields, const std::string& key) // -> decltype( range::make( header::fields()))
                      {
-                        return range::find_if( fields(), [&]( const Field& f){
-                           return f.key == key;
+                        return range::find_if( fields, [&]( const Field& f){
+                           return f.equal( key);
                         });
+                     }
+
+                     template< typename F>
+                     decltype( auto) find_at( F& fields, const std::string& key) // -> decltype( range::make( header::fields()))
+                     {
+                        auto found = find( fields, key);
+                        
+                        if( found) 
+                           return *found;
+   
+                        throw exception::system::invalid::Argument{ "service header key not found: " + key};
                      }
 
                   } // <unnamed>
                } // local
 
-               bool operator == (  const Field& lhs, const Field& rhs)
+
+               bool Field::equal( const std::string& value) const
                {
-                  return lhs.key == rhs.key;
+                  return range::equal( key, value, 
+                     []( auto a, auto b){ return std::tolower(a) == std::tolower(b);});
                }
 
-               std::ostream& operator << ( std::ostream& out, const Field& value)
+               std::string Field::http() const
                {
-                  return out << "{ key: " << value.key << ", value: " << value.value << '}';
+                  return key + ": " + value;
                }
 
-               std::vector< header::Field>& fields()
+               bool Fields::exists( const std::string& key) const
                {
-                  static std::vector< header::Field> fields;
-                  return fields;
+                  return local::find( *this, key);
                }
 
-               void fields( std::vector< header::Field> header)
+               const std::string& Fields::at( const std::string& key) const
                {
-                  log::debug << "header: " << range::make( header) << '\n';
-                  fields() = std::move( header);
+                  return local::find_at( *this, key).value;
                }
 
-               bool exists( const std::string& key)
+               std::string Fields::at( const std::string& key, const std::string& default_value) const
                {
-                  return local::find( key);
-               }
-
-
-               const std::string& get( const std::string& key)
-               {
-                  auto found = local::find( key);
-
-                  if( found)
-                  {
-                     return found->value;
-                  }
-                  throw exception::system::invalid::Argument{ "service header key not found: " + key};
-               }
-
-               std::string get( const std::string& key, const std::string& default_value)
-               {
-                  auto found = local::find( key);
+                  auto found = local::find( *this, key);
 
                   if( found)
                   {
@@ -83,28 +77,47 @@ namespace casual
                   return default_value;
                }
 
-               namespace replace
+               std::string& Fields::operator[] ( const std::string& key )
                {
-                  void add( Field field)
+                  auto found = local::find( *this, key);
+                  
+                  if( found)
                   {
-                     auto found = range::find( fields(), field);
-
-                     if( found)
-                     {
-                        *found = std::move( field);
-                     }
-                     else
-                     {
-                        fields().push_back( std::move( field));
-                     }
+                     return found->value;
                   }
-               } // replace
 
-               void clear()
-               {
-                  fields().clear();
+                  fields_type::emplace_back( key, "");
+                  return fields_type::back().value;
                }
-            }
+
+               const std::string& Fields::operator[]( const std::string& key ) const
+               {
+                  return at( key);
+               }
+
+               bool operator == (  const Field& lhs, const Field& rhs)
+               {
+                  return lhs.equal( rhs.key);
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Field& value)
+               {
+                  return out << "{ key: " << value.key << ", value: " << value.value << '}';
+               }
+
+               header::Fields& fields()
+               {
+                  static header::Fields fields;
+                  return fields;
+               }
+
+               void fields( header::Fields header)
+               {
+                  log::debug << "header: " << range::make( header) << '\n';
+                  fields() = std::move( header);
+               }
+
+            } // v1
          } // header
       } // service
    } // common

@@ -53,7 +53,7 @@ namespace casual
             //
             // Set header so we invoke the servcie-describe protocol
             //
-            common::service::header::replace::add( { "casual-service-describe", "true"});
+            common::service::header::fields()[ "casual-service-describe"] = "true";
 
             return range::transform( services, local::Call{});
          }

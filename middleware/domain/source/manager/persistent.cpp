@@ -165,12 +165,11 @@ namespace casual
                         Version version;
                         std::reference_wrapper< S> state;
 
-                        template< typename A>
-                        void serialize( A& archive)
-                        {
+                        CASUAL_CONST_CORRECT_SERIALIZE
+                        (
                            archive & CASUAL_MAKE_NVP( version);
                            archive & sf::name::value::pair::make( "state", state.get());
-                        }
+                        )
                      };
 
                      template< typename S>

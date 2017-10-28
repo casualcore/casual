@@ -238,11 +238,11 @@ namespace casual
 
                // header
                {
-                  service::header::clear();
+                  auto& header = service::header::fields();
+                  header.clear();
 
-                  service::header::replace::add( { "casual.header.test.1", "42"});
-                  service::header::replace::add( { "casual.header.test.2", "poop"});
-
+                  header[ "casual.header.test.1"] = "42";
+                  header[ "casual.header.test.2"] = "poop";
                }
 
 
@@ -260,7 +260,7 @@ namespace casual
 
                // header
                {
-                  service::header::clear();
+                  service::header::fields().clear();
                   EXPECT_TRUE( service::header::fields().empty());
                }
             }
@@ -277,16 +277,12 @@ namespace casual
                EXPECT_TRUE( message.buffer.memory.size() == 100);
                EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
 
-               service::header::clear();
-               service::header::fields( std::move( message.header));
-
-
                // header
                {
-                  EXPECT_TRUE( service::header::fields().size() == 2);
-                  EXPECT_TRUE( service::header::get< int>( "casual.header.test.1") == 42);
-                  EXPECT_TRUE( service::header::get( "casual.header.test.2") == "poop");
-                  service::header::clear();
+                   
+                  EXPECT_TRUE( message.header.size() == 2);
+                  EXPECT_TRUE( message.header.at< int>( "casual.header.test.1") == 42);
+                  EXPECT_TRUE( message.header.at( "casual.header.test.2") == "poop");
                }
 
             }
