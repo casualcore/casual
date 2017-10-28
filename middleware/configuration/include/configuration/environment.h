@@ -28,12 +28,11 @@ namespace casual
             std::string key;
             std::string value;
 
-            template< typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( key);
                archive & CASUAL_MAKE_NVP( value);
-            }
+            )
 
             friend bool operator == ( const Variable& lhs, const Variable& rhs);
 
@@ -49,12 +48,11 @@ namespace casual
          std::vector< std::string> files;
          std::vector< environment::Variable> variables;
 
-         template< typename A>
-         void serialize( A& archive)
-         {
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
             archive & CASUAL_MAKE_NVP( files);
             archive & CASUAL_MAKE_NVP( variables);
-         }
+         )
 
          friend bool operator == ( const Environment& lhs, const Environment& rhs);
       };

@@ -20,11 +20,10 @@ namespace casual
       {
          long integer = 0;
 
-         template<typename A>
-         void serialize( A& archive)
-         {
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
             archive & CASUAL_MAKE_NVP( integer);
-         }
+         )
       };
    } // <unnamed>
 

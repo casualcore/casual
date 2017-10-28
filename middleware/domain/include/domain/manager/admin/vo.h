@@ -175,12 +175,11 @@ namespace casual
                         std::string alias;
                         size_type instances;
 
-                        template< typename A>
-                        void serialize( A& archive)
-                        {
+                        CASUAL_CONST_CORRECT_SERIALIZE
+                        (
                            archive & CASUAL_MAKE_NVP( alias);
                            archive & CASUAL_MAKE_NVP( instances);
-                        }
+                        )
                      };
                   } // scale
 

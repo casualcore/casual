@@ -94,12 +94,11 @@ namespace casual
             long integer;
             std::string string;
 
-            template<typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( integer);
                archive & CASUAL_MAKE_NVP( string);
-            }
+            )
          };
 
 
@@ -109,11 +108,10 @@ namespace casual
             {
                long long huge;
 
-               template<typename A>
-               void serialize( A& archive)
-               {
+               CASUAL_CONST_CORRECT_SERIALIZE
+               (
                   archive & CASUAL_MAKE_NVP( huge);
-               }
+               )
 
             };
 
@@ -121,12 +119,11 @@ namespace casual
             InnerVO other_inner;
 
 
-            template<typename A>
-            void serialize( A& archive)
-            {
+            CASUAL_CONST_CORRECT_SERIALIZE
+            (
                archive & CASUAL_MAKE_NVP( first_inner);
                archive & CASUAL_MAKE_NVP( other_inner);
-            }
+            )
          };
 
          bool boolean;
@@ -134,14 +131,13 @@ namespace casual
          short tiny;
          std::vector<OtherVO> others;
 
-         template<typename A>
-         void serialize( A& archive)
-         {
+         CASUAL_CONST_CORRECT_SERIALIZE
+         (
             archive & CASUAL_MAKE_NVP( boolean);
             archive & CASUAL_MAKE_NVP( first);
             archive & CASUAL_MAKE_NVP( tiny);
             archive & CASUAL_MAKE_NVP( others);
-         }
+         )
 
       };
 

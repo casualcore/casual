@@ -31,14 +31,13 @@ namespace casual
 
             casual_xa_switch_mapping* xa_switches = nullptr;
 
-            template< typename A>
-            void serialize( A& archive)
+            CASUAL_CONST_CORRECT_SERIALIZE(
             {
                archive & CASUAL_MAKE_NVP( rm_id);
                archive & CASUAL_MAKE_NVP( rm_key);
                archive & CASUAL_MAKE_NVP( rm_openinfo);
                archive & CASUAL_MAKE_NVP( rm_closeinfo);
-            }
+            })
 
          };
 
