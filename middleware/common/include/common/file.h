@@ -42,9 +42,8 @@ namespace casual
                Path& operator =( const Path&) = delete;
 
 
-               const std::string& path() const;
-
-               operator const std::string&() const;
+               const std::string& path() const &; // only on l-values
+               operator const std::string&() const &; // only on l-values
 
                std::string release();
 

@@ -24,7 +24,7 @@ namespace casual
             {
                namespace
                {
-                  Model get( Model http, const std::string& file)
+                  Model get( Model current, const std::string& file)
                   {
                      Trace trace{ "http::outbound::configuration::local::get"};
 
@@ -33,20 +33,27 @@ namespace casual
                      //
                      // Create the reader and deserialize configuration
                      //
+                     Model http;
                      auto reader = sf::archive::reader::from::file( file);
                      reader >> CASUAL_MAKE_NVP( http);
 
-
                      verbose::log << "http: " << http << '\n';
 
-                     return http;
+                     return current + http;
 
                   }
                } // <unnamed>
             } // local
 
+            Default operator + ( Default lhs, Default rhs)
+            {
+               common::range::append( lhs.headers, rhs.headers);
+               return lhs;
+            }
+
             Model operator + ( Model lhs, Model rhs)
             {
+               lhs.casual_default = lhs.casual_default + rhs.casual_default;
                common::range::append( rhs.services, lhs.services);
                return lhs;
             }

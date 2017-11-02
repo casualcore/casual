@@ -31,7 +31,6 @@ common_archive = LinkArchive( 'bin/casual-http-common',
        Compile( 'source/common.cpp'),
      ])
 
-
 common_outbound_archive = LinkArchive( 'bin/casual-http-outbound-common',
     [
        Compile( 'source/outbound/configuration.cpp'),
@@ -64,6 +63,26 @@ target = LinkExecutable( 'bin/casual-http-outbound',
      ])
 
 install_bin.append( target)
+
+
+#
+# Unittest
+#
+LinkUnittest( 'unittest/isolated/bin/test-http',
+   [
+    Compile( 'unittest/isolated/outbound/source/test_model.cpp'),
+   ],
+   [ 
+      common_outbound_archive, 
+      common_archive,
+      'casual-mockup',
+      'casual-common', 
+      'casual-sf', 
+      'casual-unittest'
+   ])  
+   
+
+
 
 Install( install_bin,'$(CASUAL_HOME)/bin')
 Install( install_lib,'$(CASUAL_HOME)/lib')

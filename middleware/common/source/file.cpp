@@ -85,13 +85,13 @@ namespace casual
                return *this;
             }
 
-            Path::operator const std::string&() const
+            Path::operator const std::string&() const &
             {
                return path();
             }
 
 
-            const std::string& Path::path() const
+            const std::string& Path::path() const &
             {
                return m_path;
             }

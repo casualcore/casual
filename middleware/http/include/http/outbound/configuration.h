@@ -9,6 +9,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 #include <iosfwd>
 
 namespace casual
@@ -35,6 +36,9 @@ namespace casual
 
             struct Service
             {
+               Service() = default;
+               inline Service( std::function< void(Service&)> foriegn) { foriegn( *this);}
+
                std::string name;
                std::string url;
 
@@ -54,10 +58,15 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                   archive & CASUAL_MAKE_NVP( headers);
                )
+
+               friend Default operator + ( Default lhs, Default rhs);
             };
 
             struct Model
             {
+               Model() = default;
+               inline Model( std::function< void(Model&)> foriegn) { foriegn( *this);}
+
                Default casual_default;
                std::vector< Service> services;
 
