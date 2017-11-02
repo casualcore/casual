@@ -31,10 +31,13 @@ namespace casual
 
       namespace protocol
       {
+
          const std::string& x_octet();
          const std::string& binary();
          const std::string& json();
          const std::string& xml();
+         const std::string& field();
+
 
          namespace convert
          {

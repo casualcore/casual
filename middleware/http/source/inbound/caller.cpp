@@ -144,6 +144,7 @@ namespace casual
                      {
                         { http::protocol::binary(), transcode_base64},
                         { http::protocol::x_octet(), transcode_base64},
+                        { http::protocol::field(), transcode_base64},
                         { http::protocol::json(), transcode_none},
                         { http::protocol::xml(), transcode_none}
                      };
@@ -187,6 +188,7 @@ namespace casual
                      {
                         { http::protocol::binary(), transcode_base64},
                         { http::protocol::x_octet(), transcode_base64},
+                        { http::protocol::field(), transcode_base64},
                         { http::protocol::json(), transcode_none},
                         { http::protocol::xml(), transcode_none}
                      };

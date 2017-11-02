@@ -4,6 +4,8 @@
 #include "common/algorithm.h"
 #include "common/buffer/type.h"
 
+#include "buffer/field.h"
+
 namespace casual
 {
    namespace http
@@ -26,6 +28,7 @@ namespace casual
          const std::string& binary() { static const auto name = std::string("application/casual-x-octet"); return name;}
          const std::string& json() { static const auto name = std::string("application/json"); return name;}
          const std::string& xml() { static const auto name = std::string("application/xml"); return name;}
+         const std::string& field() { static const auto name = std::string("application/casual-field"); return name;}
 
          namespace convert
          {
@@ -43,6 +46,19 @@ namespace casual
 
                      return decltype( found->second){};
                   }
+
+                  namespace buffer
+                  {
+                     namespace type
+                     {
+                        auto fielded() { return common::buffer::type::combine( CASUAL_FIELD, nullptr);}
+
+
+                     } // type
+
+
+                  } // buffer
+
                } // <unnamed>
             } // local
             namespace from
@@ -54,8 +70,8 @@ namespace casual
                      { common::buffer::type::binary(), protocol::binary()},
                      { common::buffer::type::json(), protocol::json()},
                      { common::buffer::type::xml(), protocol::xml()},
+                     { local::buffer::type::fielded(), protocol::field()},
                   };
-
                   return local::find( mapping, buffer);
                }
             } // from
@@ -69,6 +85,7 @@ namespace casual
                      { protocol::binary(), common::buffer::type::binary()},
                      { protocol::json(), common::buffer::type::json()},
                      { protocol::xml(), common::buffer::type::xml()},
+                     { protocol::field(), local::buffer::type::fielded()},
                   };
 
                   return local::find( mapping, content);
