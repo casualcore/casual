@@ -203,12 +203,12 @@ namespace casual
                      {
                         manager::admin::vo::Group result;
 
-                        result.id = value.id.underlaying();
+                        result.id = value.id.value();
                         result.name = value.name;
                         result.note = value.note;
 
                         result.dependencies = range::transform( value.dependencies, []( auto& id){
-                           return id.underlaying();
+                           return id.value();
                         });
                         result.resources = value.resources;
 
@@ -276,14 +276,14 @@ namespace casual
                      {
                         R result;
 
-                        result.id = value.id.underlaying();
+                        result.id = value.id.value();
                         result.alias = value.alias;
                         result.path = value.path;
                         result.arguments = value.arguments;
                         result.note = value.note;
                         result.instances = range::transform( value.instances, Instance{});
                         result.memberships = range::transform( value.memberships, []( auto id){
-                           return common::id::underlaying( id);
+                           return id.value();
                         });
                         result.environment.variables = value.environment.variables;
                         result.restart = value.restart;

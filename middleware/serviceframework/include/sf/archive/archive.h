@@ -166,7 +166,10 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::container::is_sequence< T>::value && ! std::is_same< platform::binary::type, T>::value, bool>
+         traits::enable_if_t< 
+            traits::container::is_sequence< T>::value 
+            && ! traits::container::is_string< T>::value
+            && ! std::is_same< platform::binary::type, T>::value, bool>
          serialize( Reader& archive, T& container, const char* const name)
          {
             auto properties = archive.container_start( 0, name);
@@ -372,7 +375,10 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::container::is_container< T>::value && ! std::is_same< platform::binary::type, T>::value>
+         traits::enable_if_t< 
+            traits::container::is_container< T>::value 
+            && ! traits::container::is_string< T>::value 
+            && ! std::is_same< platform::binary::type, T>::value>
          serialize( Writer& archive, const T& container, const char* const name)
          {
             archive.container_start( container.size(), name);

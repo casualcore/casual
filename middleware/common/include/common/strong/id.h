@@ -5,8 +5,7 @@
 #ifndef CASUAL_COMMON_STRONG_ID_H_
 #define CASUAL_COMMON_STRONG_ID_H_
 
-#include "common/optional.h"
-
+#include "common/value/optional.h"
 #include "common/platform.h"
 
 namespace casual
@@ -32,7 +31,7 @@ namespace casual
                struct type{};
             } // tag
    
-            using id = value::optional< platform::ipc::native::type, platform::ipc::native::invalid, tag::type>;
+            using id = value::Optional< platform::ipc::native::type, platform::ipc::native::invalid, tag::type>;
             
          } // ipc
 
@@ -40,14 +39,14 @@ namespace casual
          {
             struct stream
             {
-               static std::ostream& print( std::ostream& out, platform::resource::native::type value);
+               static std::ostream& print( std::ostream& out, bool valid, platform::resource::native::type value);
             };
             namespace tag
             {
                struct type{};
             } // tag
 
-            using id = value::optional< platform::resource::native::type, platform::resource::native::invalid, tag::type, stream>;
+            using id = value::Optional< platform::resource::native::type, platform::resource::native::invalid, tag::type, stream>;
 
          } // resource
       } // strong 

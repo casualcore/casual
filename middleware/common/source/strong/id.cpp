@@ -10,7 +10,7 @@ namespace casual
       {
          namespace resource
          {
-            std::ostream& stream::print( std::ostream& out, platform::resource::native::type value)
+            std::ostream& stream::print( std::ostream& out, bool valid, platform::resource::native::type value)
             {
                if( value < 0) return out << "E-" << std::abs( value);
                if( value > 0) return out << "L-" << value;

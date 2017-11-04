@@ -7,7 +7,6 @@
 
 #include "common/message/type.h"
 #include "common/domain.h"
-#include "common/id.h"
 
 namespace casual
 {
@@ -304,53 +303,6 @@ namespace casual
                } // server
 
             } // configuration
-
-
-
-            namespace scale
-            {
-               /*
-               struct Executable : common::message::basic_message< common::message::Type::domain_scale_executable>
-               {
-                  using id_type = platform::size::type;
-
-                  struct Scale
-                  {
-                     id_type id = 0;
-                     platform::size::type instances = 0;
-
-                     CASUAL_CONST_CORRECT_MARSHAL({
-                        archive & id;
-                        archive & instances;
-                     })
-
-                     friend std::ostream& operator << ( std::ostream& out, const Scale& value);
-                  };
-
-
-                  Executable() = default;
-                  Executable( std::initializer_list< Scale> servers, std::initializer_list< Scale> executables)
-                     : servers( std::move( servers)), executables{ std::move( executables)} {}
-
-                  std::vector< Scale> servers;
-                  std::vector< Scale> executables;
-
-                  explicit operator bool () const { return ! servers.empty() || ! executables.empty();}
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     base_type::marshal( archive);
-                     archive & servers;
-                     archive & executables;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const Executable& value);
-               };
-               static_assert( traits::is_movable< Executable>::value, "not movable");
-               */
-
-            } // scale
-
-
 
             namespace process
             {

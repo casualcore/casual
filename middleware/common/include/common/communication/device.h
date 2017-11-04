@@ -315,7 +315,7 @@ namespace casual
                   //
                   signal::thread::scope::Block block;
 
-                  auto count = platform::batch::flush();
+                  auto count = platform::batch::flush;
 
                   while( next( message_type::flush_ipc, non_blocking_policy{}) && --count > 0)
                   {

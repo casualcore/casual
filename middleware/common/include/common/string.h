@@ -7,6 +7,7 @@
 
 #include "common/platform.h"
 #include "common/traits.h"
+#include "common/algorithm.h"
 
 #include <string>
 #include <locale>
@@ -115,9 +116,18 @@ namespace casual
 
          std::string upper( std::string value);
 
-			bool integer( const std::string& value);
+         template< typename R>
+         bool integer( R&& value)
+         {
+            auto range = range::make( value);
+            
+            if( range.empty())
+               return false;
 
+            return range::includes( "0123456789", range);
+         }
 
+/*
 			template< typename T>
 			auto digits( T value) -> std::enable_if_t< std::is_integral< T>::value, platform::size::type>
 			{
@@ -129,7 +139,7 @@ namespace casual
 			   }
 			   return result;
 			}
-
+*/
          namespace detail
          {
             inline void composer( std::ostream& out) {}

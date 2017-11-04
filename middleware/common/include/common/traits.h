@@ -179,6 +179,8 @@ namespace casual
                struct array : continuous {};
 
                struct adaptor : container{};
+
+               struct string : continuous{};
             } // category
 
             namespace detail
@@ -211,6 +213,8 @@ namespace casual
 
 
 
+            template<>
+            struct traits< std::string> : detail::traits< std::string, container::category::string>{};
 
             template< typename T>
             struct traits< std::vector< T>> : detail::traits< std::vector< T>, container::category::continuous>{};
@@ -271,6 +275,9 @@ namespace casual
 
             template< typename Container>
             struct is_array : is_category< Container, category::array> {};
+
+            template< typename Container>
+            struct is_string : is_category< Container, category::string> {};
 
          } // container
 
@@ -460,6 +467,7 @@ namespace casual
          {
             template< typename T>
             using size = detect::is_detected< member::has_size, T>;
+
 
             template< typename T>
             using insert = detect::is_detected< member::has_insert, T>;

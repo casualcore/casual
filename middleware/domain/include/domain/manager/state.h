@@ -12,7 +12,7 @@
 #include "common/uuid.h"
 #include "common/platform.h"
 #include "common/process.h"
-#include "common/id.h"
+#include "common/value/id.h"
 
 #include "common/event/dispatch.h"
 
@@ -34,17 +34,17 @@ namespace casual
       namespace archive
       {
          template< typename I, typename T>
-         void serialize( Reader& archive, common::id::basic< I, T>& value, const char* name)
+         void serialize( Reader& archive, common::value::basic_id< I, T>& value, const char* name)
          {
             I integer;
             archive >> name::value::pair::make( name, integer);
-            value = common::id::basic< I, T>{ integer};
+            value = common::value::basic_id< I, T>{ integer};
          }
 
          template< typename I, typename T>
-         void serialize( Writer& archive, const common::id::basic< I, T>& value, const char* name)
+         void serialize( Writer& archive, const common::value::basic_id< I, T>& value, const char* name)
          {
-            archive << name::value::pair::make( name, value.underlaying());
+            archive << name::value::pair::make( name, value.value());
          }
       } // archive
    } // sf
@@ -58,39 +58,40 @@ namespace casual
          namespace state
          {
             using size_type = common::platform::size::type;
-            namespace internal
+
+
+            namespace id
             {
-
-               template< typename T>
-               struct Id
+               template< typename Tag>
+               struct policy
                {
-                  using id_type = common::id::basic< size_type, T>;
-
-                  id_type id = id_type::next();
-
-                  friend bool operator == ( const Id& lhs, id_type rhs) { return lhs.id == rhs;}
-                  friend bool operator < ( const Id& lhs, const Id& rhs) { return lhs.id < rhs.id;}
-
-                  inline static void set_next_id( id_type id)
-                  {
-                     id_type::next( id);
+                  static size_type initialize() 
+                  { 
+                     return ++value;
                   }
-
-               private:
+                  static size_type value;
                };
 
+               template< typename Tag>
+               size_type policy< Tag>::value = 0;
 
-            } // internal
+
+               template< typename Tag>
+               using type = common::value::basic_id< size_type, policy< Tag>>;
+               
+            } // id
 
 
 
-            struct Group : internal::Id< Group>
+            struct Group
             {
+               using id_type = id::type< Group>;
                Group() = default;
 
                Group( std::string name, std::vector< id_type> dependencies, std::string note = "")
                   : name( std::move( name)), note( std::move( note)), dependencies( std::move( dependencies)) {}
 
+               id_type id;
 
                std::string name;
                std::string note;
@@ -114,6 +115,9 @@ namespace casual
                   };
                };
 
+
+               inline friend bool operator < ( const Group& l, const Group& r) { return l.id < r.id;}
+
                //!
                //! For persistent state
                //!
@@ -128,9 +132,12 @@ namespace casual
             };
 
 
-            struct Process : internal::Id< Process>
+            struct Process 
             {
-               typedef common::strong::process::id pid_type;
+               using id_type = id::type< Group>;
+               using pid_type = common::strong::process::id;
+
+               id_type id;
 
                std::string alias;
                std::string path;
@@ -151,6 +158,8 @@ namespace casual
                //! Number of instances that has been restarted
                //!
                size_type restarts = 0;
+
+               inline friend bool operator < ( const Process& l, const Process& r) { return l.id < r.id;}
 
                //!
                //! For persistent state

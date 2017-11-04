@@ -97,8 +97,8 @@ namespace casual
 
                if( output)
                {
-                  output << process.queue << '\n';
-                  output << process.pid << '\n';
+                  output << process.queue.value() << '\n';
+                  output << process.pid.value() << '\n';
                   output << identity.name << '\n';
                   output << identity.id << std::endl;
 

@@ -232,7 +232,7 @@ namespace casual
                         {
                            common::message::event::domain::Group event;
                            event.context = common::message::event::domain::Group::Context::boot_start;
-                           event.id = m_batch.group.underlaying();
+                           event.id = m_batch.group.value();
                            event.name = state().group( m_batch.group).name;
 
                            manager::local::ipc::send( state(), state().event( event));
@@ -250,7 +250,7 @@ namespace casual
                            {
                               common::message::event::domain::Group event;
                               event.context = common::message::event::domain::Group::Context::boot_end;
-                              event.id = m_batch.group.underlaying();
+                              event.id = m_batch.group.value();
                               event.name = state().group( m_batch.group).name;
 
                               manager::local::ipc::send( state(), state().event( event));
@@ -301,7 +301,7 @@ namespace casual
                            {
                               common::message::event::domain::Group event;
                               event.context = common::message::event::domain::Group::Context::shutdown_end;
-                              event.id = m_batch.group.underlaying();
+                              event.id = m_batch.group.value();
                               event.name = state().group( m_batch.group).name;
 
                               manager::local::ipc::send( state(), state().event( event));
@@ -332,7 +332,7 @@ namespace casual
                         {
                            common::message::event::domain::Group event;
                            event.context = common::message::event::domain::Group::Context::shutdown_start;
-                           event.id = m_batch.group.underlaying();
+                           event.id = m_batch.group.value();
                            event.name = state().group( m_batch.group).name;
 
                            manager::local::ipc::send( state(), state().event( event));

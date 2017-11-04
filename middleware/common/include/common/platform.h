@@ -80,20 +80,20 @@ namespace casual
 	         //! before (forced) persistence store of the updates, could be
 	         //! stored before though
 	         //!
-	         constexpr size::type transaction() { return 100;}
+	         constexpr size::type transaction = 100;
 
 	         //!
 	         //! Max number of statistics updates that will be done
 	         //! before persistence store of the updates...
 	         //!
-	         constexpr size::type statistics() { return 1000;}
+	         constexpr size::type statistics = 1000;
 
 
 	         //!
 	         //! Max number of ipc messages consumed from the queue to cache
 	         //! (application memory) during a 'flush'
 	         //!
-	         constexpr size::type flush() { return 20;}
+	         constexpr size::type flush = 20;
 
 	         namespace gateway
             {
@@ -101,8 +101,45 @@ namespace casual
 	            //! Max number of batched metrics before force
 	            //! send to service-manager
 	            //!
-	            constexpr size::type metrics() { return 20;}
+	            constexpr size::type metrics = 20;
             } // gateway
+
+            namespace domain
+            {
+               //!
+               //! Max number of consumed messages before trying to send
+               //! pending messages. 
+               //!
+               constexpr size::type pending = 100;
+
+            } // domain
+
+            namespace queue
+            {
+               //!
+               //! Max number of pending updates before 
+               //! a persistent write
+               //!
+               constexpr size::type persitent = 100;
+            } // queue
+
+            namespace service
+            {
+               //!
+               //! Max number of consumed messages before trying to send
+               //! pending messages. 
+               //!
+               constexpr size::type pending = 100;
+
+               namespace forward
+               {
+                  //!
+                  //! Max number of consumed messages before trying to send
+                  //! pending messages. 
+                  //!
+                  constexpr size::type pending = 100;
+               } // forward
+            } // service
 
          } // batch
 
@@ -119,7 +156,7 @@ namespace casual
          {
             namespace native
             {
-               //! @attention do not use directly - use string::ipc::id
+               //! @attention do not use directly - use strong::ipc::id
                using type = long;
                constexpr type invalid = -1;
             } // native

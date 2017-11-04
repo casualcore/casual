@@ -64,8 +64,6 @@ namespace casual
 
             std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter)
             {
-               typedef typename std::string::value_type value_type;
-
                std::vector< std::string> result;
 
                auto current = std::begin( line);
@@ -79,7 +77,7 @@ namespace casual
                      result.emplace_back( current, found);
                   }
 
-                  current = std::find_if( found, std::end( line), [=]( value_type value) { return value != delimiter;});
+                  current = std::find_if( found, std::end( line), [=]( auto value) { return value != delimiter;});
                }
                return result;
             }
@@ -88,7 +86,7 @@ namespace casual
 
          std::string join( const std::vector< std::string>& strings)
          {
-            return std::accumulate( strings.begin(), strings.end(), std::string());
+            return range::accumulate( strings, std::string());
          }
 
 
@@ -102,9 +100,10 @@ namespace casual
             //
             // This will give a delimiter between empty strings (as well)
             //
+            auto range = range::make( strings);
 
-            return std::accumulate( strings.begin() + 1, strings.end(), strings.front(),
-               [&]( const std::string& f, const std::string& s){ return f + delimiter + s;});
+            return range::accumulate( ++range, strings.front(), 
+               [&delimiter]( const std::string& f, const std::string& s){ return f + delimiter + s;});
          }
 
 
@@ -125,7 +124,7 @@ namespace casual
             const auto lower = [] ( const std::string::value_type character)
             { return std::tolower( character, std::locale::classic());};
 
-            std::transform( value.begin(), value.end(), value.begin(), lower);
+            range::transform( value, std::begin( value), lower);
 
             return value;
          }
@@ -135,21 +134,11 @@ namespace casual
             const auto upper = [] ( const std::string::value_type character)
             { return std::toupper( character, std::locale::classic());};
 
-            std::transform( value.begin(), value.end(), value.begin(), upper);
+            range::transform( value, std::begin( value), upper);
 
             return value;
          }
 
-
-         bool integer( const std::string& value)
-         {
-            if( value.empty())
-            {
-               return false;
-            }
-
-            return range::includes( "0123456789", value);
-         }
 
       } // string
    } // common

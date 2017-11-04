@@ -152,7 +152,7 @@ namespace casual
             common::communication::ipc::blocking::receive( requester.output(), reply);
 
             EXPECT_TRUE( reply.queue == 0);
-            EXPECT_TRUE( reply.process == common::process::Handle{}) << "reply.process: " << reply.process;
+            EXPECT_TRUE( reply.process == common::process::Handle{}); // << "reply.process: " << reply.process;
          }
       }
 

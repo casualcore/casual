@@ -42,12 +42,12 @@ namespace casual
             {
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
                {
+                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+
                   //
                   // before we might block we check signals.
                   //
                   common::signal::handle();
-
-                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
 
                   auto result = ::msgsnd( id.value(), &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
 
@@ -315,7 +315,7 @@ namespace casual
                            {
                               auto process = process::instance::fetch::handle( identity, directive);
 
-                              if( ! environment.empty())
+                              if( process && ! environment.empty())
                               {
                                  environment::variable::process::set( environment, process);
                               }

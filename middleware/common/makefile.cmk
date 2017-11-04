@@ -269,7 +269,8 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/test_domain.cpp'),
 
-    Compile( 'unittest/source/test_optional.cpp'),
+    Compile( 'unittest/source/value/test_optional.cpp'),
+    Compile( 'unittest/source/value/test_id.cpp'),
 
     
 ]

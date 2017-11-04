@@ -793,7 +793,7 @@ namespace casual
 
                   common::message::service::remote::Metric metric;
                   metric.process = common::process::handle();
-                  metric.services.reserve( common::platform::batch::gateway::metrics());
+                  metric.services.reserve( common::platform::batch::gateway::metrics);
 
 
 
@@ -832,7 +832,7 @@ namespace casual
                      // consume until queue is empty or we reach batch limit
                      //
                      while( handler( inbound.next( inbound.policy_non_blocking()))
-                           && metric.services.size() < common::platform::batch::gateway::metrics())
+                           && metric.services.size() < common::platform::batch::gateway::metrics)
                      {
                         ;
                      }

@@ -819,18 +819,16 @@ namespace casual
             }
          }
 
-         template< typename R, typename Size, typename Iter>
-         void copy_max( R&& range, Size size, Iter output)
+         template< typename R, typename Iter>
+         void copy_max( R&& range, platform::size::type size, Iter output)
          {
-            auto inputRange = make( range);
-
-            if( inputRange.size() <= static_cast< decltype( inputRange.size())>( size))
+            if( range::size( range) <= size)
             {
-               copy( inputRange, output);
+               copy( range, output);
             }
             else
             {
-               std::copy_n( std::begin( inputRange), size, output);
+               std::copy_n( std::begin( range), size, output);
             }
          }
 
@@ -859,9 +857,9 @@ namespace casual
             template< typename R, typename C, typename T>
             auto transform( R&& range, C& container, T transform, category::container)
             {
-               container.reserve( range.size() + container.size());
+               container.reserve( range::size( range) + container.size());
                std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
-               return make( std::end( container) - range.size(), std::end( container));
+               return make( std::end( container) - range::size( range), std::end( container));
             }
 
             template< typename R, typename O, typename T>
@@ -907,7 +905,7 @@ namespace casual
             using value_type = std::remove_const_t< std::remove_reference_t< decltype( transformer( *std::begin( range)))>>;
             std::vector< value_type> result;
 
-            result.reserve( range.size());
+            result.reserve( range::size( range));
             std::transform( std::begin( range), std::end( range), std::back_inserter( result), transformer);
 
             return result;
@@ -1095,9 +1093,9 @@ namespace casual
          template< typename R, typename N, typename F>
          auto for_each_n( R&& range, N n, F functor) -> decltype( range::make( std::forward< R>( range)))
          {
-            if( range.size() <= n)
+            if( range::size( range) <= n)
             {
-               return for_each( range::make( std::forward< R>( range)), functor);
+               return for_each( std::forward< R>( range), functor);
             }
             else
             {

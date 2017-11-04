@@ -47,7 +47,7 @@ namespace casual
                            auto max = range::max( state.executables);
                            if( max)
                            {
-                              state::Executable::set_next_id( max.front().id + state::Executable::id_type{ 1});
+                              state::Executable::id_type::policy_type::value = max.front().id.value();
                            }
                         }
 
@@ -55,7 +55,7 @@ namespace casual
                            auto max = range::max( state.groups);
                            if( max)
                            {
-                              state::Group::set_next_id( max.front().id + state::Group::id_type{ 1});
+                              state::Group::id_type::policy_type::value = max.front().id.value();
                            }
                         }
 
