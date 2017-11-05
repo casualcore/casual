@@ -120,6 +120,18 @@ namespace casual
 
                      } // request
 
+                     namespace local
+                     {
+                        namespace 
+                        {
+                           template< typename R>
+                           auto to_string( R&& range)
+                           {
+                              range = common::string::trim( range);
+                              return std::string( std::begin( range), std::end( range));
+                           };
+                        }
+                     }
 
                      std::size_t header( char* buffer, size_t size, size_t nitems, http::Header* destination)
                      {
@@ -141,14 +153,16 @@ namespace casual
                         {
                            auto split = common::range::split( range, ':');
 
+                           /* bug in gcc 5.4 can't use this lambda
                            auto to_string = []( auto&& range){
                               range = common::string::trim( range);
                               return std::string( std::begin( range), std::end( range));
                            };
+                           */
 
                            destination->emplace_back(
-                              to_string( std::get< 0>( split)),
-                              to_string( std::get< 1>( split))
+                              local::to_string( std::get< 0>( split)),
+                              local::to_string( std::get< 1>( split))
                            );
                         }
                         // else:
