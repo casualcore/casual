@@ -97,22 +97,25 @@ namespace casual
                {
                   namespace prepare
                   {
+                     struct Reply 
+                     {
+                        platform::descriptor::type descriptor;
+                        message::service::call::caller::Request message;
+                     };
 
-                     inline std::tuple< platform::descriptor::type, message::service::call::caller::Request> message(
+                     inline Reply message(
                            State& state,
                            const platform::time::point::type& start,
                            common::buffer::payload::Send&& buffer,
                            async::Flags flags,
-                           const message::service::call::Service& service)
+                           const service::Lookup::Reply& lookup)
                      {
                         Trace trace( "service::call::local::prepare::message");
 
-                        using return_type = std::tuple< platform::descriptor::type, message::service::call::caller::Request>;
-
                         message::service::call::caller::Request message( std::move( buffer));
 
-                        message.correlation = uuid::make();
-                        message.service = service;
+                        message.correlation = lookup.correlation;
+                        message.service = lookup.service;
 
                         message.process = process::handle();
                         message.parent = execution::service::name();
@@ -131,7 +134,7 @@ namespace casual
                            //
                            // No reply, hence no descriptor and no transaction (we validated this before)
                            //
-                           return return_type{ 0, std::move( message) };
+                           return Reply{ 0, std::move( message) };
                         }
                         else
                         {
@@ -141,7 +144,7 @@ namespace casual
 
                            if( ! flags.exist( async::Flag::no_time))
                            {
-                              descriptor.timeout.set( start, service.timeout);
+                              descriptor.timeout.set( start, lookup.service.timeout);
                            }
 
                            auto& transaction = common::transaction::context().current();
@@ -162,7 +165,7 @@ namespace casual
 
                            message.service.timeout = descriptor.timeout.timeout;
 
-                           return return_type{ descriptor.descriptor, std::move( message) };
+                           return Reply{ descriptor.descriptor, std::move( message) };
                         }
                      }
 
@@ -182,7 +185,7 @@ namespace casual
                service::Lookup lookup( service, local::validate::flags( flags));
 
                //
-               // We do as much as possible while we wait for the broker reply
+               // We do as much as possible while we wait for the service-lookup reply
                //
 
                auto start = platform::time::clock::type::now();
@@ -202,30 +205,18 @@ namespace casual
                //
                // The service exists. Take care of reserving descriptor and determine timeout
                //
-               auto prepared = local::prepare::message( m_state, start, std::move( buffer), flags, target.service);
+               auto prepared = local::prepare::message( m_state, start, std::move( buffer), flags, target);
 
                //
                // If some thing goes wrong we unreserve the descriptor
                //
-               auto unreserve = common::scope::execute( [&](){ m_state.pending.unreserve( std::get< 0>( prepared));});
-
-
-               //
-               // If something goes wrong (most likely a timeout), we need to send ack to broker in that case, cus the service(instance)
-               // will not do it...
-               //
-               auto send_ack = common::scope::execute( [&]()
-                  {
-                     message::service::call::ACK ack;
-                     ack.process = target.process;
-                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
-                  });
+               auto unreserve = common::scope::execute( [&](){ m_state.pending.unreserve( prepared.descriptor);});
 
 
                //
                // Make sure we timeout if we don't keep our deadline
                //
-               auto deadline = m_state.pending.deadline( std::get< 0>( prepared), start);
+               auto deadline = m_state.pending.deadline( prepared.descriptor, start);
 
 
                if( target.busy())
@@ -240,16 +231,15 @@ namespace casual
                // Call the service
                //
                {
-                  std::get< 1>( prepared).service = target.service;
+                  prepared.message.service = target.service;
 
-                  log::debug << "async - message: " << std::get< 1>( prepared) << std::endl;
+                  log::debug << "async - message: " << prepared.message << std::endl;
 
-                  communication::ipc::blocking::send( target.process.queue, std::get< 1>( prepared));
+                  communication::ipc::blocking::send( target.process.queue, prepared.message);
                }
 
                unreserve.release();
-               send_ack.release();
-               return std::get< 0>( prepared);
+               return prepared.descriptor;
             }
 
             namespace local

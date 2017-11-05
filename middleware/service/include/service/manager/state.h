@@ -85,6 +85,8 @@ namespace casual
 
                   inline friend bool operator == ( const base_instance& lhs, const base_instance& rhs) { return lhs.process == rhs.process;}
                   inline friend bool operator < ( const base_instance& lhs, const base_instance& rhs) { return lhs.process.pid < rhs.process.pid;}
+
+                  inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
                };
 
 
@@ -100,7 +102,12 @@ namespace casual
 
                   using base_instance::base_instance;
 
-                  void reserve( const common::platform::time::point::type& when, state::Service* service);
+                  void reserve( 
+                     const common::platform::time::point::type& when, 
+                     state::Service* service,
+                     const common::process::Handle& caller,
+                     const common::Uuid& correlation);
+
                   state::Service* unreserve( const common::platform::time::point::type& now);
 
 
@@ -120,10 +127,18 @@ namespace casual
                   void add( const state::Service& service);
                   void remove( const std::string& service);
 
+                  //!
+                  //! caller and correlation of last reserve
+                  //! @{
+                  inline const common::process::Handle& caller() const { return m_caller;}
+                  inline const common::Uuid& correlation() const { return m_correlation;}
+                  //! @}
 
                private:
                   common::platform::time::point::type m_last = common::platform::time::point::type::min();
                   state::Service* m_service = nullptr;
+                  common::process::Handle m_caller;
+                  common::Uuid m_correlation;
 
                   using service_view = std::reference_wrapper< const std::string>;
                   std::vector< service_view> m_services;
@@ -171,6 +186,8 @@ namespace casual
 
                   common::message::service::lookup::Request request;
                   common::platform::time::point::type when;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Pending& value);
                };
 
 
@@ -188,9 +205,13 @@ namespace casual
 
                      inline bool idle() const { return get().idle();}
 
-                     inline void reserve( const common::platform::time::point::type& when, state::Service* service)
+                     inline void reserve(                      
+                        const common::platform::time::point::type& when, 
+                        state::Service* service,
+                        const common::process::Handle& caller,
+                        const common::Uuid& correlation)
                      {
-                        get().reserve( when, service);
+                        get().reserve( when, service, caller, correlation);
                      }
 
                      inline const common::process::Handle& process() const { return get().process;}
@@ -262,7 +283,10 @@ namespace casual
                //!
                //! @return a reserved instance or 'null-handle' if no one is found.
                //!
-               common::process::Handle reserve( const common::platform::time::point::type& now);
+               common::process::Handle reserve( 
+                  const common::platform::time::point::type& now, 
+                  const common::process::Handle& caller, 
+                  const common::Uuid& correlation);
 
 
                void add( state::instance::Local& instance);

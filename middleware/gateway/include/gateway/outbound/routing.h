@@ -91,14 +91,8 @@ namespace casual
             //!
             container_type extract() const
             {
-               container_type result;
-
-               {
-                  lock_type lock{ m_mutex};
-                  std::swap( result, m_points);
-               }
-
-               return result;
+               lock_type lock{ m_mutex};
+               return std::exchange( m_points,{});
             }
 
          private:

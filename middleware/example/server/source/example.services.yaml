@@ -42,3 +42,6 @@ server:
 
     - name: casual/example/lowercase
       function: casual_example_lowercase
+
+    - name: casual/example/terminate
+      function: casual_example_terminate

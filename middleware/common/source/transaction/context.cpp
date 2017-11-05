@@ -316,8 +316,7 @@ namespace casual
             //
             // Regardless, we will consume every transaction.
             //
-            decltype( m_transactions) transactions;
-            std::swap( transactions, m_transactions);
+            auto transactions = std::exchange( m_transactions, {});
 
             if( log::category::transaction)
             {

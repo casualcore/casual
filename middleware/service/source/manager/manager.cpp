@@ -198,10 +198,9 @@ namespace casual
                         //
                         {
 
-                           log << "pending replies: " << range::make( state.pending.replies) << '\n';
+                           verbose::log << "pending replies: " << range::make( state.pending.replies) << '\n';
 
-                           decltype( state.pending.replies) replies;
-                           std::swap( replies, state.pending.replies);
+                           auto replies = std::exchange( state.pending.replies, {});
 
                            auto remain = std::get< 1>( common::range::partition(
                                  replies,

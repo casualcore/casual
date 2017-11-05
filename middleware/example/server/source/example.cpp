@@ -57,6 +57,12 @@ namespace casual
             }
 
 
+            void casual_example_terminate( TPSVCINFO* info)
+            {
+               std::terminate();
+            }
+
+
 
          }
       } // server

@@ -61,6 +61,34 @@ namespace casual
                         }
                      }
                   } // optional
+
+                  namespace eventually
+                  {
+                     template< typename D, typename M>
+                     void send( State& state, D&& device, M&& message)
+                     {
+                        Trace trace{ "service::manager::handle::local::eventually::send"};
+
+                        verbose::log << "message: " << message << '\n';
+
+                        try
+                        {
+                           if( ! ipc::device().non_blocking_send( device, message))
+                           {
+                              log << "non blocking send failed - action: try later\n";
+
+                              state.pending.replies.emplace_back( std::forward< M>( message), device);
+                           }
+                        }
+                        catch( const common::exception::system::communication::Unavailable&)
+                        {
+                           log << "destination unavailable - " << device << '\n';
+                        }
+
+                     }
+                  } // eventually
+
+
                } // <unnamed>
             } // local
 
@@ -79,11 +107,41 @@ namespace casual
 
             namespace process
             {
+               namespace local
+               {
+                  namespace
+                  {
+                     template< typename I>
+                     void service_call_error_reply( State& state, const I& instance)
+                     {
+                        Trace trace{ "service::manager::handle::process::local::service_call_error_reply"};
+
+                        common::log::category::error << "callee terminated with pending reply to caller - callee: " 
+                           << instance.process.pid << " - caller: " << instance.caller().pid << '\n';
+
+                        common::message::service::call::Reply message;
+                        message.correlation = instance.correlation();
+                        message.status = common::code::xatmi::service_error; 
+
+                        handle::local::eventually::send( state, instance.caller().queue, std::move( message));
+                     }
+
+                  } // <unnamed>
+               } // local
+
                void Exit::operator () ( message_type& message)
                {
                   Trace trace{ "service::manager::handle::process::Exit"};
 
-                  log << "message: " << message << '\n';
+                  verbose::log << "message: " << message << '\n';
+
+                  //
+                  // we need to check if the dead process has anyone wating for a reply
+                  if( auto found = common::range::find( m_state.instances.local, message.state.pid))
+                  {
+                     if( ! found->second.idle())
+                        local::service_call_error_reply( m_state, found->second);
+                  }
 
                   m_state.remove_process( message.state.pid);
                }
@@ -153,11 +211,13 @@ namespace casual
 
                   auto now = platform::time::clock::type::now();
 
+                  verbose::log << "message: " << message << '\n';
+
                   try
                   {
                      auto& service = m_state.service( message.requested);
 
-                     auto handle = service.reserve( now);
+                     auto handle = service.reserve( now, message.process, message.correlation);
 
                      if( handle)
                      {
@@ -168,13 +228,7 @@ namespace casual
                         reply.state = decltype( reply.state)::idle;
                         reply.process = handle;
 
-                        if( local::optional::send( message.process.queue, reply))
-                        {
-                           //
-                           // flag it as busy.
-                           //
-                           //instance->lock( now);
-                        }
+                        local::optional::send( message.process.queue, reply);
                      }
                      else if( ! service.instances.active())
                      {
@@ -234,6 +288,7 @@ namespace casual
                                  //
                                  m_state.pending.requests.emplace_back( std::move( message), now);
                               }
+
                               break;
                            }
                         }
@@ -326,6 +381,8 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::domain::discover::Request"};
 
+                     verbose::log << "message: " << message << '\n';
+
                      auto reply = common::message::reverse::type( message);
 
                      reply.process = common::process::handle();
@@ -415,7 +472,7 @@ namespace casual
             {
                Trace trace{ "service::manager::handle::ACK"};
 
-               log << "message: " << message << '\n';
+               verbose::log << "message: " << message << '\n';
 
                try
                {
@@ -439,6 +496,7 @@ namespace casual
 
                      if( pending)
                      {
+                        verbose::log << "found pendig: " << *pending << '\n';
 
                         //
                         // We now know that there are one idle server that has advertised the

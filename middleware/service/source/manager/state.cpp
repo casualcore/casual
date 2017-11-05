@@ -66,25 +66,27 @@ namespace casual
 
             namespace instance
             {
-               void Local::reserve( const common::platform::time::point::type& when, state::Service* service)
+               void Local::reserve(
+                  const common::platform::time::point::type& when, 
+                  state::Service* service,
+                  const common::process::Handle& caller,
+                  const common::Uuid& correlation)
                {
                   assert( m_service == nullptr);
 
                   m_service = service;
-
                   m_last = when;
+                  m_caller = caller;
+                  m_correlation = correlation;
                }
 
                state::Service* Local::unreserve( const common::platform::time::point::type& now)
                {
                   assert( m_service != nullptr);
 
-                  auto result = m_service;
-                  m_service = nullptr;
+                  m_service->unreserve( now, m_last);
 
-                  result->unreserve( now, m_last);
-
-                  return result;
+                  return std::exchange( m_service, nullptr);
                }
 
                namespace local
@@ -157,6 +159,14 @@ namespace casual
                   m_count = 0;
                   m_total = std::chrono::microseconds::zero();
                }
+
+               std::ostream& operator << ( std::ostream& out, const Pending& value)
+               {
+                  return out << "{ request: " << value.request
+                     << ", when: " << value.when.time_since_epoch().count()
+                     << '}';
+               }
+
 
 
                namespace instance
@@ -239,13 +249,16 @@ namespace casual
             }
 
 
-            common::process::Handle Service::reserve( const common::platform::time::point::type& now)
+            common::process::Handle Service::reserve( 
+               const common::platform::time::point::type& now, 
+               const common::process::Handle& caller, 
+               const common::Uuid& correlation)
             {
                auto found = range::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
 
                if( found)
                {
-                  found->reserve( now, this);
+                  found->reserve( now, this, caller, correlation);
                   return found->process();
                }
 

@@ -329,8 +329,7 @@ namespace casual
                void clear()
                {
                   flush();
-                  cache_type empty;
-                  std::swap( empty, m_cache);
+                  std::exchange( m_cache, {});
                }
 
                connector_type& connector() { return m_connector;}

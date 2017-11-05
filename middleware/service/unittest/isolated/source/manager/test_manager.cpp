@@ -10,6 +10,8 @@
 #include "service/manager/admin/managervo.h"
 
 #include "common/message/domain.h"
+#include "common/message/event.h"
+#include "common/message/service.h"
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/domain.h"
@@ -370,5 +372,50 @@ namespace casual
             EXPECT_TRUE( service.process.queue != server.process().queue);
          }
       }
+
+      TEST( service_manager, service_lookup_service1__server_terminate__expect__service_error_reply)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         common::mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+
+         common::Uuid correlation;
+
+         {
+            auto service = common::service::Lookup{ "service1"}();
+            EXPECT_TRUE( service.service.name == "service1");
+            EXPECT_TRUE( service.process == server.process());
+            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            
+            correlation = service.correlation;
+         }
+
+         {
+            common::message::event::process::Exit message;
+            message.state.pid = server.process().pid;
+            message.state.reason = common::process::lifetime::Exit::Reason::core;
+
+            common::communication::ipc::blocking::send( 
+               common::communication::ipc::service::manager::device(),
+               message);
+         }
+
+         {
+            // we expect to get a service-call-error-reply
+            common::message::service::call::Reply message;
+            
+            common::communication::ipc::blocking::receive( 
+               common::communication::ipc::inbound::device(),
+               message);
+            
+            EXPECT_TRUE( message.status == decltype( message.status)::service_error);
+            EXPECT_TRUE( message.correlation == correlation);
+         }
+
+      }
+
 	} // service
 } // casual
