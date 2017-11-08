@@ -77,7 +77,7 @@ performCoverageMeasuring()
    gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
 }
 
-source scl_source enable devtoolset-6
+source scl_source enable devtoolset-4
 
 ''' + common_backend_builder
 
@@ -157,6 +157,7 @@ def build( name, image, content)
 
    sh """
    chmod +x builder.sh
+   docker pull $image
    docker run --rm -v $current_dir:/git/casual:Z $image /git/casual/builder.sh
    """
 }
