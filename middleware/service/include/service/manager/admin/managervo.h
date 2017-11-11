@@ -67,7 +67,7 @@ namespace casual
                struct Metric
                {
                   sf::platform::size::type count = 0;
-                  std::chrono::microseconds total;
+                  std::chrono::nanoseconds total;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -109,7 +109,7 @@ namespace casual
             struct ServiceVO
             {
                std::string name;
-               std::chrono::microseconds timeout;
+               std::chrono::nanoseconds timeout;
                std::string category;
                sf::platform::size::type transaction = 0;
 

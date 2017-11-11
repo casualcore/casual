@@ -97,29 +97,35 @@ namespace casual
                return local::native::Variable::instance().exists( name);
             }
 
-            std::string get( const char* name)
+            namespace detail
             {
-               if( ! exists( name))
+               std::string get( const char* name)
                {
-                  throw exception::system::invalid::Argument( string::compose( "failed to get variable: ",name));
+                  if( ! exists( name))
+                  {
+                     throw exception::system::invalid::Argument( string::compose( "failed to get variable: ",name));
+                  }
+                  return local::native::Variable::instance().get( name);
                }
-               return local::native::Variable::instance().get( name);
-            }
 
 
-            std::string get( const char* name, std::string alternative)
-            {
-               if( exists( name))
+               std::string get( const char* name, std::string alternative)
                {
-                  return get( name);
+                  if( exists( name))
+                  {
+                     return get( name);
+                  }
+                  return alternative;
                }
-               return alternative;
-            }
 
-            void set( const char* name, const std::string& value)
-            {
-               local::native::Variable::instance().set( name, value);
-            }
+               void set( const char* name, const std::string& value)
+               {
+                  local::native::Variable::instance().set( name, value);
+               }
+
+            } // detail
+
+
 
             namespace process
             {

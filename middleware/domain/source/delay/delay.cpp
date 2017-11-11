@@ -65,17 +65,17 @@ namespace casual
             return result;
          }
 
-         std::chrono::microseconds State::timeout() const
+         common::platform::time::unit State::timeout() const
          {
             auto min = range::min( m_messages);
 
             if( min)
             {
-               return std::chrono::duration_cast< std::chrono::microseconds>(
+               return std::chrono::duration_cast< common::platform::time::unit>(
                      min->deadline - platform::time::clock::type::now()
                );
             }
-            return std::chrono::microseconds::min();
+            return common::platform::time::unit::min();
          }
 
          namespace handle

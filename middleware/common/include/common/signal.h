@@ -88,48 +88,48 @@ namespace casual
 			   //! @returns previous timeout.
 			   //!
 			   //! @note zero and negative offset will trigger a signal directly
-			   //! @note std::chrono::microseconds::min() has special meaning and will not set any
+			   //! @note common::platform::time::unit::min() has special meaning and will not set any
 			   //! timeout and will unset current timeout, if any.
 			   //!
-			   std::chrono::microseconds set( std::chrono::microseconds offset);
+			   common::platform::time::unit set( common::platform::time::unit offset);
 
 			   template< typename R, typename P>
-			   std::chrono::microseconds set( std::chrono::duration< R, P> offset)
+			   common::platform::time::unit set( std::chrono::duration< R, P> offset)
 			   {
-			      return set( std::chrono::duration_cast< std::chrono::microseconds>( offset));
+			      return set( std::chrono::duration_cast< common::platform::time::unit>( offset));
 			   }
 
 			   //!
-			   //! @return current timeout, std::chrono::microseconds::min() if there isn't one
+			   //! @return current timeout, common::platform::time::unit::min() if there isn't one
 			   //!
-			   std::chrono::microseconds get();
+			   common::platform::time::unit get();
 
             //!
             //! Unset current timeout, if any.
             //!
-            //! @return previous timeout, std::chrono::microseconds::min() if there wasn't one
+            //! @return previous timeout, common::platform::time::unit::min() if there wasn't one
             //!
-			   std::chrono::microseconds unset();
+			   common::platform::time::unit unset();
 
 
 			   //!
 			   //! Sets a scoped timout.
 			   //! dtor will 'reset' previous timeout, if any. Hence enable nested timeouts.
 			   //!
-			   //! @note std::chrono::microseconds::min() has special meaning and will not set any
+			   //! @note common::platform::time::unit::min() has special meaning and will not set any
             //! timeout and will unset current timeout, if any (that will be reset by dtor)
 			   //!
             class Scoped
             {
             public:
 
-			      Scoped( std::chrono::microseconds timeout);
-               Scoped( std::chrono::microseconds timeout, const platform::time::point::type& now);
+			      Scoped( common::platform::time::unit timeout);
+               Scoped( common::platform::time::unit timeout, const platform::time::point::type& now);
 
 
                template< typename R, typename P>
                Scoped( std::chrono::duration< R, P> timeout)
-                  : Scoped( std::chrono::duration_cast< std::chrono::microseconds>( timeout))
+                  : Scoped( std::chrono::duration_cast< common::platform::time::unit>( timeout))
                {
                }
 
@@ -151,8 +151,8 @@ namespace casual
 
                Deadline( const platform::time::point::type& deadline, const platform::time::point::type& now);
                Deadline( const platform::time::point::type& deadline);
-               Deadline( std::chrono::microseconds timeout, const platform::time::point::type& now);
-               Deadline( std::chrono::microseconds timeout);
+               Deadline( common::platform::time::unit timeout, const platform::time::point::type& now);
+               Deadline( common::platform::time::unit timeout);
                ~Deadline();
 
                Deadline( Deadline&&);

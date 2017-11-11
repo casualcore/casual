@@ -143,12 +143,40 @@ namespace casual
                   return lhs.order < rhs.order;
                }
 
+               std::ostream& operator << ( std::ostream& out, Local::State value)
+               {
+                  switch( value)
+                  {
+                     case Local::State::busy: return out << "busy";
+                     case Local::State::idle: return out << "idle";
+                     case Local::State::exiting: return out << "exiting";
+                  }
+                  return out << "unknown";
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Local& value)
+               {
+                  auto state = value.state();
+
+                  out << "{ state: " << state
+                     << ", process: " << value.process;
+
+                  if( state == Local::State::busy)
+                  {
+                     out  << ", service: " << *value.m_service
+                        << ", correlation: " << value.correlation()
+                        << ", caller: " << value.caller();
+                  }
+
+                  return out << '}';
+               }
+
             } // instance
 
             namespace service
             {
 
-               void Metric::add( const std::chrono::microseconds& duration)
+               void Metric::add( const common::platform::time::unit& duration)
                {
                   ++m_count;
                   m_total += duration;
@@ -157,7 +185,7 @@ namespace casual
                void Metric::reset()
                {
                   m_count = 0;
-                  m_total = std::chrono::microseconds::zero();
+                  m_total = common::platform::time::unit::zero();
                }
 
                std::ostream& operator << ( std::ostream& out, const Pending& value)
@@ -366,7 +394,7 @@ namespace casual
 
 
                template< typename Service>
-               common::message::service::call::Service transform( const Service& service, std::chrono::microseconds timeout)
+               common::message::service::call::Service transform( const Service& service, common::platform::time::unit timeout)
                {
                   common::message::service::call::Service result;
 

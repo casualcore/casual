@@ -329,6 +329,8 @@ namespace casual
                using type = clock::type::time_point;
             } // point
 
+            using unit = std::chrono::nanoseconds;
+
          } // time
 
 
@@ -353,16 +355,16 @@ namespace casual
    template< typename R, typename P, typename M>
    void casual_marshal_value( const std::chrono::duration< R, P>& value, M& marshler)
    {
-      marshler << std::chrono::duration_cast< std::chrono::microseconds>( value).count();
+      marshler << std::chrono::duration_cast< common::platform::time::unit>( value).count();
    }
 
    template< typename R, typename P, typename M>
    void casual_unmarshal_value( std::chrono::duration< R, P>& value, M& unmarshler)
    {
-      std::chrono::microseconds::rep representation;
+      common::platform::time::unit::rep representation;
 
       unmarshler >> representation;
-      value = std::chrono::microseconds( representation);
+      value = std::chrono::duration_cast< std::chrono::duration< R, P>>( common::platform::time::unit( representation));
    }
 
 

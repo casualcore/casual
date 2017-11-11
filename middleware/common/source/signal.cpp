@@ -326,17 +326,17 @@ namespace casual
                namespace
                {
 
-                  std::chrono::microseconds convert( const itimerval& value)
+                  common::platform::time::unit convert( const itimerval& value)
                   {
                      if( value.it_value.tv_sec == 0 && value.it_value.tv_usec == 0)
                      {
-                        return std::chrono::microseconds::min();
+                        return common::platform::time::unit::min();
                      }
 
                      return std::chrono::seconds( value.it_value.tv_sec) + std::chrono::microseconds( value.it_value.tv_usec);
                   }
 
-                  std::chrono::microseconds get()
+                  common::platform::time::unit get()
                   {
                      itimerval old;
 
@@ -347,7 +347,7 @@ namespace casual
                      return convert( old);
                   }
 
-                  std::chrono::microseconds set( itimerval& value)
+                  common::platform::time::unit set( itimerval& value)
                   {
                      itimerval old;
 
@@ -367,11 +367,11 @@ namespace casual
 
 
 
-            std::chrono::microseconds set( std::chrono::microseconds offset)
+            common::platform::time::unit set( common::platform::time::unit offset)
             {
-               if( offset <= std::chrono::microseconds::zero())
+               if( offset <= common::platform::time::unit::zero())
                {
-                  if( offset == std::chrono::microseconds::min())
+                  if( offset == common::platform::time::unit::min())
                   {
                      //
                      // Special case == 'unset'
@@ -392,18 +392,19 @@ namespace casual
                   value.it_interval.tv_sec = 0;
                   value.it_interval.tv_usec = 0;
                   value.it_value.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( offset).count();
-                  value.it_value.tv_usec =  (offset % std::chrono::seconds( 1)).count();
+                  value.it_value.tv_usec = (
+                     std::chrono::duration_cast< std::chrono::microseconds>( offset) % std::chrono::seconds( 1)).count();
 
                   return local::set( value);
                }
             }
 
-            std::chrono::microseconds get()
+            common::platform::time::unit get()
             {
                return local::get();
             }
 
-            std::chrono::microseconds unset()
+            common::platform::time::unit unset()
             {
                itimerval value;
                memory::set( value);
@@ -413,11 +414,11 @@ namespace casual
 
 
 
-            Scoped::Scoped( std::chrono::microseconds timeout, const platform::time::point::type& now)
+            Scoped::Scoped( common::platform::time::unit timeout, const platform::time::point::type& now)
             {
                auto old = timer::set( timeout);
 
-               if( old != std::chrono::microseconds::min())
+               if( old != common::platform::time::unit::min())
                {
                   m_old = now + old;
                   log::debug << "old timepoint: " << chronology::local( m_old) << std::endl;
@@ -428,7 +429,7 @@ namespace casual
                }
             }
 
-            Scoped::Scoped( std::chrono::microseconds timeout)
+            Scoped::Scoped( common::platform::time::unit timeout)
                : Scoped( timeout, platform::time::clock::type::now())
             {
             }
@@ -465,10 +466,10 @@ namespace casual
              : Deadline( deadline, platform::time::clock::type::now()) {}
 
 
-            Deadline::Deadline( std::chrono::microseconds timeout, const platform::time::point::type& now)
+            Deadline::Deadline( common::platform::time::unit timeout, const platform::time::point::type& now)
              : Deadline( now + timeout, now) {}
 
-            Deadline::Deadline( std::chrono::microseconds timeout)
+            Deadline::Deadline( common::platform::time::unit timeout)
              : Deadline( timeout, platform::time::clock::type::now()) {}
 
 

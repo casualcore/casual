@@ -29,7 +29,7 @@ namespace casual
             struct Request : common::message::basic_message< common::message::Type::delay_message>
             {
                common::strong::ipc::id destination;
-               std::chrono::microseconds delay;
+               common::platform::time::unit delay;
                common::communication::message::Complete message;
 
                CASUAL_CONST_CORRECT_MARSHAL(
@@ -48,7 +48,7 @@ namespace casual
             {
                Request request;
                request.destination = destination;
-               request.delay = std::chrono::duration_cast< std::chrono::microseconds>( delay);
+               request.delay = std::chrono::duration_cast< common::platform::time::unit>( delay);
                request.message = common::marshal::complete( std::move( message));
 
                send( request);

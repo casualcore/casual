@@ -128,7 +128,6 @@ namespace casual
 
                   result.trid = transform::trid( row);
 
-
                   result.pid = common::strong::process::id{ row.get< common::platform::process::native::type>( 3)};
                   result.state = static_cast< Log::State>( row.get< long>( 4));
 

@@ -90,6 +90,20 @@ namespace casual
 
          namespace format
          {
+            namespace customize
+            {
+               struct Stream
+               {
+                  Stream( std::ostream& stream);
+                  ~Stream();
+
+               private:
+                  std::ostream* m_stream;
+                  std::ios::fmtflags m_flags;
+                  std::streamsize m_precision;
+               };
+            }
+
             enum class Align
             {
                left,
@@ -185,6 +199,8 @@ namespace casual
                template< typename R>
                std::ostream& print( std::ostream& out, R&& range)
                {
+                  customize::Stream stream( out);
+
                   if( ! m_directives.porcelain)
                   {
                      calculate_width( range, out);

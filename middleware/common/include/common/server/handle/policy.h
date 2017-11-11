@@ -44,7 +44,7 @@ namespace casual
                      void transaction(
                            const common::transaction::ID& trid,
                            const server::Service& service,
-                           const std::chrono::microseconds& timeout,
+                           const common::platform::time::unit& timeout,
                            const platform::time::point::type& now);
 
 
@@ -69,7 +69,7 @@ namespace casual
                      void transaction(
                            const common::transaction::ID& trid,
                            const server::Service& service,
-                           const std::chrono::microseconds& timeout,
+                           const common::platform::time::unit& timeout,
                            const platform::time::point::type& now);
 
 

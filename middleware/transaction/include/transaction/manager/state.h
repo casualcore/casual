@@ -45,9 +45,9 @@ namespace casual
          {
             Statistics();
 
-            std::chrono::microseconds min;
-            std::chrono::microseconds max;
-            std::chrono::microseconds total;
+            common::platform::time::unit min;
+            common::platform::time::unit max;
+            common::platform::time::unit total;
             size_type invoked;
 
             void start( const common::platform::time::point::type& start);

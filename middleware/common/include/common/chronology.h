@@ -22,10 +22,29 @@ namespace casual
          std::string universal();
          std::string universal( const platform::time::point::type& time);
 
+         namespace unit
+         {
+            namespace detail
+            {
+               template< typename D>
+               struct string;
+
+               template<>
+               struct string<  std::chrono::nanoseconds> { constexpr static auto value = "ns";};
+
+               template<>
+               struct string<  std::chrono::microseconds> { constexpr static auto value = "us";};
+
+            }
+
+            template< typename D>
+            constexpr auto string( D&& duration) { return detail::string< D>::value;}
+         } // unit
+
 
          namespace from
          {
-            std::chrono::microseconds string( const std::string& value);
+            common::platform::time::unit string( const std::string& value);
          } // from
 
 

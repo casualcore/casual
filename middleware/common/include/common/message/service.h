@@ -56,7 +56,7 @@ namespace casual
          {
             using service::Base::Base;
 
-            std::chrono::microseconds timeout = std::chrono::microseconds::zero();
+            common::platform::time::unit timeout = common::platform::time::unit::zero();
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
@@ -350,11 +350,11 @@ namespace casual
                   struct Service
                   {
                      Service() = default;
-                     Service( std::string name, std::chrono::microseconds duration)
+                     Service( std::string name, common::platform::time::unit duration)
                       : name( std::move( name)), duration( std::move( duration)) {}
 
                      std::string name;
-                     std::chrono::microseconds duration;
+                     common::platform::time::unit duration;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

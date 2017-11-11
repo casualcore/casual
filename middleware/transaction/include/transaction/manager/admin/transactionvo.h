@@ -20,9 +20,9 @@ namespace casual
          struct Statistics
          {
 
-            std::chrono::microseconds min = std::chrono::microseconds::max();
-            std::chrono::microseconds max = std::chrono::microseconds{ 0};
-            std::chrono::microseconds total = std::chrono::microseconds{ 0};
+            common::platform::time::unit min = common::platform::time::unit::max();
+            common::platform::time::unit max = common::platform::time::unit{ 0};
+            common::platform::time::unit total = common::platform::time::unit{ 0};
             sf::platform::size::type invoked = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

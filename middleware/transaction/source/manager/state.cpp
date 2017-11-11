@@ -27,7 +27,7 @@ namespace casual
 
 
 
-         Statistics::Statistics() :  min{ std::chrono::microseconds::max()}, max{ 0}, total{ 0}, invoked{ 0}
+         Statistics::Statistics() :  min{ common::platform::time::unit::max()}, max{ 0}, total{ 0}, invoked{ 0}
          {
 
          }
@@ -43,7 +43,7 @@ namespace casual
 
          void Statistics::time( const common::platform::time::point::type& start, const common::platform::time::point::type& end)
          {
-            auto time = std::chrono::duration_cast< std::chrono::microseconds>( end - start);
+            auto time = std::chrono::duration_cast< common::platform::time::unit>( end - start);
             total += time;
 
             if( time < min) min = time;

@@ -370,6 +370,15 @@ namespace casual
                   }
                };
 
+               //
+               // we need to set something when category is empty to help
+               // enable possible use of sort, cut, awk and such
+               auto format_catetegory = []( const admin::ServiceVO& value){
+                  if( value.category.empty())
+                     return "-";
+                  return value.category.c_str();
+               };
+
 
                auto format_invoked = []( const admin::ServiceVO& value){
                   return value.metrics.count;
@@ -407,7 +416,7 @@ namespace casual
                return {
                   { global::porcelain, ! global::no_colors, ! global::no_header},
                   terminal::format::column( "name", std::mem_fn( &admin::ServiceVO::name), terminal::color::yellow, terminal::format::Align::left),
-                  terminal::format::column( "category", std::mem_fn( &admin::ServiceVO::category), terminal::color::no_color, terminal::format::Align::left),
+                  terminal::format::column( "category", format_catetegory, terminal::color::no_color, terminal::format::Align::left),
                   terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
                   terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
@@ -547,24 +556,20 @@ namespace casual
 
          namespace action
          {
-            std::ostream& set_format( std::ostream& out)
-            {
-               return out << std::fixed << std::setprecision( 4);
-            }
 
 
             void list_services()
             {
                auto state = call::state();
 
-               print::services( set_format( std::cout), state);
+               print::services( std::cout, state);
             }
 
             void list_instances()
             {
                auto state = call::instances();
 
-               print::instances( set_format( std::cout), state);
+               print::instances( std::cout, state);
             }
 
 

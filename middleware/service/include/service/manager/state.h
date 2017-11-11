@@ -134,6 +134,9 @@ namespace casual
                   inline const common::Uuid& correlation() const { return m_correlation;}
                   //! @}
 
+                  friend std::ostream& operator << ( std::ostream& out, State value);
+                  friend std::ostream& operator << ( std::ostream& out, const Local& value);
+
                private:
                   common::platform::time::point::type m_last = common::platform::time::point::type::min();
                   state::Service* m_service = nullptr;
@@ -161,21 +164,21 @@ namespace casual
                struct Metric
                {
                   inline size_type count() const { return m_count;}
-                  inline std::chrono::microseconds total() const { return m_total;}
+                  inline common::platform::time::unit total() const { return m_total;}
 
-                  void add( const std::chrono::microseconds& duration);
+                  void add( const common::platform::time::unit& duration);
 
                   template< typename R, typename P>
                   void add( const std::chrono::duration< R, P>& duration)
                   {
-                     add( std::chrono::duration_cast< std::chrono::microseconds>( duration));
+                     add( std::chrono::duration_cast< common::platform::time::unit>( duration));
                   }
 
                   void reset();
 
                private:
                   size_type m_count = 0;
-                  std::chrono::microseconds m_total = std::chrono::microseconds::zero();
+                  common::platform::time::unit m_total = common::platform::time::unit::zero();
 
                };
 
@@ -367,7 +370,7 @@ namespace casual
 
             common::process::Handle forward;
 
-            std::chrono::microseconds default_timeout = std::chrono::microseconds::zero();
+            common::platform::time::unit default_timeout = common::platform::time::unit::zero();
 
 
             state::Service& service( const std::string& name);

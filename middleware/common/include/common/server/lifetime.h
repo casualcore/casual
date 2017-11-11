@@ -21,12 +21,12 @@ namespace casual
 
             namespace soft
             {
-               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout);
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, common::platform::time::unit timeout);
             } // soft
 
             namespace hard
             {
-               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout);
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, common::platform::time::unit timeout);
             } // hard
 
 
@@ -41,7 +41,7 @@ namespace casual
             //! @param pids to terminate
             //!
             template< typename C>
-            void shutdown( C&& callback, const std::vector< process::Handle>& servers, std::vector< strong::process::id> executables, std::chrono::microseconds timeout)
+            void shutdown( C&& callback, const std::vector< process::Handle>& servers, std::vector< strong::process::id> executables, common::platform::time::unit timeout)
             {
                for( auto& death : process::lifetime::terminate( std::move( executables), timeout))
                {

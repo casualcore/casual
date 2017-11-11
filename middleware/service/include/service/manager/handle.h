@@ -231,7 +231,7 @@ namespace casual
                void transaction(
                      const common::transaction::ID& trid,
                      const common::server::Service& service,
-                     const std::chrono::microseconds& timeout,
+                     const common::platform::time::unit& timeout,
                      const common::platform::time::point::type& now);
 
                common::message::service::Transaction transaction( bool commit);

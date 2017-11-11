@@ -198,7 +198,7 @@ namespace casual
          //!
          //! @param time numbers of microseconds to sleep
          //!
-         void sleep( std::chrono::microseconds time);
+         void sleep( common::platform::time::unit time);
 
          //!
          //! Sleep for an arbitrary duration
@@ -217,7 +217,7 @@ namespace casual
          template< typename R, typename P>
          void sleep( std::chrono::duration< R, P> time)
          {
-            sleep( std::chrono::duration_cast< std::chrono::microseconds>( time));
+            sleep( std::chrono::duration_cast< common::platform::time::unit>( time));
          }
 
          namespace pattern
@@ -227,11 +227,11 @@ namespace casual
                struct Pattern
                {
 
-                  Pattern( std::chrono::microseconds time, platform::size::type quantity);
+                  Pattern( common::platform::time::unit time, platform::size::type quantity);
 
                   template< typename R, typename P>
                   Pattern( std::chrono::duration< R, P> time, platform::size::type quantity)
-                   : Pattern{ std::chrono::duration_cast< std::chrono::microseconds>( time), quantity}
+                   : Pattern{ std::chrono::duration_cast< common::platform::time::unit>( time), quantity}
                   {}
 
 
@@ -240,7 +240,7 @@ namespace casual
                   friend std::ostream& operator << ( std::ostream& out, const Pattern& value);
 
                private:
-                  std::chrono::microseconds m_time;
+                  common::platform::time::unit m_time;
                   platform::size::type m_quantity = 0;
                };
                
@@ -374,7 +374,7 @@ namespace casual
             //!
             //!
             std::vector< Exit> wait( const std::vector< strong::process::id>& pids);
-            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout);
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout);
 
 
             //!
@@ -384,7 +384,7 @@ namespace casual
             //!
             //
             std::vector< Exit> terminate( const std::vector< strong::process::id>& pids);
-            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout);
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout);
 
          } // lifetime
 

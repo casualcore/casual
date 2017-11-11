@@ -14,10 +14,10 @@ namespace casual
 
       Timeout::Timeout() : start{ platform::time::point::type::min()}, timeout{ 0} {}
 
-      Timeout::Timeout( platform::time::point::type start, std::chrono::microseconds timeout)
+      Timeout::Timeout( platform::time::point::type start, common::platform::time::unit timeout)
          : start{ std::move( start)}, timeout{ timeout} {}
 
-      void Timeout::set( platform::time::point::type start_, std::chrono::microseconds timeout_)
+      void Timeout::set( platform::time::point::type start_, common::platform::time::unit timeout_)
       {
          start = std::move( start_);
          timeout = timeout_;
@@ -25,7 +25,7 @@ namespace casual
 
       platform::time::point::type Timeout::deadline() const
       {
-         if( timeout == std::chrono::microseconds::zero())
+         if( timeout == common::platform::time::unit::zero())
          {
             return platform::time::point::type::max();
          }

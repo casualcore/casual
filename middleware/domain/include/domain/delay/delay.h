@@ -41,7 +41,7 @@ namespace casual
             std::vector< Message> passed( common::platform::time::point::type time);
             std::vector< Message> passed() { return passed( common::platform::time::clock::type::now());}
 
-            std::chrono::microseconds timeout() const;
+            common::platform::time::unit timeout() const;
 
 
          private:

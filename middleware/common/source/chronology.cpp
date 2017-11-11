@@ -88,8 +88,10 @@ namespace chronology
 
    namespace from
    {
-      std::chrono::microseconds string( const std::string& value)
+      common::platform::time::unit string( const std::string& value)
       {
+         using time_unit = common::platform::time::unit;
+
          auto last = std::find_if_not( std::begin( value), std::end( value), []( std::string::value_type value)
                {
                   return value >= '0' && value <= '9';
@@ -105,11 +107,12 @@ namespace chronology
          const std::string unit{ last, std::end( value)};
 
          if( unit.empty() || unit == "s") return std::chrono::seconds( count);
-         if( unit == "ms") return std::chrono::milliseconds( count);
+         if( unit == "ms") return std::chrono::duration_cast< time_unit>( std::chrono::milliseconds( count));
          if( unit == "min") return std::chrono::minutes( count);
-         if( unit == "us") return std::chrono::microseconds( count);
+         if( unit == "us") return std::chrono::duration_cast< time_unit>( std::chrono::microseconds( count));
          if( unit == "h") return std::chrono::hours( count);
          if( unit == "d") return std::chrono::hours( count * 24);
+         if( unit == "ns") return std::chrono::duration_cast< time_unit>( std::chrono::nanoseconds( count));
 
 
          throw exception::system::invalid::Argument{ "invalid time representation: " + value};

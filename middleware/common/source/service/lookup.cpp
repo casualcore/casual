@@ -44,6 +44,8 @@ namespace casual
             Reply result;
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
 
+           verbose::log << "reply: " << result << '\n';
+
             switch( result.state)
             {
                case Reply::State::idle:

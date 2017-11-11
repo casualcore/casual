@@ -351,7 +351,7 @@ namespace casual
             return singleton;
          }
 
-         void sleep( std::chrono::microseconds time)
+         void sleep( common::platform::time::unit time)
          {
             log::debug << "process::sleep time: " << time.count() << "us\n";
 
@@ -398,7 +398,7 @@ namespace casual
             } // local
 
 
-            Sleep::Pattern::Pattern( std::chrono::microseconds time, platform::size::type quantity)
+            Sleep::Pattern::Pattern( common::platform::time::unit time, platform::size::type quantity)
                : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
@@ -955,7 +955,7 @@ namespace casual
                return result;
             }
 
-            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout)
+            std::vector< Exit> wait( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout)
             {
                Trace trace{ "common::process::lifetime::wait"};
 
@@ -986,7 +986,7 @@ namespace casual
                return wait( process::terminate( pids));
             }
 
-            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, std::chrono::microseconds timeout)
+            std::vector< Exit> terminate( const std::vector< strong::process::id>& pids, common::platform::time::unit timeout)
             {
                return wait( process::terminate( pids), timeout);
             }

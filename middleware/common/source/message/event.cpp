@@ -91,8 +91,8 @@ namespace casual
                      return out << "{ process: " << value.process
                            << ", service: " << value.service
                            << ", parent: " << value.parent
-                           << ", start: " << std::chrono::duration_cast< std::chrono::microseconds>( value.start.time_since_epoch()).count()
-                           << ", end: " << std::chrono::duration_cast< std::chrono::microseconds>( value.end.time_since_epoch()).count()
+                           << ", start: " << std::chrono::duration_cast< common::platform::time::unit>( value.start.time_since_epoch()).count()
+                           << ", end: " << std::chrono::duration_cast< common::platform::time::unit>( value.end.time_since_epoch()).count()
                            << '}';
                   }
                }

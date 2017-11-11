@@ -42,54 +42,67 @@ namespace casual
 				inline bool exists( const std::string& name) { return exists( name.c_str());}
 
 
+				namespace detail
+            {
+				   inline const char* get_name( const char* name) { return name;}
+				   inline const char* get_name( const std::string& name) { return name.c_str();}
+
+
+				   std::string get( const char* name);
+				   std::string get( const char* name, std::string alternative);
+
+				   void set( const char* name, const std::string& value);
+
+            } // detail
+
+
 				//!
 				//! @return value of environment variable with @p name
 				//! @throws exception::EnvironmentVariableNotFound if not found
 				//!
-				std::string get( const char* name);
-				inline std::string get( const std::string& name) { return get( name.c_str());}
+				template< typename String>
+				std::string get( String&& name) { return detail::get( detail::get_name( name));}
 
             //!
             //! @return value of environment variable with @p name or value of alternative if
             //!   variable isn't found
             //!
-            std::string get( const char* name, std::string alternative);
-            inline std::string get( const std::string& name, std::string alternative) { return get( name.c_str(), std::move( alternative));}
+				template< typename String>
+            std::string get( String&& name, std::string alternative) { return detail::get( detail::get_name( name), std::move( alternative));}
 
-            template< typename T>
-            T get( const char* name)
+
+            template< typename T, typename String>
+            T get( String&& name)
             {
-               std::istringstream converter( get( name));
+               std::istringstream converter( detail::get( detail::get_name( name)));
                T result;
                converter >> result;
                return result;
             }
 
-				template< typename T>
-				T get( const std::string& name)
-				{
-					return get< T>( name.c_str());
-				}
+
+            template< typename String, typename T>
+            auto get( String&& name, T value) -> std::enable_if_t< std::is_integral< T>::value, T>
+            {
+               if( exists( name))
+                  return get< T>( name);
+
+               return value;
+            }
 
 
-				void set( const char* name, const std::string& value);
-				inline void set( const std::string& name, const std::string& value) { set( name.c_str(), value);}
+            template< typename String>
+            void set( String&& name, const std::string& value) { detail::set( detail::get_name( name), value);}
 
 
-            template< typename T>
-            void set( const char* name, T&& value)
+            template< typename String, typename T>
+            void set( String&& name, T&& value)
             {
                std::ostringstream converter;
                converter << value;
                const std::string& string = converter.str();
                set( name, string);
             }
-
-				template< typename T>
-				void set( const std::string& name, T&& value)
-				{
-				   set( name.c_str(), std::forward< T>( value));
-				}
 
 				namespace process
             {
@@ -153,6 +166,11 @@ namespace casual
                   } // gateway
                } // ipc
 				   //! @}
+
+               namespace terminal
+               {
+                  constexpr auto precision() { return "CASUAL_TERMINAL_PRECISION";}
+               } // log
 
 
             } // name

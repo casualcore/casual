@@ -4,6 +4,8 @@
 
 #include "common/terminal.h"
 
+#include "common/environment.h"
+
 
 #include <iomanip>
 
@@ -90,6 +92,41 @@ namespace casual
 
             namespace format
             {
+               namespace customize
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+                        auto flags()
+                        {
+                           return std::ios::dec
+                              | std::ios::fixed;
+                        }
+
+                        auto precision()
+                        {
+                           return environment::variable::get(
+                              environment::variable::name::terminal::precision(), std::streamsize{ 4});
+                        }
+
+                     } // <unnamed>
+                  } // local
+
+                  Stream::Stream( std::ostream& stream)
+                    : m_stream( &stream),
+                      m_flags( stream.flags( local::flags())),
+                      m_precision( stream.precision( local::precision()))
+                  {
+
+                  }
+
+                  Stream::~Stream()
+                  {
+                     m_stream->flags( m_flags);
+                     m_stream->precision( m_precision);
+                  }
+               }
 
             } // format
       } // terminal

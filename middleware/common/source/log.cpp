@@ -14,6 +14,16 @@ namespace casual
 
       } // log
 
+      namespace trace
+      {
+         log::Stream log{ "casual.trace"};
+      } // trace
+
+      namespace verbose
+      {
+         log::Stream log{ "casual.common.verbose"};
+      } // verbose
+
    } // common
 } // casual
 

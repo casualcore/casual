@@ -19,7 +19,7 @@ namespace casual
 
             namespace soft
             {
-               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, common::platform::time::unit timeout)
                {
                   Trace trace{ "common::server::lifetime::soft::shutdown"};
 
@@ -64,7 +64,7 @@ namespace casual
 
             namespace hard
             {
-               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, std::chrono::microseconds timeout)
+               std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, common::platform::time::unit timeout)
                {
                   Trace trace{ "common::server::lifetime::hard::shutdown"};
 

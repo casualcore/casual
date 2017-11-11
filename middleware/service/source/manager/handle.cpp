@@ -119,6 +119,8 @@ namespace casual
                         common::log::category::error << "callee terminated with pending reply to caller - callee: " 
                            << instance.process.pid << " - caller: " << instance.caller().pid << '\n';
 
+                        common::log::category::verbose::error << "instance: " << instance << '\n';
+
                         common::message::service::call::Reply message;
                         message.correlation = instance.correlation();
                         message.status = common::code::xatmi::service_error; 
@@ -139,7 +141,7 @@ namespace casual
                   // we need to check if the dead process has anyone wating for a reply
                   if( auto found = common::range::find( m_state.instances.local, message.state.pid))
                   {
-                     if( ! found->second.idle())
+                     if( found->second.state() == state::instance::Local::State::busy)
                         local::service_call_error_reply( m_state, found->second);
                   }
 
@@ -549,7 +551,7 @@ namespace casual
             void Policy::transaction(
                   const common::transaction::ID& trid,
                   const common::server::Service& service,
-                  const std::chrono::microseconds& timeout,
+                  const common::platform::time::unit& timeout,
                   const common::platform::time::point::type& now)
             {
                // service-manager doesn't bother with transactions...

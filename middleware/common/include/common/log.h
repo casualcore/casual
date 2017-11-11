@@ -21,13 +21,22 @@ namespace casual
          //! Log with category 'casual.common'
          //!
          extern log::Stream debug;
-
       } // log
+
+      namespace trace
+      {
+         extern log::Stream log;
+      } // trace
+
+      namespace verbose
+      {
+         extern log::Stream log;
+      } // verbose
 
       struct Trace : common::log::Trace
       {
          template< typename T>
-         Trace( T&& value) : common::log::Trace( std::forward< T>( value), log::debug) {}
+         Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
       };
 
 
