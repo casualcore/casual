@@ -2,6 +2,16 @@
 //! casual
 //!
 
+#include "xatmi.h"
+#include "tx.h"
+
+#include "common/arguments.h"
+#include "common/chronology.h"
+
+#include "sf/service/protocol/call.h"
+
+
+
 
 #include <algorithm>
 #include <string>
@@ -10,20 +20,6 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-
-
-#include "xatmi.h"
-#include "tx.h"
-
-#include "common/arguments.h"
-
-#include "sf/service/protocol/call.h"
-
-void help()
-{
-   std::cerr << "usage: \n\t" << "test_multicall_client " << " --service --number --argument" << std::endl;
-   exit( 1);
-}
 
 
 struct Timeoint
@@ -110,11 +106,11 @@ void run( Settings settings)
          timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "call");
 
 
-         for( auto& recive : receivers)
+         for( auto& receive : receivers)
          {
             try
             {
-               auto result = recive();
+               auto result = receive();
             }
             catch( const casual::sf::exception::Base& exception)
             {
@@ -131,25 +127,19 @@ void run( Settings settings)
 
       }
 
-
-      //timepoints.emplace_back( casual::common::platform::time::clock::type::now(), "end");
-
-      typedef std::chrono::microseconds us;
-
-
-      std::cout << "time spent (us) for iteration # " << iteration << ":\n";
+      std::cout << "time spent for iteration # " << iteration << ":\n";
 
       auto current = timepoints.begin();
       auto next = current + 1;
 
       for( ; next !=  std::end( timepoints); ++current, ++next)
       {
-         std::cout << std::left << std::setw(10) << std::setfill( '.') << next->info << ": " <<
-               std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( next->time - current->time).count() << "\n";
+         casual::common::log::line( std::cout, std::left, std::setw(10), std::setfill( '.'), next->info, ": ",
+               std::right, std::setw( 7), std::setfill( ' '), next->time - current->time);
       }
 
-      std::cout << std::left << std::setw(10) << std::setfill( '.') << "total" << ": " <<
-         std::right << std::setw( 7) << std::setfill( ' ') << std::chrono::duration_cast< us>( timepoints.back().time - timepoints.front().time).count() << "\n";
+      casual::common::log::line( std::cout, std::left, std::setw(10), std::setfill( '.'), "total", ": ",
+         std::right, std::setw( 7), std::setfill( ' '), timepoints.back().time - timepoints.front().time);
    }
 
 }
@@ -169,7 +159,6 @@ int main( int argc, char** argv)
             casual::common::argument::directive( { "-t", "--transaction"}, "call within a transaction", settings.transaction),
             casual::common::argument::directive( { "-r", "--rollback"}, "call within a transaction", settings.rollback),
             casual::common::argument::directive( { "-i", "--iterations"}, "number of iterations of batch-calls", settings.iterations),
-            //casual::common::argument::directive( { "-h", "--help"}, "shows this help", &help)
       }};
 
 

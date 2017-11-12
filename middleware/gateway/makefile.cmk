@@ -142,7 +142,6 @@ install_bin.append( target)
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
         Compile( 'unittest/source/test_inbound_cache.cpp'),
-        #Compile( 'unittest/source/test_message.cpp'),
         
         # ipc
         Compile( 'unittest/source/ipc/test_manager.cpp'),

@@ -245,7 +245,7 @@ namespace casual
 
             namespace thread
             {
-               std::mutex Safe::m_mutex;
+               std::mutex Lock::m_mutex;
 
             } // thread
 

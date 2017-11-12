@@ -59,6 +59,8 @@
 
 namespace casual
 {
+   using namespace std::literals::chrono_literals;
+   
 	namespace common
 	{
 		namespace platform
@@ -258,8 +260,10 @@ namespace casual
 
 			namespace signal
          {
-			   using type = int;
-
+            namespace native
+            {
+               using type = int;   
+            } // native
          } // signal
 
 
@@ -329,7 +333,7 @@ namespace casual
                using type = clock::type::time_point;
             } // point
 
-            using unit = std::chrono::nanoseconds;
+            using unit = point::type::duration;
 
          } // time
 

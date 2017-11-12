@@ -37,20 +37,19 @@ namespace casual
             namespace
             {
 
-               bool send( strong::process::id pid, platform::signal::type signal)
+               bool send( strong::process::id pid, Type signal)
                {
+                  log::line( verbose::log, "local::signal::send pid: ", pid, " signal: ", signal);
 
-                  log::debug << "signal::send pid: " << pid << " signal: " << signal << std::endl;
-
-                  if( ::kill( pid.value(), signal) != 0)
+                  if( ::kill( pid.value(), cast::underlying( signal)) != 0)
                   {
                      switch( errno)
                      {
                         case ESRCH:
-                           log::debug << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << code::last::system::error() << '\n';
+                           log::line( log::debug, "failed to send signal - ", signal, " -> pid: ", pid, " - error: ", code::last::system::error());
                            break;
                         default:
-                           log::category::error << "failed to send signal (" << type::string( signal) << ") to pid: " << pid << " - error: " << code::last::system::error() << '\n';
+                           log::line( log::category::error, "failed to send signal - ", signal, " -> pid: ", pid, " - error: ", code::last::system::error());
                            break;
                      }
                      return false;
@@ -74,35 +73,20 @@ namespace casual
 		{
          std::ostream& operator << ( std::ostream& out, signal::Type signal)
          {
+            const auto value = cast::underlying( signal);
             switch( signal)
             {
-               case Type::alarm: return out << "alarm";
-               case Type::interrupt: return out << "interrupt";
-               case Type::kill: return out << "kill";
-               case Type::quit: return out << "quit";
-               case Type::child: return out << "child";
-               case Type::terminate: return out << "terminate";
-               case Type::user: return out << "user";
-               case Type::pipe: return out << "pipe";
+               case Type::alarm: return out << value << ":alarm";
+               case Type::interrupt: return out << value << ":interrupt";
+               case Type::kill: return out << value << ":kill";
+               case Type::quit: return out << value << ":quit";
+               case Type::child: return out << value << ":child";
+               case Type::terminate: return out << value << ":terminate";
+               case Type::user: return out << value << ":user";
+               case Type::pipe: return out << value << ":pipe";
             }
-            return out << cast::underlying( signal);
+            return out << value;
          }
-
-		   namespace type
-		   {
-
-            std::string string( Type signal)
-            {
-               return type::string( cast::underlying( signal));
-            }
-
-            std::string string( platform::signal::type signal)
-            {
-               return strsignal( signal);
-            }
-
-         } // type
-
 
 		   namespace local
          {
@@ -128,7 +112,7 @@ namespace casual
 
 
                      template< signal::Type Signal>
-                     void signal_callback( platform::signal::type signal)
+                     void signal_callback( platform::signal::native::type signal)
                      {
                         if( ! basic_pending< Signal>::pending.exchange( true))
                         {
@@ -356,9 +340,9 @@ namespace casual
                         exception::system::throw_from_errno( "timer::set");
                      }
 
-                     log::debug << "timer set: "
-                           << value.it_value.tv_sec << "." << std::setw( 6) << std::setfill( '0') << value.it_value.tv_usec << "s - was: "
-                           << old.it_value.tv_sec << "." <<  std::setw( 6) << std::setfill( '0') << old.it_value.tv_usec << "s\n";
+                     log::line( verbose::log, "timer set: ",
+                           value.it_value.tv_sec, ".", std::setw( 6), std::setfill( '0'), value.it_value.tv_usec, "s - was: ",
+                           old.it_value.tv_sec, "." ,std::setw( 6), std::setfill( '0'), old.it_value.tv_usec, "s");
 
                      return convert( old);
                   }
@@ -421,11 +405,7 @@ namespace casual
                if( old != common::platform::time::unit::min())
                {
                   m_old = now + old;
-                  log::debug << "old timepoint: " << chronology::local( m_old) << std::endl;
-               }
-               else
-               {
-                  m_old = platform::time::point::type::min();
+                  log::line( verbose::log, "old timepoint: ", m_old.time_since_epoch());
                }
             }
 
@@ -489,7 +469,7 @@ namespace casual
 
          bool send( strong::process::id pid, Type signal)
          {
-            return local::send( pid, cast::underlying( signal));
+            return local::send( pid, signal);
          }
 
 
@@ -624,11 +604,9 @@ namespace casual
 
             void send( std::thread& thread, Type signal)
             {
-               log::debug << "signal::thread::send thread: " << thread.get_id() << " signal: " << signal << std::endl;
+               log::line( log::debug, "signal::thread::send thread: ", thread.get_id(), " signal: ", signal);
 
                send( thread.native_handle(), signal);
-
-               //if( pthread_kill( const_cast< std::thread&>( thread).native_handle(), signal) != 0)
             }
 
             void send( common::thread::native::type thread, Type signal)
@@ -637,18 +615,18 @@ namespace casual
 	       {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
                   {
-                      log::category::error << "failed to send signal (" << type::string( signal) << ") to thread - error: " << code::last::system::error() << '\n';
+                      log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::last::system::error());
                   } 
                }
                else
                {     
-                  log::category::error << "thread-handle is not valid - action: ignore"  << std::endl;
+                  log::line( log::category::error, "thread-handle is not valid - action: ignore");
                }
             }
 
             void send( Type signal)
             {
-               log::debug << "signal::thread::send current thread - signal: " << signal << std::endl;
+               log::line( log::debug, "signal::thread::send current thread - signal: ", signal);
 
                send( common::thread::native::current(), signal);
             }

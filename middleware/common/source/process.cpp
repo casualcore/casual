@@ -17,6 +17,7 @@
 #include "common/message/server.h"
 #include "common/communication/ipc.h"
 #include "common/flag.h"
+#include "common/chronology.h"
 
 //
 // std
@@ -353,19 +354,18 @@ namespace casual
 
          void sleep( common::platform::time::unit time)
          {
-            log::debug << "process::sleep time: " << time.count() << "us\n";
+            log::line( verbose::log, "process::sleep time: ", time);
 
-            //
-            // We check signals before we sleep
-            //
-            signal::handle();
 
             timespec posix_time;
             posix_time.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( time).count();
             posix_time.tv_nsec = std::chrono::duration_cast< std::chrono::nanoseconds>(
                   time - std::chrono::seconds{ posix_time.tv_sec}).count();
 
-
+            //
+            // We check signals before we sleep
+            //
+            signal::handle();
 
             if( nanosleep( &posix_time, nullptr) == -1)
             {
@@ -656,7 +656,7 @@ namespace casual
             //
             signal::thread::scope::Block block;
 
-            process::sleep( std::chrono::microseconds{ 200});
+            process::sleep( 200us);
 
             log::debug << "process::spawned pid: " << pid << '\n';
 
@@ -666,7 +666,7 @@ namespace casual
             /* We can't really do this, since we mess up the semantics for the caller
 
             {
-               auto deaths = lifetime::wait( { pid}, std::chrono::microseconds{ 1});
+               auto deaths = lifetime::wait( { pid}, 1us);
 
                if( ! deaths.empty() && deaths.front().reason != lifetime::Exit::Reason::exited)
                {

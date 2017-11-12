@@ -2,19 +2,19 @@
 //! casual
 //!
 
-#ifndef CHRONOLOGY_H_
-#define CHRONOLOGY_H_
+#ifndef CASUAL_COMMON_CHRONOLOGY_H_
+#define CASUAL_COMMON_CHRONOLOGY_H_
 
 #include "common/platform.h"
+#include "common/log/stream.h"
 
 #include <string>
+#include <chrono>
 
 namespace casual
 {
-
    namespace common
    {
-
       namespace chronology
       {
          std::string local();
@@ -35,10 +35,16 @@ namespace casual
                template<>
                struct string<  std::chrono::microseconds> { constexpr static auto value = "us";};
 
+               template<>
+               struct string<  std::chrono::milliseconds> { constexpr static auto value = "ms";};
+
+               template<>
+               struct string<  std::chrono::seconds> { constexpr static auto value = "s";};
+
             }
 
             template< typename D>
-            constexpr auto string( D&& duration) { return detail::string< D>::value;}
+            constexpr auto string( D&& duration) { return detail::string< std::decay_t< D>>::value;}
          } // unit
 
 
@@ -47,12 +53,29 @@ namespace casual
             common::platform::time::unit string( const std::string& value);
          } // from
 
+         struct format
+         {
+            template< typename D>
+            void operator () ( std::ostream& out, D&& duration) const
+            {
+               out << duration.count() << unit::string( duration);
+            }
+         };
 
-      }
+      } // chronology
 
-   }
+      namespace log
+      {
+         template< typename R, typename P>
+         struct has_formatter< std::chrono::duration< R, P>> : std::true_type
+         {
+            using formatter = chronology::format;
+         };
+      } // log
 
-}
+
+   } // common
+} // casual
 
 
-#endif /* CHRONOLOGY_H_ */
+#endif // CASUAL_COMMON_CHRONOLOGY_H_

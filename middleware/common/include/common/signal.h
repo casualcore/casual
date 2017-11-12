@@ -29,7 +29,7 @@ namespace casual
       namespace signal
       {
 
-         enum class Type : platform::signal::type
+         enum class Type : platform::signal::native::type
          {
             alarm = SIGALRM,
             interrupt = SIGINT,
@@ -42,14 +42,6 @@ namespace casual
          };
 
          std::ostream& operator << ( std::ostream& out, signal::Type signal);
-
-		   namespace type
-         {
-            std::string string( Type signal);
-            std::string string( platform::signal::type signal);
-
-         } // type
-
 
 
 			//!
@@ -136,7 +128,7 @@ namespace casual
                ~Scoped();
 
             private:
-               platform::time::point::type m_old;
+               platform::time::point::type m_old = platform::time::point::type::min();
                move::Moved m_moved;
 
             };

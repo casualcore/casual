@@ -16,10 +16,10 @@
 
 namespace casual
 {
+
    namespace transaction
    {
-
-
+      
       TEST( casual_transaction_admin, statistics_start_end)
       {
          common::unittest::Trace trace;
@@ -28,15 +28,13 @@ namespace casual
 
          auto now = common::platform::time::clock::type::now();
 
-         auto us100 = std::chrono::microseconds{ 100};
-
          statistics.start( now);
-         statistics.end( now + us100);
+         statistics.end( now + 100us);
 
          EXPECT_TRUE( statistics.invoked == 1);
-         EXPECT_TRUE( statistics.min == us100);
-         EXPECT_TRUE( statistics.max == us100);
-         EXPECT_TRUE( statistics.total == us100);
+         EXPECT_TRUE( statistics.min == 100us);
+         EXPECT_TRUE( statistics.max == 100us);
+         EXPECT_TRUE( statistics.total == 100us);
 
       }
 
@@ -48,17 +46,15 @@ namespace casual
 
          auto now = common::platform::time::clock::type::now();
 
-         auto us100 = std::chrono::microseconds{ 100};
-
          statistics.start( now);
-         statistics.end( now + us100);
+         statistics.end( now + 100us);
 
          auto vo = transform::Statistics{}( statistics);
 
          EXPECT_TRUE( vo.invoked == 1);
-         EXPECT_TRUE( vo.min == us100);
-         EXPECT_TRUE( vo.max == us100);
-         EXPECT_TRUE( vo.total == us100);
+         EXPECT_TRUE( vo.min == 100us);
+         EXPECT_TRUE( vo.max == 100us);
+         EXPECT_TRUE( vo.total == 100us);
 
       }
 
@@ -70,18 +66,16 @@ namespace casual
 
          auto now = common::platform::time::clock::type::now();
 
-         auto us100 = std::chrono::microseconds{ 100};
-
          statistics.start( now);
-         statistics.end( now + us100);
+         statistics.end( now + 100us);
 
          auto vo = transform::Statistics{}( statistics);
          vo += vo::Statistics{};
 
          EXPECT_TRUE( vo.invoked == 1);
-         EXPECT_TRUE( vo.min == us100);
-         EXPECT_TRUE( vo.max == us100);
-         EXPECT_TRUE( vo.total == us100);
+         EXPECT_TRUE( vo.min == 100us);
+         EXPECT_TRUE( vo.max == 100us);
+         EXPECT_TRUE( vo.total == 100us);
 
       }
 
@@ -93,18 +87,16 @@ namespace casual
 
          auto now = common::platform::time::clock::type::now();
 
-         auto us100 = std::chrono::microseconds{ 100};
-
          statistics.start( now);
-         statistics.end( now + us100);
+         statistics.end( now + 100us);
 
          vo::Statistics vo;
          vo += transform::Statistics{}( statistics);
 
          EXPECT_TRUE( vo.invoked == 1);
-         EXPECT_TRUE( vo.min == us100) << CASUAL_MAKE_NVP( vo);
-         EXPECT_TRUE( vo.max == us100);
-         EXPECT_TRUE( vo.total == us100);
+         EXPECT_TRUE( vo.min == 100us) << CASUAL_MAKE_NVP( vo);
+         EXPECT_TRUE( vo.max == 100us);
+         EXPECT_TRUE( vo.total == 100us);
 
       }
 
@@ -114,11 +106,9 @@ namespace casual
 
          vo::Statistics vo;
 
-         auto us100 = std::chrono::microseconds{ 100};
-
-         vo.min = us100;
-         vo.max = us100 + us100;
-         vo.total = us100 * 3;
+         vo.min = 100us;
+         vo.max = 100us + 100us;
+         vo.total = 100us * 3;
          vo.invoked = 2;
 
 
@@ -127,9 +117,9 @@ namespace casual
          value += vo;
 
          EXPECT_TRUE( value.invoked == 4);
-         EXPECT_TRUE( value.min == us100) << CASUAL_MAKE_NVP( vo);
-         EXPECT_TRUE( value.max == us100 * 2);
-         EXPECT_TRUE( value.total == us100 * 3 * 2);
+         EXPECT_TRUE( value.min == 100us) << CASUAL_MAKE_NVP( vo);
+         EXPECT_TRUE( value.max == 100us * 2);
+         EXPECT_TRUE( value.total == 100us * 3 * 2);
 
 
       }

@@ -8,6 +8,7 @@
 
 
 #include "common/platform.h"
+#include "common/traits.h"
 
 
 #include <string>
@@ -28,10 +29,21 @@ namespace casual
 
             namespace thread
             {
-               class Safe
+
+               class Lock
                {
                public:
-                  Safe( std::ostream& stream) : m_stream( stream), m_lock( m_mutex) {}
+                  inline Lock() : m_lock( m_mutex) {}
+
+               private:
+                  std::unique_lock< std::mutex> m_lock;
+                  static std::mutex m_mutex;
+               };
+
+               class Safe : public Lock
+               {
+               public:
+                  inline Safe( std::ostream& stream) : m_stream( stream) {}
                   Safe( Safe&&) = default;
 
 
@@ -61,9 +73,6 @@ namespace casual
 
                private:
                   std::ostream& m_stream;
-                  std::unique_lock< std::mutex> m_lock;
-
-                  static std::mutex m_mutex;
                };
 
 
@@ -104,10 +113,55 @@ namespace casual
             }
          };
 
+         template< typename T>
+         struct has_formatter : std::false_type{};
+
+
+         namespace detail
+         {
+            template< typename S>
+            void part( S& stream)
+            {
+            }
+
+            template< typename S, typename T>
+            auto part( S& stream, T&& value) -> std::enable_if_t< has_formatter< std::decay_t< T>>::value>
+            {
+               typename has_formatter< std::decay_t< T>>::formatter{}( stream, std::forward< T>( value));
+            }
+
+            template< typename S, typename T>
+            auto part( S& stream, T&& value) -> std::enable_if_t< ! has_formatter< std::decay_t< T>>::value>
+            {
+               stream << std::forward< T>( value);
+            }
+
+            template< typename S, typename Arg, typename... Args>
+            void part( S& stream, Arg&& arg, Args&&... args)
+            {
+               detail::part( stream, std::forward< Arg>( arg));
+               detail::part( stream, std::forward< Args>( args)...);
+            }
+         } // detail
+
+         template< typename... Args>
+         void write( std::ostream& stream, Args&&... args)
+         {
+            if( stream)
+            {
+               stream::thread::Lock lock;
+               detail::part( stream, std::forward< Args>( args)...);
+            }
+         }
+
+         template< typename... Args>
+         void line( std::ostream& stream, Args&&... args)
+         {
+            write( stream, std::forward< Args>( args)..., '\n');
+         } 
       } // log
    } // common
 } // casual
-
 
 
 #endif // COMMON_LOG_H
