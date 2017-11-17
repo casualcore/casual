@@ -7,8 +7,7 @@
 
 #include "common/communication/tcp.h"
 #include "common/exception/system.h"
-
-
+#include "common/exception/handle.h"
 
 #include "common/message/service.h"
 #include "common/mockup/thread.h"

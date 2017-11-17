@@ -9,6 +9,7 @@
 #include "common/algorithm.h"
 #include "common/file.h"
 #include "common/network/byteorder.h"
+#include "common/execute.h"
 
 #include "xatmi.h"
 
@@ -57,7 +58,7 @@ namespace casual
 
             char* buffer = tpalloc( CASUAL_FIELD, nullptr, 0);
 
-             auto deleter = common::scope::execute( [&](){
+             auto deleter = common::execute::scope( [&](){
                 tpfree( buffer);
              });
 

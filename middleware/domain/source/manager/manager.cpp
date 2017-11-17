@@ -10,6 +10,7 @@
 #include "common/file.h"
 #include "common/environment.h"
 #include "common/uuid.h"
+#include "common/exception/handle.h"
 
 
 #include <fstream>

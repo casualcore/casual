@@ -128,7 +128,7 @@ namespace casual
                         //
                         // If something goes wrong, we try to send error reply to caller
                         //
-                        auto error_reply = scope::execute( [&](){
+                        auto error_reply = execute::scope( [&](){
                            send::error::reply( m_state, request);
                         });
 

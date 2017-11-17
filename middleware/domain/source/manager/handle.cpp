@@ -883,7 +883,7 @@ namespace casual
 
                   auto reply = common::message::reverse::type( message);
 
-                  auto send_reply = common::scope::execute( [&](){
+                  auto send_reply = common::execute::scope( [&](){
                      manager::local::ipc::send( state(), message.process, reply);
                   });
 

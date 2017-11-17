@@ -5,7 +5,7 @@
 #include "common/mockup/thread.h"
 #include "common/mockup/log.h"
 
-
+#include "common/exception/handle.h"
 #include "common/signal.h"
 
 namespace casual

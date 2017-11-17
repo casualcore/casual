@@ -151,7 +151,7 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
 
 
-                  auto send_reply = common::scope::execute( [&](){
+                  auto send_reply = common::execute::scope( [&](){
                      local::reply( message.process.queue, reply);
                   });
 

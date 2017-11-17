@@ -11,6 +11,7 @@
 #include "common/message/handle.h"
 #include "common/exception/casual.h"
 #include "common/transaction/context.h"
+#include "common/execute.h"
 
 
 
@@ -38,7 +39,7 @@ namespace casual
                      //
                      // Rollback unless we commit
                      //
-                     auto rollback = common::scope::execute( [](){
+                     auto rollback = common::execute::scope( [](){
                            tx_rollback();
                      });
 

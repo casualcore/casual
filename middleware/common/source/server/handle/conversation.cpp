@@ -8,6 +8,8 @@
 
 #include "common/service/conversation/context.h"
 
+#include "common/execute.h"
+
 
 namespace casual
 {
@@ -30,7 +32,7 @@ namespace casual
                   // We set the worst we got until proven otherwise.
                   reply.status = code::xatmi::protocol;
 
-                  auto send_reply = scope::execute( [&](){
+                  auto send_reply = execute::scope( [&](){
                      reply.process = process::handle();
                      reply.route = message.recording;
                   });

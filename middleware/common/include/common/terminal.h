@@ -5,7 +5,8 @@
 #ifndef COMMON_TERMINAL_H_
 #define COMMON_TERMINAL_H_
 
-#include "common/pimpl.h"
+#include "common/move.h"
+#include "common/algorithm.h"
 
 #include <string>
 #include <ostream>

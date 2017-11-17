@@ -9,6 +9,8 @@
 
 #include "common/message/handle.h"
 #include "common/event/listen.h"
+#include "common/exception/handle.h"
+#include "common/execute.h"
 
 namespace casual
 {
@@ -431,7 +433,7 @@ namespace casual
 
                   auto reply = common::message::reverse::type( message);
 
-                  auto send_reply = common::scope::execute( [&](){
+                  auto send_reply = common::execute::scope( [&](){
                      local::ipc::blocking::send( message.process.queue, reply);
                   });
 

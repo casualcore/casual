@@ -9,6 +9,7 @@
 #include "common/marshal/complete.h"
 
 #include "common/arguments.h"
+#include "common/exception/handle.h"
 
 #include <fstream>
 

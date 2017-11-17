@@ -10,6 +10,7 @@
 #include "common/environment.h"
 #include "common/server/service.h"
 #include "common/exception/system.h"
+#include "common/exception/handle.h"
 
 #include "configuration/build/server.h"
 #include "configuration/resource/property.h"

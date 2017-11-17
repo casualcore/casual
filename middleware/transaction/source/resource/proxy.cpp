@@ -12,6 +12,7 @@
 #include "common/message/handle.h"
 #include "common/communication/ipc.h"
 #include "common/event/send.h"
+#include "common/environment.h"
 
 #include "sf/log.h"
 
@@ -58,12 +59,14 @@ namespace casual
 
                   reply_type reply;
 
+                  auto openinfo = common::environment::string( m_state.rm_openinfo);
+
                   reply.process = common::process::handle();
                   reply.resource = m_state.rm_id;
 
                   reply.state = local::convert( 
                      m_state.xa_switches->xa_switch->xa_open_entry( 
-                        m_state.rm_openinfo.c_str(), m_state.rm_id, common::cast::underlying( common::flag::xa::Flag::no_flags)));
+                        openinfo.c_str(), m_state.rm_id, common::cast::underlying( common::flag::xa::Flag::no_flags)));
 
 
                   {

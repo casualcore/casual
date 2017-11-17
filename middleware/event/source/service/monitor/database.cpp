@@ -7,6 +7,7 @@
 #include "common/arguments.h"
 #include "common/process.h"
 #include "common/event/listen.h"
+#include "common/exception/handle.h"
 
 #include "sql/database.h"
 

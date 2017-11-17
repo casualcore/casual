@@ -7,6 +7,7 @@
 
 #include "common/arguments.h"
 #include "common/chronology.h"
+#include "common/exception/handle.h"
 
 #include "sf/service/protocol/call.h"
 

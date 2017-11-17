@@ -15,6 +15,7 @@
 
 #include "common/marshal/complete.h"
 #include "common/communication/ipc.h"
+#include "common/execute.h"
 
 #include "common/message/service.h"
 #include "common/message/gateway.h"
@@ -212,7 +213,7 @@ namespace casual
                      //
                      cache.add( common::marshal::complete( std::move( message)));
 
-                     auto remove = common::scope::execute( [&](){
+                     auto remove = common::execute::scope( [&](){
                         cache.get( request.correlation);
                      });
 

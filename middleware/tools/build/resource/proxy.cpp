@@ -10,7 +10,9 @@
 #include "common/string.h"
 #include "common/process.h"
 #include "common/exception/system.h"
+#include "common/exception/handle.h"
 #include "configuration/resource/property.h"
+
 
 #include "sf/log.h"
 

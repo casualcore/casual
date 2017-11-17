@@ -7,6 +7,7 @@
 
 #include "common/process.h"
 #include "common/communication/ipc.h"
+#include "common/execute.h"
 
 
 namespace casual
@@ -32,7 +33,7 @@ namespace casual
 
             try
             {
-               auto terminate = scope::execute( [&](){
+               auto terminate = execute::scope( [&](){
                   common::process::lifetime::terminate( { m_process.pid});
                });
 

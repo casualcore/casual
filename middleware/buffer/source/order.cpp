@@ -7,10 +7,12 @@
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
 #include "common/exception/xatmi.h"
+#include "common/exception/handle.h"
 #include "common/network/byteorder.h"
 #include "common/platform.h"
 #include "common/log.h"
 #include "common/algorithm.h"
+#include "common/execute.h"
 
 #include <cstring>
 #include <utility>
@@ -282,7 +284,7 @@ namespace casual
                   //
                   // create potential rollback
                   //
-                  const auto reset = common::scope::execute
+                  const auto reset = common::execute::scope
                   ( [&](){ if( std::uncaught_exception()) memory.resize( used);});
 
                   //
@@ -308,7 +310,7 @@ namespace casual
                      //
                      // Make sure to update the handle regardless
                      //
-                     const auto synchronize = common::scope::execute
+                     const auto synchronize = common::execute::scope
                      ( [&]() { *handle = buffer.handle();});
 
 

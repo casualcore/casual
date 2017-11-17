@@ -9,6 +9,7 @@
 #include "common/transaction/id.h"
 #include "common/transaction/transaction.h"
 #include "common/flag.h"
+#include "common/exception/handle.h"
 
 #include "xa.h"
 

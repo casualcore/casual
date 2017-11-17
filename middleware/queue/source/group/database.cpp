@@ -6,6 +6,7 @@
 #include "queue/common/log.h"
 
 #include "common/algorithm.h"
+#include "common/execute.h"
 
 
 // temp
@@ -109,7 +110,7 @@ namespace casual
 
             Trace trace{ "Database::Database"};
 
-            auto update_name_mapping = common::scope::execute( [&](){
+            auto update_name_mapping = common::execute::scope( [&](){
                update_mapping();
             });
 

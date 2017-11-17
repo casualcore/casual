@@ -4,6 +4,7 @@
 
 #include "common/event/listen.h"
 
+#include "common/execute.h"
 #include "common/message/handle.h"
 
 namespace casual
@@ -72,7 +73,7 @@ namespace casual
 
                   local::subscribe( process, types);
 
-                  return scope::execute( [&](){
+                  return execute::scope( [&](){
                      event::unsubscribe( process, types);
                   });
                }

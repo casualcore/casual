@@ -16,6 +16,7 @@
 #include "common/exception/system.h"
 #include "common/exception/casual.h"
 #include "common/exception/handle.h"
+#include "common/execute.h"
 
 #include "common/log.h"
 
@@ -355,7 +356,7 @@ namespace casual
                      {
                         Trace trace{ "Link::input_worker"};
 
-                        auto terminate = scope::execute( [&](){ queue.terminate();});
+                        auto terminate = execute::scope( [&](){ queue.terminate();});
 
                         while( true)
                         {

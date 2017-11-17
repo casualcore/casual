@@ -146,7 +146,7 @@ namespace casual
                         case Proxy::Instance::State::idle: return "idle";
                         case Proxy::Instance::State::shutdown: return "shutdown";
                         case Proxy::Instance::State::started: return "started";
-                        case Proxy::Instance::State::error: return "startupError";
+                        case Proxy::Instance::State::error: return "startup-error";
                      }
                      return "<unknown>";
                   };

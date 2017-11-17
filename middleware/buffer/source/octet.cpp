@@ -7,6 +7,7 @@
 #include "common/buffer/pool.h"
 #include "common/memory.h"
 #include "common/platform.h"
+#include "common/exception/handle.h"
 
 namespace casual
 {

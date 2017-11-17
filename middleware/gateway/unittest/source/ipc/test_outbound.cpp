@@ -12,6 +12,7 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/exception/handle.h"
 
 #include "common/mockup/process.h"
 #include "common/mockup/domain.h"

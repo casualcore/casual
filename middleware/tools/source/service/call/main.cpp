@@ -2,6 +2,10 @@
 //! casual
 //!
 
+#include "common/arguments.h"
+#include "common/exception/handle.h"
+
+
 #include <stdexcept>
 #include <iostream>
 #include <string>
@@ -9,7 +13,7 @@
 #include <cstring>
 
 #include "xatmi.h"
-#include "common/arguments.h"
+
 
 std::string type_from_input( const std::string& input)
 {

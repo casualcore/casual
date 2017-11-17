@@ -10,6 +10,7 @@
 #include "common/arguments.h"
 #include "common/log.h"
 #include "common/server/start.h"
+#include "common/exception/handle.h"
 
 #include "sf/service/protocol.h"
 

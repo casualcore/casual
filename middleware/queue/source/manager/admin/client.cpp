@@ -13,6 +13,8 @@
 #include "common/terminal.h"
 #include "common/chronology.h"
 #include "common/transcode.h"
+#include "common/execute.h"
+#include "common/exception/handle.h"
 
 #include "sf/service/protocol/call.h"
 #include "sf/archive/maker.h"
@@ -260,7 +262,7 @@ namespace casual
       {
          tx_begin();
 
-         auto rollback = scope::execute( [](){
+         auto rollback = execute::scope( [](){
             tx_rollback();
          });
 
@@ -291,7 +293,7 @@ namespace casual
       {
          tx_begin();
 
-         auto rollback = scope::execute( [](){
+         auto rollback = execute::scope( [](){
             tx_rollback();
          });
 

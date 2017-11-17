@@ -13,6 +13,8 @@
 #include "common/message/service.h"
 #include "common/message/handle.h"
 
+#include "common/execute.h"
+
 #include <memory>
 
 namespace casual
@@ -118,12 +120,12 @@ namespace casual
                   reply.status = common::code::xatmi::no_entry;
 
                   // make sure we always send reply
-                  auto send_reply = common::scope::execute( [&](){
+                  auto send_reply = common::execute::scope( [&](){
                      common::communication::ipc::blocking::send( message.process.queue, reply);
                   });
 
                   // make sure we always send ACK
-                  auto send_ack = common::scope::execute( [&](){
+                  auto send_ack = common::execute::scope( [&](){
                      common::message::service::call::ACK ack;
                      ack.correlation = message.correlation;
                      ack.process = common::process::handle();

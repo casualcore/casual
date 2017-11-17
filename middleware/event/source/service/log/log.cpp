@@ -7,6 +7,7 @@
 #include "common/process.h"
 #include "common/uuid.h"
 #include "common/event/listen.h"
+#include "common/exception/handle.h"
 
 #include <fstream>
 #include <iostream>

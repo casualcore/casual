@@ -10,6 +10,7 @@
 #include "common/terminal.h"
 #include "common/chronology.h"
 #include "common/transcode.h"
+#include "common/exception/handle.h"
 
 #include "sf/service/protocol/call.h"
 #include "sf/archive/maker.h"

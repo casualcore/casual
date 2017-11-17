@@ -12,6 +12,7 @@
 #include "common/execution.h"
 #include "common/exception/xatmi.h"
 #include "common/log.h"
+#include "common/execute.h"
 
 #include "common/flag.h"
 
@@ -62,7 +63,7 @@ namespace casual
                   //
                   // Make sure we do some cleanup and send ACK to broker.
                   //
-                  auto execute_finalize = scope::execute( [&](){
+                  auto execute_finalize = execute::scope( [&](){
                      policy.ack();
                      server::context().finalize();
                   });
@@ -73,7 +74,7 @@ namespace casual
                   //
                   auto reply = transform::reply( message);
 
-                  auto execute_reply = scope::execute( [&](){
+                  auto execute_reply = execute::scope( [&](){
                      if( send_reply)
                      {
                         //
@@ -91,7 +92,7 @@ namespace casual
                   // If something goes wrong, make sure to rollback before reply with error.
                   // this will execute before execute_reply
                   //
-                  auto execute_error_reply = scope::execute( [&](){
+                  auto execute_error_reply = execute::scope( [&](){
                      reply.transaction = policy.transaction( false);
                   });
 
@@ -178,7 +179,7 @@ namespace casual
                   // Do transaction stuff...
                   // - commit/rollback transaction if service has "auto-transaction"
                   //
-                  auto execute_transaction = scope::execute( [&](){
+                  auto execute_transaction = execute::scope( [&](){
                      reply.transaction = policy.transaction(
                            reply.transaction.state == message::service::Transaction::State::active);
                   });
@@ -192,7 +193,7 @@ namespace casual
                   //
                   // Take end time
                   //
-                  auto execute_monitor = scope::execute( [&](){
+                  auto execute_monitor = execute::scope( [&](){
                      if( ! message.service.event_subscribers.empty())
                      {
                         state.event.end = platform::time::clock::type::now();

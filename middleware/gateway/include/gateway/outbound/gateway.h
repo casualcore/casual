@@ -13,6 +13,7 @@
 #include "gateway/outbound/routing.h"
 
 #include "common/communication/ipc.h"
+#include "common/exception/handle.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/gateway.h"

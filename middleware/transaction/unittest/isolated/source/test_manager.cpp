@@ -443,6 +443,42 @@ resources:
          EXPECT_TRUE( result == tx::ok) << "result: " << result;
       }
 
+      TEST( casual_transaction_manager, begin_commit_transaction__1_resources_involved__environment_open_info__XAER_NOTA___expect__TX_OK)
+      {
+         common::unittest::Trace trace;
+
+         common::environment::variable::set( "CASUAL_OPEN_INFO", "--commit " + std::to_string( XAER_NOTA));
+
+         auto configuration = local::Domain::configuration();
+         configuration.transaction.resources.resize( 1);
+         configuration.transaction.resources.at( 0).openinfo = "${CASUAL_OPEN_INFO}";
+
+         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
+
+         using tx = common::code::tx;
+
+         EXPECT_TRUE( local::tx_invoke( &tx_begin) == tx::ok);
+
+         //
+         // Make sure we make the transaction distributed
+         //
+         auto state = local::admin::call::state();
+         EXPECT_TRUE( state.transactions.empty());
+
+         // involved
+         {
+            common::message::transaction::resource::Involved message;
+            message.trid = common::transaction::Context::instance().current().trid;
+            message.process = process::handle();
+            message.resources = { 1};
+
+            local::send::tm( message);
+         }
+
+         auto result = local::tx_invoke( &tx_commit);
+         EXPECT_TRUE( result == tx::ok) << "result: " << result;
+      }
+
       TEST( casual_transaction_manager, begin_rollback_transaction__1_resources_involved__expect_one_phase_commit_optimization)
       {
          common::unittest::Trace trace;

@@ -454,6 +454,9 @@ namespace casual
             using has_size = decltype( std::declval< T&>().size());
 
             template< typename T>
+            using has_empty = decltype( std::declval< T&>().empty());
+
+            template< typename T>
             using has_insert = decltype( std::declval< T&>().insert( std::begin( std::declval< T&>()), std::begin( std::declval< T&>()), std::begin( std::declval< T&>())));
 
             template< typename T>
@@ -467,6 +470,9 @@ namespace casual
          {
             template< typename T>
             using size = detect::is_detected< member::has_size, T>;
+
+            template< typename T>
+            using empty = detect::is_detected< member::has_empty, T>;
 
 
             template< typename T>

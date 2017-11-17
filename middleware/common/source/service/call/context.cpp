@@ -19,6 +19,8 @@
 
 #include "common/transaction/context.h"
 
+#include "common/execute.h"
+
 #include "xatmi.h"
 
 //
@@ -210,7 +212,7 @@ namespace casual
                //
                // If some thing goes wrong we unreserve the descriptor
                //
-               auto unreserve = common::scope::execute( [&](){ m_state.pending.unreserve( prepared.descriptor);});
+               auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
 
 
                //
@@ -322,7 +324,7 @@ namespace casual
                //
                // We unreserve pending (at end of scope, regardless of outcome)
                //
-               auto discard = scope::execute( [&](){ m_state.pending.unreserve( result.descriptor);});
+               auto discard = execute::scope( [&](){ m_state.pending.unreserve( result.descriptor);});
 
                //
                // Update transaction state

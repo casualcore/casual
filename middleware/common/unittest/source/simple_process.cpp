@@ -6,6 +6,7 @@
 #include "common/arguments.h"
 #include "common/process.h"
 
+#include "common/exception/handle.h"
 
 using namespace casual::common;
 

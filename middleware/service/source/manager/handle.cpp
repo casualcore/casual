@@ -299,7 +299,7 @@ namespace casual
                   catch( const state::exception::Missing&)
                   {
 
-                     auto send_reply = scope::execute( [&](){
+                     auto send_reply = execute::scope( [&](){
 
                         log << "no instances found for service: " << message.requested << '\n';
 

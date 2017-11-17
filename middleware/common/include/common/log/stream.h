@@ -9,6 +9,7 @@
 
 #include "common/platform.h"
 #include "common/traits.h"
+#include "common/range.h"
 
 
 #include <string>
@@ -113,9 +114,26 @@ namespace casual
             }
          };
 
-         template< typename T>
+         template< typename T, typename = void>
          struct has_formatter : std::false_type{};
 
+         //!
+         //! Specialization for containers, to log ranges
+         //!
+         template< typename C> 
+         struct has_formatter< C> : 
+            std::conditional_t< traits::container::is_sequence< C>::value && ! traits::container::is_string< C>::value,
+               std::true_type, std::false_type>
+         {
+            struct formatter
+            {
+               template< typename R>
+               void operator () ( std::ostream& out, R&& range) const
+               { 
+                  out << range::make( range);
+               }
+            };
+         };
 
          namespace detail
          {

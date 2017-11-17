@@ -14,6 +14,7 @@
 #include "common/message/handle.h"
 #include "common/transaction/context.h"
 #include "common/communication/ipc.h"
+#include "common/execute.h"
 
 
 #include "sf/service/protocol/call.h"
@@ -88,7 +89,7 @@ namespace casual
                   auto group = lookup();
 
 
-                  auto forget_blocking = common::scope::execute( [&]()
+                  auto forget_blocking = common::execute::scope( [&]()
                   {
                      common::message::queue::dequeue::forget::Request request;
                      request.process = common::process::handle();

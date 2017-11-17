@@ -8,6 +8,7 @@
 
 #include "common/communication/ipc.h"
 #include "common/exception/casual.h"
+#include "common/exception/handle.h"
 
 namespace casual
 {

@@ -19,6 +19,8 @@
 #include "common/mockup/process.h"
 #include "common/service/lookup.h"
 #include "common/event/listen.h"
+#include "common/execute.h"
+
 #include "sf/service/protocol/call.h"
 #include "sf/log.h"
 
@@ -68,7 +70,7 @@ namespace casual
                      //
                      // Make sure we unregister the event subscription
                      //
-                     auto unsubscribe = common::scope::execute( [](){
+                     auto unsubscribe = common::execute::scope( [](){
                         common::event::unsubscribe( common::process::handle(), {});
                      });
 

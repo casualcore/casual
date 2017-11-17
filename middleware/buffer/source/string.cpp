@@ -9,6 +9,7 @@
 
 #include "common/log.h"
 #include "common/memory.h"
+#include "common/exception/handle.h"
 
 
 

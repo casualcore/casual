@@ -234,7 +234,7 @@ namespace casual
                {
                   Trace trace{ "instance::handle::fetch"};
 
-                  log::debug << "identity: " << identity << ", directive: " << directive << '\n';
+                  log::line( log::debug, "identity: ", identity, ", directive: ", directive);
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -247,7 +247,7 @@ namespace casual
                {
                   Trace trace{ "instance::handle::fetch (pid)"};
 
-                  log::debug << "pid: " << pid << ", directive: " << directive << '\n';
+                  log::line( log::debug, "pid: ", pid, ", directive: ", directive);
 
                   message::domain::process::lookup::Request request;
                   request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
@@ -578,7 +578,7 @@ namespace casual
          {
             Trace trace{ "process::spawn"};
 
-            path = environment::string( path);
+            path = environment::string( std::move( path));
 
             //
             // check if path exist and process has permission to execute it.
@@ -587,29 +587,19 @@ namespace casual
             //
             if( ! file::permission::execution( path))
             {
-               throw exception::system::invalid::Argument( string::compose( "spawn failed - path: ", path,
-                  " arguments: ", range::make( arguments),
-                  " environment: ", range::make( environment)));
+               throw exception::system::invalid::Argument( string::compose( "spawn failed - path: ", path));
             }
 
             //
-            // We need to expand environment and arguments
+            // We need to expand environment
             //
+            for( auto& variable : environment)
             {
-               for( auto& argument : arguments)
-               {
-                  argument = environment::string( argument);
-               }
-
-               for( auto& variable : environment)
-               {
-                  variable = environment::string( variable);
-               }
+               variable = environment::string( variable);
             }
-
-
-
-            log::debug << "process::spawn " << path << " " << range::make( arguments) << " - environment: " << range::make( environment) << std::endl;
+            
+            log::line( log::debug, "process::spawn ", path, ' ', arguments);
+            log::line( verbose::log, "environment: ", environment);
 
             //
             // Append current, if not "overridden"
@@ -658,7 +648,7 @@ namespace casual
 
             process::sleep( 200us);
 
-            log::debug << "process::spawned pid: " << pid << '\n';
+            log::line( log::debug, "process::spawned pid: ", pid );
 
             //
             // Try to figure out if the process started correctly..
@@ -745,7 +735,7 @@ namespace casual
                            }
                            default:
                            {
-                              log::category::error << "failed to check state of pid: " << exit.pid << " - " << code::last::system::error() << '\n';
+                              log::line( log::category::error, "failed to check state of pid: ", exit.pid, " - ", code::last::system::error());
                               exception::system::throw_from_errno();
                            }
                         }
@@ -833,7 +823,7 @@ namespace casual
 
          std::vector< strong::process::id> terminate( const std::vector< strong::process::id>& pids)
          {
-            log::debug << "process::terminate pids: " << range::make( pids) << '\n';
+            log::line( verbose::log, "process::terminate pids: ", pids);
 
             std::vector< strong::process::id> result;
             for( auto pid : pids)
@@ -936,7 +926,7 @@ namespace casual
                   }
                   else
                   {
-                     log::debug << "terminations: " << range::make( terminations) << '\n';
+                     log::line( verbose::log, "terminations: ", terminations);
                      return terminations;
                   }
                }
@@ -946,7 +936,7 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< strong::process::id>& pids)
             {
-               log::debug << "process::lifetime::wait pids: " << range::make( pids) << '\n';
+               log::line( verbose::log, "process::lifetime::wait pids: ", pids);
 
                std::vector< Exit> result;
 
@@ -959,8 +949,7 @@ namespace casual
             {
                Trace trace{ "common::process::lifetime::wait"};
 
-
-               log::debug << "wait for pids: " << range::make( pids) << std::endl;
+               log::line( verbose::log, "process::lifetime::wait pids: ", pids, " - timeout: ", timeout);
 
                if( pids.empty())
                   return {};

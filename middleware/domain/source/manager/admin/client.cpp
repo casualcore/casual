@@ -9,6 +9,8 @@
 #include "common/arguments.h"
 #include "common/terminal.h"
 #include "common/environment.h"
+#include "common/exception/handle.h"
+#include "common/execute.h"
 
 #include "common/communication/ipc.h"
 
@@ -51,7 +53,7 @@ namespace casual
                         //
                         // Make sure we unsubscribe for events
                         //
-                        auto unsubscribe = scope::execute( [](){
+                        auto unsubscribe = execute::scope( [](){
                            message::event::subscription::End message;
                            message.process = process::handle();
 

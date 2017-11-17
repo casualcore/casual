@@ -214,7 +214,7 @@ namespace casual
 
 
 			//!
-			//! Parses value for environment variables with format @p $(<variable>)
+			//! Parses value for environment variables with format @p ${<variable>}
 			//! and tries to find and replace the variable from environment.
 			//!
 			//! @return possible altered string with regards to environment variables

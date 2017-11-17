@@ -13,6 +13,7 @@
 #include "configuration/message/transform.h"
 
 #include "common/environment.h"
+#include "common/exception/handle.h"
 
 
 namespace casual

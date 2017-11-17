@@ -10,6 +10,7 @@
 #include "sf/archive/maker.h"
 
 #include "common/environment.h"
+#include "common/exception/handle.h"
 
 
 #define CASUAL_CUSTOMIZATION_POINT_SERIALIZE( type, statement) \

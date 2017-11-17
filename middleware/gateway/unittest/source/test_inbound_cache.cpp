@@ -7,6 +7,8 @@
 #include "gateway/inbound/cache.h"
 
 
+#include "common/exception/handle.h"
+
 namespace casual
 {
    using namespace common;

@@ -8,6 +8,7 @@
 
 #include "common/environment.h"
 #include "common/exception/xatmi.h"
+#include "common/exception/handle.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
@@ -15,6 +16,8 @@
 #include "common/platform.h"
 #include "common/algorithm.h"
 #include "common/transcode.h"
+#include "common/execute.h"
+
 
 
 #include "sf/namevaluepair.h"
@@ -345,7 +348,7 @@ namespace casual
                      //
                      // Make sure to update the handle regardless
                      //
-                     const auto synchronize = common::scope::execute
+                     const auto synchronize = common::execute::scope
                      ( [&]() { *handle = buffer.handle();});
 
                      //
@@ -627,7 +630,7 @@ namespace casual
                      //
                      // Make sure to update the handle regardless
                      //
-                     const auto synchronize = common::scope::execute
+                     const auto synchronize = common::execute::scope
                      ( [&]() { *handle = buffer.handle();});
 
                      //
@@ -845,7 +848,7 @@ namespace casual
                      auto& target = pool_type::pool.get( *target_handle);
                      const auto& source = pool_type::pool.get( source_handle);
 
-                     const auto synchronize = common::scope::execute
+                     const auto synchronize = common::execute::scope
                      ( [&]() { *target_handle = target.handle();});
 
                      auto index = source.index;
@@ -869,7 +872,7 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool.get( *handle);
 
-                     const auto synchronize = common::scope::execute
+                     const auto synchronize = common::execute::scope
                      ( [&]() { *handle = buffer.handle();});
 
                      const auto data = static_cast<const_data_type>(source);

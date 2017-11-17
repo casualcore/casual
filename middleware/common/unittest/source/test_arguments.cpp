@@ -6,6 +6,7 @@
 
 #include "common/unittest.h"
 #include "common/arguments.h"
+#include "common/execute.h"
 
 
 #include <functional>
@@ -496,7 +497,7 @@ namespace casual
             {
                auto origin = std::cout.rdbuf( out.rdbuf());
 
-               return scope::execute( [=](){
+               return execute::scope( [=](){
                   std::cout.rdbuf( origin);
                });
             }

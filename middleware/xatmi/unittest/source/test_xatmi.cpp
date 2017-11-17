@@ -15,10 +15,13 @@
 #include "common/mockup/transform.h"
 #include "common/mockup/domain.h"
 
+
 #include "common/flag.h"
 
 #include "common/message/server.h"
 #include "common/message/transaction.h"
+
+#include "common/execute.h"
 
 
 #include "xatmi.h"
@@ -109,7 +112,7 @@ namespace casual
 
          tx_begin();
 
-         auto rollback = common::scope::execute( [](){
+         auto rollback = common::execute::scope( [](){
             tx_rollback();
          });
 

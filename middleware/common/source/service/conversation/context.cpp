@@ -8,6 +8,7 @@
 #include "common/log.h"
 #include "common/buffer/transport.h"
 #include "common/transaction/context.h"
+#include "common/execute.h"
 
 #include "common/message/conversation.h"
 
@@ -228,7 +229,7 @@ namespace casual
                //
                // If some thing goes wrong we unreserve the descriptor
                //
-               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+               auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 
                //
                // TODO: Invoke pre-transport buffer modifiers
@@ -250,7 +251,7 @@ namespace casual
                // If something goes wrong (most likely a timeout), we need to send ack to broker in that case, cus the service(instance)
                // will not do it...
                //
-               auto send_ack = common::scope::execute( [&]()
+               auto send_ack = common::execute::scope( [&]()
                   {
                      message::service::call::ACK ack;
                      ack.process = target.process;
@@ -295,7 +296,7 @@ namespace casual
 
                local::validate::send( descriptor);
 
-               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+               auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 
                local::check::disconnect( descriptor);
 
@@ -327,7 +328,7 @@ namespace casual
 
                local::validate::receive( descriptor);
 
-               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+               auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 
                local::check::disconnect( descriptor);
 
@@ -377,7 +378,7 @@ namespace casual
 
                local::validate::diconnect( descriptor);
 
-               auto unreserve = common::scope::execute( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
+               auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor.descriptor);});
 
                {
                   auto message = local::prepare::message< message::conversation::Disconnect>( descriptor);

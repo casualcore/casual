@@ -5,6 +5,7 @@
 
 #include "common/arguments.h"
 #include "common/terminal.h"
+#include "common/exception/handle.h"
 
 #include "sf/log.h"
 #include "sf/archive/maker.h"
