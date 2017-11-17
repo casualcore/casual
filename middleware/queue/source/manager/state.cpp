@@ -68,8 +68,8 @@ namespace casual
          {
             Trace trace{ "queue::broker::State::remove_queues"};
 
-            common::range::erase_if( queues, [pid]( std::vector< Queue>& instances){
-               return common::range::trim( instances, common::range::remove_if( instances, [pid]( const Queue& q){
+            common::algorithm::erase_if( queues, [pid]( std::vector< Queue>& instances){
+               return common::algorithm::trim( instances, common::algorithm::remove_if( instances, [pid]( const Queue& q){
                   return pid == q.process.pid;
                })).empty();
             });
@@ -93,12 +93,12 @@ namespace casual
 
             remove_queues( pid);
 
-            common::range::trim( groups, common::range::remove_if( groups, [pid]( const auto& g){
+            common::algorithm::trim( groups, common::algorithm::remove_if( groups, [pid]( const auto& g){
                return pid == g.process.pid;
             }));
 
 
-            common::range::trim( remotes, common::range::remove_if( remotes, [pid]( const auto& g){
+            common::algorithm::trim( remotes, common::algorithm::remove_if( remotes, [pid]( const auto& g){
                return pid == g.process.pid;
             }));
 
@@ -129,7 +129,7 @@ namespace casual
                      // We only add gateway and queues if there are any.
                      //
 
-                     if( ! common::range::find( remotes, message.domain))
+                     if( ! common::algorithm::find( remotes, message.domain))
                      {
                         remotes.emplace_back( message.domain, message.process);
                      }
@@ -146,7 +146,7 @@ namespace casual
                         //
                         // Make sure we prioritize local queue
                         //
-                        common::range::stable_sort( instances);
+                        common::algorithm::stable_sort( instances);
                      }
                   }
 
@@ -158,7 +158,7 @@ namespace casual
                   {
                      auto& instances = queues[ queue.name];
 
-                     common::range::trim( instances, common::range::remove_if( instances, [&]( const Queue& q){
+                     common::algorithm::trim( instances, common::algorithm::remove_if( instances, [&]( const Queue& q){
                            return message.process.pid == q.process.pid;
                         }));
 

@@ -124,7 +124,7 @@ namespace casual
             if( range.empty())
                return false;
 
-            return range::includes( "0123456789", range);
+            return algorithm::includes( "0123456789", range);
          }
 
 /*

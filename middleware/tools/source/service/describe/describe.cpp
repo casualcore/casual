@@ -55,7 +55,7 @@ namespace casual
             //
             common::service::header::fields()[ "casual-service-describe"] = "true";
 
-            return range::transform( services, local::Call{});
+            return algorithm::transform( services, local::Call{});
          }
 
       } // service

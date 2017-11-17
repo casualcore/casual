@@ -44,7 +44,7 @@ namespace casual
          {
             std::vector< manager::admin::Group> result;
 
-            common::range::transform( state.groups, result, local::Group{});
+            common::algorithm::transform( state.groups, result, local::Group{});
 
             return result;
          }
@@ -83,9 +83,9 @@ namespace casual
 
             for( auto& value : values)
             {
-               auto range = common::range::transform( value.queues, result, transform::Queue{});
+               auto range = common::algorithm::transform( value.queues, result, transform::Queue{});
 
-               common::range::for_each( range, [&]( manager::admin::Queue& q){
+               common::algorithm::for_each( range, [&]( manager::admin::Queue& q){
                   q.group = value.process.pid;
                });
             }
@@ -97,7 +97,7 @@ namespace casual
          {
             manager::admin::State::Remote result;
 
-            common::range::transform( state.remotes, result.domains, []( auto& r){
+            common::algorithm::transform( state.remotes, result.domains, []( auto& r){
                manager::admin::remote::Domain domain;
                
                domain.id = r.id;
@@ -109,11 +109,11 @@ namespace casual
 
             for( auto& queue : state.queues)
             {
-               auto found = common::range::find_if( queue.second, []( auto& i){
+               auto found = common::algorithm::find_if( queue.second, []( auto& i){
                   return i.order > 0;
                });
 
-               common::range::transform( found, result.queues, [&queue]( auto& i){
+               common::algorithm::transform( found, result.queues, [&queue]( auto& i){
                   manager::admin::remote::Queue result;
                   result.name = queue.first;
                   result.pid = i.process.pid;
@@ -166,7 +166,7 @@ namespace casual
 
          std::vector< manager::admin::Message> messages( const common::message::queue::information::messages::Reply& reply)
          {
-            return common::range::transform( reply.messages, Message{});
+            return common::algorithm::transform( reply.messages, Message{});
          }
 
 

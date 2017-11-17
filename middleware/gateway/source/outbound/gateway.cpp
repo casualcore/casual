@@ -132,7 +132,7 @@ namespace casual
 
                   log << "pending requests: " << common::range::make( pending) << '\n';
 
-                  common::range::for_each( pending, local::reply::Send{});
+                  common::algorithm::for_each( pending, local::reply::Send{});
                }
                catch( ...)
                {

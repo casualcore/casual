@@ -62,7 +62,7 @@ namespace casual
                   {
                      auto path = common::environment::string( file);
 
-                     if( ! common::range::find( paths, path))
+                     if( ! common::algorithm::find( paths, path))
                      {
                         auto nested = get( path);
 
@@ -70,11 +70,11 @@ namespace casual
 
                         auto variables = fetch( std::move( nested), paths);
 
-                        common::range::move( variables, result);
+                        common::algorithm::move( variables, result);
                      }
                   }
 
-                  common::range::move( environment.variables, result);
+                  common::algorithm::move( environment.variables, result);
 
                   return result;
                }

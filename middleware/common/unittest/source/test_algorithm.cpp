@@ -198,13 +198,13 @@ namespace casual
          auto s = local::sorted();
 
          // shall not compile
-         //auto sorted = range::sort( range::make( local::unsorted()));
+         //auto sorted = algorithm::sort( range::make( local::unsorted()));
 
-         auto sorted = range::sort( us);
+         auto sorted = algorithm::sort( us);
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, s));
+         EXPECT_TRUE( algorithm::equal( sorted, s));
       }
 
 
@@ -215,11 +215,11 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = range::sort( us, std::less< int>());
+         auto sorted = algorithm::sort( us, std::less< int>());
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, s));
+         EXPECT_TRUE( algorithm::equal( sorted, s));
 
       }
 
@@ -230,11 +230,11 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = range::sort( range::make_reverse( us));
+         auto sorted = algorithm::sort( range::make_reverse( us));
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, s));
+         EXPECT_TRUE( algorithm::equal( sorted, s));
       }
 
 
@@ -245,11 +245,11 @@ namespace casual
          auto us = local::unsorted();
          auto s = local::sorted();
 
-         auto sorted = range::sort( range::make_reverse( us), std::less< int>());
+         auto sorted = algorithm::sort( range::make_reverse( us), std::less< int>());
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( range::equal( sorted, s)) << "sorted : " << sorted << "\nunsortd: " << range::make( s);
+         EXPECT_TRUE( algorithm::equal( sorted, s)) << "sorted : " << sorted << "\nunsortd: " << range::make( s);
 
       }
 
@@ -259,7 +259,7 @@ namespace casual
 
          auto us = local::unsorted();
 
-         auto part = range::partition( us, []( int value) { return value == 3;});
+         auto part = algorithm::partition( us, []( int value) { return value == 3;});
 
          ASSERT_TRUE( std::get< 0>( part).size() == 2);
          EXPECT_TRUE( *std::get< 0>( part) == 3);
@@ -272,7 +272,7 @@ namespace casual
 
          auto us = local::unsorted();
 
-         auto part = range::partition( range::make_reverse( us), []( int value) { return value == 3;});
+         auto part = algorithm::partition( range::make_reverse( us), []( int value) { return value == 3;});
 
          ASSERT_TRUE( std::get< 0>( part).size() == 2);
          EXPECT_TRUE( *std::get< 0>( part) == 3);
@@ -285,7 +285,7 @@ namespace casual
 
          auto us = local::unsorted();
 
-         auto found =  range::find( us, 3);
+         auto found =  algorithm::find( us, 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found == 3);
@@ -297,7 +297,7 @@ namespace casual
 
          std::map< int, std::string> container{ {1, "one"}, {2, "two"}, {3, "three"}, {4, "four"}};
 
-         auto found =  range::find( container, 3);
+         auto found =  algorithm::find( container, 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( found->second == "three");
@@ -309,7 +309,7 @@ namespace casual
 
          auto us = local::unsorted();
 
-         auto found =  range::find( range::make_reverse( us), 3);
+         auto found =  algorithm::find( range::make_reverse( us), 3);
 
          ASSERT_TRUE( ! found.empty());
          EXPECT_TRUE( *found == 3);
@@ -321,7 +321,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto found = range::search( "some text to search", std::string{ "some"});
+         auto found = algorithm::search( "some text to search", std::string{ "some"});
          EXPECT_TRUE( ! found.empty());
 
       }
@@ -333,7 +333,7 @@ namespace casual
 
          std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-         EXPECT_TRUE( range::uniform (uniform));
+         EXPECT_TRUE( algorithm::uniform (uniform));
 
       }
 
@@ -343,7 +343,7 @@ namespace casual
 
          std::vector< int> uniform{ 1, 1, 1, 1, 1, 1, 1, 2, 1};
 
-         EXPECT_FALSE( range::uniform (uniform));
+         EXPECT_FALSE( algorithm::uniform (uniform));
       }
 
 
@@ -354,9 +354,9 @@ namespace casual
          auto us = local::unsorted();
 
 
-         auto found =  range::find(
-               std::get< 0>( range::partition(
-                     range::sort( us),
+         auto found =  algorithm::find(
+               std::get< 0>( algorithm::partition(
+                     algorithm::sort( us),
                []( int value) { return value == 3;})), 3);
 
          ASSERT_TRUE( ! found.empty());
@@ -369,10 +369,10 @@ namespace casual
 
          auto s = local::sorted();
 
-         auto found =  range::find( s, 3);
-         auto result = range::trim( s, found);
+         auto found =  algorithm::find( s, 3);
+         auto result = algorithm::trim( s, found);
 
-         EXPECT_TRUE( range::equal( result, s));
+         EXPECT_TRUE( algorithm::equal( result, s));
 
       }
 
@@ -383,7 +383,7 @@ namespace casual
 
          std::vector< int> set{ 3, 1, 3, 2, 1, 3, 1, 2, 3};
 
-         range::trim( set, range::unique( range::sort( set)));
+         algorithm::trim( set, algorithm::unique( algorithm::sort( set)));
 
          ASSERT_TRUE( set.size() == 3);
          EXPECT_TRUE( set.at( 0) == 1);
@@ -414,7 +414,7 @@ namespace casual
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
-         auto part = range::partition( range, chain::Or::link( Equal{ 2}, Equal{ 4}));
+         auto part = algorithm::partition( range, chain::Or::link( Equal{ 2}, Equal{ 4}));
 
          EXPECT_TRUE( std::get< 0>( part).size() == 2);
 
@@ -429,7 +429,7 @@ namespace casual
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
-         auto part = range::partition( range, functor);
+         auto part = algorithm::partition( range, functor);
 
          EXPECT_TRUE( std::get< 0>( part).size() == 2);
       }
@@ -444,7 +444,7 @@ namespace casual
 
          std::vector< int> range{ 1, 2, 4, 5, 6, 7};
 
-         auto part = range::partition( range, functor);
+         auto part = algorithm::partition( range, functor);
 
          EXPECT_TRUE( std::get< 0>( part).size() == 2);
       }
@@ -504,7 +504,7 @@ namespace casual
 
          auto values = local::values();
 
-         auto sorted = range::sort( values, chain::Order::link( order::name::Ascending()));
+         auto sorted = algorithm::sort( values, chain::Order::link( order::name::Ascending()));
 
          EXPECT_TRUE( std::begin( sorted)->name == "Charlie");
       }
@@ -515,7 +515,7 @@ namespace casual
 
          auto values = local::values();
 
-         auto sorted = range::sort( values, chain::Order::link(
+         auto sorted = algorithm::sort( values, chain::Order::link(
                order::name::Descending(),
                order::age::Ascending()));
 
@@ -532,7 +532,7 @@ namespace casual
 
          auto values = local::values();
 
-         auto sorted = range::sort( values, chain::Order::link(
+         auto sorted = algorithm::sort( values, chain::Order::link(
                order::age::Descending(),
                order::height::Ascending()));
 
@@ -550,7 +550,7 @@ namespace casual
          const std::string source = "1234";
          std::string target;
 
-         range::copy_max( source, 50, std::back_inserter( target));
+         algorithm::copy_max( source, 50, std::back_inserter( target));
 
          EXPECT_TRUE( target == "1234") << target;
 
@@ -563,7 +563,7 @@ namespace casual
          const std::string source = "1234567";
          std::string target;
 
-         range::copy_max( source, source.size(), std::back_inserter( target));
+         algorithm::copy_max( source, source.size(), std::back_inserter( target));
 
          EXPECT_TRUE( source == target) << target;
 
@@ -576,7 +576,7 @@ namespace casual
          const std::string source = "1234567";
          std::string target;
 
-         range::copy_max( source, 4, std::back_inserter( target));
+         algorithm::copy_max( source, 4, std::back_inserter( target));
 
          EXPECT_TRUE( target == "1234") << target;
 
@@ -590,9 +590,9 @@ namespace casual
          std::vector< int> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
          std::vector< int> lookup{ 4, 1, 3, 5, 2};
 
-         auto split = range::intersection( range, lookup);
+         auto split = algorithm::intersection( range, lookup);
 
-         EXPECT_TRUE( range::sort( std::get< 0>( split)) == range::sort( lookup)) << std::get< 0>( split);
+         EXPECT_TRUE( algorithm::sort( std::get< 0>( split)) == algorithm::sort( lookup)) << std::get< 0>( split);
          EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
       }
 
@@ -635,9 +635,9 @@ namespace casual
          std::vector< A> range{ 9, 3, 1, 7, 4, 2, 5, 8, 6};
          std::vector< B> lookup{ 4, 1, 3, 5, 2};
 
-         auto split = range::intersection( range, lookup, []( const A& a, const B& b){ return a.value == b.value;});
+         auto split = algorithm::intersection( range, lookup, []( const A& a, const B& b){ return a.value == b.value;});
 
-         EXPECT_TRUE( range::sort( std::get< 0>( split)) == range::sort( lookup));// << std::get< 0>( split);
+         EXPECT_TRUE( algorithm::sort( std::get< 0>( split)) == algorithm::sort( lookup));// << std::get< 0>( split);
          EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
       }
 
@@ -743,7 +743,7 @@ namespace casual
 
          std::vector< int> container;
 
-         EXPECT_TRUE( range::remove( range::make( container), range::make( container)).empty());
+         EXPECT_TRUE( algorithm::remove( range::make( container), range::make( container)).empty());
       }
 
       TEST( casual_common_algorithm_remove, source_4__unwanted_empty__expect_4)
@@ -752,7 +752,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE( range::remove( range::make( container), range::make( std::begin( container), 0)) == container);
+         EXPECT_TRUE( algorithm::remove( range::make( container), range::make( std::begin( container), 0)) == container);
       }
 
       TEST( casual_common_algorithm_remove, source_4__unwanted_first__expect_3)
@@ -761,7 +761,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE(( range::remove( range::make( container), range::make( std::begin( container), 1)) == std::vector< int>{ 2, 3, 4}));
+         EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container), 1)) == std::vector< int>{ 2, 3, 4}));
       }
 
 
@@ -771,7 +771,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE(( range::remove( range::make( container), range::make( std::end( container) - 1, 1)) == std::vector< int>{ 1, 2, 3}));
+         EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::end( container) - 1, 1)) == std::vector< int>{ 1, 2, 3}));
       }
 
       TEST( casual_common_algorithm_remove, source_4__unwanted_middle_2__expect_2)
@@ -780,7 +780,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE(( range::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
+         EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
       }
 
    } // common

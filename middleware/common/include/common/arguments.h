@@ -234,7 +234,7 @@ namespace casual
                template< typename T>
                operator std::vector< T>() const
                {
-                  return range::transform( m_values, convert< T>{});
+                  return algorithm::transform( m_values, convert< T>{});
                }
 
                operator const std::string&() const
@@ -339,7 +339,7 @@ namespace casual
                template< typename T, typename V>
                void assign( T&& value, std::vector< V>& variable)
                {
-                  range::copy( value, std::back_inserter( variable));
+                  algorithm::copy( value, std::back_inserter( variable));
                }
             } // value
 

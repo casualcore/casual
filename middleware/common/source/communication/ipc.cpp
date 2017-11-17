@@ -153,7 +153,7 @@ namespace casual
 
                   if( native::receive( id, transport, flags))
                   {
-                     auto found = range::find_if( cache,
+                     auto found = algorithm::find_if( cache,
                            [&]( const auto& m)
                            {
                               return transport.type() == m.type

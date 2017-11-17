@@ -165,7 +165,7 @@ namespace casual
             const std::string info( "test string");
 
             auto handle = pool::Holder::instance().allocate( type, 128);
-            range::copy( info, handle);
+            algorithm::copy( info, handle);
 
             auto holder = buffer::pool::Holder::instance().get( handle, 100);
 
@@ -188,7 +188,7 @@ namespace casual
             // marshal
             {
                auto handle = pool::Holder::instance().allocate( type, 128);
-               range::copy( info, handle);
+               algorithm::copy( info, handle);
 
                message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
 

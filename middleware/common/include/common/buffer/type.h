@@ -39,7 +39,7 @@ namespace casual
 
             inline auto dismantle( const std::string& type)
             {
-               return range::split( type, '/');
+               return algorithm::split( type, '/');
             }
 
          } // type

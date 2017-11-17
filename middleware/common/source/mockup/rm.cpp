@@ -122,7 +122,7 @@ namespace casual
                return XAER_PROTO;
             }
 
-            auto found = range::find( state.transactions.all, trid);
+            auto found = algorithm::find( state.transactions.all, trid);
 
             if( ! found)
             {
@@ -159,7 +159,7 @@ namespace casual
 
             if( ! common::has::flag< TMSUSPEND>( flags))
             {
-               auto found = range::find( state.transactions.all, trid);
+               auto found = algorithm::find( state.transactions.all, trid);
 
                if( found)
                {
@@ -201,7 +201,7 @@ namespace casual
                if( state.transactions.current == transaction)
                   state.transactions.current = transaction::ID{};
 
-               auto found = range::find( state.transactions.all, transaction);
+               auto found = algorithm::find( state.transactions.all, transaction);
 
                if( found)
                {

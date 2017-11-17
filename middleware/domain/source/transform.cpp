@@ -70,7 +70,7 @@ namespace casual
 
                   for( auto& name : members)
                   {
-                     auto found = common::range::find( groups, name);
+                     auto found = common::algorithm::find( groups, name);
 
                      if( found)
                      {
@@ -111,7 +111,7 @@ namespace casual
 
                   manager::state::Group::id_type id( const std::string& name) const
                   {
-                     auto found = range::find_if( m_state.groups, [&]( const manager::state::Group& group){
+                     auto found = algorithm::find_if( m_state.groups, [&]( const manager::state::Group& group){
                         return group.name == name;
                      });
 
@@ -191,7 +191,7 @@ namespace casual
                template< typename C>
                auto executables( C&& values, const std::vector< manager::state::Group>& groups)
                {
-                  return range::transform( values, std::bind( Executable{}, std::placeholders::_1, std::ref( groups)));
+                  return algorithm::transform( values, std::bind( Executable{}, std::placeholders::_1, std::ref( groups)));
                }
 
                namespace vo
@@ -207,7 +207,7 @@ namespace casual
                         result.name = value.name;
                         result.note = value.note;
 
-                        result.dependencies = range::transform( value.dependencies, []( auto& id){
+                        result.dependencies = algorithm::transform( value.dependencies, []( auto& id){
                            return id.value();
                         });
                         result.resources = value.resources;
@@ -281,8 +281,8 @@ namespace casual
                         result.path = value.path;
                         result.arguments = value.arguments;
                         result.note = value.note;
-                        result.instances = range::transform( value.instances, Instance{});
-                        result.memberships = range::transform( value.memberships, []( auto id){
+                        result.instances = algorithm::transform( value.instances, Instance{});
+                        result.memberships = algorithm::transform( value.memberships, []( auto id){
                            return id.value();
                         });
                         result.environment.variables = value.environment.variables;
@@ -302,9 +302,9 @@ namespace casual
          {
             manager::admin::vo::State result;
 
-            result.groups = range::transform( state.groups, local::vo::Group{});
-            result.servers = range::transform( state.servers, local::vo::Executable{});
-            result.executables = range::transform( state.executables, local::vo::Executable{});
+            result.groups = algorithm::transform( state.groups, local::vo::Group{});
+            result.servers = algorithm::transform( state.servers, local::vo::Executable{});
+            result.executables = algorithm::transform( state.executables, local::vo::Executable{});
 
             return result;
          }
@@ -356,15 +356,15 @@ namespace casual
                const std::vector< std::string> reserved{
                   ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
 
-               auto groups = common::range::remove_if( domain.groups, [&reserved]( const casual::configuration::group::Group& g){
-                  return common::range::find( reserved, g.name);
+               auto groups = common::algorithm::remove_if( domain.groups, [&reserved]( const casual::configuration::group::Group& g){
+                  return common::algorithm::find( reserved, g.name);
                });
 
 
                //
                // We transform user defined groups
                //
-               range::transform( groups, result.groups, local::Group{ result});
+               algorithm::transform( groups, result.groups, local::Group{ result});
             }
 
             {
@@ -409,13 +409,13 @@ namespace casual
                   result.servers.push_back( std::move( manager));
                }
 
-               range::append( local::executables( domain.servers, result.groups), result.servers);
-               range::append( local::executables( domain.executables, result.groups), result.executables);
+               algorithm::append( local::executables( domain.servers, result.groups), result.servers);
+               algorithm::append( local::executables( domain.executables, result.groups), result.executables);
 
                local::verify::Alias verify;
 
-               range::for_each( result.servers, verify);
-               range::for_each( result.executables, verify);
+               algorithm::for_each( result.servers, verify);
+               algorithm::for_each( result.executables, verify);
 
             }
 

@@ -111,7 +111,7 @@ namespace casual
                         if( state.connections.empty())
                            return false;
 
-                        return range::all_of( state.connections, []( const manager::admin::vo::Connection& c){
+                        return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
                            return c.runlevel >= manager::admin::vo::Connection::Runlevel::online;
                         });
                      }
@@ -215,7 +215,7 @@ namespace casual
 
                   using vo_type = manager::admin::vo::Connection;
 
-                  return range::all_of( state.connections, []( const vo_type& vo){
+                  return algorithm::all_of( state.connections, []( const vo_type& vo){
                      return vo.runlevel == vo_type::Runlevel::online;
                   });
 
@@ -245,7 +245,7 @@ namespace casual
 
 
          ASSERT_TRUE( state.connections.size() == 2) << CASUAL_MAKE_NVP( state);
-         range::sort( state.connections);
+         algorithm::sort( state.connections);
 
          using vo_type = manager::admin::vo::Connection;
 
@@ -275,7 +275,7 @@ namespace casual
                   EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
                   auto state = local::call::wait::ready::state();
-                  range::sort( state.connections);
+                  algorithm::sort( state.connections);
 
                   return state.connections.at( 0).process.queue;
                };

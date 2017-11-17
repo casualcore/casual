@@ -262,7 +262,7 @@ namespace casual
             void Save::operator() ( platform::binary::type& yaml) const
             {
                yaml.resize( m_emitter.size());
-               common::range::copy(
+               common::algorithm::copy(
                      common::range::make( m_emitter.c_str(), m_emitter.size()),
                      std::begin( yaml));
             }

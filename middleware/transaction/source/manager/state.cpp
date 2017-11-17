@@ -88,7 +88,7 @@ namespace casual
 
             bool Proxy::booted() const
             {
-               return common::range::all_of( instances, []( const Instance& i){
+               return common::algorithm::all_of( instances, []( const Instance& i){
                   switch( i.state())
                   {
                      case Instance::State::idle:
@@ -103,7 +103,7 @@ namespace casual
 
             bool Proxy::remove_instance( common::strong::process::id pid)
             {
-               auto found = common::range::find_if( instances, [pid]( auto& i){
+               auto found = common::algorithm::find_if( instances, [pid]( auto& i){
                   return i.process.pid == pid;
                });
 
@@ -171,7 +171,7 @@ namespace casual
                {
                   id::type id( State& state, const common::process::Handle& process)
                   {
-                     auto found = common::range::find( state.externals, process);
+                     auto found = common::algorithm::find( state.externals, process);
 
                      if( found)
                      {
@@ -230,7 +230,7 @@ namespace casual
                };
 
                auto validate = [&state]( const common::message::domain::configuration::transaction::Resource& r) {
-                  if( ! common::range::find( state.resource_properties, r.key))
+                  if( ! common::algorithm::find( state.resource_properties, r.key))
                   {
                      common::log::category::error << "failed to correlate resource key '" << r.key << "' - action: skip resource\n";
 
@@ -240,7 +240,7 @@ namespace casual
                   return true;
                };
 
-               common::range::transform_if(
+               common::algorithm::transform_if(
                      configuration.domain.transaction.resources,
                      state.resources,
                      transform_resource,
@@ -396,7 +396,7 @@ namespace casual
 
       bool State::booted() const
       {
-         return common::range::all_of( resources, []( const auto& p){ return p.booted();});
+         return common::algorithm::all_of( resources, []( const auto& p){ return p.booted();});
       }
 
       size_type State::instances() const
@@ -429,7 +429,7 @@ namespace casual
 
          for( auto& resource : resources)
          {
-            auto found = common::range::find_if(
+            auto found = common::algorithm::find_if(
                resource.instances,
                state::filter::Instance{ death.pid});
 
@@ -453,7 +453,7 @@ namespace casual
 
       state::resource::Proxy& State::get_resource( state::resource::id::type rm)
       {
-         auto found = common::range::find( resources, rm);
+         auto found = common::algorithm::find( resources, rm);
 
          if( ! found)
          {
@@ -466,7 +466,7 @@ namespace casual
       {
          auto& resource = get_resource( rm);
 
-         auto found = common::range::find_if( resource.instances, [=]( const state::resource::Proxy::Instance& instance){
+         auto found = common::algorithm::find_if( resource.instances, [=]( const state::resource::Proxy::Instance& instance){
                return instance.process.pid == pid;
             });
 
@@ -479,7 +479,7 @@ namespace casual
 
       bool State::remove_instance( common::strong::process::id pid)
       {
-         return common::range::find_if( resources, [pid]( auto& r){
+         return common::algorithm::find_if( resources, [pid]( auto& r){
             return r.remove_instance( pid);
          });
       }
@@ -488,12 +488,12 @@ namespace casual
       {
          auto& resource = get_resource( rm);
 
-         return common::range::find_if( resource.instances, state::filter::Idle{});
+         return common::algorithm::find_if( resource.instances, state::filter::Idle{});
       }
 
       const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
       {
-         auto found = common::range::find_if( externals, [rm]( const state::resource::external::Proxy& p){
+         auto found = common::algorithm::find_if( externals, [rm]( const state::resource::external::Proxy& p){
             return p.id == rm;
          });
 

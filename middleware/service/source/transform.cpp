@@ -118,8 +118,8 @@ namespace casual
                               };
                            };
 
-                     common::range::transform( value.instances.local, result.instances.local, transform_local);
-                     common::range::transform( value.instances.remote, result.instances.remote, transform_remote);
+                     common::algorithm::transform( value.instances.local, result.instances.local, transform_local);
+                     common::algorithm::transform( value.instances.remote, result.instances.remote, transform_remote);
 
                      return result;
                   }
@@ -132,15 +132,15 @@ namespace casual
          {
             manager::admin::StateVO result;
 
-            common::range::transform( state.instances.local, result.instances.local,
+            common::algorithm::transform( state.instances.local, result.instances.local,
                   common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
 
-            common::range::transform( state.instances.remote, result.instances.remote,
+            common::algorithm::transform( state.instances.remote, result.instances.remote,
                   common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
 
-            common::range::transform( state.pending.requests, result.pending, local::Pending{});
+            common::algorithm::transform( state.pending.requests, result.pending, local::Pending{});
 
-            common::range::transform( state.services, result.services,
+            common::algorithm::transform( state.services, result.services,
                   common::chain::Nested::link( local::Service{}, common::extract::Second{}));
 
 

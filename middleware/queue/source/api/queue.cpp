@@ -165,7 +165,7 @@ namespace casual
                         {
                            throw common::exception::system::invalid::Argument{ "correlation mismatch"};
                         }
-                        common::range::transform( reply.message, result, queue::transform::Message{});
+                        common::algorithm::transform( reply.message, result, queue::transform::Message{});
 
 
 
@@ -367,7 +367,7 @@ namespace casual
 
                auto reply = common::communication::ipc::call( queue.process.queue, request);
 
-               common::range::transform( reply.messages, result, []( common::message::queue::information::Message& m){
+               common::algorithm::transform( reply.messages, result, []( common::message::queue::information::Message& m){
 
                   message::Information message;
                   message.id = m.id;
@@ -410,7 +410,7 @@ namespace casual
 
                auto reply = common::communication::ipc::call( queue.process.queue, request);
 
-               common::range::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
+               common::algorithm::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
                   Message message;
                   message.id = m.id;
                   message.attributes.available = m.available;
@@ -443,7 +443,7 @@ namespace casual
                   std::vector< manager::admin::Affected> result;
                   reply >> CASUAL_MAKE_NVP( result);
 
-                  common::range::transform( result, affected, []( const manager::admin::Affected& a){
+                  common::algorithm::transform( result, affected, []( const manager::admin::Affected& a){
                      Affected result;
                      result.queue = a.queue.name;
                      result.restored = a.restored;

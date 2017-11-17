@@ -86,7 +86,7 @@ namespace casual
 
          std::string join( const std::vector< std::string>& strings)
          {
-            return range::accumulate( strings, std::string());
+            return algorithm::accumulate( strings, std::string());
          }
 
 
@@ -102,7 +102,7 @@ namespace casual
             //
             auto range = range::make( strings);
 
-            return range::accumulate( ++range, strings.front(), 
+            return algorithm::accumulate( ++range, strings.front(), 
                [&delimiter]( const std::string& f, const std::string& s){ return f + delimiter + s;});
          }
 
@@ -124,7 +124,7 @@ namespace casual
             const auto lower = [] ( const std::string::value_type character)
             { return std::tolower( character, std::locale::classic());};
 
-            range::transform( value, std::begin( value), lower);
+            algorithm::transform( value, std::begin( value), lower);
 
             return value;
          }
@@ -134,7 +134,7 @@ namespace casual
             const auto upper = [] ( const std::string::value_type character)
             { return std::toupper( character, std::locale::classic());};
 
-            range::transform( value, std::begin( value), upper);
+            algorithm::transform( value, std::begin( value), upper);
 
             return value;
          }

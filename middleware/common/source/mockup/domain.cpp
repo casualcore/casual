@@ -89,12 +89,12 @@ namespace casual
 
                      auto reply_error( const std::string& service)
                      {
-                        if( range::search( service, std::string{ "TPEOS"})) { return code::xatmi::os;}
-                        if( range::search( service, std::string{ "TPEPROTO"})) { return code::xatmi::protocol;}
-                        if( range::search( service, std::string{ "TPESVCERR"})) { return code::xatmi::service_error;}
-                        if( range::search( service, std::string{ "TPESVCFAIL"})) { return code::xatmi::service_fail;}
-                        if( range::search( service, std::string{ "TPESYSTEM"})) { return code::xatmi::system;}
-                        if( range::search( service, std::string{ "SUCCESS"})) { return success;}
+                        if( algorithm::search( service, std::string{ "TPEOS"})) { return code::xatmi::os;}
+                        if( algorithm::search( service, std::string{ "TPEPROTO"})) { return code::xatmi::protocol;}
+                        if( algorithm::search( service, std::string{ "TPESVCERR"})) { return code::xatmi::service_error;}
+                        if( algorithm::search( service, std::string{ "TPESVCFAIL"})) { return code::xatmi::service_fail;}
+                        if( algorithm::search( service, std::string{ "TPESYSTEM"})) { return code::xatmi::system;}
+                        if( algorithm::search( service, std::string{ "SUCCESS"})) { return success;}
                         return code::xatmi::ok;
                      }
 
@@ -114,7 +114,7 @@ namespace casual
                         reply.buffer = std::move( request.buffer);
                         reply.transaction.trid = request.trid;
 
-                        if( range::search( request.service.name, std::string{ "urcode"}))
+                        if( algorithm::search( request.service.name, std::string{ "urcode"}))
                         {
                            reply.code = 42;
                         }
@@ -311,7 +311,7 @@ namespace casual
 
                            auto reply = message::reverse::type( r);
 
-                           auto found = range::find( m_state.services, r.requested);
+                           auto found = algorithm::find( m_state.services, r.requested);
 
                            if( found)
                            {
@@ -388,7 +388,7 @@ namespace casual
                         },
                         [&]( message::event::subscription::End& m)
                         {
-                           range::trim( m_state.traffic_monitors, range::remove( m_state.traffic_monitors, m.process.queue));
+                           algorithm::trim( m_state.traffic_monitors, algorithm::remove( m_state.traffic_monitors, m.process.queue));
                         },
                         [&]( message::gateway::domain::discover::Request& m)
                         {
@@ -403,7 +403,7 @@ namespace casual
 
                            for( auto&& s : m.services)
                            {
-                              auto found = range::find( m_state.services, s);
+                              auto found = algorithm::find( m_state.services, s);
 
                               if( found)
                               {
@@ -480,7 +480,7 @@ namespace casual
 
                         if( r.identification)
                         {
-                           auto found = range::find(  m_state.singeltons, r.identification);
+                           auto found = algorithm::find(  m_state.singeltons, r.identification);
 
                            if( found && found->second != r.process)
                            {
@@ -499,7 +499,7 @@ namespace casual
                         //
                         // Check pending
                         //
-                        range::trim( m_state.pending, range::remove_if( m_state.pending, [&]( const common::message::domain::process::lookup::Request& p)
+                        algorithm::trim( m_state.pending, algorithm::remove_if( m_state.pending, [&]( const common::message::domain::process::lookup::Request& p)
                               {
                                  if( ( p.identification && p.identification == r.identification)
                                        || ( p.pid && p.pid == r.process.pid))
@@ -540,7 +540,7 @@ namespace casual
 
                         if( r.identification)
                         {
-                           auto found = range::find(  m_state.singeltons, r.identification);
+                           auto found = algorithm::find(  m_state.singeltons, r.identification);
 
                            if( found)
                            {
@@ -553,7 +553,7 @@ namespace casual
                         }
                         else if( r.pid)
                         {
-                           auto found = range::find_if( m_state.executables, [=]( const process::Handle& h){
+                           auto found = algorithm::find_if( m_state.executables, [=]( const process::Handle& h){
                               return h.pid == r.pid;
                            });
 
@@ -890,7 +890,7 @@ namespace casual
                   message::service::Advertise unadvertise;
                   unadvertise.directive = message::service::Advertise::Directive::remove;
                   unadvertise.process = m_replier.process();
-                  range::copy( services, std::back_inserter( unadvertise.services));
+                  algorithm::copy( services, std::back_inserter( unadvertise.services));
 
                   communication::ipc::blocking::send( communication::ipc::service::manager::device(), unadvertise);
                }

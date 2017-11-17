@@ -99,7 +99,7 @@ namespace casual
 
                                  log << "pending replies: " << range::make( pending) << '\n';
 
-                                 range::trim( pending, range::remove_if( pending,
+                                 algorithm::trim( pending, algorithm::remove_if( pending,
                                        common::message::pending::sender(
                                              communication::ipc::policy::non::Blocking{})));
                               }

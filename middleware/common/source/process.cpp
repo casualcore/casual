@@ -425,7 +425,7 @@ namespace casual
                //
                // We reverse the patterns so we can go from the back
                //
-               range::reverse( m_pattern);
+               algorithm::reverse( m_pattern);
             }
             bool Sleep::operator () ()
             {
@@ -473,10 +473,10 @@ namespace casual
                         {
                            std::string variable{ *current};
 
-                           auto found =  range::find_if( variables, [&variable]( const std::string& v){
-                              return range::equal(
-                                 std::get< 0>( range::divide( variable, '=')),
-                                 std::get< 0>( range::divide( v, '='))
+                           auto found =  algorithm::find_if( variables, [&variable]( const std::string& v){
+                              return algorithm::equal(
+                                 std::get< 0>( algorithm::divide( variable, '=')),
+                                 std::get< 0>( algorithm::divide( v, '='))
                               );
                            });
 
@@ -521,7 +521,7 @@ namespace casual
                      c_arguments.push_back( path.c_str());
 
 
-                     range::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
+                     algorithm::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
 
                      //
                      // Null end
@@ -790,7 +790,7 @@ namespace casual
                   {
                      auto exit = local::wait( strong::process::id{ -1}, 0);
 
-                     if( range::find( pids, exit.pid))
+                     if( algorithm::find( pids, exit.pid))
                      {
                         result.push_back( std::move( exit));
                      }

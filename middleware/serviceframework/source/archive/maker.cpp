@@ -64,9 +64,9 @@ namespace casual
                namespace from
                {
                   template<typename D, typename IO>
-                  auto name( const D& dispatch, IO&& stream, std::string name) -> decltype(common::range::find( dispatch, name)->second( std::forward<IO>( stream)))
+                  auto name( const D& dispatch, IO&& stream, std::string name) -> decltype(common::algorithm::find( dispatch, name)->second( std::forward<IO>( stream)))
                   {
-                     const auto found = common::range::find( dispatch, common::string::lower( name));
+                     const auto found = common::algorithm::find( dispatch, common::string::lower( name));
 
                      if( found)
                      {

@@ -22,7 +22,7 @@ namespace casual
 
             Holder::Base& Holder::find( const std::string& type)
             {
-               auto pool = range::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
+               auto pool = algorithm::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
                   return b->manage( type);
                });
 
@@ -35,7 +35,7 @@ namespace casual
 
             Holder::Base& Holder::find( platform::buffer::raw::immutable::type handle)
             {
-               auto pool = range::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
+               auto pool = algorithm::find_if( m_pools, [&]( std::unique_ptr< Base>& b){
                   return b->manage( handle);
                });
 
@@ -207,7 +207,7 @@ namespace casual
                      log::category::error << "failed to deallocate inbound buffer - " << exception << std::endl;
                   }
                }
-               range::for_each( m_pools, std::mem_fn( &Base::clear));
+               algorithm::for_each( m_pools, std::mem_fn( &Base::clear));
             }
 
 

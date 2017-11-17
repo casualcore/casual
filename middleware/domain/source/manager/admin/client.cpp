@@ -250,12 +250,12 @@ namespace casual
 
                         if( ! files.empty())
                         {
-                           if( ! range::all_of( files, &common::file::exists))
+                           if( ! algorithm::all_of( files, &common::file::exists))
                            {
                               throw exception::system::invalid::File{ string::compose( "at least one file does not exist - files: ", files)};
                            }
                            arguments.emplace_back( "--configuration-files");
-                           range::copy( files, std::back_inserter( arguments));
+                           algorithm::copy( files, std::back_inserter( arguments));
                         }
 
                         arguments.emplace_back( "--event-queue");
@@ -330,7 +330,7 @@ namespace casual
                      };
 
                      auto format_running_instances = []( const P& e){
-                        return common::range::count_if( e.instances, []( auto& i){
+                        return common::algorithm::count_if( e.instances, []( auto& i){
                               return i.state == admin::vo::instance::State::running;
                         });
                      };
@@ -367,7 +367,7 @@ namespace casual
 
                      auto formatter = format::process< VO>();
 
-                     formatter.print( std::cout, range::sort( processes));
+                     formatter.print( std::cout, algorithm::sort( processes));
                   }
 
                } // print

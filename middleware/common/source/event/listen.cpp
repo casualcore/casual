@@ -27,7 +27,7 @@ namespace casual
                   {
                      signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
 
-                     if( range::find_if( types, []( message_type type){
+                     if( algorithm::find_if( types, []( message_type type){
                         return type >= message_type::EVENT_DOMAIN_BASE && type < message_type::EVENT_DOMAIN_BASE_END;}))
                      {
                         communication::ipc::blocking::send(
@@ -41,7 +41,7 @@ namespace casual
                   {
                      signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
 
-                     if( range::find_if( types, []( message_type type){
+                     if( algorithm::find_if( types, []( message_type type){
                         return type >= message_type::EVENT_SERVICE_BASE && type < message_type::EVENT_SERVICE_BASE_END;}))
                      {
                         communication::ipc::blocking::send(

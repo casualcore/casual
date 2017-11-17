@@ -334,7 +334,7 @@ namespace casual
 
                   auto formatter = format::resource_proxy();
 
-                  formatter.print( std::cout, range::sort( state.resources));
+                  formatter.print( std::cout, algorithm::sort( state.resources));
                }
 
                namespace local
@@ -350,7 +350,7 @@ namespace casual
 
                            for( auto& resource : resources)
                            {
-                              range::move( resource.instances, result);
+                              algorithm::move( resource.instances, result);
                            }
                            return result;
                         }
@@ -365,7 +365,7 @@ namespace casual
 
                   auto formatter = format::resource_instance();
 
-                  formatter.print( std::cout, range::sort( instances));
+                  formatter.print( std::cout, algorithm::sort( instances));
                }
 
                namespace local
@@ -407,7 +407,7 @@ namespace casual
 
                   auto formatter = format::resource_proxy();
 
-                  formatter.print( std::cout, range::sort( resources));
+                  formatter.print( std::cout, algorithm::sort( resources));
                }
 
                void state( const std::vector< std::string>& values)

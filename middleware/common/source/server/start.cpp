@@ -55,9 +55,9 @@ namespace casual
 
                         common::server::Arguments result;
 
-                        range::transform( services, result.services, transform::Service{});
+                        algorithm::transform( services, result.services, transform::Service{});
 
-                        range::transform( resources, result.resources, [](argument::transaction::Resource& r){
+                        algorithm::transform( resources, result.resources, [](argument::transaction::Resource& r){
                            return transaction::Resource{
                               std::move( r.key),
                               r.xa_switch

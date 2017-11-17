@@ -28,7 +28,7 @@ namespace casual
                   {
                      auto create = [](){
                         common::platform::binary::type result( 1000);
-                        range::numeric::iota( result, 0);
+                        algorithm::numeric::iota( result, 0);
                         std::random_device rd;
                         std::shuffle( std::begin( result), std::end( result), std::mt19937{ rd()});
 
@@ -57,7 +57,7 @@ namespace casual
                         transport.message.header.count = std::distance( current, last);
                         transport.message.header.offset = std::distance( std::begin( payload), current);
 
-                        range::copy( range::make( current, last), std::begin( transport.message.payload));
+                        algorithm::copy( range::make( current, last), std::begin( transport.message.payload));
 
                         result.push_back( transport);
                         current = last;
@@ -110,7 +110,7 @@ namespace casual
             common::unittest::Trace trace;
 
             auto parts = local::payload::parts( 100, common::message::Type::event_service_call);
-            range::reverse( parts);
+            algorithm::reverse( parts);
             auto complete = local::payload::complete( parts);
 
             EXPECT_TRUE( static_cast< bool>( complete));
@@ -201,7 +201,7 @@ namespace casual
                marshal::complete( complete, receive_message);
             }
 
-            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+            EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
          }
 
 
@@ -237,7 +237,7 @@ namespace casual
                marshal::complete( complete, receive_message);
             }
 
-            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+            EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
          }
 
 
@@ -252,7 +252,7 @@ namespace casual
 
             unittest::Message receive_message;
             ipc::blocking::receive( ipc::inbound::device(), receive_message);
-            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+            EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
 
          }
 
@@ -268,7 +268,7 @@ namespace casual
             unittest::Message receive_message;
             ipc::blocking::receive( ipc::inbound::device(), receive_message);
             EXPECT_TRUE( receive_message.size() == 1103);
-            EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+            EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
 
          }
 
@@ -289,14 +289,14 @@ namespace casual
 
 
             // We reverse the order we fetch the messages
-            for( auto& correlation : common::range::reverse( correlations))
+            for( auto& correlation : common::algorithm::reverse( correlations))
             {
                unittest::Message receive_message;
 
                ipc::blocking::receive( ipc::inbound::device(), receive_message, correlation);
 
                EXPECT_TRUE( receive_message.correlation == correlation);
-               EXPECT_TRUE( ( range::equal( receive_message.payload, send_message.payload)));
+               EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
             }
          }
 

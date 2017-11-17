@@ -22,13 +22,13 @@ namespace casual
             platform::binary::type uuid;
             archive >> name::value::pair::make( name, uuid);
 
-            common::range::copy_max( uuid, value.get());
+            common::algorithm::copy_max( uuid, value.get());
          }
 
          void serialize( Writer& archive, const platform::Uuid& value, const char* name)
          {
             platform::binary::type uuid( sizeof( value.get()));
-            common::range::copy( value.get(), std::begin( uuid));
+            common::algorithm::copy( value.get(), std::begin( uuid));
 
             archive << name::value::pair::make( name, uuid);
          }

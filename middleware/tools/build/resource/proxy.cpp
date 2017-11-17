@@ -177,8 +177,8 @@ int main( int argc, char** argv)
 
             std::vector< std::string> arguments{ c_file, "-o", settings.output};
 
-            common::range::append( common::string::adjacent::split( settings.directives.compile), arguments);
-            common::range::append( common::string::adjacent::split( settings.directives.link), arguments);
+            common::algorithm::append( common::string::adjacent::split( settings.directives.compile), arguments);
+            common::algorithm::append( common::string::adjacent::split( settings.directives.link), arguments);
 
 
             for( auto& include_path : resource.paths.include)
@@ -225,7 +225,7 @@ int main( int argc, char** argv)
             auto switches = settings.properties_file.empty() ?
                   configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
 
-            auto found = common::range::find_if( switches,
+            auto found = common::algorithm::find_if( switches,
                [&]( const configuration::resource::Property& value){ return value.key == settings.key;});
 
             if( ! found)

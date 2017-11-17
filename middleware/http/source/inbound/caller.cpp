@@ -149,7 +149,7 @@ namespace casual
                         { http::protocol::xml(), transcode_none}
                      };
 
-                     auto found = common::range::find( mapping, protocol);
+                     auto found = common::algorithm::find( mapping, protocol);
                      if( found)
                      {
                         //
@@ -193,7 +193,7 @@ namespace casual
                         { http::protocol::xml(), transcode_none}
                      };
 
-                     auto found = common::range::find( mapping, protocol);
+                     auto found = common::algorithm::find( mapping, protocol);
                      if (found)
                      {
                         //
@@ -212,7 +212,7 @@ namespace casual
                   Buffer output;
                   output.data = reinterpret_cast<char*>( malloc( input.size()));
                   output.size = input.size();
-                  common::range::copy( input, output.data);
+                  common::algorithm::copy( input, output.data);
                   return output;
                }
 

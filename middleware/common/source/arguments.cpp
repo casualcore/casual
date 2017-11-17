@@ -105,7 +105,7 @@ namespace casual
 
             bool base_directive::option( const std::string& option) const
             {
-               return ! range::find( m_options, option).empty();
+               return ! algorithm::find( m_options, option).empty();
             }
 
             void base_directive::visit( visitor::Base& visitor) const
@@ -122,18 +122,18 @@ namespace casual
 
          void Group::visit( visitor::Base& visitor) const
          {
-            range::for_each( m_options, std::bind( &option::Holder::visit, std::placeholders::_1, std::ref( visitor)));
+            algorithm::for_each( m_options, std::bind( &option::Holder::visit, std::placeholders::_1, std::ref( visitor)));
          }
 
 
          bool Group::option( const std::string& option) const
          {
-            return range::any_of( m_options, local::Option{ option});
+            return algorithm::any_of( m_options, local::Option{ option});
          }
 
          void Group::assign( const std::string& option, std::vector< std::string>&& values)
          {
-            auto found = range::find_if( m_options, local::Option{ option});
+            auto found = algorithm::find_if( m_options, local::Option{ option});
 
             if( found)
             {
@@ -143,18 +143,18 @@ namespace casual
 
          bool Group::consumed() const
          {
-            return range::all_of( m_options, std::mem_fn( &option::Holder::consumed));
+            return algorithm::all_of( m_options, std::mem_fn( &option::Holder::consumed));
          }
 
          void Group::dispatch() const
          {
-            range::for_each( m_options, std::mem_fn( &option::Holder::dispatch));
+            algorithm::for_each( m_options, std::mem_fn( &option::Holder::dispatch));
          }
 
 
          bool Group::valid() const
          {
-            return range::all_of( m_options, std::mem_fn( &option::Holder::valid));
+            return algorithm::all_of( m_options, std::mem_fn( &option::Holder::valid));
          }
 
 
@@ -320,11 +320,11 @@ namespace casual
                template< typename Range>
                void completion( const Group& group, Range&& arguments)
                {
-                  auto found = range::find( arguments, "casual-bash-completion");
+                  auto found = algorithm::find( arguments, "casual-bash-completion");
 
                   if( found && std::begin( found) == std::begin( arguments))
                   {
-                     arguments = range::remove( arguments, range::make( std::begin( found), 1));
+                     arguments = algorithm::remove( arguments, range::make( std::begin( found), 1));
 
                      Completion visitor{ group};
 
@@ -391,7 +391,7 @@ namespace casual
             //
             // Try to find a handler for this argument
             //
-            auto found = range::find_if( m_options, argument::local::Option{ *argumentRange});
+            auto found = algorithm::find_if( m_options, argument::local::Option{ *argumentRange});
 
             if( ! found)
             {
@@ -408,7 +408,7 @@ namespace casual
             //
             // Find the end of values associated with this option
             //
-            auto slice = range::divide_first( argumentRange, m_options, []( const std::string& option, const argument::option::Holder& holder)
+            auto slice = algorithm::divide_first( argumentRange, m_options, []( const std::string& option, const argument::option::Holder& holder)
                {
                   return holder.option( option);
                });

@@ -79,7 +79,7 @@ namespace casual
             {
                const manager::admin::ServiceVO* find( const manager::admin::StateVO& state, const std::string& name)
                {
-                  auto found = common::range::find_if( state.services, [&name]( auto& s){
+                  auto found = common::algorithm::find_if( state.services, [&name]( auto& s){
                      return s.name == name;
                   });
 
@@ -93,7 +93,7 @@ namespace casual
             {
                const manager::admin::instance::LocalVO* find( const manager::admin::StateVO& state, common::strong::process::id pid)
                {
-                  auto found = common::range::find_if( state.instances.local, [pid]( auto& i){
+                  auto found = common::algorithm::find_if( state.instances.local, [pid]( auto& i){
                      return i.process.pid == pid;
                   });
 
@@ -123,8 +123,8 @@ namespace casual
          {
             bool has_services( const std::vector< manager::admin::ServiceVO>& services, std::initializer_list< const char*> wanted)
             {
-               return common::range::all_of( wanted, [&services]( auto& s){
-                  return common::range::find_if( services, [&s]( auto& service){
+               return common::algorithm::all_of( wanted, [&services]( auto& s){
+                  return common::algorithm::find_if( services, [&s]( auto& service){
                      return service.name == s;
                   });
                });

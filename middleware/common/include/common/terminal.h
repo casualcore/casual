@@ -153,14 +153,14 @@ namespace casual
                   {
                      out << std::setfill( ' ');
                      {
-                        range::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
+                        algorithm::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
                            out << std::left << std::setw( c.width()) << c.name();
                         });
                         out << '\n';
                      }
 
                      {
-                        range::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
+                        algorithm::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
                            out << std::string( c.width(), '-');
                         });
                         out << '\n';
@@ -177,7 +177,7 @@ namespace casual
                   {
                      for( auto& row : rows)
                      {
-                        range::print( out,  m_columns, '|', [&]( std::ostream& out, const column_holder& c){
+                        algorithm::print( out,  m_columns, '|', [&]( std::ostream& out, const column_holder& c){
                            c.print( out, row, false, false);
                         });
                         out << '\n';
@@ -187,7 +187,7 @@ namespace casual
                   {
                      for( auto& row : rows)
                      {
-                        range::print( out,  m_columns, m_directives.delimiter, [&]( std::ostream& out, const column_holder& c){
+                        algorithm::print( out,  m_columns, m_directives.delimiter, [&]( std::ostream& out, const column_holder& c){
                            c.print( out, row, m_directives.colors);
                         });
                         out << '\n';

@@ -232,7 +232,7 @@ namespace casual
             EXPECT_TRUE( tperrno == TPEEVENT);
             EXPECT_TRUE( event & TPEV_SENDONLY);
 
-            EXPECT_TRUE( range::equal( range::make( reply, 128), range::make( buffer, 128)));
+            EXPECT_TRUE( algorithm::equal( range::make( reply, 128), range::make( buffer, 128)));
 
             tpfree( reply);
 

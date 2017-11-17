@@ -61,15 +61,15 @@ namespace casual
                            {
                               auto physical = server::context().physical( service.name);
 
-                              if( physical && ( configuration.restrictions.empty() || range::find( configuration.restrictions, service.name)))
+                              if( physical && ( configuration.restrictions.empty() || algorithm::find( configuration.restrictions, service.name)))
                               {
-                                 auto found = range::find_if( configuration.routes, [&service]( const message::domain::configuration::server::Reply::Service& s){
+                                 auto found = algorithm::find_if( configuration.routes, [&service]( const message::domain::configuration::server::Reply::Service& s){
                                     return s.name == service.name;
                                  });
 
                                  if( found)
                                  {
-                                    range::for_each( found->routes, [physical,&advertise,&service]( const std::string& name){
+                                    algorithm::for_each( found->routes, [physical,&advertise,&service]( const std::string& name){
 
                                        advertise.emplace_back( name, service.category, service.transaction);
 

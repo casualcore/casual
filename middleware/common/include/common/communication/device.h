@@ -179,7 +179,7 @@ namespace casual
                   return find_complete(
                         std::forward< P>( policy),
                         handler,
-                        [&]( const complete_type& m){ return ! common::range::find( types, m.type).empty();});
+                        [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();});
                }
 
                //!
@@ -259,7 +259,7 @@ namespace casual
                {
                   flush();
 
-                  auto complete = range::find_if( m_cache, [&]( const auto& m){ return m.correlation == correlation;});
+                  auto complete = algorithm::find_if( m_cache, [&]( const auto& m){ return m.correlation == correlation;});
 
                   if( complete)
                   {
@@ -271,7 +271,7 @@ namespace casual
                   }
                   else
                   {
-                     auto found = range::find( m_discarded, correlation);
+                     auto found = algorithm::find( m_discarded, correlation);
 
                      if( ! found)
                      {
@@ -364,7 +364,7 @@ namespace casual
                   {
                      try
                      {
-                        auto found = range::find_if( m_cache, predicate);
+                        auto found = algorithm::find_if( m_cache, predicate);
 
                         while( ! found && ( found = policy.receive( m_connector, m_cache)))
                         {
@@ -380,7 +380,7 @@ namespace casual
                            //
                            // Try to find a massage that matches the predicate
                            //
-                           found = range::find_if( m_cache, predicate);
+                           found = algorithm::find_if( m_cache, predicate);
                         }
                         return found;
                      }
@@ -421,7 +421,7 @@ namespace casual
 
                bool discard( const communication::message::Complete& complete)
                {
-                  auto found = range::find( m_discarded, complete.correlation);
+                  auto found = algorithm::find( m_discarded, complete.correlation);
 
                   if( found && complete.complete())
                   {

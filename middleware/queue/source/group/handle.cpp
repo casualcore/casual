@@ -32,7 +32,7 @@ namespace casual
                      template< typename M>
                      void involved( State& state, M& message)
                      {
-                        if( ! common::range::find( state.involved, message.trid))
+                        if( ! common::algorithm::find( state.involved, message.trid))
                         {
                            auto involved = common::message::transaction::resource::external::involved::create( message);
 
@@ -45,7 +45,7 @@ namespace casual
                      template< typename M>
                      void done( State& state, M& message)
                      {
-                        common::range::trim( state.involved, common::range::remove( state.involved, message.trid));
+                        common::algorithm::trim( state.involved, common::algorithm::remove( state.involved, message.trid));
                      }
 
 
@@ -437,7 +437,7 @@ namespace casual
                      local::ipc::blocking::send( message.process.queue, reply);
                   });
 
-                  reply.affected = common::range::transform( message.queues, [&]( Queue::id_type queue){
+                  reply.affected = common::algorithm::transform( message.queues, [&]( Queue::id_type queue){
                      common::message::queue::restore::Reply::Affected result;
 
                      result.queue = queue;

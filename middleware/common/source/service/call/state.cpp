@@ -46,7 +46,7 @@ namespace casual
 
             State::Pending::Descriptor& State::Pending::reserve()
             {
-               auto found = range::find_if( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
+               auto found = algorithm::find_if( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
 
                if( found)
                {
@@ -63,7 +63,7 @@ namespace casual
 
             void State::Pending::unreserve( descriptor_type descriptor)
             {
-               auto found = range::find( m_descriptors, descriptor);
+               auto found = algorithm::find( m_descriptors, descriptor);
 
                if( found)
                {
@@ -77,7 +77,7 @@ namespace casual
 
             bool State::Pending::active( descriptor_type descriptor) const
             {
-               auto found = range::find( m_descriptors, descriptor);
+               auto found = algorithm::find( m_descriptors, descriptor);
 
                if( found)
                {
@@ -88,7 +88,7 @@ namespace casual
 
             const State::Pending::Descriptor& State::Pending::get( descriptor_type descriptor) const
             {
-               auto found = range::find( m_descriptors, descriptor);
+               auto found = algorithm::find( m_descriptors, descriptor);
                if( found && found->active)
                {
                   return *found;
@@ -98,7 +98,7 @@ namespace casual
 
             const State::Pending::Descriptor& State::Pending::get( const Uuid& correlation) const
             {
-               auto found = range::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
+               auto found = algorithm::find_if( m_descriptors, [&]( const auto& d){ return d.correlation == correlation;});
                if( found && found->active)
                {
                   return *found;
@@ -143,7 +143,7 @@ namespace casual
 
             bool State::Pending::empty() const
             {
-               return range::all_of( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
+               return algorithm::all_of( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
             }
 
          } // call

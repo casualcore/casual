@@ -155,8 +155,8 @@ namespace casual
 
          auto expected = first.variables;
          {
-            common::range::append( second.variables, expected);
-            common::range::append( third.variables, expected);
+            common::algorithm::append( second.variables, expected);
+            common::algorithm::append( third.variables, expected);
          }
 
 

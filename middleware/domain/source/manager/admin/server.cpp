@@ -38,7 +38,7 @@ namespace casual
 
                         auto scale_entites = [&]( auto& instance, auto& entites){
 
-                           auto found = range::find_if( entites, [&instance]( auto& e){
+                           auto found = algorithm::find_if( entites, [&instance]( auto& e){
                               return e.alias == instance.alias;
                            });
 

@@ -119,9 +119,9 @@ namespace casual
 
          bool State::running() const
          {
-            return range::any_of( listeners, std::mem_fn( &Listener::running))
-               || range::any_of( connections.outbound, std::mem_fn( &state::outbound::Connection::running))
-               || range::any_of( connections.inbound, std::mem_fn( &state::inbound::Connection::running));
+            return algorithm::any_of( listeners, std::mem_fn( &Listener::running))
+               || algorithm::any_of( connections.outbound, std::mem_fn( &state::outbound::Connection::running))
+               || algorithm::any_of( connections.inbound, std::mem_fn( &state::inbound::Connection::running));
          }
 
          void State::event( const message::manager::listener::Event& event)
@@ -130,7 +130,7 @@ namespace casual
 
             log << "event: " << event << '\n';
 
-            auto found = range::find( listeners, event.correlation);
+            auto found = algorithm::find( listeners, event.correlation);
 
             if( found)
             {

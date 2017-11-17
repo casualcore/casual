@@ -98,11 +98,11 @@ namespace casual
                if( message.task == Message::Targets::all)
                {
                   message.targets = range::to_vector(
-                        range::remove_if( message.targets, send));
+                        algorithm::remove_if( message.targets, send));
                }
                else
                {
-                  if( range::find_if( message.targets, send))
+                  if( algorithm::find_if( message.targets, send))
                   {
                      message.targets.clear();
                   }

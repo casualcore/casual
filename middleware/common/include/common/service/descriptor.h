@@ -70,7 +70,7 @@ namespace casual
 
                bool active() const
                {
-                  return range::find_if( m_descriptors, []( const auto& d){
+                  return algorithm::find_if( m_descriptors, []( const auto& d){
                      return d.active;
                   });
                }
@@ -84,7 +84,7 @@ namespace casual
             private:
                descriptor_type& reserve()
                {
-                  auto found = range::find_if( m_descriptors, negate( std::mem_fn( &descriptor_type::active)));
+                  auto found = algorithm::find_if( m_descriptors, negate( std::mem_fn( &descriptor_type::active)));
 
                   if( found)
                   {
@@ -116,7 +116,7 @@ namespace casual
             template< typename I>
             void Holder< I>::unreserve( descriptor::type descriptor)
             {
-               auto found = range::find( m_descriptors, descriptor);
+               auto found = algorithm::find( m_descriptors, descriptor);
 
                if( found)
                {
@@ -131,7 +131,7 @@ namespace casual
             template< typename I>
             typename Holder< I>::descriptor_type& Holder< I>::get( descriptor::type descriptor)
             {
-               auto found = range::find( m_descriptors, descriptor);
+               auto found = algorithm::find( m_descriptors, descriptor);
                if( found && found->active)
                {
                   return *found;

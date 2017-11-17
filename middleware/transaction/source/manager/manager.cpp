@@ -21,11 +21,6 @@
 #include <tx.h>
 
 
-
-
-
-
-
 namespace casual
 {
    using namespace common;
@@ -51,7 +46,7 @@ namespace casual
       }
 
       Manager::Manager( Settings settings) :
-          m_state( common::environment::string( settings.log))
+          m_state( common::environment::string( std::move( settings.log)))
       {
          auto start = common::platform::time::clock::type::now();
 
@@ -77,7 +72,7 @@ namespace casual
          {
             Trace trace{ "start rm-proxy-servers"};
 
-            common::range::for_each(
+            common::algorithm::for_each(
                m_state.resources,
                action::resource::Instances( m_state));
 
@@ -99,7 +94,7 @@ namespace casual
          }
 
 
-         auto instances = common::range::accumulate(
+         auto instances = common::algorithm::accumulate(
                m_state.resources, 0,
                []( std::size_t count, const state::resource::Proxy& p) {
                   return count + p.instances.size();
@@ -127,7 +122,7 @@ namespace casual
                resource.concurency = 0;
             }
 
-            range::for_each( m_state.resources, action::resource::Instances{ m_state});
+            algorithm::for_each( m_state.resources, action::resource::Instances{ m_state});
 
             auto processes = m_state.processes();
 
@@ -219,11 +214,11 @@ namespace casual
 
                               log << "manager persistent replies: " << state.persistent.replies.size() << "\n";
 
-                              auto not_done = common::range::partition(
+                              auto not_done = common::algorithm::partition(
                                     state.persistent.replies,
                                     common::negate( action::persistent::Send{ state}));
 
-                              common::range::trim( state.persistent.replies, std::get< 0>( not_done));
+                              common::algorithm::trim( state.persistent.replies, std::get< 0>( not_done));
 
                               log << "manager persistent replies: " << state.persistent.replies.size() << "\n";
                            }
@@ -234,14 +229,14 @@ namespace casual
                            {
                               log << "manager persistent request: " << state.persistent.requests.size() << "\n";
 
-                              auto not_done = common::range::partition(
+                              auto not_done = common::algorithm::partition(
                                     state.persistent.requests,
                                     common::negate( action::persistent::Send{ state}));
 
                               //
                               // Move the ones that did not find an idle resource to pending requests
                               //
-                              common::range::move( std::get< 0>( not_done), state.pending.requests);
+                              common::algorithm::move( std::get< 0>( not_done), state.pending.requests);
 
                               state.persistent.requests.clear();
 

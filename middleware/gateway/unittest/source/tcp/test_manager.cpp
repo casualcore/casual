@@ -140,7 +140,7 @@ namespace casual
                         if( state.connections.empty())
                            return false;
 
-                        return range::all_of( state.connections, []( const manager::admin::vo::Connection& c){
+                        return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
                            return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
                               c.process == process::ping( c.process.queue);
                         });
@@ -210,7 +210,7 @@ namespace casual
          auto state = local::call::wait::ready::state();
 
          EXPECT_TRUE( state.connections.size() == 2);
-         EXPECT_TRUE( range::any_of( state.connections, []( const manager::admin::vo::Connection& c){
+         EXPECT_TRUE( algorithm::any_of( state.connections, []( const manager::admin::vo::Connection& c){
             return c.bound == manager::admin::vo::Connection::Bound::out;
          }));
       }
@@ -232,7 +232,7 @@ namespace casual
 
          ASSERT_TRUE( state.connections.size() == 2);
 
-         range::sort( state.connections);
+         algorithm::sort( state.connections);
 
          auto data = common::unittest::random::binary( 128);
 
@@ -298,7 +298,7 @@ namespace casual
 
          auto state = local::call::wait::ready::state();
          ASSERT_TRUE( state.connections.size() == 2);
-         range::sort( state.connections);
+         algorithm::sort( state.connections);
 
          //
          // Gateway is connected to it self. Hence we can send a request to the outbound, and it

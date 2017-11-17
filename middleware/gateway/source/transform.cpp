@@ -117,8 +117,8 @@ namespace casual
 
             manager::State state;
 
-            range::transform( configuration.gateway.listeners, state.listeners, local::Listener{});
-            range::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
+            algorithm::transform( configuration.gateway.listeners, state.listeners, local::Listener{});
+            algorithm::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
 
             //
             // Define the order, hence the priority
@@ -142,8 +142,8 @@ namespace casual
             manager::admin::vo::State result;
 
 
-            range::transform( state.connections.outbound, result.connections, local::vo::Connection{});
-            range::transform( state.connections.inbound, result.connections, local::vo::Connection{});
+            algorithm::transform( state.connections.outbound, result.connections, local::vo::Connection{});
+            algorithm::transform( state.connections.inbound, result.connections, local::vo::Connection{});
 
 
             return result;

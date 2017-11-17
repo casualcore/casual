@@ -35,7 +35,7 @@ namespace casual
                auto get( M& map, ID&& id) ->
                 common::traits::enable_if_t< common::traits::container::is_associative< M>::value, decltype( map.at( id))>
                {
-                  auto found = common::range::find( map, id);
+                  auto found = common::algorithm::find( map, id);
 
                   if( found)
                   {
@@ -48,7 +48,7 @@ namespace casual
                auto get( C& container, ID&& id) ->
                 common::traits::enable_if_t< common::traits::container::is_sequence< C>::value, decltype( *std::begin( container))>
                {
-                  auto found = common::range::find( container, id);
+                  auto found = common::algorithm::find( container, id);
 
                   if( found)
                   {
@@ -119,19 +119,19 @@ namespace casual
 
                bool Local::service( const std::string& name) const
                {
-                  return range::sorted::search( m_services, name, std::less< const std::string>());
+                  return algorithm::sorted::search( m_services, name, std::less< const std::string>());
                }
 
 
                void Local::add( const state::Service& service)
                {
                   m_services.emplace_back( service.information.name);
-                  range::sort( m_services, std::less< const std::string>());
+                  algorithm::sort( m_services, std::less< const std::string>());
                }
 
                void Local::remove( const std::string& service)
                {
-                  auto found = range::find_if( m_services, [&service]( auto& s){ return s.get() == service;});
+                  auto found = algorithm::find_if( m_services, [&service]( auto& s){ return s.get() == service;});
 
                   if( found)
                      m_services.erase( std::begin( found));
@@ -211,7 +211,7 @@ namespace casual
             void Service::remove( common::strong::process::id instance)
             {
                {
-                  auto found = range::find( instances.local, instance);
+                  auto found = algorithm::find( instances.local, instance);
 
                   if( found)
                   {
@@ -221,7 +221,7 @@ namespace casual
                }
 
                {
-                  auto found = range::find( instances.remote, instance);
+                  auto found = algorithm::find( instances.remote, instance);
 
                   if( found)
                   {
@@ -259,13 +259,13 @@ namespace casual
 
             void Service::partition_remote_instances()
             {
-               range::stable_sort( instances.remote);
+               algorithm::stable_sort( instances.remote);
             }
 
 
             bool Service::Instances::active() const
             {
-               return ! remote.empty() || range::any_of( local, []( const auto& i){
+               return ! remote.empty() || algorithm::any_of( local, []( const auto& i){
                   return i.state() != instance::Local::State::exiting;
                });
             }
@@ -282,7 +282,7 @@ namespace casual
                const common::process::Handle& caller, 
                const common::Uuid& correlation)
             {
-               auto found = range::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
+               auto found = algorithm::find_if( instances.local, std::mem_fn( &service::instance::Local::idle));
 
                if( found)
                {
@@ -318,7 +318,7 @@ namespace casual
 
          std::vector< common::strong::ipc::id> State::subscribers() const
          {
-            return range::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
+            return algorithm::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
                return v.queue;
             });
          }
@@ -334,7 +334,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::local::remove_process"};
 
-                  auto found = common::range::find( instances, pid);
+                  auto found = common::algorithm::find( instances, pid);
 
                   if( found)
                   {
@@ -355,7 +355,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::local::find_or_add"};
 
-                  auto found = range::find( instances, process.pid);
+                  auto found = algorithm::find( instances, process.pid);
 
                   if( found)
                   {
@@ -373,7 +373,7 @@ namespace casual
 
                   log << "service: " << service << '\n';
 
-                  auto found = range::find( services, service.name);
+                  auto found = algorithm::find( services, service.name);
 
                   if( found)
                   {
@@ -460,7 +460,7 @@ namespace casual
          {
             Trace trace{ "service::manager::State::prepare_shutdown"};
 
-            auto found = common::range::find( instances.local, pid);
+            auto found = common::algorithm::find( instances.local, pid);
 
             if( found)
             {
@@ -602,7 +602,7 @@ namespace casual
 
          state::Service* State::find_service( const std::string& name)
          {
-            auto found = range::find( services, name);
+            auto found = algorithm::find( services, name);
 
             if( found)
             {
@@ -619,7 +619,7 @@ namespace casual
 
             message.directive = common::message::service::Advertise::Directive::add;
 
-            range::transform( services, message.services, []( common::server::Service& s){
+            algorithm::transform( services, message.services, []( common::server::Service& s){
                common::message::service::advertise::Service result;
 
                result.category = s.category;

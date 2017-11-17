@@ -480,7 +480,7 @@ namespace casual
             argument::directive( { "-f"}, "", variable)}};
          
          std::vector< std::string> text{ "-f"};
-         range::transform( random, text, []( auto v){ return std::to_string( v);});
+         algorithm::transform( random, text, []( auto v){ return std::to_string( v);});
 
          arguments.parse( std::move( text));
 

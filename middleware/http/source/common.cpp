@@ -39,7 +39,7 @@ namespace casual
                   template< typename C, typename K>
                   auto find( C& container, const K& key)
                   {
-                     auto found = common::range::find( container, key);
+                     auto found = common::algorithm::find( container, key);
 
                      if( found)
                         return found->second;

@@ -60,7 +60,7 @@ namespace casual
             {
                vo::Transaction result;
 
-               common::range::transform( transaction.resources, result.resources, []( const transaction::Transaction::Resource& r){
+               common::algorithm::transform( transaction.resources, result.resources, []( const transaction::Transaction::Resource& r){
                   return r.id;
                });
 
@@ -98,7 +98,7 @@ namespace casual
                result.closeinfo = value.closeinfo;
                result.statistics = transform::Stats{}( value.statistics);
 
-               common::range::transform( value.instances, result.instances, Instance{});
+               common::algorithm::transform( value.instances, result.instances, Instance{});
 
                return result;
             }
@@ -155,12 +155,12 @@ namespace casual
          {
             vo::State result;
 
-            common::range::transform( state.resources, result.resources, transform::resource::Proxy{});
-            common::range::transform( state.transactions, result.transactions, transform::Transaction{});
+            common::algorithm::transform( state.resources, result.resources, transform::resource::Proxy{});
+            common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});
 
-            common::range::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
-            common::range::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
-            common::range::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
+            common::algorithm::transform( state.pending.requests, result.pending.requests, transform::pending::Request{});
+            common::algorithm::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
+            common::algorithm::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
 
             result.log = transform::log( state.log.stats());
 

@@ -202,13 +202,13 @@ namespace casual
 
                            auto replies = std::exchange( state.pending.replies, {});
 
-                           auto remain = std::get< 1>( common::range::partition(
+                           auto remain = std::get< 1>( common::algorithm::partition(
                                  replies,
                                  common::message::pending::sender(
                                        communication::ipc::policy::non::Blocking{},
                                        manager::ipc::device().error_handler())));
 
-                           range::move( remain, state.pending.replies);
+                           algorithm::move( remain, state.pending.replies);
                         }
 
                         //

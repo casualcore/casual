@@ -25,11 +25,11 @@ namespace casual
                {
                   inline Message( std::vector< strong::process::id> pids) : m_pids{ std::move( pids)} {}
                   inline Message( const std::vector< common::process::Handle>& processes)
-                     : m_pids{ range::transform( processes, []( const common::process::Handle& h){ return h.pid;})} {}
+                     : m_pids{ algorithm::transform( processes, []( const common::process::Handle& h){ return h.pid;})} {}
 
                   inline bool consume( strong::process::id pid)
                   {
-                     auto found = range::find( m_pids, pid);
+                     auto found = algorithm::find( m_pids, pid);
 
                      if( found)
                      {
@@ -89,7 +89,7 @@ namespace casual
             template< typename Reply>
             bool accumulate( Reply&& message)
             {
-               auto found = range::find_if( m_messages, [&message]( const holder_type& m){
+               auto found = algorithm::find_if( m_messages, [&message]( const holder_type& m){
                   return m.message.correlation == message.correlation;
                });
 
@@ -117,7 +117,7 @@ namespace casual
 
             void remove( strong::process::id pid)
             {
-               range::trim( m_messages, range::remove_if( m_messages, [=]( holder_type& h){
+               algorithm::trim( m_messages, algorithm::remove_if( m_messages, [=]( holder_type& h){
                   if( h.policy.consume( pid) && h.policy.done())
                   {
                      m_policy.send( h.queue, h.message);

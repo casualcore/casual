@@ -52,7 +52,7 @@ namespace casual
             {
                common::service::header::Fields headers;
 
-               common::range::transform( model, headers.container(), []( auto& h){
+               common::algorithm::transform( model, headers.container(), []( auto& h){
                   return common::service::header::Field{ h.name, h.value};
                });
 
@@ -66,7 +66,7 @@ namespace casual
             common::message::service::Advertise message;
             message.process = common::process::handle();
 
-            common::range::transform( state.lookup, message.services, []( auto& l){
+            common::algorithm::transform( state.lookup, message.services, []( auto& l){
                common::message::service::advertise::Service service;
                service.category = "http";
                service.name = l.first;
@@ -85,7 +85,7 @@ namespace casual
             // default headers will be used if service have 0 headers
             auto header = transform::header( model.casual_default.headers);
 
-            common::range::for_each( model.services, [&]( auto& s){
+            common::algorithm::for_each( model.services, [&]( auto& s){
                State::Node node;
                {
                   node.url = s.url;

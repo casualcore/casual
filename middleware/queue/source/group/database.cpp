@@ -486,13 +486,13 @@ namespace casual
 
             std::vector< Queue> result;
 
-            auto create = common::range::partition( update, []( const Queue& q){ return q.id == 0;});
+            auto create = common::algorithm::partition( update, []( const Queue& q){ return q.id == 0;});
 
-            common::range::transform( std::get< 0>( create), result, std::bind( &Database::create, this, std::placeholders::_1));
+            common::algorithm::transform( std::get< 0>( create), result, std::bind( &Database::create, this, std::placeholders::_1));
 
-            common::range::for_each( std::get< 1>( create), std::bind( &Database::updateQueue, this, std::placeholders::_1));
+            common::algorithm::for_each( std::get< 1>( create), std::bind( &Database::updateQueue, this, std::placeholders::_1));
 
-            common::range::for_each( remove, std::bind( &Database::removeQueue, this, std::placeholders::_1));
+            common::algorithm::for_each( remove, std::bind( &Database::removeQueue, this, std::placeholders::_1));
 
 
             update_mapping();

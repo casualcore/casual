@@ -102,7 +102,7 @@ namespace casual
                   {
                      auto gtrid = row.get< common::platform::binary::type>( index);
 
-                     common::range::copy( common::range::make( gtrid), std::begin( result.xid.data));
+                     common::algorithm::copy( common::range::make( gtrid), std::begin( result.xid.data));
 
                      result.xid.gtrid_length = gtrid.size();
                   }
@@ -110,7 +110,7 @@ namespace casual
                   {
                      auto bqual = row.get< common::platform::binary::type>( index + 1);
 
-                     common::range::copy(
+                     common::algorithm::copy(
                            common::range::make( bqual),
                            std::begin( result.xid.data) + result.xid.gtrid_length);
 

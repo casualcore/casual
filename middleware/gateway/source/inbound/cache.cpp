@@ -90,7 +90,7 @@ namespace casual
             Trace trace{ "gateway::inbound::Cache::get"};
 
             lock_type lock{ m_mutex};
-            auto found = range::find( m_messages, correlation);
+            auto found = algorithm::find( m_messages, correlation);
 
             if( ! found)
             {

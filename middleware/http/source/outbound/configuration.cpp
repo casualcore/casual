@@ -47,14 +47,14 @@ namespace casual
 
             Default operator + ( Default lhs, Default rhs)
             {
-               common::range::append( lhs.headers, rhs.headers);
+               common::algorithm::append( lhs.headers, rhs.headers);
                return lhs;
             }
 
             Model operator + ( Model lhs, Model rhs)
             {
                lhs.casual_default = lhs.casual_default + rhs.casual_default;
-               common::range::append( rhs.services, lhs.services);
+               common::algorithm::append( rhs.services, lhs.services);
                return lhs;
             }
 
@@ -76,7 +76,7 @@ namespace casual
 
                verbose::log << "files: " << common::range::make( files) << '\n';
 
-               return common::range::accumulate( files, Model{}, &local::get);
+               return common::algorithm::accumulate( files, Model{}, &local::get);
             }
 
          } // configuration

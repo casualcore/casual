@@ -630,7 +630,7 @@ namespace casual
                //!
                bool operator () ( const resource::Proxy& resource) const
                {
-                  return common::range::any_of( resource.instances, Running{});
+                  return common::algorithm::any_of( resource.instances, Running{});
                }
             };
 

@@ -44,7 +44,7 @@ namespace casual
 
                   std::vector< file::scoped::Path> files( const std::vector< std::string>& config)
                   {
-                     return range::transform( config, []( const std::string& c){
+                     return algorithm::transform( config, []( const std::string& c){
                         return file::scoped::Path{ mockup::file::temporary::content( ".yaml", c)};
                      });
                   }
@@ -625,7 +625,7 @@ domain:
             mockup::domain::service::Manager service;
 
             auto state = local::call::state();
-            state.executables = range::trim( state.executables, range::remove_if( state.executables, local::predicate::Manager{}));
+            state.executables = algorithm::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::Manager{}));
 
 
             ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_MAKE_NVP( state);
@@ -637,7 +637,7 @@ domain:
 
             state = local::call::state();
 
-            for( auto executable : range::remove_if( state.executables, local::predicate::Manager{}))
+            for( auto executable : algorithm::remove_if( state.executables, local::predicate::Manager{}))
             {
                EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
             }

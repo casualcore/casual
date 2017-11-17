@@ -98,7 +98,7 @@ namespace casual
          auto terminated = process::lifetime::terminate( pids, std::chrono::seconds( 5));
 
          ASSERT_TRUE( pids.size() == terminated.size());
-         EXPECT_TRUE( range::equal( range::sort( pids), range::sort( terminated)));
+         EXPECT_TRUE( algorithm::equal( algorithm::sort( pids), algorithm::sort( terminated)));
       }
 
 

@@ -85,7 +85,7 @@ namespace casual
 
                      try
                      {
-                        common::range::for_each( spawnable, [&]( auto& i){
+                        common::algorithm::for_each( spawnable, [&]( auto& i){
                            i.spawned( common::process::spawn(
                                  executable.path, executable.arguments, state.variables( executable)));
                         });
@@ -96,7 +96,7 @@ namespace casual
                            message.path = executable.path;
                            message.alias = executable.alias;
 
-                           common::range::transform( spawnable, message.pids, []( auto& i){
+                           common::algorithm::transform( spawnable, message.pids, []( auto& i){
                               return common::process::id( i.handle);
                            });
 
@@ -108,7 +108,7 @@ namespace casual
                      {
                         log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
 
-                        common::range::for_each( executable.spawnable(), []( auto& i){
+                        common::algorithm::for_each( executable.spawnable(), []( auto& i){
                            i.state = state::instance::State::exit;
                         });
 
@@ -141,7 +141,7 @@ namespace casual
                      signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
 
-                     auto pids = range::transform( range::make_reverse( shutdownable), []( const auto& i){
+                     auto pids = algorithm::transform( range::make_reverse( shutdownable), []( const auto& i){
                         return i.handle;
                      });
 
@@ -170,7 +170,7 @@ namespace casual
                      common::message::domain::process::prepare::shutdown::Request prepare;
                      prepare.process = common::process::handle();
 
-                     prepare.processes = range::transform( range::make_reverse( shutdownable), []( const auto& i){
+                     prepare.processes = algorithm::transform( range::make_reverse( shutdownable), []( const auto& i){
                         return i.handle;
                      });
 
@@ -219,11 +219,11 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::handle::task::Boot::start"};
 
-                        range::for_each( m_batch.executables, [&]( auto id){
+                        algorithm::for_each( m_batch.executables, [&]( auto id){
                            scale::out( this->state(), this->state().executable( id));
                         });
 
-                        range::for_each( m_batch.servers, [&]( auto id){
+                        algorithm::for_each( m_batch.servers, [&]( auto id){
                            scale::out( this->state(), this->state().server( id));
                         });
 
@@ -264,14 +264,14 @@ namespace casual
 
                      bool done() const
                      {
-                        return range::all_of( m_batch.servers, [&]( auto id){
+                        return algorithm::all_of( m_batch.servers, [&]( auto id){
                            auto& server = this->state().server( id);
-                           return range::none_of( server.instances, []( auto& i){
+                           return algorithm::none_of( server.instances, []( auto& i){
                               return i.state == state::Server::state_type::scale_out;
                            });
-                        }) && range::all_of( m_batch.executables, [&]( auto id){
+                        }) && algorithm::all_of( m_batch.executables, [&]( auto id){
                            auto& server = this->state().executable( id);
-                           return range::none_of( server.instances, []( auto& i){
+                           return algorithm::none_of( server.instances, []( auto& i){
                               return i.state == state::Server::state_type::scale_out;
                            });
                         });
@@ -317,13 +317,13 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::handle::task::Shutdown::start"};
 
-                        range::for_each( m_batch.executables, [&]( auto id){
+                        algorithm::for_each( m_batch.executables, [&]( auto id){
                            state::Executable& e = this->state().executable( id);
                            e.scale( 0);
                            scale::in( this->state(), e);
                         });
 
-                        range::for_each( m_batch.servers, [&]( auto id){
+                        algorithm::for_each( m_batch.servers, [&]( auto id){
                            state::Server& s = this->state().server( id);
                            s.scale( 0);
                            scale::in( this->state(), s);
@@ -341,15 +341,15 @@ namespace casual
 
                      bool done() const
                      {
-                        return range::all_of( m_batch.servers, [&]( auto id){
+                        return algorithm::all_of( m_batch.servers, [&]( auto id){
                            auto& server = this->state().server( id);
-                           return range::all_of( server.instances, []( auto& i){
+                           return algorithm::all_of( server.instances, []( auto& i){
                               return i.state != state::Server::state_type::running
                                     && i.state != state::Server::state_type::scale_in;
                            });
-                        }) && range::all_of( m_batch.executables, [&]( auto id){
+                        }) && algorithm::all_of( m_batch.executables, [&]( auto id){
                            auto& server = this->state().executable( id);
-                           return range::all_of( server.instances, []( auto& i){
+                           return algorithm::all_of( server.instances, []( auto& i){
                               return i.state != state::Server::state_type::running
                                     && i.state != state::Server::state_type::scale_in;
                            });
@@ -501,7 +501,7 @@ namespace casual
                   manager::local::ipc::send( state, state.event( event));
                }
 
-               range::for_each( state.bootorder(), [&]( state::Batch& batch){
+               algorithm::for_each( state.bootorder(), [&]( state::Batch& batch){
                      state.tasks.add( manager::local::task::Boot{ state, batch});
                   });
 
@@ -535,14 +535,14 @@ namespace casual
                //
                // Make sure we remove our self so we don't try to shutdown
                //
-               range::for_each( state.servers, [&]( auto& s){
+               algorithm::for_each( state.servers, [&]( auto& s){
                   if( s.id == state.manager_id)
                   {
                      s.instances.clear();
                   }
                });
 
-               range::for_each( state.shutdownorder(), [&]( state::Batch& batch){
+               algorithm::for_each( state.shutdownorder(), [&]( state::Batch& batch){
                      state.tasks.add( manager::local::task::Shutdown{ state, batch});
                   });
 
@@ -619,7 +619,7 @@ namespace casual
                   {
                      Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
 
-                     range::for_each( message.processes, [&]( auto& process){
+                     algorithm::for_each( message.processes, [&]( auto& process){
 
                         if( process)
                         {
@@ -770,7 +770,7 @@ namespace casual
 
                            if( message.identification)
                            {
-                              auto found = range::find( state().singletons, message.identification);
+                              auto found = algorithm::find( state().singletons, message.identification);
 
                               if( found)
                               {
@@ -821,7 +821,7 @@ namespace casual
                            common::message::service::Advertise message;
                            message.process = common::process::handle();
 
-                           message.services = range::transform( manager::admin::services( state).services,
+                           message.services = algorithm::transform( manager::admin::services( state).services,
                                  []( const common::server::Service& s)
                                  {
                                     common::message::service::advertise::Service result;
@@ -863,7 +863,7 @@ namespace casual
                               { common::process::instance::identity::queue::manager(), &queue}
                            };
 
-                           auto found = range::find( tasks, message.identification);
+                           auto found = algorithm::find( tasks, message.identification);
 
                            if( found)
                            {
@@ -891,7 +891,7 @@ namespace casual
 
                   if( message.identification)
                   {
-                     auto found = range::find( state().singletons, message.identification);
+                     auto found = algorithm::find( state().singletons, message.identification);
 
 
                      if( found)
@@ -958,7 +958,7 @@ namespace casual
 
                   auto& pending = state().pending.lookup;
 
-                  range::trim( pending, range::remove_if( pending, local::Lookup{ state()}));
+                  algorithm::trim( pending, algorithm::remove_if( pending, local::Lookup{ state()}));
 
                   if( state().event.active< message::event::domain::server::Connect>())
                   {
@@ -1017,7 +1017,7 @@ namespace casual
                   }
 
                   using service_type = message::domain::configuration::service::Service;
-                  range::transform_if(
+                  algorithm::transform_if(
                         state().configuration.service.services,
                         reply.routes,
                         []( const service_type& s){ // transform

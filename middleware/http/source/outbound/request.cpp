@@ -98,7 +98,7 @@ namespace casual
 
                            if( input.size() < size)
                            {
-                              common::range::copy( input, buffer);
+                              common::algorithm::copy( input, buffer);
                               auto count = input.size();
                               input.advance( count);
                               return count;
@@ -144,14 +144,14 @@ namespace casual
 
                         auto range = common::range::make( buffer, buffer + ( size * nitems));
 
-                        range = std::get< 0>( common::range::divide_if( range, []( char c){
+                        range = std::get< 0>( common::algorithm::divide_if( range, []( char c){
                            return c == '\n' || c == '\r';
                         }));
 
 
                         if( range)
                         {
-                           auto split = common::range::split( range, ':');
+                           auto split = common::algorithm::split( range, ':');
 
                            /* bug in gcc 5.4 can't use this lambda
                            auto to_string = []( auto&& range){
@@ -313,7 +313,7 @@ namespace casual
                         request::Reply result;
                         result.payload.type = type;
                         result.header = std::move( reply.header);
-                        common::range::copy( reply.payload, result.payload.memory);
+                        common::algorithm::copy( reply.payload, result.payload.memory);
 
                         return result;
                      };
@@ -348,7 +348,7 @@ namespace casual
 
                      auto type = protocol::convert::to::buffer( content);
 
-                     auto found = common::range::find( mapping, type);
+                     auto found = common::algorithm::find( mapping, type);
 
                      if( found)
                      {
@@ -422,7 +422,7 @@ namespace casual
                         }
                      };
 
-                     auto found = common::range::find( mapping, payload.payload().type);
+                     auto found = common::algorithm::find( mapping, payload.payload().type);
 
                      if( found)
                      {

@@ -295,7 +295,7 @@ namespace casual
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
 
-               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
@@ -321,7 +321,7 @@ namespace casual
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
 
-               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
@@ -347,7 +347,7 @@ namespace casual
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
 
-               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 
@@ -380,7 +380,7 @@ namespace casual
 
                tcp.receive( receive_message, correlation, tcp::inbound::Device::blocking_policy{});
 
-               EXPECT_TRUE( common::range::equal( receive_message.payload, send_message.payload));
+               EXPECT_TRUE( common::algorithm::equal( receive_message.payload, send_message.payload));
             }
          }
 

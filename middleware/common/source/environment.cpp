@@ -135,7 +135,7 @@ namespace casual
 
                   common::process::Handle result;
                   {
-                     auto split = range::split(value, '|');
+                     auto split = algorithm::split(value, '|');
 
                      auto pid = std::get < 0 > ( split);
                      if( common::string::integer( pid))
@@ -275,7 +275,7 @@ namespace casual
                   using token_type = Token< decltype( range::make( range))>;
                   std::vector< token_type> result;
 
-                  auto splitted = range::divide_first( range, first);
+                  auto splitted = algorithm::divide_first( range, first);
 
                   if( std::get< 0>( splitted))
                   {
@@ -291,7 +291,7 @@ namespace casual
                      //
                      token.advance( range::make( first).size());
 
-                     splitted = range::divide_first( token, last);
+                     splitted = algorithm::divide_first( token, last);
 
                      if( ! std::get< 1>( splitted))
                      {

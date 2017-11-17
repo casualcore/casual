@@ -43,7 +43,7 @@ namespace casual
 
             void subscription( const message::event::subscription::Begin& message)
             {
-               if( ( message.types.empty() || range::find( message.types, Event::type())) && ! exists( message.process.queue))
+               if( ( message.types.empty() || algorithm::find( message.types, Event::type())) && ! exists( message.process.queue))
                {
                   m_subscribers.push_back( message.process);
                }
@@ -51,14 +51,14 @@ namespace casual
 
             void subscription( const message::event::subscription::End& message)
             {
-               range::trim( m_subscribers, range::remove_if( m_subscribers, [&]( auto& v){
+               algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [&]( auto& v){
                   return v.queue == message.process.queue;
                }));
             }
 
             void remove( strong::process::id pid)
             {
-               range::trim( m_subscribers, range::remove_if( m_subscribers, [pid]( auto& v){
+               algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [pid]( auto& v){
                   return pid == v.pid;
                }));
             }

@@ -79,8 +79,8 @@ namespace casual
 
             bool Group::boot::Order::operator () ( const Group& lhs, const Group& rhs)
             {
-               auto rhs_depend = range::find( rhs.dependencies, lhs.id);
-               auto lhs_depend = range::find( lhs.dependencies, rhs.id);
+               auto rhs_depend = algorithm::find( rhs.dependencies, lhs.id);
+               auto lhs_depend = algorithm::find( lhs.dependencies, rhs.id);
 
                return rhs_depend && ! lhs_depend;
             }
@@ -96,7 +96,7 @@ namespace casual
                      {
                         using state_type = typename I::value_type::state_type;
 
-                        return range::sorted::subrange( instances, []( auto& i){
+                        return algorithm::sorted::subrange( instances, []( auto& i){
                            return i.state ==  state_type::scale_out && ! common::process::id( i.handle);
                         });
                      }
@@ -106,7 +106,7 @@ namespace casual
                      {
                         using state_type = typename I::value_type::state_type;
 
-                        return range::sorted::subrange( instances, []( auto& i){
+                        return algorithm::sorted::subrange( instances, []( auto& i){
                            return i.state == state_type::scale_in && common::process::id( i.handle);
                         });
                      }
@@ -118,7 +118,7 @@ namespace casual
 
                         using state_type = typename I::value_type::state_type;
 
-                        auto split = range::stable_partition( instances, []( auto& i){
+                        auto split = algorithm::stable_partition( instances, []( auto& i){
                            return compare::any( i.state, { state_type::running, state_type::scale_out});
                         });
 
@@ -134,11 +134,11 @@ namespace casual
                            // scale out
                            // check if we got any 'exit' to reuse
                            {
-                              auto exit = std::get< 0>( range::partition( std::get< 1>( split), []( auto& i){
+                              auto exit = std::get< 0>( algorithm::partition( std::get< 1>( split), []( auto& i){
                                  return i.state == state_type::exit;
                               }));
 
-                              count -= range::for_each_n( exit, count, []( auto& i){
+                              count -= algorithm::for_each_n( exit, count, []( auto& i){
                                  i.state = state_type::scale_out;
                               }).size();
                            }
@@ -151,12 +151,12 @@ namespace casual
                         {
                            // scale in.
                            // We just advance the range, and scale_in the reminders.
-                           range::for_each( running.advance( count), []( auto& i){
+                           algorithm::for_each( running.advance( count), []( auto& i){
                               i.state = state_type::scale_in;
                            });
                         }
 
-                        range::stable_sort( instances);
+                        algorithm::stable_sort( instances);
 
                         log::debug << "instances: " << range::make( instances) << '\n';
 
@@ -189,7 +189,7 @@ namespace casual
 
             void Executable::remove( pid_type instance)
             {
-               auto found = range::find( instances, instance);
+               auto found = algorithm::find( instances, instance);
 
                if( found)
                {
@@ -217,7 +217,7 @@ namespace casual
 
             Server::instance_type Server::instance( common::strong::process::id pid) const
             {
-               auto found = range::find_if( instances, [pid]( auto& p){
+               auto found = algorithm::find_if( instances, [pid]( auto& p){
                   return p.handle.pid == pid;
                });
 
@@ -230,7 +230,7 @@ namespace casual
 
             Server::instance_type Server::remove( common::strong::process::id pid)
             {
-               auto found = range::find_if( instances, [pid]( auto& p){
+               auto found = algorithm::find_if( instances, [pid]( auto& p){
                   return p.handle.pid == pid;
                });
 
@@ -257,7 +257,7 @@ namespace casual
 
             bool Server::connect( common::process::Handle process)
             {
-               auto found = range::find_if( instances, [=]( auto& i){
+               auto found = algorithm::find_if( instances, [=]( auto& i){
                   return i.handle.pid == process.pid;
                });
 
@@ -330,8 +330,8 @@ namespace casual
                      std::vector< state::Batch> result;
 
                      std::vector< std::reference_wrapper< const state::Group>> groups;
-                     range::copy( state.groups, std::back_inserter( groups));
-                     range::stable_sort( groups, state::Group::boot::Order{});
+                     algorithm::copy( state.groups, std::back_inserter( groups));
+                     algorithm::stable_sort( groups, state::Group::boot::Order{});
 
                      std::vector< std::reference_wrapper< state::Server>> server_wrappers;
                      std::vector< std::reference_wrapper< state::Executable>> excutable_wrappers;
@@ -339,11 +339,11 @@ namespace casual
                      //
                      // We make sure we don't include our self in the boot sequence.
                      //
-                     range::copy_if( state.servers, std::back_inserter( server_wrappers), [&state]( const auto& e){
+                     algorithm::copy_if( state.servers, std::back_inserter( server_wrappers), [&state]( const auto& e){
                         return e.id != state.manager_id;
                      });
 
-                     range::copy( state.executables, std::back_inserter( excutable_wrappers));
+                     algorithm::copy( state.executables, std::back_inserter( excutable_wrappers));
 
                      auto executable = range::make( excutable_wrappers);
                      auto servers = range::make( server_wrappers);
@@ -352,7 +352,7 @@ namespace casual
                      // Reverse the order, so we 'consume' executable based on the group
                      // that is the farthest in the dependency chain
                      //
-                     for( auto& group : range::reverse( groups))
+                     for( auto& group : algorithm::reverse( groups))
                      {
                         state::Batch batch{ group.get().id};
 
@@ -361,11 +361,11 @@ namespace casual
                            //
                            // Partition executables so we get the ones that has current group as a dependency
                            //
-                           auto slice = range::stable_partition( entites, [&]( const auto& e){
-                              return static_cast< bool>( range::find( e.get().memberships, group.get().id));
+                           auto slice = algorithm::stable_partition( entites, [&]( const auto& e){
+                              return static_cast< bool>( algorithm::find( e.get().memberships, group.get().id));
                            });
 
-                           range::transform( std::get< 0>( slice), output, []( auto& e){
+                           algorithm::transform( std::get< 0>( slice), output, []( auto& e){
                               common::traits::concrete::type_t< decltype( range::front( output))> result;
                               result = e.get().id;
                               return result;
@@ -383,7 +383,7 @@ namespace casual
                      //
                      // We reverse the result so the dependency order is correct
                      //
-                     return range::reverse( result);
+                     return algorithm::reverse( result);
                   }
                } // order
 
@@ -402,7 +402,7 @@ namespace casual
          {
             Trace trace{ "domain::manager::State::shutdownorder"};
 
-            return range::reverse( local::order::boot( *this));
+            return algorithm::reverse( local::order::boot( *this));
          }
 
 
@@ -420,7 +420,7 @@ namespace casual
             // Remove from singletons
             //
             {
-               auto found = range::find_if( singletons, [pid]( auto& v){
+               auto found = algorithm::find_if( singletons, [pid]( auto& v){
                   return v.second.pid == pid;
                });
 
@@ -478,7 +478,7 @@ namespace casual
             // check if it's a grandchild
             //
             {
-               auto found = range::find_if( grandchildren, [=]( const auto& v){
+               auto found = algorithm::find_if( grandchildren, [=]( const auto& v){
                   return v.pid == pid;
                });
 
@@ -496,7 +496,7 @@ namespace casual
          {
             auto result = casual::configuration::environment::transform( casual::configuration::environment::fetch( environment));
 
-            range::append( process.environment.variables, result);
+            algorithm::append( process.environment.variables, result);
 
             return result;
          }
@@ -508,7 +508,7 @@ namespace casual
                template< typename S>
                auto server( S& servers, common::strong::process::id pid)
                {
-                  return range::find_if( servers, [pid]( const auto& s){
+                  return algorithm::find_if( servers, [pid]( const auto& s){
                      return s.instance( pid).handle.pid == pid;
                   }).data();
                }
@@ -528,21 +528,21 @@ namespace casual
 
          state::Executable* State::executable( common::strong::process::id pid)
          {
-            return range::find_if( executables, [=]( const auto& e){
-               return range::find( e.instances, pid) == true;
+            return algorithm::find_if( executables, [=]( const auto& e){
+               return algorithm::find( e.instances, pid) == true;
             }).data();
          }
 
          state::Group& State::group( state::Group::id_type id)
          {
-            return range::front( range::find_if( groups, [=]( const auto& g){
+            return range::front( algorithm::find_if( groups, [=]( const auto& g){
                return g.id == id;
             }));
          }
 
          const state::Group& State::group( state::Group::id_type id) const
          {
-            return range::front( range::find_if( groups, [=]( const auto& g){
+            return range::front( algorithm::find_if( groups, [=]( const auto& g){
                return g.id == id;
             }));
          }
@@ -554,7 +554,7 @@ namespace casual
                template< typename I, typename ID>
                decltype( auto) executable( I& instances, ID id)
                {
-                  return range::front( range::find_if( instances, [id]( auto& i){
+                  return range::front( algorithm::find_if( instances, [id]( auto& i){
                      return i.id == id;
                   }));
                }
@@ -582,7 +582,7 @@ namespace casual
 
          common::process::Handle State::grandchild( common::strong::process::id pid) const
          {
-            auto found = range::find_if( grandchildren, [=]( auto& v){
+            auto found = algorithm::find_if( grandchildren, [=]( auto& v){
                return v.pid == pid;
             });
 
@@ -594,7 +594,7 @@ namespace casual
 
          common::process::Handle State::singleton( const common::Uuid& id) const
          {
-            auto found = range::find( singletons, id);
+            auto found = algorithm::find( singletons, id);
             if( found)
             {
                return found->second;
@@ -634,10 +634,10 @@ namespace casual
             {
                auto& group = State::group( id);
 
-               common::range::append( group.resources, resources);
+               common::algorithm::append( group.resources, resources);
             }
 
-            return range::to_vector( range::unique( range::sort( resources)));
+            return range::to_vector( algorithm::unique( algorithm::sort( resources)));
          }
 
          std::ostream& operator << ( std::ostream& out, const State& state)

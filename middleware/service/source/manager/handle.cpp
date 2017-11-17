@@ -139,7 +139,7 @@ namespace casual
 
                   //
                   // we need to check if the dead process has anyone wating for a reply
-                  if( auto found = common::range::find( m_state.instances.local, message.state.pid))
+                  if( auto found = common::algorithm::find( m_state.instances.local, message.state.pid))
                   {
                      if( found->second.state() == state::instance::Local::State::busy)
                         local::service_call_error_reply( m_state, found->second);
@@ -158,7 +158,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.processes = std::move( message.processes);
 
-                     range::for_each( reply.processes, [&]( const auto& p){
+                     algorithm::for_each( reply.processes, [&]( const auto& p){
                         m_state.prepare_shutdown( p.pid);
                      });
 
@@ -429,7 +429,7 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::gateway::discover::Reply"};
 
-                     auto found = range::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
+                     auto found = algorithm::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
                         return p.request.correlation == message.correlation;
                      });
 
@@ -492,7 +492,7 @@ namespace casual
                   //
 
                   {
-                     auto pending = common::range::find_if( m_state.pending.requests, [&]( const auto& p){
+                     auto pending = common::algorithm::find_if( m_state.pending.requests, [&]( const auto& p){
                         return instance.service( p.request.requested);
                      });
 

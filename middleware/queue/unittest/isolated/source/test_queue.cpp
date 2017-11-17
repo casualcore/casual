@@ -264,7 +264,7 @@ namespace casual
             EXPECT_TRUE( ! messages.empty());
             auto& message = messages.at( 0);
             EXPECT_TRUE( message.id == id);
-            EXPECT_TRUE( common::range::equal( message.payload.data, payload));
+            EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
          }
       }
 
@@ -302,7 +302,7 @@ namespace casual
          EXPECT_TRUE( message.attributes.properties == "poop");
          EXPECT_TRUE( message.attributes.reply == "queueA2");
          EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
-         EXPECT_TRUE( common::range::equal( message.payload.data, payload));
+         EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
 
          // message should still be there
          {
@@ -310,7 +310,7 @@ namespace casual
             EXPECT_TRUE( ! messages.empty());
             auto& message = messages.at( 0);
             EXPECT_TRUE( message.id == id);
-            EXPECT_TRUE( common::range::equal( message.payload.data, payload));
+            EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
          }
       }
 

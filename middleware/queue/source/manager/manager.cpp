@@ -93,7 +93,7 @@ namespace casual
                      common::message::queue::connect::Reply reply;
                      reply.name = group.name;
 
-                     common::range::transform( group.queues, reply.queues, transform::Queue{});
+                     common::algorithm::transform( group.queues, reply.queues, transform::Queue{});
 
                      ipc::device().blocking_send( request.process.queue, reply);
 
@@ -104,7 +104,7 @@ namespace casual
 
                void startup( State& state, common::message::domain::configuration::Domain&& config)
                {
-                  casual::common::range::transform( config.queue.groups, state.groups, Startup( state));
+                  casual::common::algorithm::transform( config.queue.groups, state.groups, Startup( state));
 
                   //
                   // Make sure all groups are up and running before we continue
@@ -115,7 +115,7 @@ namespace casual
 
                      const auto filter = handler.types();
 
-                     while( ! common::range::all_of( state.groups, std::mem_fn(&State::Group::connected)))
+                     while( ! common::algorithm::all_of( state.groups, std::mem_fn(&State::Group::connected)))
                      {
                         handler( ipc::device().blocking_next( filter));
                      }
@@ -162,7 +162,7 @@ namespace casual
 
             std::vector< common::Uuid> correlations;
 
-            common::range::transform( state.groups, correlations, send);
+            common::algorithm::transform( state.groups, correlations, send);
 
 
             auto receive = [&]( const common::Uuid& correlation)
@@ -174,7 +174,7 @@ namespace casual
 
             std::vector< common::message::queue::information::queues::Reply> replies;
 
-            common::range::transform( correlations, replies, receive);
+            common::algorithm::transform( correlations, replies, receive);
 
             return replies;
          }
@@ -183,7 +183,7 @@ namespace casual
          {
             common::message::queue::information::messages::Reply result;
 
-            auto found = common::range::find( state.queues, queue);
+            auto found = common::algorithm::find( state.queues, queue);
 
             if( found && ! found->second.empty())
             {

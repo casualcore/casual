@@ -25,7 +25,7 @@ namespace casual
                      template< typename F>
                      auto find( F& fields, const std::string& key) // -> decltype( range::make( header::fields()))
                      {
-                        return range::find_if( fields, [&]( const Field& f){
+                        return algorithm::find_if( fields, [&]( const Field& f){
                            return f.equal( key);
                         });
                      }
@@ -47,7 +47,7 @@ namespace casual
 
                bool Field::equal( const std::string& value) const
                {
-                  return range::equal( key, value, 
+                  return algorithm::equal( key, value, 
                      []( auto a, auto b){ return std::tolower(a) == std::tolower(b);});
                }
 

@@ -108,7 +108,7 @@ namespace casual
                   return message.queue;
                }
 
-               auto found = common::range::find( m_name_mapping, message.name);
+               auto found = common::algorithm::find( m_name_mapping, message.name);
 
                if( found)
                {

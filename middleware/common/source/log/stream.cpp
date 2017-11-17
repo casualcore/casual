@@ -204,7 +204,7 @@ namespace casual
                   {
                      holder* holder( const std::string& category)
                      {
-                        auto found = range::find_if( stream::streams(), [&]( const stream::holder& h){ return h.category == category;});
+                        auto found = algorithm::find_if( stream::streams(), [&]( const stream::holder& h){ return h.category == category;});
 
                         if( found)
                         {

@@ -231,7 +231,7 @@ namespace casual
 
                      auto sender = message::pending::sender( communication::ipc::policy::non::Blocking{});
 
-                     auto remain = common::range::remove_if(
+                     auto remain = common::algorithm::remove_if(
                         m_state.pending,
                         sender);
 

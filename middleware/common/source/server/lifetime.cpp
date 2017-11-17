@@ -52,7 +52,7 @@ namespace casual
 
                   auto terminated = process::lifetime::wait( requested, timeout);
 
-                  range::append( std::get< 0>( range::intersection( terminated, requested)), result);
+                  algorithm::append( std::get< 0>( algorithm::intersection( terminated, requested)), result);
 
                   log::debug << "soft off-line: " << range::make( result) << std::endl;
 
@@ -78,13 +78,13 @@ namespace casual
                   auto result = soft::shutdown( servers, timeout);
 
 
-                  auto running = range::difference( origin, result);
+                  auto running = algorithm::difference( origin, result);
 
                   log::debug << "still on-line: " << range::make( running) << std::endl;
 
-                  range::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
+                  algorithm::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
 
-                  log::debug << "hard off-line: " << std::get< 0>( range::intersection( running, result)) << std::endl;
+                  log::debug << "hard off-line: " << std::get< 0>( algorithm::intersection( running, result)) << std::endl;
 
                   return result;
 

@@ -104,7 +104,7 @@ namespace casual
 
                std::vector< communication::message::Complete> operator () ( communication::message::Complete& message)
                {
-                  auto found = range::find( m_transformers, message.type);
+                  auto found = algorithm::find( m_transformers, message.type);
 
                   if( found)
                   {

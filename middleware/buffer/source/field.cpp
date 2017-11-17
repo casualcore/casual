@@ -719,7 +719,7 @@ namespace casual
                   {
                      const auto& buffer = pool_type::pool.get( handle);
 
-                     auto found = common::range::find( buffer.index, id);
+                     auto found = common::algorithm::find( buffer.index, id);
 
                      if( found)
                         occurrences = found->second.size();

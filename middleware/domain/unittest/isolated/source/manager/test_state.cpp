@@ -42,7 +42,7 @@ namespace casual
 
                const state::Batch& find_batch( const State& state, const std::vector< state::Batch>& bootorder, const std::string& group)
                {
-                  return common::range::front( common::range::find_if( bootorder, [&]( const state::Batch& b){
+                  return common::range::front( common::algorithm::find_if( bootorder, [&]( const state::Batch& b){
                      return state.group( b.group).name == group;
                   }));
                }

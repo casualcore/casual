@@ -20,7 +20,7 @@ namespace casual
 
             return common::message::pending::Message{
                std::move( complete),
-               range::transform( m_subscribers, std::mem_fn( &common::process::Handle::queue))
+               algorithm::transform( m_subscribers, std::mem_fn( &common::process::Handle::queue))
             };
          }
 
@@ -28,16 +28,16 @@ namespace casual
          {
             Trace trace{ "common::event::base_dispatch::remove"};
 
-            auto split = range::partition( m_subscribers, [pid]( const auto& p){
+            auto split = algorithm::partition( m_subscribers, [pid]( const auto& p){
                return p.pid != pid;
             });
 
-            range::erase( m_subscribers, std::get< 1>( split));
+            algorithm::erase( m_subscribers, std::get< 1>( split));
          }
 
          bool base_dispatch::exists( strong::ipc::id queue) const
          {
-            return range::find_if( m_subscribers, [queue]( auto& s){
+            return algorithm::find_if( m_subscribers, [queue]( auto& s){
                return s.queue == queue;
             });
          }

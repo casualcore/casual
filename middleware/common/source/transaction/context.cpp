@@ -121,7 +121,7 @@ namespace casual
                   // It could be several RM-configuration for one linked RM.
                   //
 
-                  auto splitted = range::stable_partition( configuration, [&]( RM rm){ return resource.key == rm.key;});
+                  auto splitted = algorithm::stable_partition( configuration, [&]( RM rm){ return resource.key == rm.key;});
 
                   auto partition = std::get< 0>( splitted);
 
@@ -156,7 +156,7 @@ namespace casual
             // create the views
             //
             std::tie( m_resources.dynamic, m_resources.fixed) =
-                  range::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
+                  algorithm::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
 
             common::log::category::transaction << "static resources: " << m_resources.fixed << std::endl;
             common::log::category::transaction << "dynamic resources: " << m_resources.dynamic << std::endl;
@@ -175,7 +175,7 @@ namespace casual
          {
             const auto process = process::handle();
 
-            return ! range::find_if( m_transactions, [&]( const Transaction& transaction){
+            return ! algorithm::find_if( m_transactions, [&]( const Transaction& transaction){
                return ! transaction.trid.null() && transaction.trid.owner() != process;
             }).empty();
          }
@@ -270,7 +270,7 @@ namespace casual
          {
             if( reply.transaction.trid)
             {
-               auto found = range::find( m_transactions, reply.transaction.trid);
+               auto found = algorithm::find( m_transactions, reply.transaction.trid);
 
                if( ! found)
                {
@@ -392,17 +392,17 @@ namespace casual
             //
             // Check pending calls
             //
-            range::for_each( transactions, pending_check);
+            algorithm::for_each( transactions, pending_check);
 
             //
             // Ignore 'null trid':s
             //
-            auto actual_transactions = std::get< 0>( range::stable_partition( transactions, [&]( const Transaction& transaction){
+            auto actual_transactions = std::get< 0>( algorithm::stable_partition( transactions, [&]( const Transaction& transaction){
                return ! transaction.trid.null();
             }));
 
 
-            auto owner_split = range::stable_partition( actual_transactions, [&]( const Transaction& transaction){
+            auto owner_split = algorithm::stable_partition( actual_transactions, [&]( const Transaction& transaction){
                return transaction.trid.owner() != process;
             });
 
@@ -414,7 +414,7 @@ namespace casual
             //
             {
                auto owner = std::get< 1>( owner_split);
-               range::for_each( owner, trans_commit_rollback);
+               algorithm::for_each( owner, trans_commit_rollback);
             }
 
 
@@ -429,7 +429,7 @@ namespace casual
                //
                assert( not_owner.size() <= 1);
 
-               auto found = range::find_if( not_owner, [&]( const Transaction& transaction){
+               auto found = algorithm::find_if( not_owner, [&]( const Transaction& transaction){
                   return transaction.trid == result.trid;
                });
 
@@ -461,7 +461,7 @@ namespace casual
                   {
                      auto& transaction = found.front();
                      auto involved = resources();
-                     range::append( transaction.resources, involved);
+                     algorithm::append( transaction.resources, involved);
 
                      if( transaction && ! involved.empty())
                      {
@@ -487,7 +487,7 @@ namespace casual
             //
             // Verify that rmid is known and is dynamic
             //
-            if( ! common::range::find( m_resources.dynamic, rmid))
+            if( ! common::algorithm::find( m_resources.dynamic, rmid))
             {
                throw exception::ax::exception{ code::ax::argument, string::compose( "resource id: ", rmid)};
             }
@@ -501,7 +501,7 @@ namespace casual
             // We'll interpret this as the transaction has been suspended, and
             // then resumed.
             //
-            if( common::range::find( transaction.resources, rmid))
+            if( common::algorithm::find( transaction.resources, rmid))
             {
                throw exception::ax::exception{ code::ax::resume};
             }
@@ -526,7 +526,7 @@ namespace casual
             //
             if( ! transaction.trid)
             {
-               auto found = common::range::find( transaction.resources, rmid);
+               auto found = common::algorithm::find( transaction.resources, rmid);
 
                if( found)
                {
@@ -584,7 +584,7 @@ namespace casual
             //   seams really strange not to notify user that some of the resources has
             //   failed to open...
             //
-            range::for_each( m_resources.all, []( auto& r){
+            algorithm::for_each( m_resources.all, []( auto& r){
                auto result = r.open();
                if( result != code::xa::ok)
                {
@@ -597,11 +597,11 @@ namespace casual
          {
             Trace trace{ "transaction::Context::close"};
 
-            auto results = range::transform( m_resources.all, []( auto& r){
+            auto results = algorithm::transform( m_resources.all, []( auto& r){
                return r.close();
             });
 
-            if( ! range::all_of( results, []( auto r){ return r == code::xa::ok;}))
+            if( ! algorithm::all_of( results, []( auto r){ return r == code::xa::ok;}))
             {
                log::category::error << "failed to close one or more resource\n";
             }
@@ -675,7 +675,7 @@ namespace casual
                request.trid = transaction.trid;
                request.process = process;
                request.resources = resources();
-               range::append( transaction.resources, request.resources);
+               algorithm::append( transaction.resources, request.resources);
 
                //
                // Get reply
@@ -777,7 +777,7 @@ namespace casual
             request.trid = transaction.trid;
             request.process = process;
             request.resources = resources();
-            range::append( transaction.resources, request.resources);
+            algorithm::append( transaction.resources, request.resources);
 
             auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
@@ -936,7 +936,7 @@ namespace casual
 
 
 
-            auto found = range::find( m_transactions, *xid);
+            auto found = algorithm::find( m_transactions, *xid);
 
             if( ! found)
             {
@@ -1014,7 +1014,7 @@ namespace casual
          {
             Trace trace{ "transaction::Context::resources_commit"};
 
-            auto found = range::find_if (m_resources.all, [rm]( const auto& r){
+            auto found = algorithm::find_if (m_resources.all, [rm]( const auto& r){
                return r.id == rm;
             });
 

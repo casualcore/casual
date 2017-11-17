@@ -52,7 +52,7 @@ namespace casual
                {
                   for( auto& value : rhs)
                   {
-                     auto found = range::find( lhs, value);
+                     auto found = algorithm::find( lhs, value);
 
                      if( found)
                      {

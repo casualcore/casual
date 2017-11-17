@@ -37,7 +37,7 @@ namespace casual
             {
                auto buffer = common::range::make( info->data, info->len);
 
-               common::range::transform( buffer, buffer, ::toupper);
+               common::algorithm::transform( buffer, buffer, ::toupper);
 
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
             }
@@ -46,7 +46,7 @@ namespace casual
             {
                auto buffer = common::range::make( info->data, info->len);
 
-               common::range::transform( buffer, buffer, ::tolower);
+               common::algorithm::transform( buffer, buffer, ::tolower);
 
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
             }

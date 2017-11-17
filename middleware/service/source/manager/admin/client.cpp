@@ -140,8 +140,8 @@ namespace casual
             {
                std::vector< Instance> result;
 
-               range::copy( state.instances.local, std::back_inserter( result));
-               range::copy( state.instances.remote, std::back_inserter( result));
+               algorithm::copy( state.instances.local, std::back_inserter( result));
+               algorithm::copy( state.instances.remote, std::back_inserter( result));
 
                return result;
             }
@@ -181,8 +181,8 @@ namespace casual
                      {
                         const casual::domain::manager::admin::vo::Executable* executable( const call::State& state, strong::process::id pid)
                         {
-                           auto found = range::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::vo::Executable& e){
-                              return range::find( e.instances, pid);
+                           auto found = algorithm::find_if( state.domain.executables, [=]( const casual::domain::manager::admin::vo::Executable& e){
+                              return algorithm::find( e.instances, pid);
                            });
 
                            if( found)
@@ -204,7 +204,7 @@ namespace casual
                   {
                      for( auto& i : service.instances.local)
                      {
-                        auto local = range::find( state.service.instances.local, i.pid);
+                        auto local = algorithm::find( state.service.instances.local, i.pid);
                         Instance instance{ service};
                         instance.state = local->state == admin::instance::LocalVO::State::idle ? Instance::State::idle : Instance::State::busy;
                         instance.process.pid = i.pid;
@@ -257,7 +257,7 @@ namespace casual
                      // total instances we hold
                      //
 
-                     return std::get< 0>( range::intersection( m_instances, instances, []( const normalized::Instance& ni, const T& i){
+                     return std::get< 0>( algorithm::intersection( m_instances, instances, []( const normalized::Instance& ni, const T& i){
                         return ni.process.pid == i.pid;
                      }));
                   }
@@ -286,7 +286,7 @@ namespace casual
                      {
                         auto instances = base_instances::instances( value.instances.local);
 
-                        return range::count_if( instances, []( const normalized::Instance& i){
+                        return algorithm::count_if( instances, []( const normalized::Instance& i){
                            return i.state == normalized::Instance::State::busy;
                         });
                      }
@@ -298,7 +298,7 @@ namespace casual
 
                      std::size_t pending( const std::string& service) const
                      {
-                        return range::count_if( get().pending, [&]( const admin::PendingVO& p){
+                        return algorithm::count_if( get().pending, [&]( const admin::PendingVO& p){
                            return p.requested == service;
                         });
                      }
@@ -526,11 +526,11 @@ namespace casual
 
                if( ! global::admin_services)
                {
-                  services = std::get< 0>( range::partition( services, []( const admin::ServiceVO& s){
+                  services = std::get< 0>( algorithm::partition( services, []( const admin::ServiceVO& s){
                      return s.category != common::service::category::admin();}));
                }
 
-               range::sort( services, []( const admin::ServiceVO& l, const admin::ServiceVO& r){ return l.name < r.name;});
+               algorithm::sort( services, []( const admin::ServiceVO& l, const admin::ServiceVO& r){ return l.name < r.name;});
 
                auto formatter = format::services( state);
 

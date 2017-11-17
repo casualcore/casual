@@ -88,7 +88,7 @@ namespace casual
                      };
 
 
-                     const auto found = common::range::find( names, typeid( common::marshal::binary::network::detail::cast( value)));
+                     const auto found = common::algorithm::find( names, typeid( common::marshal::binary::network::detail::cast( value)));
 
                      if( found)
                      {

@@ -29,7 +29,7 @@ namespace casual
                if( domain.manager_default.service.timeout)
                   result.service.default_timeout = common::chronology::from::string( domain.manager_default.service.timeout.value());
 
-               common::range::transform( domain.services, result.service.services, []( const service::Service& s){
+               common::algorithm::transform( domain.services, result.service.services, []( const service::Service& s){
 
                   common::message::domain::configuration::service::Service result;
 
@@ -50,7 +50,7 @@ namespace casual
             {
                result.transaction.log = domain.transaction.log;
 
-               common::range::transform( domain.transaction.resources, result.transaction.resources, []( const transaction::Resource& r){
+               common::algorithm::transform( domain.transaction.resources, result.transaction.resources, []( const transaction::Resource& r){
 
                   common::message::domain::configuration::transaction::Resource result;
 
@@ -70,7 +70,7 @@ namespace casual
             // Gateway
             //
             {
-               common::range::transform( domain.gateway.listeners, result.gateway.listeners, []( const gateway::Listener& l){
+               common::algorithm::transform( domain.gateway.listeners, result.gateway.listeners, []( const gateway::Listener& l){
                   common::message::domain::configuration::gateway::Listener result;
 
                   result.address = l.address;
@@ -84,7 +84,7 @@ namespace casual
                   return result;
                });
 
-               common::range::transform( domain.gateway.connections, result.gateway.connections, []( const gateway::Connection& c){
+               common::algorithm::transform( domain.gateway.connections, result.gateway.connections, []( const gateway::Connection& c){
                   common::message::domain::configuration::gateway::Connection result;
 
                   result.note = c.note;
@@ -106,14 +106,14 @@ namespace casual
             // Queue
             //
             {
-               common::range::transform( domain.queue.groups, result.queue.groups, []( const queue::Group& g){
+               common::algorithm::transform( domain.queue.groups, result.queue.groups, []( const queue::Group& g){
                   common::message::domain::configuration::queue::Group result;
 
                   result.name = g.name;
                   result.note = g.note;
                   result.queuebase = g.queuebase.value_or( "");
 
-                  common::range::transform( g.queues, result.queues, []( const queue::Queue& q){
+                  common::algorithm::transform( g.queues, result.queues, []( const queue::Queue& q){
                      common::message::domain::configuration::queue::Queue result;
 
                      result.name = q.name;

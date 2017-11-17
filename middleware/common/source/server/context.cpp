@@ -110,7 +110,7 @@ namespace casual
 
 
 
-            auto found = range::find( m_state.services, prospect.name);
+            auto found = algorithm::find( m_state.services, prospect.name);
 
             if( found)
             {
@@ -128,7 +128,7 @@ namespace casual
                message::service::Advertise message;
                message.process = process::handle();
 
-               auto found = range::find_if( m_state.physical_services, [&]( const Service& s){
+               auto found = algorithm::find_if( m_state.physical_services, [&]( const Service& s){
                   return s == prospect;
                });
 
@@ -187,7 +187,7 @@ namespace casual
                template< typename S, typename P>
                server::Service* find_physical( S& services, P&& predicate)
                {
-                  auto found = range::find_if( services, predicate);
+                  auto found = algorithm::find_if( services, predicate);
 
                   if( found)
                   {

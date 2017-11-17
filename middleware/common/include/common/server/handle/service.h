@@ -109,7 +109,7 @@ namespace casual
                   // Find service
                   //
 
-                  auto found = range::find( state.services, parameter.service.name);
+                  auto found = algorithm::find( state.services, parameter.service.name);
 
                   if( ! found)
                   {

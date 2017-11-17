@@ -44,7 +44,7 @@ namespace casual
                result.message.reply = "someQueue";
                result.message.type = common::buffer::type::binary();
 
-               common::range::copy( common::uuid::string( common::uuid::make()), std::back_inserter(result.message.payload));
+               common::algorithm::copy( common::uuid::string( common::uuid::make()), std::back_inserter(result.message.payload));
 
 
                result.message.available = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::time::clock::type::now());
@@ -443,13 +443,13 @@ namespace casual
 
          {
             auto writer = sql::database::scoped::write( database);
-            common::range::for_each( messages, [&]( const message_type& m){
+            common::algorithm::for_each( messages, [&]( const message_type& m){
                database.enqueue( m);});
          }
 
          auto writer = sql::database::scoped::write( database);
 
-         common::range::for_each( messages,[&]( const message_type& origin){
+         common::algorithm::for_each( messages,[&]( const message_type& origin){
 
             auto fetched = database.dequeue( local::request( queue));
 
@@ -788,7 +788,7 @@ namespace casual
 
          common::transaction::ID xid = common::transaction::ID::create();
 
-         common::range::for_each( messages,[&]( const message_type& origin){
+         common::algorithm::for_each( messages,[&]( const message_type& origin){
 
             auto fetched = database.dequeue( local::request( queue, xid));
 

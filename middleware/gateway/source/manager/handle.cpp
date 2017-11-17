@@ -195,10 +195,10 @@ namespace casual
 
                log << "state: " << state << '\n';
 
-               range::for_each( state.listeners, std::mem_fn( &Listener::shutdown));
+               algorithm::for_each( state.listeners, std::mem_fn( &Listener::shutdown));
 
-               range::for_each( state.connections.inbound, local::shutdown::Connection{});
-               range::for_each( state.connections.outbound, local::shutdown::Connection{});
+               algorithm::for_each( state.connections.inbound, local::shutdown::Connection{});
+               algorithm::for_each( state.connections.outbound, local::shutdown::Connection{});
 
                auto handler = manager::handler( state);
 
@@ -215,8 +215,8 @@ namespace casual
             {
                Trace trace{ "gateway::manager::handle::boot"};
 
-               range::for_each( state.connections.outbound, local::Boot{});
-               range::for_each( state.listeners, std::mem_fn( &Listener::start));
+               algorithm::for_each( state.connections.outbound, local::Boot{});
+               algorithm::for_each( state.listeners, std::mem_fn( &Listener::start));
             }
 
 
@@ -263,8 +263,8 @@ namespace casual
                   //
                   ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
 
-                  auto inbound_found = range::find( state().connections.inbound, message.state.pid);
-                  auto outbound_found = range::find( state().connections.outbound, message.state.pid);
+                  auto inbound_found = algorithm::find( state().connections.inbound, message.state.pid);
+                  auto outbound_found = algorithm::find( state().connections.outbound, message.state.pid);
 
                   if( inbound_found)
                   {
@@ -340,7 +340,7 @@ namespace casual
                               }
                            };
 
-                     range::for_each( state().connections.outbound, send_request);
+                     algorithm::for_each( state().connections.outbound, send_request);
 
                      state().discover.outbound.add( message.correlation, destination, std::move( requested));
                   }
@@ -378,7 +378,7 @@ namespace casual
                      });
 
 
-                     auto found = range::find( state().connections.outbound, message.process.pid);
+                     auto found = algorithm::find( state().connections.outbound, message.process.pid);
 
                      if( found)
                      {
@@ -401,7 +401,7 @@ namespace casual
 
                   log << "message: " << message << '\n';
 
-                  auto found = range::find( state().connections.outbound, message.process.pid);
+                  auto found = algorithm::find( state().connections.outbound, message.process.pid);
 
                   if( found)
                   {
@@ -433,7 +433,7 @@ namespace casual
 
                   log << "message: " << message << '\n';
 
-                  auto found = range::find( state().connections.inbound, message.process.pid);
+                  auto found = algorithm::find( state().connections.inbound, message.process.pid);
 
                   if( found)
                   {

@@ -206,11 +206,11 @@ namespace casual
                            F&& filter, 
                            common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
                         {
-                           auto resources = common::range::partition(
+                           auto resources = common::algorithm::partition(
                               transaction.resources,
                               filter);
 
-                           common::range::for_each( resources, [&]( const Transaction::Resource& r){
+                           common::algorithm::for_each( resources, [&]( const Transaction::Resource& r){
 
                               M message;
                               message.process = common::process::handle();
@@ -237,19 +237,19 @@ namespace casual
                         Trace trace{ "transaction::handle::send::resource::request"};
 
 
-                        auto resources = std::get< 0>( common::range::partition(
+                        auto resources = std::get< 0>( common::algorithm::partition(
                            transaction.resources,
                            filter));
 
                         //
                         // Update state on transaction-resources
                         //
-                        common::range::for_each(
+                        common::algorithm::for_each(
                            resources,
                            Transaction::Resource::update::Stage{ new_stage});
 
 
-                        common::range::for_each( resources, [&]( const Transaction::Resource& r){
+                        common::algorithm::for_each( resources, [&]( const Transaction::Resource& r){
 
                            M message;
                            message.process = common::process::handle();
@@ -280,7 +280,7 @@ namespace casual
 
                   void done( State& state, state::resource::Proxy::Instance& instance)
                   {
-                     auto request = common::range::find_if(
+                     auto request = common::algorithm::find_if(
                            state.pending.requests,
                            state::pending::filter::Request{ instance.id});
 
@@ -322,7 +322,7 @@ namespace casual
                   {
                      for( auto& resource : message.resources)
                      {
-                        if( common::range::find( state.resources, resource))
+                        if( common::algorithm::find( state.resources, resource))
                         {
                            transaction.resources.emplace_back( resource);
                         }
@@ -332,7 +332,7 @@ namespace casual
                         }
                      }
 
-                     common::range::trim( transaction.resources, common::range::unique( common::range::sort( transaction.resources)));
+                     common::algorithm::trim( transaction.resources, common::algorithm::unique( common::algorithm::sort( transaction.resources)));
 
                      log << "involved: " << transaction << '\n';
 
@@ -348,7 +348,7 @@ namespace casual
                      //
                      // Find the transaction
                      //
-                     auto found = common::range::find_if( state.transactions, find::Transaction{ message.trid});
+                     auto found = common::algorithm::find_if( state.transactions, find::Transaction{ message.trid});
 
                      if( found)
                      {
@@ -905,7 +905,7 @@ namespace casual
 
                for( auto& proxy : m_state.resources)
                {
-                  if( common::range::find( message.resources, proxy.name))
+                  if( common::algorithm::find( message.resources, proxy.name))
                   {
                      common::message::transaction::resource::Resource resource;
 
@@ -960,14 +960,14 @@ namespace casual
                   //
                   // Find the transaction
                   //
-                  auto found = common::range::find_if(
+                  auto found = common::algorithm::find_if(
                         common::range::make( m_state.transactions), find::Transaction{ message.trid});
 
                   if( found)
                   {
                      auto& transaction = *found;
 
-                     auto resource = common::range::find_if(
+                     auto resource = common::algorithm::find_if(
                            transaction.resources,
                            Transaction::Resource::filter::ID{ message.resource});
 
@@ -1049,7 +1049,7 @@ namespace casual
                   }
 
 
-                  if( ! m_connected && common::range::all_of( common::range::make( m_state.resources), state::filter::Running{}))
+                  if( ! m_connected && common::algorithm::all_of( common::range::make( m_state.resources), state::filter::Running{}))
                   {
                      //
                      // We now have enough resource proxies up and running to guarantee consistency
@@ -1353,7 +1353,7 @@ namespace casual
 
                auto id = state::resource::external::proxy::id( m_state, message.process);
 
-               if( ! common::range::find( transaction.resources, id))
+               if( ! common::algorithm::find( transaction.resources, id))
                {
                   transaction.resources.emplace_back( id);
                }
@@ -1377,7 +1377,7 @@ namespace casual
                // rollback
                //
                {
-                  auto found = common::range::find_if( transaction.resources, [&]( auto& resource){
+                  auto found = common::algorithm::find_if( transaction.resources, [&]( auto& resource){
                      return state::resource::id::remote( resource.id) && m_state.get_external( resource.id).process.pid == message.process.pid;
                   });
 
@@ -1397,7 +1397,7 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
+               auto found = common::algorithm::find_if( m_state.transactions, find::Transaction{ message.trid});
 
 
                if( found)
@@ -1516,7 +1516,7 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
+               auto found = common::algorithm::find_if( m_state.transactions, find::Transaction{ message.trid});
 
                if( found)
                {
@@ -1635,7 +1635,7 @@ namespace casual
                //
                // Find the transaction
                //
-               auto found = common::range::find_if( m_state.transactions, find::Transaction{ message.trid});
+               auto found = common::algorithm::find_if( m_state.transactions, find::Transaction{ message.trid});
 
                if( found)
                {

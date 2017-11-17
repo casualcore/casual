@@ -275,7 +275,7 @@ namespace casual
       //! Rather an abstraction that helps our use-cases and to get a feel for
       //! what a real range-library could offer. It's a work in progress
       //!
-      namespace range
+      namespace algorithm
       {
 
          template< typename R, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
@@ -318,7 +318,7 @@ namespace casual
          auto partition( R&& range, P predicate)
          {
             auto middle = std::partition( std::begin( range), std::end( range), predicate);
-            return std::make_tuple( make( std::begin( range), middle), make( middle, std::end( range)));
+            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
 
 
@@ -326,7 +326,7 @@ namespace casual
          auto stable_partition( R&& range, P predicate)
          {
             auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
-            return std::make_tuple( make( std::begin( range), middle), make( middle, std::end( range)));
+            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
 
 
@@ -427,15 +427,15 @@ namespace casual
          namespace detail
          {
             template< typename R, typename C, typename T>
-            auto transform( R&& range, C& container, T transform, category::container)
+            auto transform( R&& range, C& container, T transform, range::category::container)
             {
                container.reserve( range::size( range) + container.size());
                std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
-               return make( std::end( container) - range::size( range), std::end( container));
+               return range::make( std::end( container) - range::size( range), std::end( container));
             }
 
             template< typename R, typename O, typename T>
-            decltype( auto) transform( R&& range, O&& output, T transform, category::fixed)
+            decltype( auto) transform( R&& range, O&& output, T transform, range::category::fixed)
             {
                assert( range::size( output) >= range::size( range));
                std::transform( std::begin( range), std::end( range), std::begin( output), transform);
@@ -443,7 +443,7 @@ namespace casual
             }
 
             template< typename R, typename O, typename T>
-            auto transform( R&& range, O&& output, T transform, category::output_iterator)
+            auto transform( R&& range, O&& output, T transform, range::category::output_iterator)
             {
                auto last = std::transform( std::begin( range), std::end( range), output, transform);
                return range::make( last - range::size( range), last);;
@@ -461,7 +461,7 @@ namespace casual
          template< typename R, typename O, typename T>
          decltype( auto) transform( R&& range, O&& output, T&& transform)
          {
-            return detail::transform( std::forward< R>( range), std::forward< O>( output), std::forward< T>( transform), category::tag_t< O>{} );
+            return detail::transform( std::forward< R>( range), std::forward< O>( output), std::forward< T>( transform), range::category::tag_t< O>{} );
          }
 
          //!
@@ -519,7 +519,7 @@ namespace casual
          template< typename R>
          auto unique( R&& range)
          {
-            return make( std::begin( range), std::unique( std::begin( range), std::end( range)));
+            return range::make( std::begin( range), std::unique( std::begin( range), std::end( range)));
          }
 
          //!
@@ -581,7 +581,7 @@ namespace casual
          template< typename R, typename T, std::enable_if_t< common::traits::detect::is_detected< detail::iterator_value_compare, R, T>::value>* dummy = nullptr>
          auto remove( R&& range, const T& value)
          {
-            return make( std::begin( range), std::remove( std::begin( range), std::end( range), value));
+            return range::make( std::begin( range), std::remove( std::begin( range), std::end( range), value));
          }
 
          //!
@@ -592,13 +592,13 @@ namespace casual
          {
             auto last = std::rotate( std::begin( unwanted), std::end( unwanted), std::end( source));
             
-            return make( std::begin( source), last);
+            return range::make( std::begin( source), last);
          }
 
          template< typename R, typename P>
          auto remove_if( R&& range, P predicate)
          {
-            return make( std::begin( range), std::remove_if( std::begin( range), std::end( range), predicate));
+            return range::make( std::begin( range), std::remove_if( std::begin( range), std::end( range), predicate));
          }
 
 
@@ -683,7 +683,7 @@ namespace casual
             std::enable_if_t< common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
          auto find( R&& range, T&& value)
          {
-            return make( range.find( value), std::end( range));
+            return range::make( range.find( value), std::end( range));
          }
 
          //!
@@ -693,7 +693,7 @@ namespace casual
             std::enable_if_t< ! common::traits::container::is_associative< std::decay_t< R>>::value>* dummy = nullptr>
          auto find( R&& range, T&& value)
          {
-            return make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));
+            return range::make( std::find( std::begin( range), std::end( range), std::forward< T>( value)), std::end( range));
          }
 
 
@@ -701,21 +701,21 @@ namespace casual
          template< typename R, typename P>
          auto find_if( R&& range, P predicate)
          {
-            return make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
+            return range::make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
          }
 
 
          template< typename R>
          auto adjacent_find( R&& range)
          {
-            return make( std::adjacent_find( std::begin( range), std::end( range)), std::end( range));
+            return range::make( std::adjacent_find( std::begin( range), std::end( range)), std::end( range));
          }
 
 
          template< typename R, typename P>
          auto adjacent_find( R&& range, P predicate)
          {
-            return make( std::adjacent_find( std::begin( range), std::end( range), predicate), std::end( range));
+            return range::make( std::adjacent_find( std::begin( range), std::end( range), predicate), std::end( range));
          }
 
 
@@ -732,7 +732,7 @@ namespace casual
                   std::begin( range), std::end( range),
                   std::forward< T>( value));
 
-            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
+            return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
          }
 
          //!
@@ -765,7 +765,7 @@ namespace casual
          {
             auto divider = std::find_if( std::begin( range), std::end( range), predicate);
 
-            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
+            return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
          }
          
 
@@ -773,14 +773,14 @@ namespace casual
          auto search( R1&& range, R2&& to_find)
          {
             auto first = std::search( std::begin( range), std::end( range), std::begin( to_find), std::end( to_find));
-            return make( first, std::end( range));
+            return range::make( first, std::end( range));
          }
 
 
          template< typename R1, typename R2, typename F>
          auto find_first_of( R1&& target, R2&& source, F functor)
          {
-            auto result = make( std::forward< R1>( target));
+            auto result = range::make( std::forward< R1>( target));
 
             result.first = std::find_first_of(
                   std::begin( result), std::end( result),
@@ -794,7 +794,7 @@ namespace casual
          template< typename R1, typename R2>
          auto find_first_of( R1&& target, R2&& source)
          {
-            auto result = make( std::forward< R1>( target));
+            auto result = range::make( std::forward< R1>( target));
 
             result.first = std::find_first_of(
                   std::begin( result), std::end( result),
@@ -816,7 +816,7 @@ namespace casual
                   std::begin( range), std::end( range),
                   std::begin( lookup), std::end( lookup));
 
-            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
+            return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
          }
 
 
@@ -834,7 +834,7 @@ namespace casual
                   std::begin( range), std::end( range),
                   std::begin( lookup), std::end( lookup), functor);
 
-            return std::make_tuple( make( std::begin( range), divider), make( divider, std::end( range)));
+            return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
          }
 
 
@@ -848,7 +848,7 @@ namespace casual
          template< typename R1, typename R2>
          auto intersection( R1&& range, R2&& lookup)
          {
-            using range_type = decltype( make( std::forward< R1>( range)));
+            using range_type = decltype( range::make( std::forward< R1>( range)));
             using value_type = typename range_type::value_type;
 
             auto lambda = [&]( const value_type& value){ return find( lookup, value);};
@@ -900,9 +900,9 @@ namespace casual
             //
             // Just to make sure range is not an rvalue container. we could use enable_if instead
             //
-            auto result = make( std::forward< R>( range));
+            auto result = range::make( std::forward< R>( range));
 
-            return make( std::max_element( std::begin( result), std::end( result), functor), std::end( result));
+            return range::make( std::max_element( std::begin( result), std::end( result), functor), std::end( result));
          }
 
          template< typename R>
@@ -911,9 +911,9 @@ namespace casual
             //
             // Just to make sure range is not an rvalue container. we could use enable_if instead
             //
-            auto result = make( std::forward< R>( range));
+            auto result = range::make( std::forward< R>( range));
 
-            return make( std::max_element( std::begin( result), std::end( result)), std::end( result));
+            return range::make( std::max_element( std::begin( result), std::end( result)), std::end( result));
          }
 
          template< typename R, typename F>
@@ -922,9 +922,9 @@ namespace casual
             //
             // Just to make sure range is not an rvalue container. we could use enable_if instead.
             //
-            auto result = make( std::forward< R>( range));
+            auto result = range::make( std::forward< R>( range));
 
-            return make( std::min_element( std::begin( result), std::end( result), functor), std::end( result));
+            return range::make( std::min_element( std::begin( result), std::end( result), functor), std::end( result));
          }
 
          template< typename R>
@@ -933,9 +933,9 @@ namespace casual
             //
             // Just to make sure range is not an rvalue container. we could use enable_if instead.
             //
-            auto result = make( std::forward< R>( range));
+            auto result = range::make( std::forward< R>( range));
 
-            return make( std::min_element( std::begin( result), std::end( result)), std::end( result));
+            return range::make( std::min_element( std::begin( result), std::end( result)), std::end( result));
          }
 
 
@@ -1070,7 +1070,7 @@ namespace casual
                      std::begin( other), std::end( other),
                      std::back_inserter( result));
 
-               return make( result);
+               return range::make( result);
             }
 
             template< typename R1, typename R2, typename Output, typename Compare>
@@ -1082,7 +1082,7 @@ namespace casual
                      std::back_inserter( result),
                      compare);
 
-               return make( result);
+               return range::make( result);
             }
 
             template< typename R1, typename R2, typename Output>
@@ -1093,7 +1093,7 @@ namespace casual
                      std::begin( other), std::end( other),
                      std::back_inserter( result));
 
-               return make( result);
+               return range::make( result);
             }
 
             template< typename R1, typename R2, typename Output, typename Compare>
@@ -1105,7 +1105,7 @@ namespace casual
                      std::back_inserter( result),
                      compare);
 
-               return make( result);
+               return range::make( result);
             }
 
 
@@ -1115,7 +1115,7 @@ namespace casual
                auto first = std::lower_bound( std::begin( range), std::end( range), value, compare);
                auto last = std::upper_bound( first, std::end( range), value, compare);
 
-               return make( first, last);
+               return range::make( first, last);
             }
 
 
@@ -1131,7 +1131,7 @@ namespace casual
             {
                std::vector< range::type_t< R>> result;
 
-               auto current = make( range);
+               auto current = range::make( range);
 
                while( current)
                {
@@ -1162,7 +1162,7 @@ namespace casual
             }
 
          } // sorted
-      } // range
+      } // algorithm
 
       template< typename Iter>
       std::ostream& operator << ( std::ostream& out, Range< Iter> range)
@@ -1170,7 +1170,7 @@ namespace casual
          if( out)
          {
             out << "[";
-            range::print( out, range, ',') << ']';
+            algorithm::print( out, range, ',') << ']';
          }
          return out;
       }
@@ -1178,21 +1178,21 @@ namespace casual
       template< typename Iter1, typename Iter2>
       bool operator == ( const Range< Iter1>& lhs, const Range< Iter2>& rhs)
       {
-         return range::equal( lhs, rhs);
+         return algorithm::equal( lhs, rhs);
       }
 
       template< typename Iter, typename C,
          std::enable_if_t< common::traits::container::is_container< std::remove_reference_t< C>>::value>* dummy = nullptr>
       bool operator == ( const Range< Iter>& lhs, const C& rhs)
       {
-         return range::equal( lhs, rhs);
+         return algorithm::equal( lhs, rhs);
       }
 
       template< typename C, typename Iter,
          std::enable_if_t< common::traits::container::is_container< std::remove_reference_t< C>>::value>* dummy = nullptr>
       bool operator == ( C& lhs, const Range< Iter>& rhs)
       {
-         return range::equal( lhs, rhs);
+         return algorithm::equal( lhs, rhs);
       }
 
       template< typename Iter>
@@ -1207,13 +1207,13 @@ namespace casual
          template< typename T, typename R>
          bool any( T&& value, R&& range)
          {
-            return range::find( range, value);
+            return algorithm::find( range, value);
          }
 
          template< typename T, typename V>
          bool any( T&& value, std::initializer_list< V> range)
          {
-            return range::find( range, value);
+            return algorithm::find( range, value);
          }
       } // compare
 

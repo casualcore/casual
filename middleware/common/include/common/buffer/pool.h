@@ -371,7 +371,7 @@ namespace casual
 
                range_type find( platform::buffer::raw::immutable::type handle)
                {
-                  return range::find_if( m_pool,
+                  return algorithm::find_if( m_pool,
                         [&]( const buffer_type& b){ return b.payload.memory.data() == handle;});
                }
                pool_type m_pool;

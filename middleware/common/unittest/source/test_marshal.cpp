@@ -247,7 +247,7 @@ namespace casual
 
 
                buffer::Payload payload{ type, 128};
-               range::copy( info, std::begin( payload.memory));
+               algorithm::copy( info, std::begin( payload.memory));
 
                EXPECT_TRUE( payload.memory.size() == 128) << " payload.memory.size(): " <<  payload.memory.size();
                EXPECT_TRUE( payload.memory.data() == info) << "payload.memory.data(): " <<  payload.memory.data();

@@ -63,7 +63,7 @@ namespace casual
                      // Try to send it first with no blocking.
                      //
 
-                     auto busy = common::range::partition( groups, [&]( group_type& g)
+                     auto busy = common::algorithm::partition( groups, [&]( group_type& g)
                            {
                               return ! ipc::device().non_blocking_send( g.queue, message);
                            });
@@ -130,9 +130,9 @@ namespace casual
                void Request::operator () ( message_type& message)
                {
                   std::vector< common::process::Handle> groups;
-                  common::range::transform( m_state.groups, groups, std::mem_fn( &manager::State::Group::process));
+                  common::algorithm::transform( m_state.groups, groups, std::mem_fn( &manager::State::Group::process));
 
-                  common::range::for_each(
+                  common::algorithm::for_each(
                         common::server::lifetime::soft::shutdown( groups, std::chrono::seconds( 1)),
                         std::bind( &process::Exit::apply, process::Exit{ m_state}, std::placeholders::_1));
 
@@ -155,7 +155,7 @@ namespace casual
                      local::reply( message.process.queue, reply);
                   });
 
-                  auto found =  common::range::find( m_state.queues, message.name);
+                  auto found =  common::algorithm::find( m_state.queues, message.name);
 
                   if( found && ! found->second.empty())
                   {
@@ -211,10 +211,10 @@ namespace casual
 
                      instances.emplace_back( message.process, queue.id);
 
-                     common::range::stable_sort( instances);
+                     common::algorithm::stable_sort( instances);
                   }
 
-                  auto found = common::range::find( m_state.groups, message.process);
+                  auto found = common::algorithm::find( m_state.groups, message.process);
 
                   if( found)
                   {
@@ -250,20 +250,20 @@ namespace casual
                      // Queues has been added, we check if there are any pending
                      //
 
-                     auto split = common::range::stable_partition( m_state.pending,[&]( auto& p){
+                     auto split = common::algorithm::stable_partition( m_state.pending,[&]( auto& p){
 
-                        return ! common::range::any_of( message.queues, [&]( auto& q){
+                        return ! common::algorithm::any_of( message.queues, [&]( auto& q){
                            return q.name == p.name;});
                      });
 
                      common::traits::concrete::type_t< decltype( m_state.pending)> pending;
 
-                     common::range::move( std::get< 1>( split), pending);
-                     common::range::trim( m_state.pending, std::get< 0>( split));
+                     common::algorithm::move( std::get< 1>( split), pending);
+                     common::algorithm::trim( m_state.pending, std::get< 0>( split));
 
                      log << "pending to lookup: " << common::range::make( pending) << '\n';
 
-                     common::range::for_each( pending, [&]( auto& pending){
+                     common::algorithm::for_each( pending, [&]( auto& pending){
                         lookup::Request{ m_state}( pending);
                      });
                   }
@@ -283,7 +283,7 @@ namespace casual
 
                      for( auto& queue : message.queues)
                      {
-                        if( common::range::find( m_state.queues, queue))
+                        if( common::algorithm::find( m_state.queues, queue))
                         {
                            reply.queues.emplace_back( queue);
                         }
@@ -301,7 +301,7 @@ namespace casual
                      // check if there are any pending lookups for this reply
                      //
 
-                     auto found = common::range::find_if( m_state.pending, [&]( const auto& r){
+                     auto found = common::algorithm::find_if( m_state.pending, [&]( const auto& r){
                         return r.correlation == message.correlation;
                      });
 
@@ -312,7 +312,7 @@ namespace casual
 
                         auto reply = common::message::reverse::type( *found);
 
-                        auto found_queue = common::range::find( m_state.queues, request.name);
+                        auto found_queue = common::algorithm::find( m_state.queues, request.name);
 
                         if( found_queue && ! found_queue->second.empty())
                         {

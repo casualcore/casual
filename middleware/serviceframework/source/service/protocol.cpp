@@ -56,7 +56,7 @@ namespace casual
 
             Protocol Factory::create( common::service::invoke::Parameter&& parameter)
             {
-               auto found = common::range::find( m_creators, parameter.payload.type);
+               auto found = common::algorithm::find( m_creators, parameter.payload.type);
 
                if( found)
                {

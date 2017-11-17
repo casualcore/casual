@@ -131,7 +131,7 @@ namespace casual
 
                   auto destination = range::make( std::begin( payload) + offset( chunk), size);
 
-                  range::copy( chunk, std::begin( destination));
+                  algorithm::copy( chunk, std::begin( destination));
 
 
                   {

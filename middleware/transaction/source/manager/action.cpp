@@ -145,7 +145,7 @@ namespace casual
                //
                // Make sure we only update a specific RM one time
                //
-               for( auto& directive : range::unique( range::sort( instances)))
+               for( auto& directive : algorithm::unique( algorithm::sort( instances)))
                {
                   try
                   {

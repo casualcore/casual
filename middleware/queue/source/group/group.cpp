@@ -36,7 +36,7 @@ namespace casual
 
          void State::Pending::enqueue( const common::transaction::ID& trid, queue_id_type id)
          {
-            auto found = common::range::find_if( requests, [&]( const request_type& r){
+            auto found = common::algorithm::find_if( requests, [&]( const request_type& r){
                return r.queue == id;
             });
 
@@ -54,7 +54,7 @@ namespace casual
             common::message::queue::dequeue::forget::Reply reply;
             reply.correlation = request.correlation;
 
-            auto found = common::range::find_if( requests, [&]( const request_type& r){
+            auto found = common::algorithm::find_if( requests, [&]( const request_type& r){
                return r.queue == request.queue && r.process == request.process;
             });
 
@@ -77,7 +77,7 @@ namespace casual
          {
             result_t result;
 
-            auto found = common::range::find( transactions, trid);
+            auto found = common::algorithm::find( transactions, trid);
 
             if( found)
             {
@@ -88,14 +88,14 @@ namespace casual
                // Move all request that is interested in committed queues to the end.
                // We use the second part of the partition directly
                //
-               auto interested = std::get< 1>( common::range::stable_partition( requests, [&]( const request_type& r){
-                  return ! common::range::find( result.enqueued, r.queue);
+               auto interested = std::get< 1>( common::algorithm::stable_partition( requests, [&]( const request_type& r){
+                  return ! common::algorithm::find( result.enqueued, r.queue);
                }));
 
                //
                // move the requests to the result, and erase them in pending
                //
-               common::range::move( interested, result.requests);
+               common::algorithm::move( interested, result.requests);
                requests.erase( std::begin( interested), std::end( interested));
             }
 
@@ -109,7 +109,7 @@ namespace casual
 
          void State::Pending::erase( common::strong::process::id pid)
          {
-            auto found = std::get< 1>( common::range::stable_partition( requests, [=]( const request_type& r){
+            auto found = std::get< 1>( common::algorithm::stable_partition( requests, [=]( const request_type& r){
                return r.process.pid != pid;
             }));
 
@@ -154,7 +154,7 @@ namespace casual
                   //
                   // queuebase is persistent - send pending persistent replies
                   //
-                  common::range::trim( state.persistent, common::range::remove_if(
+                  common::algorithm::trim( state.persistent, common::algorithm::remove_if(
                      state.persistent,
                      common::message::pending::sender( common::communication::ipc::policy::non::Blocking{})));
 
@@ -193,7 +193,7 @@ namespace casual
 
                for( auto&& queue : reply.queues)
                {
-                  auto exists = common::range::find( existing, queue.name);
+                  auto exists = common::algorithm::find( existing, queue.name);
 
                   if( ! exists)
                   {

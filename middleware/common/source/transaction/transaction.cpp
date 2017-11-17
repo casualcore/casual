@@ -45,7 +45,7 @@ namespace casual
 
          bool Transaction::associated( const Uuid& correlation) const
          {
-            return range::find( m_pending, correlation);
+            return algorithm::find( m_pending, correlation);
          }
 
          const std::vector< Uuid>& Transaction::correlations() const

@@ -549,7 +549,7 @@ namespace casual
 
                   try
                   {
-                     if( range::find( replier.types(), common::message::Type::mockup_need_worker_process))
+                     if( algorithm::find( replier.types(), common::message::Type::mockup_need_worker_process))
                      {
                         message::mockup::thread::Process message;
                         message.process.pid = pid;

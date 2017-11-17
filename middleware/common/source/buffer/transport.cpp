@@ -40,7 +40,7 @@ namespace casual
             {
                m_callbacks.emplace_back( order, std::move( lifecycles), std::move( types), std::move( callback));
 
-               range::stable_sort( m_callbacks);
+               algorithm::stable_sort( m_callbacks);
             }
 
             void Context::dispatch(
@@ -51,18 +51,18 @@ namespace casual
                   const std::string& type)
             {
                auto predicate = [&]( const Callback& c){
-                  return (c.lifecycles.empty() || range::find( c.lifecycles, lifecycle))
-                        && (c.types.empty() || range::find( c.types, type));
+                  return (c.lifecycles.empty() || algorithm::find( c.lifecycles, lifecycle))
+                        && (c.types.empty() || algorithm::find( c.types, type));
                };
 
-               auto found = range::find_if( m_callbacks, predicate);
+               auto found = algorithm::find_if( m_callbacks, predicate);
 
                while( found)
                {
                   found->dispatch( buffer, size, service, lifecycle, type);
                   found++;
 
-                  found = range::find_if( found, predicate);
+                  found = algorithm::find_if( found, predicate);
                }
             }
 

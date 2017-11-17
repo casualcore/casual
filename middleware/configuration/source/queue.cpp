@@ -95,13 +95,13 @@ namespace casual
                      {
                         throw common::exception::casual::invalid::Configuration{ "queue group has to have a queuebase path"};
                      }
-                     common::range::for_each( group.queues, *this);
+                     common::algorithm::for_each( group.queues, *this);
                   }
                };
 
                void validate( const Manager& manager)
                {
-                  common::range::for_each( manager.groups, Validate{});
+                  common::algorithm::for_each( manager.groups, Validate{});
 
                   //
                   // Check unique groups
@@ -114,7 +114,7 @@ namespace casual
 
                      auto groups = common::range::to_reference( manager.groups);
 
-                     if( common::range::adjacent_find( common::range::sort( groups, order_group_name), equality_group_name))
+                     if( common::algorithm::adjacent_find( common::algorithm::sort( groups, order_group_name), equality_group_name))
                      {
                         throw common::exception::casual::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
                      }
@@ -123,9 +123,9 @@ namespace casual
                      auto equality_group_gb = []( G lhs, G rhs){ return lhs.queuebase == rhs.queuebase;};
 
                      // remote in-memory queues when we validate uniqueness
-                     auto persitent_groups = std::get< 0>( range::partition( groups, []( G g){ return g.queuebase.value_or( "") != ":memory:";}));
+                     auto persitent_groups = std::get< 0>( algorithm::partition( groups, []( G g){ return g.queuebase.value_or( "") != ":memory:";}));
 
-                     if( common::range::adjacent_find( common::range::sort( persitent_groups, order_group_qb), equality_group_gb))
+                     if( common::algorithm::adjacent_find( common::algorithm::sort( persitent_groups, order_group_qb), equality_group_gb))
                      {
                         throw common::exception::casual::invalid::Configuration{ "queue groups has to have unique names and queuebase paths"};
                      }
@@ -140,10 +140,10 @@ namespace casual
 
                      for( auto& group : manager.groups)
                      {
-                        common::range::copy( group.queues, std::back_inserter( queues));
+                        common::algorithm::copy( group.queues, std::back_inserter( queues));
                      }
 
-                     if( common::range::adjacent_find( common::range::sort( queues)))
+                     if( common::algorithm::adjacent_find( common::algorithm::sort( queues)))
                      {
                         throw common::exception::casual::invalid::Configuration{ "queues has to be unique"};
                      }
@@ -156,7 +156,7 @@ namespace casual
                {
                   for( auto& value : rhs)
                   {
-                     auto found = common::range::find( lhs, value);
+                     auto found = common::algorithm::find( lhs, value);
 
                      if( found)
                      {

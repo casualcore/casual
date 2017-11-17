@@ -145,7 +145,7 @@ namespace casual
 
                   if( name)
                   {
-                     *name = std::get< 1>( common::range::split( buffer.payload.type, '/')).data();
+                     *name = std::get< 1>( common::algorithm::split( buffer.payload.type, '/')).data();
                   }
                   if( size) *size = buffer.payload.memory.size();
                }

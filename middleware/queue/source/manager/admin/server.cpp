@@ -93,7 +93,7 @@ namespace casual
             {
                std::vector< Affected> result;
 
-               auto found = common::range::find( state.queues, queuename);
+               auto found = common::algorithm::find( state.queues, queuename);
 
                if( found && ! found->second.empty() && found->second.front().order == 0)
                {

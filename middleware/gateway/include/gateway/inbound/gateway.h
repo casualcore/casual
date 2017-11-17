@@ -421,8 +421,8 @@ namespace casual
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::accumulate"};
 
 
-                           common::range::copy( reply.services, std::back_inserter( message.services));
-                           common::range::copy( reply.queues, std::back_inserter( message.queues));
+                           common::algorithm::copy( reply.services, std::back_inserter( message.services));
+                           common::algorithm::copy( reply.queues, std::back_inserter( message.queues));
 
                            log << "reply: " << reply << '\n';
                            log << "message: " << message << '\n';
@@ -893,7 +893,7 @@ namespace casual
 
             static version_type validate( const std::vector< version_type>& versions)
             {
-               if( common::range::find( versions, version_type::version_1))
+               if( common::algorithm::find( versions, version_type::version_1))
                   return version_type::version_1;
 
                return version_type::invalid;

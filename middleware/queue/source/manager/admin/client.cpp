@@ -158,7 +158,7 @@ namespace casual
 
             /*
             auto format_error = [&]( const q_type& q){
-               return range::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
+               return algorithm::find_if( state.queues, [&]( const q_type& e){ return e.id == q.error && e.group == q.group;}).at( 0).name;
             };
             */
 
@@ -173,7 +173,7 @@ namespace casual
             };
 
             auto format_group = [&]( const q_type& q){
-               return range::find_if( state.groups, [&]( const manager::admin::Group& g){ return q.group == g.process.pid;}).at( 0).name;
+               return algorithm::find_if( state.groups, [&]( const manager::admin::Group& g){ return q.group == g.process.pid;}).at( 0).name;
             };
 
 
@@ -197,11 +197,11 @@ namespace casual
             terminal::format::formatter< manager::admin::remote::Queue> queues( const manager::admin::State& state)
             {
                auto format_domain_id = [&]( const auto& q){
-                  return uuid::string( range::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.id);
+                  return uuid::string( algorithm::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.id);
                };
    
                auto format_domain_name = [&]( const auto& q){
-                  return range::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.name;
+                  return algorithm::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.name;
                };
    
    
@@ -227,7 +227,7 @@ namespace casual
 
          auto formatter = format::queues( state);
 
-         formatter.print( std::cout, range::sort( state.queues));
+         formatter.print( std::cout, algorithm::sort( state.queues));
       }
 
       void list_remote_queues()
@@ -236,7 +236,7 @@ namespace casual
          
          auto formatter = format::remote::queues( state);
 
-         formatter.print( std::cout, range::sort( state.remote.queues));
+         formatter.print( std::cout, algorithm::sort( state.remote.queues));
 
       }
 

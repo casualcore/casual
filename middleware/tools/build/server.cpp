@@ -58,7 +58,7 @@ struct Settings
 
       using service_type = configuration::build::server::Service;
 
-      common::range::transform( server.services, services, []( const service_type& service)
+      common::algorithm::transform( server.services, services, []( const service_type& service)
             {
                Service result;
                result.function = service.function.value_or( service.name);
@@ -99,7 +99,7 @@ struct Settings
 
             for( auto& resource : resources)
             {
-               auto found = common::range::find_if( properties, [&]( const property_type& s){
+               auto found = common::algorithm::find_if( properties, [&]( const property_type& s){
                   return s.key == resource;
                });
 
@@ -141,7 +141,7 @@ struct Settings
    {
       auto splittet = split( value, ',');
 
-      common::range::transform( splittet, services, []( const std::string& name){
+      common::algorithm::transform( splittet, services, []( const std::string& name){
          return Service{ name};
          });
    }

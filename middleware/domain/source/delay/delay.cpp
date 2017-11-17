@@ -53,21 +53,21 @@ namespace casual
 
          std::vector< State::Message> State::passed( common::platform::time::point::type time)
          {
-            auto partition = range::partition( m_messages, [=]( const State::Message& m){
+            auto partition = algorithm::partition( m_messages, [=]( const State::Message& m){
                return m.deadline > time;
             });
 
             std::vector< State::Message> result;
 
-            range::move( std::get< 1>( partition), result);
-            range::erase( m_messages, std::get< 1>( partition));
+            algorithm::move( std::get< 1>( partition), result);
+            algorithm::erase( m_messages, std::get< 1>( partition));
 
             return result;
          }
 
          common::platform::time::unit State::timeout() const
          {
-            auto min = range::min( m_messages);
+            auto min = algorithm::min( m_messages);
 
             if( min)
             {

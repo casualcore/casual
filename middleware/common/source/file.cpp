@@ -227,7 +227,7 @@ namespace casual
                //
                // Check if path contains any directory, if so, we can check it directly
                //
-               if( range::find( path, '/'))
+               if( algorithm::find( path, '/'))
                {
                   return access( path.c_str(), R_OK | X_OK) == 0;
                }

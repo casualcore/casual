@@ -71,7 +71,7 @@ namespace casual
             point_type get( const common::Uuid& correlation) const
             {
                lock_type lock{ m_mutex};
-               auto found = common::range::find_if( m_points, [&]( const auto& p){
+               auto found = common::algorithm::find_if( m_points, [&]( const auto& p){
                   return correlation == p.correlation;
                });
 
