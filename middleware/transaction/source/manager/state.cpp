@@ -385,7 +385,7 @@ namespace casual
             << '}';
       }
 
-      State::State( const std::string& database) : log( database) {}
+      State::State( std::string database) : log( std::move( database)) {}
 
 
       bool State::outstanding() const

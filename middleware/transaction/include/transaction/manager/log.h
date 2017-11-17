@@ -37,7 +37,7 @@ namespace casual
          };
 
 
-         Log( const std::string& database);
+         Log( std::string database);
 
 
          void prepare( const transaction::Transaction& transaction);

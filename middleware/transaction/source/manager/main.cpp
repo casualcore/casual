@@ -30,7 +30,7 @@ int main( int argc, char** argv)
          parser.parse( argc, argv);
       }
 
-      casual::transaction::Manager manager( settings);
+      casual::transaction::Manager manager( std::move( settings));
       manager.start();
 
    }

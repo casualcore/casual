@@ -17,8 +17,8 @@ namespace casual
    namespace transaction
    {
 
-      Log::Log( const std::string& database)
-            : m_connection( database)
+      Log::Log( std::string database)
+            : m_connection( std::move( database))
       {
          //m_connection.execute( "PRAGMA journal_mode = WAL;");
 

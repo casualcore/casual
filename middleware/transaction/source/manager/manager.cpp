@@ -50,8 +50,8 @@ namespace casual
 
       }
 
-      Manager::Manager( const Settings& settings) :
-          m_state( settings.log)
+      Manager::Manager( Settings settings) :
+          m_state( common::environment::string( settings.log))
       {
          auto start = common::platform::time::clock::type::now();
 

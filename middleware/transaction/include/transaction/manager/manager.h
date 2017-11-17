@@ -42,7 +42,7 @@ namespace casual
       {
       public:
 
-         Manager( const Settings& settings);
+         Manager( Settings settings);
          ~Manager();
 
          void start();

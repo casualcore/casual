@@ -489,7 +489,7 @@ namespace casual
       class State
       {
       public:
-         State( const std::string& database);
+         State( std::string database);
 
          State( const State&) = delete;
          State& operator = ( const State&) = delete;
