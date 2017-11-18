@@ -84,7 +84,7 @@ namespace casual
             private:
                descriptor_type& reserve()
                {
-                  auto found = algorithm::find_if( m_descriptors, negate( std::mem_fn( &descriptor_type::active)));
+                  auto found = algorithm::find_if( m_descriptors, predicate::negate( std::mem_fn( &descriptor_type::active)));
 
                   if( found)
                   {

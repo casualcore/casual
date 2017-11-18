@@ -7,6 +7,7 @@
 
 #include "common/environment.h"
 #include "common/chronology.h"
+#include "common/predicate.h"
 
 namespace casual
 {
@@ -133,16 +134,15 @@ namespace casual
             manager::admin::StateVO result;
 
             common::algorithm::transform( state.instances.local, result.instances.local,
-                  common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
+                  common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
 
             common::algorithm::transform( state.instances.remote, result.instances.remote,
-                  common::chain::Nested::link( local::Instance{}, common::extract::Second{}));
+                  common::predicate::make_nested( local::Instance{}, common::extract::Second{}));
 
             common::algorithm::transform( state.pending.requests, result.pending, local::Pending{});
 
             common::algorithm::transform( state.services, result.services,
-                  common::chain::Nested::link( local::Service{}, common::extract::Second{}));
-
+                  common::predicate::make_nested( local::Service{}, common::extract::Second{}));
 
             return result;
          }

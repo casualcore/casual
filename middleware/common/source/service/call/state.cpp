@@ -46,7 +46,7 @@ namespace casual
 
             State::Pending::Descriptor& State::Pending::reserve()
             {
-               auto found = algorithm::find_if( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
+               auto found = algorithm::find_if( m_descriptors, predicate::negate( std::mem_fn( &Descriptor::active)));
 
                if( found)
                {
@@ -143,7 +143,7 @@ namespace casual
 
             bool State::Pending::empty() const
             {
-               return algorithm::all_of( m_descriptors, negate( std::mem_fn( &Descriptor::active)));
+               return algorithm::all_of( m_descriptors, predicate::negate( std::mem_fn( &Descriptor::active)));
             }
 
          } // call

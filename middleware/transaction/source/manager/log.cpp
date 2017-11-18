@@ -4,6 +4,7 @@
 
 #include "transaction/manager/log.h"
 #include "transaction/manager/state.h"
+#include "transaction/common.h"
 
 #include "common/algorithm.h"
 
@@ -45,6 +46,8 @@ namespace casual
 
       void Log::prepare( const transaction::Transaction& transaction)
       {
+         Trace trace{ "transaction::Log::prepare"};
+
          m_statement.insert.execute(
             common::transaction::global( transaction.trid),
             common::transaction::branch( transaction.trid),
@@ -55,31 +58,43 @@ namespace casual
             transaction.deadline
          );
          ++m_stats.update.prepare;
+
+         common::log::line( verbose::log, "total prepares: ", m_stats.update.prepare);
       }
 
       void Log::remove( const common::transaction::ID& trid)
       {
+         Trace trace{ "transaction::Log::remove"};
+
          m_statement.remove.execute(
             common::transaction::global( trid),
             common::transaction::branch( trid));
 
          ++m_stats.update.remove;
+
+         common::log::line( verbose::log, "total removes: ", m_stats.update.remove);
       }
 
 
-      void Log::writeBegin()
+      void Log::write_begin()
       {
+         Trace trace{ "transaction::Log::write_begin"};
+
          m_connection.begin();
       }
 
-      void Log::writeCommit()
+      void Log::write_commit()
       {
+         Trace trace{ "transaction::Log::write_commit"};
+
          m_connection.commit();
          ++m_stats.writes;
+
+         common::log::line( verbose::log, "total commits: ", m_stats.writes);
       }
 
 
-      void Log::writeRollback()
+      void Log::write_rollback()
       {
          m_connection.rollback();
       }

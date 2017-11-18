@@ -216,7 +216,7 @@ namespace casual
 
                               auto not_done = common::algorithm::partition(
                                     state.persistent.replies,
-                                    common::negate( action::persistent::Send{ state}));
+                                    common::predicate::negate( action::persistent::Send{ state}));
 
                               common::algorithm::trim( state.persistent.replies, std::get< 0>( not_done));
 
@@ -231,7 +231,7 @@ namespace casual
 
                               auto not_done = common::algorithm::partition(
                                     state.persistent.requests,
-                                    common::negate( action::persistent::Send{ state}));
+                                    common::predicate::negate( action::persistent::Send{ state}));
 
                               //
                               // Move the ones that did not find an idle resource to pending requests

@@ -218,6 +218,7 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/test_algorithm.cpp'),   
     Compile( 'unittest/source/test_execute.cpp'),
+    #Compile( 'unittest/source/test_predicate.cpp'),
     
     Compile( 'unittest/source/test_memory.cpp'),
     Compile( 'unittest/source/test_pimpl.cpp'),
@@ -274,7 +275,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/value/test_optional.cpp'),
     Compile( 'unittest/source/value/test_id.cpp'),
 
-    
+    Compile( 'unittest/source/test_predicate.cpp'),
 ]
 
 

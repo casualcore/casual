@@ -46,9 +46,9 @@ namespace casual
 
 
 
-         void writeBegin();
-         void writeCommit();
-         void writeRollback();
+         void write_begin();
+         void write_commit();
+         void write_rollback();
 
          struct Stats
          {
@@ -113,7 +113,7 @@ namespace casual
             {
                if( m_state == State::committed)
                {
-                  m_log.writeBegin();
+                  m_log.write_begin();
                   m_state = State::begun;
                }
             }
@@ -122,7 +122,7 @@ namespace casual
             {
                if( m_state == State::begun)
                {
-                  m_log.writeCommit();
+                  m_log.write_commit();
                   m_state = State::committed;
                }
             }

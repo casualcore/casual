@@ -13,6 +13,7 @@
 #include "common/marshal/complete.h"
 #include "common/exception/signal.h"
 #include "common/exception/system.h"
+#include "common/predicate.h"
 
 #include "common/log.h"
 
@@ -405,7 +406,7 @@ namespace casual
                   auto found = find(
                         std::forward< Policy>( policy),
                         handler,
-                        chain::And::link(
+                        predicate::make_and(
                               []( const auto& m){ return m.complete();},
                               std::forward< Predicates>( predicates)...));
 

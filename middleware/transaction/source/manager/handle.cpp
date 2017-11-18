@@ -241,6 +241,8 @@ namespace casual
                            transaction.resources,
                            filter));
 
+                        common::log::line( verbose::log, "resources: ", resources);
+
                         //
                         // Update state on transaction-resources
                         //
@@ -265,7 +267,7 @@ namespace casual
                               // Could not send to resource. We put the request
                               // in pending.
                               //
-                              log << "could not send to resource: " << r.id << " - action: try later\n";
+                              common::log::line( log, "could not send to resource: ", r.id, " - action: try later");
 
                               state.pending.requests.push_back( std::move( request));
                            }
@@ -328,13 +330,14 @@ namespace casual
                         }
                         else
                         {
-                           common::log::category::error << "invalid resource id: " << resource << " - involved with " << message.trid << " - action: discard\n";
+                           common::log::line( common::log::category::error, "invalid resource id: ", resource, " - action: discard");
+                           common::log::line( common::log::category::verbose::error, "trid: ", message.trid);
                         }
                      }
 
                      common::algorithm::trim( transaction.resources, common::algorithm::unique( common::algorithm::sort( transaction.resources)));
 
-                     log << "involved: " << transaction << '\n';
+                     common::log::line( log, "involved: ", transaction);
 
                   }
 
@@ -389,7 +392,7 @@ namespace casual
 
                            case xa::read_only:
                            {
-                              log << "prepare completed - " << transaction << " XA_RDONLY\n";
+                              common::log::line( log, result, " prepare completed - ", transaction);
 
                               //
                               // Read-only optimization. We can send the reply directly and
@@ -404,7 +407,6 @@ namespace casual
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
                                  reply.stage = reply_type::Stage::commit;
-                                 //reply.state = common::code::tx::read_only;
                                  reply.state = common::code::tx::ok;
 
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
@@ -417,7 +419,7 @@ namespace casual
                            }
                            case xa::ok:
                            {
-                              log << "prepare completed - " << transaction << " XA_OK\n";
+                              common::log::line( log, result, " prepare completed - ", transaction);
 
                               //
                               // Prepare has gone ok. Log state
@@ -444,7 +446,7 @@ namespace casual
                               // We only want to send to resources that has reported ok, and is in prepared state
                               // (could be that some has read-only)
                               //
-                              auto filter = common::chain::And::link(
+                              auto filter = common::predicate::make_and(
                                     Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
                                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
 
@@ -743,7 +745,7 @@ namespace casual
 
                                     case xa::read_only:
                                     {
-                                       log << std::error_code( result) << " prepare completed - " << transaction << '\n';
+                                       common::log::line( log, result, " prepare completed - ", transaction);
 
                                        //
                                        // Read-only optimization. We can send the reply directly and
@@ -770,7 +772,7 @@ namespace casual
                                     }
                                     case xa::ok:
                                     {
-                                       log << std::error_code( result) << " prepare completed - " << transaction << '\n';
+                                       common::log::line( log, result, " prepare completed - ", transaction);
 
                                        //
                                        // Prepare has gone ok. Log state
@@ -786,7 +788,7 @@ namespace casual
                                        // We only want to send to resources that has reported ok, and is in prepared state
                                        // (could be that some has read-only)
                                        //
-                                       auto filter = common::chain::And::link(
+                                       auto filter = common::predicate::make_and(
                                              Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
                                              Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
 
