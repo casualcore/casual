@@ -16,6 +16,35 @@ namespace casual
       {
          namespace id
          {
+            namespace detail
+            {
+               template< typename T, typename Tag, T start = 1>
+               struct sequence
+               {
+                  using native_type = T;
+                  constexpr static native_type next() 
+                  { 
+                     return value++;
+                  }
+                  
+                  static native_type value;
+               };
+
+               template< typename T, typename Tag, T start>
+               T sequence< T, Tag, start>::value = start;
+            } // detail
+
+
+            template< typename ID, typename ID::value_type start = 1>
+            struct sequence
+            {
+               constexpr static ID next() 
+               { 
+                  using native_type = typename ID::value_type;
+                  return { id::detail::sequence< native_type, ID, start>::next()};
+               }
+            };
+
             namespace policy
             {
                struct default_tag{};
@@ -25,6 +54,17 @@ namespace casual
                {
                   constexpr static T initialize() { return T();}
                };
+
+               template< typename T, typename Tag = default_tag, T start = 1>
+               struct unique_initialize
+               {
+                  using sequence = id::detail::sequence< T, Tag, start>;
+                  constexpr static auto initialize() 
+                  { 
+                     return sequence::next();
+                  }
+               };
+
             } // policy
          } // id
 

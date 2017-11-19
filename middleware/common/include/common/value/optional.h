@@ -59,13 +59,6 @@ namespace casual
             constexpr bool empty() const { return policy_type::empty( this->m_value);}
             
             explicit constexpr operator bool () const { return ! empty();}
-            /*
-            constexpr operator bool () const { return ! empty();}
-            
-            //! disable all implicit conversion that is not exactly bool 
-            template<typename not_bool>
-            constexpr operator not_bool() const = delete;
-            */
 
             constexpr void clear() noexcept { this->m_value = policy_type::initialize();}
 

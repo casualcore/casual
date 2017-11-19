@@ -104,6 +104,7 @@ namespace casual
                   void state( State state);
                   State state() const;
 
+                  inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
                private:
                   State m_state = State::absent;
 
@@ -111,8 +112,9 @@ namespace casual
 
                struct generate_id {};
 
-               Proxy() = default;
-               inline Proxy( generate_id) : id( next_id()) {}
+               using id_sequence = common::value::id::sequence< id::type>;
+
+               inline Proxy( generate_id) : id( id_sequence::next()) {}
 
                id::type id = 0;
 
@@ -151,30 +153,7 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Proxy& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance& value);
                friend std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value);
-
-            private:
-
-               inline static size_type next_id()
-               {
-                  static size_type id = 1;
-                  return id++;
-               }
-
             };
-
-
-            namespace update
-            {
-               template< Proxy::Instance::State state>
-               struct State
-               {
-                  void operator () ( Proxy::Instance& instance) const
-                  {
-                     instance.state( state);
-                  }
-               };
-            } // update
-
 
             namespace external
             {
@@ -199,10 +178,7 @@ namespace casual
                } // proxy
 
             } // external
-
          } // resource
-
-
 
          namespace pending
          {
@@ -232,32 +208,14 @@ namespace casual
 
             struct Request : base_message
             {
-               using id_type = common::strong::resource::id;
-
                template< typename M>
-               Request( id_type resource, M&& message) : base_message( std::forward< M>( message)), resource( resource) {}
+               Request( resource::id::type resource, M&& message) : base_message( std::forward< M>( message)), resource( resource) {}
 
-               id_type resource;
+               resource::id::type resource;
 
+               inline friend bool operator == ( const Request& lhs, resource::id::type rhs) { return lhs.resource == rhs;}
             };
 
-            namespace filter
-            {
-               struct Request
-               {
-                  using id_type = common::strong::resource::id;
-
-                  Request( id_type id) : m_id( id) {}
-
-                  bool operator () ( const pending::Request& value) const
-                  {
-                     return value.resource == m_id;
-                  }
-
-               private:
-                  id_type m_id;
-               };
-            } // filter
          } // pending
       } // state
 
@@ -337,61 +295,30 @@ namespace casual
 
             struct update
             {
-               struct Stage
+               static inline auto stage( Resource::Stage stage)
                {
-                  Stage( Resource::Stage stage) : m_stage( stage) {}
-
-                  void operator () ( Resource& value) const
-                  {
-                     value.stage = m_stage;
-                  }
-               private:
-                  Resource::Stage m_stage;
-               };
+                  return [stage]( Resource& value){ value.stage = stage;};
+               }
             };
 
             struct filter
             {
-               struct Stage
+               static inline auto stage( Resource::Stage stage)
                {
-                  Stage( Resource::Stage stage) : m_stage( stage) {}
+                  return [stage]( const Resource& value){ return value.stage == stage;};
+               }
 
-                  bool operator () ( const Resource& value) const
-                  {
-                     return value.stage == m_stage;
-                  }
-               private:
-                  Resource::Stage m_stage;
-               };
-
-               struct Result
+               static inline auto result( Resource::Result result)
                {
-                  Result( Resource::Result result) : m_result( result) {}
-
-                  bool operator () ( const Resource& value) const
-                  {
-                     return value.result == m_result;
-                  }
-               private:
-                  Resource::Result m_result;
-               };
-
-               struct ID
-               {
-                  ID( id_type id) : m_id( id) {}
-
-                  bool operator () ( const Resource& value) const
-                  {
-                     return value.id == m_id;
-                  }
-               private:
-                  id_type m_id;
-               };
+                  return [ result]( const Resource& value){ return value.result == result;};
+               }
             };
 
-            friend bool operator < ( const Resource& lhs, const Resource& rhs) { return lhs.id < rhs.id; }
-            friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
-            friend std::ostream& operator << ( std::ostream& out, const Resource& value) { return out << value.id; }
+            inline friend bool operator < ( const Resource& lhs, const Resource& rhs) { return lhs.id < rhs.id; }
+            inline friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
+            inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
+
+            inline friend std::ostream& operator << ( std::ostream& out, const Resource& value) { return out << value.id; }
 
          };
 
@@ -424,7 +351,7 @@ namespace casual
          //! Indicate if the transaction is owned by a remote domain,
          //! and what RM id that domain act as.
          //!
-         state::resource::id::type resource = 0;
+         state::resource::id::type resource;
 
 
          Resource::Stage stage() const;
@@ -434,56 +361,9 @@ namespace casual
          //!
          common::code::xa results() const;
 
+         inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& trid) { return lhs.trid == trid;}
          friend std::ostream& operator << ( std::ostream& out, const Transaction& value);
       };
-
-
-
-
-
-      namespace find
-      {
-         struct Transaction
-         {
-            Transaction( const common::transaction::ID& trid) : m_trid( trid) {}
-            bool operator () ( const transaction::Transaction& value) const
-            {
-               return value.trid == m_trid;
-            }
-
-            struct Resource
-            {
-               using id_type = transaction::Transaction::Resource::id_type;
-
-               Resource( id_type id) : m_id( id) {}
-               bool operator () ( const transaction::Transaction::Resource& value) const
-               {
-                  return value.id == m_id;
-               }
-            private:
-               id_type m_id;
-            };
-
-         private:
-            const common::transaction::ID& m_trid;
-         };
-
-      } // find
-
-      namespace transform
-      {
-         namespace resource
-         {
-            struct ID
-            {
-               template< typename T>
-               common::strong::resource::id operator () ( const T& value) const
-               {
-                  return value.id;
-               }
-            };
-         } // resource
-      } // transform
 
 
       class State
@@ -588,34 +468,17 @@ namespace casual
 
       namespace state
       {
-
-
          namespace filter
          {
 
-            struct Instance
+            //!
+            //! @return a functor that returns true if instance is idle
+            //!
+            inline auto idle()
             {
-               Instance( common::strong::process::id pid) : m_pid( pid) {}
-               bool operator () ( const resource::Proxy::Instance& instance) const
-               {
-                  return instance.process.pid == m_pid;
-               }
-            private:
-               common::strong::process::id m_pid;
+               return []( const resource::Proxy::Instance& i){ return i.state() == resource::Proxy::Instance::State::idle;};
+            }
 
-            };
-
-
-            struct Idle
-            {
-               //!
-               //! @return true if instance is idle
-               //!
-               bool operator () ( const resource::Proxy::Instance& instance) const
-               {
-                  return instance.state() == resource::Proxy::Instance::State::idle;
-               }
-            };
 
             struct Running
             {
@@ -623,12 +486,16 @@ namespace casual
                //!
                //! @return true if instance is running
                //!
-               bool operator () ( const resource::Proxy::Instance& instance) const;
+               inline bool operator () ( const resource::Proxy::Instance& instance) const
+               {
+                  return instance.state() == resource::Proxy::Instance::State::idle
+                     || instance.state() == resource::Proxy::Instance::State::busy;
+               }
 
                //!
                //! @return true if at least one instance in resource-proxy is running
                //!
-               bool operator () ( const resource::Proxy& resource) const
+               inline bool operator () ( const resource::Proxy& resource) const
                {
                   return common::algorithm::any_of( resource.instances, Running{});
                }

@@ -247,21 +247,7 @@ namespace casual
                      validate);
 
             }
-
          }
-
-         namespace filter
-         {
-
-            bool Running::operator () ( const resource::Proxy::Instance& instance) const
-            {
-               return instance.state() == resource::Proxy::Instance::State::idle
-                     || instance.state() == resource::Proxy::Instance::State::busy;
-            }
-
-         } // filter
-
-
       } // state
 
       Transaction::Resource::Result Transaction::Resource::convert( common::code::xa value)
@@ -429,9 +415,7 @@ namespace casual
 
          for( auto& resource : resources)
          {
-            auto found = common::algorithm::find_if(
-               resource.instances,
-               state::filter::Instance{ death.pid});
+            auto found = common::algorithm::find( resource.instances, death.pid);
 
             if( found)
             {
@@ -488,7 +472,7 @@ namespace casual
       {
          auto& resource = get_resource( rm);
 
-         return common::algorithm::find_if( resource.instances, state::filter::Idle{});
+         return common::algorithm::find_if( resource.instances, state::filter::idle());
       }
 
       const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const

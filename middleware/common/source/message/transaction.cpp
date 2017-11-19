@@ -25,6 +25,24 @@ namespace casual
                         << '}';
                }
 
+               std::ostream& operator << ( std::ostream& out, const Reply::Stage& stage)
+               {
+                  switch( stage)
+                  {
+                     case Reply::Stage::rollback: return out << "rollback";
+                     case Reply::Stage::error: return out << "error";
+                  }
+                  return out << "unknown";
+               }
+               std::ostream& operator << ( std::ostream& out, const Reply& message)
+               {
+                  return out << "{ process: " << message.process
+                        << ", trid: " << message.trid
+                        << ", stage: " << message.stage
+                        << ", state: " << message.state
+                        << '}';
+               }
+
             } // rollback
 
             namespace commit

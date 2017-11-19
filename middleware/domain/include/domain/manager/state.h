@@ -63,21 +63,7 @@ namespace casual
             namespace id
             {
                template< typename Tag>
-               struct policy
-               {
-                  static size_type initialize() 
-                  { 
-                     return ++value;
-                  }
-                  static size_type value;
-               };
-
-               template< typename Tag>
-               size_type policy< Tag>::value = 0;
-
-
-               template< typename Tag>
-               using type = common::value::basic_id< size_type, policy< Tag>>;
+               using type = common::value::basic_id< size_type, common::value::id::policy::unique_initialize< size_type, Tag, 0>>;
                
             } // id
 

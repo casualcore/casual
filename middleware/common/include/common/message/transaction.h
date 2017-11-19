@@ -139,6 +139,8 @@ namespace casual
                      base_reply::marshal( archive);
                      archive & stage;
                   })
+                  friend std::ostream& operator << ( std::ostream& out, const Reply::Stage& message);
+                  friend std::ostream& operator << ( std::ostream& out, const Reply& message);
                };
                static_assert( traits::is_movable< Reply>::value, "not movable");
             } // rollback

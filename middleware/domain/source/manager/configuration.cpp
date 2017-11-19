@@ -44,19 +44,15 @@ namespace casual
                         // We need to adjust 'next-id' so runtime configuration works.
                         //
                         {
-                           auto max = algorithm::max( state.executables);
-                           if( max)
-                           {
-                              state::Executable::id_type::policy_type::value = max.front().id.value();
-                           }
-                        }
-
-                        {
-                           auto max = algorithm::max( state.groups);
-                           if( max)
-                           {
-                              state::Group::id_type::policy_type::value = max.front().id.value();
-                           }
+                           auto adjust_id = []( const auto& range){
+                              auto max = algorithm::max( range);
+                              if( max)
+                              {
+                                 decltype( max.front().id)::policy_type::sequence::value = max.front().id.value() + 1;
+                              }
+                           };
+                           adjust_id( state.executables);
+                           adjust_id( state.groups);
                         }
 
                         return state;

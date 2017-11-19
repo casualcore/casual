@@ -54,7 +54,7 @@ namespace casual
                   }
                   catch( const common::exception::system::communication::Unavailable&)
                   {
-                     log << "failed to send message to queue: " << device << '\n';
+                     common::log::line( log, "failed to send message to queue: ", device);
                   }
                }
 
@@ -149,7 +149,9 @@ namespace casual
 
                         if( ! send( reply))
                         {
-                           log << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
+                           common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
+                           common::log::line( verbose::log, "message: ", message, " trid: ", message.trid);
+
                            m_state.persistent.replies.push_back( std::move( reply));
                         }
 
@@ -173,7 +175,9 @@ namespace casual
 
                      if( ! send( reply))
                      {
-                        log << "failed to send reply directly to : " << target << " type: " << common::message::type( message) << " transaction: " << message.trid << " - action: pend reply\n";
+                        common::log::line( log, "failed to send reply directly to : ", target,  " - action: pend reply");
+                        common::log::line( verbose::log, "message: ", message, " trid: ", message.trid);
+
                         state.persistent.replies.push_back( std::move( reply));
                      }
                   }
@@ -248,7 +252,7 @@ namespace casual
                         //
                         common::algorithm::for_each(
                            resources,
-                           Transaction::Resource::update::Stage{ new_stage});
+                           Transaction::Resource::update::stage( new_stage));
 
 
                         common::algorithm::for_each( resources, [&]( const Transaction::Resource& r){
@@ -282,9 +286,7 @@ namespace casual
 
                   void done( State& state, state::resource::Proxy::Instance& instance)
                   {
-                     auto request = common::algorithm::find_if(
-                           state.pending.requests,
-                           state::pending::filter::Request{ instance.id});
+                     auto request = common::algorithm::find( state.pending.requests, instance.id);
 
                      instance.state( state::resource::Proxy::Instance::State::idle);
 
@@ -302,7 +304,7 @@ namespace casual
                         }
                         else
                         {
-                           common::log::category::error << "failed to send pending request to resource, although the instance (" << instance <<  ") reported idle\n";
+                           common::log::line( common::log::category::error, "failed to send pending request to resource, although the instance (", instance , ") reported idle");
                         }
                      }
                   }
@@ -351,7 +353,7 @@ namespace casual
                      //
                      // Find the transaction
                      //
-                     auto found = common::algorithm::find_if( state.transactions, find::Transaction{ message.trid});
+                     auto found = common::algorithm::find( state.transactions, message.trid);
 
                      if( found)
                      {
@@ -447,8 +449,8 @@ namespace casual
                               // (could be that some has read-only)
                               //
                               auto filter = common::predicate::make_and(
-                                    Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
-                                    Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
+                                    Transaction::Resource::filter::result( Transaction::Resource::Result::xa_OK),
+                                    Transaction::Resource::filter::stage( Transaction::Resource::Stage::prepare_replied));
 
                               local::send::resource::request<
                                  common::message::transaction::resource::commit::Request>( state, transaction, filter, Transaction::Resource::Stage::prepare_requested);
@@ -461,12 +463,13 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << "prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                              common::log::line( common::log::category::error, result, "prepare failed for: ", transaction.trid, " - action: rollback");
+                              common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
 
                               local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                  state,
                                  transaction,
-                                 Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                                 Transaction::Resource::filter::stage( Transaction::Resource::Stage::prepare_replied),
                                  Transaction::Resource::Stage::rollback_requested);
 
                               break;
@@ -498,7 +501,7 @@ namespace casual
                            case xa::ok:
                            case xa::read_only:
                            {
-                              log << "commit completed - " << transaction << " XA_OK\n";
+                              common::log::line( log, result, " commit completed ", transaction.trid);
 
                               auto reply = local::transform::message< reply_type>( message);
                               reply.correlation = transaction.correlation;
@@ -532,7 +535,8 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << std::error_code( result) <<  " TODO: commit gone wrong for transaction: " << transaction << "\n";
+                              common::log::line( common::log::category::error, result, " commit gone wrong for: ", transaction.trid);
+                              common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
                               
 
                               //
@@ -574,7 +578,7 @@ namespace casual
                            case xa::invalid_xid:
                            case xa::read_only:
                            {
-                              log << std::error_code( result) << " rollback completed - " << transaction << '\n';
+                              common::log::line( log, result, " rollback completed ", transaction.trid);
 
                               //
                               // Send reply
@@ -598,7 +602,8 @@ namespace casual
                               //
                               // Something has gone wrong.
                               //
-                              common::log::category::error << std::error_code( result) << " TODO: resource rollback for transaction: " << transaction << "\n";
+                              common::log::line( common::log::category::error, result, " rollback gone wrong for: ", transaction.trid);
+                              common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
 
                               //
                               // prepare send reply. Will be sent after persistent write to file
@@ -789,8 +794,8 @@ namespace casual
                                        // (could be that some has read-only)
                                        //
                                        auto filter = common::predicate::make_and(
-                                             Transaction::Resource::filter::Result{ Transaction::Resource::Result::xa_OK},
-                                             Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied});
+                                             Transaction::Resource::filter::result( Transaction::Resource::Result::xa_OK),
+                                             Transaction::Resource::filter::stage( Transaction::Resource::Stage::prepare_replied));
 
                                        local::send::resource::request<
                                           common::message::transaction::resource::commit::Request>(
@@ -804,12 +809,13 @@ namespace casual
                                        //
                                        // Something has gone wrong.
                                        //
-                                       common::log::category::error << std::error_code( result) << " prepare phase failed for transaction: " << transaction << " - action: rollback\n";
+                                       common::log::line( common::log::category::error, result, " prepare failed for: ", transaction.trid, " - action: rollback");
+                                       common::log::line( common::log::category::error, "transaction: ", transaction);
 
                                        local::send::resource::request< common::message::transaction::resource::rollback::Request>(
                                           state,
                                           transaction,
-                                          Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                                          Transaction::Resource::filter::stage( Transaction::Resource::Stage::prepare_replied),
                                           Transaction::Resource::Stage::rollback_requested);
 
                                        break;
@@ -881,6 +887,8 @@ namespace casual
                   }
                }
 
+               common::log::line( verbose::log, "trids: ", trids);
+
                for( auto& trid : trids)
                {
                   common::message::transaction::rollback::Request request;
@@ -929,7 +937,7 @@ namespace casual
             {
                Trace trace{ "transaction::handle::resource::Involved"};
 
-               log << "involved message: " << message << '\n';
+               common::log::line( log, "involved message: ",  message);
 
                auto& transaction = *local::transaction::find_or_add( m_state, message);
 
@@ -962,16 +970,15 @@ namespace casual
                   //
                   // Find the transaction
                   //
-                  auto found = common::algorithm::find_if(
-                        common::range::make( m_state.transactions), find::Transaction{ message.trid});
+                  auto found = common::algorithm::find( m_state.transactions, message.trid);
 
                   if( found)
                   {
                      auto& transaction = *found;
 
-                     auto resource = common::algorithm::find_if(
+                     auto resource = common::algorithm::find(
                            transaction.resources,
-                           Transaction::Resource::filter::ID{ message.resource});
+                           message.resource);
 
                      if( resource)
                      {
@@ -1004,14 +1011,15 @@ namespace casual
                      else
                      {
                         // TODO: what to do? We have previously sent a prepare request, why do we not find the resource?
-                        common::log::category::error << "failed to locate resource: " <<  message.resource  << " for trid: " << message.trid << " - action: discard?\n";
+
+                        common::log::line( common::log::category::error, "failed to locate resource: ", message.resource, " for trid: ", message.trid, " - action: discard?");
                      }
 
                   }
                   else
                   {
                      // TODO: what to do? We have previously sent a prepare request, why do we not find the trid?
-                     common::log::category::error << "failed to locate trid: " << message.trid << " - action: discard?\n";
+                     common::log::line( common::log::category::error, "failed to locate trid: ", message.trid, " - action: discard?");
                   }
                }
 
@@ -1021,7 +1029,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::connect reply"};
 
-                  log << "resource connected: " << message << std::endl;
+                  common::log::line( log, "message: ", message);
 
                   try
                   {
@@ -1036,7 +1044,9 @@ namespace casual
                      }
                      else
                      {
-                        common::log::category::error << "resource proxy: " <<  message.process << " startup error" << std::endl;
+                        common::log::line( common::log::category::error, "resource proxy: ", message.process, " startup error ", message.state);
+                        common::log::line( common::log::category::verbose::error, "message: ", message);
+
                         instance.state( state::resource::Proxy::Instance::State::error);
                         //throw common::exception::signal::Terminate{};
                         // TODO: what to do?
@@ -1045,13 +1055,13 @@ namespace casual
                   }
                   catch( common::exception::system::invalid::Argument&)
                   {
-                     common::log::category::error << "unexpected resource connecting: " << message << " - action: discard" << std::endl;
-
-                     log << "resources: " << common::range::make( m_state.resources) << std::endl;
+                     common::log::line( common::log::category::error, "unexpected resource connecting: ", message.process, " - action: discard");
+                     common::log::line( common::log::category::verbose::error, "message: ", message);
+                     common::log::line( common::log::category::verbose::error, "resources: ", m_state.resources);
                   }
 
 
-                  if( ! m_connected && common::algorithm::all_of( common::range::make( m_state.resources), state::filter::Running{}))
+                  if( ! m_connected && common::algorithm::all_of( m_state.resources, state::filter::Running{}))
                   {
                      //
                      // We now have enough resource proxies up and running to guarantee consistency
@@ -1074,7 +1084,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::prepare reply"};
 
-                  log << "message: " << message << '\n';
+                  common::log::line( log, "message: ", message);
 
                   //
                   // Are we in a prepared state?
@@ -1097,7 +1107,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::commit reply"};
 
-                  log << "message: " << message << '\n';
+                  common::log::line( log, "message: ", message);
 
                   //
                   // Are we in a committed state?
@@ -1118,7 +1128,7 @@ namespace casual
                {
                   Trace trace{ "transaction::handle::resource::rollback reply"};
 
-                  log << "message: " << message << '\n';
+                  common::log::line( log, "message: ", message);
 
                   //
                   // Are we in a rolled back stage?
@@ -1158,7 +1168,7 @@ namespace casual
             catch( ...)
             {
                auto fail = common::code::tx::fail;
-               common::log::category::error << "unexpected error - action: send reply " << std::error_code( fail) << '\n';
+               common::log::line( common::log::category::error, fail, " unexpected error - action: send reply ");
 
                common::exception::handle();
 
@@ -1175,7 +1185,7 @@ namespace casual
          {
             Trace trace{ "transaction::handle::Commit"};
 
-            log << "message: " << message << '\n';
+            common::log::line( log, "message: ", message);
 
             auto location = local::transaction::find_or_add( m_state, message);
             auto& transaction = *location;
@@ -1214,7 +1224,7 @@ namespace casual
             {
                case 0:
                {
-                  log << "no resources involved - " << transaction << " XA_RDONLY\n";
+                  common::log::line( log, transaction.trid, " no resources involved: ");
 
                   //
                   // We can remove this transaction
@@ -1240,7 +1250,7 @@ namespace casual
                   //
                   // Only one resource involved, we do a one-phase-commit optimization.
                   //
-                  log << "only one resource involved - " << transaction << " TMONEPHASE\n";
+                  common::log::line( log, transaction.trid, " only one resource involved");
 
                   //
                   // Keep the correlation so we can send correct reply
@@ -1250,7 +1260,7 @@ namespace casual
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                     Transaction::Resource::filter::stage( Transaction::Resource::Stage::involved),
                      Transaction::Resource::Stage::commit_requested,
                      common::flag::xa::Flag::one_phase
                   );
@@ -1267,12 +1277,12 @@ namespace casual
                   //
                   // More than one resource involved, we do the prepare stage
                   //
-                  log << "prepare " << transaction << "\n";
+                  common::log::line( log, transaction.trid, " more than one resource involved");
 
                   local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                     Transaction::Resource::filter::stage( Transaction::Resource::Stage::involved),
                      Transaction::Resource::Stage::prepare_requested
                   );
 
@@ -1288,7 +1298,7 @@ namespace casual
          {
             Trace trace{ "transaction::handle::Rollback"};
 
-            log << "message: " << message << '\n';
+            common::log::line( log, "message: ", message);
 
             auto location = local::transaction::find_or_add( m_state, message);
             auto& transaction = *location;
@@ -1305,7 +1315,7 @@ namespace casual
 
             if( transaction.resources.empty())
             {
-               log << "no resources involved - " << transaction << " XA_OK\n";
+               common::log::line( log, transaction.trid, " no resources involved");
 
                //
                // We can remove this transaction.
@@ -1324,7 +1334,7 @@ namespace casual
             }
             else
             {
-               log << "resources involved - " << transaction << "\n";
+               common::log::line( log, transaction.trid, " resources involved");
 
                //
                // Keep the correlation so we can send correct reply
@@ -1349,7 +1359,7 @@ namespace casual
             {
                Trace trace{ "transaction::handle::external::Involved"};
 
-               log << "involved message: " << message << '\n';
+               common::log::line( log, "message: ", message);
 
                auto& transaction = *local::transaction::find_or_add( m_state, message);
 
@@ -1360,7 +1370,7 @@ namespace casual
                   transaction.resources.emplace_back( id);
                }
 
-               log << "transaction: " << transaction << '\n';
+               common::log::line( verbose::log, "transaction: ", transaction);
             }
          } // external
 
@@ -1394,12 +1404,12 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::prepare request"};
 
-               log << "message: " << message << '\n';
+               common::log::line( log, "message: ", message);
 
                //
                // Find the transaction
                //
-               auto found = common::algorithm::find_if( m_state.transactions, find::Transaction{ message.trid});
+               auto found = common::algorithm::find( m_state.transactions, message.trid);
 
 
                if( found)
@@ -1422,7 +1432,7 @@ namespace casual
                   // Either way, we don't have it, so we just reply that it has been prepared with "read only"
                   //
 
-                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
+                  common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)");
 
                   local::send::read_only( m_state, message);
                }
@@ -1432,7 +1442,8 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::Prepare::handle"};
 
-               log << "transaction: " << transaction << '\n';
+               common::log::line( log, "message: ", message);
+               common::log::line( verbose::log, "transaction: ", transaction);
 
                //
                // We can only get this message if a 'user commit' has
@@ -1487,7 +1498,7 @@ namespace casual
                         local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                            m_state,
                            transaction,
-                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                           Transaction::Resource::filter::stage( Transaction::Resource::Stage::involved),
                            Transaction::Resource::Stage::prepare_requested,
                            message.flags
                         );
@@ -1501,7 +1512,10 @@ namespace casual
                      }
                      default:
                      {
-                        common::log::category::error << "unexpected transaction stage: " << transaction << '\n';
+                        common::log::line( common::log::category::error, 
+                           transaction.stage(), " ", transaction.trid, " unexpected transaction stage");
+                        common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
+
                         break;
                      }
                   }
@@ -1513,12 +1527,12 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::commit request"};
 
-               log << "message: " << message << '\n';
+               common::log::line( log, "message: ", message);
 
                //
                // Find the transaction
                //
-               auto found = common::algorithm::find_if( m_state.transactions, find::Transaction{ message.trid});
+               auto found = common::algorithm::find( m_state.transactions, message.trid);
 
                if( found)
                {
@@ -1545,8 +1559,7 @@ namespace casual
                      return;
                   }
 
-                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
-
+                  common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send commit-reply (read only)");
                   local::send::read_only( m_state, message);
                }
             }
@@ -1557,7 +1570,8 @@ namespace casual
 
                transaction.correlation = message.correlation;
 
-               log << "transaction: " << transaction << '\n';
+               common::log::line( log, "message: ", message);
+               common::log::line( verbose::log, "transaction: ", transaction);
 
                if( transaction.implementation)
                {
@@ -1568,7 +1582,7 @@ namespace casual
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
                      m_state,
                      transaction,
-                     Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::prepare_replied},
+                     Transaction::Resource::filter::stage( Transaction::Resource::Stage::prepare_replied),
                      Transaction::Resource::Stage::commit_requested,
                      message.flags
                   );
@@ -1596,17 +1610,18 @@ namespace casual
                   {
                      case 0:
                      {
-                        log << common::code::xa::read_only << " - no relevant resources involved\n";
+                        common::log::line( log, transaction.trid, " - no relevant resources involved");
                         local::send::read_only( m_state, message);
 
                         return Directive::remove_transaction;
                      }
                      case 1:
                      {
+                        common::log::line( log, transaction.trid, " - one resource involved");
                         local::send::resource::request< common::message::transaction::resource::commit::Request>(
                            m_state,
                            transaction,
-                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                           Transaction::Resource::filter::stage( Transaction::Resource::Stage::involved),
                            Transaction::Resource::Stage::commit_requested,
                            message.flags
                         );
@@ -1614,10 +1629,11 @@ namespace casual
                      }
                      default:
                      {
+                        common::log::line( log, transaction.trid, " - more than one resource involved");
                         local::send::resource::request< common::message::transaction::resource::prepare::Request>(
                            m_state,
                            transaction,
-                           Transaction::Resource::filter::Stage{ Transaction::Resource::Stage::involved},
+                           Transaction::Resource::filter::stage( Transaction::Resource::Stage::involved),
                            Transaction::Resource::Stage::prepare_requested
                         );
                         break;
@@ -1631,13 +1647,13 @@ namespace casual
             {
                Trace trace{ "transaction::handle::domain::rollback request"};
 
-               log << "message: " << message << '\n';
+               common::log::line( log, "message: ", message);
 
 
                //
                // Find the transaction
                //
-               auto found = common::algorithm::find_if( m_state.transactions, find::Transaction{ message.trid});
+               auto found = common::algorithm::find( m_state.transactions, message.trid);
 
                if( found)
                {
@@ -1651,7 +1667,7 @@ namespace casual
                }
                else
                {
-                  log << "XA_RDONLY transaction (" << message.trid << ") either does not exists (longer) in this domain or there are no resources involved - action: send prepare-reply (read only)\n";
+                  common::log::line( log, message.trid, " either does not exists (longer) in this domain or there are no resources involved - action: send rollback-reply (read only)");
                   local::send::read_only( m_state, message);
                }
             }
@@ -1714,7 +1730,8 @@ namespace casual
                   }
                   default:
                   {
-                     common::log::category::error << common::code::xa::protocol << "unexpected transaction stage - action: reply with xa::protocol\n";
+                     common::log::line( common::log::category::error, common::code::xa::protocol, ' ', transaction.trid, " unexpected transaction stage");
+                     common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
                      local::send::xa_result( m_state, message, common::code::xa::protocol);
 
                   }
@@ -1763,11 +1780,7 @@ namespace casual
                   ipc::device().error_handler()},
                common::message::handle::ping()
             );
-
          }
-
-
       } // handle
    } // transaction
-
 } // casual
