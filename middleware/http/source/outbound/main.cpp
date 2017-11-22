@@ -3,8 +3,8 @@
 //!
 
 #include "http/outbound/configuration.h"
-
 #include "http/outbound/request.h"
+#include "http/common.h"
 
 #include "common/exception/handle.h"
 #include "common/arguments.h"
@@ -34,6 +34,7 @@ namespace casual
             {
                std::string url;
                std::shared_ptr< common::service::header::Fields> headers;
+               bool discard_transaction = false;
             };
 
             inline friend std::ostream& operator << ( std::ostream& out, const Node& value)
@@ -83,7 +84,7 @@ namespace casual
             State state;
 
             // default headers will be used if service have 0 headers
-            auto header = transform::header( model.casual_default.headers);
+            auto header = transform::header( model.casual_default.service.headers);
 
             common::algorithm::for_each( model.services, [&]( auto& s){
                State::Node node;
@@ -93,6 +94,10 @@ namespace casual
                      node.headers = header;
                   else
                      node.headers = transform::header( s.headers);
+
+                  node.discard_transaction = s.discard_transaction.value_or( 
+                     model.casual_default.service.discard_transaction);
+
                }
                state.lookup[ s.name] = std::move( node);
             });
@@ -139,11 +144,18 @@ namespace casual
 
                   if( message.trid)
                   {
-                     common::log::category::error << common::code::xatmi::protocol << " - http-outbound can't be used in transaction - service: " << message.service.name << '\n';
-                     common::log::category::verbose::error << common::code::xatmi::protocol << " - message: " << message << '\n';
-                     common::log::category::verbose::error << common::code::xatmi::protocol << " - node: " << node << '\n';
-                     reply.status = common::code::xatmi::protocol;
-                     return;
+                     if( ! node.discard_transaction)
+                     {
+                        common::log::line( common::log::category::error, common::code::xatmi::protocol, " - http-outbound can't be used in transaction for service: ",  message.service.name);
+                        common::log::line( common::log::category::verbose::error, common::code::xatmi::protocol, " - message: ", message);
+                        common::log::line( common::log::category::verbose::error, common::code::xatmi::protocol, " - node: ", node);
+                        reply.status = common::code::xatmi::protocol;
+                        return;
+                      }
+                      else
+                      {
+                         common::log::line( log, "transaction discarded for '", message.service.name, "'");
+                      }
                   }
 
                   auto respons = http::request::post( node.url, message.buffer, *node.headers.get());
