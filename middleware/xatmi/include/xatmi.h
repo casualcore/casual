@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef XATMI_H_
-#define XATMI_H_
+#ifndef CASUAL_XATMI_H_
+#define CASUAL_XATMI_H_
 
 #include "xatmi/defines.h"
 #include "xatmi/extended.h"
@@ -14,6 +14,8 @@
 #include "xatmi/code.h"
 
 
+
+#define CASUAL_XATMI_IMPLEMENTATION 1
 
 // NOW STARTS THE MAIN OPERATION LIST
 
@@ -64,4 +66,4 @@ extern void tpsvrdone();
 #endif
 
 
-#endif /* XATMI_H_ */
+#endif /* CASUAL_XATMI_H_ */

@@ -6,8 +6,6 @@
 #define CASUAL_SF_EXCEPTION_H_
 
 
-#include "common/exception/system.h"
-#include "common/exception/xatmi.h"
 #include "common/exception/casual.h"
 
 #include <string>
@@ -21,7 +19,6 @@ namespace casual
    {
       namespace exception 
       {
-         using namespace common::exception;
 
          class Base : public common::exception::base
          {

@@ -8,6 +8,7 @@
 
 
 #include "common/environment.h"
+#include "common/exception/system.h"
 
 
 namespace casual

@@ -12,6 +12,7 @@
 #include "common/string.h"
 #include "common/file.h"
 #include "common/buffer/type.h"
+#include "common/exception/system.h"
 
 #include <fstream>
 
@@ -169,7 +170,7 @@ namespace casual
 
                   if( ! file.is_open())
                   {
-                     throw exception::system::invalid::File( name);
+                     throw common::exception::system::invalid::File( name);
                   }
 
                   return local::name( std::move( file), common::file::name::extension( name));
@@ -230,7 +231,7 @@ namespace casual
 
                   if( ! file.is_open())
                   {
-                     throw exception::system::invalid::File( name);
+                     throw common::exception::system::invalid::File( name);
                   }
 
                   return local::name( std::move( file), common::file::name::extension( name));
