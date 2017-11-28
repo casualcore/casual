@@ -90,8 +90,14 @@ namespace casual
                      request.process = process::handle();
                      request.resources = std::move( names);
 
-                     return communication::ipc::call( communication::ipc::transaction::manager::device(), request);
+                     auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
+                     common::algorithm::for_each( reply.resources, []( auto& r){
+                        r.openinfo = common::environment::string( r.openinfo);
+                        r.closeinfo = common::environment::string( r.closeinfo);
+                     });
+
+                     return reply;
                   }
 
                } // resource
