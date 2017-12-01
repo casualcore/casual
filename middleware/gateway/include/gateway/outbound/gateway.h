@@ -829,21 +829,14 @@ namespace casual
                         handler( inbound.next( inbound.policy_blocking()));
                      }
 
-                     //
-                     // consume until queue is empty or we reach batch limit
-                     //
-                     while( handler( inbound.next( inbound.policy_non_blocking()))
-                           && metric.services.size() < common::platform::batch::gateway::metrics)
+                     if( metric.services.size() < common::platform::batch::gateway::metrics)
                      {
-                        ;
+                        //
+                        // Send metrics to service-manager
+                        //
+                        common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), metric);
+                        metric.services.clear();
                      }
-
-                     //
-                     // Send metrics to service-manager
-                     //
-                     common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), metric);
-                     metric.services.clear();
-
                   }
 
                }

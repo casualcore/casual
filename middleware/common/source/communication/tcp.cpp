@@ -601,7 +601,8 @@ namespace casual
 
                      communication::message::Complete message{ header};
 
-                     local::receive( socket.descriptor(), message.payload.data(), message.payload.data() + message.payload.size(), flags);
+                     // make sure we always block when we wait for the payload.
+                     local::receive( socket.descriptor(), message.payload.data(), message.payload.data() + message.payload.size(), flags - Flag::non_blocking);
 
                      log << "tcp receive <---- socket: " << socket << " , complete: " << message << '\n';
 
