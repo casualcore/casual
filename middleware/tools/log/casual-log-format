@@ -152,7 +152,7 @@ Format of the logfile:\n
 
     parser.add_argument(
         '--no-color', dest='colorize', action='store_false',
-        default=True, help='colorize log file'
+        default=True, help='do not colorize log file'
     )
 
     args = parser.parse_args()
