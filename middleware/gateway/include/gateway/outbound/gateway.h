@@ -823,13 +823,9 @@ namespace casual
 
                   while( true)
                   {
-                     while( metric.services.empty())
-                     {
-                        // we can block
-                        handler( inbound.next( inbound.policy_blocking()));
-                     }
+                     handler( inbound.next( inbound.policy_blocking()));
 
-                     if( metric.services.size() < common::platform::batch::gateway::metrics)
+                     if( metric.services.size() >= common::platform::batch::gateway::metrics)
                      {
                         //
                         // Send metrics to service-manager
