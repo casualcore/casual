@@ -6,6 +6,9 @@
 .cproject
 .project
 
+# python, rope
+.ropeproject/
+
 # vs code
 .vscode/
 

@@ -11,6 +11,10 @@ _use_pager() {
             "--no-pager")
                 ret=1
                 ;;
+            "--h"*|"-h")
+                ret=2
+                out_arguments+=("${in_arguments[$i]}")
+                ;;
             *)
                 out_arguments+=("${in_arguments[$i]}")
                 ;;
@@ -23,6 +27,19 @@ _use_pager() {
 }
 
 arguments=($(_use_pager "$*"))
-(( $? == 0 )) && \
+ret=$?
+(( ret == 0 )) && \
     casual-log-format "${arguments[@]}" | less -R || \
         casual-log-format "${arguments[@]}"
+
+if (( ret == 2 )); then
+    cat <<EOF
+
+usage $0 [--no-pager] ...
+
+in addition to the arguments for casual-log-format, the following is supported by $0.
+
+optional arguments:
+  --no-pager  do not page output
+EOF
+fi

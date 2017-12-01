@@ -24,6 +24,7 @@ casual = LinkExecutable( 'bin/casual',
 Install( casual, '$(CASUAL_HOME)/bin')
 
 Install( 'etc/bash_completion.d/casual', '$(CASUAL_HOME)/etc/bash_completion.d')
+Install( 'etc/bash_completion.d/casual-log', '$(CASUAL_HOME)/etc/bash_completion.d')
 
 
 

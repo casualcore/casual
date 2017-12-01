@@ -7,13 +7,14 @@ import sys
 import os
 import os.path
 import errno
-import optparse
+import argparse
 import re
 import datetime
 
 from functools import partial
+from color import Color
 
-from color import color
+color = None
 
 
 def time(time):
@@ -73,18 +74,11 @@ def category(name):
 
     return name
 
-category.switch = [
-    [re.compile('^err'), partial(color.red, bold=True)],
-    [re.compile('^war'), partial(color.warning, bold=True)],
-    [re.compile('^inf'), partial(color.white, bold=True)],
-    [re.compile('^deb'), color.green],
-    [re.compile('^tra'), partial(color.green, bold=True)],
-    [re.compile('^parameter$'), color.green],
-    [re.compile('^casu'), color.blue],
-]
+
+category.switch = []
 
 
-def format(input, output):
+def format(input, output, colorize=True):
 
     line = input.readline()
 
@@ -130,32 +124,63 @@ def format(input, output):
             break
 
 
+def valid_file(value):
+    try:
+        with open(value, 'r'):
+            return value
+    except IOError as e:
+        raise argparse.ArgumentTypeError(
+            "can't open '{value}': {message}".format(
+                value=value, message=e
+            )
+        )
+
+
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser('''
-        usage: %prog [logfile...]
+    parser = argparse.ArgumentParser(description='''
+Format of the logfile:\n
 
-        Format of the logfile:
-
-        <time>|<domain>|<execution id>|<transaction id>|<process id>|\
+<time>|<domain>|<execution id>|<transaction id>|<process id>|\
 <thread id>|<executable>|<log category>|<service>|<message>...
-        ''')
+''', formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    (options, args) = parser.parse_args()
+    parser.add_argument(
+        'file', nargs='?', default=None,
+        type=valid_file, help='log file that is to be formatted'
+    )
+
+    parser.add_argument(
+        '--no-color', dest='colorize', action='store_false',
+        default=True, help='colorize log file'
+    )
+
+    args = parser.parse_args()
+
+    color = Color(args.colorize)
+    category.switch = [
+        [re.compile('^err'), partial(color.red, bold=True)],
+        [re.compile('^war'), partial(color.warning, bold=True)],
+        [re.compile('^inf'), partial(color.white, bold=True)],
+        [re.compile('^deb'), color.green],
+        [re.compile('^tra'), partial(color.green, bold=True)],
+        [re.compile('^parameter$'), color.green],
+        [re.compile('^casu'), color.blue],
+    ]
 
     try:
-        if len(args) > 0:
-            with open(args[0]) as infile:
-                format(infile, sys.stdout)
+        if args.file is not None:
+            with open(args.file) as infile:
+                format(infile, sys.stdout, args.colorize)
 
         elif not sys.stdin.isatty():
-            format(sys.stdin, sys.stdout)
+            format(sys.stdin, sys.stdout, args.colorize)
 
         elif os.environ['CASUAL_DOMAIN_HOME']:
             with open(
                 os.path.join(os.environ['CASUAL_DOMAIN_HOME'], 'casual.log')
             ) as infile:
-                format(infile, sys.stdout)
+                format(infile, sys.stdout, args.colorize)
 
     except IOError as e:
         if e.errno != errno.EPIPE:
