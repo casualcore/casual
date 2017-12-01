@@ -15,6 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <netinet/tcp.h>
 
 
 namespace casual
@@ -403,6 +404,8 @@ namespace casual
 
             Socket adopt( const socket::descriptor_type descriptor)
             {
+               int val = 1;
+              ::setsockopt( descriptor, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
                return { descriptor};
             }
 
