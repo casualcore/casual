@@ -65,12 +65,68 @@ namespace casual
                         }
                      } // check
 
+                            
+                     const rapidjson::Document& parse( rapidjson::Document& document, const char* const json)
+                     {
+                        //
+                        // To support empty documents
+                        //
+                        if( ! json || json[ 0] == '\0')
+                        {
+                           document.Parse( "{}");
+                        }
+                        else
+                        {
+                           document.Parse( json);
+                        }
+
+                        if( document.HasParseError())
+                        {
+                           throw exception::archive::invalid::Document{ rapidjson::GetParseError_En( document.GetParseError())};
+                        }
+                        return document;
+                     }
+
+
+
+                     const rapidjson::Document& parse( rapidjson::Document& document, std::istream& stream)
+                     {
+                        //
+                        // note: istreambuf_iterator does not skip whitespace, which is what we want.
+                        //
+                        const std::string buffer{
+                           std::istreambuf_iterator<char>(stream),
+                           {}};
+
+                        return parse( document, buffer.c_str());
+                     }
+
+                     const rapidjson::Document& parse( rapidjson::Document& document, const std::string& json)
+                     {
+                        return parse( document, json.c_str());
+                     }
+
+                     const rapidjson::Document& parse( rapidjson::Document& document, const char* const json, const platform::size::type size)
+                     {
+                        // To ensure null-terminated string
+                        const std::string buffer{ json, json + size};
+                        return parse( document, buffer.c_str());
+                     }
+
+                     const rapidjson::Document& parse( rapidjson::Document& document, const platform::binary::type& json)
+                     {
+                        if( ! json.empty() && json.back() == '\0')
+                           return parse( document, json.data());
+                        else
+                           return parse( document, json.data(), json.size());
+                     }
 
                      class Implementation
                      {
                      public:
 
-                        explicit Implementation( rapidjson::Value&& document) : m_document( std::move( document)), m_stack{ &m_document} 
+                        template< typename... Ts>
+                        explicit Implementation( Ts&&... ts) : m_stack{ & reader::parse( m_document, std::forward< Ts>( ts)...)} 
                         {
                            
                         }
@@ -211,68 +267,11 @@ namespace casual
                         { value = common::transcode::base64::decode( check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
                      private:
 
-                        rapidjson::Value m_document;
+                        rapidjson::Document m_document;
                         std::vector<const rapidjson::Value*> m_stack;
                      };
 
-       
-                     rapidjson::Document parse( const char* const json)
-                     {
-                        rapidjson::Document document;
-                        //
-                        // To support empty documents
-                        //
-                        if( ! json || json[ 0] == '\0')
-                        {
-                           document.Parse( "{}");
-                        }
-                        else
-                        {
-                           document.Parse( json);
-                        }
 
-                        if( document.HasParseError())
-                        {
-                           throw exception::archive::invalid::Document{ rapidjson::GetParseError_En( document.GetParseError())};
-                        }
-
-                        return document;
-                     }
-
-
-
-                     rapidjson::Document parse( std::istream& stream)
-                     {
-                        //
-                        // note: istreambuf_iterator does not skip whitespace, which is what we want.
-                        //
-                        const std::string buffer{
-                           std::istreambuf_iterator<char>(stream),
-                           {}};
-
-                        return parse( buffer.c_str());
-                     }
-
-                     rapidjson::Document parse( const std::string& json)
-                     {
-                        return parse( json.c_str());
-                     }
-
-                     rapidjson::Document parse( const char* const json, const platform::size::type size)
-                     {
-                        // To ensure null-terminated string
-                        const std::string buffer{ json, json + size};
-                        return parse( buffer.c_str());
-                     }
-
-                     rapidjson::Document parse( const platform::binary::type& json)
-                     {
-                        if( ! json.empty() && json.back() == '\0')
-                        {
-                           return parse( json.data());
-                        }
-                        return parse( json.data(), json.size());
-                     }
 
 
                      namespace strict
@@ -280,7 +279,7 @@ namespace casual
                         template< typename T>
                         auto create( T&& source)
                         {
-                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( parse( std::forward< T>( source)));
+                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( std::forward< T>( source));
                         }
                      } // strict
 
@@ -289,7 +288,7 @@ namespace casual
                         template< typename T>
                         auto create( T&& source)
                         {
-                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( parse( std::forward< T>( source)));
+                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( std::forward< T>( source));
                         }
                      } // relaxed
 
