@@ -58,7 +58,7 @@ namespace casual
             auto& service = model.services.at( 0);
 
             EXPECT_TRUE( service.name == "s1");
-            EXPECT_TRUE( service.transaction.value() == "join");
+            EXPECT_TRUE( service.transaction.value() == "join") << "service.transaction.value(): " << service.transaction.value();
             EXPECT_TRUE( service.function.value() == "s1");
             EXPECT_TRUE( service.category.value() == "some.category");
          }

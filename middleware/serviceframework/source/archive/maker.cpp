@@ -110,15 +110,33 @@ namespace casual
                   }
                }
 
-               archive::Reader file( const std::string& name)
+               struct File::Implementation
                {
-                  std::ifstream file( name);
-
-                  if( ! file.is_open())
+                  Implementation( const std::string& name) : file( name) 
                   {
-                     throw exception::system::invalid::File( name);
-                  }
-                  return from::name( file, common::file::name::extension( name));
+                     if( ! file.is_open())
+                     {
+                        throw exception::system::invalid::File( name);
+                     }
+                  } 
+                  std::ifstream file;
+               };
+
+               File::File( const std::string& name) 
+                  : m_implementation( name), 
+                   m_reader( from::name( m_implementation->file, common::file::name::extension( name))) 
+               {
+
+               }
+               File::~File() = default;
+               File::File( File&&) = default;
+               File& File::operator = ( File&&) = default;
+
+               File file( const std::string& name)
+               {
+                  File result( name);
+
+                  return result;
                }
 
                archive::Reader data()
@@ -182,7 +200,34 @@ namespace casual
                   } // <unnamed>
                } // local
 
+               struct File::Implementation
+               {
+                  Implementation( const std::string& name) : file( name) 
+                  {
+                     if( ! file.is_open())
+                     {
+                        throw exception::system::invalid::File( name);
+                     }
+                  } 
+                  std::ofstream file;
+               };
 
+               File::File( const std::string& name) 
+                  : m_implementation( name), 
+                   m_writer( from::name( m_implementation->file, common::file::name::extension( name))) 
+               {
+
+               }
+               File::~File() = default;
+               File::File( File&&) = default;
+               File& File::operator = ( File&&) = default;
+
+               File file( const std::string& name)
+               {
+                  File result( name);
+
+                  return result;
+               }
 
                archive::Writer name( std::string name)
                {

@@ -6,6 +6,7 @@
 #include "common/unittest.h"
 
 #include "configuration/environment.h"
+#include "configuration/common.h"
 
 #include "sf/archive/maker.h"
 #include "sf/log.h"
@@ -65,9 +66,8 @@ namespace casual
             common::file::scoped::Path serialize( const Environment& environment, const std::string& extension)
             {
                common::file::scoped::Path name{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
-               std::ofstream file{ name};
-
-               auto archive = sf::archive::writer::from::name( file, common::file::name::extension( name));
+               
+               auto archive = sf::archive::writer::from::file( name);
                archive << CASUAL_MAKE_NVP( environment);
 
                return name;
@@ -95,6 +95,8 @@ namespace casual
 
       TEST_P( configuration_environment, file_referenced)
       {
+         common::unittest::Trace trace;
+
          Environment origin;
          origin.variables = local::variables();
 
@@ -113,6 +115,8 @@ namespace casual
 
       TEST_P( configuration_environment, file_referenced__added_variables__expect__added_to_be_last)
       {
+         common::unittest::Trace trace;
+
          Environment origin;
          origin.variables = local::variables();
 
@@ -141,19 +145,26 @@ namespace casual
 
       TEST_P( configuration_environment, hierarchy_2_files__3_env___expect__filo_order)
       {
+         common::unittest::Trace trace;
+
          Environment first;
          first.variables = local::variables();
          auto first_file = local::serialize( first, GetParam());
+
+         configuration::log << CASUAL_MAKE_NVP( first);
 
          Environment second;
          second.variables = local::variables();
          second.files.push_back( first_file);
          auto second_file = local::serialize( second, GetParam());
 
+         configuration::log << CASUAL_MAKE_NVP( second);
 
          Environment third;
          third.variables = local::variables();
          third.files.push_back( second_file);
+
+         configuration::log << CASUAL_MAKE_NVP( third);
 
 
          auto expected = first.variables;

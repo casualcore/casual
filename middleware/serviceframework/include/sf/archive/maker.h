@@ -9,6 +9,7 @@
 #include "sf/archive/archive.h"
 
 #include "sf/platform.h"
+#include "sf/pimpl.h"
 
 #include <string>
 #include <iosfwd>
@@ -24,7 +25,27 @@ namespace casual
          {
             namespace from
             {
-               archive::Reader file( const std::string& name);
+               struct File 
+               {
+                  File( const std::string& name);
+                  ~File();
+
+                  File( File&&);
+                  File& operator = ( File&&);
+
+                  template< typename T>  
+                  archive::Reader& operator >> ( T&& value)
+                  {
+                     return m_reader >> std::forward< T>( value); 
+                  }
+
+               private:
+                  struct Implementation;
+                  sf::move::Pimpl< Implementation> m_implementation; 
+                  archive::Reader m_reader;
+               };
+
+               File file( const std::string& name);
 
                //! @{
                archive::Reader data();
@@ -45,6 +66,28 @@ namespace casual
          {
             namespace from
             {
+               struct File 
+               {
+                  File( const std::string& name);
+                  ~File();
+
+                  File( File&&);
+                  File& operator = ( File&&);
+
+                  template< typename T>  
+                  archive::Writer& operator << ( T&& value)
+                  {
+                     return m_writer << std::forward< T>( value); 
+                  }
+
+               private:
+                  struct Implementation;
+                  sf::move::Pimpl< Implementation> m_implementation; 
+                  archive::Writer m_writer;
+               };
+
+               File file( const std::string& name);
+
                //! @{
                archive::Writer name( std::string name);
                archive::Writer name( std::ostream& stream, std::string type);

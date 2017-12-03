@@ -40,8 +40,7 @@ namespace casual
 
                void write( const resources_type& resources, const std::string& name)
                {
-                  std::ofstream file{ name};
-                  auto archive = sf::archive::writer::from::name( file, common::file::name::extension( name));
+                  auto archive = sf::archive::writer::from::file( name);
                   archive << CASUAL_MAKE_NVP( resources);
                }
 

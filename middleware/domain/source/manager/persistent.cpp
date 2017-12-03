@@ -12,8 +12,6 @@
 #include "common/environment.h"
 #include "common/exception/handle.h"
 
-#include <fstream>
-
 
 #define CASUAL_CUSTOMIZATION_POINT_SERIALIZE( type, statement) \
 void serialize( sf::archive::Writer& archive, const type& value, const char* name) \
@@ -190,9 +188,7 @@ namespace casual
                   Trace trace{ "domain::manager::persistent::state::save"};
 
                   auto persistent = local::persistent( state);
-                  std::ofstream file{ name};
-
-                  auto archive = sf::archive::writer::from::name( file, common::file::name::extension( name));
+                  auto archive = sf::archive::writer::from::file( name);
                   archive << CASUAL_MAKE_NVP( persistent);
                }
 
