@@ -13,6 +13,7 @@
 #include "common/string.h"
 #include "common/file.h"
 #include "common/buffer/type.h"
+#include "common/exception/system.h"
 
 #include <fstream>
 #include <iostream>
@@ -116,7 +117,7 @@ namespace casual
                   {
                      if( ! file.is_open())
                      {
-                        throw exception::system::invalid::File( name);
+                        throw common::exception::system::invalid::File( name);
                      }
                   } 
                   std::ifstream file;
@@ -138,6 +139,7 @@ namespace casual
 
                   return result;
                }
+
 
                archive::Reader data()
                {
@@ -206,7 +208,7 @@ namespace casual
                   {
                      if( ! file.is_open())
                      {
-                        throw exception::system::invalid::File( name);
+                        throw common::exception::system::invalid::File( name);
                      }
                   } 
                   std::ofstream file;

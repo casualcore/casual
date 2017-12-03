@@ -8,6 +8,7 @@
 #include "sf/archive/maker.h"
 
 #include "sf/exception.h"
+#include "common/exception/system.h"
 
 #include <sstream>
 
@@ -126,6 +127,41 @@ namespace casual
    }
 
 
+
+   TEST( casual_sf_maker, read_from_non_existing_file__expecting_exception)
+   {
+      EXPECT_THROW
+      ({
+         sf::archive::reader::from::file( common::file::name::unique( common::directory::temporary() + "/", ".ini"));
+      },common::exception::system::invalid::File);
+   }
+
+   TEST( casual_sf_maker, write_and_read_file__expecting_success)
+   {
+      common::file::scoped::Path path{ common::file::name::unique( common::directory::temporary() + "/", ".ini")};
+
+      long source = 42;
+      {
+         Banana banana;
+         banana.integer = source;
+
+         auto w = sf::archive::writer::from::file( path);
+
+         w << CASUAL_MAKE_NVP( banana);
+      }
+
+      long target;
+      {
+         Banana banana;
+         auto r = sf::archive::reader::from::file( path);
+
+         r >> CASUAL_MAKE_NVP( banana);
+
+         target = banana.integer;
+      }
+
+      EXPECT_TRUE( source == target);
+   }
 
    TEST( casual_sf_maker, write_and_read_buffer__expecting_success)
    {

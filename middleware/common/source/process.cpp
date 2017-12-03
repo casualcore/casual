@@ -591,12 +591,20 @@ namespace casual
             }
 
             //
-            // We need to expand environment
+            // We need to expand environment and arguments
             //
-            for( auto& variable : environment)
             {
-               variable = environment::string( variable);
+               for( auto& argument : arguments)
+               {
+                  argument = environment::string( argument);
+               }
+
+               for( auto& variable : environment)
+               {
+                  variable = environment::string( variable);
+               }
             }
+
             
             log::line( log::debug, "process::spawn ", path, ' ', arguments);
             log::line( verbose::log, "environment: ", environment);

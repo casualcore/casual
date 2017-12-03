@@ -823,27 +823,16 @@ namespace casual
 
                   while( true)
                   {
-                     while( metric.services.empty())
+                     handler( inbound.next( inbound.policy_blocking()));
+
+                     if( metric.services.size() >= common::platform::batch::gateway::metrics)
                      {
-                        // we can block
-                        handler( inbound.next( inbound.policy_blocking()));
+                        //
+                        // Send metrics to service-manager
+                        //
+                        common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), metric);
+                        metric.services.clear();
                      }
-
-                     //
-                     // consume until queue is empty or we reach batch limit
-                     //
-                     while( handler( inbound.next( inbound.policy_non_blocking()))
-                           && metric.services.size() < common::platform::batch::gateway::metrics)
-                     {
-                        ;
-                     }
-
-                     //
-                     // Send metrics to service-manager
-                     //
-                     common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), metric);
-                     metric.services.clear();
-
                   }
 
                }
