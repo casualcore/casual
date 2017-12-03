@@ -8,12 +8,14 @@
 #include "sf/archive/json.h"
 #include "sf/archive/xml.h"
 #include "sf/archive/ini.h"
+#include "sf/archive/log.h"
 
 #include "common/string.h"
 #include "common/file.h"
 #include "common/buffer/type.h"
 
 #include <fstream>
+#include <iostream>
 
 namespace casual
 {
@@ -21,75 +23,17 @@ namespace casual
    {
       namespace archive
       {
-         namespace
-         {
-            const auto cYML{ "yml"}; const auto cYAML{ "yaml"};
-            const auto cXML{ "xml"};
-            const auto cJSN{ "jsn"}; const auto cJSON{ "json"};
-            const auto cINI{ "ini"};
-         }
-
-         namespace maker
+         namespace name
          {
             namespace
             {
-               template<typename I, typename IO, typename LS, typename A>
-               class Basic : public I
-               {
-               public:
-                  typedef IO stream_type;
-                  typedef LS load_save_type;
-                  typedef A archive_type;
-
-                  Basic( stream_type stream) : m_archive( m_load_save()), m_stream( std::forward<IO>( stream)) {}
-
-                  virtual ~Basic() noexcept {}
-
-                  void serialize() override
-                  {
-                     m_load_save( m_stream);
-                  }
-
-                  archive_type& archive() override
-                  {
-                     return m_archive;
-                  }
-
-               private:
-                  load_save_type m_load_save;
-                  archive_type m_archive;
-                  stream_type m_stream;
-               };
-
-               namespace from
-               {
-                  template<typename D, typename IO>
-                  auto name( const D& dispatch, IO&& stream, std::string name) -> decltype(common::algorithm::find( dispatch, name)->second( std::forward<IO>( stream)))
-                  {
-                     const auto found = common::algorithm::find( dispatch, common::string::lower( name));
-
-                     if( found)
-                     {
-                        return found->second( std::forward<IO>( stream));
-                     }
-
-                     throw exception::Validation{ string::compose( "Could not deduce archive from name: ",name)};
-                  }
-               } // from
-
-               template<typename H, typename I, typename LS, typename A>
-               struct factory
-               {
-                  template<typename IO>
-                  H operator () ( IO&& stream) const
-                  {
-                     return typename H::base_type{ new Basic<I, IO, LS, A>{ std::forward<IO>( stream)}};
-                  }
-               };
-
+               constexpr auto yml = "yml"; constexpr auto yaml = "yaml";
+               constexpr auto xml = "xml";
+               constexpr auto jsn = "jsn"; constexpr auto json = "json";
+               constexpr auto ini = "ini";
+      
             } // <unnamed>
-
-         } // maker
+         } // local
 
 
          namespace reader
@@ -101,27 +45,35 @@ namespace casual
                   namespace
                   {
                      template<typename IO>
-                     Holder name( IO&& stream, std::string name)
+                     archive::Reader name( IO& stream, std::string name)
                      {
-                        using yml_type = maker::factory< Holder, Interface,   yaml::Load, yaml::relaxed::Reader>;
-                        using jsn_type = maker::factory< Holder, Interface,   json::Load, json::relaxed::Reader>;
-                        using xml_type = maker::factory< Holder, Interface,   xml::Load,  xml::relaxed::Reader>;
-                        using ini_type = maker::factory< Holder, Interface,   ini::Load,  ini::relaxed::Reader>;
+                        auto make_yaml = []( auto& source){ return archive::yaml::relaxed::reader( source);};
+                        auto make_json = []( auto& source){ return archive::json::relaxed::reader( source);};
+                        auto make_xml = []( auto& source){ return archive::xml::relaxed::reader( source);};
+                        auto make_ini = []( auto& source){ return archive::ini::relaxed::reader( source);};
 
-                        static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
+                        static const auto dispatch = std::map< std::string, std::function< archive::Reader( decltype(stream))>>
                         {
-                           { cYML, yml_type{}}, { common::buffer::type::yaml(), yml_type{}}, { cYAML, yml_type{}},
-                           { cXML, xml_type{}}, { common::buffer::type::xml(), xml_type{}},
-                           { cJSN, jsn_type{}}, { common::buffer::type::json(), jsn_type{}}, { cJSON, jsn_type{}},
-                           { cINI, ini_type{}}, { common::buffer::type::ini(), ini_type{}}
+                           { name::yml, make_yaml}, { name::yaml, make_yaml}, { common::buffer::type::yaml(), make_yaml}, 
+                           { name::jsn, make_json}, { name::json, make_json}, { common::buffer::type::json(), make_json},
+                           { name::xml, make_xml}, { common::buffer::type::xml(), make_xml},
+                           { name::ini, make_ini}, { common::buffer::type::ini(), make_ini},
                         };
+                        
+                        auto type = common::string::lower( std::move( name));
+                        const auto found = common::algorithm::find( dispatch, type);
 
-                        return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
+                        if( found)
+                        {
+                           return found->second( stream);
+                        }
+
+                        throw exception::Validation{ string::compose( "Could not deduce archive from name: ", type)};
                      }
                   } // <unnamed>
                } // local
 
-               Holder data( std::istream& stream)
+               archive::Reader data( std::istream& stream)
                {
                   //
                   // Skip any possible whitespace
@@ -146,24 +98,19 @@ namespace casual
                   case '%':
                   case '-':
                   case '#':
-                     return local::name( stream, cYML);
+                     return local::name( stream, name::yml);
                   case '<':
-                     return local::name( stream, cXML);
+                     return local::name( stream, name::xml);
                   case '{':
-                     return local::name( stream, cJSN);
+                     return local::name( stream, name::jsn);
                   case '[':
-                     return local::name( stream, cINI);
+                     return local::name( stream, name::ini);
                   default:
                      throw exception::Validation{ "Could not deduce archive from input"};
                   }
                }
 
-               Holder data()
-               {
-                  return data( std::cin);
-               }
-
-               Holder file( std::string name)
+               archive::Reader file( const std::string& name)
                {
                   std::ifstream file( name);
 
@@ -171,27 +118,29 @@ namespace casual
                   {
                      throw exception::system::invalid::File( name);
                   }
-
-                  return local::name( std::move( file), common::file::name::extension( name));
+                  return from::name( file, common::file::name::extension( name));
                }
 
-               Holder name( std::string name)
+               archive::Reader data()
+               {
+                  return data( std::cin);
+               }
+
+               archive::Reader name( std::string name)
                {
                   return local::name( std::cin, std::move( name));
                }
 
-               Holder name( std::istream& stream, std::string name)
+               archive::Reader name( std::istream& stream, std::string name)
                {
                   return local::name( stream, std::move( name));
                }
 
-               Holder buffer( const platform::binary::type& data, std::string type)
+               archive::Reader buffer( const platform::binary::type& data, std::string name)
                {
-                  return local::name( data, std::move( type));
+                  return local::name( data, std::move( name));
                }
-
             } // from
-
          } // reader
 
 
@@ -204,63 +153,57 @@ namespace casual
                   namespace
                   {
                      template<typename IO>
-                     Holder name( IO&& stream, std::string name)
+                     archive::Writer name( IO& stream, std::string name)
                      {
-                        using yml_type = maker::factory< Holder, Interface,   yaml::Save, yaml::Writer>;
-                        using jsn_type = maker::factory< Holder, Interface,   json::Save, json::Writer>;
-                        using xml_type = maker::factory< Holder, Interface,   xml::Save,  xml::Writer>;
-                        using ini_type = maker::factory< Holder, Interface,   ini::Save,  ini::Writer>;
+                       auto make_yaml = []( auto& destination){ return archive::yaml::writer( destination);};
+                       auto make_json = []( auto& destination){ return archive::json::writer( destination);};
+                       auto make_xml = []( auto& destination){ return archive::xml::writer( destination);};
+                       auto make_ini = []( auto& destination){ return archive::ini::writer( destination);};
 
-                        static const auto dispatch = std::map< std::string, std::function< Holder( decltype(stream))>>
+                        static const auto dispatch = std::map< std::string, std::function< archive::Writer(IO&)>>
                         {
-                           { cYML, yml_type{}}, { common::buffer::type::yaml(), yml_type{}}, { cYAML, yml_type{}},
-                           { cXML, xml_type{}}, { common::buffer::type::xml(),  xml_type{}},
-                           { cJSN, jsn_type{}}, { common::buffer::type::json(), jsn_type{}}, { cJSON, jsn_type{}},
-                           { cINI, ini_type{}}, { common::buffer::type::ini(),  ini_type{}}
+                           { name::yml, make_yaml}, { name::yaml, make_yaml}, { common::buffer::type::yaml(), make_yaml}, 
+                           { name::jsn, make_json}, { name::json, make_json}, { common::buffer::type::json(), make_json},
+                           { name::xml, make_xml}, { common::buffer::type::xml(), make_xml},
+                           { name::ini, make_ini}, { common::buffer::type::ini(), make_ini},
+                           //{ "", make_log},
                         };
 
-                        return maker::from::name( dispatch, std::forward<IO>( stream), std::move( name));
+                        auto type = common::string::lower( std::move( name));
+                        const auto found = common::algorithm::find( dispatch, type);
+
+                        if( found)
+                        {
+                           return found->second( stream);
+                        }
+
+                        throw exception::Validation{ string::compose( "Could not deduce archive from name: ", type)};
                      }
                   } // <unnamed>
                } // local
 
-               Holder file( std::string name)
+
+
+               archive::Writer name( std::string name)
                {
-                  std::ofstream file( name);
-
-                  if( ! file.is_open())
-                  {
-                     throw exception::system::invalid::File( name);
-                  }
-
-                  return local::name( std::move( file), common::file::name::extension( name));
-               }
-
-               Holder name( std::string name)
-               {
+                  if( name.empty()) return archive::log::writer( std::cout);
                   return local::name( std::cout, std::move( name));
                }
 
-               Holder name( std::ostream& stream, std::string name)
+               archive::Writer name( std::ostream& stream, std::string name)
                {
+                  if( name.empty()) return archive::log::writer( stream);
                   return local::name( stream, std::move( name));
                }
 
-               Holder buffer( platform::binary::type& data, std::string type)
+               archive::Writer buffer( platform::binary::type& data, std::string name)
                {
-                  return local::name( data, std::move( type));
+                  return local::name( data, std::move( name));
                }
-
             } // from
-
-
          } // writer
-
-
       } // archive
-
    } // sf
-
 } // casual
 
 

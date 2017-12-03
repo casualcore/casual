@@ -35,31 +35,22 @@ namespace casual
       namespace holder
       {
          template< typename P>
-         struct json
+         struct basic
          {
             using policy_type = P;
 
             template< typename T>
             static T write_read( const T& value)
             {
-               std::string data;
+               auto buffer = policy_type::buffer(); 
 
                {
-                  sf::archive::json::Save save;
-
-                  sf::archive::json::Writer writer( save());
-
+                  auto writer = policy_type::writer( buffer);
                   writer << CASUAL_MAKE_NVP( value);
-
-                  save( data);
-
                }
 
                {
-                  sf::archive::json::Load load;
-                  load( data);
-
-                  archive::json::basic_reader< policy_type> reader( load());
+                  auto reader = policy_type::reader( buffer);
                   T value;
                   reader >> CASUAL_MAKE_NVP( value);
                   return value;
@@ -67,200 +58,84 @@ namespace casual
             }
          };
 
-         template< typename P>
-         struct json_file
+         namespace policy
          {
-            using policy_type = P;
-
-            template< typename T>
-            static T write_read( const T& value)
+            template< typename B>
+            struct base
             {
-               common::file::scoped::Path path{
-                  common::file::name::unique( common::directory::temporary() + '/', "json" )};
+               static B buffer() { return B{};}
+            };
 
-
-               {
-                  sf::archive::json::Save save;
-
-                  sf::archive::json::Writer writer( save());
-
-                  writer << CASUAL_MAKE_NVP( value);
-
-                  std::ofstream file{ path};
-                  save( file);
-
-               }
-
-               {
-                  std::ifstream file{ path};
-                  sf::archive::json::Load load;
-                  load( file);
-
-                  archive::json::basic_reader< policy_type> reader( load());
-                  T value;
-                  reader >> CASUAL_MAKE_NVP( value);
-                  return value;
-               }
-            }
-         };
-
-         template< typename P>
-         struct yaml
-         {
-            using policy_type = P;
-
-            template< typename T>
-            static T write_read( const T& value)
+            template< typename B>
+            struct json : base< B>
             {
+               template< typename T>
+               static auto reader( T&& buffer) { return sf::archive::json::reader( buffer);}
 
-               archive::yaml::Save save;
+               template< typename T>
+               static auto writer( T&& buffer) { return sf::archive::json::writer( buffer);}
+            };
 
-               {
-                  archive::yaml::Writer writer( save());
-                  writer << CASUAL_MAKE_NVP( value);
-               }
-
-               std::string yaml;
-               save( yaml);
-
-               archive::yaml::Load load;
-               load( yaml);
-
-               {
-                  sf::archive::yaml::basic_reader< policy_type> reader( load());
-                  T value;
-                  reader >> CASUAL_MAKE_NVP( value);
-                  return value;
-               }
-            }
-         };
-
-         template< typename P>
-         struct yaml_file
-         {
-            using policy_type = P;
-
-            template< typename T>
-            static T write_read( const T& value)
+            namespace relaxed    
             {
-               common::file::scoped::Path path{
-                  common::file::name::unique( common::directory::temporary() + '/', ".yaml" )};
-
-
-
+               template< typename B>
+               struct json : policy::json< B>
                {
-                  archive::yaml::Save save;
-                  archive::yaml::Writer writer( save());
-                  writer << CASUAL_MAKE_NVP( value);
+                  template< typename T>
+                  static auto reader( T&& buffer) { return sf::archive::json::relaxed::reader( buffer);}
+               };
+            } // relaxed  
 
-                  std::ofstream file{ path};
-                  save( file);
-               }
-
-
-
-               {
-                  std::ifstream file{ path};
-                  archive::yaml::Load load;
-                  load( file);
-
-                  sf::archive::yaml::basic_reader< policy_type> reader( load());
-                  T value;
-                  reader >> CASUAL_MAKE_NVP( value);
-                  return value;
-               }
-
-
-            }
-         };
-
-         template< typename P>
-         struct xml
-         {
-            using policy_type = P;
-
-            template< typename T>
-            static T write_read( const T& value)
+            template< typename B>
+            struct yaml : base< B>
             {
-               archive::xml::Save save;
+               template< typename T>
+               static auto reader( T&& buffer) { return sf::archive::yaml::reader( buffer);}
 
-               {
-                  archive::xml::Writer writer( save());
-                  writer << CASUAL_MAKE_NVP( value);
-               }
+               template< typename T>
+               static auto writer( T&& buffer) { return sf::archive::yaml::writer( buffer);}
+            };
 
-               std::string xml;
-               save( xml);
-
-               archive::xml::Load load;
-               load( xml);
-
-               {
-                  archive::basic_reader< archive::xml::reader::Implementation, P> reader( load());
-                  T value;
-                  reader >> CASUAL_MAKE_NVP( value);
-
-                  return value;
-               }
-            }
-         };
-
-
-         template< typename P>
-         struct ini
-         {
-            using policy_type = P;
-
-            template< typename T>
-            static T write_read( const T& value)
+            namespace relaxed    
             {
-               archive::ini::Save save;
-
+               template< typename B>
+               struct yaml : policy::yaml< B>
                {
-                  archive::ini::Writer writer( save());
-                  writer << CASUAL_MAKE_NVP( value);
-               }
+                  template< typename T>
+                  static auto reader( T&& buffer) { return sf::archive::yaml::relaxed::reader( buffer);}
+               };
+            } // relaxed  
 
-               std::string ini;
-               save( ini);
-
-               std::cout << ini << std::endl;
-
-               archive::ini::Load load;
-               load( ini);
-
-               {
-                  archive::basic_reader< archive::ini::reader::Implementation, P> reader( load());
-                  T value;
-                  reader >> CASUAL_MAKE_NVP( value);
-
-                  return value;
-               }
-            }
-         };
-
-
-
-         struct binary
-         {
-            template< typename T>
-            static T write_read( const T& value)
+            template< typename B>
+            struct xml : base< B>
             {
-               sf::platform::binary::type buffer;
-               {
-                  sf::archive::binary::Writer writer( buffer);
-                  writer << CASUAL_MAKE_NVP( value);
-               }
+               template< typename T>
+               static auto reader( T&& buffer) { return sf::archive::xml::reader( buffer);}
 
-               {
-                  sf::archive::binary::Reader reader( buffer);
-                  T value;
-                  reader >> CASUAL_MAKE_NVP( value);
-                  return value;
-               }
-            }
-         };
+               template< typename T>
+               static auto writer( T&& buffer) { return sf::archive::xml::writer( buffer);}
+            };
 
+            namespace relaxed    
+            {
+               template< typename B>
+               struct xml : policy::xml< B>
+               {
+                  template< typename T>
+                  static auto reader( T&& buffer) { return sf::archive::xml::relaxed::reader( buffer);}
+               };
+            } // relaxed  
+
+            struct binary : base< sf::platform::binary::type>
+            {
+               template< typename T>
+               static auto reader( T&& buffer) { return sf::archive::binary::reader( buffer);}
+
+               template< typename T>
+               static auto writer( T&& buffer) { return sf::archive::binary::writer( buffer);}
+            };
+
+         } // policy
       } // holder
 
 
@@ -272,19 +147,27 @@ namespace casual
 
 
       typedef ::testing::Types<
-            holder::json< archive::policy::Strict>,
-            holder::json< archive::policy::Relaxed>,
-            holder::json_file< archive::policy::Strict>,
-            holder::json_file< archive::policy::Relaxed>,
-            holder::yaml< archive::policy::Strict>,
-            holder::yaml< archive::policy::Relaxed>,
-            holder::yaml_file< archive::policy::Strict>,
-            holder::yaml_file< archive::policy::Relaxed>,
-            holder::xml< archive::policy::Strict>,
-            holder::xml< archive::policy::Relaxed>,
+            holder::basic< holder::policy::json< std::string>>,
+            holder::basic< holder::policy::json< common::platform::binary::type>>,
+            holder::basic< holder::policy::json< std::stringstream>>,
+            holder::basic< holder::policy::relaxed::json< std::string>>,
+            holder::basic< holder::policy::relaxed::json< common::platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::json< std::stringstream>>,
+            holder::basic< holder::policy::yaml< std::string>>,
+            holder::basic< holder::policy::yaml< common::platform::binary::type>>,
+            holder::basic< holder::policy::yaml< std::stringstream>>,
+            holder::basic< holder::policy::relaxed::yaml< std::string>>,
+            holder::basic< holder::policy::relaxed::yaml< common::platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::yaml< std::stringstream>>,
+            holder::basic< holder::policy::xml< std::string>>,
+            holder::basic< holder::policy::xml< common::platform::binary::type>>,
+            holder::basic< holder::policy::xml< std::stringstream>>,
+            holder::basic< holder::policy::relaxed::xml< std::string>>,
+            holder::basic< holder::policy::relaxed::xml< common::platform::binary::type>>,
+            holder::basic< holder::policy::relaxed::xml< std::stringstream>>,
             //holder::ini< archive::policy::Strict>,  // cannot handle nested containers yet
             //holder::ini< archive::policy::Relaxed>, // cannot handle nested containers yet
-            holder::binary
+            holder::basic< holder::policy::binary>
        > archive_types;
 
       TYPED_TEST_CASE(casual_sf_archive_write_read, archive_types);

@@ -6,6 +6,8 @@
 
 #include "sf/archive/maker.h"
 
+#include <fstream>
+
 namespace casual
 {
    namespace configuration
@@ -46,9 +48,10 @@ namespace casual
                   return result;
                }
 
-               void write( const model_type& server, const std::string& file)
+               void write( const model_type& server, const std::string& name)
                {
-                  auto archive = sf::archive::writer::from::file( file);
+                  std::ofstream file{ name};
+                  auto archive = sf::archive::writer::from::name( file, common::file::name::extension( name));
                   archive << CASUAL_MAKE_NVP( server);
                }
 
@@ -56,8 +59,7 @@ namespace casual
                {
                   common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/build_server_", extension)};
 
-                  auto archive = sf::archive::writer::from::file( file);
-                  archive << CASUAL_MAKE_NVP( server);
+                   write( server, file);
 
                   return file;
                }

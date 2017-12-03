@@ -68,28 +68,22 @@ value:
          template<typename T>
          void string_to_strict_value( const std::string& string, T&& value)
          {
-            sf::archive::yaml::Load load;
-            load( string);
-            sf::archive::yaml::Reader reader( load());
+            auto reader = sf::archive::yaml::reader( string);
             reader >> CASUAL_MAKE_NVP( value);
          }
 
          template<typename T>
          void string_to_relaxed_value( const std::string& string, T&& value)
          {
-            sf::archive::yaml::Load load;
-            load( string);
-            sf::archive::yaml::relaxed::Reader reader( load());
+            auto reader = sf::archive::yaml::relaxed::reader( string);
             reader >> CASUAL_MAKE_NVP( value);
          }
 
          template<typename T>
          void value_to_string( T&& value, std::string& string)
          {
-            sf::archive::yaml::Save save;
-            sf::archive::yaml::Writer writer( save());
+            auto writer = sf::archive::yaml::writer( string);
             writer << CASUAL_MAKE_NVP( value);
-            save( string);
          }
 
          struct Empty
@@ -149,9 +143,7 @@ value:
 
    TEST( casual_sf_yaml_archive, strict_read_not_in_document__gives_throws)
    {
-      sf::archive::yaml::Load load;
-      load( test::SimpleVO::yaml());
-      sf::archive::yaml::Reader reader( load());
+      auto reader = sf::archive::yaml::reader( test::SimpleVO::yaml());
 
       test::SimpleVO wrongRoleName;
 
@@ -295,7 +287,7 @@ value:
 
       EXPECT_THROW
       ({
-         sf::archive::yaml::Load{}( yaml);
+         sf::archive::yaml::reader( yaml);
       }, sf::exception::archive::invalid::Document);
 
    }

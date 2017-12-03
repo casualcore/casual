@@ -7,7 +7,6 @@
 
 
 #include "sf/namevaluepair.h"
-#include "sf/archive/basic.h"
 #include "sf/archive/binary.h"
 
 #include "common/log.h"
@@ -29,7 +28,7 @@ namespace casual
    {
 
       sf::platform::binary::type buffer;
-      sf::archive::binary::Writer writer( buffer);
+      auto writer = sf::archive::binary::writer( buffer);
 
       writer << CASUAL_MAKE_NVP( 10);
    }
@@ -38,11 +37,11 @@ namespace casual
    {
 
       sf::platform::binary::type buffer;
-      sf::archive::binary::Writer writer( buffer);
+      auto writer = sf::archive::binary::writer( buffer);
 
       writer << CASUAL_MAKE_NVP( std::string{ "test"});
 
-      sf::archive::binary::Reader reader( buffer);
+      auto reader = sf::archive::binary::reader( buffer);
 
       std::string result;
 
@@ -59,11 +58,11 @@ namespace casual
    {
 
       sf::platform::binary::type buffer;
-      sf::archive::binary::Writer writer( buffer);
+      auto writer = sf::archive::binary::writer( buffer);
 
       writer << CASUAL_MAKE_NVP( 34L);
 
-      sf::archive::binary::Reader reader( buffer);
+      auto reader = sf::archive::binary::reader( buffer);
 
       long result;
 
@@ -79,7 +78,7 @@ namespace casual
    {
 
       sf::platform::binary::type buffer;
-      sf::archive::binary::Writer writer( buffer);
+      auto writer = sf::archive::binary::writer( buffer);
 
 
       std::vector< long> someInts = { 1, 2, 3, 4 };
@@ -88,7 +87,7 @@ namespace casual
 
       std::vector< long> result;
 
-      sf::archive::binary::Reader reader( buffer);
+      auto reader = sf::archive::binary::reader( buffer);
 
       reader >> CASUAL_MAKE_NVP( result);
 
@@ -105,7 +104,7 @@ namespace casual
    {
 
       sf::platform::binary::type buffer;
-      sf::archive::binary::Writer writer( buffer);
+      auto writer = sf::archive::binary::writer( buffer);
 
       std::map< long, std::string> value = { { 1, "test 1"}, { 2, "test 2"}, { 3, "test 3"}, { 4, "test 4"} };
 
@@ -114,7 +113,7 @@ namespace casual
 
       std::map< long, std::string> result;
 
-      sf::archive::binary::Reader reader( buffer);
+      auto reader = sf::archive::binary::reader( buffer);
 
       reader >> CASUAL_MAKE_NVP( result);
 
@@ -147,7 +146,7 @@ namespace casual
       sf::platform::binary::type buffer;
 
       {
-         sf::archive::binary::Writer writer( buffer);
+         auto writer = sf::archive::binary::writer( buffer);
 
          Serializible value;
          value.someLong = 23;
@@ -157,7 +156,7 @@ namespace casual
       }
 
       {
-         sf::archive::binary::Reader reader( buffer);
+         auto reader = sf::archive::binary::reader( buffer);
 
          Serializible value;
          reader >> CASUAL_MAKE_NVP( value);
@@ -184,13 +183,13 @@ namespace casual
 
          std::vector< test::Composite> range{ value, value, value, value};
 
-         sf::archive::binary::Writer writer( buffer);
+         auto writer = sf::archive::binary::writer( buffer);
          writer << CASUAL_MAKE_NVP( range);
 
       }
 
       {
-         sf::archive::binary::Reader reader( buffer);
+         auto reader = sf::archive::binary::reader( buffer);
 
          std::vector< test::Composite> range;
          reader >> CASUAL_MAKE_NVP( range);

@@ -153,26 +153,26 @@ namespace casual
                   {
                      struct Input
                      {
-                        Input( service::payload_type& payload) : m_archive( payload.memory)
+                        Input( service::payload_type& payload) : m_archive( archive::binary::writer( payload.memory))
                         {
                         }
-                        archive::binary::Writer& archive() { return m_archive;}
+                        auto& archive() { return m_archive;}
 
                         static const std::string& type() { return common::buffer::type::binary();};
 
                      private:
-                        archive::binary::Writer m_archive;
+                        archive::Writer m_archive;
                      };
 
                      struct Result
                      {
                         template< typename R>
-                        Result( R& result) : m_archive( result.buffer.memory) {}
+                        Result( R& result) : m_archive( archive::binary::reader( result.buffer.memory)) {}
 
-                        archive::binary::Reader& archive() { return m_archive;}
+                        archive::Reader& archive() { return m_archive;}
 
                      private:
-                        archive::binary::Reader m_archive;
+                        archive::Reader m_archive;
 
                      };
                   } // policy

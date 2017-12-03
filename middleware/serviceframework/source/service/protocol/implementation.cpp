@@ -59,7 +59,8 @@ namespace casual
 
                Binary::Binary( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                     m_reader( m_parameter.payload.memory), m_writer( m_result.payload.memory)
+                     m_reader( sf::archive::binary::reader( m_parameter.payload.memory)), 
+                     m_writer( sf::archive::binary::writer( m_result.payload.memory))
                {
                   sf::Trace trace{ "protocol::Binary::Binary"};
 
@@ -79,8 +80,8 @@ namespace casual
 
                Yaml::Yaml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( m_load( m_parameter.payload.memory)),
-                    m_writer( m_save())
+                    m_reader( archive::yaml::reader( m_parameter.payload.memory)),
+                    m_writer( archive::yaml::writer( m_result.payload.memory))
                {
                   sf::Trace trace{ "protocol::Yaml::Yaml"};
 
@@ -103,16 +104,15 @@ namespace casual
                {
                   sf::Trace trace{ "protocol::Yaml::finalize"};
 
-                  m_save( m_result.payload.memory);
-
+                  m_writer.flush();
                   return Base::finalize();
                }
 
 
                Json::Json( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( m_load( m_parameter.payload.memory)),
-                    m_writer( m_save())
+                    m_reader( archive::json::reader( m_parameter.payload.memory)),
+                    m_writer( archive::json::writer( m_result.payload.memory))
                {
                   sf::Trace trace{ "protocol::Json::Json"};
 
@@ -136,7 +136,7 @@ namespace casual
                {
                   sf::Trace trace{ "protocol::Json::finalize"};
 
-                  m_save( m_result.payload.memory);
+                  m_writer.flush();
                   return Base::finalize();
                }
 
@@ -144,8 +144,8 @@ namespace casual
 
                Xml::Xml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( m_load( m_parameter.payload.memory)),
-                    m_writer( m_save())
+                    m_reader( archive::xml::reader( m_parameter.payload.memory)),
+                    m_writer( archive::xml::writer( m_result.payload.memory))
                {
                   sf::Trace trace{ "protocol::Xml::Xml"};
 
@@ -170,15 +170,15 @@ namespace casual
                {
                   sf::Trace trace{ "protocol::Xml::finalize"};
 
-                  m_save( m_result.payload.memory);
+                  m_writer.flush();
                   return Base::finalize();
                }
 
 
                Ini::Ini( protocol::parameter_type&& parameter)
                : Base( std::move( parameter)),
-                 m_reader( m_load( m_parameter.payload.memory)),
-                 m_writer( m_save())
+                 m_reader( archive::ini::reader( m_parameter.payload.memory)),
+                 m_writer( archive::ini::writer( m_result.payload.memory))
                {
                   sf::Trace trace{ "protocol::Ini::Ini"};
 
@@ -196,7 +196,7 @@ namespace casual
                {
                   sf::Trace trace{ "protocol::Ini::finalize"};
 
-                  m_save( m_result.payload.memory);
+                  m_writer.flush();
                   return Base::finalize();
                }
 

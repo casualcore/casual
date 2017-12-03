@@ -10,6 +10,8 @@
 #include "sf/archive/maker.h"
 #include "sf/log.h"
 
+#include <fstream>
+
 namespace casual
 {
    namespace configuration
@@ -62,12 +64,13 @@ namespace casual
 
             common::file::scoped::Path serialize( const Environment& environment, const std::string& extension)
             {
-               common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
+               common::file::scoped::Path name{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
+               std::ofstream file{ name};
 
-               auto archive = sf::archive::writer::from::file( file);
+               auto archive = sf::archive::writer::from::name( file, common::file::name::extension( name));
                archive << CASUAL_MAKE_NVP( environment);
 
-               return file;
+               return name;
             }
 
             std::vector< environment::Variable> variables( int size = 8)

@@ -6,9 +6,9 @@
 #define CASUAL_SF_ARCHIVE_SERVICE_H_
 
 #include "sf/service/model.h"
+#include "sf/archive/archive.h"
 
-#include "sf/platform.h"
-#include "sf/archive/basic.h"
+
 
 namespace casual
 {
@@ -20,66 +20,11 @@ namespace casual
          {
             namespace describe
             {
-               namespace implementation
-               {
-                  class Writer
-                  {
-                  public:
-
-                     using types_t = std::vector< sf::service::Model::Type>;
-
-                     Writer( std::vector< sf::service::Model::Type>& types);
-                     Writer( Writer&&);
-
-
-                     ~Writer();
-
-                     platform::size::type container_start( const platform::size::type size, const char* name);
-                     void container_end( const char*);
-
-                     void serialtype_start( const char* name);
-                     void serialtype_end( const char*);
-
-                     template<typename T>
-                     void write( T&& value, const char* name)
-                     {
-                        m_stack.back()->emplace_back( name, sf::service::model::type::traits< T>::category());
-                     }
-
-                  private:
-                     std::vector< types_t*> m_stack;
-                  };
 
 
 
-                  struct Prepare
-                  {
-
-                     bool serialtype_start( const char*);
-
-                     std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*);
-
-                     //! @{
-                     //! No op
-                     void container_end( const char*);
-                     void serialtype_end( const char*);
-                     //! @}
-
-
-                     template< typename T>
-                     bool read( T& value, const char*)
-                     {
-                        return true;
-                     }
-                  };
-
-               } // implementation
-
-
-               using Prepare = basic_reader< implementation::Prepare, policy::Relaxed>;
-
-               using Writer = basic_writer< implementation::Writer>;
-
+               archive::Reader prepare();
+               archive::Writer writer( std::vector< sf::service::Model::Type>& types);
 
 
                //!
@@ -87,14 +32,13 @@ namespace casual
                //!
                struct Wrapper
                {
-                  Wrapper( std::vector< sf::service::Model::Type>& types) : m_writer( types) {}
+                  Wrapper( std::vector< sf::service::Model::Type>& types) 
+                     : m_prepare( describe::prepare()), m_writer( describe::writer( types)) {}
 
                   template< typename T>
                   Wrapper& operator << ( T&& value)
                   {
-                     Prepare prepare;
-                     prepare >> value;
-
+                     m_prepare >> value;
                      m_writer << std::forward< T>( value);
 
                      return *this;
@@ -106,7 +50,9 @@ namespace casual
                      return *this << std::forward< T>( value);
                   }
                private:
-                  Writer m_writer;
+                  archive::Reader m_prepare;
+                  archive::Writer m_writer;
+                  
                };
 
             } // describe

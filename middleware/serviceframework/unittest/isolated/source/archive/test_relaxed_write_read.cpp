@@ -37,21 +37,13 @@ namespace casual
                std::string data;
 
                {
-                  sf::archive::json::Save save;
-                  sf::archive::json::Writer writer( save());
-
+                  auto writer = sf::archive::json::writer( data);
                   writer << sf::name::value::pair::make( "value", from);
-
-                  save( data);
-
                }
 
                To result;
                {
-                  sf::archive::json::Load load;
-                  load( data);
-
-                  archive::json::relaxed::Reader reader( load());
+                  auto reader = sf::archive::json::relaxed::reader( data);
                   reader >> sf::name::value::pair::make( "value", result);
                }
                return result;
@@ -63,22 +55,16 @@ namespace casual
             template< typename To, typename From>
             static To write_read( const From& from)
             {
-               archive::yaml::Save save;
+               std::string yaml;
 
                {
-                  archive::yaml::Writer writer( save());
+                  auto writer = archive::yaml::writer( yaml);
                   writer << sf::name::value::pair::make( "value", from);
                }
 
-               std::string yaml;
-               save( yaml);
-
-               archive::yaml::Load load;
-               load( yaml);
-
                To result;
                {
-                  sf::archive::yaml::relaxed::Reader reader( load());
+                  auto reader = archive::yaml::relaxed::reader( yaml);
                   reader >> sf::name::value::pair::make( "value", result);
                }
                return result;
@@ -91,22 +77,16 @@ namespace casual
             template< typename To, typename From>
             static To write_read( const From& from)
             {
-               archive::xml::Save save;
+               std::string xml;
 
                {
-                  archive::xml::Writer writer( save());
+                  auto writer = archive::xml::writer( xml);
                   writer << sf::name::value::pair::make( "value", from);
                }
 
-               std::string xml;
-               save( xml);
-
-               archive::xml::Load load;
-               load( xml);
-
                To result;
                {
-                  archive::xml::relaxed::Reader reader( load());
+                  auto reader = archive::xml::relaxed::reader( xml);
                   reader >> sf::name::value::pair::make( "value", result);
                }
                return result;

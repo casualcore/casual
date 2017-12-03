@@ -162,7 +162,7 @@ namespace casual
 
             if( format.empty())
             {
-               sf::archive::log::Writer archive( std::cout);
+               auto archive = sf::archive::log::writer( std::cout);
                archive << CASUAL_MAKE_NVP( state);
             }
             else 

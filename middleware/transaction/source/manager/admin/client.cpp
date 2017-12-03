@@ -319,7 +319,7 @@ namespace casual
                {
                   auto state = call::state();
 
-                  sf::archive::log::Writer debug{ std::cout};
+                  auto debug = sf::archive::log::writer( std::cout);
 
                   debug << CASUAL_MAKE_NVP( state.pending.requests);
                   debug << CASUAL_MAKE_NVP( state.persistent.requests);
@@ -410,22 +410,13 @@ namespace casual
                   formatter.print( std::cout, algorithm::sort( resources));
                }
 
-               void state( const std::vector< std::string>& values)
+               void state( std::vector< std::string> values)
                {
                   auto state = call::state();
+                  values.emplace_back( "");
 
-                  if( values.empty())
-                  {
-                     sf::archive::log::Writer archive( std::cout);
-                     archive << CASUAL_MAKE_NVP( state);
-                  }
-                  else
-                  {
-                     auto archive = sf::archive::writer::from::name( std::cout, values.front());
-
-                     archive << CASUAL_MAKE_NVP( state);
-
-                  }
+                  auto archive = sf::archive::writer::from::name( std::cout, values.front());
+                  archive << CASUAL_MAKE_NVP( state);
                }
 
             } // dispatch

@@ -24,6 +24,12 @@ namespace casual
             return ( derived.*pmf)( std::forward<Args>(args)...);
          }
 
+         template< typename Base, typename R, typename Derived, typename... Args>
+         decltype( auto) invoke( R Base::*pmf, Derived* derived, Args&&... args)
+         {
+            return ( derived->*pmf)( std::forward<Args>(args)...);
+         }
+
          //!
          //! free function/functor
          //!

@@ -23,19 +23,16 @@ namespace casual
       namespace local
       {
          template<typename T>
-         void value_to_string( const T& value, std::string& string)
+         void value_to_string( T&& value, std::string& string)
          {
-            sf::archive::ini::Save save;
-            sf::archive::ini::Writer writer( save());
+            auto writer = sf::archive::ini::writer( string);
             writer << CASUAL_MAKE_NVP( value);
-            save( string);
          }
 
          template<typename T>
          void string_to_value( const std::string& string, T& value)
          {
-            sf::archive::ini::Load load;
-            sf::archive::ini::Reader reader( load( string));
+            auto reader = sf::archive::ini::reader( string);
             reader >> CASUAL_MAKE_NVP( value);
          }
 
@@ -58,11 +55,10 @@ namespace casual
    TEST( casual_sf_ini_archive, write_read_boolean)
    {
       std::string ini;
-      bool source = true;
-      local::value_to_string( source, ini);
+      local::value_to_string( true, ini);
       bool target = false;
       local::string_to_value( ini, target);
-      EXPECT_TRUE( source == target);
+      EXPECT_TRUE( target == true);
    }
 
    TEST( casual_sf_ini_archive, write_read_decimal)

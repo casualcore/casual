@@ -1,8 +1,5 @@
 //!
-//! test_uuid.cpp
-//!
-//! Created on: May 5, 2013
-//!     Author: Lazan
+//! casual
 //!
 
 #include <gtest/gtest.h>
@@ -14,21 +11,14 @@ namespace casual
 {
    TEST( casual_sf_uuid, serialize)
    {
-
-      sf::archive::yaml::Save save;
-      sf::archive::yaml::Writer writer( save());
-
-      sf::platform::Uuid uuid( sf::platform::uuid::make());
-
-      writer << CASUAL_MAKE_NVP( uuid);
-
       std::string yaml;
-      save( yaml);
+      auto uuid = sf::platform::uuid::make();
 
-      sf::archive::yaml::Load load;
-      load( yaml);
-      sf::archive::yaml::Reader reader( load());
-
+      {
+         auto writer = sf::archive::yaml::writer( yaml);
+         writer << CASUAL_MAKE_NVP( uuid);
+      }
+      auto reader = sf::archive::yaml::reader( yaml);
       sf::platform::Uuid out;
       reader >> sf::name::value::pair::make( "uuid", out);
 

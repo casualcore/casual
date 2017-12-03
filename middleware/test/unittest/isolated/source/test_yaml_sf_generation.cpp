@@ -219,13 +219,9 @@ proxy:
 
 TEST( casual_yaml_sf_generation, desrialize_server)
 {
-
-   sf::archive::yaml::Load load;
-   load( getDeclaration());
-   sf::archive::yaml::relaxed::Reader relaxed( load());
+   auto relaxed = sf::archive::yaml::relaxed::reader( getDeclaration()); 
 
    Declaration declaration;
-
    declaration.serialize( relaxed);
 
    ASSERT_TRUE( declaration.server.services.size() == 2);
@@ -241,9 +237,7 @@ TEST( casual_yaml_sf_generation, desrialize_server)
 
 TEST( casual_yaml_sf_generation, desrialize_proxy)
 {
-   sf::archive::yaml::Load load;
-   load( getDeclaration());
-   sf::archive::yaml::relaxed::Reader relaxed( load());
+   auto relaxed = sf::archive::yaml::relaxed::reader( getDeclaration()); 
 
    Proxy proxy;
 

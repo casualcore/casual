@@ -16,41 +16,28 @@ namespace casual
    {
       namespace
       {
-
          template< typename T>
          void value_to_string( T&& value, std::string& string)
          {
-            sf::archive::json::Save save;
-            sf::archive::json::Writer writer( save());
-
+            auto writer = sf::archive::json::writer( string);
             writer << CASUAL_MAKE_NVP( value);
-
-            save( string);
          }
 
          template< typename T>
          void string_to_strict_value( const std::string& string, T&& value)
          {
-            sf::archive::json::Load load;
-
-            sf::archive::json::Reader reader( load( string));
-
+            auto reader = sf::archive::json::reader( string);
             reader >> CASUAL_MAKE_NVP( value);
          }
 
          template< typename T>
          void string_to_relaxed_value( const std::string& string, T&& value)
          {
-            sf::archive::json::Load load;
-
-            sf::archive::json::relaxed::Reader reader( load( string));
-
+            auto reader = sf::archive::json::relaxed::reader( string);
             reader >> CASUAL_MAKE_NVP( value);
          }
 
       } // <unnamed>
-
-
    } // local
 
 
@@ -149,7 +136,7 @@ namespace casual
 
       EXPECT_THROW
       ({
-         sf::archive::json::Load{}( json);
+         auto reader = sf::archive::json::reader( json);
       }, sf::exception::archive::invalid::Document);
    }
 

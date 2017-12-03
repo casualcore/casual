@@ -62,8 +62,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-                  archive::binary::Reader m_reader;
-                  archive::binary::Writer m_writer;
+                  archive::Reader m_reader;
+                  archive::Writer m_writer;
 
                };
 
@@ -77,11 +77,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-
-                  archive::yaml::Load m_load;
-                  archive::yaml::Reader m_reader;
-                  archive::yaml::Save m_save;
-                  archive::yaml::Writer m_writer;
+                  archive::Reader m_reader;
+                  archive::Writer m_writer;
                };
 
                class Json : public Base
@@ -93,13 +90,9 @@ namespace casual
                   protocol::result_type finalize();
                   static const std::string& type();
 
-
                private:
-
-                  archive::json::Load m_load;
-                  archive::json::Reader m_reader;
-                  archive::json::Save m_save;
-                  archive::json::Writer m_writer;
+                  archive::Reader m_reader;
+                  archive::Writer m_writer;
                };
 
                class Xml : public Base
@@ -112,11 +105,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-
-                  archive::xml::Load m_load;
-                  archive::xml::Reader m_reader;
-                  archive::xml::Save m_save;
-                  archive::xml::Writer m_writer;
+                  archive::Reader m_reader;
+                  archive::Writer m_writer;
                };
 
                class Ini : public Base
@@ -128,12 +118,8 @@ namespace casual
                   static const std::string& type();
 
                private:
-
-                  archive::ini::Load m_load;
-                  archive::ini::Reader m_reader;
-                  archive::ini::Save m_save;
-                  archive::ini::Writer m_writer;
-
+                  archive::Reader m_reader;
+                  archive::Writer m_writer;
                };
 
 
@@ -146,7 +132,7 @@ namespace casual
                   public:
                      using base_type = B;
 
-                     Log( protocol::parameter_type&& parameter) : base_type( std::move( parameter)), m_writer( log::parameter)
+                     Log( protocol::parameter_type&& parameter) : base_type( std::move( parameter)), m_writer( archive::log::writer( log::parameter))
                      {
                         this->m_input.writers.push_back( &m_writer);
                         this->m_output.writers.push_back( &m_writer);
@@ -155,7 +141,7 @@ namespace casual
                      Log( Log&&) = default;
 
                   private:
-                     archive::log::Writer m_writer;
+                     archive::Writer m_writer;
 
                   };
                } // parameter
@@ -188,14 +174,16 @@ namespace casual
 
                   Model m_model;
 
-                  archive::service::describe::Prepare m_prepare;
+                  archive::Reader m_prepare = archive::service::describe::prepare();
 
                   struct writer_t
                   {
-                     writer_t( Model& model) : input( model.arguments.input), output( model.arguments.output) {}
+                     writer_t( Model& model) 
+                        : input( archive::service::describe::writer( model.arguments.input)), 
+                          output( archive::service::describe::writer( model.arguments.output)) {}
 
-                     archive::service::describe::Writer input;
-                     archive::service::describe::Writer output;
+                     archive::Writer input;
+                     archive::Writer output;
                   } m_writer;
 
                   service::Protocol m_protocol;

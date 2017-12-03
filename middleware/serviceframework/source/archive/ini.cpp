@@ -4,6 +4,7 @@
 
 
 #include "sf/archive/ini.h"
+#include "sf/archive/policy.h"
 
 #include "sf/exception.h"
 
@@ -24,641 +25,660 @@ namespace casual
       {
          namespace ini
          {
-            namespace
+            namespace local
             {
-               namespace local
+               namespace
                {
                   const std::string magic{ '@' };
-               } // local
-            } //
 
-            namespace
-            {
-               namespace local
-               {
-                  std::string trim( std::string string)
+                  struct tree
                   {
-                     const auto trimmer = [] ( const std::string::value_type character)
-                     { return ! std::isspace( character, std::locale::classic()); };
+                     std::multimap<std::string,tree> children;
+                     std::multimap<std::string,std::string> values;
+                  };
 
-                     string.erase( string.begin(), std::find_if( string.begin(), string.end(), trimmer));
-                     string.erase( std::find_if( string.rbegin(), string.rend(), trimmer).base(), string.end());
-
-                     return string;
-                  }
-
-                  // TODO: Make it streamable
-                  std::string decode( const std::string& data)
+                  namespace reader
                   {
-                     std::ostringstream stream;
-
-                     for( std::string::size_type idx = 0; idx < data.size(); ++idx)
+                     std::string trim( std::string string)
                      {
-                        if( data[idx] == '\\')
-                        {
-                           // TODO: handle all control-characters (and back-slash)
+                        const auto trimmer = [] ( const std::string::value_type character)
+                        { return ! std::isspace( character, std::locale::classic()); };
 
-                           switch( data[++idx])
-                           {
-                           case '\\': stream.put( '\\'); break;
-                           case '0': stream.put( '\0');  break;
-                           case 'a': stream.put( '\a');  break;
-                           case 'b': stream.put( '\b');  break;
-                           case 'f': stream.put( '\f');  break;
-                           case 'n': stream.put( '\n');  break;
-                           case 'r': stream.put( '\r');  break;
-                           case 't': stream.put( '\t');  break;
-                           case 'v': stream.put( '\v');  break;
-                           default: throw exception::archive::invalid::Document{ "Invalid content"};
-                           }
-                        }
-                        else
-                        {
-                           stream.put( data[idx]);
-                        }
+                        string.erase( string.begin(), std::find_if( string.begin(), string.end(), trimmer));
+                        string.erase( std::find_if( string.rbegin(), string.rend(), trimmer).base(), string.end());
 
+                        return string;
                      }
 
-                     return stream.str();
-                  }
-
-                  void parse_flat( tree& document, std::istream& stream)
-                  {
-                     //
-                     // This function would make Sean Parent cry !!!
-                     //
-
-                     auto composite = &document;
-
-                     std::vector<std::string> last;
-
-
-                     std::string line;
-                     while( std::getline( stream, line))
+                     // TODO: Make it streamable
+                     std::string decode( const std::string& data)
                      {
-                        const auto candidate = trim( line);
+                        std::ostringstream stream;
 
-                        if( candidate.empty())
+                        for( std::string::size_type idx = 0; idx < data.size(); ++idx)
                         {
-                           //
-                           // Found nothing and we just ignore it
-                           //
-                           continue;
-                        }
-
-                        if( candidate.find_first_of( "#;") == 0)
-                        {
-                           //
-                           // Found a comment and we just ignore it
-                           //
-                           continue;
-                        }
-
-                        const auto separator = line.find_first_of( '=');
-
-                        if( separator != std::string::npos)
-                        {
-                           //
-                           // We found a (potential) value and some data
-                           //
-
-                           auto name = trim( line.substr( 0, separator));
-                           auto data = line.substr( separator + 1);
-
-                           //
-                           // Add it to the tree after some unmarshalling
-                           //
-                           composite->values.emplace( std::move( name), decode( data));
-
-                           continue;
-                        }
-
-
-                        if( candidate.front() == '[' && candidate.back() == ']')
-                        {
-                           //
-                           // Found a potential section (a.k.a. composite a.k.a. serializable)
-                           //
-
-
-                           //
-                           // An internal lambda-helper to split a qualified name
-                           //
-                           const auto splitter = [] ( std::string qualified)
+                           if( data[idx] == '\\')
                            {
-                              std::vector<std::string> result;
+                              // TODO: handle all control-characters (and back-slash)
 
-                              std::istringstream stream( std::move( qualified));
-                              std::string name;
-                              while( std::getline( stream, name, '.'))
+                              switch( data[++idx])
                               {
-                                 auto candidate = trim( std::move( name) );
+                              case '\\': stream.put( '\\'); break;
+                              case '0': stream.put( '\0');  break;
+                              case 'a': stream.put( '\a');  break;
+                              case 'b': stream.put( '\b');  break;
+                              case 'f': stream.put( '\f');  break;
+                              case 'n': stream.put( '\n');  break;
+                              case 'r': stream.put( '\r');  break;
+                              case 't': stream.put( '\t');  break;
+                              case 'v': stream.put( '\v');  break;
+                              default: throw exception::archive::invalid::Document{ "Invalid content"};
+                              }
+                           }
+                           else
+                           {
+                              stream.put( data[idx]);
+                           }
 
-                                 if( candidate.empty())
+                        }
+
+                        return stream.str();
+                     }
+
+                     void parse_flat( tree& document, std::istream& stream)
+                     {
+                        //
+                        // This function would make Sean Parent cry !!!
+                        //
+
+                        auto composite = &document;
+
+                        std::vector<std::string> last;
+
+
+                        std::string line;
+                        while( std::getline( stream, line))
+                        {
+                           const auto candidate = trim( line);
+
+                           if( candidate.empty())
+                           {
+                              //
+                              // Found nothing and we just ignore it
+                              //
+                              continue;
+                           }
+
+                           if( candidate.find_first_of( "#;") == 0)
+                           {
+                              //
+                              // Found a comment and we just ignore it
+                              //
+                              continue;
+                           }
+
+                           const auto separator = line.find_first_of( '=');
+
+                           if( separator != std::string::npos)
+                           {
+                              //
+                              // We found a (potential) value and some data
+                              //
+
+                              auto name = trim( line.substr( 0, separator));
+                              auto data = line.substr( separator + 1);
+
+                              //
+                              // Add it to the tree after some unmarshalling
+                              //
+                              composite->values.emplace( std::move( name), decode( data));
+
+                              continue;
+                           }
+
+
+                           if( candidate.front() == '[' && candidate.back() == ']')
+                           {
+                              //
+                              // Found a potential section (a.k.a. composite a.k.a. serializable)
+                              //
+
+
+                              //
+                              // An internal lambda-helper to split a qualified name
+                              //
+                              const auto splitter = [] ( std::string qualified)
+                              {
+                                 std::vector<std::string> result;
+
+                                 std::istringstream stream( std::move( qualified));
+                                 std::string name;
+                                 while( std::getline( stream, name, '.'))
+                                 {
+                                    auto candidate = trim( std::move( name) );
+
+                                    if( candidate.empty())
+                                    {
+                                       throw exception::archive::invalid::Document{ "Invalid name"};
+                                    }
+                                    else
+                                    {
+                                       result.push_back( std::move( candidate));
+                                    }
+                                 }
+
+                                 if( result.empty())
                                  {
                                     throw exception::archive::invalid::Document{ "Invalid name"};
                                  }
-                                 else
+
+                                 return result;
+
+
+                              };
+
+                              //
+                              // An internal lambda-helper to help out where to add this section
+                              //
+                              const auto finder = [] ( const std::vector<std::string>& last, const std::vector<std::string>& next)
+                              {
+                                 if( next.size() > last.size())
                                  {
-                                    result.push_back( std::move( candidate));
+                                    return std::mismatch( last.begin(), last.end(), next.begin()).second;
                                  }
-                              }
 
-                              if( result.empty())
+                                 auto match = std::mismatch( next.begin(), next.end(), last.begin());
+
+                                 return match.first != next.end() ? match.first : std::prev( match.first);
+                              };
+
+
+                              //
+                              // First we split the string (e.g. 'foo.bar' into 'foo' and 'bar')
+                              //
+                              auto next = splitter( { candidate.begin() + 1, candidate.end() - 1 } );
+
+
+                              const auto inserter = finder( last, next);
+
+                              composite = &document;
+
+                              //
+                              // Search from root to find out where this should be added
+                              //
+                              for( auto name = next.begin(); name != inserter; ++name)
                               {
-                                 throw exception::archive::invalid::Document{ "Invalid name"};
+                                 composite = &std::prev( composite->children.upper_bound( *name))->second;
                               }
 
-                              return result;
-
-
-                           };
-
-                           //
-                           // An internal lambda-helper to help out where to add this section
-                           //
-                           const auto finder = [] ( const std::vector<std::string>& last, const std::vector<std::string>& next)
-                           {
-                              if( next.size() > last.size())
+                              //
+                              // Add all names where they should be added
+                              //
+                              for( auto name = inserter; name != next.end(); ++name)
                               {
-                                 return std::mismatch( last.begin(), last.end(), next.begin()).second;
+                                 composite = &composite->children.emplace( *name, tree())->second;
                               }
 
-                              auto match = std::mismatch( next.begin(), next.end(), last.begin());
+                              //
+                              // Keep this qualified name until next time
+                              //
+                              std::swap( last, next);
 
-                              return match.first != next.end() ? match.first : std::prev( match.first);
-                           };
-
-
-                           //
-                           // First we split the string (e.g. 'foo.bar' into 'foo' and 'bar')
-                           //
-                           auto next = splitter( { candidate.begin() + 1, candidate.end() - 1 } );
+                              continue;
+                           }
 
 
-                           const auto inserter = finder( last, next);
-
-                           composite = &document;
-
-                           //
-                           // Search from root to find out where this should be added
-                           //
-                           for( auto name = next.begin(); name != inserter; ++name)
+                           if( candidate.back() == '\\')
                            {
-                              composite = &std::prev( composite->children.upper_bound( *name))->second;
+                              //
+                              // TODO: Possibly append to previous data
+                              //
+                              // Can be done by using 'inserter' and previous.back()
+                              //
+                           }
+
+
+                           //
+                           // Unknown content
+                           //
+                           exception::archive::invalid::Document( "Invalid document");
+                        }
+                     }
+
+                     tree parse_flat( std::istream& stream)
+                     {
+                        tree document;
+                        parse_flat( document, stream);
+                        return document;
+                     }
+
+                     tree parse_flat( const std::string& ini)
+                     {
+                        std::istringstream stream( ini);
+                        return parse_flat( stream);
+                     }
+
+                     tree parse_flat( const char* ini, platform::size::type size)
+                     {
+                        std::istringstream stream( std::string( ini, size));
+                        return parse_flat( stream);
+                     }
+
+
+                     tree parse_flat( const platform::binary::type& ini)
+                     {
+                        return parse_flat( ini.data(), ini.size());
+                     }
+
+                     struct Implementation
+                     {
+                        Implementation( tree&& document) : m_document( std::move( document)), m_node_stack{ &m_document} {}
+
+                        std::tuple< platform::size::type, bool> container_start( const platform::size::type size, const char* const name)
+                        {
+
+                           if( name)
+                           {
+                              //
+                              // We do not know whether it's a node or data
+                              //
+
+                              const auto node = m_node_stack.back()->children.equal_range( name);
+
+                              if( node.first != node.second)
+                              {
+                                 //
+                                 // Transform backwards
+                                 //
+                                 for( auto iterator = node.second; iterator != node.first; --iterator)
+                                 {
+                                    m_node_stack.push_back( &std::prev( iterator)->second);
+                                 }
+
+                                 return std::make_tuple( std::distance( node.first, node.second), true);
+                              }
+
+                              const auto data = m_node_stack.back()->values.equal_range( name);
+
+                              if( data.first != data.second)
+                              {
+                                 //
+                                 // Transform backwards
+                                 //
+                                 for( auto iterator = data.second; iterator != data.first; --iterator)
+                                 {
+                                    m_data_stack.push_back( &std::prev( iterator)->second);
+                                 }
+
+                                 return std::make_tuple( std::distance( data.first, data.second), true);
+                              }
+
+                           }
+                           else
+                           {
+                              //
+                              // An idea to handle this is by creating fake serializable
+                              //
+                              // E.g. [@name], [@name.@name], etc or something
+                              //
+                              throw exception::archive::invalid::Node{ "Nested containers not supported (yet)"};
+                           }
+
+
+                           //
+                           // Note that we return 'true' anyway - Why?
+                           //
+
+                           return std::make_tuple( 0, false);
+
+                        }
+
+                        void container_end( const char* const name) {}
+
+                        bool serialtype_start( const char* const name)
+                        {
+                           if( name)
+                           {
+                              const auto node = m_node_stack.back()->children.find( name);
+
+                              if( node != m_node_stack.back()->children.end())
+                              {
+                                 m_node_stack.push_back( &node->second);
+                              }
+                              else
+                              {
+                                 return false;
+                              }
                            }
 
                            //
-                           // Add all names where they should be added
+                           // Either we found the node or we assume it's an 'unnamed' container
+                           // element that is already pushed to the stack
                            //
-                           for( auto name = inserter; name != next.end(); ++name)
+
+                           return true;
+
+                        }
+
+                        void serialtype_end( const char* const name)
+                        {
+                           m_node_stack.pop_back();
+                        }
+
+                        bool value_start( const char* name)
+                        {
+                           if( name)
                            {
-                              composite = &composite->children.emplace( *name, tree())->second;
+                              const auto data = m_node_stack.back()->values.find( name);
+
+                              if( data != m_node_stack.back()->values.end())
+                              {
+                                 m_data_stack.push_back( &data->second);
+                              }
+                              else
+                              {
+                                 return false;
+                              }
                            }
 
                            //
-                           // Keep this qualified name until next time
+                           // Either we found the node or we assume it's an 'unnamed' container
+                           // element that is already pushed to the stack
                            //
-                           std::swap( last, next);
 
-                           continue;
+                           return true;
+
                         }
 
+                        void value_end( const char* name)
+                        {
+                           m_data_stack.pop_back();
+                        }
 
-                        if( candidate.back() == '\\')
+                        template< typename T>
+                        bool read( T& value, const char* const name)
+                        {
+                           if( ! value_start( name))
+                           {
+                              return false;
+                           }
+
+                           read( value);
+                           value_end( name);
+
+                           return true;
+                        }
+
+    
+                        template<typename T>
+                        void read( T& value)
+                        {
+                           value = common::from_string< T>( *m_data_stack.back());
+                        }
+
+                        void read( bool& value)
+                        { 
+                           if( *m_data_stack.back() == "true")  value = true;
+                           else if( *m_data_stack.back() == "false") value = false;
+                           else throw exception::archive::invalid::Node{ "unexpected type"};
+                        }
+
+                        void read( char& value)
+                        {
+                           value = m_data_stack.back()->empty() ? '\0' : m_data_stack.back()->front();
+                        }
+
+                        void read( std::string& value)
+                        {
+                           value = *m_data_stack.back();
+                        }
+
+                        void read( std::vector<char>& value)
                         {
                            //
-                           // TODO: Possibly append to previous data
+                           // Binary data might be double-decoded (in the end)
                            //
-                           // Can be done by using 'inserter' and previous.back()
+                           value = common::transcode::base64::decode( *m_data_stack.back());
+                        }
+
+                        tree m_document;
+                        using data = std::string;
+                        std::vector<const data*> m_data_stack;
+                        std::vector<const tree*> m_node_stack;
+                     };
+
+                     namespace relaxed
+                     {
+                        template< typename S>
+                        archive::Reader create( S& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( parse_flat( source));
+                        }
+                     } // relaxed
+
+                     namespace strict
+                     {
+                        template< typename S>
+                        archive::Reader create( S& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( parse_flat( source));
+                        }
+                     } // strict
+                  } // reader
+
+
+                  namespace writer
+                  {
+                     // TODO: Make it streamable
+                     std::string encode( const std::string& data)
+                     {
+                        std::ostringstream stream;
+                        for( const auto sign : data)
+                        {
+                           // TODO: handle all control-characters (and back-slash)
+                           //if( std::iscntrl( sign, std::locale::classic())){ ... }
+
+                           switch( sign)
+                           {
+                           case '\\': stream << "\\\\";  break;
+                           case '\0': stream << "\\0";   break;
+                           case '\a': stream << "\\a";   break;
+                           case '\b': stream << "\\b";   break;
+                           case '\f': stream << "\\f";   break;
+                           case '\n': stream << "\\n";   break;
+                           case '\r': stream << "\\r";   break;
+                           case '\t': stream << "\\t";   break;
+                           case '\v': stream << "\\v";   break;
+                           default: stream.put( sign);   break;
+                           }
+                        }
+
+                        return stream.str();
+                     }
+
+                     void write_flat( const tree& node, std::ostream& stream, const std::string& name = "")
+                     {
+                        for( const auto& value : node.values)
+                        {
+                           stream << value.first << '=' << encode( value.second) << '\n';
+                        }
+
+                        for( const auto& child : node.children)
+                        {
+                           const auto qualified = name.empty() ? child.first : name + '.' + child.first;
+
                            //
+                           // Let's print useless empty sections anyway ('cause
+                           // reading need 'em as of today)
+                           //
+                           //if( ! child.second.values.empty())
+                           {
+                              stream << '\n' << '[' << qualified << ']' << '\n';
+                           }
+
+                           write_flat( child.second, stream, qualified);
                         }
-
-
-                        //
-                        // Unknown content
-                        //
-                        exception::archive::invalid::Document( "Invalid document");
-
                      }
 
-                  }
-
-
-               } // local
-
-            } //
-
-            Load::Load() = default;
-            Load::~Load() = default;
-
-            const tree& Load::operator() () const noexcept
-            {
-               return m_document;
-            }
-
-            const tree& Load::operator() ( std::istream& stream)
-            {
-               local::parse_flat( m_document, stream);
-               return m_document;
-            }
-
-            const tree& Load::operator() ( const std::string& ini)
-            {
-               std::istringstream stream( ini);
-               local::parse_flat( m_document, stream);
-               return m_document;
-            }
-
-            const tree& Load::operator() ( const platform::binary::type& ini)
-            {
-               return operator() ( ini.data(), ini.size());
-            }
-
-            const tree& Load::operator() ( const char* ini, platform::size::type size)
-            {
-               std::istringstream stream( std::string( ini, size));
-               return operator() ( stream);
-            }
-
-            namespace reader
-            {
-
-               Implementation::Implementation( const tree& document) : m_node_stack{ &document } {}
-
-               std::tuple< platform::size::type, bool> Implementation::container_start( const platform::size::type size, const char* const name)
-               {
-
-                  if( name)
-                  {
-                     //
-                     // We do not know whether it's a node or data
-                     //
-
-                     const auto node = m_node_stack.back()->children.equal_range( name);
-
-                     if( node.first != node.second)
+                     void write_flat( const tree& node, std::string& ini)
                      {
-                        //
-                        // Transform backwards
-                        //
-                        for( auto iterator = node.second; iterator != node.first; --iterator)
+                        std::ostringstream stream;
+                        write_flat( node, stream);
+                        ini = stream.str();
+                     }
+
+                     void write_flat( const tree& node, platform::binary::type& ini)
+                     {
+                        std::string buffer;
+                        write_flat( node, buffer);
+                        ini.assign( std::begin( buffer), std::end( buffer));
+                     }
+                     
+                     class Implementation
+                     {
+
+                     public:
+
+                        Implementation() : m_node_stack{ &m_document } {}
+
+                        platform::size::type container_start( const platform::size::type size, const char* const name)
                         {
-                           m_node_stack.push_back( &std::prev( iterator)->second);
+                           //
+                           // We do not know where it's node or data
+                           //
+
+                           if( name)
+                           {
+                              m_name_stack.push_back( name);
+                           }
+                           else
+                           {
+                              throw exception::archive::invalid::Node{ "Nested containers not supported (yet)"};
+                           }
+
+                           return size;
                         }
-
-                        return std::make_tuple( std::distance( node.first, node.second), true);
-                     }
-
-                     const auto data = m_node_stack.back()->values.equal_range( name);
-
-                     if( data.first != data.second)
-                     {
-                        //
-                        // Transform backwards
-                        //
-                        for( auto iterator = data.second; iterator != data.first; --iterator)
+                        
+                        void container_end( const char* const name)
                         {
-                           m_data_stack.push_back( &std::prev( iterator)->second);
+                           if( name)
+                           {
+                              m_name_stack.pop_back();
+                           }
                         }
 
-                        return std::make_tuple( std::distance( data.first, data.second), true);
-                     }
+                        void serialtype_start( const char* const name)
+                        {
+                           const auto final = name ? name : m_name_stack.back();
 
-                  }
-                  else
-                  {
-                     //
-                     // An idea to handle this is by creating fake serializable
-                     //
-                     // E.g. [@name], [@name.@name], etc or something
-                     //
-                     throw exception::archive::invalid::Node{ "Nested containers not supported (yet)"};
-                  }
+                           const auto child = m_node_stack.back()->children.emplace( final, tree());
+
+                           m_node_stack.push_back( &child->second);
+                        }
+
+                        void serialtype_end( const char* const name)
+                        {
+                           m_node_stack.pop_back();
+                        }
+
+                        template< typename T>
+                        void write( const T& data, const char* const name)
+                        {
+                           write( encode( data), name);
+                        }
+
+                        void write( std::string data, const char* const name)
+                        {
+                           const auto final = name ? name : m_name_stack.back();
+
+                           m_node_stack.back()->values.emplace( final, std::move( data));
+                        }
+
+                        const tree& document() const { return m_document;}
+                     private:
+
+                        template<typename T>
+                        std::string encode( const T& value) const
+                        {
+                           return std::to_string( value);
+                        }
+
+                        //
+                        // A few overloads
+                        //
 
 
-                  //
-                  // Note that we return 'true' anyway - Why?
-                  //
+                        std::string encode( const bool& value) const
+                        {
+                           return value ? "true" : "false";
+                        }
 
-                  return std::make_tuple( 0, false);
+                        std::string encode( const char& value) const
+                        {
+                           return std::string{ value};
+                        }
 
-               }
+                        std::string encode( const std::vector<char>& value) const
+                        {
+                           //
+                           // Binary data might be double-encoded
+                           //
+                           return common::transcode::base64::encode( value);
+                        }
 
-               void Implementation::container_end( const char* const name)
-               {
+                        using name = const char;
 
-               }
+                        tree m_document;
+                        std::vector<name*> m_name_stack; // for containers
+                        std::vector<tree*> m_node_stack;
 
-               bool Implementation::serialtype_start( const char* const name)
-               {
-                  if( name)
-                  {
-                     const auto node = m_node_stack.back()->children.find( name);
+                     }; // Implementation
 
-                     if( node != m_node_stack.back()->children.end())
+                     template< typename Out> 
+                     struct Holder : Implementation
                      {
-                        m_node_stack.push_back( &node->second);
-                     }
-                     else
-                     {
-                        return false;
-                     }
-                  }
+                        Holder( Out& out) : m_out( out) {}
 
-                  //
-                  // Either we found the node or we assume it's an 'unnamed' container
-                  // element that is already pushed to the stack
-                  //
-
-                  return true;
-
-               }
-
-               void Implementation::serialtype_end( const char* const name)
-               {
-                  m_node_stack.pop_back();
-               }
-
-               bool Implementation::value_start( const char* name)
-               {
-                  if( name)
-                  {
-                     const auto data = m_node_stack.back()->values.find( name);
-
-                     if( data != m_node_stack.back()->values.end())
-                     {
-                        m_data_stack.push_back( &data->second);
-                     }
-                     else
-                     {
-                        return false;
-                     }
-                  }
-
-                  //
-                  // Either we found the node or we assume it's an 'unnamed' container
-                  // element that is already pushed to the stack
-                  //
-
-                  return true;
-
-               }
-
-               void Implementation::value_end( const char* name)
-               {
-                  m_data_stack.pop_back();
-               }
-
-               namespace
-               {
-                  namespace local
-                  {
-
-                     template<typename T>
-                     T read( const std::string& data)
-                     {
-                        std::istringstream stream( data);
-                        T result;
-                        stream >> result;
-                        if( ! stream.fail() && stream.eof())   return result;
-                        throw exception::archive::invalid::Node{ "unexpected type"};
-                     }
-
-
-                     //
-                     // std::istream::eof() is not set when streaming bool
-                     //
-                     template<>
-                     bool read( const std::string& data)
-                     {
-                        if( data == "true")  return true;
-                        if( data == "false") return false;
-                        throw exception::archive::invalid::Node{ "unexpected type"};
-                     }
-                  }
+                        void flush() 
+                        {
+                           write_flat( Implementation::document(), m_out.get());
+                        }
+                        std::reference_wrapper< Out> m_out;
+                     };
+                  } // writer
                } // <unnamed>
-
-               void Implementation::read( bool& value) const
-               { value = local::read<bool>( *m_data_stack.back()); }
-               void Implementation::read( short& value) const
-               { value = local::read<short>( *m_data_stack.back()); }
-               void Implementation::read( long& value) const
-               { value = local::read<long>( *m_data_stack.back()); }
-               void Implementation::read( long long& value) const
-               { value = local::read<long long>( *m_data_stack.back()); }
-               void Implementation::read( float& value) const
-               { value = local::read<float>( *m_data_stack.back()); }
-               void Implementation::read( double& value) const
-               { value = local::read<double>( *m_data_stack.back()); }
-
-               void Implementation::read( char& value) const
-               {
-                  value = m_data_stack.back()->empty() ? '\0' : m_data_stack.back()->front();
-               }
-
-               void Implementation::read( std::string& value) const
-               {
-                  value = *m_data_stack.back();
-               }
-
-               void Implementation::read( std::vector<char>& value) const
-               {
-                  //
-                  // Binary data might be double-decoded (in the end)
-                  //
-                  value = common::transcode::base64::decode( *m_data_stack.back());
-               }
-
-            } // reader
-
-
-            namespace
+            } // local
+            
+            namespace relaxed
             {
-               namespace local
-               {
-
-                  // TODO: Make it streamable
-                  std::string encode( const std::string& data)
-                  {
-                     std::ostringstream stream;
-                     for( const auto sign : data)
-                     {
-                        // TODO: handle all control-characters (and back-slash)
-                        //if( std::iscntrl( sign, std::locale::classic())){ ... }
-
-                        switch( sign)
-                        {
-                        case '\\': stream << "\\\\";  break;
-                        case '\0': stream << "\\0";   break;
-                        case '\a': stream << "\\a";   break;
-                        case '\b': stream << "\\b";   break;
-                        case '\f': stream << "\\f";   break;
-                        case '\n': stream << "\\n";   break;
-                        case '\r': stream << "\\r";   break;
-                        case '\t': stream << "\\t";   break;
-                        case '\v': stream << "\\v";   break;
-                        default: stream.put( sign);   break;
-                        }
-                     }
-
-                     return stream.str();
-                  }
-
-                  void write_flat( const tree& node, std::ostream& stream, const std::string& name = "")
-                  {
-                     for( const auto& value : node.values)
-                     {
-                        stream << value.first << '=' << encode( value.second) << '\n';
-                     }
-
-                     for( const auto& child : node.children)
-                     {
-                        const auto qualified = name.empty() ? child.first : name + '.' + child.first;
-
-                        //
-                        // Let's print useless empty sections anyway ('cause
-                        // reading need 'em as of today)
-                        //
-                        //if( ! child.second.values.empty())
-                        {
-                           stream << '\n' << '[' << qualified << ']' << '\n';
-                        }
-
-                        write_flat( child.second, stream, qualified);
-                     }
-
-                  }
-
-/*
-                  void write_tree( const tree& node, std::ostream& stream, std::string::size_type indent = 0)
-                  {
-                     for( const auto& value : node.values)
-                     {
-                        stream << std::string( indent, ' ') << value.first << '=' << value.second << '\n';
-                     }
-
-                     for( const auto& child : node.children)
-                     {
-                        ++indent;
-                        stream << '\n' << std::string( indent, ' ') << '[' << child.first << ']' << '\n';
-                        write_tree( child.second, stream, indent);
-                        ++indent;
-                     }
-
-                  }
-*/
-
-               } // local
-
-            } //
-
-
-            Save::Save() = default;
-            Save::~Save() = default;
-
-            tree& Save::operator() () noexcept
-            {
-               return m_document;
+               archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
+               archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
             }
 
-            void Save::operator() ( std::ostream& ini) const
+            archive::Reader reader( const std::string& source) { return local::reader::strict::create( source);}
+            archive::Reader reader( std::istream& source) { return local::reader::strict::create( source);}
+            archive::Reader reader( const common::platform::binary::type& source) { return local::reader::strict::create( source);}
+
+
+            archive::Writer writer( std::string& destination)
             {
-               local::write_flat( m_document, ini);
+               return archive::Writer::emplace< local::writer::Holder< std::string>>( destination);
             }
 
-            void Save::operator() ( std::string& ini) const
+            archive::Writer writer( std::ostream& destination)
             {
-               std::ostringstream stream;
-               local::write_flat( m_document, stream);
-               ini = stream.str();
+               return archive::Writer::emplace< local::writer::Holder< std::ostream>>( destination);
             }
 
-            void Save::operator() ( platform::binary::type& ini) const
+            archive::Writer writer( common::platform::binary::type& destination)
             {
-               std::string buffer;
-               operator()( buffer);
-               ini.assign( std::begin( buffer), std::end( buffer));
+               return archive::Writer::emplace< local::writer::Holder< common::platform::binary::type>>( destination);
             }
-
-            namespace writer
-            {
-
-               Implementation::Implementation( tree& document) : m_node_stack{ &document } {}
-
-               platform::size::type Implementation::container_start( const platform::size::type size, const char* const name)
-               {
-                  //
-                  // We do not know where it's node or data
-                  //
-
-                  if( name)
-                  {
-                     m_name_stack.push_back( name);
-                  }
-                  else
-                  {
-                     throw exception::archive::invalid::Node{ "Nested containers not supported (yet)"};
-                  }
-
-                  return size;
-               }
-
-               void Implementation::container_end( const char* const name)
-               {
-                  if( name)
-                  {
-                     m_name_stack.pop_back();
-                  }
-               }
-
-               void Implementation::serialtype_start( const char* const name)
-               {
-                  const auto final = name ? name : m_name_stack.back();
-
-                  const auto child = m_node_stack.back()->children.emplace( final, tree());
-
-                  m_node_stack.push_back( &child->second);
-               }
-
-               void Implementation::serialtype_end( const char* const name)
-               {
-                  m_node_stack.pop_back();
-               }
-
-               void Implementation::write( std::string data, const char* const name)
-               {
-                  const auto final = name ? name : m_name_stack.back();
-
-                  m_node_stack.back()->values.emplace( final, std::move( data));
-               }
-
-               std::string Implementation::encode( const bool& value) const
-               {
-                  return value ? "true" : "false";
-               }
-
-               std::string Implementation::encode( const char& value) const
-               {
-                  return std::string{ value};
-               }
-
-               std::string Implementation::encode( const std::vector<char>& value) const
-               {
-                  //
-                  // Binary data might be double-encoded
-                  //
-                  return common::transcode::base64::encode( value);
-               }
-
-            } // writer
 
          } // ini
-
       } // archive
-
    } // sf
-
 } // casual
 
 

@@ -4,7 +4,6 @@
 
 
 #include "sf/namevaluepair.h"
-#include "sf/archive/log.h"
 #include "sf/archive/maker.h"
 #include "sf/service/protocol/call.h"
 
@@ -573,20 +572,13 @@ namespace casual
             }
 
 
-            void output_state( const std::vector< std::string>& format)
+            void output_state( std::vector< std::string> format)
             {
                auto state = call::state();
+               format.emplace_back( "");
 
-               if( format.empty())
-               {
-                  sf::archive::log::Writer archive( std::cout);
-                  archive << CASUAL_MAKE_NVP( state);
-               }
-               else 
-               {
-                  auto archive = sf::archive::writer::from::name( std::cout, format.front());
-                  archive << CASUAL_MAKE_NVP( state);
-               }
+               auto archive = sf::archive::writer::from::name( std::cout, format.front());
+               archive << CASUAL_MAKE_NVP( state);
             }
 
 

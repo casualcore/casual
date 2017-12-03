@@ -67,8 +67,8 @@ namespace casual
             {
                if( out.good())
                {
-                  sf::archive::log::Writer writer( out);
-                  writer << value;
+                  auto archive = sf::archive::log::writer( out);
+                  archive << value;
                }
                return out;
             }

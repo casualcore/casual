@@ -6,6 +6,8 @@
 
 #include "sf/archive/maker.h"
 
+#include <fstream>
+
 namespace casual
 {
    namespace configuration
@@ -36,9 +38,10 @@ namespace casual
                   };
                }
 
-               void write( const resources_type& resources, const std::string& file)
+               void write( const resources_type& resources, const std::string& name)
                {
-                  auto archive = sf::archive::writer::from::file( file);
+                  std::ofstream file{ name};
+                  auto archive = sf::archive::writer::from::name( file, common::file::name::extension( name));
                   archive << CASUAL_MAKE_NVP( resources);
                }
 
@@ -46,8 +49,7 @@ namespace casual
                {
                   common::file::scoped::Path file{ common::file::name::unique( common::directory::temporary() + "/domain_", extension)};
 
-                  auto archive = sf::archive::writer::from::file( file);
-                  archive << CASUAL_MAKE_NVP( resources);
+                  write( resources, file);
 
                   return file;
                }

@@ -92,6 +92,17 @@ namespace casual
       }
 
 
+      namespace value
+      {
+         template< typename T, typename U>
+         auto max( T&& lhs, U&& rhs) -> std::common_type_t< T, U>
+         {
+            using common_type = std::common_type_t< T, U>;
+            if( static_cast< common_type>( lhs) < static_cast< common_type>( rhs)) return rhs;
+            return lhs;
+         }
+      } // value
+
       //!
       //! This is not intended to be a serious attempt at a range-library
       //! Rather an abstraction that helps our use-cases and to get a feel for

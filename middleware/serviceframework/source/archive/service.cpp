@@ -3,9 +3,9 @@
 //!
 
 #include "sf/archive/service.h"
-#include "sf/log.h"
 
-#include <random>
+#include "sf/platform.h"
+
 
 namespace casual
 {
@@ -17,72 +17,103 @@ namespace casual
          {
             namespace describe
             {
-
-               namespace implementation
+               namespace local
                {
-                  Writer::Writer( std::vector< sf::service::Model::Type>& types) : m_stack{ &types}
+                  namespace
                   {
-
-                  }
-
-                  Writer::Writer( Writer&&) = default;
-
-
-                  Writer::~Writer() = default;
-
-                  platform::size::type Writer::container_start( const platform::size::type size, const char* name)
-                  {
-                    auto& current = *m_stack.back();
-
-                    current.emplace_back( name, sf::service::model::type::Category::container);
-
-                    m_stack.push_back( &current.back().attribues);
-
-                     return 1;
-                  }
-
-                  void Writer::container_end( const char*)
-                  {
-                     m_stack.pop_back();
-                  }
-
-
-                  void Writer::serialtype_start( const char* name)
-                  {
-                     auto& current = *m_stack.back();
-
-                     current.emplace_back( name, sf::service::model::type::Category::composite);
-
-                     m_stack.push_back( &current.back().attribues);
-
-                  }
-
-                  void Writer::serialtype_end( const char*)
-                  {
-                     m_stack.pop_back();
-                  }
-
-
-                  bool Prepare::serialtype_start( const char*) { return true;}
-
-                  std::tuple< platform::size::type, bool> Prepare::container_start( platform::size::type size, const char*)
-                  {
-                     if( size == 0)
+                     namespace implementation
                      {
-                        return std::make_tuple( 1, true);
-                     }
+                        class Writer
+                        {
+                        public:
 
-                     return std::make_tuple( size, true);
-                  }
+                           using types_t = std::vector< sf::service::Model::Type>;
 
-                  void Prepare::container_end( const char*) { /*no op*/}
-                  void Prepare::serialtype_end( const char*) { /*no op*/}
+                           Writer( types_t& types) : m_stack{ &types}
+                           {
+                           }
+
+                           platform::size::type container_start( const platform::size::type size, const char* name)
+                           {
+                              auto& current = *m_stack.back();
+
+                              current.emplace_back( name, sf::service::model::type::Category::container);
+
+                              m_stack.push_back( &current.back().attribues);
+
+                                 return 1;
+                           }
+
+                           void container_end( const char*)
+                           {
+                              m_stack.pop_back();
+                           }
+
+                           
+                           void serialtype_start( const char* name)
+                           {
+                              auto& current = *m_stack.back();
+
+                              current.emplace_back( name, sf::service::model::type::Category::composite);
+
+                              m_stack.push_back( &current.back().attribues);
+                           }
+
+                           void serialtype_end( const char*)
+                           {
+                              m_stack.pop_back();
+                           }
+
+                           template<typename T>
+                           void write( T&& value, const char* name)
+                           {
+                              m_stack.back()->emplace_back( name, sf::service::model::type::traits< T>::category());
+                           }
+
+                        private:
+                           std::vector< types_t*> m_stack;
+                        };
 
 
-               } // implementation
+
+                        struct Prepare
+                        {
+                           bool serialtype_start( const char*) { return true;}
+
+                           std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*)
+                           {
+                              if( size == 0)
+                              {
+                                 return std::make_tuple( 1, true);
+                              }
+
+                              return std::make_tuple( size, true);
+                           }
+
+                           void container_end( const char*) { /*no op*/}
+                           void serialtype_end( const char*) { /*no op*/}
+
+                           template< typename T>
+                           bool read( T& value, const char*)
+                           {
+                              return true;
+                           }
+                        };
+
+                     } // implementation
+
+                  } // <unnamed>
+               } // local
+
+               
+               archive::Reader prepare() { return archive::Reader::emplace< local::implementation::Prepare>();}
+               
+               archive::Writer writer( std::vector< sf::service::Model::Type>& types)
+               {
+                  return archive::Writer::emplace< local::implementation::Writer>( types);
+               }
 
             } // describe
-
          } // service
       } // archive
    } // sf

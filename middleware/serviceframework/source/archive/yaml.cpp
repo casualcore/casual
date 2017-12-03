@@ -4,10 +4,18 @@
 
 #include "sf/archive/yaml.h"
 
+#include "sf/archive/policy.h"
+
 #include "sf/exception.h"
 #include "sf/log.h"
 
 #include "common/transcode.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <yaml-cpp/yaml.h>
+#include <yaml-cpp/binary.h>
+#pragma GCC diagnostic pop
 
 
 namespace casual
@@ -22,318 +30,412 @@ namespace casual
             {
                namespace
                {
-                  const std::string& empty()
+                  namespace reader
                   {
-                     static const std::string document{ "---\n"};
-                     return document;
-                  }
 
-                  const std::string& stream( const std::string& yaml)
-                  {
-                     if( yaml.empty())
+                     struct Load
                      {
-                        return empty();
-                     }
-                     return yaml;
-                  }
 
-                  const char* stream( const char* const yaml)
-                  {
-                     if( ! yaml || yaml[ 0] == '\0')
+                        const YAML::Node& operator() ( YAML::Node& document, std::istream& stream)
+                        {
+                           try
+                           {
+                              YAML::Parser parser( stream);
+                              if( ! parser.GetNextDocument( document))
+                              {
+                                 throw exception::archive::invalid::Document{ "no document"};
+                              }
+                           }
+                           catch( const YAML::ParserException& e)
+                           {
+                              throw exception::archive::invalid::Document{ e.what()};
+                           }
+
+                           return document;
+                        }
+
+                        const YAML::Node& operator() ( YAML::Node& document, const platform::binary::type& yaml)
+                        {
+                           return operator() ( document, yaml.data(), yaml.size());
+                        }
+
+                        const YAML::Node& operator() ( YAML::Node& document, const std::string& yaml)
+                        {
+                           std::istringstream stream{ wrap_empty( yaml)};
+                           return operator()( document, stream);
+                        }
+
+                        const YAML::Node& operator() ( YAML::Node& document, const char* const yaml, const platform::size::type size)
+                        {
+                           std::istringstream stream{ wrap_empty( std::string( yaml, size))};
+                           return operator()( document, stream);
+                        }
+                     private:
+                        const std::string& empty()
+                        {
+                           static const std::string document{ "---\n"};
+                           return document;
+                        }
+
+                        const std::string& wrap_empty( const std::string& yaml)
+                        {
+                           if( yaml.empty())
+                           {
+                              return empty();
+                           }
+                           return yaml;
+                        }
+
+                        const char* wrap_empty( const char* const yaml)
+                        {
+                           if( ! yaml || yaml[ 0] == '\0')
+                           {
+                              return empty().c_str();
+                           }
+                           return yaml;
+                        }
+                     };
+
+
+                     class Implementation
                      {
-                        return empty().c_str();
+                     public:
+
+                        template< typename... Ts>
+                        Implementation( Ts&&... ts) : m_stack{ &Load{}( m_document, std::forward< Ts>( ts)...)} {}
+
+                        std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* const name)
+                        {
+                           if( ! start( name))
+                           {
+                              return std::make_tuple( 0, false);
+                           }
+
+                           const auto& node = *m_stack.back();
+
+                           size = node.size();
+
+                           if( size)
+                           {
+                              //
+                              // If there are elements, it must be a sequence
+                              //
+
+                              if( node.Type() != YAML::NodeType::Sequence)
+                              {
+                                 throw exception::archive::invalid::Node{ "expected sequence"};
+                              }
+
+                              //
+                              // We stack'em in reverse order
+                              //
+
+                              for( auto index = size; index > 0; --index)
+                              {
+                                 m_stack.push_back( &node[ index - 1]);
+                              }
+                           }
+
+                           return std::make_tuple( size, true);
+
+                        }
+
+                        void container_end( const char* const name)
+                        {
+                           end( name);
+                        }
+
+                        bool serialtype_start( const char* const name)
+                        {
+                           if( ! start( name))
+                           {
+                              return false;
+                           }
+
+                           if( m_stack.back()->Type() != YAML::NodeType::Map)
+                           {
+                              throw exception::archive::invalid::Node{ "expected map"};
+                           }
+
+                           return true;
+                        }
+
+                        void serialtype_end( const char* const name)
+                        {
+                           end( name);
+                        }
+
+                        template< typename T>
+                        bool read( T& value, const char* const name)
+                        {
+                           if( start( name))
+                           {
+                              if( m_stack.back()->Type() != YAML::NodeType::Null)
+                              {
+                                 read( value);
+                              }
+
+                              end( name);
+                              return true;
+                           }
+
+                           return false;
+                        }
+
+                     private:
+
+                        bool start( const char* const name)
+                        {
+                           if( name)
+                           {
+                              auto node = m_stack.back()->FindValue( name);
+
+                              if( node)
+                              {
+                                 m_stack.push_back( node);
+                              }
+                              else
+                              {
+                                 return false;
+                              }
+                           }
+
+                           //
+                           // Either we found the node or we assume it's an 'unnamed' container
+                           // element that is already pushed to the stack
+                           //
+
+                           return true;
+
+                        }
+
+                        void end( const char* const name)
+                        {
+                           m_stack.pop_back();
+                        }
+
+                        template<typename T>
+                        void consume( const YAML::Node& node, T& value) const
+                        {
+                           try
+                           {
+                              node >> value;
+                           }
+                           catch( const YAML::InvalidScalar& e)
+                           {
+                              throw exception::archive::invalid::Node{ e.what()};
+                           }
+                        }
+
+                        void read( bool& value) const { consume( *m_stack.back(), value);}
+                        void read( short& value) const { consume( *m_stack.back(), value);}
+                        void read( long& value) const { consume( *m_stack.back(), value);}
+                        void read( long long& value) const { consume( *m_stack.back(), value);}
+                        void read( float& value) const { consume( *m_stack.back(), value);}
+                        void read( double& value) const { consume( *m_stack.back(), value);}
+                        void read( char& value) const
+                        {
+                           consume( *m_stack.back(), value);
+                           value = *common::transcode::utf8::decode( { value}).c_str();
+                        }
+                        void read( std::string& value) const
+                        {
+                           consume( *m_stack.back(), value);
+                           value = common::transcode::utf8::decode( value);
+                        }
+                        void read( platform::binary::type& value) const
+                        {
+                           YAML::Binary binary;
+                           consume( *m_stack.back(), binary);
+                           value.assign( binary.data(), binary.data() + binary.size());
+                        }
+
+
+
+                     private:
+                        YAML::Node m_document;
+                        std::vector< const YAML::Node*> m_stack;
+
+                     };
+
+                     namespace strict
+                     {
+                        template< typename T>
+                        auto create( T&& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( std::forward< T>( source));
+                        }
+                     } // strict
+
+                     namespace relaxed
+                     {
+                        template< typename T>
+                        auto create( T&& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( std::forward< T>( source));
+                        }
+                     } // relaxed
+
+                  } // reader
+
+
+                  namespace writer
+                  {
+
+                     class Implementation
+                     {
+
+                     public:
+
+                        typedef YAML::Emitter buffer_type;
+
+                        Implementation()
+                        {
+                           m_output << YAML::BeginDoc;
+                           m_output << YAML::BeginMap;
+                        }
+
+
+                        platform::size::type container_start( const platform::size::type size, const char* const name)
+                        {
+                           if( name)
+                           {
+                              m_output << YAML::Key << name;
+                              m_output << YAML::Value;
+                           }
+                           m_output << YAML::BeginSeq;
+
+                           return size;
+                        }
+
+                        void container_end( const char* const name)
+                        {
+                           m_output << YAML::EndSeq;
+                           m_output << YAML::Newline;
+                        }
+
+                        void serialtype_start( const char* const name)
+                        {
+                           if( name)
+                           {
+                              m_output << YAML::Key << name;
+                              m_output << YAML::Value;
+                           }
+                           m_output << YAML::BeginMap;
+                        }
+
+                        void serialtype_end( const char* const name)
+                        {
+                           m_output << YAML::EndMap;
+                           m_output << YAML::Newline;
+                        }
+
+                        template< typename T>
+                        void write( const T& value, const char* name)
+                        {
+                           if( name)
+                           {
+                              m_output << YAML::Key << name;
+                              m_output << YAML::Value;
+                           }
+
+                           write( value);
+                        }
+
+                        const YAML::Emitter& document() const { return m_output;}
+
+                     private:
+
+                        template< typename T>
+                        void write( const T& value)
+                        {
+                           m_output << value;
+                        }
+
+                        //
+                        // A few overloads
+                        //
+
+                        void write( const char& value)
+                        {
+                           m_output << common::transcode::utf8::encode( { value});
+                        }
+
+                        void write( const std::string& value)
+                        {
+                           m_output << common::transcode::utf8::encode( value);
+                        }
+
+                        void write( const platform::binary::type& value)
+                        {
+                           // TODO: Is this conformant ?
+                           const YAML::Binary binary{ reinterpret_cast< const unsigned char*>( value.data()), value.size()};
+                           m_output << binary;
+                        }
+
+                     
+                        YAML::Emitter m_output;
+                     };
+
+                     void write_document( const YAML::Emitter& document, std::ostream& yaml)
+                     {
+                        yaml << document.c_str();
                      }
-                     return yaml;
-                  }
+
+                     void write_document( const YAML::Emitter& document, platform::binary::type& yaml)
+                     {
+                        yaml.resize( document.size());
+                        common::algorithm::copy(
+                              common::range::make( document.c_str(), document.size()),
+                              std::begin( yaml));
+                     }
+                     void write_document( const YAML::Emitter& document, std::string& yaml)
+                     {
+                        yaml = document.c_str();
+                     }
+
+                     template< typename Out> 
+                     struct Holder : Implementation
+                     {
+                        Holder( Out& out) : m_out( out) {}
+
+                        void flush() 
+                        {
+                           write_document( Implementation::document(), m_out.get());
+                        }
+
+                        std::reference_wrapper< Out> m_out;
+                     };
+                  } // writer
 
                } // <unnamed>
             } // local
 
-            Load::Load() = default;
-            Load::~Load() = default;
+            archive::Reader reader( const std::string& source) { return local::reader::strict::create( source);}
+            archive::Reader reader( std::istream& source) { return local::reader::strict::create( source);}
+            archive::Reader reader( const common::platform::binary::type& source) { return local::reader::strict::create( source);}
 
-            const YAML::Node& Load::operator() () const noexcept
-            {
-               return m_document;
+            namespace relaxed
+            {    
+               archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
+               archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
             }
 
-
-            const YAML::Node& Load::operator() ( std::istream& stream)
+            archive::Writer writer( std::string& destination)
             {
-               try
-               {
-                  YAML::Parser parser( stream);
-                  if( ! parser.GetNextDocument( m_document))
-                  {
-                     throw exception::archive::invalid::Document{ "no document"};
-                  }
-               }
-               catch( const YAML::ParserException& e)
-               {
-                  throw exception::archive::invalid::Document{ e.what()};
-               }
-
-               return m_document;
+               return archive::Writer::emplace< local::writer::Holder< std::string>>( destination);
             }
 
-            const YAML::Node& Load::operator() ( const platform::binary::type& yaml)
+            archive::Writer writer( std::ostream& destination)
             {
-               return operator() ( yaml.data(), yaml.size());
+               return archive::Writer::emplace< local::writer::Holder< std::ostream>>( destination);
             }
 
-            const YAML::Node& Load::operator() ( const std::string& yaml)
+            archive::Writer writer( common::platform::binary::type& destination)
             {
-               std::istringstream stream{ local::stream( yaml)};
-               return (*this)( stream);
+               return archive::Writer::emplace< local::writer::Holder< common::platform::binary::type>>( destination);
             }
-
-            const YAML::Node& Load::operator() ( const char* const yaml, const platform::size::type size)
-            {
-               std::istringstream stream{ local::stream( std::string( yaml, size))};
-               return (*this)( stream);
-            }
-
-
-            const YAML::Node& Load::operator() ( const char* const yaml)
-            {
-               std::istringstream stream{ local::stream( yaml)};
-               return (*this)( stream);
-            }
-
-            namespace reader
-            {
-               Implementation::Implementation( const YAML::Node& node) : m_stack{ &node} {}
-
-               std::tuple< platform::size::type, bool> Implementation::container_start( platform::size::type size, const char* const name)
-               {
-                  if( ! start( name))
-                  {
-                     return std::make_tuple( 0, false);
-                  }
-
-                  const auto& node = *m_stack.back();
-
-                  size = node.size();
-
-                  if( size)
-                  {
-                     //
-                     // If there are elements, it must be a sequence
-                     //
-
-                     if( node.Type() != YAML::NodeType::Sequence)
-                     {
-                        throw exception::archive::invalid::Node{ "expected sequence"};
-                     }
-
-                     //
-                     // We stack'em in reverse order
-                     //
-
-                     for( auto index = size; index > 0; --index)
-                     {
-                        m_stack.push_back( &node[ index - 1]);
-                     }
-                  }
-
-                  return std::make_tuple( size, true);
-
-               }
-
-               void Implementation::container_end( const char* const name)
-               {
-                  end( name);
-               }
-
-               bool Implementation::serialtype_start( const char* const name)
-               {
-                  if( ! start( name))
-                  {
-                     return false;
-                  }
-
-                  if( m_stack.back()->Type() != YAML::NodeType::Map)
-                  {
-                     throw exception::archive::invalid::Node{ "expected map"};
-                  }
-
-                  return true;
-               }
-
-               void Implementation::serialtype_end( const char* const name)
-               {
-                  end( name);
-               }
-
-               bool Implementation::start( const char* const name)
-               {
-                  if( name)
-                  {
-                     auto node = m_stack.back()->FindValue( name);
-
-                     if( node)
-                     {
-                        m_stack.push_back( node);
-                     }
-                     else
-                     {
-                        return false;
-                     }
-                  }
-
-                  //
-                  // Either we found the node or we assume it's an 'unnamed' container
-                  // element that is already pushed to the stack
-                  //
-
-                  return true;
-
-               }
-
-               void Implementation::end( const char* const name)
-               {
-                  m_stack.pop_back();
-               }
-
-               namespace
-               {
-                  namespace local
-                  {
-                     template<typename T>
-                     void read( const YAML::Node& node, T& value)
-                     {
-                        try
-                        {
-                           node >> value;
-                        }
-                        catch( const YAML::InvalidScalar& e)
-                        {
-                           throw exception::archive::invalid::Node{ e.what()};
-                        }
-                     }
-                  }
-               }
-
-
-               void Implementation::read( bool& value) const
-               { local::read( *m_stack.back(), value);}
-               void Implementation::read( short& value) const
-               { local::read( *m_stack.back(), value);}
-               void Implementation::read( long& value) const
-               { local::read( *m_stack.back(), value);}
-               void Implementation::read( long long& value) const
-               { local::read( *m_stack.back(), value);}
-               void Implementation::read( float& value) const
-               { local::read( *m_stack.back(), value);}
-               void Implementation::read( double& value) const
-               { local::read( *m_stack.back(), value);}
-               void Implementation::read( char& value) const
-               {
-                  local::read( *m_stack.back(), value);
-                  value = *common::transcode::utf8::decode( { value}).c_str();
-               }
-               void Implementation::read( std::string& value) const
-               {
-                  local::read( *m_stack.back(), value);
-                  value = common::transcode::utf8::decode( value);
-               }
-               void Implementation::read( platform::binary::type& value) const
-               {
-                  YAML::Binary binary;
-                  local::read( *m_stack.back(), binary);
-                  value.assign( binary.data(), binary.data() + binary.size());
-               }
-
-
-            } // reader
-
-            Save::Save() = default;
-            Save::~Save() = default;
-
-            YAML::Emitter& Save::operator() () noexcept
-            {
-               return m_emitter;
-            }
-            void Save::operator() ( std::ostream& yaml) const
-            {
-               yaml << m_emitter.c_str();
-            }
-
-            void Save::operator() ( platform::binary::type& yaml) const
-            {
-               yaml.resize( m_emitter.size());
-               common::algorithm::copy(
-                     common::range::make( m_emitter.c_str(), m_emitter.size()),
-                     std::begin( yaml));
-            }
-            void Save::operator() ( std::string& yaml) const
-            {
-               yaml = m_emitter.c_str();
-            }
-
-            namespace writer
-            {
-
-               Implementation::Implementation( YAML::Emitter& output) : m_output( output)
-               {
-                  m_output << YAML::BeginDoc;
-                  m_output << YAML::BeginMap;
-               }
-
-
-               platform::size::type Implementation::container_start( const platform::size::type size, const char* const name)
-               {
-                  if( name)
-                  {
-                     m_output << YAML::Key << name;
-                     m_output << YAML::Value;
-                  }
-                  m_output << YAML::BeginSeq;
-
-                  return size;
-               }
-
-               void Implementation::container_end( const char* const name)
-               {
-                  m_output << YAML::EndSeq;
-                  m_output << YAML::Newline;
-               }
-
-               void Implementation::serialtype_start( const char* const name)
-               {
-                  if( name)
-                  {
-                     m_output << YAML::Key << name;
-                     m_output << YAML::Value;
-                  }
-                  m_output << YAML::BeginMap;
-               }
-
-               void Implementation::serialtype_end( const char* const name)
-               {
-                  m_output << YAML::EndMap;
-                  m_output << YAML::Newline;
-               }
-
-               void Implementation::write( const char& value)
-               {
-                  m_output << common::transcode::utf8::encode( { value});
-               }
-
-               void Implementation::write( const std::string& value)
-               {
-                  m_output << common::transcode::utf8::encode( value);
-               }
-
-               void Implementation::write( const platform::binary::type& value)
-               {
-                  // TODO: Is this conformant ?
-                  const YAML::Binary binary{ reinterpret_cast< const unsigned char*>( value.data()), value.size()};
-                  m_output << binary;
-               }
-
-
-            } // writer
 
          } // yaml
       } // archive

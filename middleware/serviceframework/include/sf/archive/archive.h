@@ -10,6 +10,7 @@
 #include "sf/exception.h"
 
 #include "sf/platform.h"
+#include "sf/pimpl.h"
 
 
 #include <utility>
@@ -28,49 +29,91 @@ namespace casual
          //!
          class Reader
          {
-
          public:
+            ~Reader();
 
-            Reader();
-            virtual ~Reader();
+            Reader( Reader&&) noexcept;
+            Reader& operator = ( Reader&&) noexcept;
 
-            std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
-            void container_end( const char* name);
+            template< typename Protocol, typename... Ts>
+            static Reader emplace( Ts&&... ts) { return { std::make_unique< holder< Protocol>>( std::forward< Ts>( ts)...)};}
 
-            bool serialtype_start( const char* name);
-            void serialtype_end( const char* name);
+            inline std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name) { return m_protocol->container_start( size, name);}
+            inline void container_end( const char* name) { m_protocol->container_end( name);}
 
-            bool read( bool& value, const char* name);
-            bool read( char& value, const char* name);
-            bool read( short& value, const char* name);
+            inline bool serialtype_start( const char* name) { return m_protocol->serialtype_start( name);}
+            inline void serialtype_end( const char* name) { m_protocol->serialtype_end( name);}
+
+            inline bool read( bool& value, const char* name) { return m_protocol->read( value, name);}
+            inline bool read( char& value, const char* name){ return m_protocol->read( value, name);}
+            inline bool read( short& value, const char* name) { return m_protocol->read( value, name);}
             bool read( int& value, const char* name);
-            bool read( long& value, const char* name);
+            inline bool read( long& value, const char* name) { return m_protocol->read( value, name);}
             bool read( unsigned long& value, const char* name);
-            bool read( long long& value, const char* name);
-            bool read( float& value, const char* name);
-            bool read( double& value, const char* name);
-            bool read( std::string& value, const char* name);
-            bool read( platform::binary::type& value, const char* name);
+            inline bool read( long long& value, const char* name) { return m_protocol->read( value, name);}
+            inline bool read( float& value, const char* name) { return m_protocol->read( value, name);}
+            inline bool read( double& value, const char* name) { return m_protocol->read( value, name);}
+            inline bool read( std::string& value, const char* name) { return m_protocol->read( value, name);}
+            inline bool read( platform::binary::type& value, const char* name) { return m_protocol->read( value, name);}
 
          private:
 
-            virtual std::tuple< platform::size::type, bool> dispatch_container_start( platform::size::type size, const char* name) = 0;
-            virtual void dispatch_container_end( const char* name) = 0;
+            struct holder_base
+            {
+               virtual ~holder_base() = default;
 
-            virtual bool dispatch_serialtype_start( const char* name) = 0;
-            virtual void dispatch_serialtype_end( const char* name) = 0;
+               virtual std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name) = 0;
+               virtual void container_end( const char* name) = 0;
 
-            virtual bool pod( bool& value, const char* name) = 0;
-            virtual bool pod( char& value, const char* name) = 0;
-            virtual bool pod( short& value, const char* name) = 0;
-            virtual bool pod( long& value, const char* name) = 0;
-            virtual bool pod( long long& value, const char* name) = 0;
-            virtual bool pod( float& value, const char* name) = 0;
-            virtual bool pod( double& value, const char* name) = 0;
-            virtual bool pod( std::string& value, const char* name) = 0;
-            virtual bool pod( platform::binary::type& value, const char* name) = 0;
+               virtual bool serialtype_start( const char* name) = 0;
+               virtual void serialtype_end( const char* name) = 0;
+
+               virtual bool read( bool& value, const char* name) = 0;
+               virtual bool read( char& value, const char* name) = 0;
+               virtual bool read( short& value, const char* name) = 0;
+               virtual bool read( long& value, const char* name) = 0;
+               virtual bool read( long long& value, const char* name) = 0;
+               virtual bool read( float& value, const char* name) = 0;
+               virtual bool read( double& value, const char* name) = 0;
+               virtual bool read( std::string& value, const char* name) = 0;
+               virtual bool read( platform::binary::type& value, const char* name) = 0;
+            };
+
+            template< typename P>
+            struct holder : holder_base
+            {
+               using protocol_type = P;
+
+               template< typename... Ts>
+               holder( Ts&&... ts) : m_protocol( std::forward< Ts>( ts)...) {}
+
+               std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name) override { return m_protocol.container_start( size, name);}
+               void container_end( const char* name) override { m_protocol.container_end( name);}
+
+               bool serialtype_start( const char* name) override { return m_protocol.serialtype_start( name);}
+               void serialtype_end( const char* name) override { m_protocol.serialtype_end( name);}
+
+               bool read( bool& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( char& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( short& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( long& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( long long& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( float& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( double& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( std::string& value, const char* name) override { return m_protocol.read( value, name);}
+               bool read( platform::binary::type& value, const char* name) override { return m_protocol.read( value, name);}
+
+            private:
+               protocol_type m_protocol;
+            };
+
+            Reader( std::unique_ptr< holder_base>&& base) : m_protocol( std::move( base)) {}
+
+            std::unique_ptr< holder_base> m_protocol;
 
          };
+
+
 
          template< typename NVP>
          Reader& operator >> ( Reader& archive, NVP&& nvp);
@@ -251,52 +294,114 @@ namespace casual
          }
 
 
-         //!
-         //! Write to archive
-         //!
          class Writer
          {
 
          public:
+            ~Writer();
 
-            Writer();
-            virtual ~Writer();
+            Writer( Writer&&) noexcept;
+            Writer& operator = ( Writer&&) noexcept;
 
-            void container_start( platform::size::type size, const char* name);
-            void container_end( const char* name);
+            template< typename Protocol, typename... Ts>
+            static Writer emplace( Ts&&... ts) { return { std::make_unique< holder< Protocol>>( std::forward< Ts>( ts)...)};}
 
-            void serialtype_start( const char* name);
-            void serialtype_end( const char* name);
+            inline void container_start( platform::size::type size, const char* name) { m_protocol->container_start( size, name);}
+            inline void container_end( const char* name) { m_protocol->container_end( name);}
 
-            void write( const bool value, const char* name);
-            void write( const char value, const char* name);
-            void write( const short value, const char* name);
-            void write( const int value, const char* name);
-            void write( const long value, const char* name);
-            void write( const unsigned long value, const char* name);
-            void write( const long long value, const char* name);
-            void write( const float value, const char* name);
-            void write( const double value, const char* name);
-            void write( const std::string& value, const char* name);
-            void write( const platform::binary::type& value, const char* name);
+            inline void serialtype_start( const char* name) { m_protocol->serialtype_start( name);}
+            inline void serialtype_end( const char* name) { m_protocol->serialtype_end( name);}
+
+            inline void write( bool value, const char* name) { m_protocol->write( value, name);}
+            inline void write( char value, const char* name){ m_protocol->write( value, name);}
+            inline void write( short value, const char* name) { m_protocol->write( value, name);}
+            void write( int value, const char* name);
+            inline void write( long value, const char* name) { m_protocol->write( value, name);}
+            void write( unsigned long value, const char* name);
+            inline void write( long long value, const char* name) { m_protocol->write( value, name);}
+            inline void write( float value, const char* name) { m_protocol->write( value, name);}
+            inline void write( double value, const char* name) { m_protocol->write( value, name);}
+            inline void write( const std::string& value, const char* name) { m_protocol->write( value, name);}
+            inline void write( const platform::binary::type& value, const char* name) { m_protocol->write( value, name);}
+
+            //!
+            //! Flushes the archive, if the implementation has a flush member function.
+            //!
+            inline void flush() { m_protocol->flush();}
 
          private:
 
-            virtual void dispatch_container_start( platform::size::type size, const char* name) = 0;
-            virtual void dispatch_container_end( const char* name) = 0;
+            struct holder_base
+            {
+               virtual ~holder_base() = default;
 
-            virtual void dispatch_serialtype_start( const char* name) = 0;
-            virtual void dispatch_serialtype_end( const char* name) = 0;
+               virtual void container_start( platform::size::type size, const char* name) = 0;
+               virtual void container_end( const char* name) = 0;
 
-            virtual void pod( const bool value, const char* name) = 0;
-            virtual void pod( const char value, const char* name) = 0;
-            virtual void pod( const short value, const char* name) = 0;
-            virtual void pod( const long value, const char* name) = 0;
-            virtual void pod( const long long value, const char* name) = 0;
-            virtual void pod( const float value, const char* name) = 0;
-            virtual void pod( const double value, const char* name) = 0;
-            virtual void pod( const std::string& value, const char* name) = 0;
-            virtual void pod( const platform::binary::type& value, const char* name) = 0;
+               virtual void serialtype_start( const char* name) = 0;
+               virtual void serialtype_end( const char* name) = 0;
+
+               virtual void write( bool value, const char* name) = 0;
+               virtual void write( char value, const char* name) = 0;
+               virtual void write( short value, const char* name) = 0;
+               virtual void write( long value, const char* name) = 0;
+               virtual void write( long long value, const char* name) = 0;
+               virtual void write( float value, const char* name) = 0;
+               virtual void write( double value, const char* name) = 0;
+               virtual void write( const std::string& value, const char* name) = 0;
+               virtual void write( const platform::binary::type& value, const char* name) = 0;
+
+               virtual void flush() = 0;
+            };
+
+            template< typename P>
+            struct holder : holder_base
+            {
+               using protocol_type = P;
+
+               template< typename... Ts>
+               holder( Ts&&... ts) : m_protocol( std::forward< Ts>( ts)...) {}
+
+               void container_start( platform::size::type size, const char* name) override { m_protocol.container_start( size, name);}
+               void container_end( const char* name) override { m_protocol.container_end( name);}
+
+               void serialtype_start( const char* name) override { m_protocol.serialtype_start( name);}
+               void serialtype_end( const char* name) override { m_protocol.serialtype_end( name);}
+
+               void write( bool value, const char* name) override { m_protocol.write( value, name);}
+               void write( char value, const char* name) override { m_protocol.write( value, name);}
+               void write( short value, const char* name) override { m_protocol.write( value, name);}
+               void write( long value, const char* name) override { m_protocol.write( value, name);}
+               void write( long long value, const char* name) override { m_protocol.write( value, name);}
+               void write( float value, const char* name) override { m_protocol.write( value, name);}
+               void write( double value, const char* name) override { m_protocol.write( value, name);}
+               void write( const std::string& value, const char* name) override { m_protocol.write( value, name);}
+               void write( const platform::binary::type& value, const char* name) override { m_protocol.write( value, name);}
+
+               void flush() override { selective_flush( m_protocol);}
+
+            private:
+               template< typename T>
+               using has_flush = decltype( std::declval< T&>().flush());
+
+               template< typename T>
+               static auto selective_flush( T& protocol) -> 
+                  std::enable_if_t< common::traits::detect::is_detected< has_flush, T>::value>
+               {
+                  protocol.flush();
+               }
+               template< typename T>
+               static auto selective_flush( T& protocol) -> 
+                  std::enable_if_t< ! common::traits::detect::is_detected< has_flush, T>::value>
+               {
+               }
+
+               protocol_type m_protocol;
+            };
+
+            Writer( std::unique_ptr< holder_base>&& base) : m_protocol( std::move( base)) {}
+
+            std::unique_ptr< holder_base> m_protocol;
 
          };
 

@@ -1378,9 +1378,7 @@ namespace casual
                {
                   decltype(fetch_groups()) groups;
 
-                  const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
-
-                  auto archive = sf::archive::reader::from::file( file);
+                  auto archive = sf::archive::reader::from::file( common::environment::variable::get( "CASUAL_FIELD_TABLE"));
                   archive >> CASUAL_MAKE_NVP( groups);
 
                   return groups;

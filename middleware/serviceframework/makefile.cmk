@@ -29,6 +29,7 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
         Compile( 'source/archive/yaml.cpp'),
         Compile( 'source/archive/ini.cpp'),
         Compile( 'source/archive/log.cpp'),
+        Compile( 'source/archive/binary.cpp'),
         Compile( 'source/archive/service.cpp'),
         #Compile( 'source/proxy.cpp'),
         #Compile( 'source/service/interface.cpp'),
@@ -74,6 +75,7 @@ LinkUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/archive/test_xml.cpp'),
         Compile( 'unittest/isolated/source/archive/test_ini.cpp'),
         Compile( 'unittest/isolated/source/archive/test_service.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_log.cpp')
     ],
 	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
 

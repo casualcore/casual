@@ -187,8 +187,24 @@ namespace casual
             static T get( const std::string& value) { return std::stod( value);} 
          };
 
+/*
+         template< typename T>
+		   struct from_string< T, std::enable_if_t< sizeof( T) == 1 && ! std::is_same< T, bool>::value>> 
+         { 
+            static T get( const std::string& value) { return value.at( 0);} 
+         };
+
+         template< typename T>
+		   struct from_string< T, std::enable_if_t< std::is_same< T, bool>::value>> 
+         { 
+            static bool get( const std::string& value) { return value == "true";} 
+         };
+*/
 		   template<>
-		   struct from_string< std::string, void> { static const std::string& get( const std::string& value) { return value;} };
+		   struct from_string< std::string, void> 
+         { 
+            static const std::string& get( const std::string& value) { return value;} 
+         };
 
 
          //inline std::string to_string( std::string value) { return value;}

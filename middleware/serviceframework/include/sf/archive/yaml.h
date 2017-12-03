@@ -5,17 +5,12 @@
 #ifndef CASUAL_ARCHIVE_YAML_POLICY_H_
 #define CASUAL_ARCHIVE_YAML_POLICY_H_
 
-#include "sf/archive/basic.h"
-//#include "sf/reader_policy.h"
+#include "sf/archive/archive.h"
+#include "sf/platform.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <yaml-cpp/yaml.h>
-#include <yaml-cpp/binary.h>
-#pragma GCC diagnostic pop
 
 #include <iosfwd>
-#include <stack>
+#include <string>
 
 namespace casual
 {
@@ -26,179 +21,21 @@ namespace casual
          namespace yaml
          {
 
-            class Load
-            {
-            public:
 
-               typedef YAML::Node source_type;
-
-               Load();
-               ~Load();
-
-               const YAML::Node& operator() () const noexcept;
-
-               const YAML::Node& operator() ( std::istream& stream);
-               const YAML::Node& operator() ( const platform::binary::type& yaml);
-               const YAML::Node& operator() ( const std::string& yaml);
-               const YAML::Node& operator() ( const char* yaml, platform::size::type size);
-               const YAML::Node& operator() ( const char* yaml);
-
-            private:
-
-               YAML::Node m_document;
-
-            };
-
-
-            namespace reader
-            {
-
-               class Implementation
-               {
-               public:
-
-                  Implementation( const YAML::Node& node);
-
-                  std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name);
-
-                  void container_end( const char* name);
-
-                  bool serialtype_start( const char* name);
-
-                  void serialtype_end( const char* name);
-
-                  template< typename T>
-                  bool read( T& value, const char* const name)
-                  {
-                     if( start( name))
-                     {
-                        if( m_stack.back()->Type() != YAML::NodeType::Null)
-                        {
-                           read( value);
-                        }
-
-                        end( name);
-                        return true;
-                     }
-
-                     return false;
-                  }
-
-               private:
-
-                  bool start( const char* name);
-                  void end( const char* name);
-
-                  void read( bool& value) const;
-                  void read( short& value) const;
-                  void read( long& value) const;
-                  void read( long long& value) const;
-                  void read( float& value) const;
-                  void read( double& value) const;
-                  void read( char& value) const;
-                  void read( std::string& value) const;
-                  void read( platform::binary::type& value) const;
-
-               private:
-
-                  std::vector< const YAML::Node*> m_stack;
-
-               };
-
-            } // reader
-
-
-            class Save
-            {
-            public:
-
-               typedef YAML::Emitter target_type;
-
-               Save();
-               ~Save();
-
-               YAML::Emitter& operator() () noexcept;
-
-               void operator() ( std::ostream& yaml) const;
-               void operator() ( platform::binary::type& yaml) const;
-               void operator() ( std::string& yaml) const;
-
-
-            private:
-
-               YAML::Emitter m_emitter;
-
-            };
-
-
-
-            namespace writer
-            {
-
-               class Implementation
-               {
-
-               public:
-
-                  typedef YAML::Emitter buffer_type;
-
-                  Implementation( YAML::Emitter& output);
-
-                  platform::size::type container_start( platform::size::type size, const char* name);
-                  void container_end( const char* name);
-
-                  void serialtype_start( const char* name);
-                  void serialtype_end( const char* name);
-
-                  template< typename T>
-                  void write( const T& value, const char* name)
-                  {
-                     if( name)
-                     {
-                        m_output << YAML::Key << name;
-                        m_output << YAML::Value;
-                     }
-
-                     write( value);
-                  }
-
-               private:
-
-                  template< typename T>
-                  void write( const T& value)
-                  {
-                     m_output << value;
-                  }
-
-                  //
-                  // A few overloads
-                  //
-
-                  void write( const char& value);
-                  void write( const std::string& value);
-                  void write( const platform::binary::type& value);
-
-
-               private:
-
-                  YAML::Emitter& m_output;
-               };
-
-            } // writer
-
-
-            template< typename P>
-            using basic_reader = archive::basic_reader< reader::Implementation, P>;
-
-            using Reader = basic_reader< policy::Strict>;
+            archive::Reader reader( const std::string& destination);
+            archive::Reader reader( std::istream& destination);
+            archive::Reader reader( const common::platform::binary::type& destination);
 
             namespace relaxed
-            {
-               using Reader = basic_reader< policy::Relaxed>;
+            {    
+               archive::Reader reader( const std::string& destination);
+               archive::Reader reader( std::istream& destination);
+               archive::Reader reader( const common::platform::binary::type& destination);
             }
 
-
-            typedef basic_writer< writer::Implementation> Writer;
+            archive::Writer writer( std::string& destination);
+            archive::Writer writer( std::ostream& destination);
+            archive::Writer writer( common::platform::binary::type& destination);
 
          } // yaml
       } // archive
