@@ -1287,9 +1287,9 @@ namespace casual
       {
          namespace internal
          {
-            std::unordered_map<std::string,int> name_to_type()
+            const std::unordered_map<std::string,decltype(CASUAL_FIELD_NO_TYPE)>& name_to_type()
             {
-               return decltype(name_to_type())
+               static const std::decay_t<decltype(name_to_type())> singleton
                {
                   {"short",   CASUAL_FIELD_SHORT},
                   {"long",    CASUAL_FIELD_LONG},
@@ -1299,20 +1299,13 @@ namespace casual
                   {"string",  CASUAL_FIELD_STRING},
                   {"binary",  CASUAL_FIELD_BINARY},
                };
+
+               return singleton;
             }
 
-            int name_to_type( const char* const name)
+            const std::unordered_map<decltype(CASUAL_FIELD_NO_TYPE),std::string>& type_to_name()
             {
-               static const auto mapping = name_to_type();
-
-               const auto type = mapping.find( name);
-
-               return type != mapping.end() ? type->second : CASUAL_FIELD_NO_TYPE;
-            }
-
-            std::unordered_map<int,std::string> type_to_name()
-            {
-               return decltype(type_to_name())
+               static const std::decay_t<decltype(type_to_name())> singleton
                {
                   {CASUAL_FIELD_SHORT,    "short"},
                   {CASUAL_FIELD_LONG,     "long"},
@@ -1322,198 +1315,249 @@ namespace casual
                   {CASUAL_FIELD_STRING,   "string"},
                   {CASUAL_FIELD_BINARY,   "binary"},
                };
+
+               return singleton;
             }
 
-
-
-            const char* type_to_name( const int type)
+            namespace detail
             {
-               static const auto mapping = type_to_name();
 
-               const auto name = mapping.find( type);
+               namespace
+               {
 
-               return name != mapping.end() ? name->second.c_str() : nullptr;
+                  struct field
+                  {
+                     item_type id; // relative id
+                     std::string name;
+                     std::string type;
+                     //std::string comment;
+
+                     template< typename A>
+                     void serialize( A& archive)
+                     {
+                        archive & CASUAL_MAKE_NVP( id);
+                        archive & CASUAL_MAKE_NVP( name);
+                        archive & CASUAL_MAKE_NVP( type);
+                        //archive & CASUAL_MAKE_NVP( comment);
+                     }
+                  };
+
+                  struct group
+                  {
+                     item_type base = 0;
+                     std::vector< field> fields;
+
+                     template< typename A>
+                     void serialize( A& archive)
+                     {
+                        archive & CASUAL_MAKE_NVP( base);
+                        archive & CASUAL_MAKE_NVP( fields);
+                     }
+                  };
+
+                  struct mapping
+                  {
+                     item_type id;
+                     std::string name;
+                  };
+
+                  std::vector<group> fetch_groups()
+                  {
+                     decltype(fetch_groups()) groups;
+
+                     const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
+
+                     auto archive = sf::archive::reader::from::file( file);
+                     archive >> CASUAL_MAKE_NVP( groups);
+
+                     return groups;
+                  }
+
+                  std::vector<field> fetch_fields()
+                  {
+                     const auto groups = fetch_groups();
+
+                     decltype(fetch_fields()) fields;
+
+                     for( const auto& group : groups)
+                     {
+                        for( const auto& field : group.fields)
+                        {
+                           try
+                           {
+                              const auto id = name_to_type().at( field.type) * CASUAL_FIELD_TYPE_BASE + group.base + field.id;
+
+                              if( id > CASUAL_FIELD_NO_ID)
+                              {
+                                 fields.push_back( field);
+                                 fields.back().id = id;
+                              }
+                              else
+                              {
+                                 // TODO: Much better
+                                 common::log::category::warning << "id for " << field.name << " is invalid" << std::endl;
+                              }
+                           }
+                           catch( const std::out_of_range&)
+                           {
+                              // TODO: Much better
+                              common::log::category::warning << "type for " << field.name << " is invalid" << std::endl;
+                           }
+                        }
+                     }
+
+                     return fields;
+
+                  }
+
+                  std::unordered_map<std::string,item_type> name_to_id()
+                  {
+                     decltype( name_to_id()) result;
+
+                     try
+                     {
+                        const auto fields = fetch_fields();
+
+                        for( const auto& field : fields)
+                        {
+                           if( ! result.emplace( field.name, field.id).second)
+                           {
+                              // TODO: Much better
+                              common::log::category::warning << "name for " << field.name << " is not unique" << std::endl;
+                           }
+                        }
+                     }
+                     catch( ...)
+                     {
+                        // TODO: Handle this in an other way ?
+                        common::exception::handle();
+                     }
+
+                     return result;
+                  }
+
+                  std::unordered_map<item_type,std::string> id_to_name()
+                  {
+                     decltype( id_to_name()) result;
+
+                     try
+                     {
+                        const auto fields = fetch_fields();
+
+                        for( const auto& field : fields)
+                        {
+                           if( ! result.emplace( field.id, field.name).second)
+                           {
+                              // TODO: Much better
+                              common::log::category::warning << "id for " << field.name << " is not unique" << std::endl;
+                           }
+                        }
+                     }
+                     catch( ...)
+                     {
+                        // TODO: Handle this in an other way ?
+                        common::exception::handle();
+                     }
+
+                     return result;
+                  }
+
+               } // <unnamed>
+
+            } // detail
+
+            const std::unordered_map<std::string,item_type>& name_to_id()
+            {
+               static const auto singleton = detail::name_to_id();
+               return singleton;
             }
+
+            const std::unordered_map<item_type,std::string>& id_to_name()
+            {
+               static const auto singleton = detail::id_to_name();
+               return singleton;
+            }
+
 
             namespace
             {
-
-               struct field
+               struct write
                {
-                  item_type id; // relative id
-                  std::string name;
-                  std::string type;
-                  //std::string comment;
+                  const item_type id;
+                  const char* occurrence;
+                  write( const item_type id, const char* const occurrence) : id( id), occurrence( occurrence) {}
 
-                  template< typename A>
-                  void serialize( A& archive)
+                  template<typename A>
+                  void serialize( A& archive) const
                   {
-                     archive & CASUAL_MAKE_NVP( id);
-                     archive & CASUAL_MAKE_NVP( name);
-                     archive & CASUAL_MAKE_NVP( type);
-                     //archive & CASUAL_MAKE_NVP( comment);
-                  }
-               };
+                     const auto name = "name";
 
-               struct group
-               {
-                  item_type base = 0;
-                  std::vector< field> fields;
+                     archive << sf::name::value::pair::make( name, id_to_name().at( id));
 
-                  template< typename A>
-                  void serialize( A& archive)
-                  {
-                     archive & CASUAL_MAKE_NVP( base);
-                     archive & CASUAL_MAKE_NVP( fields);
-                  }
-               };
+                     const auto value = "value";
 
-               struct mapping
-               {
-                  item_type id;
-                  std::string name;
-               };
+                     using sf::name::value::pair::make;
 
-               std::vector<group> fetch_groups()
-               {
-                  decltype(fetch_groups()) groups;
+                     const auto data = occurrence + data_offset;
+                     const auto size = occurrence + size_offset;
 
-                  const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
 
-                  auto archive = sf::archive::reader::from::file( file);
-                  archive >> CASUAL_MAKE_NVP( groups);
-
-                  return groups;
-               }
-
-               std::vector<field> fetch_fields()
-               {
-                  const auto groups = fetch_groups();
-
-                  decltype(fetch_fields()) fields;
-
-                  for( const auto& group : groups)
-                  {
-                     for( const auto& field : group.fields)
+                     switch( id / CASUAL_FIELD_TYPE_BASE)
                      {
-                        try
-                        {
-                           const auto id = name_to_type().at( field.type) * CASUAL_FIELD_TYPE_BASE + group.base + field.id;
-
-                           if( id > CASUAL_FIELD_NO_ID)
-                           {
-                              fields.push_back( field);
-                              fields.back().id = id;
-                           }
-                           else
-                           {
-                              // TODO: Much better
-                              common::log::category::warning << "id for " << field.name << " is invalid" << std::endl;
-                           }
-                        }
-                        catch( const std::out_of_range&)
-                        {
-                           // TODO: Much better
-                           common::log::category::warning << "type for " << field.name << " is invalid" << std::endl;
-                        }
+                     case CASUAL_FIELD_SHORT:
+                        archive << make( value, decode<short>( data));
+                        break;
+                     case CASUAL_FIELD_LONG:
+                        archive << make( value, decode<long>( data));
+                        break;
+                     case CASUAL_FIELD_CHAR:
+                        archive << make( value, *(data));
+                        break;
+                     case CASUAL_FIELD_FLOAT:
+                        archive << make( value, decode<float>( data));
+                        break;
+                     case CASUAL_FIELD_DOUBLE:
+                        archive << make( value, decode<double>( data));
+                        break;
+                     case CASUAL_FIELD_STRING:
+                        archive << make( value, std::string( data));
+                        break;
+                     case CASUAL_FIELD_BINARY:
+                     default:
+                        archive << make( value, std::vector<char>( data, data + decode<size_type>( size)));
+                        break;
                      }
                   }
+               };
 
-                  return fields;
+            } // <unnamed>
 
-               }
 
-            } //
-
-            std::unordered_map<std::string,item_type> name_to_id()
+            std::ostream& dump( const char* const handle, std::ostream& stream, const std::string& protocol)
             {
-               const auto fields = fetch_fields();
+               //const trace trace( "field::internal::dump");
 
-               decltype( name_to_id()) result;
+               const auto& buffer = pool_type::pool.get( handle);
 
-               for( const auto& field : fields)
+               auto archive = sf::archive::writer::from::name( stream, protocol);
+
+               std::vector<write> fields;
+
+               for( const auto& field : buffer.index)
                {
-                  if( ! result.emplace( field.name, field.id).second)
+                  for( const auto& occurrence : field.second)
                   {
-                     // TODO: Much better
-                     common::log::category::warning << "name for " << field.name << " is not unique" << std::endl;
+                     fields.emplace_back( field.first, buffer.handle() + occurrence);
                   }
                }
 
-               return result;
-            }
+               archive << CASUAL_MAKE_NVP( fields);
 
-            std::unordered_map<item_type,std::string> id_to_name()
-            {
-               const auto fields = fetch_fields();
-
-               decltype( id_to_name()) result;
-
-               for( const auto& field : fields)
-               {
-                  if( ! result.emplace( field.id, field.name).second)
-                  {
-                     // TODO: Much better
-                     common::log::category::warning << "id for " << field.name << " is not unique" << std::endl;
-                  }
-               }
-
-               return result;
+               return stream;
             }
 
 
-            item_type name_to_id( const char* const name)
-            {
-
-               try
-               {
-                  static const auto mapping = name_to_id();
-
-                  const auto id = mapping.find( name);
-
-                  if( id != mapping.end())
-                  {
-                     return id->second;
-                  }
-
-               }
-               catch( ...)
-               {
-                  // TODO: Handle this in an other way ?
-                  common::exception::handle();
-               }
-
-               return CASUAL_FIELD_NO_ID;
-
-            }
-
-            const char* id_to_name( const item_type id)
-            {
-               try
-               {
-                  static const auto mapping = id_to_name();
-
-                  const auto name = mapping.find( id);
-
-                  if( name != mapping.end())
-                  {
-                     return name->second.c_str();
-                  }
-
-               }
-               catch( ...)
-               {
-                  // TODO: Handle this in an other way ?
-                  common::exception::handle();
-               }
-
-               return nullptr;
-
-            }
-
-
-
-         } // repository
+         } // internal
 
       } // field
 
@@ -1523,22 +1567,18 @@ namespace casual
 
 int casual_field_name_of_id( const long id, const char** name)
 {
-   if( id > CASUAL_FIELD_NO_ID)
+   try
    {
-      const auto result = casual::buffer::field::internal::id_to_name( id);
+      const auto& result = casual::buffer::field::internal::id_to_name().at( id);
 
-      if( result)
+      if( name)
       {
-         if( name) *name = result;
-      }
-      else
-      {
-         return CASUAL_FIELD_OUT_OF_BOUNDS;
+         *name = result.data();
       }
    }
-   else
+   catch( ...)
    {
-      return CASUAL_FIELD_INVALID_ARGUMENT;
+      return casual::buffer::field::error::handle();
    }
 
    return CASUAL_FIELD_SUCCESS;
@@ -1548,23 +1588,26 @@ int casual_field_id_of_name( const char* const name, long* const id)
 {
    if( name)
    {
-      const auto result = casual::buffer::field::internal::name_to_id( name);
+      try
+      {
+         const auto& result = casual::buffer::field::internal::name_to_id().at( name);
 
-      if( result)
-      {
-         if( id) *id = result;
+         if( id)
+         {
+            *id = result;
+         }
       }
-      else
+      catch( ...)
       {
-         return CASUAL_FIELD_OUT_OF_BOUNDS;
+         return casual::buffer::field::error::handle();
       }
+
+      return CASUAL_FIELD_SUCCESS;
    }
    else
    {
       return CASUAL_FIELD_INVALID_ARGUMENT;
    }
-
-   return CASUAL_FIELD_SUCCESS;
 
 }
 
@@ -1596,33 +1639,41 @@ int casual_field_type_of_id( const long id, int* const type)
 
 int casual_field_name_of_type( const int type, const char** name)
 {
-   const auto result = casual::buffer::field::internal::type_to_name( type);
-
-   if( result)
+   try
    {
-      if( name) *name = result;
+      const auto& result = casual::buffer::field::internal::type_to_name().at( type);
 
-      return CASUAL_FIELD_SUCCESS;
+      if( name)
+      {
+         *name = result.data();
+      }
+
+   }
+   catch( ...)
+   {
+      return casual::buffer::field::error::handle();
    }
 
-   return CASUAL_FIELD_INVALID_ARGUMENT;
+   return CASUAL_FIELD_SUCCESS;
 }
 
 int casual_field_type_of_name( const char* const name, int* const type)
 {
-   if( name)
+   try
    {
-      const auto result = casual::buffer::field::internal::name_to_type( name);
+      const auto result = casual::buffer::field::internal::name_to_type().at( name);
 
-      if( result)
+      if( type)
       {
-         if( type) *type = result;
-
-         return CASUAL_FIELD_SUCCESS;
+         *type = result;
       }
    }
+   catch( ...)
+   {
+      return casual::buffer::field::error::handle();
+   }
 
-   return CASUAL_FIELD_INVALID_ARGUMENT;
+   return CASUAL_FIELD_SUCCESS;
 }
 
 int casual_field_plain_type_host_size( const int type, long* const count)
@@ -1772,14 +1823,6 @@ namespace casual
             namespace
             {
 
-               template<typename T>
-               T pod( const char* const data)
-               {
-                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( data);
-                  return common::network::byteorder::decode<T>( encoded);
-               }
-
-
                int stream( const char* const handle, std::ostream& stream)
                {
                   //const trace trace( "field::transform::stream");
@@ -1792,53 +1835,48 @@ namespace casual
 
                      for( const auto& field : buffer.index)
                      {
-                        const auto name = internal::id_to_name( field.first);
-
                         const auto& occurrences = field.second;
 
                         for( decltype(occurrences.size()) idx = 0; idx < occurrences.size(); ++idx)
                         {
-                           if( name)
-                              stream << name;
-                           else
-                              stream << field.first;
+                           stream << internal::id_to_name().at( field.first);
+
                            stream << '[' << idx << ']' << " = ";
 
-                           const auto offset = occurrences[idx];
+                           const auto offset = buffer.payload.memory.data() + occurrences[idx];
 
-                           const auto data = buffer.payload.memory.data() + offset + data_offset;
+                           const auto data = offset + data_offset;
 
                            switch( field.first / CASUAL_FIELD_TYPE_BASE)
                            {
                            case CASUAL_FIELD_SHORT:
-                              stream << pod<short>( data);
+                              stream << decode<short>( data);
                               break;
                            case CASUAL_FIELD_LONG:
-                              stream << pod<long>( data);
+                              stream << decode<long>( data);
                               break;
                            case CASUAL_FIELD_CHAR:
-                              stream << *data;
+                              stream << data;
                               break;
                            case CASUAL_FIELD_FLOAT:
-                              stream << pod<float>( data);
+                              stream << decode<float>( data);
                               break;
                            case CASUAL_FIELD_DOUBLE:
-                              stream << pod<double>( data);
+                              stream << decode<double>( data);
                               break;
                            case CASUAL_FIELD_STRING:
                               stream << data;
                               break;
                            case CASUAL_FIELD_BINARY:
-                              const auto size = buffer.payload.memory.data() + offset + size_offset;
-                              stream << common::transcode::base64::encode( data, data + pod<long>( size));
+                           default:
+                              const auto size = offset + size_offset;
+                              stream << common::transcode::base64::encode( data, data + decode<long>( size));
                               break;
                            }
 
                            stream << '\n';
                         }
-
                      }
-
                   }
                   catch( ...)
                   {

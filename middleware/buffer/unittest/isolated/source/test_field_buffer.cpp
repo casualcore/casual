@@ -11,6 +11,7 @@
 #include "common/unittest.h"
 
 #include "buffer/field.h"
+#include "buffer/internal/field.h"
 #include "common/environment.h"
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
@@ -625,13 +626,22 @@ namespace casual
       TEST_F( casual_field_buffer_repository, get_name_from_invalid_id__expecting_invalid_argument)
       {
          const char* name;
-         ASSERT_TRUE( casual_field_name_of_id( -666, &name) == CASUAL_FIELD_INVALID_ARGUMENT);
+         const auto result = casual_field_name_of_id( -666, &name);
+         EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
+      }
+
+      TEST_F( casual_field_buffer_repository, get_id_from_null_name__expecting_invalid_argument)
+      {
+         long id;
+         const auto result = casual_field_id_of_name( nullptr, &id);
+         EXPECT_TRUE( result == CASUAL_FIELD_INVALID_ARGUMENT) << result;
       }
 
       TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_argument)
       {
          long id;
-         ASSERT_TRUE( casual_field_id_of_name( nullptr, &id) == CASUAL_FIELD_INVALID_ARGUMENT);
+         const auto result = casual_field_id_of_name( "CSL_FLD_STRNG", &id);
+         EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
       TEST_F( casual_field_buffer_repository, get_name_of_type__expecting_success)
@@ -656,12 +666,14 @@ namespace casual
       TEST_F( casual_field_buffer_repository, get_name_of_invalid_type__expecting_invalid_argument)
       {
          const char* name = nullptr;
-         EXPECT_TRUE( casual_field_name_of_type( 666, &name) == CASUAL_FIELD_INVALID_ARGUMENT);
+         const auto result = casual_field_name_of_type( 666, &name);
+         EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
       TEST_F( casual_field_buffer_repository, get_name_of_type_to_null__expecting_success_and_no_crasch)
       {
-         EXPECT_TRUE( casual_field_name_of_type( CASUAL_FIELD_STRING, nullptr) == CASUAL_FIELD_SUCCESS);
+         const auto result = casual_field_name_of_type( CASUAL_FIELD_STRING, nullptr);
+         EXPECT_TRUE( result == CASUAL_FIELD_SUCCESS) << result;
       }
 
       TEST_F( casual_field_buffer_repository, get_type_of_name__expecting_success)
@@ -686,7 +698,8 @@ namespace casual
       TEST_F( casual_field_buffer_repository, get_type_of_invalid_name__expecting_invalid_argument)
       {
          int type = -1;
-         EXPECT_TRUE( casual_field_type_of_name( "666", &type) == CASUAL_FIELD_INVALID_ARGUMENT);
+         const auto result = casual_field_type_of_name( "666", &type);
+         EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
       TEST_F( casual_field_buffer_repository, get_type_of_name_to_null__expecting_success_and_no_crasch)
@@ -699,14 +712,41 @@ namespace casual
          auto buffer = tpalloc( CASUAL_FIELD, "", 512);
          ASSERT_TRUE( buffer != nullptr);
 
-         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
-         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "First string 2"));
-         EXPECT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string 1"));
-         EXPECT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
+         casual_field_add_short( &buffer, FLD_SHORT1, 42);
+         //casual_field_add_long( &buffer, FLD_LONG1, 123456);
+         //casual_field_add_char( &buffer, FLD_CHAR1, 'a');
+         casual_field_add_float( &buffer, FLD_FLOAT1, 3.14);
+         //casual_field_add_double( &buffer, FLD_DOUBLE1, 123.456);
+         //casual_field_add_string( &buffer, FLD_STRING1, "Quite a long string but not that long");
+         casual_field_add_binary( &buffer, FLD_BINARY1, "Some Data", 9);
 
          EXPECT_FALSE( casual_field_print( buffer));
 
          tpfree( buffer);
+      }
+
+      TEST_F( casual_field_buffer_repository, dump__correct_transformation)
+      {
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+         ASSERT_TRUE( buffer != nullptr);
+
+         const long iterations = 1;
+         for( long idx = 0; idx < iterations; ++idx)
+         {
+            casual_field_add_short( &buffer, FLD_SHORT1, 42);
+            casual_field_add_long( &buffer, FLD_LONG1, 123456);
+            casual_field_add_char( &buffer, FLD_CHAR1, 'a');
+            casual_field_add_float( &buffer, FLD_FLOAT1, 3.14);
+            casual_field_add_double( &buffer, FLD_DOUBLE1, 123.456);
+            casual_field_add_string( &buffer, FLD_STRING1, "Quite a long string but not that long");
+            casual_field_add_binary( &buffer, FLD_BINARY1, "Some Data", 9);
+         }
+
+         // TODO: How to test this ?
+         //casual::buffer::field::internal::dump( buffer, std::clog, "json");
+
+         tpfree( buffer);
+
       }
 
       TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_match)
@@ -715,8 +755,7 @@ namespace casual
          ASSERT_TRUE( buffer != nullptr);
 
          ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
-         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING2, "First string 2"));
-         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "Other string 1"));
+         ASSERT_FALSE( casual_field_add_string( &buffer, FLD_STRING1, "First string 1"));
          ASSERT_FALSE( casual_field_add_float( &buffer, FLD_FLOAT1, 3.14));
 
          int match = 0;
