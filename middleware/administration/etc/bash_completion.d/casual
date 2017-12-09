@@ -25,7 +25,10 @@ __get_file_list() {
 _casual() {
 
     # do not load, if casual is not in $PATH
-    which casual &> /dev/null || return 0
+    type casual | grep -q hashed || return 0
+
+    # script only works on bash >= 4
+    (( BASH_VERINFO == 4 )) || return 0
 
     local current previous arguments options i index cmd
     local parameters=("${COMP_WORDS[@]:0:COMP_CWORD}")
