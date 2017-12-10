@@ -1,7 +1,11 @@
+__compopt() {
+    type compopt &> /dev/null && compopt "$@"
+}
+
 _casual_log() {
 
     # do not load, if casual-log is not in $PATH
-    which casual-log &> /dev/null || return 0
+    type casual-log &> /dev/null || return 0
 
     local current previous
     local arguments=("--no-color" "--no-pager" "--help")
@@ -9,11 +13,11 @@ _casual_log() {
 
     COMPREPLY=()
 
-    compopt +o nospace > /dev/null
-    compopt +o default > /dev/null
+    __compopt +o nospace
+    __compopt +o default
 
     current="${COMP_WORDS[COMP_CWORD]}"
-    previous="${COMP_WORDS[COMP_CWORD-1]}"
+    (( COMP_CWORD > 0 )) && previous="${COMP_WORDS[COMP_CWORD-1]}"
 
     case "${current}" in
         -*)
@@ -35,7 +39,7 @@ _casual_log() {
             COMPREPLY=($(compgen -W "${suggestions[*]}" -- "${current}"))
             ;;
         *)
-            compopt -o default > /dev/null
+            __compopt -o default
             ;;
     esac
 
