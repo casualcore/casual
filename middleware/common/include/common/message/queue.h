@@ -294,9 +294,10 @@ namespace casual
 
                struct Queue : message::queue::Queue
                {
-                  size_type count;
-                  size_type size;
-                  size_type uncommitted;
+                  size_type count = 0;
+                  size_type size = 0;
+                  size_type uncommitted = 0;
+                  size_type pending = 0;
                   platform::time::point::type timestamp;
 
 
@@ -306,8 +307,10 @@ namespace casual
                      archive & count;
                      archive & size;
                      archive & uncommitted;
+                     archive & pending;
                      archive & timestamp;
                   })
+                  friend std::ostream& operator << ( std::ostream& out, const Queue& value);
                };
                static_assert( traits::is_movable< Queue>::value, "not movable");
 

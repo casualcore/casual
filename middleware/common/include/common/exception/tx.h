@@ -39,6 +39,17 @@ namespace casual
 
                using Support = base< code::tx::not_supported>;
             } // no
+
+            //!
+            //! throws a suitable type based on the code. 
+            //! @note no-op if code is tx::ok
+            //! @{
+            void handle( code::tx code, const std::string& information);
+            void handle( code::tx code);
+            //! @}
+
+            code::tx handle();
+
          } // tx 
       } // exception 
    } // common

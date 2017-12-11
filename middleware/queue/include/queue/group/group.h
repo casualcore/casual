@@ -53,40 +53,6 @@ namespace casual
             //!
             std::vector< common::transaction::ID> involved;
 
-
-            //!
-            //! Kepp track of pending requests
-            //!
-            struct Pending
-            {
-               using request_type = common::message::queue::dequeue::Request;
-
-
-               std::vector< request_type> requests;
-               std::map< common::transaction::ID, std::map< queue_id_type, size_type>> transactions;
-
-               void dequeue( const request_type& request);
-
-               void enqueue( const common::transaction::ID& trid, queue_id_type queue);
-
-
-               common::message::queue::dequeue::forget::Reply forget( const common::message::queue::dequeue::forget::Request& request);
-
-               struct result_t
-               {
-                  std::vector< request_type> requests;
-                  std::map< queue_id_type, size_type> enqueued;
-               };
-
-               result_t commit( const common::transaction::ID& trid);
-
-               void rollback( const common::transaction::ID& trid);
-
-
-               void erase( common::strong::process::id pid);
-
-            } pending;
-
          };
 
          namespace message

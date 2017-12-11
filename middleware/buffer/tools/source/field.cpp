@@ -1,9 +1,6 @@
-//
-// field_header.cpp
-//
-//  Created on: 8 feb 2015
-//      Author: Kristone
-//
+//!
+//! casual
+//!
 
 #include "common/environment.h"
 #include "buffer/field.h"

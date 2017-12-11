@@ -10,6 +10,7 @@
 #include "common/exception/system.h"
 #include "common/string.h"
 #include "common/message/queue.h"
+#include "common/message/pending.h"
 
 namespace casual
 {
@@ -31,9 +32,20 @@ namespace casual
             };
          } // message
 
+         namespace pending
+         {
+            struct Dequeue
+            {
+               Queue::id_type id;
+               common::platform::size::type pending;
+               common::platform::size::type count;
+            };
+         } // pending
          class Database
          {
          public:
+
+
             Database( const std::string& database, std::string groupname);
 
 
@@ -45,9 +57,6 @@ namespace casual
             //! @return the created queues
             //!
             std::vector< Queue> update( std::vector< Queue> update, const std::vector< Queue::id_type>& remove);
-
-
-            //bool remove( const std::string& name);
 
 
             common::message::queue::enqueue::Reply enqueue( const common::message::queue::enqueue::Request& message);
@@ -74,6 +83,19 @@ namespace casual
 
             std::vector< common::message::queue::information::Message> messages( Queue::id_type id);
 
+
+            inline bool has_pending() const noexcept { return ! m_requests.empty();}
+
+            common::message::queue::dequeue::forget::Reply pending_forget( const common::message::queue::dequeue::forget::Request& request);
+
+            //! consume and forget all pending dequeues
+            std::vector< common::message::pending::Message> pending_forget();
+
+            std::vector< common::message::queue::dequeue::Request> pending();
+
+            void pending_add( const common::message::queue::dequeue::Request& request);
+            void pending_erase( common::strong::process::id pid);
+            
             
             //!
             //! @return "global" error queue
@@ -85,6 +107,9 @@ namespace casual
             //! @return the number of rows affected by the last statement.
             //!
             size_type affected() const;
+
+
+
 
 
 
@@ -119,18 +144,29 @@ namespace casual
                   common::string::compose( "requested queue is not hosted by this queue-group - message: ", message)};
             }
 
-
+            
+            //!
+            //! @attention only exposed for unittest purposes
+            //! @{
+            std::vector< pending::Dequeue> get_pending();
+            void pending_add( Queue::id_type id);
+            void pending_set( Queue::id_type id, common::platform::size::type value);
+            //! @}
+ 
          private:
 
+           
 
-            void updateQueue( const Queue& queue);
-            void removeQueue( Queue::id_type id);
+
+            void update_queue( const Queue& queue);
+            void remove_queue( Queue::id_type id);
 
             std::vector< Queue> queue( Queue::id_type id);
 
             void update_mapping();
 
 
+            std::vector< common::message::queue::dequeue::Request> m_requests;
 
             std::unordered_map< std::string, Queue::id_type> m_name_mapping;
 
@@ -151,12 +187,21 @@ namespace casual
 
                } dequeue;
 
+
+
                struct
                {
                   sql::database::Statement xid;
                   sql::database::Statement nullxid;
 
                } state;
+
+               struct
+               {
+                  sql::database::Statement add;
+                  sql::database::Statement set;
+                  sql::database::Statement check;
+               } pending;
 
 
                sql::database::Statement commit1;

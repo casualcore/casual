@@ -174,7 +174,6 @@ namespace casual
             return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
 
-
          template< typename R, typename OutIter, typename = std::enable_if_t< 
             common::traits::iterator::is_output< OutIter>::value
             && common::traits::is::iterable< R>::value>>

@@ -34,7 +34,6 @@ namespace casual
          std::vector< message::Information> information( const std::string& queue, const Selector& selector);
 
          std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids);
-
       } // peek
 
       namespace xatmi

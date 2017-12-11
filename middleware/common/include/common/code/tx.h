@@ -48,14 +48,6 @@ namespace casual
 
       } // code
 
-      namespace exception
-      {
-         namespace tx
-         {
-            code::tx handler();
-         } // tx
-      } // exception
-
    } // common
 } // casual
 

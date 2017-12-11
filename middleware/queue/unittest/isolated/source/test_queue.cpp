@@ -6,6 +6,7 @@
 #include "common/unittest.h"
 
 #include "queue/group/group.h"
+#include "queue/common/queue.h"
 #include "queue/common/environment.h"
 #include "queue/common/transform.h"
 #include "queue/api/queue.h"
@@ -335,6 +336,126 @@ namespace casual
          EXPECT_THROW({
             queue::peek::information( "remote-queue");
          }, common::exception::system::invalid::Argument);
+      }
+
+      TEST( casual_queue, enqueue_1_message__dequeue_1_message)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain{ local::configuration()};
+
+         const std::string payload{ "some message"};
+
+         auto enqueue = [&](){
+            queue::Message message;
+            {
+               message.attributes.properties = "poop";
+               message.attributes.reply = "queueA2";
+               message.payload.type = common::buffer::type::binary();
+               message.payload.data.assign( std::begin( payload), std::end( payload));
+            }
+
+            return queue::enqueue( "queueA1", message);
+         };
+
+         enqueue();
+
+         auto message = queue::dequeue( "queueA1");
+
+         ASSERT_TRUE( message.size() == 1);
+         EXPECT_TRUE( common::algorithm::equal( message.at( 0).payload.data, payload));
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace blocking
+            {
+               template< typename IPC>
+               void dequeue( IPC&& ipc, std::string name)
+               {
+                  queue::Lookup lookup{ std::move( name)};
+
+                  common::message::queue::dequeue::Request message;
+                  message.name = lookup.name();
+                  message.block = true;
+                  message.process.pid = common::process::id();
+                  message.process.queue = ipc.connector().id();
+
+                  auto destination = lookup();
+                  message.queue = destination.queue;
+
+                  common::communication::ipc::blocking::send( destination.process.queue, message);
+               }
+            } // blocking
+         } // <unnamed>
+      } // local
+
+      TEST( casual_queue, blocking_dequeue_4_message__enqueue_4_message)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain{ local::configuration()};
+
+         common::communication::ipc::inbound::Device ipc1;
+         common::communication::ipc::inbound::Device ipc2;
+         common::communication::ipc::inbound::Device ipc3;
+         common::communication::ipc::inbound::Device ipc4;
+
+         local::blocking::dequeue( ipc1, "queueA1");
+         local::blocking::dequeue( ipc2, "queueA1");
+         local::blocking::dequeue( ipc3, "queueA1");
+         local::blocking::dequeue( ipc4, "queueA1");
+
+         const std::string payload{ "some message"};
+
+         auto enqueue = [&](){
+            queue::Message message;
+            {
+               message.attributes.properties = "poop";
+               message.attributes.reply = "queueA2";
+               message.payload.type = common::buffer::type::binary();
+               message.payload.data.assign( std::begin( payload), std::end( payload));
+            }
+
+            return queue::enqueue( "queueA1", message);
+         };
+
+         enqueue();
+         enqueue();
+         enqueue();
+         enqueue();
+
+         auto dequeue = []( auto& ipc){
+            common::message::queue::dequeue::Reply message;
+            ipc.receive( message, ipc.policy_blocking());
+            return message;
+         };
+
+         {
+            auto message = dequeue( ipc1);
+            ASSERT_TRUE( message.message.size() == 1);
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+         }
+
+         {
+            auto message = dequeue( ipc2);
+            ASSERT_TRUE( message.message.size() == 1);
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+         }
+
+         {
+            auto message = dequeue( ipc3);
+            ASSERT_TRUE( message.message.size() == 1);
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+         }
+
+         {
+            auto message = dequeue( ipc4);
+            ASSERT_TRUE( message.message.size() == 1);
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+         }
       }
 
    } // queue

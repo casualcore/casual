@@ -7,6 +7,7 @@
 
 #include "common/transaction/context.h"
 #include "common/code/tx.h"
+#include "common/exception/tx.h"
 #include "common/cast.h"
 
 namespace local
@@ -23,28 +24,15 @@ namespace local
       {
          try
          {
-            return convert( executer( std::forward< Args>( args)...));
-         }
-         catch( ...)
-         {
-            return convert( casual::common::exception::tx::handler());
-         }
-         return convert( casual::common::code::tx::ok);
-      }
-
-      template< typename E, typename... Args>
-      int wrap_void( E&& executer, Args&&... args)
-      {
-         try
-         {
             executer( std::forward< Args>( args)...);
          }
          catch( ...)
          {
-            return convert( casual::common::exception::tx::handler());
+            return convert( casual::common::exception::tx::handle());
          }
          return convert( casual::common::code::tx::ok);
       }
+
 
    } // <unnamed>
 } // local
@@ -58,7 +46,7 @@ int tx_begin()
 
 int tx_close()
 {
-   return local::wrap_void( [](){
+   return local::wrap( [](){
       casual::common::transaction::Context::instance().close();
    });
 }
@@ -72,7 +60,7 @@ int tx_commit()
 
 int tx_open()
 {
-   return local::wrap_void( [](){
+   return local::wrap( [](){
       casual::common::transaction::Context::instance().open();
    });
 }
@@ -86,21 +74,21 @@ int tx_rollback()
 
 int tx_set_commit_return(COMMIT_RETURN value)
 {
-   return local::wrap_void( []( auto value){
+   return local::wrap( []( auto value){
       casual::common::transaction::Context::instance().set_commit_return( value);
    }, value);
 }
 
 int tx_set_transaction_control(TRANSACTION_CONTROL control)
 {
-   return local::wrap_void( []( auto value){
+   return local::wrap( []( auto value){
       return casual::common::transaction::Context::instance().set_transaction_control( value);
    }, control);
 }
 
 int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
 {
-   return local::wrap_void( []( auto value){
+   return local::wrap( []( auto value){
       casual::common::transaction::Context::instance().set_transaction_timeout( value);
    }, timeout);
 }
@@ -113,7 +101,7 @@ int tx_info( TXINFO* info)
    }
    catch( ...)
    {
-      casual::common::exception::tx::handler();
+      casual::common::exception::tx::handle();
       return 0; // false;
    }
 }
@@ -121,14 +109,14 @@ int tx_info( TXINFO* info)
 /* casual extension */
 int tx_suspend( XID* xid)
 {
-   return local::wrap_void( [xid](){
+   return local::wrap( [xid](){
       casual::common::transaction::Context::instance().suspend( xid);
    });
 }
 
 int tx_resume( const XID* xid)
 {
-   return local::wrap_void( [xid](){
+   return local::wrap( [xid](){
       casual::common::transaction::Context::instance().resume( xid);
    });
 }
@@ -142,7 +130,8 @@ COMMIT_RETURN tx_get_commit_return()
    }
    catch( ...)
    {
-      return local::convert( casual::common::exception::tx::handler());
+      casual::common::exception::tx::handle();
+      return 0;
    }
 }
 

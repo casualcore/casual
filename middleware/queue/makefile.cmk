@@ -168,7 +168,6 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
      Compile( 'unittest/isolated/source/manager/test_handle.cpp'),
      
      Compile( 'unittest/isolated/source/group/test_database.cpp'),
-     Compile( 'unittest/isolated/source/group/test_pending.cpp'),
      
      Compile( 'unittest/isolated/source/test_queue.cpp'),
     ],

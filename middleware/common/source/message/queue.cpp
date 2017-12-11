@@ -173,7 +173,7 @@ namespace casual
 
             std::ostream& operator << ( std::ostream& out, const Queue& value)
             {
-               return out << "{ queue: " << value.id
+               return out << "{ id: " << value.id
                      << ", name: " << value.name
                      << ", type: " << value.type
                      << ", retries: " << value.retries
@@ -184,6 +184,20 @@ namespace casual
 
             namespace information
             {
+               std::ostream& operator << ( std::ostream& out, const Queue& value)
+               {
+                  return out << "{ id: " << value.id
+                     << ", name: " << value.name
+                     << ", type: " << value.type
+                     << ", retries: " << value.retries
+                     << ", error: " << value.error
+                     << ", count: " << value.count
+                     << ", size: " <<  value.size
+                     << ", uncommitted: " << value.uncommitted
+                     << ", pending: " << value.pending
+                     << ", timestamp: " << value.timestamp.time_since_epoch().count()
+                     << '}';
+               }
                std::ostream& operator << ( std::ostream& out, const Message& value)
                {
                   return out << "{ id: " << value.id

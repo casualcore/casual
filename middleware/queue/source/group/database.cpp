@@ -136,12 +136,16 @@ namespace casual
                   count        INTEGER  NOT NULL, -- number of (committed) messages
                   size         INTEGER  NOT NULL, -- total size of all (committed) messages
                   uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+                  pending      INTEGER  NOT NULL, -- number of pending dequeues wating
                   timestamp    INTEGER NOT NULL -- last update to the queue 
                    ); )"
               );
 
             m_connection.execute(
                   "CREATE INDEX IF NOT EXISTS i_id_queue ON queue ( id);" );
+
+            // make sure pending is reset when we start
+            m_connection.execute( "UPDATE queue SET pending = 0;");
 
             m_connection.execute(
                 R"( CREATE TABLE IF NOT EXISTS message 
@@ -186,7 +190,7 @@ namespace casual
             {
                groupname = common::uuid::string( common::uuid::make());
             }
-            m_connection.execute( "INSERT OR REPLACE INTO queue VALUES ( 1, ?, 0, 1, 1, 0, 0, 0, ?); ", groupname + ".group.error", now);
+            m_connection.execute( "INSERT OR REPLACE INTO queue VALUES ( 1, ?, 0, 1, 1, 0, 0, 0, 0, ?); ", groupname + ".group.error", now);
             m_error_queue = 1;
 
 
@@ -324,12 +328,13 @@ namespace casual
                   count        INTEGER, -- number of (committed) messages
                   size         INTEGER, -- total size of all (committed) messages
                   uncommitted_count INTEGER, -- uncommitted messages
+                  pending  --
                   timestamp    INTEGER, -- last update to the queue
                 */
 
                m_statement.information.queue = m_connection.precompile( R"(
                   SELECT
-                     q.id, q.name, q.retries, q.error, q.type, q.count, q.size, q.uncommitted_count, q.timestamp
+                     q.id, q.name, q.retries, q.error, q.type, q.count, q.size, q.uncommitted_count, q.pending, q.timestamp
                   FROM
                      queue q  
                       ;
@@ -379,6 +384,25 @@ namespace casual
                   SET queue = :queue 
                   WHERE state = 2 AND queue != origin AND origin = :queue; )");
 
+
+               m_statement.pending.add = m_connection.precompile( R"(
+                  UPDATE queue
+                  SET pending = pending + 1 
+                  WHERE id = :id; 
+                 )");
+
+               m_statement.pending.set = m_connection.precompile( R"(
+                  UPDATE queue
+                  SET pending = :pending
+                  WHERE id = :id; 
+                 )");
+               m_statement.pending.check = m_connection.precompile( R"( 
+                  SELECT 
+                    id, pending, count
+                  FROM 
+                     queue
+                  WHERE pending > 0 AND count > 0;
+                  )");
             }
          }
 
@@ -412,21 +436,21 @@ namespace casual
             //
             // Create corresponding error queue
             //
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name + ".error", queue.retries, m_error_queue, Queue::Type::error_queue, now);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, 0, ?);", queue.name + ".error", queue.retries, m_error_queue, Queue::Type::error_queue, now);
             queue.error = m_connection.rowid();
 
-            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, ?);", queue.name, queue.retries, queue.error, Queue::Type::queue, now);
+            m_connection.execute( "INSERT INTO queue VALUES ( NULL,?,?,?,?, 0, 0, 0, 0, ?);", queue.name, queue.retries, queue.error, Queue::Type::queue, now);
             queue.id = m_connection.rowid();
             queue.type = Queue::Type::queue;
 
-            log << "queue: " << queue << std::endl;
+            common::log::line( log, "queue: ", queue);
 
             update_mapping();
 
             return queue;
          }
 
-         void Database::updateQueue( const Queue& queue)
+         void Database::update_queue( const Queue& queue)
          {
             Trace trace{ "queue::Database::updateQueue"};
 
@@ -438,7 +462,7 @@ namespace casual
                m_connection.execute( "UPDATE queue SET name = :name, retries = :retries WHERE id = :id;", queue.name + ".error", queue.retries, existing.front().error);
             }
          }
-         void Database::removeQueue( Queue::id_type id)
+         void Database::remove_queue( Queue::id_type id)
          {
             Trace trace{ "queue::Database::removeQueue"};
 
@@ -484,15 +508,17 @@ namespace casual
          {
             Trace trace{ "queue::Database::update"};
 
+            common::log::line( verbose::log, "update: ", update, " - remove: ", remove);
+
             std::vector< Queue> result;
 
             auto create = common::algorithm::partition( update, []( const Queue& q){ return q.id == 0;});
 
-            common::algorithm::transform( std::get< 0>( create), result, std::bind( &Database::create, this, std::placeholders::_1));
+            common::algorithm::transform( std::get< 0>( create), result, [&]( auto& q){ return Database::create( q);});
 
-            common::algorithm::for_each( std::get< 1>( create), std::bind( &Database::updateQueue, this, std::placeholders::_1));
+            common::algorithm::for_each( std::get< 1>( create), [&]( auto& q){ Database::update_queue( q);});
 
-            common::algorithm::for_each( remove, std::bind( &Database::removeQueue, this, std::placeholders::_1));
+            common::algorithm::for_each( remove, [&]( auto id){ Database::remove_queue( id);});
 
 
             update_mapping();
@@ -501,13 +527,11 @@ namespace casual
          }
 
 
-
-
          common::message::queue::enqueue::Reply Database::enqueue( const common::message::queue::enqueue::Request& message)
          {
             Trace trace{ "queue::Database::enqueue"};
 
-            log << "request: " << message << std::endl;
+            common::log::line( verbose::log, "message: ", message);
 
             auto reply = common::message::reverse::type( message);
 
@@ -535,18 +559,20 @@ namespace casual
                   message.message.available,
                   common::platform::time::clock::type::now(),
                   message.message.payload);
+            
 
+            
+
+            common::log::line( verbose::log, "reply: ", reply);
             return reply;
          }
-
-
 
 
          common::message::queue::dequeue::Reply Database::dequeue( const common::message::queue::dequeue::Request& message)
          {
             Trace trace{ "queue::Database::dequeue"};
 
-            log << "request: " << message << std::endl;
+            common::log::line( verbose::log, "message: ", message);
 
             common::message::queue::dequeue::Reply reply;
 
@@ -571,7 +597,10 @@ namespace casual
 
             if( ! resultset.fetch( row))
             {
-               log << "dequeue - qid: " << message.queue << " - no message" << std::endl;
+               common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
+
+               if( message.block)
+                  pending_add( message);
 
                return reply;
             }
@@ -592,9 +621,9 @@ namespace casual
                m_statement.state.nullxid.execute( std::get< 0>( result));
             }
 
-            log << "dequeue - qid: " << message.queue << " id: " << std::get< 1>( result).id << " size: " << std::get< 1>( result).payload.size() << " trid: " << message.trid << std::endl;
-
             reply.message.push_back( std::move( std::get< 1>( result)));
+
+            common::log::line( verbose::log, "reply: ", reply);
 
             return reply;
          }
@@ -603,7 +632,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::peek information"};
 
-            log << "request: " << request << std::endl;
+            common::log::line( verbose::log, "message: ", request);
 
             auto reply = common::message::reverse::type( request);
 
@@ -614,7 +643,6 @@ namespace casual
                   return m_statement.peek.match.query( request.queue, request.selector.properties);
                }
                return m_statement.information.message.query( request.queue);
-
             };
 
             auto query = get_query();
@@ -641,7 +669,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::peek messages"};
 
-            log << "request: " << request << std::endl;
+            common::log::line( verbose::log, "message: ", request);
 
             auto reply = common::message::reverse::type( request);
 
@@ -724,6 +752,153 @@ namespace casual
             return result;
          }
 
+         void Database::pending_add( const common::message::queue::dequeue::Request& request)
+         {
+            Trace trace{ "queue::Database::pending_add"};
+
+            common::log::line( log, "request: ", request);
+
+            m_requests.push_back( request);
+            pending_add( request.queue);
+         }
+
+         common::message::queue::dequeue::forget::Reply Database::pending_forget( const common::message::queue::dequeue::forget::Request& request)
+         {
+            Trace trace{ "queue::Database::pending_forget"};
+
+            common::message::queue::dequeue::forget::Reply reply;
+            reply.correlation = request.correlation;
+
+            auto found = common::algorithm::find_if( m_requests, [&]( const auto& r){
+               return r.queue == request.queue && r.process == request.process;
+            });
+
+            reply.found = static_cast< bool>( found);
+
+            if( found)
+            {
+               m_requests.erase( std::begin( found));
+            }
+
+            return reply;
+         }
+
+         std::vector< common::message::pending::Message> Database::pending_forget()
+         {
+            Trace trace{ "queue::Database::pending_forget all"};
+
+            return common::algorithm::transform( std::exchange( m_requests, {}), []( auto& pending){
+                  common::message::queue::dequeue::forget::Request forget;
+                  
+                  forget.process = common::process::handle();
+                  forget.queue = pending.queue;
+
+                  return common::message::pending::Message{ std::move( forget), pending.process.queue};
+            });
+            
+         }
+
+         std::vector< common::message::queue::dequeue::Request> Database::pending()
+         {
+            Trace trace{ "queue::Database::pending"};
+
+            const auto queues = get_pending();
+
+            if( queues.empty())
+               return {};
+
+            std::vector< common::message::queue::dequeue::Request> result;
+
+            auto requests = common::range::make( m_requests);
+
+            for( auto& queue : queues)
+            {
+               auto splice = common::algorithm::stable_partition( requests, [&]( auto& r){ return r.queue != queue.id;});
+
+               auto prospects = std::get< 1>( splice);
+
+               common::log::line( verbose::log, "queue.count: ", queue.count, " - prospect.size: ", prospects.size());
+
+               if( prospects.size() <= queue.count)
+               {
+                  common::algorithm::move( prospects, result);
+                  requests = std::get< 0>( splice);
+                  pending_set( queue.id, 0);
+               }
+               else 
+               {
+                  // we have more pending than new messages, 
+
+                  auto replies = common::range::make( std::begin( prospects), std::begin( prospects) + queue.count);
+                  common::algorithm::move( replies, result);
+
+                  // clean up, and move the consumed to the back, for erasure.
+                  requests = common::range::make( 
+                     std::begin( requests),
+                     std::rotate( std::begin( replies), std::end( replies), std::end( prospects)));
+
+                  pending_set( queue.id, prospects.size() - replies.size());
+               }
+            }
+            m_requests.erase( std::end( requests), std::end( m_requests));
+
+
+            return result;
+         }
+
+         void Database::pending_erase( common::strong::process::id pid)
+         {
+            Trace trace{ "queue::Database::pending_erase"};
+
+            auto found = std::get< 1>( common::algorithm::stable_partition( m_requests, [=]( const auto& r){
+               return r.process.pid != pid;
+            }));
+
+            m_requests.erase( std::begin( found), std::end( found));
+         }
+
+
+         void Database::pending_add( Queue::id_type id)
+         {
+            Trace trace{ "queue::Database::pending_add"};
+
+            common::log::line( verbose::log, "id: ", id);
+
+            m_statement.pending.add.execute( id);
+         }
+
+         void Database::pending_set( Queue::id_type id, common::platform::size::type value)
+         {
+            Trace trace{ "queue::Database::pending_set"};
+
+            common::log::line( verbose::log, "id: ", id, " - value: ", value);
+
+            m_statement.pending.set.execute( value, id);
+         }
+
+            
+         std::vector< pending::Dequeue> Database::get_pending()
+         {
+            Trace trace{ "queue::Database::get_pending"};
+
+            auto query = m_statement.pending.check.query();
+
+            std::vector< pending::Dequeue> result;
+
+            sql::database::Row row;
+
+            while( query.fetch( row))
+            {
+               pending::Dequeue pending;
+
+               row.get( 0, pending.id);
+               row.get( 1, pending.pending);
+               row.get( 2, pending.count);
+
+               result.push_back( pending);
+            }
+            return result;
+         }
 
          std::vector< common::message::queue::information::Queue> Database::queues()
          {
@@ -747,6 +922,7 @@ namespace casual
                   count        INTEGER  NOT NULL, -- number of (committed) messages
                   size         INTEGER  NOT NULL, -- total size of all (committed) messages
                   uncommitted_count INTEGER  NOT NULL, -- uncommitted messages
+                  pending     ---
                   timestamp    INTEGER NOT NULL, -- last update to the queue
                 */
                common::message::queue::information::Queue queue;
@@ -759,7 +935,8 @@ namespace casual
                row.get( 5, queue.count);
                row.get( 6, queue.size);
                row.get( 7, queue.uncommitted);
-               row.get( 8, queue.timestamp);
+               row.get( 8, queue.pending);
+               row.get( 9, queue.timestamp);
 
                result.push_back( std::move( queue));
             }

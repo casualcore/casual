@@ -324,10 +324,7 @@ namespace casual
             //
             auto transactions = std::exchange( m_transactions, {});
 
-            if( log::category::transaction)
-            {
-               log::category::transaction << "transactions: " << range::make( transactions) << '\n';
-            }
+            log::line( log::category::transaction, "transactions: ", transactions);
 
             const auto process = process::handle();
 
@@ -365,11 +362,14 @@ namespace casual
 
             auto trans_rollback = [&]( const Transaction& transaction)
             {
-               auto status = Context::rollback( transaction);
-
-               if( status != code::tx::ok)
+               try
                {
-                  code::stream( status) << "failed to rollback transaction: " << transaction.trid << " - " << std::error_code{ status} << std::endl;
+                  Context::rollback( transaction);
+               }
+               catch( ...)
+               {
+                  exception::tx::handle();
+                  log::line( log::category::transaction, "failed to rollback transaction: ", transaction.trid);
                   result.state = message::service::Transaction::State::error;
                }
             };
@@ -378,21 +378,22 @@ namespace casual
             {
                if( commit && transaction.state == Transaction::State::active)
                {
-                  auto status = Context::commit( transaction);
-
-                  if( status != code::tx::ok)
+                  try
                   {
-                     code::stream( status) << "failed to commit transaction: " << transaction.trid << " - " << std::error_code{ status} << std::endl;
-                     result.state = message::service::Transaction::State::error;
+                    Context::commit( transaction); 
                   }
+                  catch( ...)
+                  {
+                     exception::tx::handle();
+                     log::line( log::category::transaction, "failed to commit transaction: ", transaction.trid);
+                     result.state = message::service::Transaction::State::error;
+                  } 
                }
                else
                {
                   trans_rollback( transaction);
                }
             };
-
-
 
 
             //
@@ -544,7 +545,7 @@ namespace casual
          }
 
 
-         code::tx Context::begin()
+         void Context::begin()
          {
             Trace trace{ "transaction::Context::begin"};
 
@@ -574,9 +575,7 @@ namespace casual
 
             m_transactions.push_back( std::move( trans));
 
-            common::log::category::transaction << "transaction: " << m_transactions.back().trid << " started\n";
-
-            return code::tx::ok;
+            log::line( log::category::transaction, "transaction: ", m_transactions.back().trid, " started");
          }
 
 
@@ -614,9 +613,9 @@ namespace casual
          }
 
 
-         code::tx Context::commit( const Transaction& transaction)
+         void Context::commit( const Transaction& transaction)
          {
-            Trace trace{ "transaction::Context::commit"};
+            Trace trace{ "transaction::Context::commit - transaction"};
 
             const auto process = process::handle();
 
@@ -671,7 +670,7 @@ namespace casual
                //
                // No resources associated to this transaction, hence the commit is successful.
                //
-               return code::tx::ok;
+               return;
             }
             else
             {
@@ -697,11 +696,11 @@ namespace casual
                   {
                      case message::transaction::commit::Reply::Stage::prepare:
                      {
-                        log::category::transaction << "prepare reply: " << std::error_code( reply.state) << '\n';
+                        log::line( log::category::transaction, "prepare reply: ", reply.state);
 
                         if( m_commit_return == Commit_Return::logged)
                         {
-                           log::category::transaction << "decision logged directive\n";
+                           log::line( log::category::transaction, "decision logged directive");
 
                            //
                            // Discard the coming commit-message
@@ -715,50 +714,42 @@ namespace casual
                            //
                            communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
 
-                           log::category::transaction << "commit reply: " << std::error_code( reply.state) << '\n';
+                           log::line( log::category::transaction, "commit reply: ", reply.state);
                         }
 
                         break;
                      }
                      case message::transaction::commit::Reply::Stage::commit:
                      {
-                        log::category::transaction << "commit reply: " << std::error_code( reply.state) << '\n';
-
+                        log::line( log::category::transaction, "commit reply: ", reply.state);
                         break;
                      }
                      case message::transaction::commit::Reply::Stage::error:
                      {
                         log::category::error << "commit error: " << std::error_code( reply.state) << std::endl;
-
                         break;
                      }
                   }
 
-                  return reply.state;
+                  exception::tx::handle( reply.state, "commit");
                }
             }
          }
 
-         code::tx Context::commit()
+         void Context::commit()
          {
             Trace trace{ "transaction::Context::commit"};
 
-            auto result = commit( current());
+            commit( current());
 
             //
             // We only remove/consume transaction if commit succeed
             // TODO: any other situation we should remove?
             //
-            if( result == code::tx::ok)
-            {
-               return pop_transaction();
-            }
-
-            return result;
-
+            pop_transaction();
          }
 
-         code::tx Context::rollback( const Transaction& transaction)
+         void Context::rollback( const Transaction& transaction)
          {
             Trace trace{ "transaction::Context::rollback"};
 
@@ -787,21 +778,15 @@ namespace casual
 
             auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
 
-            log::category::transaction << "rollback reply tx: " << std::error_code( reply.state) << '\n';
+            log::line( log::category::transaction, "rollback reply tx: ", reply.state);
 
-            return reply.state;
+            exception::tx::handle( reply.state, "rollback");
          }
 
-         code::tx Context::rollback()
+         void Context::rollback()
          {
-            auto result = rollback( current());
-
-            if( result == code::tx::ok)
-            {
-               return pop_transaction();
-            }
-
-            return result;
+            rollback( current());
+            pop_transaction();
          }
 
 
@@ -1016,23 +1001,25 @@ namespace casual
             }
          }
 
-         code::tx Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
+         void Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
 
-            auto found = algorithm::find_if (m_resources.all, [rm]( const auto& r){
+            auto found = algorithm::find_if( m_resources.all, [rm]( const auto& r){
                return r.id == rm;
             });
 
             if( found)
             {
-               return common::code::convert::to::tx( found->commit( transaction, flags));
+               auto code = common::code::convert::to::tx( found->commit( transaction, flags));
+               
+               exception::tx::handle( code, "resource commit");
             }
 
             throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
          }
 
-         code::tx Context::pop_transaction()
+         void Context::pop_transaction()
          {
             Trace trace{ "transaction::Context::pop_transaction"};
 
@@ -1059,7 +1046,8 @@ namespace casual
                   //
                   // We start a new one
                   //
-                  return begin();
+                  begin();
+                  break;
                }
                case Control::stacked:
                {
@@ -1080,7 +1068,6 @@ namespace casual
                   throw exception::tx::Fail{ "unknown control directive - this can not happen"};
                }
             }
-            return code::tx::ok;
          }
 
       } // transaction
