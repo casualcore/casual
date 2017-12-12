@@ -514,11 +514,11 @@ namespace casual
 
             auto create = common::algorithm::partition( update, []( const Queue& q){ return q.id == 0;});
 
-            common::algorithm::transform( std::get< 0>( create), result, [&]( auto& q){ return Database::create( q);});
+            common::algorithm::transform( std::get< 0>( create), result, [&]( auto& q){ return this->create( q);});
 
-            common::algorithm::for_each( std::get< 1>( create), [&]( auto& q){ Database::update_queue( q);});
+            common::algorithm::for_each( std::get< 1>( create), [&]( auto& q){ this->update_queue( q);});
 
-            common::algorithm::for_each( remove, [&]( auto id){ Database::remove_queue( id);});
+            common::algorithm::for_each( remove, [&]( auto id){ this->remove_queue( id);});
 
 
             update_mapping();
