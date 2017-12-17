@@ -7,10 +7,12 @@
 
 #include "common/log/category.h"
 #include "common/log.h"
+#include "common/log/stream.h"
 #include "common/traits.h"
 
 #include "sf/namevaluepair.h"
 #include "sf/archive/log.h"
+#include "sf/archive/line.h"
 
 
 #include <sstream>
@@ -76,6 +78,38 @@ namespace casual
          } // value
       } // name
    } // sf
+
+   namespace common
+   {
+      namespace log
+      {
+         namespace detail
+         {
+            template< typename T>
+            using can_serialize = decltype( std::declval< T&>().serialize( std::declval< sf::archive::Writer&>()));
+         } // detail
+
+         //!
+         //! Specialization for containers, to log ranges
+         //!
+         template< typename T> 
+         struct has_formatter< T, std::enable_if_t< 
+               sf::traits::detect::is_detected< detail::can_serialize, T>::value>>
+            : std::true_type
+         {
+            struct formatter
+            {
+               template< typename V>
+               void operator () ( std::ostream& out, V&& value) const
+               { 
+                  auto writer = sf::archive::line::writer( out);
+                  writer << sf::name::value::pair::make( nullptr, std::forward< V>( value));
+               }
+            };
+         };
+         
+      } // log
+   } // common
 } // casual
 
 #endif // SF_LOG_H_

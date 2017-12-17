@@ -18,6 +18,7 @@
 
 
 #include "sf/service/protocol/call.h"
+#include "sf/log.h"
 
 namespace casual
 {
@@ -34,6 +35,8 @@ namespace casual
                sf::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
                   Trace trace( "casual::queue::enqueue");
+
+                  common::log::line( verbose::log, "message: ", message);
 
                   auto& transaction = common::transaction::context().current();
 
@@ -69,7 +72,7 @@ namespace casual
                   }
                   request.queue = group.queue;
 
-                  //log << "message: " << message << '\n';
+                  common::log::line( verbose::log, "request: ", request);
 
                   return common::communication::ipc::call( group.process.queue, request).id;
 
@@ -131,7 +134,7 @@ namespace casual
                      request.selector.id = selector.id;
                      request.selector.properties = selector.properties;
 
-                     log << "async::dequeue - request: " << request << std::endl;
+                     common::log::line( verbose::log, "request: ", request);
 
                      return ipc.blocking_send( group.process.queue, request);
                   };
