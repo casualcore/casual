@@ -5,8 +5,6 @@
 #include "queue/group/handle.h"
 #include "queue/common/log.h"
 
-#include "queue/common/environment.h"
-
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
@@ -409,7 +407,7 @@ namespace casual
                      local::ipc::blocking::send( message.process.queue, reply);
                   });
 
-                  reply.affected = common::algorithm::transform( message.queues, [&]( Queue::id_type queue){
+                  reply.affected = common::algorithm::transform( message.queues, [&]( auto queue){
                      common::message::queue::restore::Reply::Affected result;
 
                      result.queue = queue;

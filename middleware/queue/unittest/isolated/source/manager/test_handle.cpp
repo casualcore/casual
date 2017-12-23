@@ -25,6 +25,8 @@ namespace casual
          {
             struct State
             {
+               template< typename T>
+               common::strong::queue::id queue( T id) { return common::strong::queue::id{ id};}
 
                State()
                {
@@ -34,12 +36,12 @@ namespace casual
                   };
 
                   state.queues = {
-                        { "queue1", { { group10.process(), 1}}},
-                        { "queue2", { { group10.process(), 2}}},
-                        { "queue3", { { group10.process(), 3}}},
-                        { "queueB1", { { group20.process(), 1}}},
-                        { "queueB2", { { group20.process(), 2}}},
-                        { "queueB3", { { group20.process(), 3}}},
+                        { "queue1", { { group10.process(), queue( 1)}}},
+                        { "queue2", { { group10.process(), queue( 2)}}},
+                        { "queue3", { { group10.process(), queue( 3)}}},
+                        { "queueB1", { { group20.process(), queue( 1)}}},
+                        { "queueB2", { { group20.process(), queue( 2)}}},
+                        { "queueB3", { { group20.process(), queue( 3)}}},
                   };
                }
 
@@ -115,7 +117,7 @@ namespace casual
             common::message::queue::lookup::Reply reply;
             common::communication::ipc::blocking::receive( requester.output(), reply);
 
-            EXPECT_TRUE( reply.queue == 1);
+            EXPECT_TRUE( reply.queue.value() == 1);
             EXPECT_TRUE( reply.process == state.group10.process());
 
          }
@@ -151,7 +153,7 @@ namespace casual
             common::message::queue::lookup::Reply reply;
             common::communication::ipc::blocking::receive( requester.output(), reply);
 
-            EXPECT_TRUE( reply.queue == 0);
+            EXPECT_TRUE( ! reply.queue);
             EXPECT_TRUE( reply.process == common::process::Handle{}); // << "reply.process: " << reply.process;
          }
       }
@@ -243,7 +245,7 @@ namespace casual
             common::message::queue::lookup::Reply reply;
             common::communication::ipc::blocking::receive( requester.output(), reply);
 
-            EXPECT_TRUE( reply.queue == 0);
+            EXPECT_TRUE( ! reply.queue);
             EXPECT_TRUE( reply.process == requester.process()) << "reply.process: " << reply.process;
          }
       }

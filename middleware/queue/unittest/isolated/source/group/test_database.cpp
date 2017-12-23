@@ -65,7 +65,7 @@ namespace casual
 
             namespace peek
             {
-               common::message::queue::peek::information::Request information( group::Queue::id_type queue)
+               common::message::queue::peek::information::Request information( common::strong::queue::id queue)
                {
                   common::message::queue::peek::information::Request result;
 

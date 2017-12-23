@@ -23,7 +23,8 @@ namespace casual
             validation,
             invalid_configuration,
             invalid_document,
-            invalid_node
+            invalid_node,
+            invalid_version,
          };
 
          //static_assert( static_cast< int>( signal::ok) == 0, "signal::ok has to be 0");

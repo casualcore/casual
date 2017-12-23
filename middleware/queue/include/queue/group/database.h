@@ -36,7 +36,7 @@ namespace casual
          {
             struct Dequeue
             {
-               Queue::id_type id;
+               common::strong::queue::id id;
                common::platform::size::type pending;
                common::platform::size::type count;
             };
@@ -56,7 +56,7 @@ namespace casual
             //!
             //! @return the created queues
             //!
-            std::vector< Queue> update( std::vector< Queue> update, const std::vector< Queue::id_type>& remove);
+            std::vector< Queue> update( std::vector< Queue> update, const std::vector< common::strong::queue::id>& remove);
 
 
             common::message::queue::enqueue::Reply enqueue( const common::message::queue::enqueue::Request& message);
@@ -67,7 +67,7 @@ namespace casual
             common::message::queue::peek::messages::Reply peek( const common::message::queue::peek::messages::Request& request);
 
 
-            size_type restore( Queue::id_type id);
+            size_type restore( common::strong::queue::id id);
 
             void commit( const common::transaction::ID& id);
             void rollback( const common::transaction::ID& id);
@@ -75,13 +75,13 @@ namespace casual
             //!
             //! @return queues that was affected of the commit
             //!
-            std::vector< Queue::id_type> committed( const common::transaction::ID& id);
+            std::vector< common::strong::queue::id> committed( const common::transaction::ID& id);
 
 
 
             std::vector< common::message::queue::information::Queue> queues();
 
-            std::vector< common::message::queue::information::Message> messages( Queue::id_type id);
+            std::vector< common::message::queue::information::Message> messages( common::strong::queue::id id);
 
 
             inline bool has_pending() const noexcept { return ! m_requests.empty();}
@@ -100,7 +100,7 @@ namespace casual
             //!
             //! @return "global" error queue
             //!
-            Queue::id_type error() const { return m_error_queue;}
+            common::strong::queue::id error() const { return m_error_queue;}
 
 
             //!
@@ -126,9 +126,9 @@ namespace casual
             //! @return id to the queue
             //!
             template< typename M>
-            Queue::id_type quid( M&& message) const
+            common::strong::queue::id quid( M&& message) const
             {
-               if( message.queue != 0)
+               if( message.queue)
                {
                   return message.queue;
                }
@@ -149,9 +149,11 @@ namespace casual
             //! @attention only exposed for unittest purposes
             //! @{
             std::vector< pending::Dequeue> get_pending();
-            void pending_add( Queue::id_type id);
-            void pending_set( Queue::id_type id, common::platform::size::type value);
+            void pending_add( common::strong::queue::id id);
+            void pending_set( common::strong::queue::id id, common::platform::size::type value);
             //! @}
+
+            inline const std::string& name() const { return m_name;}
  
          private:
 
@@ -159,20 +161,20 @@ namespace casual
 
 
             void update_queue( const Queue& queue);
-            void remove_queue( Queue::id_type id);
+            void remove_queue( common::strong::queue::id id);
 
-            std::vector< Queue> queue( Queue::id_type id);
+            std::vector< Queue> queue( common::strong::queue::id id);
 
             void update_mapping();
 
 
             std::vector< common::message::queue::dequeue::Request> m_requests;
 
-            std::unordered_map< std::string, Queue::id_type> m_name_mapping;
+            std::unordered_map< std::string, common::strong::queue::id> m_name_mapping;
 
 
             sql::database::Connection m_connection;
-            Queue::id_type m_error_queue;
+            common::strong::queue::id m_error_queue;
 
             struct Statement
             {
@@ -231,6 +233,8 @@ namespace casual
 
 
             } m_statement;
+
+            std::string m_name;
 
          };
 

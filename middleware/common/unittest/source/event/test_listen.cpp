@@ -57,13 +57,14 @@ namespace casual
             mockup::ipc::eventually::send( communication::ipc::inbound::id(), message::shutdown::Request{});
          }
 
+         
          //
          // listen to the event
          //
          {
             EXPECT_THROW({
                event::listen( []( message::event::process::Exit& m){
-                  EXPECT_TRUE( m.state.pid == 42);
+                  EXPECT_TRUE( m.state.pid == strong::process::id{ 42});
                   EXPECT_TRUE( m.state.reason == process::lifetime::Exit::Reason::core);
                });
             }, exception::casual::Shutdown);

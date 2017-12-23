@@ -7,7 +7,6 @@
 
 #include "queue/group/group.h"
 #include "queue/common/queue.h"
-#include "queue/common/environment.h"
 #include "queue/common/transform.h"
 #include "queue/api/queue.h"
 #include "queue/manager/admin/queuevo.h"

@@ -7,7 +7,6 @@
 #include "queue/manager/handle.h"
 
 #include "queue/common/log.h"
-#include "queue/common/environment.h"
 
 
 #include "common/message/dispatch.h"
@@ -17,6 +16,7 @@
 #include "common/environment.h"
 #include "common/exception/signal.h"
 #include "common/exception/handle.h"
+#include "common/event/send.h"
 
 #include "configuration/message/transform.h"
 #include "configuration/queue.h"
@@ -42,76 +42,84 @@ namespace casual
 
                   State state( const Settings& settings)
                   {
+                     Trace trace( "queue::manager::local::transform::state");
+
                      State result;
 
-                     if( settings.group_executable.empty())
+                     result.group_executable = common::coalesce(
+                        std::move( settings.group_executable),
+                        casual::common::environment::directory::casual() + "/bin/casual-queue-group"
+                     );
+
+                     //
+                     // We ask the domain manager for configuration
+                     //
                      {
-                        result.group_executable = casual::common::environment::directory::casual() + "/bin/casual-queue-group";
-                     }
-                     else
-                     {
-                        result.group_executable = std::move( settings.group_executable);
+                        common::message::domain::configuration::Request request;
+                        request.process = common::process::handle();
+
+                        result.configuration = common::communication::ipc::call(
+                           common::communication::ipc::domain::manager::device(), request).domain.queue;
                      }
 
                      return result;
                   }
-
-                  struct Queue
-                  {
-                     common::message::queue::Queue operator() ( const common::message::domain::configuration::queue::Queue& value) const
-                     {
-                        common::message::queue::Queue result;
-
-                        result.name = value.name;
-                        result.retries = value.retries;
-
-                        return result;
-                     }
-                  };
                } // transform
 
 
-               struct Startup : manager::handle::Base
+               struct Spawn : manager::handle::Base
                {
                   using manager::handle::Base::Base;
 
                   State::Group operator () ( const common::message::domain::configuration::queue::Group& group)
                   {
+                     Trace trace( "queue::manager::local::Spawn");
+
                      State::Group result;
                      result.name = group.name;
                      result.queuebase = group.queuebase;
 
-                     result.process.pid = casual::common::process::spawn(
-                        m_state.group_executable,
-                        { "--queuebase", group.queuebase, "--name", group.name});
-
-                     common::message::queue::connect::Request request;
-                     ipc::device().blocking_receive( request);
-
-                     result.process.queue = request.process.queue;
-
-                     common::message::queue::connect::Reply reply;
-                     reply.name = group.name;
-
-                     common::algorithm::transform( group.queues, reply.queues, transform::Queue{});
-
-                     ipc::device().blocking_send( request.process.queue, reply);
+                     try
+                     {
+                        result.process.pid = casual::common::process::spawn(
+                           m_state.group_executable,
+                           { "--queuebase", group.queuebase, "--name", group.name});
+                     }
+                     catch( const common::exception::base& exception)
+                     {
+                        auto message = common::string::compose( "failed to spawn queue group:  ", group.name, " - ", exception);
+                        
+                        common::log::line( common::log::category::error, message);
+                        common::event::error::send( message, common::event::error::Severity::error);
+                     }
 
                      return result;
                   }
-
                };
 
-               void startup( State& state, common::message::domain::configuration::Domain&& config)
+
+
+               void startup( State& state)
                {
-                  casual::common::algorithm::transform( config.queue.groups, state.groups, Startup( state));
+                  Trace trace( "queue::manager::local::startup");
+                  
+                  casual::common::algorithm::transform( state.configuration.groups, state.groups, Spawn( state));
+
+                  common::algorithm::trim( state.groups, common::algorithm::remove_if( state.groups, []( auto& g){
+                     return ! g.process.pid;
+                  }));
+            
 
                   //
                   // Make sure all groups are up and running before we continue
                   //
                   {
                      auto handler = ipc::device().handler(
-                        manager::handle::connect::Request{ state});
+                        manager::handle::connect::Request{ state},
+                        manager::handle::connect::Information{ state},
+                        manager::handle::process::Exit{ state},
+                        common::message::handle::Shutdown{}
+                     );
 
                      const auto filter = handler.types();
 
@@ -119,35 +127,12 @@ namespace casual
                      {
                         handler( ipc::device().blocking_next( filter));
                      }
-
                   }
                }
 
             } // <unnamed>
          } // local
 
-
-
-
-         namespace message
-         {
-            void pump( State& state)
-            {
-               log << "queue manager start" << std::endl;
-
-               auto handler = manager::handlers( state);
-
-               common::log::category::information << "casual-queue-manager is on-line" << std::endl;
-
-
-               while( true)
-               {
-                  handler( ipc::device().blocking_next());
-               }
-
-            }
-
-         } // message
 
          std::vector< common::message::queue::information::queues::Reply> queues( State& state)
          {
@@ -217,20 +202,6 @@ namespace casual
                common::environment::variable::name::ipc::queue::manager(),
                common::process::handle());
 
-
-         {
-            //
-            // We ask the domain manager for configuration
-            //
-
-            common::message::domain::configuration::Request request;
-            request.process = common::process::handle();
-
-            manager::local::startup( m_state,
-                  common::communication::ipc::call(
-                        common::communication::ipc::domain::manager::device(), request).domain);
-         }
-
       }
 
       Broker::~Broker()
@@ -244,13 +215,13 @@ namespace casual
                   std::bind( &manager::handle::process::Exit::apply, manager::handle::process::Exit{ m_state}, std::placeholders::_1),
                   m_state.processes());
 
-            common::log::category::information << "casual-queue-manager is off-line" << std::endl;
+            common::log::line( common::log::category::information, "casual-queue-manager is off-line");
 
          }
          catch( const common::exception::signal::Timeout& exception)
          {
             auto pids = m_state.processes();
-            common::log::category::error << "failed to terminate groups - pids: " << common::range::make( pids) << std::endl;
+            common::log::line( common::log::category::error, "failed to terminate groups - pids: ", pids);
          }
          catch( ...)
          {
@@ -261,7 +232,9 @@ namespace casual
 
       void Broker::start()
       {
-         log << "qeueue manager start" << std::endl;
+         common::log::line( log, "queue manager start");
+
+         manager::local::startup( m_state);
 
          auto handler = manager::handlers( m_state);
 
@@ -270,8 +243,7 @@ namespace casual
          //
          common::process::instance::connect( common::process::instance::identity::queue::manager());
 
-         common::log::category::information << "casual-queue-manager is on-line" << std::endl;
-
+         common::log::line( common::log::category::information, "casual-queue-manager is on-line");
 
          while( true)
          {

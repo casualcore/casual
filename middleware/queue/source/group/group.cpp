@@ -4,9 +4,7 @@
 
 #include "queue/group/group.h"
 #include "queue/group/handle.h"
-
 #include "queue/common/log.h"
-#include "queue/common/environment.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -121,6 +119,7 @@ namespace casual
                //
                {
                   common::message::queue::Information information;
+                  information.name = m_state.name();
                   information.process = common::process::handle();
                   information.queues = m_state.queuebase.queues();
 

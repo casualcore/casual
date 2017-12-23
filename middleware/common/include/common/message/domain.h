@@ -197,12 +197,7 @@ namespace casual
                      )
                   };
 
-                  //!
-                  //! Trying a new name for 'broker'. If it feels good
-                  //! we change the real broker to service::Manager
-                  //!
-                  //! otherwise, we change this type.
-                  //!
+
                   struct Manager
                   {
                      common::platform::time::unit default_timeout = common::platform::time::unit::zero();

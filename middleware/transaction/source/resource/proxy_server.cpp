@@ -27,32 +27,26 @@ int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* 
 {
    try
    {
+      casual::transaction::Trace trace{ "casual_start_resource_proxy"};
 
-      casual::transaction::Trace trace{ "casual_start_reource_proxy"};
-
-      casual::transaction::resource::State state;
-      state.xa_switches = serverArguments->xaSwitches;
+      casual::transaction::resource::proxy::Settings settings;
 
       {
          casual::common::Arguments arguments{ {
-            casual::common::argument::directive( {"-k", "--rm-key"}, "resource key", state.rm_key),
-            casual::common::argument::directive( {"-o", "--rm-openinfo"}, "open info", state.rm_openinfo),
-            casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "close info", state.rm_closeinfo),
-            casual::common::argument::directive( {"-i", "--rm-id"}, "resource id", state.rm_id),
+            casual::common::argument::directive( {"-k", "--rm-key"}, "resource key", settings.key),
+            casual::common::argument::directive( {"-o", "--rm-openinfo"}, "open info", settings.openinfo),
+            casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "close info", settings.closeinfo),
+            casual::common::argument::directive( {"-i", "--rm-id"}, "resource id", settings.id),
          }};
 
          arguments.parse( serverArguments->argc, serverArguments->argv);
       }
 
-      casual::transaction::log << CASUAL_MAKE_NVP( state);
-
-
-      casual::transaction::resource::Proxy proxy( std::move( state));
+      casual::transaction::resource::Proxy proxy( std::move( settings), serverArguments->xaSwitches);
       proxy.start();
    }
    catch( const casual::common::exception::signal::Terminate& exception)
    {
-      return 0;
    }
    catch( ...)
    {

@@ -39,12 +39,12 @@ namespace casual
 
          {
             value::basic_id< int, default_initialize_42> id;
-            EXPECT_TRUE( id == 42);
+            EXPECT_TRUE( id.value() == 42);
          }
 
          {
             value::basic_id< int, default_initialize_42> id{ 1} ;
-            EXPECT_TRUE( id == 1);
+            EXPECT_TRUE( id.value() == 1);
          }
       }
 

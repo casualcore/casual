@@ -94,11 +94,14 @@ namespace casual
             {
                struct Request : Base
                {
-                  using message_type = common::message::queue::Information;
-
                   using Base::Base;
+                  void operator () ( common::message::queue::connect::Request& message);
+               };
 
-                  void operator () ( message_type& message);
+               struct Information : Base
+               {
+                  using Base::Base;
+                  void operator () ( common::message::queue::Information& message);
                };
 
             } // connect

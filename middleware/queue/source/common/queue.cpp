@@ -3,8 +3,6 @@
 //!
 
 #include "queue/common/queue.h"
-#include "queue/common/environment.h"
-
 
 #include "common/communication/ipc.h"
 

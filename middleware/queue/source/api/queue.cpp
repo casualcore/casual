@@ -91,6 +91,11 @@ namespace casual
 
                   auto group = lookup();
 
+                  if( ! group)
+                  {
+                     throw common::exception::system::invalid::Argument{ "failed to lookup queue: " + lookup.name()};
+                  }
+
 
                   auto forget_blocking = common::execute::scope( [&]()
                   {

@@ -34,6 +34,7 @@ namespace casual
                         case casual::invalid_document: return "invalid document";
                         case casual::invalid_node: return "invalid node";
                         case casual::validation: return "validation";
+                        case casual::invalid_version: return "invalid version";
 
                         default: return "unknown";
                      }

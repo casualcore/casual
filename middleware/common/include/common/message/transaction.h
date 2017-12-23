@@ -158,7 +158,7 @@ namespace casual
                   Resource() = default;
                   Resource( std::function< void(Resource&)> foreign) { foreign( *this);}
 
-                  id::type id = 0;
+                  id::type id;
                   std::string name;
                   std::string key;
 
@@ -209,7 +209,7 @@ namespace casual
                struct basic_reply : transaction::basic_reply< code::xa, type>
                {
                   using base_type = transaction::basic_reply< code::xa, type>;
-                  id::type resource = 0;
+                  id::type resource;
                   Statistics statistics;
 
 
@@ -251,7 +251,7 @@ namespace casual
                {
                   using base_type = basic_request;
 
-                  id::type resource = 0;
+                  id::type resource;
                   flag::xa::Flags flags = flag::xa::Flag::no_flags;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -279,7 +279,7 @@ namespace casual
                   struct Reply : basic_message< Type::transaction_resource_connect_reply>
                   {
                      common::process::Handle process;
-                     id::type resource = 0;
+                     id::type resource;
                      code::xa state = code::xa::ok;
 
                      CASUAL_CONST_CORRECT_MARSHAL(

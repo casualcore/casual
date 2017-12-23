@@ -9,6 +9,7 @@
 #include "common/communication/ipc.h"
 #include "common/message/queue.h"
 #include "common/message/gateway.h"
+#include "common/message/domain.h"
 #include "common/domain.h"
 
 #include <string>
@@ -31,19 +32,17 @@ namespace casual
             struct Group
             {
 
-               using id_type = common::process::Handle;
-
                Group();
-               Group( std::string name, id_type process);
+               Group( std::string name, common::process::Handle process);
 
                std::string name;
-               id_type process;
+               common::process::Handle process;
 
                std::string queuebase;
 
                bool connected = false;
 
-               friend bool operator == ( const Group& lhs, id_type process);
+               friend bool operator == ( const Group& lhs, common::strong::process::id pid);
 
             };
 
@@ -66,11 +65,11 @@ namespace casual
             struct Queue
             {
                Queue() = default;
-               Queue( common::process::Handle process, size_type queue, size_type order = 0)
+               Queue( common::process::Handle process, common::strong::queue::id queue, size_type order = 0)
                   : process{ std::move( process)}, queue{ queue}, order{ order} {}
 
                common::process::Handle process;
-               size_type queue = 0;
+               common::strong::queue::id queue;
                size_type order = 0;
 
                friend bool operator < ( const Queue& lhs, const Queue& rhs);
@@ -84,8 +83,6 @@ namespace casual
 
             std::deque< common::message::queue::lookup::Request> pending;
 
-
-            std::string configuration;
 
             std::vector< Group> groups;
             std::vector< Remote> remotes;
@@ -110,6 +107,9 @@ namespace casual
             void remove( common::strong::process::id pid);
 
             void update( common::message::gateway::domain::Advertise& message);
+
+            const common::message::domain::configuration::queue::Group* group_configuration( const std::string& name);
+            common::message::domain::configuration::queue::Manager configuration;
 
          };
 

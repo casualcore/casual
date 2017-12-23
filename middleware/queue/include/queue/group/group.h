@@ -38,6 +38,8 @@ namespace casual
 
             Database queuebase;
 
+            inline const std::string& name() const { return queuebase.name();}
+
 
             template< typename M>
             void persist( M&& message, std::vector< common::strong::ipc::id> destinations)
