@@ -11,21 +11,27 @@ __get_file_list() {
     local files=()
     local k=0
 
-    (( ${#current} < 1 )) && current="$(pwd)/"
+    (( ${#current} < 1 )) && current="${PWD}/"
 
-    for j in $(compgen -f -- "${current#$(pwd)/}" ); do
+    for j in $(compgen -f -- "${current#${PWD}/}" ); do
         [[ -d "${j}" ]] && { [[ "$(basename "${j}")" == "."* ]] && continue || j="${j}/"; }
-        [[ -f "${j}" ]] && { [[ "$(basename "${j}")" =~ .*\.(yaml|yml|json|ini|xml)$ ]] && j="${j} " || continue; }
+        # shellcheck disable=SC2015
+        [[ -f "${j}" ]] && { [[ "$(basename "${j}")" =~ .*\.(yaml|yml|json|ini|xml)$ ]] || continue; }
         files[k++]="${j}"
     done
 
     echo "${files[*]}"
 }
 
+# needed for bash 3.x compability
+__compopt() {
+    type compopt &> /dev/null && compopt "$@"
+}
+
 _casual() {
 
     # do not load, if casual is not in $PATH
-    which casual &> /dev/null || return 0
+    type casual &> /dev/null || return 0
 
     local current previous arguments options i index cmd
     local parameters=("${COMP_WORDS[@]:0:COMP_CWORD}")
@@ -54,7 +60,7 @@ _casual() {
     }
 
     # always add space after completed option
-    compopt +o nospace > /dev/null
+    __compopt +o nospace
 
     # previous completed word was found, let's see what we can do with it
     if (( index > -1 )); then
@@ -84,7 +90,7 @@ _casual() {
                 # XXX: until we have a context
                 elif [[ "${previous}" == "--boot" ]]; then
                     # do not add space after compeleted directory or file
-                    compopt -o nospace >/dev/null
+                    __compopt -o nospace
 
                     options=($(__get_file_list "${current}"))
                 elif [[ "${previous}" == "--metric-reset" ]]; then
@@ -97,13 +103,15 @@ _casual() {
     # special case, do not continue to autocomplete after the dynamic parameter arguments
     # has been completed once
     else
-        case "${COMP_WORDS[COMP_CWORD-2]}" in
-            "--boot"|"--state"|"--metric-reset")
-                return 0
-                ;;
-            *)
-                ;;
-        esac
+        if (( COMP_CWORD >= 2 )); then
+            case "${COMP_WORDS[COMP_CWORD-2]}" in
+                "--boot"|"--state"|"--metric-reset")
+                    return 0
+                    ;;
+                *)
+                    ;;
+            esac
+        fi
     fi
 
     COMPREPLY=($(compgen -W "${options[*]}" -- "${current}"))
