@@ -503,7 +503,7 @@ namespace sql
       struct Version : casual::common::Compare< Version>
       {
          Version() = default;
-         Version( long major, long minor) : major( major), minor( minor) {}
+         Version( long major, long minor) : major{ major}, minor{ minor} {}
          
          long major = 0;
          long minor = 0;

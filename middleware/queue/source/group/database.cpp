@@ -1015,6 +1015,11 @@ namespace casual
          void Database::rollback() { m_connection.rollback();}
 
 
+         sql::database::Version Database::version()
+         {
+            return sql::database::version::get( m_connection);
+         }
+
       } // server
    } // queue
 

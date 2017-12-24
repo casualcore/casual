@@ -154,6 +154,8 @@ namespace casual
             //! @}
 
             inline const std::string& name() const { return m_name;}
+
+            sql::database::Version version();
  
          private:
 

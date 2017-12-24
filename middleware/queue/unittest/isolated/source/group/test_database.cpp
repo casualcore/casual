@@ -1185,5 +1185,18 @@ namespace casual
          EXPECT_TRUE( database.get_pending().size() == 1);   
       }
 
+
+      TEST( casual_queue_group, expect_version_1_0)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         auto version = database.version();
+
+         EXPECT_TRUE( version.major == 1);
+         EXPECT_TRUE( version.minor == 0);
+      }
+
    } // queue
 } // casual
