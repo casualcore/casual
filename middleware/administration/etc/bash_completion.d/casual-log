@@ -1,0 +1,50 @@
+__compopt() {
+    type compopt &> /dev/null && compopt "$@"
+}
+
+_casual_log() {
+
+    # do not load, if casual-log is not in $PATH
+    type casual-log &> /dev/null || return 0
+
+    local current previous
+    local arguments=("--no-color" "--no-pager" "--help")
+    local suggestions=()
+
+    COMPREPLY=()
+
+    __compopt +o nospace
+    __compopt +o default
+
+    current="${COMP_WORDS[COMP_CWORD]}"
+    (( COMP_CWORD > 0 )) && previous="${COMP_WORDS[COMP_CWORD-1]}"
+
+    case "${current}" in
+        -*)
+            if [[ "${previous}" != *"help" ]]; then
+                for ((i=0; i<${#arguments[@]}; i++)) {
+                    local option="${arguments[$i]}"
+
+                    [[ "${COMP_WORDS[*]}" == *"${option}"* ]] && continue
+                    [[ "${option}" == "--help" && "${COMP_CWORD}" -gt 0 ]] && continue
+
+                    suggestions+=("${option}")
+                }
+            elif [[ "${previous}" == *"help" ]]; then
+                suggestions=()
+            else
+                suggestions=(${arguments[@]})
+            fi
+
+            COMPREPLY=($(compgen -W "${suggestions[*]}" -- "${current}"))
+            ;;
+        *)
+            __compopt -o default
+            ;;
+    esac
+
+    return 0
+
+}
+
+complete -F _casual_log casual-log

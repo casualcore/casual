@@ -1,4 +1,45 @@
-#/bin/bash
+#/usr/bin/env bash
 
-casual-log-format "$@" | less -R
+_use_pager() {
+    local in_arguments=($1)
+    local out_arguments=()
+    local i
+    local ret=0
 
+    for ((i=0; i<${#in_arguments[@]}; i++)) {
+        case "${in_arguments[$i]}" in
+            "--no-pager")
+                ret=1
+                ;;
+            "--h"*|"-h")
+                ret=2
+                out_arguments+=("${in_arguments[$i]}")
+                ;;
+            *)
+                out_arguments+=("${in_arguments[$i]}")
+                ;;
+        esac
+    }
+
+    echo "${out_arguments[@]}"
+
+    return ${ret}
+}
+
+arguments=($(_use_pager "$*"))
+ret=$?
+(( ret == 0 )) && \
+    casual-log-format "${arguments[@]}" | less -R || \
+        casual-log-format "${arguments[@]}"
+
+if (( ret == 2 )); then
+    cat <<EOF
+
+usage $0 [--no-pager] ...
+
+in addition to the arguments for casual-log-format, the following is supported by $0.
+
+optional arguments:
+  --no-pager  do not page output
+EOF
+fi

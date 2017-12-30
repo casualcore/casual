@@ -1,197 +1,187 @@
 #!/usr/bin/env python
 
-
-
 #
 # Imports
 #
 import sys
 import os
+import os.path
 import errno
-import subprocess
-import optparse
+import argparse
 import re
-import signal
 import datetime
 
 from functools import partial
+from color import Color
 
-from color import color
+color = None
 
 
+def time(time):
+    return datetime.datetime.fromtimestamp(int(time) / 1000000.0).isoformat()
 
-def time( time):
-    #return time[0: 11] + color.white( time[11:]);
-    return datetime.datetime.fromtimestamp( int( time) / 1000000.0).isoformat()
-    
-def domain( name):
+
+def domain(name):
     return name
-    
 
 
-def normalizePID( id):
-    return id;
-    #return id.rjust( 8);
-    
+def normalizePID(id):
+    return id
+    # return id.rjust( 8);
 
 
-def truncateUUID( uuid):
+def truncateUUID(uuid):
     # take the first 13:
     if uuid:
-        return uuid[:13];
+        return uuid[:13]
     else:
-        return '             ';
+        return ' ' * 13
 
-def truncateXID( xid):
+
+def truncateXID(xid):
     # 590b07bd090340ec9faa2156b90a2756:1c04d1e1886f4820bc9ffb66ababf7d2
     # -> 2156b90a2756:1c04d1e1
-    
+
     if xid:
-        return xid[20: 20 + 21];
+        return xid[20: 20 + 21]
     else:
-        return '' #'                     ';
+        return ''
 
 
-def truncateThread( pid, thread):
-    
-    process = truncateThread.threads.get( pid);
-    
+def truncateThread(pid, thread):
+
+    process = truncateThread.threads.get(pid)
+
     if not process:
-        process = truncateThread.threads[ pid] = dict();
-    
-    threadId = process.get( thread);
-    
+        process = truncateThread.threads[pid] = dict()
+
+    threadId = process.get(thread)
+
     if not threadId:
-        threadId = process[ thread] = len( process) + 1;
-        
-    return str( threadId);
-    
+        threadId = process[thread] = len(process) + 1
 
-truncateThread.threads = {};
-#truncateThread.count = 0;
+    return str(threadId)
 
 
-def category( name):
-    
+truncateThread.threads = {}
+
+
+def category(name):
+
     for match in category.switch:
-        if match[ 0].match( name):
-            return match[ 1]( name)
-    
-    return name;
+        if match[0].match(name):
+            return match[1](name)
 
-category.switch = [
-    [ re.compile( '^err'), partial( color.red, bold = True)],
-    [ re.compile( '^war'), partial( color.warning, bold = True)],
-    [ re.compile( '^inf'), partial( color.white, bold = True)],
-    [ re.compile( '^deb'), color.green],
-    [ re.compile( '^tra'), partial( color.green, bold = True)],
-    [ re.compile( '^parameter$'), color.green],
-    #[ re.compile( '^casual[.]trace'), color.bold_blue], 
-    [ re.compile( '^casu'), color.blue],                
-]
+    return name
 
 
+category.switch = []
 
-def format( input, output):
-    
-    line = input.readline();
-    
-    while( line):
-        
-        rows = line.split( '|', 10);
-        
-        if( len( rows) == 11):
-            
-            pid = rows[ 3];
-            thread = truncateThread( pid, rows[ 4]);
-            
-            output.write( time( rows[ 0]));
-            output.write( '|');
-            output.write( color.default( domain( rows[ 1])));
-            output.write( '|');
-            output.write( color.yellow( truncateUUID( rows[ 2])));
-            output.write( '|');
-            output.write( color.white( normalizePID( pid)));
-            output.write( '|');
-            output.write( thread);
-            output.write( '|');
-            #output.write( color.white( rows[ 6]));
-            output.write( rows[ 5]);
-            output.write( '|');
-            output.write( color.yellow( truncateXID( rows[ 6])));
-            output.write( '|');
-            output.write( rows[ 7]);
-            output.write( '|');
-            output.write( color.yellow( rows[ 8]));
-            output.write( '|');
-            output.write( category( rows[ 9]));
-            output.write( '|');
 
-            if rows[ 7] in [ "information", 'error']:
-                output.write( color.white( rows[ 10]));
+def format(input, output, colorize=True):
+
+    line = input.readline()
+
+    while(line):
+
+        rows = line.split('|', 10)
+
+        if len(rows) == 11:
+            pid = rows[3]
+            thread = truncateThread(pid, rows[4])
+
+            output.write(time(rows[0]))
+            output.write('|')
+            output.write(color.default(domain(rows[1])))
+            output.write('|')
+            output.write(color.yellow(truncateUUID(rows[2])))
+            output.write('|')
+            output.write(color.white(normalizePID(pid)))
+            output.write('|')
+            output.write(thread)
+            output.write('|')
+            output.write(rows[5])
+            output.write('|')
+            output.write(color.yellow(truncateXID(rows[6])))
+            output.write('|')
+            output.write(rows[7])
+            output.write('|')
+            output.write(color.yellow(rows[8]))
+            output.write('|')
+            output.write(category(rows[9]))
+            output.write('|')
+
+            if rows[7] in ['information', 'error']:
+                output.write(color.white(rows[10]))
             else:
-                output.write( rows[ 10])
-            #sys.stdout.write( '\n');
+                output.write(rows[10])
         else:
-            output.write( line)
-    
-        line = input.readline();
-    
+            output.write(line)
 
-# def handler(number, frame):
-#     sys.stderr.write( "signal: " + str( number) + " received\n");
-#     pass;
-#     
-# 
-# def less( input):
-#     try:
-#         signal.signal(signal.SIGINT, handler)
-#         signal.signal(signal.SIGILL, handler)
-#         
-#         process = subprocess.Popen( ['less', '-r'], stdin=subprocess.PIPE, universal_newlines=True)
-#         
-#         output = process.stdin;
-#         
-#         #process.stdin = sys.stdout;
-#     
-#         format( input, output);
-#     
-#         process.communicate();
-#         
-#     except IOError as e:
-#         if e.errno != errno.EPIPE:
-#             raise
-#     
+        try:
+            line = input.readline()
+        except KeyboardInterrupt:
+            break
+
+
+def valid_file(value):
+    try:
+        with open(value, 'r'):
+            return value
+    except IOError as e:
+        raise argparse.ArgumentTypeError(
+            "can't open '{value}': {message}".format(
+                value=value, message=e
+            )
+        )
 
 
 if __name__ == '__main__':
 
-    parser = optparse.OptionParser("""
-        usage: %prog [logfile...]
-        
-        Format of the logfile:
-        
-        <time>|<domain>|<execution id>|<transaction id>|<process id>|<thread id>|<executable>|<log category>|<service>|<message>...
-        
-        """)
-    
-    (options, args) = parser.parse_args()
-    
-    try:
+    parser = argparse.ArgumentParser(description='''
+Format of the logfile:\n
 
-        if len( args) > 0:
-            with open( args[ 0]) as infile:
-                format( infile, sys.stdout);
-        
+<time>|<domain>|<execution id>|<transaction id>|<process id>|\
+<thread id>|<executable>|<log category>|<service>|<message>...
+''', formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument(
+        'file', nargs='?', default=None,
+        type=valid_file, help='log file that is to be formatted'
+    )
+
+    parser.add_argument(
+        '--no-color', dest='colorize', action='store_false',
+        default=True, help='do not colorize log file'
+    )
+
+    args = parser.parse_args()
+
+    color = Color(args.colorize)
+    category.switch = [
+        [re.compile('^err'), partial(color.red, bold=True)],
+        [re.compile('^war'), partial(color.warning, bold=True)],
+        [re.compile('^inf'), partial(color.white, bold=True)],
+        [re.compile('^deb'), color.green],
+        [re.compile('^tra'), partial(color.green, bold=True)],
+        [re.compile('^parameter$'), color.green],
+        [re.compile('^casu'), color.blue],
+    ]
+
+    try:
+        if args.file is not None:
+            with open(args.file) as infile:
+                format(infile, sys.stdout, args.colorize)
+
         elif not sys.stdin.isatty():
-            format( sys.stdin, sys.stdout);
-            
-        elif os.environ["CASUAL_DOMAIN_HOME"]:
-            with open( os.environ["CASUAL_DOMAIN_HOME"] + '/casual.log') as infile:
-                format( infile, sys.stdout);
-    
+            format(sys.stdin, sys.stdout, args.colorize)
+
+        elif os.environ['CASUAL_DOMAIN_HOME']:
+            with open(
+                os.path.join(os.environ['CASUAL_DOMAIN_HOME'], 'casual.log')
+            ) as infile:
+                format(infile, sys.stdout, args.colorize)
+
     except IOError as e:
         if e.errno != errno.EPIPE:
             raise
-
-
