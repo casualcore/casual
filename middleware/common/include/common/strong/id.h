@@ -49,6 +49,18 @@ namespace casual
             using id = value::Optional< platform::resource::native::type, platform::resource::native::invalid, tag::type, stream>;
 
          } // resource
+
+         namespace queue
+         {
+            namespace tag
+            {
+               struct type{};
+            } // tag
+   
+            using id = value::Optional< platform::queue::native::type, platform::queue::native::invalid, tag::type>;
+            
+         } // ipc
+
       } // strong 
    } // common
 } // casual

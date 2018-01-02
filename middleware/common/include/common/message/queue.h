@@ -10,6 +10,7 @@
 #include "common/uuid.h"
 #include "common/marshal/marshal.h"
 #include "common/buffer/type.h"
+#include "common/strong/id.h"
 
 namespace casual
 {
@@ -80,8 +81,10 @@ namespace casual
                   Reply( common::process::Handle process) : process( std::move( process)) {}
 
                   common::process::Handle process;
-                  size_type queue = 0;
+                  strong::queue::id queue;
                   size_type order = 0;
+
+                  explicit operator bool () const { return ! process.queue.empty();}
 
                   CASUAL_CONST_CORRECT_MARSHAL({
                      archive & process;
@@ -104,7 +107,7 @@ namespace casual
 
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  size_type queue = 0;
+                  strong::queue::id queue;
                   std::string name;
 
                   Message message;
@@ -158,7 +161,7 @@ namespace casual
                {
                   common::process::Handle process;
                   common::transaction::ID trid;
-                  size_type queue = 0;
+                  strong::queue::id queue;
                   std::string name;
                   Selector selector;
                   bool block = false;
@@ -214,7 +217,7 @@ namespace casual
                   struct Request : basic_message< Type::queue_dequeue_forget_request>
                   {
                      common::process::Handle process;
-                     size_type queue = 0;
+                     strong::queue::id queue;
                      std::string name;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -258,16 +261,15 @@ namespace casual
                   queue = 3,
                };
 
-               using id_type = size_type;
 
                Queue() = default;
                Queue( std::string name, size_type retries) : name( std::move( name)), retries( retries) {}
                Queue( std::string name) : Queue( std::move( name), 0) {};
 
-               id_type id = 0;
+               strong::queue::id id;
                std::string name;
                size_type retries = 0;
-               id_type error = 0;
+               strong::queue::id error;
                Type type = Type::queue;
 
 
@@ -294,9 +296,10 @@ namespace casual
 
                struct Queue : message::queue::Queue
                {
-                  size_type count;
-                  size_type size;
-                  size_type uncommitted;
+                  size_type count = 0;
+                  size_type size = 0;
+                  size_type uncommitted = 0;
+                  size_type pending = 0;
                   platform::time::point::type timestamp;
 
 
@@ -306,21 +309,24 @@ namespace casual
                      archive & count;
                      archive & size;
                      archive & uncommitted;
+                     archive & pending;
                      archive & timestamp;
                   })
+                  friend std::ostream& operator << ( std::ostream& out, const Queue& value);
                };
                static_assert( traits::is_movable< Queue>::value, "not movable");
 
                template< message::Type type>
                struct basic_information : basic_message< type>
                {
-
+                  std::string name;
                   common::process::Handle process;
                   std::vector< Queue> queues;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
                      basic_message< type>::marshal( archive);
+                     archive & name;
                      archive & process;
                      archive & queues;
                   })
@@ -329,8 +335,8 @@ namespace casual
 
                struct Message : queue::base_message_information
                {
-                  size_type queue;
-                  size_type origin;
+                  strong::queue::id queue;
+                  strong::queue::id origin;
                   platform::binary::type trid;
                   size_type state;
                   size_type redelivered;
@@ -370,7 +376,7 @@ namespace casual
                   {
                      using base_type = server::basic_id< Type::queue_queue_information_request>;
 
-                     Queue::id_type qid = 0;
+                     strong::queue::id qid;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {
@@ -410,7 +416,7 @@ namespace casual
                   struct Request : basic_message< Type::queue_peek_information_request>
                   {
                      common::process::Handle process;
-                     size_type queue = 0;
+                     strong::queue::id queue;
                      std::string name;
                      dequeue::Selector selector;
 
@@ -516,7 +522,7 @@ namespace casual
                struct Request : basic_message< Type::queue_restore_request>
                {
                   common::process::Handle process;
-                  std::vector< Queue::id_type> queues;
+                  std::vector< strong::queue::id> queues;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                   {
@@ -531,7 +537,7 @@ namespace casual
                {
                   struct Affected
                   {
-                     Queue::id_type queue;
+                     strong::queue::id queue;
                      size_type restored = 0;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
@@ -577,6 +583,10 @@ namespace casual
 
             template<>
             struct type_traits< queue::restore::Request> : detail::type< queue::restore::Reply> {};
+
+
+            template<>
+            struct type_traits< queue::connect::Request> : detail::type< queue::connect::Reply> {};
 
          } // reverse
 

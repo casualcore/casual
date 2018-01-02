@@ -38,6 +38,8 @@ namespace casual
 
 
          platform::size::type size() const { return std::distance( m_first, m_last);}
+
+
          bool empty() const { return m_first == m_last;}
 
 

@@ -71,6 +71,7 @@ namespace casual
                case tx::ok:
                case tx::outside:
                case tx::argument:
+               case tx::rollback:
                case tx::no_begin: return common::log::category::transaction;
 
                // rest is errors
@@ -79,35 +80,5 @@ namespace casual
          }
 
       } // code
-
-      namespace exception
-      {
-         namespace tx
-         {
-            code::tx handler()
-            {
-               try 
-               {
-                  throw;
-               }
-               catch( const common::exception::tx::exception& exception)
-               {
-                  code::stream( exception.type()) << exception << std::endl;
-                  return exception.type();
-               }
-               catch( const std::system_error& exception)
-               {
-                  log::category::error << exception << '\n';
-               }
-               catch( const std::exception& exception)
-               {
-                  log::category::error << exception << '\n';
-               }
-
-               return code::tx::fail;
-            }
-         } // tx
-      } // exception
-
    } // common
 } // casual

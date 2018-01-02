@@ -27,6 +27,7 @@ namespace casual
             namespace invalid
             {
                using Configuration = base< code::casual::invalid_configuration>;
+               using Version = base< code::casual::invalid_version>;
             } // invalid
 
          } // casual 

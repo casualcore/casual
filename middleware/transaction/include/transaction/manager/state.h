@@ -76,8 +76,8 @@ namespace casual
             {
                using type = common::strong::resource::id;
 
-               inline bool remote( type id) { return id < 0;}
-               inline bool local( type id) { return id > 0;}
+               inline bool remote( type id) { return id < common::strong::resource::id{0};}
+               inline bool local( type id) { return id > common::strong::resource::id{0};}
 
             } // id
 
@@ -116,7 +116,7 @@ namespace casual
 
                inline Proxy( generate_id) : id( id_sequence::next()) {}
 
-               id::type id = 0;
+               id::type id;
 
                std::string key;
                std::string openinfo;

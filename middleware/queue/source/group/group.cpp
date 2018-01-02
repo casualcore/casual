@@ -4,9 +4,7 @@
 
 #include "queue/group/group.h"
 #include "queue/group/handle.h"
-
 #include "queue/common/log.h"
-#include "queue/common/environment.h"
 
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
@@ -20,102 +18,6 @@ namespace casual
 
       namespace group
       {
-
-         void State::Pending::dequeue( const common::message::queue::dequeue::Request& request)
-         {
-            Trace trace{ "queue::group::State::Pending::dequeue"};
-
-            log << "request: " << request << '\n';
-
-            if( request.block)
-            {
-               requests.push_back( request);
-            }
-         }
-
-
-         void State::Pending::enqueue( const common::transaction::ID& trid, queue_id_type id)
-         {
-            auto found = common::algorithm::find_if( requests, [&]( const request_type& r){
-               return r.queue == id;
-            });
-
-            if( found)
-            {
-               //
-               // Someone is waiting for messages in this queue
-               //
-               transactions[ trid][ id]++;
-            }
-         }
-
-         common::message::queue::dequeue::forget::Reply State::Pending::forget( const common::message::queue::dequeue::forget::Request& request)
-         {
-            common::message::queue::dequeue::forget::Reply reply;
-            reply.correlation = request.correlation;
-
-            auto found = common::algorithm::find_if( requests, [&]( const request_type& r){
-               return r.queue == request.queue && r.process == request.process;
-            });
-
-            reply.found = static_cast< bool>( found);
-
-            if( found)
-            {
-               requests.erase( std::begin( found));
-
-               if( requests.empty())
-               {
-                  transactions.clear();
-               }
-            }
-
-            return reply;
-         }
-
-         State::Pending::result_t State::Pending::commit( const common::transaction::ID& trid)
-         {
-            result_t result;
-
-            auto found = common::algorithm::find( transactions, trid);
-
-            if( found)
-            {
-               result.enqueued = std::move( found->second);
-               transactions.erase( std::begin( found));
-
-               //
-               // Move all request that is interested in committed queues to the end.
-               // We use the second part of the partition directly
-               //
-               auto interested = std::get< 1>( common::algorithm::stable_partition( requests, [&]( const request_type& r){
-                  return ! common::algorithm::find( result.enqueued, r.queue);
-               }));
-
-               //
-               // move the requests to the result, and erase them in pending
-               //
-               common::algorithm::move( interested, result.requests);
-               requests.erase( std::begin( interested), std::end( interested));
-            }
-
-            return result;
-         }
-
-         void State::Pending::rollback( const common::transaction::ID& trid)
-         {
-            transactions.erase( trid);
-         }
-
-         void State::Pending::erase( common::strong::process::id pid)
-         {
-            auto found = std::get< 1>( common::algorithm::stable_partition( requests, [=]( const request_type& r){
-               return r.process.pid != pid;
-            }));
-
-            requests.erase( std::begin( found), std::end( found));
-         }
-
 
          namespace message
          {
@@ -217,6 +119,7 @@ namespace casual
                //
                {
                   common::message::queue::Information information;
+                  information.name = m_state.name();
                   information.process = common::process::handle();
                   information.queues = m_state.queuebase.queues();
 

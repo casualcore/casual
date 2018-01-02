@@ -197,6 +197,9 @@ resources:
                return result;
             }
 
+            common::strong::resource::id rm_1{ 1};
+            common::strong::resource::id rm_2{ 2};
+
          } // <unnamed>
       } // local
 
@@ -333,12 +336,14 @@ resources:
          auto state = local::admin::call::state();
          EXPECT_TRUE( state.transactions.empty());
 
+
+
          // involved
          {
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1};
+            message.resources = { local::rm_1};
 
             local::send::tm( message);
          }
@@ -353,7 +358,7 @@ resources:
          auto& rm1 = proxies.at( 0);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
-         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.name == "rm1");
          EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
       }
@@ -395,7 +400,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1};
+            message.resources = { local::rm_1};
 
             local::send::tm( message);
          }
@@ -434,7 +439,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1};
+            message.resources = { local::rm_1};
 
             local::send::tm( message);
          }
@@ -470,7 +475,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1};
+            message.resources = { local::rm_1};
 
             local::send::tm( message);
          }
@@ -498,7 +503,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1};
+            message.resources = { local::rm_1};
 
             local::send::tm( message);
          }
@@ -512,7 +517,7 @@ resources:
          auto& rm1 = proxies.at( 0);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
-         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
       }
 
@@ -531,7 +536,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1, 2};
+            message.resources = { local::rm_1, local::rm_2};
 
             local::send::tm( message);
          }
@@ -546,11 +551,11 @@ resources:
          auto& rm2 = proxies.at( 1);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
-         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.statistics.resource.invoked == 1);
 
          ASSERT_TRUE( rm2.instances.size() == 2);
-         EXPECT_TRUE( rm2.id == 2);
+         EXPECT_TRUE( rm2.id == local::rm_2);
          EXPECT_TRUE( rm2.statistics.resource.invoked == 1);
       }
 
@@ -575,7 +580,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1, 2};
+            message.resources = { local::rm_1, local::rm_2};
 
             local::send::tm( message);
          }
@@ -590,11 +595,11 @@ resources:
          auto& rm2 = proxies.at( 1);
 
          ASSERT_TRUE( rm1.instances.size() == 2);
-         EXPECT_TRUE( rm1.id == 1);
+         EXPECT_TRUE( rm1.id == local::rm_1);
          EXPECT_TRUE( rm1.statistics.resource.invoked == 2); // 1 prepare, 1 commit
 
          ASSERT_TRUE( rm2.instances.size() == 2);
-         EXPECT_TRUE( rm2.id == 2);
+         EXPECT_TRUE( rm2.id == local::rm_2);
          EXPECT_TRUE( rm2.statistics.resource.invoked == 2); // 1 prepare, 1 commit
       }
 
@@ -614,7 +619,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = common::transaction::Context::instance().current().trid;
             message.process = process::handle();
-            message.resources = { 1, 2};
+            message.resources = { local::rm_1, local::rm_2};
 
             local::send::tm( message);
          }
@@ -747,7 +752,7 @@ resources:
             common::message::transaction::resource::Involved message;
             message.trid = trid;
             message.process = process::handle();
-            message.resources = { 1};
+            message.resources = { local::rm_1};
 
             local::send::tm( message);
          }

@@ -214,6 +214,15 @@ namespace casual
             } // native
          } // process
 
+         namespace queue
+         {
+            namespace native
+            {
+               //! @attention do not use directly - use strong::queue::id
+               using type = size::type;
+               constexpr type invalid = 0;
+            } // native
+         } // process
 
 			//
 			// uuid

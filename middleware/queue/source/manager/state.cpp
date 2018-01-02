@@ -18,10 +18,11 @@ namespace casual
 
 
          State::Group::Group() = default;
-         State::Group::Group( std::string name, id_type process) : name( std::move( name)), process( std::move( process)) {}
+         State::Group::Group( std::string name, common::process::Handle process) 
+            : name( std::move( name)), process( std::move( process)) {}
 
 
-         bool operator == ( const State::Group& lhs, State::Group::id_type process) { return lhs.process == process;}
+         bool operator == ( const State::Group& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
 
          static_assert( common::traits::is_movable< State::Group>::value, "not movable");
 
@@ -141,7 +142,7 @@ namespace casual
                         //
                         // outbound order is zero-based, we add 1 to distinguish local from remote
                         //
-                        instances.emplace_back( message.process, 0, message.order + 1);
+                        instances.emplace_back( message.process, common::strong::queue::id{}, message.order + 1);
 
                         //
                         // Make sure we prioritize local queue
@@ -169,9 +170,20 @@ namespace casual
                   }
                   break;
                }
-
             }
          }
+         const common::message::domain::configuration::queue::Group* State::group_configuration( const std::string& name)
+         {
+            auto found = common::algorithm::find_if( configuration.groups, [&name]( auto& g){
+               return g.name == name;
+            });
+
+            if( found)
+               return found.data();
+
+            return nullptr;
+         }
+
       } // manager
    } // queue
 } // casual

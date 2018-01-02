@@ -87,11 +87,11 @@ namespace casual
 
 
                sf::strong::process::id group;
-               size_type id;
+               sf::strong::queue::id id;
                std::string name;
                Type type;
                size_type retries;
-               size_type error;
+               sf::strong::queue::id error;
 
                size_type count;
                size_type size;
@@ -128,8 +128,8 @@ namespace casual
 
 
                sf::platform::Uuid id;
-               size_type queue;
-               size_type origin;
+               sf::strong::queue::id queue;
+               sf::strong::queue::id origin;
                sf::platform::binary::type trid;
                size_type state;
                std::string reply;
@@ -193,7 +193,7 @@ namespace casual
             {
                struct
                {
-                  size_type id;
+                  sf::strong::queue::id id;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(

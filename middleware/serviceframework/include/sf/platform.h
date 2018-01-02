@@ -96,6 +96,11 @@ namespace casual
          {
             using id = common::strong::process::id;
          } // process
+
+         namespace queue
+         {
+            using id = common::strong::queue::id;
+         } // process
          
       } // strong
 

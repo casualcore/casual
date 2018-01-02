@@ -40,7 +40,7 @@ namespace casual
             log::category::transaction << "associated resource: " << *this << " name: '" <<  xa_switch->name << "' version: " << xa_switch->version << '\n';
          }
 
-         Resource::Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, 0, {}, {}) {}
+         Resource::Resource( std::string key, xa_switch_t* xa) : Resource( std::move( key), xa, id_type{}, {}, {}) {}
 
 
          Resource::code Resource::start( const Transaction& transaction, Flags flags)

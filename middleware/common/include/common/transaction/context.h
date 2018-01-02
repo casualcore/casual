@@ -46,9 +46,9 @@ namespace casual
             void open();
             void close();
 
-            code::tx begin();
-            code::tx commit();
-            code::tx rollback();
+            void begin();
+            void commit();
+            void rollback();
 
 
 
@@ -180,15 +180,15 @@ namespace casual
             Context();
 
 
-            code::tx commit( const Transaction& transaction);
-            code::tx rollback( const Transaction& transaction);
+            void commit( const Transaction& transaction);
+            void rollback( const Transaction& transaction);
 
 
             void resources_start( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
             void resources_end( const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
-            code::tx resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
+            void resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags = flag::xa::Flag::no_flags);
 
-            code::tx pop_transaction();
+            void pop_transaction();
 
 
          };

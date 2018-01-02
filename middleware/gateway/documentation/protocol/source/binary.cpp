@@ -289,14 +289,14 @@ namespace casual
                      auto transaction_request = []( auto& message){
                         set_general( message);
                         message.trid = trid();
-                        message.resource = 42;
+                        message.resource = common::strong::resource::id{ 42};
                         message.flags = common::flag::xa::Flag::no_flags;
                      };
 
                      auto transaction_reply = []( auto& message){
                         set_general( message);
                         message.trid = trid();
-                        message.resource = 42;
+                        message.resource = common::strong::resource::id{ 42};
                         message.state = common::code::xa::ok;
                      };
 

@@ -7,6 +7,7 @@
 
 #include "common/marshal/marshal.h"
 #include "common/platform.h"
+#include "common/compare.h"
 
 namespace casual
 {
@@ -41,7 +42,7 @@ namespace casual
                constexpr static ID next() 
                { 
                   using native_type = typename ID::value_type;
-                  return { id::detail::sequence< native_type, ID, start>::next()};
+                  return ID{ id::detail::sequence< native_type, ID, start>::next()};
                }
             };
 
@@ -75,7 +76,7 @@ namespace casual
          //! enable overloading on a specific id-type
          //!
          template< typename T, typename P = id::policy::default_initialize< T>>
-         class basic_id
+         class basic_id : public Compare< basic_id< T, P>>
          {
          public:
             using policy_type = P;
@@ -83,22 +84,15 @@ namespace casual
 
 
             constexpr basic_id() = default;
-            constexpr basic_id( T value) : m_value{ std::move( value)} {}
+            constexpr explicit basic_id( T value) : m_value{ std::move( value)} {}
 
             //! return id by value if integral. const ref otherwise.
             constexpr auto value() const -> std::conditional_t< std::is_integral< T>::value, T, const T&>
             { return m_value;}   
             
 
-            constexpr friend bool operator == ( const basic_id& lhs, const basic_id& rhs) { return lhs.m_value == rhs.m_value; }
-            constexpr friend bool operator != ( const basic_id& lhs, const basic_id& rhs) { return ! ( lhs == rhs); }
-            constexpr friend bool operator < ( const basic_id& lhs, const basic_id& rhs) { return lhs.m_value < rhs.m_value; }
-            constexpr friend bool operator <= ( const basic_id& lhs, const basic_id& rhs) { return lhs.m_value <= rhs.m_value; }
-            constexpr friend bool operator > ( const basic_id& lhs, const basic_id& rhs) { return lhs.m_value > rhs.m_value; }
-            constexpr friend bool operator >= ( const basic_id& lhs, const basic_id& rhs) { return lhs.m_value >= rhs.m_value; }
-
-            constexpr inline friend bool operator == ( const basic_id& lhs, const value_type& rhs) { return lhs.m_value == rhs; }
-            constexpr inline friend bool operator == ( const value_type& lhs, const basic_id& rhs) { return lhs == rhs.m_values; }
+            //constexpr inline friend decltype( auto) tie( const basic_id& value) { return value.value();}
+            constexpr inline decltype( auto) tie() const { return value();}
 
 
             constexpr void swap( basic_id& other ) // todo: type dependent noexcept
@@ -111,6 +105,8 @@ namespace casual
             {
                archive & m_value;
             })
+
+            value_type& underlaying() { return m_value;}
 
             inline friend std::ostream& operator << ( std::ostream& out, const basic_id& value) { return out << value.m_value;}
 

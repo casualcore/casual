@@ -25,7 +25,7 @@ namespace casual
          value::Optional< int, -1> value{ 42};
 
          EXPECT_TRUE( value);
-         EXPECT_TRUE( value == 42);
+         EXPECT_TRUE( value.value() == 42);
       }
 
 

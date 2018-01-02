@@ -90,11 +90,13 @@ namespace casual
 
       transaction::action::configure( state);
 
+      const common::strong::resource::id invalid;
+
       ASSERT_TRUE( state.resources.size() == 2) << "state.resources: " << state.resources.size();
-      EXPECT_TRUE( state.resources.at( 0).id > 0) << "id: " << state.resources.at( 0).id;
+      EXPECT_TRUE( state.resources.at( 0).id > invalid) << "id: " << state.resources.at( 0).id;
       EXPECT_TRUE( state.resources.at( 0).openinfo == "some open info 1");
       EXPECT_TRUE( state.resources.at( 0).name == "rm1");
-      EXPECT_TRUE( state.resources.at( 1).id > 0) << "id: " << state.resources.at( 1).id;
+      EXPECT_TRUE( state.resources.at( 1).id > invalid) << "id: " << state.resources.at( 1).id;
       EXPECT_TRUE( state.resources.at( 1).closeinfo == "some close info 2");
       EXPECT_TRUE( state.resources.at( 1).name == "rm2");
    }

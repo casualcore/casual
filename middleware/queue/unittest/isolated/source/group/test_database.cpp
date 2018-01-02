@@ -65,7 +65,7 @@ namespace casual
 
             namespace peek
             {
-               common::message::queue::peek::information::Request information( group::Queue::id_type queue)
+               common::message::queue::peek::information::Request information( common::strong::queue::id queue)
                {
                   common::message::queue::peek::information::Request result;
 
@@ -852,6 +852,351 @@ namespace casual
       }
 
 
+      TEST( casual_queue_group_database, pending_empty)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         auto pending = database.pending();
+
+         EXPECT_TRUE( pending.empty());
+      }
+
+      TEST( casual_queue_group_database, pending_set__expect_no_throw)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         EXPECT_NO_THROW(
+            database.pending_set( queue.id, 0);
+         );
+      }
+
+      TEST( casual_queue_group_database, pending_add___expect_queue_pending_1)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         database.pending_add( queue.id);
+
+         auto queues = database.queues();
+
+         ASSERT_TRUE( queues.size() == 3);
+         EXPECT_TRUE( queues.at( 2).id == queue.id);
+         EXPECT_TRUE( queues.at( 2).pending == 1);
+      }
+
+      TEST( casual_queue_group_database, pending_add_check_pending__expect_no_pending)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         EXPECT_NO_THROW(
+            database.pending_add( queue.id);
+         );
+
+         EXPECT_TRUE( database.get_pending().empty());
+      }
+
+      TEST( casual_queue_group_database, pending_add_twice__expect_no_throw)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         EXPECT_NO_THROW(
+            database.pending_add( queue.id);
+            database.pending_add( queue.id);
+         );
+      }
+
+      TEST( casual_queue_group_database, pending_enqueue_one_message__expect_pending_result)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         database.pending_add( queue.id);
+
+         database.enqueue( local::message( queue));
+
+         auto pending = database.get_pending();
+
+         ASSERT_TRUE( pending.size() == 1) << "queue: " << database.queues().at( 2);
+         EXPECT_TRUE( pending.at( 0).id == queue.id);
+         EXPECT_TRUE( pending.at( 0).count == 1);
+      }
+
+      TEST( casual_queue_group_database, pending_enqueue_two_message__expect_pending_result)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto queue = database.create( group::Queue{ "unittest_queue"});
+
+         database.pending_add( queue.id);
+
+         database.enqueue( local::message( queue));
+         database.enqueue( local::message( queue));
+
+         auto pending = database.get_pending();
+
+         ASSERT_TRUE( ! pending.empty());
+         EXPECT_TRUE( pending.at( 0).id == queue.id);
+         EXPECT_TRUE( pending.at( 0).count == 2);
+      }
+
+      TEST( casual_queue_group_database, pending_q1_enqueue_q2___expect_0_pending_q1)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto q1 = database.create( group::Queue{ "q1"});
+         auto q2 = database.create( group::Queue{ "q2"});
+
+         database.pending_add( q1.id);
+
+         database.enqueue( local::message( q2));
+
+         auto pending = database.get_pending();
+         ASSERT_TRUE( pending.empty());
+      }
+
+      TEST( casual_queue_group_database, pending_q1_enqueue_q1_q2___expect_1_pending_q1)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto q1 = database.create( group::Queue{ "q1"});
+         auto q2 = database.create( group::Queue{ "q2"});
+
+         database.pending_add( q1.id);
+
+         database.enqueue( local::message( q1));
+         database.enqueue( local::message( q2));
+
+         auto pending = database.get_pending();
+
+         ASSERT_TRUE( ! pending.empty());
+         EXPECT_TRUE( pending.at( 0).id == q1.id);
+         EXPECT_TRUE( pending.at( 0).count == 1);
+      }
+
+      TEST( casual_queue_group_database, pending_q1_g2_enqueue_q1_q2___expect__pending_1_q1__1_g2)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Database database( path, "test_group");
+         auto q1 = database.create( group::Queue{ "q1"});
+         auto q2 = database.create( group::Queue{ "q2"});
+
+         database.pending_add( q1.id);
+         database.pending_add( q2.id);
+
+         database.enqueue( local::message( q1));
+         database.enqueue( local::message( q2));
+
+         auto pending = database.get_pending();
+
+         ASSERT_TRUE( pending.size() == 2);
+         EXPECT_TRUE( pending.at( 0).id == q1.id);
+         EXPECT_TRUE( pending.at( 0).count == 1);
+         EXPECT_TRUE( pending.at( 1).id == q2.id);
+         EXPECT_TRUE( pending.at( 1).count == 1);
+      }
+
+
+      namespace local
+      {
+         namespace
+         {
+            namespace dequeue
+            {
+               common::message::queue::dequeue::Request request( const group::Queue& queue, bool block = true, const common::process::Handle& process = common::process::handle())
+               {
+                  common::message::queue::dequeue::Request result;
+
+                  result.process = process;
+                  result.queue = queue.id;
+                  result.block = block;
+
+                  return result;
+               }
+            } // dequeue
+
+            namespace enqueue
+            {
+               common::message::queue::enqueue::Request request( const group::Queue& queue, const common::process::Handle& process = common::process::handle())
+               {
+                  common::message::queue::enqueue::Request result;
+
+                  result.process = process;
+                  result.queue = queue.id;
+                  result.message.payload = { 'a', 'b'};
+
+                  return result;
+               }
+            } // dequeue
+
+
+            namespace memory 
+            {
+               struct Database : group::Database 
+               {
+                  Database() : group::Database{ ":memory:", "test_group"},
+                     q1( group::Database::create( group::Queue{ "q1"})),
+                     q2( group::Database::create( group::Queue{ "q2"}))
+                  {}
+
+                  group::Queue q1;
+                  group::Queue q2;
+               };
+
+               Database database()
+               {
+                  return {};
+               }
+            } // memory 
+
+         } // <unnamed>
+      } // local
+      TEST( casual_queue_group_database, db_empty__pending_empty__expect_no_pending)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         auto pending = database.pending();
+
+         EXPECT_TRUE( pending.empty());
+      }
+
+      TEST( casual_queue_group_pending, block_dequeue_q1__enqueue_q1___expect_1_consumed_pending)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         {
+            auto result = database.dequeue( local::dequeue::request( database.q1));
+            EXPECT_TRUE( result.message.empty());
+         }
+
+         {
+            database.enqueue( local::enqueue::request( database.q1));
+         }
+
+         auto pending = database.pending();
+         ASSERT_TRUE( pending.size() == 1);
+
+         // we expect to have consumed the pending
+         EXPECT_TRUE( database.pending().empty());
+         
+         {
+            auto p = database.get_pending();
+            EXPECT_TRUE( p.empty()) << "p.at( 0).count: " << p.at( 0).count;
+         }
+      }
+
+      TEST( casual_queue_group_pending, block_dequeue_q1__enqueue_q2___expect_0_consumed_pending)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         {
+            auto result = database.dequeue( local::dequeue::request( database.q1));
+            EXPECT_TRUE( result.message.empty());
+         }
+
+         database.enqueue( local::enqueue::request( database.q2));
+
+         auto pending = database.pending();
+         EXPECT_TRUE( pending.empty());
+      }
+
+      TEST( casual_queue_group_pending, block_dequeue_q1_g2__enqueue_g1_q2___expect_2_consumed_pending)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         {
+            auto result = database.dequeue( local::dequeue::request( database.q1));
+            EXPECT_TRUE( result.message.empty());
+         }
+
+         {
+            auto result = database.dequeue( local::dequeue::request( database.q2));
+            EXPECT_TRUE( result.message.empty());
+         }
+
+         database.enqueue( local::enqueue::request( database.q1));
+         database.enqueue( local::enqueue::request( database.q2));
+
+         auto pending = database.pending();
+         EXPECT_TRUE( pending.size() == 2);
+
+         EXPECT_TRUE( database.get_pending().empty());   
+      }
+
+      TEST( casual_queue_group_pending, block_dequeue_q1_g1__enqueue_g1_q2___expect_1_consumed_pending)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         {
+            auto result = database.dequeue( local::dequeue::request( database.q1));
+            EXPECT_TRUE( result.message.empty());
+         }
+
+         {
+            auto result = database.dequeue( local::dequeue::request( database.q1));
+            EXPECT_TRUE( result.message.empty());
+         }
+
+         database.enqueue( local::enqueue::request( database.q1));
+         database.enqueue( local::enqueue::request( database.q2));
+
+         auto pending = database.pending();
+         EXPECT_TRUE( pending.size() == 1);
+
+         EXPECT_TRUE( database.get_pending().size() == 1);   
+      }
+
+
+      TEST( casual_queue_group, expect_version_1_0)
+      {
+         common::unittest::Trace trace;
+
+         auto database = local::memory::database();
+
+         auto version = database.version();
+
+         EXPECT_TRUE( version.major == 1);
+         EXPECT_TRUE( version.minor == 0);
+      }
 
    } // queue
 } // casual

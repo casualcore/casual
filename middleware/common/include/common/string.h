@@ -225,7 +225,7 @@ namespace casual
 		template< typename R>
 		decltype( auto) from_string( const std::string& value)
 		{
-		   return internal::from_string< typename std::decay< R>::type>::get( value);
+		   return internal::from_string< std::decay_t< R>>::get( value);
 		}
 
 		template< typename T>

@@ -13,6 +13,7 @@
 #include "common/exception/system.h"
 #include "common/file.h"
 #include "common/string.h"
+#include "common/compare.h"
 
 //
 // std
@@ -435,6 +436,14 @@ namespace sql
             query( statement, std::forward< Params>( params)...).execute();
          }
 
+         //!
+         //! @returns true if the table exists
+         //!
+         bool table( const std::string& name)
+         {
+            return ! query( R"( SELECT * FROM sqlite_master WHERE type = 'table' AND name = ?; )", name).fetch().empty();
+         }
+
 
          //!
          //! @return last rowid
@@ -489,10 +498,75 @@ namespace sql
          {
             return basic_write< C>( connection);
          }
-
-
-
       } // scoped
+
+      struct Version : casual::common::Compare< Version>
+      {
+         Version() = default;
+         Version( long major, long minor) : major{ major}, minor{ minor} {}
+         
+         long major = 0;
+         long minor = 0;
+         
+         explicit operator bool() { return *this != Version{};}
+
+         inline auto tie() const -> decltype( std::tie( major, minor)) { return std::tie( major, minor);}
+
+         friend std::ostream& operator << ( std::ostream& out, const Version& value) 
+         { 
+            return out << "{ major: " << value.major << ", minor: " << value.minor << '}';
+         }
+      };
+      
+
+      namespace version
+      {
+         inline Version get( Connection& connection)
+         {
+            Version version;
+
+            if( connection.table( "db_version"))
+            {
+               auto query = connection.query( "SELECT major, minor FROM db_version ORDER BY major, minor DESC;");
+
+               auto rows = query.fetch();
+
+               
+               if( ! rows.empty())
+               {
+                  auto& row = rows.front();
+                  row.get( 0, version.major);
+                  row.get( 1, version.minor);
+               }
+            }
+
+            return version;
+         }
+
+         inline void set( Connection& connection, const Version& version)
+         {
+            if( ! connection.table( "db_version"))
+            {
+               // we have a new database
+               connection.execute(
+                  R"( CREATE TABLE db_version 
+                  (
+                     major        INTEGER  NOT NULL,
+                     minor        INTEGER  NOT NULL
+                  );
+                  )"
+               );
+            }
+            else
+            {
+               connection.execute( "DELETE FROM db_version;");
+            }
+
+            connection.execute( "INSERT INTO db_version VALUES( ?, ?);", version.major, version.minor);
+
+         }
+
+      } // version
 
    } // database
 } // sql

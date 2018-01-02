@@ -258,67 +258,68 @@ namespace casual
          formatter.print( std::cout, messages);
       }
 
-      void enqueue_( const std::string& queue)
-      {
-         tx_begin();
-
-         auto rollback = execute::scope( [](){
-            tx_rollback();
-         });
-
-         queue::Message message;
-
-         message.attributes.reply = queue;
-         message.payload.type = common::buffer::type::binary();
-
-         while( std::cin)
-         {
-            message.payload.data.push_back( std::cin.get());
-         }
-
-         auto id = queue::enqueue( queue, message);
-
-         tx_commit();
-         rollback.release();
-
-         std::cout << id << std::endl;
-      }
-
-      struct Empty : public std::runtime_error
-      {
-         using std::runtime_error::runtime_error;
-      };
-
-      void dequeue_( const std::string& queue)
-      {
-         tx_begin();
-
-         auto rollback = execute::scope( [](){
-            tx_rollback();
-         });
-
-         const auto message = queue::dequeue( queue);
-
-         tx_commit();
-         rollback.release();
-
-         if( message.empty())
-         {
-            throw Empty{ "queue is empty"};
-         }
-         else
-         {
-            std::cout.write(
-                  message.front().payload.data.data(),
-                  message.front().payload.data.size());
-         }
-         std::cout << std::endl;
-      }
-
       namespace local
       {
          namespace
          {
+            void enqueue( const std::string& queue)
+            {
+               tx_begin();
+
+               auto rollback = execute::scope( [](){
+                  tx_rollback();
+               });
+
+               queue::Message message;
+
+               message.attributes.reply = queue;
+               message.payload.type = common::buffer::type::binary();
+
+               while( std::cin)
+               {
+                  message.payload.data.push_back( std::cin.get());
+               }
+
+               auto id = queue::enqueue( queue, message);
+
+               tx_commit();
+               rollback.release();
+
+               std::cout << id << std::endl;
+            }
+
+            struct Empty : public std::runtime_error
+            {
+               using std::runtime_error::runtime_error;
+            };
+
+            void dequeue( const std::string& queue)
+            {
+               tx_begin();
+
+               auto rollback = execute::scope( [](){
+                  tx_rollback();
+               });
+
+               const auto message = queue::dequeue( queue);
+
+               tx_commit();
+               rollback.release();
+
+               if( message.empty())
+               {
+                  throw Empty{ "queue is empty"};
+               }
+               else
+               {
+                  std::cout.write(
+                        message.front().payload.data.data(),
+                        message.front().payload.data.size());
+               }
+               std::cout << std::endl;
+            }
+
+
             void restore( const std::vector< std::string>& queueus)
             {
                auto affected = queue::restore::queue( queueus);
@@ -336,44 +337,39 @@ namespace casual
                archive << CASUAL_MAKE_NVP( state);
             }
 
+            common::Arguments parser()
+            {
+               common::Arguments parser{ {
+                     common::argument::directive( {"--no-header"}, "do not print headers", &queue::global::no_header),
+                     common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
+                     common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
+                     common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::list_queues),
+                     common::argument::directive( {"-r", "--list-remote"}, "list all remote discovered queues", &queue::list_remote_queues),
+                     common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
+                     common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
+                     common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual queue --restore <queue-name>", &queue::local::restore),
+                     common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &local::enqueue),
+                     common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &local::dequeue),
+                     common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "queue state in the provided format (xml|json|yaml|ini)", &queue::local::state),
+               }};
+
+               return parser;
+            }
          } // <unnamed>
       } // local
-
    } // queue
-
-
-   common::Arguments parser()
-   {
-      common::Arguments parser{ {
-            common::argument::directive( {"--no-header"}, "do not print headers", &queue::global::no_header),
-            common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
-            common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
-            common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::list_queues),
-            common::argument::directive( {"-r", "--list-remote"}, "list all remote discovered queues", &queue::list_remote_queues),
-            common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
-            common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
-            common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual queue --restore <queue-name>", &queue::local::restore),
-            common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &queue::enqueue_),
-            common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &queue::dequeue_),
-            common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "queue state in the provided format (xml|json|yaml|ini)", &queue::local::state),
-      }};
-
-      return parser;
-   }
-
-
 } // casual
 
 int main( int argc, char **argv)
 {
    try
    {
-      auto parser = casual::parser();
+      auto parser = casual::queue::local::parser();
 
       parser.parse( argc, argv);
 
    }
-   catch( const casual::queue::Empty& exception)
+   catch( const casual::queue::local::Empty& exception)
    {
       //std::cerr << exception.what() << std::endl;
       return 10;

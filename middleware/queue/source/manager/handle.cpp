@@ -202,7 +202,43 @@ namespace casual
 
             namespace connect
             {
-               void Request::operator () ( message_type& message)
+               void Request::operator() ( common::message::queue::connect::Request& request)
+               {
+                  auto found = common::algorithm::find( m_state.groups, request.process.pid);
+
+                  if( found)
+                  {
+                     auto& group = *found;
+
+                     auto reply = common::message::reverse::type( request);
+                     reply.name = group.name;
+
+                     auto configuration = m_state.group_configuration( group.name);
+
+                     if( configuration)
+                     {
+                        common::algorithm::transform( configuration->queues, reply.queues, []( auto& value){
+                           common::message::queue::Queue result;
+                           result.name = value.name;
+                           result.retries = value.retries;
+                           return result;
+                        });
+                     }
+                     else
+                     {
+                        common::log::line( common::log::category::error, "failed to correlate configuration for group - ", group.name);
+                     }
+
+                     ipc::device().blocking_send( request.process.queue, reply);
+                  }
+                  else
+                  {
+                     common::log::line( common::log::category::error, "failed to correlate queue group - ", request.process.pid);
+                  }
+               }
+
+
+               void Information::operator () ( common::message::queue::Information& message)
                {
 
                   for( auto&& queue : message.queues)
@@ -214,10 +250,11 @@ namespace casual
                      common::algorithm::stable_sort( instances);
                   }
 
-                  auto found = common::algorithm::find( m_state.groups, message.process);
+                  auto found = common::algorithm::find( m_state.groups, message.process.pid);
 
                   if( found)
                   {
+                     found->process = message.process;
                      found->connected = true;
                   }
                   else
@@ -225,10 +262,13 @@ namespace casual
                      //
                      // We add the group
                      //
-                     m_state.groups.emplace_back( "", message.process);
+                     m_state.groups.emplace_back( message.name, message.process);
                   }
 
                }
+
+
+
             } // connect
 
 
@@ -336,6 +376,7 @@ namespace casual
          {
             return {
                common::event::listener( manager::handle::process::Exit{ state}),
+               manager::handle::connect::Information{ state},
                manager::handle::connect::Request{ state},
                manager::handle::shutdown::Request{ state},
                manager::handle::lookup::Request{ state},

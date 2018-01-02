@@ -374,7 +374,7 @@ namespace casual
                   {
                      namespace transform
                      {
-                        std::vector< vo::update::Instances> instances( const std::vector< std::size_t>& values)
+                        std::vector< vo::update::Instances> instances( const std::vector< common::strong::resource::id::value_type>& values)
                         {
                            if( values.size() % 2 != 0)
                            {
@@ -388,7 +388,7 @@ namespace casual
                            while( current != std::end( values))
                            {
                               vo::update::Instances instance;
-                              instance.id = *current;
+                              instance.id = common::strong::resource::id{ *current};
                               instance.instances = *( current + 1);
 
                               result.push_back( std::move( instance));
@@ -401,7 +401,7 @@ namespace casual
                   } // <unnamed>
                } // local
 
-               void update_instances( const std::vector< std::size_t>& values)
+               void update_instances( const std::vector< common::strong::resource::id::value_type>& values)
                {
                   auto resources = call::update::instances( local::transform::instances( values));
 

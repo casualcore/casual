@@ -114,16 +114,15 @@ namespace casual
             }
          };
 
-         template< typename T, typename = void>
+         template< typename T, typename Enable = void>
          struct has_formatter : std::false_type{};
 
          //!
          //! Specialization for containers, to log ranges
          //!
          template< typename C> 
-         struct has_formatter< C> : 
-            std::conditional_t< traits::container::is_sequence< C>::value && ! traits::container::is_string< C>::value,
-               std::true_type, std::false_type>
+         struct has_formatter< C, std::enable_if_t< traits::container::is_sequence< C>::value && ! traits::container::is_string< C>::value>> 
+            : std::true_type
          {
             struct formatter
             {

@@ -23,6 +23,10 @@ namespace casual
       {
          //m_connection.execute( "PRAGMA journal_mode = WAL;");
 
+         common::log::line( log, "transaction log version: ",  sql::database::version::get( m_connection));
+
+         sql::database::version::set( m_connection, sql::database::Version{ 1, 0});
+
          m_connection.execute(
             R"( CREATE TABLE IF NOT EXISTS trans (
             gtrid         BLOB NOT NULL,
@@ -40,7 +44,7 @@ namespace casual
 
          m_statement.insert = m_connection.precompile( R"( INSERT INTO trans VALUES (?,?,?,?,?,?,?); )" );
          m_statement.remove = m_connection.precompile( "DELETE FROM trans WHERE gtrid = ? AND bqual = ?; ");
-
+   
       }
 
 

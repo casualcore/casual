@@ -177,7 +177,7 @@ namespace casual
                            {
                               [](  message::transaction::resource::Resource& r){
                                  r.name = "rm1";
-                                 r.id = 1;
+                                 r.id = common::strong::resource::id{ 1};
                                  r.key = "rm-mockup";
                                  r.openinfo = "openinfo1";
                                  r.closeinfo = "closeinfo1";
@@ -186,7 +186,7 @@ namespace casual
                            {
                               [](  message::transaction::resource::Resource& r){
                                  r.name = "rm2";
-                                 r.id = 2;
+                                 r.id = common::strong::resource::id{ 2};
                                  r.key = "rm-mockup";
                                  r.openinfo = "openinfo2";
                                  r.closeinfo = "closeinfo2";

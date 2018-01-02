@@ -767,7 +767,7 @@ namespace casual
 
                            auto reply = message::reverse::type( r);
                            reply.process = m_replier.process();
-                           reply.queue = 42;
+                           reply.queue = strong::queue::id{ 42};
 
                            ipc::eventually::send( r.process.queue, reply);
                         },

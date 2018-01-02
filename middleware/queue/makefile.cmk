@@ -42,13 +42,12 @@ Environment( 'PATH', '../tools/bin:$(PATH)')
 common = LinkLibrary( 'bin/casual-queue-common',
    [
     Compile( 'source/common/log.cpp'),
-    Compile( 'source/common/environment.cpp'),
     Compile( 'source/common/transform.cpp'),
     Compile( 'source/common/queue.cpp'),
    ],
-   [ 'casual-common', ]);
+   [ 'casual-common', ])
  
-install_lib.append( common);
+install_lib.append( common)
 
 #
 # Group
@@ -69,10 +68,10 @@ queue_group = LinkExecutable( 'bin/casual-queue-group',
      common,
      'casual-common',
      'sqlite3',
-     ]);
+     ])
      
  
-install_bin.append( queue_group);
+install_bin.append( queue_group)
  
 #
 # Manager
@@ -98,10 +97,10 @@ queue_manager = LinkExecutable( 'bin/casual-queue-manager',
      'casual-configuration', 
      'casual-sf', 
      'casual-xatmi',
-     ]);
+     ])
 
 
-install_bin.append( queue_manager);
+install_bin.append( queue_manager)
 
 
 
@@ -139,8 +138,8 @@ forward_queue = LinkExecutable( 'bin/casual-queue-forward-queue',
     ],
     [ forward_common, common, queue_api, 'casual-xatmi', 'casual-common', 'casual-buffer'])
 
-install_bin.append( forward_service);
-install_bin.append( forward_queue);
+install_bin.append( forward_service)
+install_bin.append( forward_queue)
 
 #
 # Client
@@ -164,12 +163,8 @@ Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
      Compile( 'unittest/isolated/source/test_transform.cpp'),
-     
      Compile( 'unittest/isolated/source/manager/test_handle.cpp'),
-     
      Compile( 'unittest/isolated/source/group/test_database.cpp'),
-     Compile( 'unittest/isolated/source/group/test_pending.cpp'),
-     
      Compile( 'unittest/isolated/source/test_queue.cpp'),
     ],
     [
