@@ -1,8 +1,5 @@
 #!groovy
 
-import jenkins.model.*
-jenkins = Jenkins.instance
-
 //
 // Use this to set version of casual
 //
