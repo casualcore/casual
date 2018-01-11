@@ -8,6 +8,8 @@
 #ifndef MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_
 #define MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_
 
+#include "common/platform.h"
+
 #include <unordered_map>
 #include <string>
 #include <iosfwd>
@@ -39,9 +41,16 @@ namespace casual
             //! @todo Better names
             //!
             //! @{
-            std::ostream& dump( const char* buffer, std::ostream& stream, const std::string& protocol);
-            //char* pump( std::istream& stream, const std::string& protocol);
+            std::ostream& serialize( const char* buffer, std::ostream& stream, const std::string& protocol);
+            char* serialize( std::istream& stream, const std::string& protocol);
             //!@}
+
+            //!
+            //! Adds a fielded buffer
+            //!
+            //! @returns the handle to the added buffer
+            //!
+            char* add( common::platform::binary::type buffer);
 
          } // internal
 

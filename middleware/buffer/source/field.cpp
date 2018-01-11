@@ -1531,18 +1531,151 @@ namespace casual
                   }
                };
 
+
+               struct read
+               {
+
+                  template<typename A>
+                  void serialize( A& archive)
+                  {
+                     std::string name;
+                     archive >> CASUAL_MAKE_NVP( name);
+
+                     casual_field_id_of_name( name.c_str(), &m_id);
+
+                     using sf::name::value::pair::make;
+
+                     switch( m_id / CASUAL_FIELD_TYPE_BASE)
+                     {
+                     case CASUAL_FIELD_SHORT:
+                        assign< short>( archive);
+                        break;
+                     case CASUAL_FIELD_LONG:
+                        assign< long>( archive);
+                        break;
+                     case CASUAL_FIELD_CHAR:
+                        assign< char>( archive);
+                        break;
+                     case CASUAL_FIELD_FLOAT:
+                        assign< float>( archive);
+                        break;
+                     case CASUAL_FIELD_DOUBLE:
+                        assign< double>( archive);
+                        break;
+                     case CASUAL_FIELD_STRING:
+                        assign_string( archive);
+                        break;
+                     case CASUAL_FIELD_BINARY:
+                     default:
+                        archive >> sf::name::value::pair::make( "value", m_value);
+                        break;
+                     }
+                  }
+
+                  template< typename F>
+                  void dispatch( F&& functor) const
+                  {
+                     switch( m_id / CASUAL_FIELD_TYPE_BASE)
+                     {
+                     case CASUAL_FIELD_SHORT:
+                        dispatch_value< short>( functor);
+                        break;
+                     case CASUAL_FIELD_LONG:
+                        dispatch_value< long>( functor);
+                        break;
+                     case CASUAL_FIELD_CHAR:
+                        dispatch_value< char>( functor);
+                        break;
+                     case CASUAL_FIELD_FLOAT:
+                        dispatch_value< float>( functor);
+                        break;
+                     case CASUAL_FIELD_DOUBLE:
+                        dispatch_value< double>( functor);
+                        break;
+                     case CASUAL_FIELD_STRING:
+                        dispatch_string( functor);
+                        break;
+                     case CASUAL_FIELD_BINARY:
+                     default:
+                        functor( m_id, m_value);
+                        break;
+                     }
+                  }
+
+               private:
+
+                  template< typename T, typename A>
+                  void assign( A& archive)
+                  {
+                     m_value.resize( sizeof( T));
+                     archive >> sf::name::value::pair::make( "value", *reinterpret_cast< T*>( m_value.data()));
+                  }
+
+                  template< typename A>
+                  void assign_string( A& archive)
+                  {
+                     std::string value;
+                     archive >> CASUAL_MAKE_NVP( value);
+                     common::algorithm::copy( value, m_value);
+                  }
+
+                  template< typename T, typename F>
+                  void dispatch_value( F& functor) const
+                  {
+                     functor( m_id, *reinterpret_cast< const T*>( m_value.data()));
+                  }
+
+                  template< typename F>
+                  void dispatch_string( F& functor) const
+                  {
+                     std::string value( std::begin( m_value), std::end( m_value));
+                     functor( m_id, value);
+                  }
+
+                  long m_id = 0;
+                  std::vector< char> m_value;
+               };
+
+
+               struct Dispatch
+               {
+                  ~Dispatch()
+                  {
+                     pool_type::pool.deallocate( m_buffer);
+                  }
+
+                  auto release()
+                  {
+                     return std::exchange( m_buffer, nullptr);
+                  }
+
+                  void operator() ( long id, char value) { casual_field_add_char( &m_buffer, id, value);}
+                  void operator() ( long id, short value) { casual_field_add_short( &m_buffer, id, value);}
+                  void operator() ( long id, long value) { casual_field_add_long( &m_buffer, id, value);}
+                  void operator() ( long id, float value) { casual_field_add_float( &m_buffer, id, value);}
+                  void operator() ( long id, double value) { casual_field_add_double( &m_buffer, id, value);}
+                  void operator() ( long id, const std::string& value) { casual_field_add_string( &m_buffer, id, value.c_str());}
+                  void operator() ( long id, const std::vector< char>& value) { casual_field_add_binary( &m_buffer, id, value.data(), value.size());}
+
+               private:
+                  char* m_buffer = pool_type::pool.allocate( common::buffer::type::combine( CASUAL_FIELD), 1024);
+               };
+
+
             } // <unnamed>
 
 
-            std::ostream& dump( const char* const handle, std::ostream& stream, const std::string& protocol)
+            std::ostream& serialize( const char* const handle, std::ostream& stream, const std::string& protocol)
             {
-               //const trace trace( "field::internal::dump");
+               const Trace trace{ "field::internal::serialize out"};
 
                const auto& buffer = pool_type::pool.get( handle);
 
+               common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
+
                auto archive = sf::archive::writer::from::name( stream, protocol);
 
-               std::vector<write> fields;
+               std::vector< write> fields;
 
                for( const auto& field : buffer.index)
                {
@@ -1557,6 +1690,40 @@ namespace casual
                return stream;
             }
 
+            char* serialize( std::istream& stream, const std::string& protocol)
+            {
+               try
+               {
+                  const Trace trace{ "field::internal::serialize in"};
+
+                  auto archive = sf::archive::reader::from::name( stream, protocol);
+
+                  std::vector< read> fields;
+                  archive >> CASUAL_MAKE_NVP( fields);
+
+                  Dispatch dispatch;
+
+                  for( auto& f : fields)
+                  {
+                     f.dispatch( dispatch);
+                  }
+
+                  return dispatch.release();
+               }
+               catch( ...)
+               {
+                  common::exception::handle();
+               }
+               return nullptr;
+            }
+
+
+            char* add( common::platform::binary::type buffer)
+            {
+               const Trace trace{ "field::internal::add"};
+
+               return pool_type::pool.insert( common::buffer::Payload{ common::buffer::type::combine( CASUAL_FIELD), std::move( buffer)});
+            }
 
          } // internal
 

@@ -68,6 +68,7 @@ LinkUnittest( 'bin/test-buffer',
     Compile( 'unittest/isolated/source/test_octet_buffer.cpp'),
     Compile( 'unittest/isolated/source/test_order_buffer.cpp'),
     Compile( 'unittest/isolated/source/test_string_buffer.cpp'),
+    Compile( 'unittest/isolated/source/test_field_serialize.cpp'),
    ],
    [ 
     lib_buffer, 'casual-common', 'casual-xatmi', 'casual-unittest'
@@ -102,10 +103,39 @@ lib_casual_buffer_sample = LinkLibrary( 'bin/casual_buffer_sample',
     ])
 
 
+binary = LinkExecutable( 'bin/casual-buffer-field-from-human', 
+    [
+     Compile( 'tools/source/field/from_human.cpp'),
+    ], 
+    [ 
+     'casual-common', 
+     'casual-sf', 
+     'casual-xatmi', 
+      lib_buffer
+    ])
+    
+install_bin.append( binary)
+
+
+binary = LinkExecutable( 'bin/casual-buffer-field-to-human', 
+    [
+     Compile( 'tools/source/field/to_human.cpp'),
+    ], 
+    [ 
+     'casual-common', 
+     'casual-sf', 
+     'casual-xatmi', 
+      lib_buffer
+    ])
+    
+install_bin.append( binary)
+
+
 #
 # Install
 #
 Install( install_lib, '$(CASUAL_HOME)/lib')
+Install( install_bin, '$(CASUAL_HOME)/bin')
 Install( install_include, '$(CASUAL_HOME)/include/buffer')
 
 
