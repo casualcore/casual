@@ -402,6 +402,10 @@ namespace casual
                : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
             {}
 
+            Sleep::Pattern::Pattern( common::platform::time::unit time, infinite_quantity)
+               : m_time{ time}, m_quantity{ std::numeric_limits< platform::size::type>::max()}
+            {}
+
             bool Sleep::Pattern::done()
             {
                sleep( m_time);
@@ -427,6 +431,7 @@ namespace casual
                //
                algorithm::reverse( m_pattern);
             }
+
             bool Sleep::operator () ()
             {
                if( ! m_pattern.empty())

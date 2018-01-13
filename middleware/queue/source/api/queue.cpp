@@ -31,6 +31,14 @@ namespace casual
             namespace
             {
 
+               namespace exception
+               {
+                  struct Lookup : common::exception::system::invalid::Argument
+                  {
+                     using common::exception::system::invalid::Argument::Argument;
+                  };
+               } // exception
+
                template< typename M>
                sf::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
@@ -93,7 +101,7 @@ namespace casual
 
                   if( ! group)
                   {
-                     throw common::exception::system::invalid::Argument{ "failed to lookup queue: " + lookup.name()};
+                     throw exception::Lookup{ "failed to lookup queue: " + lookup.name()};
                   }
 
 
@@ -247,6 +255,38 @@ namespace casual
 
                return std::move( local::dequeue( lookup, selector, true).at( 0));
             }
+
+            namespace available
+            {
+               Message dequeue( const std::string& queue)
+               {
+                  return blocking::dequeue( queue, Selector{});
+               }
+
+               Message dequeue( const std::string& queue, const Selector& selector)
+               {
+                  common::process::pattern::Sleep sleep{
+                     { std::chrono::milliseconds{ 100}, 10},
+                     { std::chrono::seconds{ 2}, 100},
+                     { std::chrono::seconds{ 10}, common::process::pattern::Sleep::Pattern::infinite_quantity{}},
+                  };
+
+                  while( true)
+                  {
+                     try
+                     {
+                        return blocking::dequeue( queue, selector);
+                     }
+                     catch( const local::exception::Lookup&)
+                     {
+                        common::log::line( verbose::log, queue, " - queue not available yet"); 
+                     }
+                     sleep();
+                  }
+               }
+
+            } // available
+
          } // blocking
 
          namespace xatmi

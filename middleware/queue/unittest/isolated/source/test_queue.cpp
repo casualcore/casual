@@ -57,7 +57,23 @@ namespace casual
                   common::process::instance::fetch::handle( common::process::instance::identity::queue::manager());
                }
 
-               common::process::Handle process() const { return m_process.handle();}
+               auto process() const { return m_process.handle();}
+
+            private:
+               common::mockup::Process m_process;
+            };
+
+            struct Forward
+            {
+               Forward( const std::string& from, const std::string& to) 
+                : m_process{ "./bin/casual-queue-forward-queue", {
+                   "--forward", from, to
+                }}
+                {}
+
+               Forward() : Forward("queueA3", "queueB3") {}
+
+               auto process() const { return m_process.handle();}
 
             private:
                common::mockup::Process m_process;
@@ -108,13 +124,13 @@ namespace casual
             {
                config_domain domain;
 
+               using queue_t = common::message::domain::configuration::queue::Queue;
+
                domain.queue.groups.resize( 2);
                {
                   auto& group = domain.queue.groups.at( 0);
                   group.name = "group_A";
                   group.queuebase = ":memory:";
-
-                  using queue_t = common::message::domain::configuration::queue::Queue;
 
                   group.queues = {
                         { []( queue_t& q){
@@ -135,8 +151,6 @@ namespace casual
                   auto& group = domain.queue.groups.at( 1);
                   group.name = "group_B";
                   group.queuebase = ":memory:";
-
-                  using queue_t = common::message::domain::configuration::queue::Queue;
 
                   group.queues = {
                         { []( queue_t& q){
@@ -455,6 +469,40 @@ namespace casual
             ASSERT_TRUE( message.message.size() == 1);
             EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
          }
+      }
+
+      TEST( casual_queue, queue_forward__enqueue_A3__expect_forward_to_B3)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain{ local::configuration()};
+
+         local::Forward forward;
+
+         const std::string payload{ "some message"};
+
+         // enqueue
+         {
+            queue::Message message;
+            message.payload.data.assign( std::begin( payload), std::end( payload));
+
+            queue::enqueue( "queueA3", message);
+         }
+
+         auto message = queue::blocking::dequeue( "queueB3");
+
+         EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
+      }
+
+      TEST( casual_queue, queue_forward_dequeue_not_available_queue__expect_gracefull_shutdown)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain{ local::configuration()};
+
+         local::Forward forward{ "non-existent-A", "non-existent-B"};
+
+         EXPECT_TRUE( forward.process() != common::process::handle());
       }
 
    } // queue

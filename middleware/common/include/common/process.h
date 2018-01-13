@@ -226,12 +226,19 @@ namespace casual
             {
                struct Pattern
                {
+                  struct infinite_quantity {}; 
 
                   Pattern( common::platform::time::unit time, platform::size::type quantity);
+                  Pattern( common::platform::time::unit time, infinite_quantity);
 
                   template< typename R, typename P>
                   Pattern( std::chrono::duration< R, P> time, platform::size::type quantity)
                    : Pattern{ std::chrono::duration_cast< common::platform::time::unit>( time), quantity}
+                  {}
+
+                  template< typename R, typename P>
+                  Pattern( std::chrono::duration< R, P> time, infinite_quantity)
+                   : Pattern{ std::chrono::duration_cast< common::platform::time::unit>( time), infinite_quantity{}}
                   {}
 
 

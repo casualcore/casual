@@ -649,22 +649,22 @@ namespace casual
                   {
                      Trace trace{ "domain::manager::handle::event::subscription::Begin"};
 
-                     log << "message: " << message << '\n';
+                     common::log::line( verbose::log, "message: ", message);
 
                      state().event.subscription( message);
 
-                     log << "event: " << state().event << '\n';
+                     common::log::line( log, "event: ", state().event);
                   }
 
                   void End::operator () ( const common::message::event::subscription::End& message)
                   {
                      Trace trace{ "domain::manager::handle::event::subscription::End"};
 
-                     log << "message: " << message << '\n';
+                     common::log::line( verbose::log, "message: ", message);
 
                      state().event.subscription( message);
 
-                     log << "event: " << state().event << '\n';
+                     common::log::line( log, "event: ", state().event);
                   }
 
                } // subscription
@@ -879,7 +879,7 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::process::Connect"};
 
-                  log << "message: " << message << '\n';
+                  common::log::line( verbose::log, "message: ", message);
 
                   auto reply = common::message::reverse::type( message);
 
@@ -975,7 +975,7 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::process::Lookup"};
 
-                  log << "message: " << message << '\n';
+                  common::log::line( verbose::log, "message: ", message);
 
                   if( ! local::Lookup{ state()}( message))
                   {

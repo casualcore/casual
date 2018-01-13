@@ -43,7 +43,7 @@ namespace casual
          }
 
          //!
-         //! Register and start listening on events on the default inbond queue.
+         //! Register and start listening on events on the default inbound queue.
          //!
          template< typename... Callback>
          void listen( Callback&&... callbacks)

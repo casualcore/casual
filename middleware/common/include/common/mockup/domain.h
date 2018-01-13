@@ -91,11 +91,11 @@ namespace casual
                   Manager();
                   Manager( dispatch_type&& handler);
 
+                  ~Manager();
+
                private:
-
-                  dispatch_type default_handler();
-
-                  ipc::Replier m_replier;
+                  struct Implementation;
+                  common::move::basic_pimpl< Implementation> m_implementation;
                };
 
             } // transaction

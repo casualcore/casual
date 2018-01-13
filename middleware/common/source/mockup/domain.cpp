@@ -665,71 +665,145 @@ namespace casual
 
             namespace transaction
             {
-               dispatch_type Manager::default_handler()
+
+               struct Manager::Implementation
                {
-
-                  return dispatch_type{
-                     [&]( common::message::transaction::commit::Request& message)
+                  struct State 
+                  {
+                     using Involved = common::message::transaction::resource::external::Involved;
+                     void involved( Involved& message)
                      {
-                        Trace trace{ "mockup::transaction::Commit"};
+                        m_involved[ message.trid].push_back( message);
+                     }
 
-                        common::message::transaction::commit::Reply reply;
-
-                        reply.correlation = message.correlation;
-                        reply.process = m_replier.process();
-                        reply.state = code::tx::ok;
-                        reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
-                        reply.trid = message.trid;
-
-                        ipc::eventually::send( message.process.queue, reply);
-
-                        reply.stage = common::message::transaction::commit::Reply::Stage::commit;
-                        ipc::eventually::send( message.process.queue, reply);
-
-                     },
-                     [&]( common::message::transaction::rollback::Request& message)
+                     template< typename M>
+                     void transaction( M&& message)
                      {
-                        Trace trace{ "mockup::transaction::Rollback"};
+                        for( auto&& involved : extract( message.trid))
+                        {
+                           ipc::eventually::send( involved.process.queue, message);
+                        }
+                     }
 
-                        common::message::transaction::rollback::Reply reply;
+                     std::vector< Involved> extract( const common::transaction::ID& trid) 
+                     {
+                        auto found = algorithm::find( m_involved, trid);
 
-                        reply.correlation = message.correlation;
-                        reply.process = m_replier.process();
-                        reply.state = code::tx::ok;;
-                        reply.trid = message.trid;
+                        if( found)
+                        {
+                           auto result = std::move( found->second);
+                           m_involved.erase( std::begin( found));
+                           return result;
+                        }
+                        return {};
+                     }
 
-                        ipc::eventually::send( message.process.queue, reply);
-                     },
-                     local::handle::connect::Reply{ "transaction manager"},
-
+                     std::map< common::transaction::ID, std::vector< Involved>> m_involved;
                   };
-               }
 
+                  Implementation( dispatch_type&& handler)
+                     : m_replier{ default_handler() + std::move( handler)}
+                  {
+
+                     //
+                     // Connect to the domain
+                     //
+                     local::send::connect::domain( m_replier, process::instance::identity::transaction::manager());
+
+                     //
+                     // Set environment variable to make it easier for other processes to
+                     // reach TM (should work any way...)
+                     //
+                     common::environment::variable::process::set(
+                           common::environment::variable::name::ipc::transaction::manager(),
+                           m_replier.process());
+
+                     //
+                     // Make sure we're up'n running before we let unittest-stuff interact with us...
+                     //
+                     process::instance::fetch::handle( process::instance::identity::transaction::manager());
+                  }
+
+                  dispatch_type default_handler()
+                  {
+
+                     return dispatch_type{
+                        [&]( common::message::transaction::commit::Request& message)
+                        {
+                           Trace trace{ "mockup::transaction::Commit"};
+
+                           {
+                              common::message::transaction::resource::commit::Request resource;
+                              resource.flags = common::flag::xa::Flag::one_phase;
+                              resource.process = m_replier.process();
+                              resource.trid = message.trid;
+                              m_state.transaction( resource);
+                           }
+
+                           common::message::transaction::commit::Reply reply;
+
+                           reply.correlation = message.correlation;
+                           reply.process = m_replier.process();
+                           reply.state = code::tx::ok;
+                           reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
+                           reply.trid = message.trid;
+
+                           ipc::eventually::send( message.process.queue, reply);
+
+                           reply.stage = common::message::transaction::commit::Reply::Stage::commit;
+                           ipc::eventually::send( message.process.queue, reply);
+                        },
+                        [&]( common::message::transaction::rollback::Request& message)
+                        {
+                           Trace trace{ "mockup::transaction::Rollback"};
+
+                           {
+                              common::message::transaction::resource::rollback::Request resource;
+                              resource.process = m_replier.process();
+                              resource.trid = message.trid;
+                              m_state.transaction( resource);
+                           }
+
+                           common::message::transaction::rollback::Reply reply;
+
+                           reply.correlation = message.correlation;
+                           reply.process = m_replier.process();
+                           reply.state = code::tx::ok;;
+                           reply.trid = message.trid;
+
+                           ipc::eventually::send( message.process.queue, reply);
+                        },
+                        [&]( common::message::transaction::resource::external::Involved& message)
+                        {
+                           Trace trace{ "mockup::transaction::resource::external::Involved"};
+
+                           m_state.involved( message);
+                        },
+                        [&]( common::message::transaction::resource::commit::Reply& message)
+                        {
+                           Trace trace{ "mockup::transaction::resource::commit::Reply - ignore"};
+                        },
+                        [&]( common::message::transaction::resource::rollback::Reply& message)
+                        {
+                           Trace trace{ "mockup::transaction::resource::rollback::Reply - ignore"};
+                        },
+                        local::handle::connect::Reply{ "transaction manager"},
+                     };
+                  }
+                  State m_state;
+                  ipc::Replier m_replier;
+               };
+
+               
                Manager::Manager() : Manager( dispatch_type{}) {}
 
 
-               Manager::Manager( dispatch_type&& handler)
-                  : m_replier{ default_handler() + std::move( handler)}
+               Manager::Manager( dispatch_type&& handler) 
+                  : m_implementation( std::move( handler))
                {
-
-                  //
-                  // Connect to the domain
-                  //
-                  local::send::connect::domain( m_replier, process::instance::identity::transaction::manager());
-
-                  //
-                  // Set environment variable to make it easier for other processes to
-                  // reach TM (should work any way...)
-                  //
-                  common::environment::variable::process::set(
-                        common::environment::variable::name::ipc::transaction::manager(),
-                        m_replier.process());
-
-                  //
-                  // Make sure we're up'n running before we let unittest-stuff interact with us...
-                  //
-                  process::instance::fetch::handle( process::instance::identity::transaction::manager());
                }
+
+               Manager::~Manager() = default;
 
             } // transaction
 

@@ -300,7 +300,7 @@ namespace casual
                inline Request() = default;
                inline Request( common::process::Handle process) : process{ std::move( process)} {}
 
-               common::process::Handle process;
+               common::process::Handle process = common::process::handle();
                bool reply = false;
 
                CASUAL_CONST_CORRECT_MARSHAL(

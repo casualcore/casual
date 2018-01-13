@@ -43,7 +43,7 @@ namespace casual
                            tx_rollback();
                      });
 
-                     task.dispatch( blocking::dequeue( task.queue));
+                     task.dispatch( blocking::available::dequeue( task.queue));
 
                      //
                      // Check what we should do with the transaction
