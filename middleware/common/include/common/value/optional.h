@@ -24,8 +24,8 @@ namespace casual
                template< typename T, T empty_value, typename Tag = default_tag>
                struct value_empty
                {
-                  constexpr static T initialize() { return empty_value;}
-                  constexpr static bool empty( const T& value) { return value == empty_value;}
+                  constexpr static T initialize() noexcept { return empty_value;}
+                  constexpr static bool empty( const T& value) noexcept { return value == empty_value;}
                   
                };
 

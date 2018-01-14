@@ -379,6 +379,7 @@ namespace casual
          template< typename T>
          struct is_movable : std::integral_constant< bool,
             std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
+         
 #else
          //!
          //!  containers and std::string is not noexcept movable with gcc 4.9.x
@@ -386,6 +387,7 @@ namespace casual
          template< typename T>
          struct is_movable : std::integral_constant< bool,
             std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
+
 #endif
 
 

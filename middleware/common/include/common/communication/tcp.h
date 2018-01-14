@@ -12,6 +12,7 @@
 
 #include "common/platform.h"
 #include "common/flag.h"
+#include "common/strong/id.h"
 
 
 #include <string>
@@ -56,7 +57,7 @@ namespace casual
 
             namespace socket
             {
-               using descriptor_type = platform::tcp::descriptor::type;
+               using descriptor_type = strong::tcp::id;
 
                namespace address
                {
@@ -123,13 +124,11 @@ namespace casual
 
 
             private:
-               Socket( descriptor_type descriptor) noexcept;
+               Socket( socket::descriptor_type descriptor) noexcept;
 
                void option( int optname, const void *optval, size_type optlen);
 
-               descriptor_type m_descriptor = -1;
-               move::Moved m_moved;
-
+               descriptor_type m_descriptor;
             };
 
             Socket adopt( socket::descriptor_type descriptor);

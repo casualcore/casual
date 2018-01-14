@@ -59,7 +59,7 @@ namespace casual
                            }
                         }
 
-                        int result( int result)
+                        auto result( int result)
                         {
                            if( result == -1)
                            {
@@ -68,7 +68,6 @@ namespace casual
                            return result;
                         }
                      } // check
-
 
 
                      enum class Flag
@@ -130,7 +129,8 @@ namespace casual
 
                         for( const struct addrinfo* info = information; info; info = info->ai_next)
                         {
-                           auto socket = adopt( ::socket( info->ai_family, info->ai_socktype, info->ai_protocol));
+                           auto socket = adopt( 
+                              tcp::socket::descriptor_type{ ::socket( info->ai_family, info->ai_socktype, info->ai_protocol)});
 
                            if( socket && binder( socket, *info))
                            {
@@ -173,7 +173,7 @@ namespace casual
                                  s.option( Socket::Option::reuse_address, 1);
                                  s.linger( std::chrono::seconds{ 1});
 
-                                 return ::connect( s.descriptor(), info.ai_addr, info.ai_addrlen) != -1;
+                                 return ::connect( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
                               });
                      }
 
@@ -203,12 +203,12 @@ namespace casual
                                  s.option( Socket::Option::reuse_address, 1);
                                  s.linger( std::chrono::seconds{ 1});
 
-                                 return ::bind( s.descriptor(), info.ai_addr, info.ai_addrlen) != -1;
+                                 return ::bind( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
                               }, flags);
                      }
 
 
-                     tcp::socket::descriptor_type duplicate( const tcp::socket::descriptor_type descriptor)
+                     auto duplicate( const tcp::socket::descriptor_type descriptor)
                      {
                         Trace trace( "common::communication::tcp::local::socket::duplicate");
 
@@ -217,9 +217,9 @@ namespace casual
                         //
                         //common::signal::thread::scope::Block block;
 
-                        const auto copy = check::result( ::dup( descriptor));
+                        const auto copy = tcp::socket::descriptor_type( check::result( ::dup( descriptor.value())));
 
-                        log << "descriptors - original: "<< descriptor << " , copy:" << copy <<'\n';
+                        common::log::line( log, "descriptors - original: ", descriptor, " , copy:", copy);
 
                         return copy;
                      }
@@ -241,6 +241,13 @@ namespace casual
                         return { Address::Host{ host}, Address::Port{ serv}};
                      }
 
+                     auto accept( const tcp::socket::descriptor_type descriptor)
+                     {
+                        return tcp::socket::descriptor_type{
+                              check::result( ::accept( descriptor.value(), nullptr, nullptr))};
+                     }
+
+                     
 
                   } // socket
 
@@ -299,7 +306,7 @@ namespace casual
 
                      local::socket::check::result(
                         getsockname(
-                           descriptor, &info, &size));
+                           descriptor.value(), &info, &size));
 
                      return local::socket::names( info, size);
                   }
@@ -316,7 +323,7 @@ namespace casual
 
                      local::socket::check::result(
                         getpeername(
-                           descriptor, &info, &size));
+                           descriptor.value(), &info, &size));
 
                      return local::socket::names( info, size);
                   }
@@ -330,10 +337,9 @@ namespace casual
 
             } // socket
 
-
             Socket::Socket() noexcept = default;
 
-            Socket::Socket( const Socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
+            Socket::Socket( const socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
 
             Socket::~Socket() noexcept
             {
@@ -342,8 +348,8 @@ namespace casual
                   try
                   {  
                      //local::socket::check::result( ::shutdown( m_descriptor, SHUT_RDWR));
-                     local::socket::check::result( ::close( m_descriptor));
-                     log << "Socket::close - descriptor: " << m_descriptor << '\n';
+                     local::socket::check::result( ::close( m_descriptor.underlaying()));
+                     common::log::line( log, "Socket::close - descriptor: ", m_descriptor);
                   }
                   catch( ...)
                   {
@@ -351,6 +357,7 @@ namespace casual
                   }
                }
             }
+
 
             Socket::Socket( const Socket& other)
                : m_descriptor{ local::socket::duplicate( other.m_descriptor)}
@@ -370,7 +377,7 @@ namespace casual
 
             void Socket::option( int optname, const void *optval, size_type optlen)
             {
-               local::socket::check::result( ::setsockopt( descriptor(), SOL_SOCKET, optname, optval, optlen));
+               local::socket::check::result( ::setsockopt( m_descriptor.value(), SOL_SOCKET, optname, optval, optlen));
             }
 
             Socket& Socket::operator = ( const Socket& other)
@@ -384,7 +391,7 @@ namespace casual
 
             Socket::operator bool() const noexcept
             {
-               return ! m_moved && m_descriptor != -1;
+               return ! m_descriptor.empty();
             }
 
             Socket::descriptor_type Socket::descriptor() const noexcept
@@ -394,18 +401,15 @@ namespace casual
 
             Socket::descriptor_type Socket::release() noexcept
             {
-               log << "Socket::release - descriptor: " << m_descriptor << '\n';
+               common::log::line( log, "Socket::release - descriptor: ", m_descriptor);
 
-               const auto descriptor = m_descriptor;
-               m_descriptor = -1;
-               return descriptor;
+               return std::exchange( m_descriptor, {});
             }
-
 
             Socket adopt( const socket::descriptor_type descriptor)
             {
                int val = 1;
-              ::setsockopt( descriptor, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
+               ::setsockopt( descriptor.value(), IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
                return { descriptor};
             }
 
@@ -459,7 +463,7 @@ namespace casual
                //
                const int queuesize = 5;
 
-               local::socket::check::result( ::listen( m_listener.descriptor(), queuesize));
+               local::socket::check::result( ::listen( m_listener.descriptor().value(), queuesize));
             }
 
             Socket Listener::operator() () const
@@ -468,9 +472,7 @@ namespace casual
 
                common::signal::handle();
 
-               return adopt(
-                     local::socket::check::result(
-                           ::accept( m_listener.descriptor(), nullptr, nullptr)));
+               return adopt( local::socket::accept( m_listener.descriptor()));
             }
 
 
@@ -487,8 +489,7 @@ namespace casual
                         common::signal::handle();
 
                         return tcp::local::socket::check::result(
-                              ::send( descriptor, data, size, flags.underlaying()));
-
+                              ::send( descriptor.value(), data, size, flags.underlaying()));
                      }
 
                      char* receive(
@@ -507,7 +508,7 @@ namespace casual
                            common::signal::handle();
 
                            const auto bytes = tcp::local::socket::check::result(
-                                 ::recv( descriptor, first, last - first, flags.underlaying()));
+                                 ::recv( descriptor.value(), first, last - first, flags.underlaying()));
 
                            if( bytes == 0)
                            {
@@ -595,7 +596,8 @@ namespace casual
 
                         local::receive( socket.descriptor(), current, header_end, flags);
 
-                        log << "header: " << header << '\n';
+                        common::log::line( verbose::log, "header: ", header);
+
                      }
 
                      //

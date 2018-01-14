@@ -26,7 +26,7 @@ namespace casual
 
             struct Settings
             {
-               communication::tcp::socket::descriptor_type descriptor = 0;
+               communication::tcp::socket::descriptor_type descriptor;
 
                struct
                {
@@ -133,7 +133,7 @@ int main( int argc, char **argv)
       casual::gateway::inbound::tcp::Settings settings;
       {
          casual::common::Arguments parser{{
-            casual::common::argument::directive( { "--descriptor"}, "socket descriptor", settings.descriptor),
+            casual::common::argument::directive( { "--descriptor"}, "socket descriptor", settings.descriptor.underlaying()),
             casual::common::argument::directive( { "--limit-messages"}, "# of concurrent messages", settings.limit.messages),
             casual::common::argument::directive( { "--limit-size"}, "max size of concurrent messages", settings.limit.size),
          }};

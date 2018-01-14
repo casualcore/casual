@@ -8,6 +8,7 @@
 #include "common/marshal/marshal.h"
 #include "common/platform.h"
 #include "common/compare.h"
+#include "common/traits.h"
 
 namespace casual
 {
@@ -53,14 +54,14 @@ namespace casual
                template< typename T, typename Tag = default_tag>
                struct default_initialize
                {
-                  constexpr static T initialize() { return T();}
+                  constexpr static T initialize() noexcept { return T();}
                };
 
                template< typename T, typename Tag = default_tag, T start = 1>
                struct unique_initialize
                {
                   using sequence = id::detail::sequence< T, Tag, start>;
-                  constexpr static auto initialize() 
+                  constexpr static auto initialize() noexcept
                   { 
                      return sequence::next();
                   }
@@ -82,9 +83,22 @@ namespace casual
             using policy_type = P;
             using value_type = T;
 
+            constexpr static bool noexcept_construct = std::is_nothrow_constructible< value_type>::value
+               && std::is_same< decltype( policy_type::initialize), T() noexcept>::value;
 
-            constexpr basic_id() = default;
-            constexpr explicit basic_id( T value) : m_value{ std::move( value)} {}
+            constexpr static bool noexcept_move_assign = std::is_nothrow_move_assignable< value_type>::value;
+            constexpr static bool noexcept_move_construct = std::is_nothrow_move_constructible< value_type>::value;
+            constexpr static bool noexcept_copy_assign = std::is_nothrow_copy_assignable< value_type>::value;
+            constexpr static bool noexcept_copy_construct = std::is_nothrow_copy_constructible< value_type>::value;
+
+
+            constexpr basic_id() noexcept( noexcept_construct) : m_value{ policy_type::initialize()} {}
+            constexpr explicit basic_id( T value) noexcept( noexcept_move_construct) : m_value{ std::move( value)} {}
+
+            constexpr basic_id( basic_id&& rhs) noexcept( noexcept_move_construct) : m_value{ std::exchange( rhs.m_value, policy_type::initialize())} {};
+            constexpr basic_id& operator = ( basic_id&& rhs) noexcept( noexcept_move_assign) { m_value = std::exchange( rhs.m_value, policy_type::initialize()); return *this;};
+            constexpr basic_id( const basic_id&) noexcept( noexcept_copy_construct) = default;
+            constexpr basic_id& operator = ( const basic_id& rhs) noexcept( noexcept_copy_assign) = default;
 
             //! return id by value if integral. const ref otherwise.
             constexpr auto value() const -> std::conditional_t< std::is_integral< T>::value, T, const T&>
@@ -95,7 +109,7 @@ namespace casual
             constexpr inline decltype( auto) tie() const { return value();}
 
 
-            constexpr void swap( basic_id& other ) // todo: type dependent noexcept
+            constexpr void swap( basic_id& other ) noexcept( noexcept_move_assign)
             {
                using std::swap;
                swap( m_value, other.m_value);
@@ -111,7 +125,7 @@ namespace casual
             inline friend std::ostream& operator << ( std::ostream& out, const basic_id& value) { return out << value.m_value;}
 
          protected:
-            value_type m_value = policy_type::initialize();
+            value_type m_value;
          };
 
       } // value

@@ -37,6 +37,7 @@ namespace casual
             constexpr static auto initialize() { return 42;}
          };
 
+
          {
             value::basic_id< int, default_initialize_42> id;
             EXPECT_TRUE( id.value() == 42);

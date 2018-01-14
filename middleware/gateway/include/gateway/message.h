@@ -215,7 +215,7 @@ namespace casual
             } // connect
             struct Connect : common::message::basic_message< common::message::Type::gateway_manager_tcp_connect>
             {
-               common::platform::tcp::descriptor::type descriptor;
+               common::strong::tcp::id descriptor;
                connect::Limit limit;
 
                friend std::ostream& operator << ( std::ostream& out, const Connect& value);

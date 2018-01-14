@@ -200,7 +200,12 @@ namespace casual
 
             namespace descriptor
             {
-               using type = int;
+               namespace native
+               {
+                  //! @attention do not use directly - use strong::tcp::id
+                  using type = int;
+                  constexpr type invalid = -1;
+               } // native
             } // handle
 
          } // tcp

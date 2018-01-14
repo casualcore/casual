@@ -509,7 +509,7 @@ namespace casual
                         connection.process.pid = common::process::spawn(
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-tcp",
                               {
-                                    "--descriptor", std::to_string( socket.descriptor()),
+                                    "--descriptor", std::to_string( socket.descriptor().value()),
                                     "--limit-messages", std::to_string( message.limit.messages),
                                     "--limit-size", std::to_string( message.limit.size),
                               });

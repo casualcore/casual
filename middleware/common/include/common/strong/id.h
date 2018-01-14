@@ -18,8 +18,8 @@ namespace casual
          {
             struct policy
             {
-               constexpr static platform::process::native::type initialize() { return -1;}
-               constexpr static bool empty( platform::process::native::type value) { return value < 0;}
+               constexpr static platform::process::native::type initialize() noexcept { return -1;}
+               constexpr static bool empty( platform::process::native::type value) noexcept { return value < 0;}
             };
             using id = value::basic_optional< platform::process::native::type, policy>;
          } // process
@@ -32,6 +32,17 @@ namespace casual
             } // tag
    
             using id = value::Optional< platform::ipc::native::type, platform::ipc::native::invalid, tag::type>;
+            
+         } // ipc
+
+         namespace tcp
+         {
+            namespace tag
+            {
+               struct type{};
+            } // tag
+   
+            using id = value::Optional< platform::tcp::descriptor::native::type, platform::tcp::descriptor::native::invalid, tag::type>;
             
          } // ipc
 
