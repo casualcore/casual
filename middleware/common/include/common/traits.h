@@ -330,6 +330,15 @@ namespace casual
 
          } // iterator
 
+         template< typename T> 
+         struct type 
+         {
+            constexpr static bool nothrow_construct = std::is_nothrow_constructible< T>::value;
+            constexpr static bool nothrow_move_assign = std::is_nothrow_move_assignable< T>::value;
+            constexpr static bool nothrow_move_construct = std::is_nothrow_move_constructible< T>::value;
+            constexpr static bool nothrow_copy_assign = std::is_nothrow_copy_assignable< T>::value;
+            constexpr static bool nothrow_copy_construct = std::is_nothrow_copy_constructible< T>::value;
+         };
 
 
 #if __GNUC__ > 4 || __clang_major__ > 4

@@ -83,22 +83,18 @@ namespace casual
             using policy_type = P;
             using value_type = T;
 
-            constexpr static bool noexcept_construct = std::is_nothrow_constructible< value_type>::value
+            using traits = traits::type< value_type>;
+
+            constexpr static bool nothrow_construct = traits::nothrow_construct
                && std::is_same< decltype( policy_type::initialize), T() noexcept>::value;
 
-            constexpr static bool noexcept_move_assign = std::is_nothrow_move_assignable< value_type>::value;
-            constexpr static bool noexcept_move_construct = std::is_nothrow_move_constructible< value_type>::value;
-            constexpr static bool noexcept_copy_assign = std::is_nothrow_copy_assignable< value_type>::value;
-            constexpr static bool noexcept_copy_construct = std::is_nothrow_copy_constructible< value_type>::value;
+            constexpr basic_id() noexcept( nothrow_construct) : m_value{ policy_type::initialize()} {}
+            constexpr explicit basic_id( T value) noexcept( traits::nothrow_move_construct) : m_value{ std::move( value)} {}
 
-
-            constexpr basic_id() noexcept( noexcept_construct) : m_value{ policy_type::initialize()} {}
-            constexpr explicit basic_id( T value) noexcept( noexcept_move_construct) : m_value{ std::move( value)} {}
-
-            constexpr basic_id( basic_id&& rhs) noexcept( noexcept_move_construct) : m_value{ std::exchange( rhs.m_value, policy_type::initialize())} {};
-            constexpr basic_id& operator = ( basic_id&& rhs) noexcept( noexcept_move_assign) { m_value = std::exchange( rhs.m_value, policy_type::initialize()); return *this;};
-            constexpr basic_id( const basic_id&) noexcept( noexcept_copy_construct) = default;
-            constexpr basic_id& operator = ( const basic_id& rhs) noexcept( noexcept_copy_assign) = default;
+            constexpr basic_id( basic_id&& rhs) noexcept( traits::nothrow_move_construct) : m_value{ std::exchange( rhs.m_value, policy_type::initialize())} {};
+            constexpr basic_id& operator = ( basic_id&& rhs) noexcept( traits::nothrow_move_assign) { m_value = std::exchange( rhs.m_value, policy_type::initialize()); return *this;};
+            constexpr basic_id( const basic_id&) noexcept( traits::nothrow_copy_construct) = default;
+            constexpr basic_id& operator = ( const basic_id& rhs) noexcept( traits::nothrow_copy_assign) = default;
 
             //! return id by value if integral. const ref otherwise.
             constexpr auto value() const -> std::conditional_t< std::is_integral< T>::value, T, const T&>
@@ -109,7 +105,7 @@ namespace casual
             constexpr inline decltype( auto) tie() const { return value();}
 
 
-            constexpr void swap( basic_id& other ) noexcept( noexcept_move_assign)
+            constexpr void swap( basic_id& other ) noexcept( traits::nothrow_move_assign)
             {
                using std::swap;
                swap( m_value, other.m_value);
