@@ -148,8 +148,9 @@ namespace casual
                template< typename P>
                complete_type next( P&& policy, const error_type& handler = nullptr)
                {
-                  return find_complete(
+                  return select(
                         std::forward< P>( policy),
+                        []( auto& m){ return true;},
                         handler);
                }
 
@@ -162,10 +163,10 @@ namespace casual
                template< typename P>
                complete_type next( message_type type, P&& policy, const error_type& handler = nullptr)
                {
-                  return find_complete(
+                  return select(
                         std::forward< P>( policy),
-                        handler,
-                        [=]( const complete_type& m){ return m.type == type;});
+                        [=]( const complete_type& m){ return m.type == type;},
+                        handler);
                }
 
                //!
@@ -177,10 +178,10 @@ namespace casual
                template< typename P>
                complete_type next( const std::vector< message_type>& types, P&& policy, const error_type& handler = nullptr)
                {
-                  return find_complete(
+                  return select(
                         std::forward< P>( policy),
-                        handler,
-                        [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();});
+                        [&]( const complete_type& m){ return ! common::algorithm::find( types, m.type).empty();},
+                        handler);
                }
 
                //!
@@ -192,10 +193,10 @@ namespace casual
                template< typename P>
                complete_type next( const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
-                  return find_complete(
+                  return select(
                         std::forward< P>( policy),
-                        handler,
-                        [&]( const complete_type& m){ return m.correlation == correlation;});
+                        [&]( const complete_type& m){ return m.correlation == correlation;},
+                        handler);
                }
 
 
@@ -208,12 +209,37 @@ namespace casual
                template< typename P>
                complete_type next( message_type type, const Uuid& correlation, P&& policy, const error_type& handler = nullptr)
                {
-                  return find_complete(
+                  return select(
                         std::forward< P>( policy),
-                        handler,
-                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;});
+                        [&]( const complete_type& m){ return m.type == type && m.correlation == correlation;},
+                        handler);
                }
 
+               //!
+               //! Tries to find a logic complete message that fulfills the predicate
+               //!
+               //! @return a logical complete message if there is one,
+               //!         otherwise the message has absent_message as type
+               //!
+               template< typename Policy, typename Predicate>
+               complete_type select( Policy&& policy, Predicate&& predicate, const error_type& handler = nullptr)
+               {
+                  auto found = find(
+                        std::forward< Policy>( policy),
+                        handler,
+                        predicate::make_and(
+                              []( const auto& m){ return m.complete();},
+                              std::forward< Predicate>( predicate)));
+
+                  if( found)
+                  {
+                     auto result = std::move( *found);
+                     m_cache.erase( std::begin( found));
+                     return result;
+                  }
+                  return {};
+
+               }
 
                //!
                //! Tries to find a message with the same type as @p message
@@ -397,26 +423,6 @@ namespace casual
                         handler();
                      }
                   }
-               }
-
-               template< typename Policy, typename... Predicates>
-               complete_type find_complete( Policy&& policy, const error_type& handler, Predicates&&... predicates)
-               {
-
-                  auto found = find(
-                        std::forward< Policy>( policy),
-                        handler,
-                        predicate::make_and(
-                              []( const auto& m){ return m.complete();},
-                              std::forward< Predicates>( predicates)...));
-
-                  if( found)
-                  {
-                     auto result = std::move( *found);
-                     m_cache.erase( std::begin( found));
-                     return result;
-                  }
-                  return {};
                }
 
 

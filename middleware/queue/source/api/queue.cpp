@@ -89,7 +89,7 @@ namespace casual
 
                std::vector< Message> dequeue( const queue::Lookup& lookup, const Selector& selector, bool block = false)
                {
-                  Trace trace{ "casual::queue::dequeue"};
+                  Trace trace{ "casual::queue::local::dequeue"};
 
 
                   auto& transaction = common::transaction::context().current();
@@ -183,8 +183,6 @@ namespace casual
                         }
                         common::algorithm::transform( reply.message, result, queue::transform::Message{});
 
-
-
                      },
                      [&]( common::message::queue::dequeue::forget::Request& request)
                      {
@@ -197,7 +195,8 @@ namespace casual
                         //
                         forget_blocking.release();
                      },
-                     common::message::handle::Shutdown{}
+                     common::message::handle::Shutdown{},
+                     common::message::handle::ping()
                   );
 
                   handler( ipc.blocking_next());
@@ -260,11 +259,13 @@ namespace casual
             {
                Message dequeue( const std::string& queue)
                {
-                  return blocking::dequeue( queue, Selector{});
+                  return available::dequeue( queue, Selector{});
                }
 
                Message dequeue( const std::string& queue, const Selector& selector)
                {
+                  Trace trace{ "casual::queue::blocking::available::dequeue"};
+
                   common::process::pattern::Sleep sleep{
                      { std::chrono::milliseconds{ 100}, 10},
                      { std::chrono::seconds{ 2}, 100},

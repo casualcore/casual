@@ -7,6 +7,9 @@
 #include "common/communication/ipc.h"
 
 
+#include "common/message/handle.h"
+
+
 namespace casual
 {
    namespace queue
@@ -36,12 +39,20 @@ namespace casual
 
       common::message::queue::lookup::Reply Lookup::operator () () const
       {
+
          common::message::queue::lookup::Reply reply;
 
-         common::communication::ipc::blocking::receive(
-               common::communication::ipc::inbound::device(),
-               reply,
-               m_correlation);
+         auto& device = common::communication::ipc::inbound::device();
+
+         auto handler = device.handler(
+            common::message::handle::assign( reply),
+            common::message::handle::Shutdown{});
+
+         device.policy_blocking();
+
+         handler( device.select( device.policy_blocking(), [&]( auto& complete){
+            return complete.correlation == m_correlation || complete.type == common::message::shutdown::Request::type();
+         }));
 
          return reply;
       }
