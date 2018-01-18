@@ -64,6 +64,9 @@ namespace casual
          {
             auto& state = local::state[ rmid];
 
+            // clear
+            state = local::State{};
+
             std::string openinfo( c_openinfo);
 
             try

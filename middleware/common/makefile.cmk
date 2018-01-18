@@ -266,7 +266,7 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/transaction/test_id.cpp'),
     Compile( 'unittest/source/transaction/test_context.cpp'),
-    
+   
     
     Compile( 'unittest/source/event/test_dispatch.cpp'),
     Compile( 'unittest/source/event/test_listen.cpp'),

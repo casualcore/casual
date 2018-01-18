@@ -1012,11 +1012,12 @@ namespace casual
             if( found)
             {
                auto code = common::code::convert::to::tx( found->commit( transaction, flags));
-               
                exception::tx::handle( code, "resource commit");
             }
-
-            throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
+            else
+            {
+               throw exception::tx::Error{ string::compose( "resource id not known - rm: ", rm, " transaction: ", transaction)};
+            }
          }
 
          void Context::pop_transaction()

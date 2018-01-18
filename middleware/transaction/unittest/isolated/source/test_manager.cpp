@@ -108,6 +108,8 @@ namespace casual
                {
                   common::message::domain::configuration::Domain domain;
 
+
+
                   using resource_type = common::message::domain::configuration::transaction::Resource;
 
                   domain.transaction.resources = {
@@ -117,7 +119,7 @@ namespace casual
                               r.name = "rm1";
                               r.key = "rm-mockup";
                               r.instances = 2;
-                              r.openinfo = "openinfo1";
+                              //r.openinfo = "openinfo1";
                            }
                         },
                         {
@@ -126,7 +128,7 @@ namespace casual
                               r.name = "rm2";
                               r.key = "rm-mockup";
                               r.instances = 2;
-                              r.openinfo = "openinfo2";
+                              //r.openinfo = "openinfo2";
                            }
                         }
                   };
@@ -265,7 +267,10 @@ resources:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto configuration = local::Domain::configuration();
+         configuration.transaction.resources.at( 1).openinfo = "openinfo2";
+
+         local::Domain domain( std::move( configuration), local::Domain::resource_configuration());
 
          common::message::transaction::resource::lookup::Request request;
          request.process = common::process::handle();
@@ -1230,6 +1235,56 @@ resources:
             EXPECT_TRUE( message.state == common::code::xa::rollback_other) << "state: " << message.state;
          }
       }
+
+      namespace local
+      {
+         namespace
+         {
+            /*
+            common::transaction::Resource xa_resource( std::string openinfo)
+            {
+               common::transaction::Resource result{ "rm-mockup", &casual_mockup_xa_switch_static};
+
+               result.id = common::strong::resource::id{ 1};
+               result.openinfo = std::move( openinfo);
+
+               return result;
+            }
+            */
+
+         } // <unnamed>
+      } // local
+
+      TEST( casual_transaction_manager, one_local_resource__configure)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         EXPECT_NO_THROW({
+            common::transaction::context().configure( {}, { "rm1"});
+         });
+      }
+
+
+      TEST( casual_transaction_manager, one_local_resource__begin_commit)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         ASSERT_NO_THROW({
+            //common::transaction::context().configure( { local::xa_resource( "")}, {});
+            common::transaction::context().configure( {}, { "rm1"});
+         });
+
+         common::transaction::context().begin();
+
+         ASSERT_NO_THROW({
+            common::transaction::context().commit();
+         });
+      }
+
 
    } // transaction
 

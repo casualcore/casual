@@ -787,7 +787,7 @@ namespace casual
                         {
                            Trace trace{ "mockup::transaction::resource::rollback::Reply - ignore"};
                         },
-                        local::handle::connect::Reply{ "transaction manager"},
+                        local::handle::connect::Reply{ "transaction manager"}
                      };
                   }
                   State m_state;
