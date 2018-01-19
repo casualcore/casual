@@ -3,6 +3,7 @@
 //!
 
 #include "queue/forward/common.h"
+#include "queue/common/log.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
 
@@ -31,6 +32,8 @@ namespace casual
                {
                   try
                   {
+                     Trace trace{ "queue::forward::local::perform"};
+
                      if( tx_begin() != common::cast::underlying( common::code::tx::ok))
                      {
                         return false;

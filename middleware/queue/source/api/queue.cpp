@@ -256,7 +256,10 @@ namespace casual
 
                auto message = local::dequeue( lookup, selector, true);
 
-               return std::move( local::dequeue( lookup, selector, true).at( 0));
+               if( message.empty())
+                  throw common::exception::system::communication::no::message::Absent{ "failed to get message from queue: " + queue};
+
+               return std::move( message.front());
             }
 
             namespace available
