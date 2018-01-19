@@ -148,6 +148,8 @@ namespace casual
                {
                   Trace trace{ "handle::lookup::Request"};
 
+                  common::log::line( verbose::log, "message: ", message);
+
                   auto reply = common::message::reverse::type( message);
 
 
@@ -168,6 +170,7 @@ namespace casual
                   }
                   else
                   {
+                     common::log::line( log, "queue not found - ", message.name);
                      //
                      // TODO: Check if we have already have pending request for this queue.
                      // If so, we don't need to ask again.

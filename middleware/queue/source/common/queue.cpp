@@ -48,7 +48,6 @@ namespace casual
             common::message::handle::assign( reply),
             common::message::handle::Shutdown{});
 
-         device.policy_blocking();
 
          handler( device.select( device.policy_blocking(), [&]( auto& complete){
             return complete.correlation == m_correlation || complete.type == common::message::shutdown::Request::type();

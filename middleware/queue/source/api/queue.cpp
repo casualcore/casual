@@ -144,6 +144,7 @@ namespace casual
 
                      request.queue = group.queue;
                      request.block = block;
+                     request.name = lookup.name();
                      request.selector.id = selector.id;
                      request.selector.properties = selector.properties;
 
@@ -208,6 +209,7 @@ namespace casual
                   //
                   forget_blocking.release();
 
+
                   return result;
                }
 
@@ -251,6 +253,8 @@ namespace casual
                Trace trace{ "casual::queue::blocking::dequeue"};
 
                queue::Lookup lookup( queue);
+
+               auto message = local::dequeue( lookup, selector, true);
 
                return std::move( local::dequeue( lookup, selector, true).at( 0));
             }
