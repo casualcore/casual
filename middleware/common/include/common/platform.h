@@ -181,6 +181,15 @@ namespace casual
 
          } // ipc
 
+         namespace socket
+         {
+            namespace native
+            {
+               //! @attention do not use directly - use strong::socket::id
+               using type = int;
+               constexpr type invalid = -1;
+            } // native
+         } // socket
 
 			namespace tcp
          {
@@ -197,17 +206,6 @@ namespace casual
                static_assert( size <= max::size, "requested tcp message size is to big");
 
             } // message
-
-            namespace descriptor
-            {
-               namespace native
-               {
-                  //! @attention do not use directly - use strong::tcp::id
-                  using type = int;
-                  constexpr type invalid = -1;
-               } // native
-            } // handle
-
          } // tcp
 
          namespace process

@@ -14,33 +14,26 @@ namespace casual
    {
       namespace communication
       {
-         namespace ipc
+         //!
+         //! Log with category 'casual.communication'
+         //!
+         extern common::log::Stream log;
+
+         namespace verbose
          {
-            //!
-            //! Log with category 'casual.ipc'
-            //!
             extern common::log::Stream log;
+         } // verbose
 
-            struct Trace : common::log::Trace
-            {
-               template< typename T>
-               Trace( T&& value) : common::log::Trace( std::forward< T>( value), log) {}
-            };
-         } // ipc
-
-         namespace tcp
+         namespace trace
          {
-            //!
-            //! Log with category 'casual.ipc'
-            //!
             extern common::log::Stream log;
+         } // trace
 
-            struct Trace : common::log::Trace
-            {
-               template< typename T>
-               Trace( T&& value) : common::log::Trace( std::forward< T>( value), log) {}
-            };
-         } // ipc
+         struct Trace : common::log::Trace
+         {
+            template< typename T>
+            Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
+         };
 
       } // communication
    } // common

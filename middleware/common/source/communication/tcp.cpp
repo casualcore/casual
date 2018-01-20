@@ -35,6 +35,17 @@ namespace casual
                   namespace socket
                   {
 
+                     namespace option
+                     {
+                        struct no_delay
+                        {
+                           constexpr static auto level() { return IPPROTO_TCP;}
+                           constexpr static auto option() { return TCP_NODELAY;}
+                           constexpr static int value() { return 1;}
+                        };
+
+                     } // option
+
                      namespace check
                      {
                         void error( common::code::system last_error)
@@ -129,15 +140,15 @@ namespace casual
 
                         for( const struct addrinfo* info = information; info; info = info->ai_next)
                         {
-                           auto socket = adopt( 
-                              tcp::socket::descriptor_type{ ::socket( info->ai_family, info->ai_socktype, info->ai_protocol)});
+                           auto socket = Socket{ 
+                              descriptor_type{ ::socket( info->ai_family, info->ai_socktype, info->ai_protocol)}};
 
                            if( socket && binder( socket, *info))
                            {
+                              socket.set( local::socket::option::no_delay{});
                               return socket;
                            }
                         }
-
 
                         switch( common::code::last::system::error())
                         {
@@ -170,12 +181,13 @@ namespace casual
                                  // possible connections
                                  //
                                  //
-                                 s.option( Socket::Option::reuse_address, 1);
-                                 s.linger( std::chrono::seconds{ 1});
+                                 s.set( communication::socket::option::reuse_address< true>{});
+                                 s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
                                  return ::connect( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
                               });
                      }
+
 
                      Socket local( const Address& address)
                      {
@@ -200,29 +212,14 @@ namespace casual
                                  //
                                  // Checkout SO_LINGER as well
                                  //
-                                 s.option( Socket::Option::reuse_address, 1);
-                                 s.linger( std::chrono::seconds{ 1});
+                                 s.set( communication::socket::option::reuse_address< true>{});
+                                 s.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
                                  return ::bind( s.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
                               }, flags);
                      }
 
 
-                     auto duplicate( const tcp::socket::descriptor_type descriptor)
-                     {
-                        Trace trace( "common::communication::tcp::local::socket::duplicate");
-
-                        //
-                        // We block all signals while we're trying to duplicate the descriptor
-                        //
-                        //common::signal::thread::scope::Block block;
-
-                        const auto copy = tcp::socket::descriptor_type( check::result( ::dup( descriptor.value())));
-
-                        common::log::line( log, "descriptors - original: ", descriptor, " , copy:", copy);
-
-                        return copy;
-                     }
 
                      Address names( const struct sockaddr& info, const socklen_t size)
                      {
@@ -241,14 +238,15 @@ namespace casual
                         return { Address::Host{ host}, Address::Port{ serv}};
                      }
 
-                     auto accept( const tcp::socket::descriptor_type descriptor)
+                     Socket accept( const descriptor_type descriptor)
                      {
-                        return tcp::socket::descriptor_type{
-                              check::result( ::accept( descriptor.value(), nullptr, nullptr))};
+                        Socket result{ descriptor_type{
+                              check::result( ::accept( descriptor.value(), nullptr, nullptr))}};
+                        
+                        result.set( socket::option::no_delay{});
+
+                        return result;
                      }
-
-                     
-
                   } // socket
 
                } // <unnamed>
@@ -337,91 +335,6 @@ namespace casual
 
             } // socket
 
-            Socket::Socket() noexcept = default;
-
-            Socket::Socket( const socket::descriptor_type descriptor) noexcept : m_descriptor( descriptor) {}
-
-            Socket::~Socket() noexcept
-            {
-               if( *this)
-               {
-                  try
-                  {  
-                     //local::socket::check::result( ::shutdown( m_descriptor, SHUT_RDWR));
-                     local::socket::check::result( ::close( m_descriptor.underlaying()));
-                     common::log::line( log, "Socket::close - descriptor: ", m_descriptor);
-                  }
-                  catch( ...)
-                  {
-                     exception::handle();
-                  }
-               }
-            }
-
-
-            Socket::Socket( const Socket& other)
-               : m_descriptor{ local::socket::duplicate( other.m_descriptor)}
-            {
-            }
-
-            void Socket::linger( std::chrono::seconds time)
-            {
-               struct
-               {
-                   int l_onoff;
-                   int l_linger;
-               } linger{ 1, static_cast< int>( time.count())};
-
-               option( Option::linger, linger);
-            }
-
-            void Socket::option( int optname, const void *optval, size_type optlen)
-            {
-               local::socket::check::result( ::setsockopt( m_descriptor.value(), SOL_SOCKET, optname, optval, optlen));
-            }
-
-            Socket& Socket::operator = ( const Socket& other)
-            {
-               Socket copy{ other};
-               return *this = std::move( copy);
-            }
-
-            Socket::Socket( Socket&&) noexcept = default;
-            Socket& Socket::operator =( Socket&&) noexcept = default;
-
-            Socket::operator bool() const noexcept
-            {
-               return ! m_descriptor.empty();
-            }
-
-            Socket::descriptor_type Socket::descriptor() const noexcept
-            {
-               return m_descriptor;
-            }
-
-            Socket::descriptor_type Socket::release() noexcept
-            {
-               common::log::line( log, "Socket::release - descriptor: ", m_descriptor);
-
-               return std::exchange( m_descriptor, {});
-            }
-
-            Socket adopt( const socket::descriptor_type descriptor)
-            {
-               int val = 1;
-               ::setsockopt( descriptor.value(), IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
-               return { descriptor};
-            }
-
-            Socket duplicate( const socket::descriptor_type descriptor)
-            {
-               return adopt( local::socket::duplicate( descriptor));
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Socket& value)
-            {
-               return out << "{ descriptor: " << value.m_descriptor << '}';
-            }
 
 
             Socket connect( const Address& address)
@@ -438,7 +351,7 @@ namespace casual
                {
                   Trace trace( "common::communication::tcp::retry::connect");
 
-                  while( true)
+                  do
                   {
                      try
                      {
@@ -446,10 +359,12 @@ namespace casual
                      }
                      catch( const exception::system::communication::Refused&)
                      {
-                        sleep();
+                        // no-op - we go to sleep
                      }
                   }
+                  while( sleep());
 
+                  return {};
                }
             } // retry
 
@@ -472,7 +387,7 @@ namespace casual
 
                common::signal::handle();
 
-               return adopt( local::socket::accept( m_listener.descriptor()));
+               return local::socket::accept( m_listener.descriptor());
             }
 
 
@@ -484,7 +399,7 @@ namespace casual
                   namespace
                   {
 
-                     ssize_t send( const socket::descriptor_type descriptor, const void* const data, size_type const size, common::Flags< Flag> flags)
+                     ssize_t send( const descriptor_type descriptor, const void* const data, size_type const size, common::Flags< Flag> flags)
                      {
                         common::signal::handle();
 
@@ -493,7 +408,7 @@ namespace casual
                      }
 
                      char* receive(
-                           const socket::descriptor_type descriptor,
+                           const descriptor_type descriptor,
                            char* first,
                            char* const last,
                            common::Flags< Flag> flags)
@@ -672,13 +587,13 @@ namespace casual
 
             base_connector::base_connector() noexcept = default;
 
-            base_connector::base_connector( tcp::Socket&& socket) noexcept
+            base_connector::base_connector( Socket&& socket) noexcept
                   : m_socket( std::move( socket))
             {
 
             }
 
-            base_connector::base_connector( const tcp::Socket& socket)
+            base_connector::base_connector( const Socket& socket)
              : m_socket{ socket}
             {
 

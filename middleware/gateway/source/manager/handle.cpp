@@ -491,13 +491,13 @@ namespace casual
                   {
                      Trace trace{ "gateway::manager::handle::inbound::tcp::Connect"};
 
-                     log << "message: " << message << '\n';
+                     common::log::line( log, "message: ", message);
 
                      //
                      // The socket (file-handler) is duplicated to the child process, so we can close
                      // the socket that belongs to this process
                      //
-                     auto socket = communication::tcp::adopt( message.descriptor);
+                     auto socket = communication::Socket{ message.descriptor};
 
 
                      if( state().runlevel != State::Runlevel::shutdown)

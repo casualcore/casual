@@ -43,7 +43,7 @@ namespace casual
 
                struct configuration_type
                {
-                  communication::tcp::socket::descriptor_type descriptor;
+                  communication::socket::descriptor_type descriptor;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & descriptor;
@@ -55,7 +55,7 @@ namespace casual
                struct internal_type
                {
                   internal_type( configuration_type configuration)
-                     : m_outbound{ communication::tcp::duplicate( configuration.descriptor)}
+                     : m_outbound{ communication::socket::duplicate( configuration.descriptor)}
                   {
                   }
 

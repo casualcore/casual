@@ -26,14 +26,13 @@ namespace casual
 
             struct Settings
             {
-               communication::tcp::socket::descriptor_type descriptor;
+               communication::socket::descriptor_type descriptor;
 
                struct
                {
                   size_type size = 0;
                   size_type messages = 0;
                } limit;
-
 
             };
 
@@ -54,7 +53,7 @@ namespace casual
 
                struct configuration_type
                {
-                  communication::tcp::socket::descriptor_type descriptor;
+                  communication::socket::descriptor_type descriptor;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
                      archive & descriptor;
@@ -64,7 +63,7 @@ namespace casual
                struct internal_type
                {
                   internal_type( configuration_type configuration)
-                     : m_outbound{ communication::tcp::duplicate( configuration.descriptor)}
+                     : m_outbound{ communication::socket::duplicate( configuration.descriptor)}
                   {
                   }
 
@@ -90,7 +89,7 @@ namespace casual
                struct external_type
                {
                   external_type( tcp::Settings&& settings)
-                     : m_inbound{ communication::tcp::adopt( settings.descriptor)}
+                     : m_inbound{ communication::Socket{ settings.descriptor}}
                   {
                      log << "external_type: " << *this << '\n';
 

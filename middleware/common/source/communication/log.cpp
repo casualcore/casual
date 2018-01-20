@@ -11,15 +11,17 @@ namespace casual
    {
       namespace communication
       {
-         namespace ipc
+         common::log::Stream log{ "casual.communication"};
+         
+         namespace verbose
          {
-            common::log::Stream log{ "casual.ipc"};
-         } // ipc
+            common::log::Stream log{ "casual.communication.verbose"};
+         } // verbose
 
-         namespace tcp
+         namespace trace
          {
-            common::log::Stream log{ "casual.tcp"};
-         } // ipc
+            common::log::Stream log{ "casual.communication.trace"};
+         } // trace
 
       } // communication
    } // common

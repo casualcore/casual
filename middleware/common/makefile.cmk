@@ -75,6 +75,7 @@ casual_common_objectfiles = [
     Compile( 'source/transaction/transaction.cpp'),
     
     Compile( 'source/communication/ipc.cpp'),
+    Compile( 'source/communication/socket.cpp'),
     Compile( 'source/communication/tcp.cpp'),
     Compile( 'source/communication/message.cpp'),
     Compile( 'source/communication/log.cpp'),

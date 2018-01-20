@@ -35,16 +35,16 @@ namespace casual
             
          } // ipc
 
-         namespace tcp
+         namespace socket
          {
             namespace tag
             {
                struct type{};
             } // tag
    
-            using id = value::Optional< platform::tcp::descriptor::native::type, platform::tcp::descriptor::native::invalid, tag::type>;
+            using id = value::Optional< platform::socket::native::type, platform::socket::native::invalid, tag::type>;
             
-         } // ipc
+         } // socket
 
          namespace resource
          {

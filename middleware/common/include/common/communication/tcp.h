@@ -6,6 +6,7 @@
 #define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_TCP_H_
 
 
+#include "common/communication/socket.h"
 #include "common/communication/message.h"
 #include "common/communication/device.h"
 #include "common/marshal/network.h"
@@ -27,8 +28,9 @@ namespace casual
          namespace tcp
          {
             using size_type = platform::size::type;
+            using descriptor_type = communication::socket::descriptor_type;
 
-            class Socket;
+            using Socket = communication::Socket;
 
 
             struct Address
@@ -57,8 +59,6 @@ namespace casual
 
             namespace socket
             {
-               using descriptor_type = strong::tcp::id;
-
                namespace address
                {
 
@@ -78,60 +78,7 @@ namespace casual
 
             } // socket
 
-            class Socket
-            {
-            public:
 
-               using descriptor_type = socket::descriptor_type;
-
-               enum class Option : int
-               {
-                  reuse_address = SO_REUSEADDR,
-                  linger = SO_LINGER,
-               };
-
-               Socket() noexcept;
-               ~Socket() noexcept;
-
-               Socket( const Socket&);
-               Socket& operator = ( const Socket&);
-
-               Socket( Socket&&) noexcept;
-               Socket& operator = ( Socket&&) noexcept;
-
-               explicit operator bool () const noexcept;
-
-               //!
-               //! Releases the responsibility of the socket
-               //!
-               //! @return descriptor
-               //!
-               descriptor_type release() noexcept;
-
-               descriptor_type descriptor() const noexcept;
-
-               void linger( std::chrono::seconds time);
-
-
-               template< typename V>
-               void option( Option option, V&& value)
-               {
-                  return Socket::option( cast::underlying( option), &value, sizeof( V));
-               }
-
-               friend Socket adopt( socket::descriptor_type descriptor);
-               friend std::ostream& operator << ( std::ostream& out, const Socket& value);
-
-
-            private:
-               Socket( socket::descriptor_type descriptor) noexcept;
-
-               void option( int optname, const void *optval, size_type optlen);
-
-               descriptor_type m_descriptor;
-            };
-
-            Socket adopt( socket::descriptor_type descriptor);
 
             //!
             //! Duplicates the descriptor
@@ -139,7 +86,7 @@ namespace casual
             //! @param descriptor to be duplicated
             //! @return socket that owns the descriptor
             //!
-            Socket duplicate( socket::descriptor_type descriptor);
+            //Socket duplicate( descriptor_type descriptor);
 
             Socket connect( const Address& address);
 
@@ -237,13 +184,13 @@ namespace casual
 
             struct base_connector
             {
-               using handle_type = tcp::Socket;
+               using handle_type = Socket;
                using blocking_policy = policy::Blocking;
                using non_blocking_policy = policy::non::Blocking;
 
                base_connector() noexcept;
-               base_connector( tcp::Socket&& socket) noexcept;
-               base_connector( const tcp::Socket& socket);
+               base_connector( Socket&& socket) noexcept;
+               base_connector( const Socket& socket);
 
                base_connector( const base_connector&) = delete;
                base_connector& operator = ( const base_connector&) = delete;
