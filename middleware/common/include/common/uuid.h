@@ -8,7 +8,6 @@
 #include <uuid/uuid.h>
 
 #include "common/platform.h"
-//#include "common/marshal.h"
 
 #include <string>
 
@@ -16,8 +15,6 @@ namespace casual
 {
 	namespace common
 	{
-
-
 		struct Uuid
 		{
 			typedef platform::uuid::type uuid_type;
