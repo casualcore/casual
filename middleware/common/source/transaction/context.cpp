@@ -963,6 +963,8 @@ namespace casual
 
             if( transaction)
             {
+               log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
+
                //
                // We call start only on static resources
                //
@@ -985,6 +987,8 @@ namespace casual
 
             if( transaction)
             {
+               log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
+
                //
                // We call end on all resources
                //
@@ -1004,6 +1008,8 @@ namespace casual
          void Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
+
+            log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);
 
             auto found = algorithm::find_if( m_resources.all, [rm]( const auto& r){
                return r.id == rm;
