@@ -65,18 +65,25 @@ namespace casual
 
                log << "payload: " << payload << std::endl;
 
-               auto result = common::service::call::Context::instance().sync( m_service,
-                     payload,
-                     common::service::call::sync::Flag::no_time);
-
-               const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
-
-               if( ! replyqueue.empty())
+               try
                {
-                  queue::Message reply;
-                  reply.payload.data = std::move( result.buffer.memory);
-                  reply.payload.type = std::move( result.buffer.type);
-                  queue::enqueue( replyqueue, reply);
+                  auto result = common::service::call::Context::instance().sync( m_service,
+                        payload,
+                        common::service::call::sync::Flag::no_time);
+
+                  const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
+
+                  if( ! replyqueue.empty())
+                  {
+                     queue::Message reply;
+                     reply.payload.data = std::move( result.buffer.memory);
+                     reply.payload.type = std::move( result.buffer.type);
+                     queue::enqueue( replyqueue, reply);
+                  }
+               }
+               catch( const common::service::call::Fail& exception)
+               {
+                  common::log::line( queue::log, "service call failed - rollback - ", exception);
                }
             }
 
