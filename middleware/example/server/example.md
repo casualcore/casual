@@ -1,6 +1,6 @@
 # casual-example-server
 
-An `XATMI` example server that provides a few general services that servers 
+An `XATMI` example server that provides a few general services that serves 
 as an example how to produce a server and services.
 
 These services can also be used in test/exploration scenarios.
@@ -20,14 +20,14 @@ Returns the provided buffer with `TPFAIL`
 _same as `echo` for now_
 
 ## casual/example/uppercase
-Applies `::toupper` to the buffer and returns it.
+Applies `::toupper` to every byte in the buffer and returns it.
 
 Hence, it will only make sense to provide a buffer with `X_OCTET` with string data,
 or something similar
 
 
 ## casual/example/lowercase
-Applies `::tolower` to the buffer and returns it.
+Applies `::tolower` to every byte in the buffer and returns it.
 
 Hence, it will only make sense to provide a buffer with `X_OCTET` with string data,
 or something similar
@@ -61,11 +61,11 @@ is default `seconds`, but can be provided.
 
 Exeample:
 ```
-  --sleep 4
-  --sleep 4s
-  --sleep 1h
-  --sleep 34us
-  --sleep 13min 
+  --work 4
+  --work 4s
+  --work 1h
+  --work 34us
+  --work 13min 
 ```
 
 
