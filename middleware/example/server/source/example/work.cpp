@@ -27,8 +27,8 @@ namespace casual
             {
                struct
                {
-                  std::chrono::microseconds sleep;
-                  std::chrono::microseconds work;
+                  casual::common::platform::time::unit sleep;
+                  casual::common::platform::time::unit work;
                } global;
             } // <unnamed>
          } // local
