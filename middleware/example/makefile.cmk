@@ -3,6 +3,7 @@ from casual.middleware.make.dsl import *
 IncludePaths( ['server/include',
     '../xatmi/include',
     '../common/include',
+    '../serviceframework/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
     ])
 LibraryPaths( [ 'server/bin',
@@ -21,7 +22,9 @@ install_bin = []
 
 
 target = LinkServer( 'server/bin/casual-example-server',
-    [ Compile( 'server/source/example.cpp')],
+    [ 
+       Compile( 'server/source/example.cpp'),
+       Compile( 'server/source/example/work.cpp')],
     [ 
         'casual-xatmi',
         'casual-common',

@@ -18,6 +18,7 @@ namespace casual
 
          extern "C"
          {
+
             void casual_example_echo( TPSVCINFO* info)
             {
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
@@ -56,15 +57,12 @@ namespace casual
                tpreturn( TPFAIL, 0, info->data, info->len, 0);
             }
 
-
             void casual_example_terminate( TPSVCINFO* info)
             {
                std::terminate();
             }
-
-
-
          }
       } // server
    } // example
 } // casual
+
