@@ -124,9 +124,12 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
                   reply.status = common::code::xatmi::no_entry;
 
-                  // make sure we always send reply
+                  // make sure we always send reply (if user wants one).
                   auto send_reply = common::execute::scope( [&](){
-                     common::communication::ipc::blocking::send( message.process.queue, reply);
+                     if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                     {
+                        common::communication::ipc::blocking::send( message.process.queue, reply);
+                     }
                   });
 
                   // make sure we always send ACK
@@ -158,24 +161,20 @@ namespace casual
                       }
                   }
 
-                  auto respons = http::request::post( node.url, message.buffer, *node.headers.get());
+                  try
+                  {
+                     auto respons = http::request::post( node.url, message.buffer, *node.headers.get());
 
-                  if( message.flags.exist( common::message::service::call::request::Flag::no_reply))
-                  {
-                     // we don't send reply
-                     send_reply.release();
-                  }
-                  else
-                  {
                      reply.buffer = std::move( respons.payload);
                      reply.status = common::code::xatmi::ok;
                   }
+                  catch( const common::exception::system::communication::Error& exception)
+                  {
+                     common::log::line( common::log::category::error, exception);
+                  }
                }
             };
-
-
          } // handle
-
 
 
 

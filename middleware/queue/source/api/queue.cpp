@@ -82,8 +82,10 @@ namespace casual
 
                   common::log::line( verbose::log, "request: ", request);
 
-                  return common::communication::ipc::call( group.process.queue, request).id;
+                  auto id = common::communication::ipc::call( group.process.queue, request).id;
+                  common::log::line( verbose::log, "id: ", id);
 
+                  return id;
                }
 
 
@@ -209,6 +211,8 @@ namespace casual
                   //
                   forget_blocking.release();
 
+                  if( ! result.empty())
+                     common::log::line( verbose::log, "message: ", result.front());
 
                   return result;
                }
