@@ -39,6 +39,11 @@ namespace casual
                      {
                         return static_cast< common::code::xa>( value);
                      }
+
+
+
+
+
                   } // <unnamed>
                } // local
 
@@ -131,9 +136,56 @@ namespace casual
                         auto result = local::convert( state.xa_switches->xa_switch->xa_prepare_entry( 
                            &message.trid.xid, state.rm_id.value(), message.flags.underlaying()));
 
+                        if( result == common::code::xa::protocol)
+                        {
+                           // we need to check if we've already prepared the transaction to this physical RM.
+                           // that is, we now we haven't in this domain, but another domain could have prepared
+                           // this transaction to the same "resource-server" that both domains _have conections to_
+                           if( prepared( state, message.trid.xid))
+                           {
+                              common::log::line( log, common::code::xa::read_only, " trid already prepared: ", state.rm_id, " trid: ", message.trid, " flags: ", message.flags);
+                              return common::code::xa::read_only;
+                           }
+                        }
+
                         common::log::line( log, result, " prepare rm: ", state.rm_id, " trid: ", message.trid, " flags: ", message.flags);
 
                         return result;
+                     }
+
+                     bool prepared( State& state, const XID& xid) const
+                     {
+                        std::array< XID, 8> xids;
+
+                        int count = xids.size();
+                        common::flag::xa::Flags flags = common::flag::xa::Flag::start_scan;
+
+                        while( count == xids.size())
+                        {
+                           count = state.xa_switches->xa_switch->xa_recover_entry( xids.data(), xids.size(), state.rm_id.value(), flags.underlaying());
+
+                           if( count < 0)
+                           {
+                              common::log::line( common::log::category::error, local::convert( count), " failed to invoce xa_recover - rm: ", state.rm_id);
+                              return false;
+                           }
+
+                           if( common::algorithm::find( common::range::make( std::begin( xids), count), xid))
+                           {
+                              // we found it. Make sure to end the scan if there are more.
+                              if( count == xids.size())
+                              {
+                                 state.xa_switches->xa_switch->xa_recover_entry(
+                                    xids.data(), 1, state.rm_id.value(),
+                                    common::cast::underlying( common::flag::xa::Flag::end_scan));
+                              }
+
+                              return true;
+                           }
+                           flags = common::flag::xa::Flag::no_flags;
+                        }
+
+                        return false;
                      }
                   };
 
