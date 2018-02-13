@@ -5,14 +5,17 @@
 #ifndef CASUAL_COMMON_CODE_SYSTEM_H_
 #define CASUAL_COMMON_CODE_SYSTEM_H_
 
-#include "common/log/stream.h"
-
 #include <system_error>
 
 namespace casual
 {
    namespace common
    {
+      namespace log
+      {
+         class Stream;
+      } // log
+
       namespace code
       {
 
@@ -36,15 +39,5 @@ namespace casual
       } // code
    } // common
 } // casual
-
-
-namespace std
-{
-   inline std::ostream& operator << ( std::ostream& out, std::errc value) 
-   { 
-      const auto code = std::make_error_code( value);
-      return out << code  << " - " << code.message();
-   }
-} // std
 
 #endif

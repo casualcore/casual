@@ -108,7 +108,7 @@ namespace casual
                   {
                      if( iconv_close( m_descriptor) == -1)
                      {
-                        std::cerr << code::last::system::error() << std::endl;
+                        std::cerr << std::make_error_code( code::last::system::error()) << '\n';
                      }
                   }
 
