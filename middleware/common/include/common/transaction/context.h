@@ -121,7 +121,7 @@ namespace casual
             bool associated( const Uuid& correlation);
 
 
-            void configure( const std::vector< Resource>& resources, std::vector< std::string> names);
+            void configure( const std::vector< resource::Link>& resources, std::vector< std::string> names);
 
 
             //!

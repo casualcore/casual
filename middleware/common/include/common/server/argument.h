@@ -25,13 +25,13 @@ namespace casual
 
             Arguments();
             Arguments( std::vector< Service> services);
-            Arguments( std::vector< Service> services, std::vector< transaction::Resource> resources);
+            Arguments( std::vector< Service> services, std::vector< transaction::resource::Link> resources);
 
             Arguments( Arguments&&);
             Arguments& operator = (Arguments&&);
 
             std::vector< Service> services;
-            std::vector< transaction::Resource> resources;
+            std::vector< transaction::resource::Link> resources;
          };
 
       } // server

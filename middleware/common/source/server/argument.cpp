@@ -20,7 +20,7 @@ namespace casual
          Arguments::Arguments( std::vector< Service> services)
           : Arguments( std::move( services), {}) {}
 
-         Arguments::Arguments( std::vector< Service> services, std::vector< transaction::Resource> resources)
+         Arguments::Arguments( std::vector< Service> services, std::vector< transaction::resource::Link> resources)
          : services( std::move( services)),resources( std::move( resources)) {}
 
 

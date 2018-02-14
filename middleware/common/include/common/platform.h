@@ -77,12 +77,24 @@ namespace casual
 
 		   namespace batch
          {
-	         //!
-	         //! Max number of transaction state updates that will be done
-	         //! before (forced) persistence store of the updates, could be
-	         //! stored before though
-	         //!
-	         constexpr size::type transaction = 100;
+
+            namespace transaction
+            {
+               //!
+               //! Max number of transaction state updates that will be done
+               //! before (forced) persistence store of the updates, could be
+               //! stored before though
+               //!
+               constexpr size::type persistence = 100;
+
+               //!
+               //! Number of xid:s we fetch from the xa-resource
+               //! in a batch
+               //!
+               constexpr size::type recover = 8;
+
+            } // transaction
+	         
 
 	         //!
 	         //! Max number of statistics updates that will be done
