@@ -29,14 +29,11 @@ namespace casual
                template< typename E>
                int log( const E& exception, std::ostream* out)
                {
-                  if( out)
-                  {
-                     *out << exception << std::endl;
-                  }
-                  else 
-                  {
-                     code::stream( exception.type()) << exception << std::endl;
-                  }
+                  if( ! out)
+                     out = &code::stream( exception.type());
+
+                  log::line( *out, exception);
+
                   return exception.code().value();
                }
 
@@ -79,39 +76,38 @@ namespace casual
                      return local::log( exception, out);
                   }
 
-                  catch( const std::system_error& exception)
-                  {
-                     if( out) 
-                        *out  << exception << std::endl;
-                     else 
-                        common::log::category::error << exception << std::endl;
-                  }
-
                   catch( const argument::exception::Help& exception)
                   {
                      if( ! out)
-                        common::log::category::error << exception << std::endl;
+                        log::line( log::category::error, exception.what());
                   }
                   catch( const argument::exception::bash::Completion& exception)
                   {
                      if( ! out)
-                        common::log::category::error << exception << std::endl;
+                        log::line( log::category::error, exception.what());
+                  }
+
+                  catch( const exception::base& exception)
+                  {
+                     if( ! out)
+                        out = &log::category::error;
+
+                     log::line( *out, exception);
                   }
                   
                   catch( const std::exception& exception)
                   {
+                     if( ! out)
+                        out = &log::category::error;
 
-                     if( out) 
-                        *out  << exception << std::endl;
-                     else 
-                        common::log::category::error << exception << std::endl;
+                     log::line( *out, exception.what());
                   }
                   catch( ...)
                   {
-                     if( out) 
-                        *out  << " - unexpected exception" << std::endl;
-                     else 
-                        common::log::category::error << " - unexpected exception" << std::endl;
+                     if( ! out)
+                        out = &log::category::error;
+
+                     log::line( *out, "unexpected exception");
                   }
 
                   return -1;

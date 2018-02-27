@@ -79,6 +79,11 @@ namespace casual
             }
          }
 
+         std::ostream& operator << ( std::ostream& out, code::tx value)
+         {
+            return out << std::error_code{ value};
+         }
+
       } // code
    } // common
 } // casual

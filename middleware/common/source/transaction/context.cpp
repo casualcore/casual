@@ -105,7 +105,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         void Context::configure( const std::vector< Resource>& resources, std::vector< std::string> names)
+         void Context::configure( const std::vector< resource::Link>& resources, std::vector< std::string> names)
          {
             Trace trace{ "transaction::Context::configure"};
 
@@ -142,8 +142,7 @@ namespace casual
                   for( auto& rm : partition)
                   {
                      m_resources.all.emplace_back(
-                           resource.key,
-                           resource.xa_switch,
+                           resource,
                            rm.id,
                            std::move( rm.openinfo),
                            std::move( rm.closeinfo));
@@ -223,7 +222,7 @@ namespace casual
 
             for( auto& resource : m_resources.fixed)
             {
-               result.push_back( resource.id);
+               result.push_back( resource.id());
             }
             return result;
          }
@@ -593,7 +592,7 @@ namespace casual
                auto result = r.open();
                if( result != code::xa::ok)
                {
-                  common::event::error::send( string::compose( "failed to open resource: ", r.key, " - error: ", std::error_code( result)));
+                  common::event::error::send( string::compose( "failed to open resource: ", r.key(), " - error: ", std::error_code( result)));
                }
             });
          }
@@ -664,7 +663,7 @@ namespace casual
 
                if( ! m_resources.fixed.empty())
                {
-                  return resource_commit( m_resources.fixed.front().id, transaction, flag::xa::Flag::one_phase);
+                  return resource_commit( m_resources.fixed.front().id(), transaction, flag::xa::Flag::one_phase);
                }
 
                //
@@ -963,12 +962,14 @@ namespace casual
 
             if( transaction)
             {
+               log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
+
                //
                // We call start only on static resources
                //
                for( auto& r : m_resources.fixed)
                {
-                  auto result = r.start( transaction, flags);
+                  auto result = r.start( transaction.trid, flags);
                   if( result != code::xa::ok)
                   {
                      code::stream( result) << "failed to start resource: " << r << " - error: " << std::error_code( result) << '\n';
@@ -985,18 +986,19 @@ namespace casual
 
             if( transaction)
             {
+               log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
+
                //
                // We call end on all resources
                //
                for( auto& r : m_resources.all)
                {
-                  auto result = r.end( transaction, flags);
+                  auto result = r.end( transaction.trid, flags);
                   if( result != code::xa::ok)
                   {
                      code::stream( result) << "failed to end resource: " << r << " - error: " << std::error_code( result) << '\n';
                   }
                }
-
                // TODO: throw if some of the rm:s report an error?
             }
          }
@@ -1005,13 +1007,15 @@ namespace casual
          {
             Trace trace{ "transaction::Context::resources_commit"};
 
+            log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);
+
             auto found = algorithm::find_if( m_resources.all, [rm]( const auto& r){
-               return r.id == rm;
+               return r.id() == rm;
             });
 
             if( found)
             {
-               auto code = common::code::convert::to::tx( found->commit( transaction, flags));
+               auto code = common::code::convert::to::tx( found->commit( transaction.trid, flags));
                exception::tx::handle( code, "resource commit");
             }
             else

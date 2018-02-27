@@ -58,7 +58,7 @@ namespace casual
                         algorithm::transform( services, result.services, transform::Service{});
 
                         algorithm::transform( resources, result.resources, [](argument::transaction::Resource& r){
-                           return transaction::Resource{
+                           return transaction::resource::Link{
                               std::move( r.key),
                               r.xa_switch
                            };

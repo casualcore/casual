@@ -63,16 +63,16 @@ namespace casual
                }
                catch( const common::exception::tx::exception& exception)
                {
-                  code::stream( exception.type()) << exception << std::endl;
+                  log::line( code::stream( exception.type()), exception);
                   return exception.type();
                }
-               catch( const std::system_error& exception)
+               catch( const exception::base& exception)
                {
-                  log::category::error << exception << '\n';
+                  log::line( log::category::error, exception);
                }
                catch( const std::exception& exception)
                {
-                  log::category::error << exception << '\n';
+                  log::line( log::category::error, exception.what());
                }
 
                return code::tx::fail;
