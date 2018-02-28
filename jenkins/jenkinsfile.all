@@ -7,16 +7,35 @@
 //
 // Current version
 //
-env.CASUAL_VERSION="0.50"
+env.CASUAL_VERSION="1.0.0"
 
+
+def isDevelop()
+{
+   return "${env.BRANCH_NAME}" == "develop"
+}
+
+def isRelease()
+{
+   return ${env.BRANCH_NAME}.startsWith("release/")
+}
 
 def isPublishable()
 {
-   if ( "${env.BRANCH_NAME}" == "develop")
+   if ( isDevelop() || isRelease())
    {
       return true
    }
    return false
+}
+
+def selectExtendedVersion()
+{
+   if (isDevelop())
+      return "-beta." + env.BUILD_NUMBER
+   if ( isRelease())
+      return ""
+   return "-alfa." + env.BUILD_NUMBER
 }
 
 def common_backend_builder = '''
@@ -66,7 +85,7 @@ casual-make --no-colors -d -a --use-valgrind make && \
 //
 def backend_builder_centos = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
-CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
+CASUAL_RELEASE=''' + selectExtendedVersion() + '''
 DISTRIBUTION="centos"
 BRANCH=''' + env.BRANCH_NAME + '''
 
@@ -86,7 +105,7 @@ source scl_source enable devtoolset-4
 //
 def backend_builder_suse = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
-CASUAL_RELEASE=''' + env.BUILD_NUMBER + '''
+CASUAL_RELEASE=''' + selectExtendedVersion() + '''
 DISTRIBUTION="suse"
 BRANCH=''' + env.BRANCH_NAME + '''
 
