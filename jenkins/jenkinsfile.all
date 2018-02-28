@@ -28,13 +28,22 @@ def isPublishable()
    return false
 }
 
+def rpmRelease()
+{
+   if (isDevelop())
+      return "beta." + env.BUILD_NUMBER
+   if ( isRelease())
+      return env.BUILD_NUMBER
+   return "alpha." + env.BUILD_NUMBER
+}
+
 def selectExtendedVersion()
 {
    if (isDevelop())
       return "-beta." + env.BUILD_NUMBER
    if ( isRelease())
       return ""
-   return "-alfa." + env.BUILD_NUMBER
+   return "-alpha." + env.BUILD_NUMBER
 }
 
 def totalVersion()
@@ -89,7 +98,7 @@ casual-make --no-colors -d -a --use-valgrind make && \
 //
 def backend_builder_centos = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
-CASUAL_RELEASE=''' + selectExtendedVersion() + '''
+CASUAL_RELEASE=''' + rpmRelease() + '''
 DISTRIBUTION="centos"
 BRANCH=''' + env.BRANCH_NAME + '''
 
@@ -109,7 +118,7 @@ source scl_source enable devtoolset-4
 //
 def backend_builder_suse = '''#! /bin/sh
 CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
-CASUAL_RELEASE=''' + selectExtendedVersion() + '''
+CASUAL_RELEASE=''' + rpmRelease() + '''
 DISTRIBUTION="suse"
 BRANCH=''' + env.BRANCH_NAME + '''
 
@@ -190,7 +199,7 @@ try
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
    echo totalVersion()
-   
+
    parallel(
    
       "frontend":
@@ -342,6 +351,20 @@ try
    {
       if ( isPublishable() )
       {
+         stage('Tag')
+         {
+            checkout scm
+
+            withCredentials([usernameColonPassword(credentialsId: '628eddfb-34f4-46de-9e61-c73b86ac681e', variable: 'USERPASS')])
+            {
+               tag = totalVersion()
+               sh """
+               git tag -a -m "Jenkins" $tag
+               git push https://${USERPASS}@bitbucket.org/casualcore/casual.git $tag
+               """
+            }
+         }
+         
          stage('publish')
          {
             unstash "suse_backend"
@@ -355,20 +378,6 @@ try
                do
                   curl -X POST --user "${USERPASS}" "https://api.bitbucket.org/2.0/repositories/casualcore/casual/downloads" --form files=@"\$filename"
                done
-               """
-            }
-         }
-
-         stage('Tag')
-         {
-            checkout scm
-
-            withCredentials([usernameColonPassword(credentialsId: '628eddfb-34f4-46de-9e61-c73b86ac681e', variable: 'USERPASS')])
-            {
-               tag = totalVersion()
-               sh """
-               git tag -a -m "Jenkins" $tag
-               git push https://${USERPASS}@bitbucket.org/casualcore/casual.git $tag
                """
             }
          }
