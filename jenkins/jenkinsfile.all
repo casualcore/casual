@@ -191,7 +191,7 @@ try
 
    parallel(
 
-      echo "Version to build: " + totalVersion()
+      echo totalVersion()
    
       "frontend":
       {
