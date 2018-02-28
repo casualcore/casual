@@ -9,15 +9,14 @@
 //
 env.CASUAL_VERSION="1.0.0"
 
-
 def isDevelop()
 {
-   return "${env.BRANCH_NAME}" == "develop"
+   return env.BRANCH_NAME == "develop"
 }
 
 def isRelease()
 {
-   return ${env.BRANCH_NAME}.startsWith("release/")
+   return env.BRANCH_NAME.startsWith("release/")
 }
 
 def isPublishable()
@@ -36,6 +35,11 @@ def selectExtendedVersion()
    if ( isRelease())
       return ""
    return "-alfa." + env.BUILD_NUMBER
+}
+
+def totalVersion()
+{
+    return env.CASUAL_VERSION + selectExtendedVersion()
 }
 
 def common_backend_builder = '''
@@ -186,6 +190,8 @@ try
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
    parallel(
+
+      echo "Version to build: " + totalVersion()
    
       "frontend":
       {
@@ -359,7 +365,7 @@ try
 
             withCredentials([usernameColonPassword(credentialsId: '628eddfb-34f4-46de-9e61-c73b86ac681e', variable: 'USERPASS')])
             {
-               tag = env.CASUAL_VERSION + "-" + env.BUILD_NUMBER
+               tag = totalVersion()
                sh """
                git tag -a -m "Jenkins" $tag
                git push https://${USERPASS}@bitbucket.org/casualcore/casual.git $tag
