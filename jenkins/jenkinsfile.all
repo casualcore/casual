@@ -189,9 +189,9 @@ try
 {
    slackSend color: "good", message: "Build started: ${env.JOB_NAME} - ${env.BUILD_NUMBER} (<${env.JOB_URL}|Open>)"
 
+   echo totalVersion()
+   
    parallel(
-
-      echo totalVersion()
    
       "frontend":
       {
