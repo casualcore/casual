@@ -8,8 +8,8 @@ The following packages need to be installed:
 
  * git
  * python
- * gcc (5.3 or higher)
- * g++
+ * gcc (version 6)
+ * g++ (version 6)
  * puppet
  * gtest (included, see below)
 
@@ -23,20 +23,43 @@ the examples correspond exactly to your setup.
 
 Latest version is on `develop` branch (default)
 
-    host$ git clone https://bitbucket.org/casualcore/casual.git
-    host$ cd casual
+    host$ git clone https://bitbucket.org/casualcore/casual.git
+    host$ cd casual
 
+
+### CentOS Setup
+
+Enable EPEL, Software Collections and install stuff
+
+    sudo yum install epel-release centos-release-scl
+    sudo yum install libuuid-devel pugixml-devel sqlite-devel python libcurl-devel devtoolset-6
+    scl enable devtoolset-6 bash
+
+Compile the yaml lib
+
+    cd thirdparty/setup
+    CMAKE_CXX_COMPILER=g++ python install_yaml.py
+
+Use templatefile to setup environment
+
+    host$ cp middleware/example/env/casual.env .
+
+edit the YAML include and library paths to
+
+    YAML_INCLUDE_PATH=/usr/local/include/yaml-cpp/
+    YAML_LIBRARY_PATH=/usr/local/lib/
+
+Then follow the instructions from Build Casual
 
 ### Install dependencies with puppet
 
     host$ sudo puppet apply thirdparty/setup/casual.pp
 
-
-### Set up the environment
+### Set up the environment 
 
 Use templatefile to setup environment
 
-    host$ cp middleware/example/env/casual.env .
+    host$ cp middleware/example/env/casual.env .
 
 
 Edit `casual.env`, to set correct paths that correspond to your setup. It
