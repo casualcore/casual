@@ -1,9 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! string.cpp
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
-//! Created on: Apr 6, 2014
-//!     Author: Lazan
-//!
+
 
 #include "common/string.h"
 #include "common/algorithm.h"

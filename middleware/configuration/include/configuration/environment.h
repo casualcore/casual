@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #ifndef CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
 #define CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
