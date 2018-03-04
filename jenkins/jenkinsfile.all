@@ -233,6 +233,7 @@ try
                   sh """
                     gitbook init .
                     gitbook build .
+                    DOCUMENT_ROOT=/var/www/documentation/doxygen doxygen documentation/Doxyfile
                   """
                }
             }
