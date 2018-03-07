@@ -47,34 +47,34 @@ Responsible for a casual-domain. Boots all the other managers and user provided 
 
 Responsible for distrubuted transactions.
 
-[documentation](./transaction/readme.md)
+[documentation](./transaction/documentation/api.md)
 
 
 ### service
 
 Responsible for service lookup and management.
 
-[documentation](./service/readme.md)
+[documentation](./service/documentation/api.md)
 
 
 ### gateway
 
 Responsible for communications with other domains
 
-[documentation](./gateway/readme.md)
+[documentation](./gateway/documentation/api.md)
 
 
 ### queue
 
 A queue implementation.
 
-[documentation](./queue/readme.md)
+[documentation](./queue/documentation/api.md)
 
 ### common
 
 Functionality that is common and in some way shared with other modules. 
 
-[documentation](./queue/readme.md)
+[documentation](./common/documentation/log.md)
 
 ### serviceframework
 
