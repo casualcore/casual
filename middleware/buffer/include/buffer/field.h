@@ -1,9 +1,9 @@
-//
-// field.h
-//
-//  Created on: 3 nov 2013
-//      Author: Kristone
-//
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 
 #ifndef CASUAL_BUFFER_FIELD_H
 #define CASUAL_BUFFER_FIELD_H

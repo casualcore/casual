@@ -1,9 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! execution.cpp
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
-//! Created on: Jun 7, 2015
-//!     Author: Lazan
-//!
+
 
 #include "common/execution.h"
 #include "common/uuid.h"

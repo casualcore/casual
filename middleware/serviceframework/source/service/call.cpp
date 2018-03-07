@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "sf/service/call.h"
 #include "sf/log.h"

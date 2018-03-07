@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #ifndef SF_SERVICE_PROTOCOL_IMPLEMENTATION_H_
 #define SF_SERVICE_PROTOCOL_IMPLEMENTATION_H_
