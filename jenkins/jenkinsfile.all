@@ -208,6 +208,7 @@ try
       {
          node("frontend")
          {
+            deleteDir()
             stage('Build frontend')
             {
                checkout scm
@@ -225,9 +226,11 @@ try
          {
             if ( isPublishable() )
             {
+               deleteDir()
                stage('Documentation')
                {
-                  checkout scm          
+                  checkout scm
+                         
                   sh """
                     gitbook init .
                     gitbook build .
