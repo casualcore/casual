@@ -20,7 +20,7 @@
    * [Order](middleware/buffer/documentation/order.md)
    * [String](middleware/buffer/documentation/string.md)
 * Common
-   * [Argument](middleware/common/documentation/argument.md)
+   * [Argument](middleware/common/documentation/arguments.md)
    * [Log](middleware/common/documentation/log.md)
 * [Configuration](middleware/configuration/example/readme.md)
 * [Domain](middleware/domain/readme.md)
