@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #ifndef SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_
 #define SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_

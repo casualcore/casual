@@ -1,9 +1,9 @@
-/*
- * field.h
- *
- *  Created on: Oct 8, 2017
- *      Author: kristone
- */
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 
 #ifndef MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_
 #define MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_

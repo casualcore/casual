@@ -1,8 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
-//! base "stolen" from BlackTie
-//!
+
 
 
 #ifndef CASUAL_XATMI_H_

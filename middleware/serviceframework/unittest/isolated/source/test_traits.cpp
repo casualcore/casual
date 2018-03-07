@@ -1,9 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual_isolatedunittest_traits.cpp
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
-//! Created on: Oct 21, 2012
-//!     Author: Lazan
-//!
+
 
 #include <gtest/gtest.h>
 

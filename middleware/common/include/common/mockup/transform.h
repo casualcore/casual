@@ -1,9 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! dispatch.h
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
-//! Created on: Jan 8, 2015
-//!     Author: Lazan
-//!
+
 
 #ifndef CASUAL_COMMON_MOCKUP_TRANSFORM_H_
 #define CASUAL_COMMON_MOCKUP_TRANSFORM_H_

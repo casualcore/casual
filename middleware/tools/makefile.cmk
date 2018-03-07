@@ -70,6 +70,15 @@ target = LinkExecutable( 'bin/casual-service-describe',
 install_bin.append( target)
 
 
+target = LinkExecutable( 'file/header/bin/casual-source-code-header',
+   [ Compile( 'file/header/source/main.cpp')],
+   [ 
+    'casual-common', 
+    ])
+
+install_bin.append( target)
+
+
 #
 # TODO: if we keep the python implementation we need to package python "correct"?
 #
