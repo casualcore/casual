@@ -32,7 +32,6 @@ See [examples](middleware/example/domain/readme.md)
 ### Status
 
 #### Whats left to do?
-* JCA implementation
 * COBOL bindings
 * some redesign of internal parts (for maintainability)
 
