@@ -32,7 +32,7 @@ See [examples](middleware/example/domain/readme.md)
 ### Status
 
 #### Whats left to do?
-* COBOL bindings
+* _conversation_ conformant on all platforms
 * some redesign of internal parts (for maintainability)
 
 
