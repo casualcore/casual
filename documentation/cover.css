@@ -63,7 +63,7 @@ body {
   font-weight: 700;
   color: rgba(255, 255, 255, .5);
   background-color: transparent;
-  border-bottom: .25rem solid transparent;
+  /*border-bottom: .25rem solid transparent;*/
 }
 
 .nav-masthead .nav-link:hover,
@@ -73,6 +73,7 @@ body {
 
 .nav-masthead .nav-link + .nav-link {
   margin-left: 1rem;
+  text-align: center;
 }
 
 .nav-masthead .active {
@@ -80,15 +81,15 @@ body {
   border-bottom-color: #fff;
 }
 
-@media (min-width: 48em) {
-  .masthead-brand {
-    float: left;
-  }
-  .nav-masthead {
-    float: right;
-  }
+.inner {
+   text-align: center;
 }
-
+div#nav{
+   text-align: center;
+ }
+ div#nav ul{
+   display: inline-block;
+ }
 
 /*
  * Cover
