@@ -78,10 +78,10 @@ namespace casual
             {
                auto state = local::state( settings);
 
-               if( settings.event_queue)
+               if( settings.event())
                {
                   common::message::event::subscription::Begin request;
-                  request.process.queue = common::strong::ipc::id{ settings.event_queue};
+                  request.process.queue = settings.event();
                   state.event.subscription( request);
                }
 

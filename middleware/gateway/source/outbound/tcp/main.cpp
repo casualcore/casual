@@ -11,7 +11,7 @@
 #include "common/communication/tcp.h"
 
 #include "common/domain.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 
 namespace casual
 {
@@ -139,11 +139,12 @@ int main( int argc, char **argv)
    {
       casual::gateway::outbound::tcp::Settings settings;
       {
-         casual::common::Arguments parser{{
-            casual::common::argument::directive( { "-a", "--address"}, "address to the remote domain [(ip|domain):]port", settings.address),
-            casual::common::argument::directive( { "-o", "--order"}, "order of the outbound connector", settings.order),
-         }};
-         parser.parse( argc, argv);
+         using namespace casual::common::argument;
+         Parse parse{ "tcp outbound",
+            Option( std::tie( settings.address), { "-a", "--address"}, "address to the remote domain [(ip|domain):]port"),
+            Option( std::tie( settings.order), { "-o", "--order"}, "order of the outbound connector"),
+         };
+         parse( argc, argv);
       }
 
       casual::gateway::outbound::tcp::Gateway gateway{ std::move( settings)};

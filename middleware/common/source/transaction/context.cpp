@@ -954,7 +954,7 @@ namespace casual
                //
                // We rotate the wanted to end;
                //
-               std::rotate( std::begin( found), std::begin( found) + 1, std::end( m_transactions));
+               algorithm::rotate( m_transactions, ++found);
             }
          }
 

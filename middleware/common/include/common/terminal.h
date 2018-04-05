@@ -10,6 +10,7 @@
 
 #include "common/move.h"
 #include "common/algorithm.h"
+#include "common/argument.h"
 
 #include <string>
 #include <ostream>
@@ -23,6 +24,34 @@ namespace casual
    {
       namespace terminal
       {
+         namespace output
+         {
+            struct Directive
+            {
+               static Directive& instance();
+
+               bool porcelain;
+               bool color;
+               bool header;
+               std::streamsize precision;
+
+               inline auto options()
+               {
+                  return argument::Option( std::tie( color), { "--color"}, "set/unset color")
+                     + argument::Option( std::tie( header), { "--header"}, "set/unset header")
+                     + argument::Option( std::tie( precision), { "--precision"}, "set number of decimal points used for output")
+                     + argument::Option( std::tie( porcelain), { "--porcelain"}, "easy to parse output format");
+               }
+
+            private:
+               Directive();
+            };
+
+            Directive& directive();
+
+
+
+         } // output
 
          struct color_t
          {
@@ -114,30 +143,22 @@ namespace casual
                right
             };
 
-            struct Directives
-            {
-               Directives( bool porcelain = false, bool colors = false, bool headers = false, std::string delimiter = "  ")
-                  : porcelain( porcelain), colors( colors), headers( headers), delimiter( std::move( delimiter)) {}
-
-
-               bool porcelain;
-               bool colors;
-               bool headers;
-               std::string delimiter;
-            };
 
             template< typename T>
             struct formatter
             {
                using value_type = T;
 
+               template< typename... Columns>
+               static auto construct( Columns&&... columns)
+               {
+                  return formatter{ "  ", initialize( std::forward< Columns>( columns)...)};
+               }
 
                template< typename... Columns>
-               formatter( Directives directives, Columns&&... columns)
-                  : m_directives( std::move( directives)),
-                  m_columns( initialize( std::forward< Columns>( columns)...))
+               static auto construct( std::string delimiter, Columns&&... columns)
                {
-
+                  return formatter{ std::move( delimiter), initialize( std::forward< Columns>( columns)...)};
                }
 
 
@@ -152,18 +173,18 @@ namespace casual
 
                void print_headers( std::ostream& out)
                {
-                  if( m_directives.headers)
+                  if( output::directive().header)
                   {
                      out << std::setfill( ' ');
                      {
-                        algorithm::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
+                        algorithm::print( out, m_columns, m_delimiter, []( std::ostream& out, const column_holder& c){
                            out << std::left << std::setw( c.width()) << c.name();
                         });
                         out << '\n';
                      }
 
                      {
-                        algorithm::print( out, m_columns, m_directives.delimiter, []( std::ostream& out, const column_holder& c){
+                        algorithm::print( out, m_columns, m_delimiter, []( std::ostream& out, const column_holder& c){
                            out << std::string( c.width(), '-');
                         });
                         out << '\n';
@@ -176,7 +197,7 @@ namespace casual
                template< typename R>
                std::ostream& print_rows( std::ostream& out, R&& rows)
                {
-                  if( m_directives.porcelain)
+                  if( output::directive().porcelain)
                   {
                      for( auto& row : rows)
                      {
@@ -190,8 +211,8 @@ namespace casual
                   {
                      for( auto& row : rows)
                      {
-                        algorithm::print( out,  m_columns, m_directives.delimiter, [&]( std::ostream& out, const column_holder& c){
-                           c.print( out, row, m_directives.colors);
+                        algorithm::print( out,  m_columns, m_delimiter, [&]( std::ostream& out, const column_holder& c){
+                           c.print( out, row, output::directive().color);
                         });
                         out << '\n';
                      }
@@ -205,7 +226,7 @@ namespace casual
                {
                   customize::Stream stream( out);
 
-                  if( ! m_directives.porcelain)
+                  if( ! output::directive().porcelain)
                   {
                      calculate_width( range, out);
                      print_headers( out);
@@ -256,6 +277,7 @@ namespace casual
                      m_column->print( out, value, width ? m_width : 0, color);
                   }
 
+
                   std::size_t width() const
                   {
                      return m_width;
@@ -304,7 +326,16 @@ namespace casual
                   result.emplace( std::begin( result), std::move( basic));
                   return result;
                }
-               Directives m_directives;
+
+            protected:
+               formatter( std::string delimiter, columns_type columns)
+                  : m_delimiter( std::move( delimiter)), 
+                  m_columns( std::move( columns))
+               {
+
+               }
+               
+               std::string m_delimiter;
                columns_type m_columns;
             };
 
@@ -347,15 +378,20 @@ namespace casual
                template< typename VT>
                void print( std::ostream& out, VT&& value, std::size_t width, bool color) const
                {
+                  std::ostringstream string_value;
+                  string_value.precision( out.precision());
+                  string_value.flags( out.flags());
+                  string_value << binder( value);
+
                   out << std::setfill( ' ');
 
                   if( color)
                   {
-                     out << m_color.start() << std::setw( width) << m_align << binder( value) << m_color.end();
+                     out << m_color.start() << std::setw( width) << m_align << string_value.str() << m_color.end();
                   }
                   else
                   {
-                     out << std::setw( width) << m_align << binder( value);
+                     out << std::setw( width) << m_align << string_value.str();
                   }
                }
 
@@ -371,35 +407,30 @@ namespace casual
 
             template< typename B>
             auto column( std::string name, B binder, common::terminal::color_t color, Align align)
-               -> name_column< default_column<B>>
             {
                return name_column< default_column<B>>{ std::move( name), std::move( binder), align, std::move( color)};
             }
 
             template< typename B>
             auto column( std::string name, B binder, common::terminal::color_t color)
-               -> name_column< default_column<B>>
             {
                return column( std::move( name), std::move( binder), std::move( color), Align::left);
             }
 
             template< typename B>
             auto column( std::string name, B binder, Align align)
-               -> name_column< default_column<B>>
             {
                return column( std::move( name), std::move( binder), common::terminal::color::no_color, align);
             }
 
             template< typename B>
             auto column( std::string name, B binder)
-               -> name_column< default_column<B>>
             {
                return column( std::move( name), std::move( binder), common::terminal::color::no_color, Align::left);
             }
 
             template< typename C>
             auto custom_column( std::string name, C&& column)
-               -> name_column< C>
             {
                return name_column< C>( std::move( name), std::move( column));
             }

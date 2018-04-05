@@ -68,7 +68,7 @@ namespace casual
          namespace value
          {
             template <typename NVP>
-            auto operator << ( std::ostream& out, NVP&& value) -> common::traits::enable_if_t< sf::traits::is_nvp< NVP>::value, std::ostream&>
+            auto operator << ( std::ostream& out, NVP&& value) -> std::enable_if_t< sf::traits::is_nvp< NVP>::value, std::ostream&>
             {
                if( out.good())
                {

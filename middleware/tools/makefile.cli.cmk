@@ -1,0 +1,48 @@
+from casual.middleware.make.dsl import *
+
+
+IncludePaths( ['include',
+    '../common/include',
+    '../xatmi/include',
+    '../configuration/include',
+    '../serviceframework/include',
+    '../service/include',
+    '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
+    ])
+
+LibraryPaths( ['bin',
+    '../buffer/bin',
+    '../common/bin',
+    '../xatmi/bin',
+    '../configuration/bin',
+    '../serviceframework/bin',
+    '../service/bin',
+    '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
+    ])
+
+
+install_bin = []
+install_lib = []
+
+
+
+service_cli = LinkLibrary( 'bin/casual-tools-service-cli',
+   [ 
+      Compile( 'source/service/describe/cli.cpp'),
+      Compile( 'source/service/call/cli.cpp')],
+   [ 
+    'casual-tools-common',
+    'casual-service-admin-api',
+    'casual-common', 
+    'casual-sf',
+    'casual-xatmi',
+    ])
+
+install_lib.append( service_cli)
+
+
+Install( install_bin, '$(CASUAL_HOME)/bin')
+Install( install_lib, '$(CASUAL_HOME)/lib')
+
+
+

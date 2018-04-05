@@ -8,7 +8,7 @@
 #include "service/forward/cache.h"
 
 #include "common/exception/handle.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 
 namespace casual
 {
@@ -23,8 +23,8 @@ namespace casual
             try
             {
                {
-                  casual::common::Arguments parser{ {}};
-                  parser.parse( argc, argv);
+                  casual::common::argument::Parse parse{ "service forward"};
+                  parse( argc, argv);
                }
 
                Cache cache;

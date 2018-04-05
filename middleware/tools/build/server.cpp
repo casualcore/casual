@@ -7,7 +7,7 @@
 
 #include "common/string.h"
 #include "common/process.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/file.h"
 #include "common/uuid.h"
 #include "common/environment.h"
@@ -404,21 +404,24 @@ int main( int argc, char **argv)
       {
          trace::Exit log( "parse arguments", false);
 
-         using namespace casual::common;
+         using namespace casual::common::argument;
 
-         Arguments handler{{
-            argument::directive( {"-o", "--output"}, "name of server to be built", settings.output),
-            argument::directive( {"-s", "--service"}, "service names", &Settings::set_services, settings),
-            argument::directive( {"-d", "--server-definition"}, "path to server definition file", &Settings::set_server_definition_path, settings),
-            argument::directive( {"-r", "--resource-keys"}, "key of the resource", &Settings::set_resources, settings),
-            argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
-            argument::directive( {"-f", "--link-directives"}, "additional compile and link directives", &Settings::set_compile_link_directive, settings),
-            argument::directive( {"-p", "--properties-file"}, "path to resource properties file", settings.properties_file),
-            argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
-            argument::directive( {"-k", "--keep"}, "keep the intermediate file", settings.keep)
-         }};
+         Parse parse{ "builds an casual xatmi server",
+            Option( std::tie( settings.output), { "-o", "--output"}, "name of server to be built"),
+            Option( [&]( const std::vector< std::string>& values){ settings.set_services( values);}, 
+               {"-s", "--service"}, "service names")( cardinality::any{}),
+            Option( [&]( const std::string& value){ settings.set_server_definition_path( value);}, { "-d", "--server-definition"}, "path to server definition file"),
+            Option( [&]( const std::vector< std::string>& values){ settings.set_resources( values);}, 
+               {"-r", "--resource-keys"}, "key of the resource")( cardinality::any{}),
+            Option( std::tie( settings.compiler), {"-c", "--compiler"}, "compiler to use"),
+            Option( [&]( const std::vector< std::string>& values){ settings.set_compile_link_directive( values);}, 
+               {"-f", "--link-directives"}, "additional compile and link directives")( cardinality::any{}),
+            Option( std::tie( settings.properties_file), {"-p", "--properties-file"}, "path to resource properties file"),
+            Option( std::tie( settings.verbose), {"-v", "--verbose"}, "verbose output"),
+            Option( std::tie( settings.keep), {"-k", "--keep"}, "keep the intermediate file")
+         };
 
-         handler.parse( argc, argv);
+         parse( argc, argv);
 
          validate( settings);
       }

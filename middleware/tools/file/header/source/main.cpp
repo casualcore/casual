@@ -6,7 +6,8 @@
 
 
 #include "common/exception/handle.h"
-#include "common/arguments.h"
+#include "common/argument.h"
+#include "common/file.h"
 
 #include <iostream>
 #include <fstream>
@@ -24,7 +25,6 @@ namespace casual
             {
                std::string headerfile;
                std::vector< std::string> files;
-               //std::string predicate = R"(^(//!)|(/\*)[ ].*)";
                std::string predicate = R"(^((//)|(/\*)|([ ]\*)).*)";
             };
 
@@ -109,11 +109,11 @@ namespace casual
                {
                   Settings settings;
                   {
-                     common::Arguments arguments{ {
-                        common::argument::directive( { "-h", "--header-file"}, "the header to use", settings.headerfile),
-                        common::argument::directive( { "-f", "--files"}, "files to replace header", settings.files)
-                     }};
-                     arguments.parse( argc, argv);
+                     common::argument::Parse parse{ "add a header to every file passed by --files",
+                        common::argument::Option( std::tie( settings.headerfile), { "-h", "--header-file"}, "the header to use"),
+                        common::argument::Option( std::tie(  settings.files), { "-f", "--files"}, "files to replace header")
+                     };
+                     parse( argc, argv);
                   }
                   header( std::move( settings));
                }

@@ -4,11 +4,11 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
+#include "gateway/manager/admin/cli.h"
 #include "gateway/manager/admin/vo.h"
 #include "gateway/manager/admin/server.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/message/queue.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
@@ -63,19 +63,6 @@ namespace casual
       } // call
 
 
-      namespace global
-      {
-         bool porcelain = false;
-
-         bool header = true;
-         bool color = true;
-
-         void no_color() { color = false;}
-         void no_header() { header = false;}
-
-      } // global
-
-
       namespace format
       {
          namespace connection
@@ -84,7 +71,7 @@ namespace casual
 
          } // connection
 
-         terminal::format::formatter<  manager::admin::vo::Connection> connections()
+         auto connections()
          {
             using vo = manager::admin::vo::Connection;
 
@@ -131,8 +118,7 @@ namespace casual
                return string::join( c.address, " ");
             };
 
-            return {
-               { global::porcelain, global::color, global::header},
+            return terminal::format::formatter<  manager::admin::vo::Connection>::construct( 
                terminal::format::column( "name", format_domain_name, terminal::color::yellow),
                terminal::format::column( "id", format_domain_id, terminal::color::blue),
                terminal::format::column( "bound", format_bound, terminal::color::magenta),
@@ -140,8 +126,8 @@ namespace casual
                terminal::format::column( "queue", format_queue, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "type", format_type, terminal::color::cyan),
                terminal::format::column( "runlevel", format_runlevel, terminal::color::no_color),
-               terminal::format::column( "address", format_address, terminal::color::blue),
-            };
+               terminal::format::column( "address", format_address, terminal::color::blue)
+            );
 
          }
 
@@ -159,59 +145,48 @@ namespace casual
             formatter.print( std::cout, state.connections);
          }
 
-         void state( const std::vector< std::string>& format)
+         void state( const common::optional< std::string>& format)
          {
             auto state = call::state();
 
-            if( format.empty())
-            {
-               auto archive = sf::archive::log::writer( std::cout);
-               archive << CASUAL_MAKE_NVP( state);
-            }
-            else 
-            {
-               auto archive = sf::archive::writer::from::name( std::cout, format.front());
-               archive << CASUAL_MAKE_NVP( state);
-            }
+            auto archive = sf::archive::writer::from::name( std::cout, format.value_or( ""));
+            archive << CASUAL_MAKE_NVP( state);
          }
 
       } // action
 
+      namespace manager
+      {
+         namespace admin 
+         {
+            struct cli::Implementation
+            {
+               common::argument::Group options()
+               {
+                  auto complete_state = []( auto values, bool){
+                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
+                  };
 
+                  return common::argument::Group{ [](){}, { "gateway"}, "gateway related administration",
+                     common::argument::Option( &gateway::action::list_connections, { "-c", "--list-connections"}, "list all connections"),
+                     common::argument::Option( &gateway::action::state, complete_state, {"--state"}, "gateway state"),
+                  };
+               }
+            };
+
+            cli::cli() = default; 
+            cli::~cli() = default; 
+
+            common::argument::Group cli::options() &
+            {
+               return m_implementation->options();
+            }
+            
+         } // admin
+      } // manager
    } // gateway
-
-
-   common::Arguments parser()
-   {
-      common::Arguments parser{ {
-            common::argument::directive( {"--no-header"}, "do not print headers", &gateway::global::no_header),
-            common::argument::directive( {"--no-color"}, "do not use color", &gateway::global::no_color),
-            common::argument::directive( {"--porcelain"}, "Easy to parse format", gateway::global::porcelain),
-            common::argument::directive( {"-c", "--list-connections"}, "list all connections", &gateway::action::list_connections),
-            common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "gateway state in the provided format (xml|json|yaml|ini)", &gateway::action::state),
-      }};
-
-      return parser;
-   }
-
-
 } // casual
 
-int main( int argc, char **argv)
-{
-   try
-   {
-      auto parser = casual::parser();
-
-      parser.parse( argc, argv);
-
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle( std::cerr);
-   }
-   return 0;
-}
 
 
 

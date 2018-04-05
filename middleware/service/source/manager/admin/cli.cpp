@@ -4,6 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#include "service/manager/admin/cli.h"
 
 
 #include "sf/namevaluepair.h"
@@ -12,13 +13,14 @@
 
 #include "service/manager/admin/managervo.h"
 #include "service/manager/admin/server.h"
+#include "service/manager/admin/api.h"
 
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/admin/server.h"
 
 
 #include "common/file.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/chronology.h"
 #include "common/terminal.h"
 #include "common/server/service.h"
@@ -51,32 +53,13 @@ namespace casual
 
          namespace global
          {
-            bool porcelain = false;
-
-            bool no_colors = false;
-            bool no_header = false;
-
             bool admin_services = false;
-
          } // global
 
 
 
          namespace call
          {
-            admin::StateVO state()
-            {
-               sf::service::protocol::binary::Call call;
-
-               auto reply = call( admin::service::name::state());
-
-               admin::StateVO result;
-
-               reply >> CASUAL_MAKE_NVP( result);
-
-               return result;
-            }
-
             namespace metric
             {
 
@@ -111,7 +94,7 @@ namespace casual
 
                reply >> CASUAL_MAKE_NVP( state.domain);
 
-               state.service = call::state();
+               state.service = admin::api::state();
 
                return state;
             }
@@ -343,7 +326,7 @@ namespace casual
                std::size_t operator () ( const T& value) const { return value.instances.size();}
             };
 
-            terminal::format::formatter< admin::ServiceVO> services( const admin::StateVO& state)
+            auto services( const admin::StateVO& state)
             {
 
                static auto instances = normalized::instances( state);
@@ -375,7 +358,7 @@ namespace casual
                //
                // we need to set something when category is empty to help
                // enable possible use of sort, cut, awk and such
-               auto format_catetegory = []( const admin::ServiceVO& value){
+               auto format_category = []( const admin::ServiceVO& value){
                   if( value.category.empty())
                      return "-";
                   return value.category.c_str();
@@ -415,10 +398,9 @@ namespace casual
                   return common::chronology::local( value.last);
                };
 
-               return {
-                  { global::porcelain, ! global::no_colors, ! global::no_header},
+               return terminal::format::formatter< admin::ServiceVO>::construct( 
                   terminal::format::column( "name", std::mem_fn( &admin::ServiceVO::name), terminal::color::yellow, terminal::format::Align::left),
-                  terminal::format::column( "category", format_catetegory, terminal::color::no_color, terminal::format::Align::left),
+                  terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
                   terminal::format::column( "mode", format_mode{}, terminal::color::no_color, terminal::format::Align::right),
                   terminal::format::column( "timeout", format_timeout{}, terminal::color::blue, terminal::format::Align::right),
                   terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
@@ -428,12 +410,12 @@ namespace casual
                   terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
                   terminal::format::column( "RI", format::instance::remote::total{}, terminal::color::cyan, terminal::format::Align::right),
                   terminal::format::column( "RC", std::mem_fn( &admin::ServiceVO::remote_invocations), terminal::color::cyan, terminal::format::Align::right),
-                  terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::right),
-               };
+                  terminal::format::column( "last", format_last, terminal::color::blue, terminal::format::Align::right)
+               );
             }
 
 
-            terminal::format::formatter< normalized::service::Instance> instances()
+            auto instances()
             {
                using value_type = normalized::service::Instance;
 
@@ -500,8 +482,8 @@ namespace casual
                };
 
 
-               return {
-                  { global::porcelain, ! global::no_colors, ! global::no_header},
+
+               return terminal::format::formatter< normalized::service::Instance>::construct(
                   terminal::format::column( "service", format_service_name, terminal::color::yellow),
                   terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                   //terminal::format::column( "queue", format_queue{}, terminal::color::no_color, terminal::format::Align::right),
@@ -510,9 +492,8 @@ namespace casual
 
                   //terminal::format::column( "last", format_last{}, terminal::color::blue, terminal::format::Align::right),
 
-                  terminal::format::column( "alias", format_process_alias, terminal::color::blue, terminal::format::Align::left),
-
-               };
+                  terminal::format::column( "alias", format_process_alias, terminal::color::blue, terminal::format::Align::left)
+               );
             }
 
          } // format
@@ -520,19 +501,21 @@ namespace casual
 
          namespace print
          {
-
-
-            void services( std::ostream& out, admin::StateVO& state)
+            enum class Service
             {
-               auto services = range::make( state.services);
+               user,
+               admin
+            };
 
-               if( ! global::admin_services)
-               {
-                  services = std::get< 0>( algorithm::partition( services, []( const admin::ServiceVO& s){
-                     return s.category != common::service::category::admin();}));
-               }
+            void services( std::ostream& out, admin::StateVO& state, Service type)
+            {
 
-               algorithm::sort( services, []( const admin::ServiceVO& l, const admin::ServiceVO& r){ return l.name < r.name;});
+               auto split = algorithm::partition( state.services, []( const admin::ServiceVO& s){
+                     return s.category != common::service::category::admin();});
+
+               auto services = type == Service::user ? std::get< 0>( split) : std::get< 1>( split);
+
+               algorithm::sort( services, []( const auto& l, const auto& r){ return l.name < r.name;});
 
                auto formatter = format::services( state);
 
@@ -559,12 +542,34 @@ namespace casual
          namespace action
          {
 
+            auto services_completer = []( auto value, bool help)
+            {
+               if( help)
+               {
+                  return std::vector< std::string>{ "<service name>..."};
+               }
+               else
+               {
+                  auto state = admin::api::state();
+
+                  return common::algorithm::transform( state.services, []( auto& service){
+                     return std::move( service.name);
+                  });
+               }
+            };
 
             void list_services()
             {
-               auto state = call::state();
+               auto state = admin::api::state();
 
-               print::services( std::cout, state);
+               print::services( std::cout, state, print::Service::user);
+            }
+
+            void list_admin_services()
+            {
+               auto state = admin::api::state();
+
+               print::services( std::cout, state, print::Service::admin);
             }
 
             void list_instances()
@@ -575,12 +580,11 @@ namespace casual
             }
 
 
-            void output_state( std::vector< std::string> format)
+            void output_state( const common::optional< std::string>& format)
             {
-               auto state = call::state();
-               format.emplace_back( "");
+               auto state = admin::api::state();
 
-               auto archive = sf::archive::writer::from::name( std::cout, format.front());
+               auto archive = sf::archive::writer::from::name( std::cout, format.value_or( ""));
                archive << CASUAL_MAKE_NVP( state);
             }
 
@@ -630,45 +634,38 @@ namespace casual
 
          } // action
 
-
-         int main( int argc, char **argv)
+         namespace admin 
          {
-            casual::common::Arguments parser{ {
-                  common::argument::directive( {"--porcelain"}, "easy to parse format", global::porcelain),
-                  common::argument::directive( {"--no-color"}, "no color will be used", global::no_colors),
-                  common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", global::no_header),
-                  common::argument::directive( {"--admin"}, "casual administration services will be included", global::admin_services),
-                  common::argument::directive( {"-ls", "--list-services"}, "list services", &action::list_services),
-                  common::argument::directive( {"--list-services-legend"}, "legend for --list-services output", &action::list_service_legend),
-                  common::argument::directive( {"-li", "--list-instances"}, "list instances", &action::list_instances),
-                  common::argument::directive( casual::common::argument::cardinality::Any{},
-                     {"-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reseet", &action::metric::reset),
-                  common::argument::directive( common::argument::cardinality::ZeroOne{}, { "--state"}, "prints the state on stdout in the provided format (json|yaml|xml|ini)", &action::output_state),
-
+            struct cli::Implementation
+            {
+               common::argument::Group options()
+               {
+                  auto complete_state = []( auto values, bool){
+                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
+                  };
+                  return common::argument::Group{ [](){}, { "service"}, "service related administration",
+                     common::argument::Option{ &action::list_services, { "-ls", "--list-services"}, "list services"},
+                     common::argument::Option{ &action::list_service_legend, { "--list-services-legend"}, "legend for --list-services output"},
+                     common::argument::Option{ &action::list_instances,  { "-li", "--list-instances"}, "list instances"},
+                     common::argument::Option{ &action::metric::reset, action::services_completer,  { "-mr", "--metric-reset"}, "reset metrics for provided services, if no services provided, all metrics will be reset"},
+                     common::argument::Option{ &action::list_admin_services,  { "--list-admin-services"}, "list casual administration services"},
+                     common::argument::Option{ &action::output_state, complete_state, { "--state"}, "service state"},
+                  };
                }
             };
 
-            try
-            {
-               parser.parse( argc, argv);
-            }
-            catch( ...)
-            {
-               return casual::common::exception::handle( std::cerr);
-            }
-            return 0;
-         }
+            cli::cli() = default; 
+            cli::~cli() = default; 
 
+            common::argument::Group cli::options() &
+            {
+               return m_implementation->options();
+            }
+            
+         } // admin 
 
       } // manager
    } // service
 } // casual
-
-
-
-int main( int argc, char** argv)
-{
-   return casual::service::manager::main( argc, argv);
-}
 
 

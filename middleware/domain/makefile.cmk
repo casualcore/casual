@@ -56,9 +56,9 @@ target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
 install_bins.append( target_domain_manager)
 
 
-target = LinkExecutable( 'bin/casual-domain-admin',
+target = LinkLibrary( 'bin/casual-domain-admin-cli',
     [
-     Compile( 'source/manager/admin/client.cpp'),
+     Compile( 'source/manager/admin/cli.cpp'),
      ],
     [
      manager_archive,
@@ -68,7 +68,7 @@ target = LinkExecutable( 'bin/casual-domain-admin',
      ]
 )
 
-Install( target,'$(CASUAL_HOME)/internal/bin')
+install_libs.append( target)
 
 
 target_simple_server = LinkExecutable( 'bin/test-simple-server',

@@ -73,9 +73,9 @@ namespace casual
 
                bool active() const
                {
-                  return algorithm::find_if( m_descriptors, []( const auto& d){
+                  return ! algorithm::find_if( m_descriptors, []( const auto& d){
                      return d.active;
-                  });
+                  }).empty();
                }
 
                friend std::ostream& operator << ( std::ostream& out, const Holder& value)

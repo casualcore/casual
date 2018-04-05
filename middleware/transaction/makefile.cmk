@@ -59,9 +59,9 @@ target = LinkExecutable( 'bin/casual-transaction-manager',
 install_bin.append( target)
 
 
-target = LinkExecutable( 'bin/casual-transaction-admin',
+target = LinkLibrary( 'bin/casual-transaction-admin-cli',
     [
-     Compile( 'source/manager/admin/client.cpp')
+     Compile( 'source/manager/admin/cli.cpp')
     ],
     [ 
       manager_archive, 
@@ -70,7 +70,7 @@ target = LinkExecutable( 'bin/casual-transaction-admin',
      ])
 
 
-Install( target, '$(CASUAL_HOME)/internal/bin')
+install_lib.append( target)
 
 #
 # Compile and link resurce-proxy-server lib

@@ -9,7 +9,7 @@
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/exception/handle.h"
 
 #include "common/buffer/pool.h"
@@ -23,25 +23,10 @@ namespace casual
       {
          struct Settings
          {
+            std::string source;
+            std::string destination;
 
-            struct dispatch_t
-            {
-               dispatch_t( std::string source, std::string destination)
-                  : source( std::move( source)), destination( std::move( destination)) {}
-
-               std::string source;
-               std::string destination;
-            };
-
-            void setForward( const std::vector< std::string>& values)
-            {
-               if( values.size() == 2)
-               {
-                  dispatch.emplace_back( values.at( 0), values.at( 1));
-               }
-            }
-
-            std::vector< dispatch_t> dispatch;
+            auto tie() { return std::tie( source, destination);}
          };
 
          struct Enqueuer
@@ -62,10 +47,7 @@ namespace casual
          {
             std::vector< forward::Task> tasks;
 
-            for( auto& task : settings.dispatch)
-            {
-               tasks.emplace_back( task.source, Enqueuer{ task.destination});
-            }
+            tasks.emplace_back( settings.source, Enqueuer{ settings.destination});
 
             return tasks;
          }
@@ -87,11 +69,11 @@ namespace casual
                Settings settings;
 
                {
-                  common::Arguments parser{ {
-                        common::argument::directive( {"-f", "--forward"}, "--forward  <from-queue> <to-queue>", &Settings::setForward, settings)
-                  }};
-
-                  parser.parse( argc, argv);
+                  using namespace casual::common::argument;
+                  Parse parse{ "queue forward to queue",
+                     Option( settings.tie(), {"-f", "--forward"}, "--forward  <from-queue> <to-queue>")
+                  };
+                  parse( argc, argv);
                }
 
                start( std::move( settings));

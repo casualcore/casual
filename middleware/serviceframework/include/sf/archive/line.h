@@ -4,12 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-//!
-//! casual
-//!
-
-
 #ifndef CASUAL_SF_ARCHIVE_LINE_H_
 #define CASUAL_SF_ARCHIVE_LINE_H_
 

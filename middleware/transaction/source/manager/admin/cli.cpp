@@ -4,12 +4,12 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
+#include "transaction/manager/admin/cli.h"
 #include "transaction/manager/admin/transactionvo.h"
 #include "transaction/manager/admin/server.h"
 
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/exception/handle.h"
@@ -68,16 +68,6 @@ namespace casual
             } // call
 
 
-            namespace global
-            {
-               bool porcelain = false;
-
-               bool no_color = false;
-               bool no_header = false;
-
-            } // global
-
-
             namespace format
             {
 
@@ -92,7 +82,7 @@ namespace casual
                   return result;
                }
 
-               common::terminal::format::formatter< vo::Transaction> transaction()
+               auto transaction()
                {
                   struct format_global
                   {
@@ -120,17 +110,16 @@ namespace casual
                   };
 
 
-                  return {
-                     { global::porcelain, ! global::no_color, ! global::no_header},
+                  return common::terminal::format::formatter< vo::Transaction>::construct(
                      common::terminal::format::column( "global", format_global{}, common::terminal::color::yellow),
                      common::terminal::format::column( "branch", format_branch{}, common::terminal::color::grey),
                      common::terminal::format::column( "owner", format_owner{}, common::terminal::color::white, common::terminal::format::Align::right),
                      common::terminal::format::column( "state", format_state, common::terminal::color::green, common::terminal::format::Align::left),
                      common::terminal::format::column( "resources", format_resources{}, common::terminal::color::magenta, common::terminal::format::Align::left)
-                  };
+                  );
                }
 
-               common::terminal::format::formatter< vo::resource::Proxy> resource_proxy()
+               auto resource_proxy()
                {
 
                   struct format_number_of_instances
@@ -185,8 +174,7 @@ namespace casual
                   };
 
 
-                  return {
-                     { global::porcelain, ! global::no_color, ! global::no_header},
+                  return common::terminal::format::formatter< vo::resource::Proxy>::construct(
                      common::terminal::format::column( "id", std::mem_fn( &vo::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
                      common::terminal::format::column( "key", std::mem_fn( &vo::resource::Proxy::key), common::terminal::color::yellow),
                      common::terminal::format::column( "openinfo", std::mem_fn( &vo::resource::Proxy::openinfo), common::terminal::color::no_color),
@@ -195,12 +183,12 @@ namespace casual
                      terminal::format::column( "min (us)", format_min{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "max (us)", format_max{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "avg (us)", format_avg{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right),
-                  };
+                     terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
+                  );
 
                }
 
-               common::terminal::format::formatter< vo::resource::Instance> resource_instance()
+               auto resource_instance()
                {
                   struct format_pid
                   {
@@ -289,8 +277,7 @@ namespace casual
                      }
                   };
 
-                  return {
-                     { global::porcelain, ! global::no_color, ! global::no_header},
+                  return common::terminal::format::formatter< vo::resource::Instance>::construct(
                      terminal::format::column( "id", std::mem_fn( &vo::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
                      terminal::format::column( "pid", format_pid{}, common::terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "queue", format_queue{}, common::terminal::color::no_color, terminal::format::Align::right),
@@ -301,8 +288,8 @@ namespace casual
                      terminal::format::column( "rm-invoked", format_rm_invoked{}, common::terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "rm-min (us)", format_rm_min{}, terminal::color::blue, terminal::format::Align::right),
                      terminal::format::column( "rm-max (us)", format_rm_max{}, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rm-avg (us)", format_rm_avg{}, terminal::color::blue, terminal::format::Align::right),
-                  };
+                     terminal::format::column( "rm-avg (us)", format_rm_avg{}, terminal::color::blue, terminal::format::Align::right)
+                  );
 
                }
             } // format
@@ -371,99 +358,60 @@ namespace casual
                   formatter.print( std::cout, algorithm::sort( instances));
                }
 
-               namespace local
+
+               void update_instances( const std::vector< std::tuple< common::strong::resource::id::value_type, int>>& values)
                {
-                  namespace
-                  {
-                     namespace transform
-                     {
-                        std::vector< vo::update::Instances> instances( const std::vector< common::strong::resource::id::value_type>& values)
-                        {
-                           if( values.size() % 2 != 0)
-                           {
-                              throw exception::system::invalid::Argument{ "use: --update-instances [<rm-id> <# instances>]+"};
-                           }
-
-                           std::vector< vo::update::Instances> result;
-
-                           auto current = std::begin( values);
-
-                           while( current != std::end( values))
-                           {
-                              vo::update::Instances instance;
-                              instance.id = common::strong::resource::id{ *current};
-                              instance.instances = *( current + 1);
-
-                              result.push_back( std::move( instance));
-                              current += 2;
-                           }
-                           return result;
-                        }
-
-                     } // transform
-                  } // <unnamed>
-               } // local
-
-               void update_instances( const std::vector< common::strong::resource::id::value_type>& values)
-               {
-                  auto resources = call::update::instances( local::transform::instances( values));
+                  auto resources = call::update::instances( common::algorithm::transform( values, []( auto& value){
+                     vo::update::Instances instance;
+                     instance.id = common::strong::resource::id{ std::get< 0>( value)};
+                     instance.instances = std::get< 1>( value);
+                     return instance;
+                  }));
 
                   auto formatter = format::resource_proxy();
 
                   formatter.print( std::cout, algorithm::sort( resources));
                }
 
-               void state( std::vector< std::string> values)
+               void state( const common::optional< std::string>& format)
                {
                   auto state = call::state();
-                  values.emplace_back( "");
+                  auto archive = sf::archive::writer::from::name( std::cout, format.value_or( ""));
 
-                  auto archive = sf::archive::writer::from::name( std::cout, values.front());
                   archive << CASUAL_MAKE_NVP( state);
                }
 
             } // dispatch
 
-
-            int main( int argc, char **argv)
+            struct cli::Implementation
             {
-
-               common::Arguments arguments{
+               common::argument::Group options()
                {
-                  common::argument::directive( {"--no-header"}, "do not print headers", global::no_header),
-                  common::argument::directive( {"--no-color"}, "do not use color", global::no_color),
-                  common::argument::directive( {"--porcelain"}, "Easy to parse format", global::porcelain),
-                  common::argument::directive( { "-lt", "--list-transactions" }, "list current transactions", &dispatch::list_transactions),
-                  common::argument::directive( { "-lr", "--list-resources" }, "list current transactions", &dispatch::list_resources),
-                  common::argument::directive( { "-li", "--list-instances" }, "list current transactions", &dispatch::list_instances),
-                  common::argument::directive( { "-ui", "--update-instances" }, "update instances - -ui [<rm-id> <# instances>]+", &dispatch::update_instances),
-                  common::argument::directive( { "-lp", "--list-pending" }, "list pending tasks", &dispatch::list_pending),
-                  common::argument::directive( common::argument::cardinality::ZeroOne{}, { "--state" }, "view current state in supplied format: --state (yaml|json|xml|ini)", &dispatch::state)
-               }};
+                  auto complete_state = []( auto values, bool){
+                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
+                  };
 
-
-               try
-               {
-                  arguments.parse( argc, argv);
-
+                  return common::argument::Group{ [](){}, { "transaction"}, "transaction related administration",
+                     common::argument::Option( &dispatch::list_transactions, { "-lt", "--list-transactions" }, "list current transactions"),
+                     common::argument::Option( &dispatch::list_resources, { "-lr", "--list-resources" }, "list all resources"),
+                     common::argument::Option( &dispatch::list_instances, { "-li", "--list-instances" }, "list resource instances"),
+                     common::argument::Option( &dispatch::update_instances, { "-ui", "--update-instances" }, "update instances - -ui [<rm-id> <# instances>]+"),
+                     common::argument::Option( &dispatch::list_pending, { "-lp", "--list-pending" }, "list pending tasks"),
+                     common::argument::Option( &dispatch::state, complete_state, { "--state" }, "view current state in optional format")
+                  };
                }
-               catch( const common::argument::exception::Help&)
-               {
-               }
-               catch( ...)
-               {
-                  common::exception::handle( std::cerr);
-               }
-               return 0;
+            };
+
+            cli::cli() = default; 
+            cli::~cli() = default; 
+
+            common::argument::Group cli::options() &
+            {
+               return m_implementation->options();
             }
 
          } // admin
       } // manager
    } // transaction
 } // casual
-
-int main( int argc, char **argv)
-{
-   return casual::transaction::manager::admin::main( argc, argv);
-}
 

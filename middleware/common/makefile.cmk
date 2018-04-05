@@ -133,7 +133,9 @@ casual_common_objectfiles = [
     Compile( 'source/transcode.cpp'),
     Compile( 'source/timeout.cpp'),
     
-    Compile( 'source/arguments.cpp'),
+    #Compile( 'source/arguments.cpp'),
+    Compile( 'source/argument.cpp'),
+    Compile( 'source/argument/cardinality.cpp'),
     Compile( 'source/terminal.cpp'),
 ]
 
@@ -233,7 +235,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_marshal.cpp'),
  
     Compile( 'unittest/source/test_uuid.cpp'),
-    Compile( 'unittest/source/test_arguments.cpp'),
+    #Compile( 'unittest/source/test_arguments.cpp'),
     Compile( 'unittest/source/test_file.cpp'),
     Compile( 'unittest/source/test_process.cpp'),
     Compile( 'unittest/source/test_string.cpp'),
@@ -278,6 +280,9 @@ unittest_objectfiles = [
     Compile( 'unittest/source/value/test_id.cpp'),
 
     Compile( 'unittest/source/test_predicate.cpp'),
+    Compile( 'unittest/source/test_functional.cpp'),
+
+    Compile( 'unittest/source/test_argument.cpp'),
 ]
 
 

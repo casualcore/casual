@@ -13,7 +13,7 @@
 #include "gateway/outbound/gateway.h"
 #include "gateway/outbound/routing.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 
 
 #include "common/message/domain.h"
@@ -226,12 +226,14 @@ int main( int argc, char **argv)
    {
       casual::gateway::outbound::ipc::Settings settings;
       {
-         casual::common::Arguments parser{{
-            casual::common::argument::directive( { "-a", "--address"}, "path to remote domain home", settings.domain_path),
-            casual::common::argument::directive( { "-o", "--order"}, "order of the outbound connector", settings.order),
-            casual::common::argument::directive( { "--domain-file"}, "only to make unittest simple", settings.domain_file)
-         }};
-         parser.parse( argc, argv);
+         using namespace casual::common::argument;
+
+         Parse parse{ "outbound ipc",
+            Option( std::tie( settings.domain_path), { "-a", "--address"}, "path to remote domain home"),
+            Option( std::tie( settings.order), { "-o", "--order"}, "order of the outbound connector"),
+            Option( std::tie( settings.domain_file), { "--domain-file"}, "only to make unittest simple")
+         };
+         parse( argc, argv);
       }
 
       casual::gateway::outbound::ipc::Gateway gateway{ std::move( settings)};

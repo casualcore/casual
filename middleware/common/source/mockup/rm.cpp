@@ -7,7 +7,7 @@
 
 #include "common/mockup/rm.h"
 #include "common/mockup/log.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 
 #include "common/transaction/id.h"
 #include "common/transaction/transaction.h"
@@ -74,17 +74,17 @@ namespace casual
 
             try
             {
-               Arguments arguments{{
-                  argument::directive( { "--open"}, "", state.xa_open_return),
-                  argument::directive( { "--close"}, "", state.xa_close_return),
-                  argument::directive( { "--start"}, "", state.xa_start_return),
-                  argument::directive( { "--end"}, "", state.xa_end_return),
-                  argument::directive( { "--prepare"}, "", state.xa_prepare_return),
-                  argument::directive( { "--commit"}, "", state.xa_commit_return),
-                  argument::directive( { "--rollback"}, "", state.xa_rollback_return),
-               }};
-
-               arguments.parse( common::string::split( openinfo));
+               argument::Parse parse{ "mockup rm",
+                  argument::Option( std::tie( state.xa_open_return), { "--open"}, ""),
+                  argument::Option( std::tie( state.xa_close_return), { "--close"}, ""),
+                  argument::Option( std::tie( state.xa_start_return), { "--start"}, ""),
+                  argument::Option( std::tie( state.xa_end_return), { "--end"}, ""),
+                  argument::Option( std::tie( state.xa_prepare_return), { "--prepare"}, ""),
+                  argument::Option( std::tie( state.xa_commit_return), { "--commit"}, ""),
+                  argument::Option( std::tie( state.xa_rollback_return), { "--rollback"}, "")
+               };
+               
+               parse( common::string::split( openinfo));
             }
             catch( ...)
             {

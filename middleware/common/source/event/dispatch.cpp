@@ -40,9 +40,9 @@ namespace casual
 
          bool base_dispatch::exists( strong::ipc::id queue) const
          {
-            return algorithm::find_if( m_subscribers, [queue]( auto& s){
+            return ! algorithm::find_if( m_subscribers, [queue]( auto& s){
                return s.queue == queue;
-            });
+            }).empty();
          }
 
 

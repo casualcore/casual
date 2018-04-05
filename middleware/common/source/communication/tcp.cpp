@@ -632,9 +632,9 @@ namespace casual
                         {
                            cache.push_back( std::move( message));
 
-                           return { std::end( cache) - 1, std::end( cache)};
+                           return policy::cache_range_type{ std::end( cache) - 1, std::end( cache)};
                         }
-                        return {};
+                        return policy::cache_range_type{};
                      }
                   } // <unnamed>
                } // local

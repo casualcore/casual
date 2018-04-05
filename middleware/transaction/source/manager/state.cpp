@@ -466,9 +466,9 @@ namespace casual
 
       bool State::remove_instance( common::strong::process::id pid)
       {
-         return common::algorithm::find_if( resources, [pid]( auto& r){
+         return ! common::algorithm::find_if( resources, [pid]( auto& r){
             return r.remove_instance( pid);
-         });
+         }).empty();
       }
 
       State::instance_range State::idle_instance( state::resource::id::type rm)

@@ -4,6 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#include "queue/manager/admin/cli.h"
 
 #include "queue/manager/admin/queuevo.h"
 #include "queue/manager/admin/services.h"
@@ -11,7 +12,7 @@
 #include "queue/api/queue.h"
 #include "queue/common/transform.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/message/queue.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
@@ -79,22 +80,9 @@ namespace casual
       } // call
 
 
-      namespace global
-      {
-         bool porcelain = false;
-
-         bool header = true;
-         bool color = true;
-
-         void no_color() { color = false;}
-         void no_header() { header = false;}
-
-      } // global
-
-
       namespace format
       {
-         terminal::format::formatter< manager::admin::Message> messages()
+         auto messages()
          {
             auto format_state = []( const manager::admin::Message& v)
                {
@@ -112,8 +100,7 @@ namespace casual
             auto format_timestamp = []( const manager::admin::Message& v) { return normalize::timestamp( v.timestamp);};
             auto format_available = []( const manager::admin::Message& v) { return normalize::timestamp( v.available);};
 
-            return {
-               { global::porcelain, global::color, global::header},
+            return terminal::format::formatter< manager::admin::Message>::construct(
                terminal::format::column( "id", std::mem_fn( &manager::admin::Message::id), terminal::color::yellow),
                terminal::format::column( "S", format_state, terminal::color::no_color),
                terminal::format::column( "size", std::mem_fn( &manager::admin::Message::size), terminal::color::cyan, terminal::format::Align::right),
@@ -122,39 +109,35 @@ namespace casual
                terminal::format::column( "type", format_type, terminal::color::no_color),
                terminal::format::column( "reply", std::mem_fn( &manager::admin::Message::reply), terminal::color::no_color),
                terminal::format::column( "timestamp", format_timestamp, terminal::color::blue, terminal::format::Align::right),
-               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right),
-
-            };
+               terminal::format::column( "available", format_available, terminal::color::blue, terminal::format::Align::right)
+            );
          }
 
-         terminal::format::formatter< manager::admin::Group> groups()
+         auto groups()
          {
             auto format_pid = []( const manager::admin::Group& g) { return g.process.pid;};
             auto format_ipc = []( const manager::admin::Group& g) { return g.process.queue;};
 
-            return {
-               { global::porcelain, global::color, global::header},
+            return terminal::format::formatter< manager::admin::Group>::construct(
                terminal::format::column( "name", std::mem_fn( &manager::admin::Group::name), terminal::color::yellow),
                terminal::format::column( "pid", format_pid, terminal::color::grey, terminal::format::Align::right),
                terminal::format::column( "ipc", format_ipc, terminal::color::grey, terminal::format::Align::right),
-               terminal::format::column( "queuebase", std::mem_fn( &manager::admin::Group::queuebase)),
-
-            };
+               terminal::format::column( "queuebase", std::mem_fn( &manager::admin::Group::queuebase))
+            );
          }
 
-         terminal::format::formatter< queue::restore::Affected> restored()
+         auto restored()
          {
             auto format_name = []( const queue::restore::Affected& a) { return a.queue;};
 
-            return {
-               { global::porcelain, global::color, global::header},
+            return terminal::format::formatter< queue::restore::Affected>::construct(
                terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::right),
-               terminal::format::column( "restored", std::mem_fn( &queue::restore::Affected::restored), terminal::color::green),
-            };
+               terminal::format::column( "restored", std::mem_fn( &queue::restore::Affected::restored), terminal::color::green)
+            );
          }
 
 
-         terminal::format::formatter< manager::admin::Queue> queues( const manager::admin::State& state)
+         auto queues( const manager::admin::State& state)
          {
             using q_type = manager::admin::Queue;
 
@@ -180,8 +163,7 @@ namespace casual
             };
 
 
-            return {
-               { global::porcelain, global::color, global::header},
+            return terminal::format::formatter< manager::admin::Queue>::construct(
                terminal::format::column( "name", std::mem_fn( &q_type::name), terminal::color::yellow),
                terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::green, terminal::format::Align::right),
                terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::cyan, terminal::format::Align::right),
@@ -190,14 +172,13 @@ namespace casual
                terminal::format::column( "updated", []( const q_type& q){ return normalize::timestamp( q.timestamp);}),
                terminal::format::column( "r", []( const auto& q){ return q.retries;}, common::terminal::color::blue, terminal::format::Align::right),
                terminal::format::column( "t", format_type, common::terminal::color::blue),
-               terminal::format::column( "group", format_group),
-
-            };
+               terminal::format::column( "group", format_group)
+            );
          }
 
          namespace remote
          {
-            terminal::format::formatter< manager::admin::remote::Queue> queues( const manager::admin::State& state)
+            auto queues( const manager::admin::State& state)
             {
                auto format_domain_id = [&]( const auto& q){
                   return uuid::string( algorithm::find_if( state.remote.domains, [&]( const auto& d){ return d.process.pid == q.pid;}).front().id.id);
@@ -208,14 +189,11 @@ namespace casual
                };
    
    
-               return {
-                  { global::porcelain, global::color, global::header},
+               return terminal::format::formatter< manager::admin::remote::Queue>::construct(
                   terminal::format::column( "name", std::mem_fn( &manager::admin::remote::Queue::name), terminal::color::yellow),
                   terminal::format::column( "domain name", format_domain_name, common::terminal::color::blue),
-                  terminal::format::column( "domain id", format_domain_id, common::terminal::color::blue),
-
-   
-               };
+                  terminal::format::column( "domain id", format_domain_id, common::terminal::color::blue)
+               );
             }
             
          } // remote
@@ -331,60 +309,56 @@ namespace casual
                formatter.print( std::cout, affected);
             }
 
-            void state( std::vector< std::string> format)
+            void state( const common::optional< std::string>& format)
             {
                auto state = call::state();
-               format.emplace_back( "");
 
-               auto archive = sf::archive::writer::from::name( std::cout, format.front());
+               auto archive = sf::archive::writer::from::name( format.value_or( ""));
                archive << CASUAL_MAKE_NVP( state);
-            }
-
-            common::Arguments parser()
-            {
-               common::Arguments parser{ {
-                     common::argument::directive( {"--no-header"}, "do not print headers", &queue::global::no_header),
-                     common::argument::directive( {"--no-color"}, "do not use color", &queue::global::no_color),
-                     common::argument::directive( {"--porcelain"}, "Easy to parse format", queue::global::porcelain),
-                     common::argument::directive( {"-q", "--list-queues"}, "list information of all queues in current domain", &queue::list_queues),
-                     common::argument::directive( {"-r", "--list-remote"}, "list all remote discovered queues", &queue::list_remote_queues),
-                     common::argument::directive( {"-g", "--list-groups"}, "list information of all groups in current domain", &queue::list_groups),
-                     common::argument::directive( {"-m", "--list-messages"}, "list information of all messages of a queue", &queue::list_messages),
-                     common::argument::directive( { "--restore"}, "restores messages to queue, that has been rolled back to error queue\n  casual queue --restore <queue-name>", &queue::local::restore),
-                     common::argument::directive( {"-e", "--enqueue"}, "enqueue to a queue from stdin\n  cat somefile.bin | casual queue --enqueue <queue-name>\n  note: should not be used with rest of casual", &local::enqueue),
-                     common::argument::directive( {"-d", "--dequeue"}, "dequeue from a queue to stdout\n  casual queue --dequeue <queue-name> > somefile.bin\n  note: should not be used with rest of casual", &local::dequeue),
-                     common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "queue state in the provided format (xml|json|yaml|ini)", &queue::local::state),
-               }};
-
-               return parser;
             }
          } // <unnamed>
       } // local
+
+      namespace manager
+      {
+         namespace admin 
+         {
+            struct cli::Implementation
+            {
+               common::argument::Group options()
+               {
+                  auto complete_state = []( auto values, bool){
+                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
+                  };
+
+                  return common::argument::Group{ [](){}, { "queue"}, "queue related administration",
+                     common::argument::Option( &queue::list_queues, { "-q", "--list-queues"}, "list information of all queues in current domain"),
+                     common::argument::Option( &queue::list_remote_queues, { "-r", "--list-remote"}, "list all remote discovered queues"),
+                     common::argument::Option( &queue::list_groups, { "-g", "--list-groups"}, "list information of all groups in current domain"),
+                     common::argument::Option( &queue::list_messages, { "-m", "--list-messages"}, "list information of all messages of a queue"),
+                     common::argument::Option( &queue::local::restore, { "--restore"}, 
+                        "restores messages to queue\n\nthat has been rolled back to error queue\n  casual queue --restore <queue-name>"),
+                     common::argument::Option( &local::enqueue, { "-e", "--enqueue"}, 
+                        "enqueue to a queue from stdin\n\n  cat somefile.bin | casual queue --enqueue <queue-name>\n  note: operation is atomic"),
+                     common::argument::Option( &local::dequeue, { "-d", "--dequeue"}, 
+                        "dequeue from a queue to stdout\n\n  casual queue --dequeue <queue-name> > somefile.bin\n  note: operation is atomic"),
+                     common::argument::Option( &queue::local::state, complete_state, {"--state"}, "queue state"),
+                  };
+               }
+            };
+
+            cli::cli() = default; 
+            cli::~cli() = default; 
+
+            common::argument::Group cli::options() &
+            {
+               return m_implementation->options();
+            }
+            
+         } // admin
+      } // manager
    } // queue
 } // casual
-
-int main( int argc, char **argv)
-{
-   try
-   {
-      auto parser = casual::queue::local::parser();
-
-      parser.parse( argc, argv);
-
-   }
-   catch( const casual::queue::local::Empty& exception)
-   {
-      //std::cerr << exception.what() << std::endl;
-      return 10;
-   }
-   catch( ...)
-   {
-      return casual::common::exception::handle( std::cerr);
-   }
-
-
-   return 0;
-}
 
 
 

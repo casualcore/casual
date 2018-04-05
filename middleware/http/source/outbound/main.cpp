@@ -10,7 +10,7 @@
 #include "http/common.h"
 
 #include "common/exception/handle.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/communication/ipc.h"
 
 #include "common/message/service.h"
@@ -201,11 +201,12 @@ namespace casual
 
             Settings settings;
             {
-               common::Arguments arguments({
-                  common::argument::directive( { "--configuration-files"}, "configuration files", settings.configurations)
-               });
+               using namespace casual::common::argument;
+               Parse parse{ "http outbound",
+                  Option( std::tie( settings.configurations), { "--configuration-files"}, "configuration files")
+               };
 
-               arguments.parse( argc, argv);
+               parse( argc, argv);
             }
 
             start( configure( configuration::get( settings.configurations)));

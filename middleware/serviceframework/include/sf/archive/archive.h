@@ -123,7 +123,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::is_pod< T>::value, bool>
+         std::enable_if_t< traits::is_pod< T>::value, bool>
          serialize( Reader& archive, T& value, const char* const name)
          {
             return archive.read( value, name);
@@ -131,7 +131,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::has_serialize< T, Reader&>::value, bool>
+         std::enable_if_t< traits::has_serialize< T, Reader&>::value, bool>
          serialize( Reader& archive, T& value, const char* const name)
          {
             if( archive.serialtype_start( name))
@@ -144,7 +144,7 @@ namespace casual
          }
 
          template< typename T>
-         traits::enable_if_t< std::is_enum< T >::value, bool>
+         std::enable_if_t< std::is_enum< T >::value, bool>
          serialize( Reader& archive, T& value, const char* const name)
          {
             typename std::underlying_type< T>::type contained;
@@ -212,7 +212,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< 
+         std::enable_if_t< 
             traits::container::is_sequence< T>::value 
             && ! traits::container::is_string< T>::value
             && ! std::is_same< platform::binary::type, T>::value, bool>
@@ -246,7 +246,7 @@ namespace casual
          } // detail
 
          template< typename T>
-         traits::enable_if_t< traits::container::is_associative< T >::value, bool>
+         std::enable_if_t< traits::container::is_associative< T >::value, bool>
          serialize( Reader& archive, T& container, const char* const name)
          {
             auto properties = archive.container_start( 0, name);
@@ -413,7 +413,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::is_pod< T>::value>
+         std::enable_if_t< traits::is_pod< T>::value>
          serialize( Writer& archive, const T& value, const char* const name)
          {
             archive.write( value, name);
@@ -421,7 +421,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< traits::has_serialize< T, Writer&>::value || traits::has_serialize< const T, Writer&>::value>
+         std::enable_if_t< traits::has_serialize< T, Writer&>::value || traits::has_serialize< const T, Writer&>::value>
          serialize( Writer& archive, const T& value, const char* const name)
          {
             archive.serialtype_start( name);
@@ -475,7 +475,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< std::is_enum< T >::value>
+         std::enable_if_t< std::is_enum< T >::value>
          serialize( Writer& archive, const T& value, const char* const name)
          {
             serialize( archive, static_cast< typename std::underlying_type< T>::type>( value), name);
@@ -483,7 +483,7 @@ namespace casual
 
 
          template< typename T>
-         traits::enable_if_t< 
+         std::enable_if_t< 
             traits::container::is_container< T>::value 
             && ! traits::container::is_string< T>::value 
             && ! std::is_same< platform::binary::type, T>::value>

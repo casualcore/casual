@@ -11,7 +11,7 @@
 #include "common/process.h"
 #include "common/log/category.h"
 #include "common/exception/handle.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/chronology.h"
 
 
@@ -45,16 +45,16 @@ namespace casual
                   auto arguments = common::range::make( argv + 1, argc - 1);
                   common::log::line( common::log::category::information, "example server started with arguments: ", arguments);
 
-                  common::Arguments parser{ {
-                     common::argument::directive( {"--sleep"}, "sleep time", []( const std::string& value){
+                  common::argument::Parse parse{ "Shows a few ways services can be develop",
+                     common::argument::Option( []( const std::string& value){
                         local::global.sleep = common::chronology::from::string( value);
-                     }),
-                     common::argument::directive( {"--work"}, "work time (us)", []( const std::string& value){
+                     }, {"--sleep"}, "sleep time"),
+                     common::argument::Option( []( const std::string& value){
                         local::global.work = common::chronology::from::string( value);
-                     })
-                  }};
+                     }, {"--work"}, "work time ")
+                  };
 
-                  parser.parse( argc, argv);
+                  parse( argc, argv);
 
 
                   common::log::line( common::log::category::information, "sleep: ", local::global.sleep);

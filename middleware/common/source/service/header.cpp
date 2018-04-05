@@ -61,7 +61,7 @@ namespace casual
 
                bool Fields::exists( const std::string& key) const
                {
-                  return local::find( *this, key);
+                  return ! local::find( *this, key).empty();
                }
 
                const std::string& Fields::at( const std::string& key) const

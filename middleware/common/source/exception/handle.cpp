@@ -13,7 +13,7 @@
 #include "common/exception/casual.h"
 #include "common/exception/tx.h"
 
-#include "common/arguments.h"
+#include "common/argument/exception.h"
 
 #include "common/log/category.h"
 
@@ -79,12 +79,12 @@ namespace casual
                      return local::log( exception, out);
                   }
 
-                  catch( const argument::exception::Help& exception)
+                  catch( const argument::exception::user::Help& exception)
                   {
                      if( ! out)
                         log::line( log::category::error, exception.what());
                   }
-                  catch( const argument::exception::bash::Completion& exception)
+                  catch( const argument::exception::user::bash::Completion& exception)
                   {
                      if( ! out)
                         log::line( log::category::error, exception.what());

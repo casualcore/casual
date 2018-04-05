@@ -24,12 +24,20 @@ namespace casual
 
             std::vector< std::string> configurationfiles;
 
-            common::platform::ipc::native::type event_queue;
             std::vector< std::string> events;
 
             bool bare = false;
             bool no_auto_persist = false;
 
+            inline void event( common::strong::ipc::id::value_type id) 
+            {
+               m_event = common::strong::ipc::id{ id};
+            }
+            auto event() const { return m_event;};
+
+
+         private:
+            common::strong::ipc::id m_event;
          };
 
 

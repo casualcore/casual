@@ -29,8 +29,9 @@ namespace casual
             Scope::Scope() { signal::clear();}
             Scope::~Scope() { signal::clear();}
 
-
          } // clean
+
+
 
          namespace local
          {
@@ -159,8 +160,6 @@ namespace casual
             } // manager
 
          } // domain
-
-
       } // unittest
    } // common
 } // casual

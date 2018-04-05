@@ -307,7 +307,7 @@ namespace casual
 
                bool manage( platform::buffer::raw::immutable::type handle)
                {
-                  return find( handle);
+                  return ! find( handle).empty();
                }
 
                void deallocate( platform::buffer::raw::immutable::type handle)

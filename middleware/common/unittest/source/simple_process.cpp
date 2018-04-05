@@ -5,8 +5,7 @@
 //!
 
 
-
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/process.h"
 
 #include "common/exception/handle.h"
@@ -18,15 +17,14 @@ int main( int argc, char** argv)
 
    try
    {
-      int returnValue = 0;
-      Arguments args{ { argument::directive( {"-r"}, "bla", returnValue)}};
+      int return_value = 0;
+      argument::Parse parse{ "", argument::Option( std::tie( return_value), {"-r"}, "bla") };
 
-
-      args.parse( argc, argv);
+      parse( argc, argv);
 
       process::sleep( std::chrono::milliseconds( 100));
 
-      return returnValue;
+      return return_value;
    }
    catch( ...)
    {

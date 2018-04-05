@@ -14,7 +14,6 @@ with Scope():
     
     Build( 'domain/makefile.cmk')    
     Build( 'event/makefile.cmk')
-    Build( 'administration/makefile.cmk')
     Build( 'gateway/makefile.cmk')
 
     Build( 'service/makefile.cmk')
@@ -28,6 +27,10 @@ with Scope():
 
 # examples 
 Build( 'example/makefile.cmk')
+
+# admin cli
+Build( 'tools/makefile.cli.cmk')
+Build( 'administration/makefile.cmk')
 
 #
 # Temporary until moved to different repo

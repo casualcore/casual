@@ -11,9 +11,11 @@
 #include "common/platform.h"
 #include "common/uuid.h"
 #include "common/process.h"
+#include "common/string.h"
+#include "common/exception/system.h"
+
 
 #include <string>
-#include <sstream>
 #include <mutex>
 
 namespace casual
@@ -77,10 +79,15 @@ namespace casual
             template< typename T, typename String>
             T get( String&& name)
             {
-               std::istringstream converter( detail::get( detail::get_name( name)));
-               T result;
-               converter >> result;
-               return result;
+               auto value = detail::get( detail::get_name( name));
+               try 
+               {
+                  return common::from_string< T>( std::move( value));
+               }
+               catch( ...)
+               {
+                  throw exception::system::invalid::Argument{ string::compose( "failed to convert value of environment variable: ", name)};
+               }
             }
 
 
@@ -101,9 +108,7 @@ namespace casual
             template< typename String, typename T>
             void set( String&& name, T&& value)
             {
-               std::ostringstream converter;
-               converter << value;
-               const std::string& string = converter.str();
+               const std::string& string = common::to_string( value);;
                set( name, string);
             }
 
@@ -173,6 +178,9 @@ namespace casual
                namespace terminal
                {
                   constexpr auto precision() { return "CASUAL_TERMINAL_PRECISION";}
+                  constexpr auto color() { return "CASUAL_TERMINAL_COLOR";}
+                  constexpr auto header() { return "CASUAL_TERMINAL_HEADER";}
+                  constexpr auto porcelain() { return "CASUAL_TERMINAL_PORCELAIN";}
                } // log
 
 

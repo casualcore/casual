@@ -302,15 +302,15 @@ namespace casual
                namespace format
                {
 
-                  common::terminal::format::formatter< type::Info> type_info()
+                  auto type_info()
                   {
-                     return {
-                        { false, false, true, " | "},
+                     return common::terminal::format::formatter< type::Info>::construct( 
+                        std::string{ " | "},
                         common::terminal::format::column( "role name", []( const type::Info& i) { return i.name.role;}, common::terminal::color::no_color),
                         common::terminal::format::column( "network type", []( const type::Info& i) { return i.network.type;}, common::terminal::color::no_color),
                         common::terminal::format::column( "network size", []( const type::Info& i) { return i.network.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
-                        common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color),
-                     };
+                        common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color)
+                     );
                   }
 
                   template< typename T>

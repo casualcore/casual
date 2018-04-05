@@ -115,7 +115,7 @@ namespace casual
             private:
 
                template< typename T>
-               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
+               std::enable_if_t< ! detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   using casual::casual_marshal_value;
@@ -123,7 +123,7 @@ namespace casual
                }
 
                template< typename T>
-               traits::enable_if_t< detail::is_native_marshable< T>::value>
+               std::enable_if_t< detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   write_pod( value);
@@ -221,7 +221,7 @@ namespace casual
             private:
 
                template< typename T>
-               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
+               std::enable_if_t< ! detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   using casual::casual_unmarshal_value;
@@ -229,7 +229,7 @@ namespace casual
                }
 
                template< typename T>
-               traits::enable_if_t< detail::is_native_marshable< T>::value>
+               std::enable_if_t< detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   read_pod( value);

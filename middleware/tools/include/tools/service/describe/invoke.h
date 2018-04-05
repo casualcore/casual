@@ -17,15 +17,12 @@ namespace casual
    {
       namespace service
       {
-         std::vector< sf::service::Model> describe( const std::vector< std::string>& services);
-
+         namespace describe
+         {
+            std::vector< sf::service::Model> invoke( const std::vector< std::string>& services);   
+         } // describe
       } // service
-
-
-
    } // tools
-
-
 } // casual
 
 #endif // CASUAL_MIDDLEWARE_TOOLS_SERVICE_INCLUDE_DESCRIBE_H_

@@ -7,10 +7,19 @@
 
 
 #include "common/process.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/environment.h"
 #include "common/exception/handle.h"
+#include "common/terminal.h"
 
+
+#include "domain/manager/admin/cli.h"
+#include "service/manager/admin/cli.h"
+#include "queue/manager/admin/cli.h"
+#include "transaction/manager/admin/cli.h"
+#include "gateway/manager/admin/cli.h"
+#include "tools/service/call/cli.h"
+#include "tools/service/describe/cli.h"
 
 
 #include <string>
@@ -24,95 +33,43 @@ namespace casual
    namespace admin
    {
 
-      namespace dispatch
-      {
-         void execute( const std::string& command, const std::vector< std::string>& arguments, const std::string& subpath = "/internal/bin/")
-         {
-            static const auto path = common::environment::variable::get( "CASUAL_HOME");
-
-            if( common::process::execute( path + subpath + command, arguments) != 0)
-            {
-               // TODO: throw?
-            }
-         }
-
-
-         void domain( const std::vector< std::string>& arguments)
-         {
-            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
-            execute( "casual-domain-admin", arguments);
-         }
-
-         void service( const std::vector< std::string>& arguments)
-         {
-            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
-            execute( "casual-service-admin", arguments);
-         }
-
-         void queue( const std::vector< std::string>& arguments)
-         {
-            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
-            execute( "casual-queue-admin", arguments);
-         }
-
-
-         void transaction( const std::vector< std::string>& arguments)
-         {
-            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
-            execute( "casual-transaction-admin", arguments);
-         }
-
-         void gateway( const std::vector< std::string>& arguments)
-         {
-            //common::directory::scope::Change change{ common::environment::string( "${CASUAL_DOMAIN_HOME}")};
-            execute( "casual-gateway-admin", arguments);
-         }
-
-         void call( const std::vector< std::string>& arguments)
-         {
-            execute( "casual-service-call", arguments, "/bin/");
-         }
-
-         void describe( const std::vector< std::string>& arguments)
-         {
-            execute( "casual-service-describe", arguments, "/bin/");
-         }
-
-
-      } // dispatch
-
-
       int main( int argc, char **argv)
       {
          try
          {
+            
+            domain::manager::admin::cli domain;
+            service::manager::admin::cli service;
+            queue::manager::admin::cli queue;
+            transaction::manager::admin::cli transaction;
+            gateway::manager::admin::cli gateway;
+            tools::service::call::cli service_call;
+            tools::service::describe::cli describe;
 
-            common::Arguments arguments{ R"(
-usage: 
 
-casual [<category> [<category-specific-directives].. ]..
+            using namespace casual::common::argument;
+            Parse parse{ R"(
+casual administration CLI
 
-To get help for a specific category use: 
-   casual <category> --help
+To get more detailed help, use any of:
+   casual --help <option>
+   casual <option> --help
+   casual --help <option> <option> 
 
-The following categories are supported:   
-  
-)", { "help"},
-            {
-               common::argument::directive( { "domain" }, "domain related administration", &dispatch::domain),
-               common::argument::directive( { "service" }, "service related administration", &dispatch::service),
-               common::argument::directive( { "queue" }, "casual-queue related administration", &dispatch::queue),
-               common::argument::directive( { "transaction" }, "transaction related administration", &dispatch::transaction),
-               common::argument::directive( { "gateway" }, "gateway related administration", &dispatch::gateway),
-               common::argument::directive( { "call" }, "generic service call", &dispatch::call),
-               common::argument::directive( { "describe" }, "describes services", &dispatch::describe),
-            }};
+Where <option> is one of the listed below
+)", 
+               domain.options(),
+               service.options(),
+               queue.options(),
+               transaction.options(),
+               gateway.options(),
+               service_call.options(),
+               describe.options(),
+               common::terminal::output::directive().options(),
+            };
 
-            arguments.parse( argc, argv);
+            parse( argc, argv);
 
-         }
-         catch( const common::argument::exception::Help&)
-         {
          }
          catch( ...)
          {

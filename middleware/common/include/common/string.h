@@ -102,8 +102,9 @@ namespace casual
 			template< typename R>
          auto trim( R&& range) -> common::traits::concrete::type_t< decltype( range)>
          {
-            const auto ws = [] (const auto character)
-            { return std::isspace( character, std::locale::classic()); };
+            const auto ws = [] (const auto character){ 
+               return std::isspace( character, std::locale::classic()); 
+            };
 
             auto last = std::end( range);
             const auto first = std::find_if_not( std::begin( range), last, ws);
@@ -111,7 +112,7 @@ namespace casual
             for( ; last != first && ws( *( last -1)); --last)
                ;
 
-            return { first, last};
+            return common::traits::concrete::type_t< decltype( range)>{ first, last};
          }
 
 
@@ -145,12 +146,24 @@ namespace casual
 */
          namespace detail
          {
+            template< typename T>
+            inline void write( std::ostream& out, const T& value) 
+            {
+               out << value;
+            }
+
+            template< typename T>
+            inline void write( std::ostream& out, const std::vector< T>& value) 
+            {
+               out << range::make( value);
+            }
+
             inline void composer( std::ostream& out) {}
 
             template< typename Part, typename... Parts>
             inline void composer( std::ostream& out, Part&& part, Parts&&... parts)
             {
-               out << std::forward< Part>( part);
+               write( out, part);
                composer( out, std::forward< Parts>( parts)...);
             }
          } // detail
@@ -190,24 +203,23 @@ namespace casual
             static T get( const std::string& value) { return std::stod( value);} 
          };
 
-/*
-         template< typename T>
-		   struct from_string< T, std::enable_if_t< sizeof( T) == 1 && ! std::is_same< T, bool>::value>> 
+         template<>
+		   struct from_string< bool, void>
          { 
-            static T get( const std::string& value) { return value.at( 0);} 
+            static bool get( const std::string& value) 
+            {
+               if( value == "true") return true; 
+               if( value == "false") return false; 
+               return std::stoi( value);
+            } 
          };
 
-         template< typename T>
-		   struct from_string< T, std::enable_if_t< std::is_same< T, bool>::value>> 
-         { 
-            static bool get( const std::string& value) { return value == "true";} 
-         };
-*/
 		   template<>
 		   struct from_string< std::string, void> 
          { 
             static const std::string& get( const std::string& value) { return value;} 
          };
+
 
 
          //inline std::string to_string( std::string value) { return value;}
@@ -219,7 +231,7 @@ namespace casual
          //inline std::string to_string( const long value) { return std::to_string( value);}
 
          template< typename T>
-         std::string to_string( T& value) { std::ostringstream out; out << value; return out.str();}
+         std::string to_string( const T& value) { std::ostringstream out; out << value; return out.str();}
 
 
 

@@ -20,11 +20,12 @@ LibraryPaths( ['bin',
 
 
 install_bin = []
+install_lib = []
 
 common_a = LinkArchive( 'bin/casual-tools-common',
   [
     Compile( 'source/common.cpp'),
-    Compile( 'source/service/describe/describe.cpp')
+    Compile( 'source/service/describe/invoke.cpp')
    ])
 
 
@@ -46,28 +47,6 @@ target = LinkExecutable( 'bin/casual-build-resource-proxy',
 
 install_bin.append( target)
 
-
-target = LinkExecutable( 'bin/casual-service-call',
-   [ Compile( 'source/service/call/main.cpp')],
-   [
-    common_a, 
-    'casual-common', 
-    'casual-xatmi',
-    ])
-
-install_bin.append( target)
-
-
-target = LinkExecutable( 'bin/casual-service-describe',
-   [ Compile( 'source/service/describe/main.cpp')],
-   [ 
-    common_a,
-    'casual-common', 
-    'casual-sf',
-    'casual-xatmi',
-    ])
-
-install_bin.append( target)
 
 
 target = LinkExecutable( 'file/header/bin/casual-source-code-header',
@@ -94,7 +73,7 @@ install_bin.append( 'log/color.py')
 
 
 Install( install_bin, '$(CASUAL_HOME)/bin')
-
+Install( install_lib, '$(CASUAL_HOME)/lib')
 
 
 

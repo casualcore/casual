@@ -3,13 +3,14 @@
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+#include "domain/manager/admin/cli.h"
 
 
 #include "common/event/listen.h"
 #include "domain/manager/admin/vo.h"
 #include "domain/manager/admin/server.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/exception/handle.h"
@@ -32,14 +33,6 @@ namespace casual
          {
             namespace
             {
-               namespace global
-               {
-                  bool porcelain = false;
-                  bool no_color = false;
-                  bool no_header = false;
-
-               } // global
-
                namespace event
                {
                   struct Done{};
@@ -325,7 +318,7 @@ namespace casual
                {
 
                   template< typename P>
-                  terminal::format::formatter< P> process()
+                  auto process()
                   {
 
                      auto format_configured_instances = []( const P& e){
@@ -348,15 +341,14 @@ namespace casual
                      };
 
 
-                     return {
-                        { global::porcelain, ! global::no_color, ! global::no_header},
+                     return terminal::format::formatter< P>::construct(
                         terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
                         terminal::format::column( "CI", format_configured_instances, terminal::color::no_color, terminal::format::Align::right),
                         terminal::format::column( "I", format_running_instances, terminal::color::white, terminal::format::Align::right),
                         terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
                         terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
-                        terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left),
-                     };
+                        terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left)
+                     );
                   }
                } // format
 
@@ -377,6 +369,23 @@ namespace casual
 
                namespace action
                {
+                  auto fetch_aliases()
+                  {
+                     auto state = call::state();
+
+                     auto aliases = common::algorithm::transform( state.servers, []( auto& s){
+                        return std::move( s.alias);
+                     });
+                     
+                     common::algorithm::transform( state.executables, aliases, []( auto& e){
+                        return std::move( e.alias);
+                     });
+
+                     return aliases;
+                  };
+
+                  
+
                   void list_instances()
                   {
                      auto state = call::state();
@@ -408,27 +417,37 @@ namespace casual
                   */
 
 
-                  void scale_instances( const std::vector< std::string>& values)
+                  void scale_instances( const std::tuple< std::string, int>& mandatory, const std::vector< std::tuple< std::string, int>>& values)
                   {
-                     if( values.size() % 2 != 0)
-                     {
-                        throw exception::system::invalid::Argument{ "<alias> <# of instances>"};
-                     }
+                     std::vector< admin::vo::scale::Instances> result;
+                      
+                     auto transform = []( auto& value){
+                        admin::vo::scale::Instances result;
+                        result.alias = std::get< 0>( value);
+                        result.instances = std::get< 1>( value);
+                        return result;
+                     };
 
-                     std::vector< admin::vo::scale::Instances> instances;
+                     result.push_back( transform( mandatory));
+                     common::algorithm::transform( values, result, transform);
 
-                     auto current = std::begin( values);
-
-                     for( ; current != std::end( values); current += 2)
-                     {
-                        admin::vo::scale::Instances instance;
-                        instance.alias = *current;
-                        instance.instances = std::stoul(*( current + 1));
-                        instances.push_back( std::move( instance));
-                     }
-
-                     call::scale_instances( instances);
+                     call::scale_instances( result);
                   }
+                
+
+                  auto scale_instances_completion = []( auto values, bool help){
+                     if( help)
+                     {
+                        return std::vector< std::string>{ "<alias> <#>"};
+                     }
+                     
+                     if( values.size() % 2 == 0)
+                     {
+                        return fetch_aliases();
+                     }
+                     else
+                        return std::vector< std::string>{ "<value>"};
+                  };
 
                   void boot( const std::vector< std::string>& files)
                   {
@@ -449,12 +468,11 @@ namespace casual
                   } // persist
 
 
-                  void state( std::vector< std::string> format)
+                  void state( const common::optional< std::string>& format)
                   {
                      auto state = call::state();
-                     format.emplace_back( "");
+                     auto archive = sf::archive::writer::from::name( format.value_or( ""));
 
-                     auto archive = sf::archive::writer::from::name( std::cout, format.front());
                      archive << CASUAL_MAKE_NVP( state);
                   }
                } // action
@@ -462,49 +480,43 @@ namespace casual
             } // <unnamed>
          } // local
 
-
-
-         int main( int argc, char** argv)
+         namespace admin 
          {
-            common::Arguments parser{ {
-                  common::argument::directive( {"--porcelain"}, "easy to parse format", local::global::porcelain),
-                  common::argument::directive( {"--no-color"}, "no color will be used", local::global::no_color),
-                  common::argument::directive( {"--no-header"}, "no descriptive header for each column will be used", local::global::no_header),
+            struct cli::Implementation
+            {
+               common::argument::Group options()
+               {
+                  auto complete_state = []( auto values, bool){
+                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
+                  };
 
-                  common::argument::directive( common::argument::cardinality::ZeroOne{}, {"--state"}, "domain state in the provided format (xml|json|yaml|ini)", &local::action::state),
-                  common::argument::directive( {"-ls", "--list-servers"}, "list all servers", &local::action::list_servers),
-                  common::argument::directive( {"-le", "--list-executables"}, "list all executables", &local::action::list_executable),
-                  common::argument::directive( {"-li", "--list-instances"}, "list all instances", &local::action::list_instances),
-                  common::argument::directive( {"-si", "--scale-instances"}, "<alias> <#> scale executable instances", &local::action::scale_instances),
-                  common::argument::directive( {"-s", "--shutdown"}, "shutdown the domain", &local::action::shutdown),
-                  common::argument::directive( common::argument::cardinality::Any{}, {"-b", "--boot"}, "boot domain", &local::action::boot),
-                  common::argument::directive( {"-p", "--persist-state"}, "persist current state", &local::action::persist::configuration)
-                }
+                  return common::argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
+                     common::argument::Option( &local::action::list_servers, { "-ls", "--list-servers"}, "list all servers"),
+                     common::argument::Option( &local::action::list_executable, { "-le", "--list-executables"}, "list all executables"),
+                     common::argument::Option( &local::action::list_instances, { "-li", "--list-instances"}, "list all instances"),
+                     common::argument::Option( &local::action::scale_instances, local::action::scale_instances_completion, { "-si", "--scale-instances"}, "<alias> <#> scale executable instances"),
+                     common::argument::Option( &local::action::shutdown, { "-s", "--shutdown"}, "shutdown the domain"),
+                     common::argument::Option( &local::action::boot, { "-b", "--boot"}, "boot domain"),
+                     common::argument::Option( &local::action::persist::configuration, { "-p", "--persist-state"}, "persist current state"),
+                     common::argument::Option( &local::action::state, complete_state, { "--state"}, "domain state")
+                  };
+               }
             };
 
-            try
-            {
-               parser.parse( argc, argv);
-            }
-            catch( ...)
-            {
-               common::exception::handle( std::cerr);
-            }
+            cli::cli() = default; 
+            cli::~cli() = default; 
 
-            return 0;
-         }
-
+            common::argument::Group cli::options() &
+            {
+               return m_implementation->options();
+            }
+            
+         } // admin 
       } // manager
-
    } // domain
-
 } // casual
 
 
-int main( int argc, char **argv)
-{
-   return casual::domain::manager::main( argc, argv);
-}
 
 
 

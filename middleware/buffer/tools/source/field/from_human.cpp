@@ -11,7 +11,7 @@
 
 #include "common/exception/handle.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 
 #include "xatmi.h"
 
@@ -25,18 +25,16 @@ namespace casual
       std::string format;
 
       {
-         common::Arguments argument{ R"(
+         common::argument::Parse parse{ R"(
 
 (xml|json|yaml|ini) --> casual-fielded-buffer
 
 reads from stdin an assumes a human readable structure in the supplied format
 for a casual-fielded-buffer, and transform this to an actual casual-fielded-buffer,
 and prints this to stdout.)",
-            {
-               common::argument::directive( { "--format"}, "which format to expect on stdin (xml|json|yaml|ini)", format)
-            }
+            common::argument::Option( std::tie( format), { "--format"}, "which format to expect on stdin (xml|json|yaml|ini)")
          };
-         argument.parse( argc, argv);
+         parse( argc, argv);
       }
 
       auto buffer = buffer::field::internal::serialize( std::cin, format);

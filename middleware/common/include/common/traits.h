@@ -70,9 +70,12 @@ namespace casual
             using detected_t = typename detector<void, void, Op, Args...>::type;
          }
 
+         template< typename... Args>
+         struct pack{};
 
          namespace detail
          {
+
             template< typename R, typename ...Args>
             struct function
             {
@@ -83,6 +86,10 @@ namespace casual
                {
                   return sizeof...(Args);
                }
+
+               using decayed = std::tuple< std::decay_t< Args>...>;
+
+               constexpr static auto tuple() { return std::tuple< std::decay_t< Args>...>{}; }
 
                using result_type = R;
 
@@ -411,9 +418,6 @@ namespace casual
          };
          //! @}
 
-         template< bool Predicate, typename V = void>
-         using enable_if_t = typename std::enable_if< Predicate, V>::type;
-
 
          struct unmovable
          {
@@ -431,6 +435,26 @@ namespace casual
 
          namespace is
          {
+            template< typename T> 
+            using detail_function = decltype( function< T>::arguments());
+            template< typename T>
+            using function = detect::is_detected< detail_function, T>;
+
+            template< typename T>
+            using detail_tuple = decltype( std::tuple_size< T>::value);
+            template< typename T>
+            using tuple = detect::is_detected< detail_tuple, T>;
+
+            static_assert( is::tuple< std::tuple< int, int>>::value, "");
+            static_assert( ! is::tuple< int>::value, "");
+
+            template< typename T> 
+            using detail_optional = decltype( std::declval< T&>().has_value());
+
+            template< typename T>
+            using optional_like = detect::is_detected< detail_optional, T>;
+
+
             template< typename T>
             using begin_end_existing = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
 

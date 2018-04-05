@@ -6,7 +6,7 @@
 
 
 #include "queue/manager/manager.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/exception/handle.h"
 
 using namespace casual;
@@ -20,16 +20,14 @@ int main( int argc, char **argv)
       queue::manager::Settings settings;
 
       {
-
-         common::Arguments parser{
+         using namespace casual::common::argument;
+         Parse parse{
             R"(
 Manages casual queue, the provided queue functionality.
 )",
-            {
-               common::argument::directive( {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest", settings.group_executable)
-         }};
-
-         parser.parse( argc, argv);
+            Option( std::tie( settings.group_executable), {"-g", "--group-executable"}, "path to casual-queue-group only (?) for unittest")
+         };
+         parse( argc, argv);
       }
 
       queue::Broker broker( settings);

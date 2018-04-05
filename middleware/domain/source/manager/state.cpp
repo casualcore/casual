@@ -268,8 +268,9 @@ namespace casual
                {
                   found->handle = process;
                   found->state = instance::State::running;
+                  return true;
                }
-               return found;
+               return false;
             }
 
 

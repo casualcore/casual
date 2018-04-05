@@ -144,15 +144,13 @@ install_bin.append( forward_queue)
 #
 # Client
 #
-queue_client = LinkExecutable( 'bin/casual-queue-admin', 
+target = LinkLibrary( 'bin/casual-queue-admin-cli', 
     [
-        Compile( 'source/manager/admin/client.cpp'),
+        Compile( 'source/manager/admin/cli.cpp'),
      ], 
    [common, queue_api, 'casual-common', 'casual-sf', 'casual-xatmi'])
  
- 
-Install( queue_client, '$(CASUAL_HOME)/internal/bin')
-
+install_lib.append( target)
 
 
 
