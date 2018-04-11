@@ -1,7 +1,8 @@
 //!
-//! casual
+//! Copyright (c) 2018, The casual project
 //!
-
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
 
 /*
  * X/Open CAE Specification

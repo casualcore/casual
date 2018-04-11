@@ -1,6 +1,9 @@
 //!
-//! casual 
+//! Copyright (c) 2018, The casual project
 //!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 #include "tools/service/describe/cli.h"
 #include "tools/service/describe/invoke.h"
 

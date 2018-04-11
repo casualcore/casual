@@ -301,7 +301,7 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
 
 #
 # We execute 'simple_process' from test-casual-common-isolated, so
-# we need to meke sure simple_process is built before
+# we need to make sure simple_process is built before
 #
 Dependencies( target_test_common, [ target_simple_process ]);
 

@@ -54,7 +54,7 @@ namespace casual
                   }
                }
 
-               virtual void TearDown() override
+               void TearDown() override
                {
 
                }
@@ -76,7 +76,6 @@ namespace
 {
    const auto registration CASUAL_OPTION_UNUSED = ::testing::AddGlobalTestEnvironment( new casual::common::mockup::unittest::Environment());
 }
-
 
 
 
