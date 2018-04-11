@@ -7,15 +7,15 @@ domain:
 
   servers:
         
-    # advertises casual.example.echo and casual.example.rollback
+    # advertises casual/example/echo and casual/example/rollback
     - path: ${CASUAL_HOME}/example/bin/casual-example-server
       instances: 1 # how many instances should be started
 
-    # forward from queueA1  to service 'casual.example.rollback'
+    # forward from queueA1  to service 'casual/example/rollback'
     # which will result in the message will end up on error queue
     - path: casual-queue-forward-service
       instances: 1
-      arguments: [ --forward, queueA1, casual.example.rollback]
+      arguments: [ --forward, queueA1, casual/example/rollback]
 
   #
   # Queue configuration
