@@ -223,7 +223,7 @@ The service `casual/example/echo` should be reqeusted once (the call from remote
 The service `casual/example/rollback` should be reqeusted once from the forward in this domain.
 
 ```bash
-host:domainA$ ccasual service --list-services
+host:domainA$ casual service --list-services
 name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
 ---------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
 casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
