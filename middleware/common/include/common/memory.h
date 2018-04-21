@@ -35,7 +35,7 @@ namespace casual
             }
 
             template< typename Iter>
-            struct is_suitable_iterator : std::integral_constant<bool,
+            struct is_suitable_iterator : traits::bool_constant<
                   traits::iterator::is_random_access< Iter>::value
                   && traits::is_trivially_copyable< typename std::iterator_traits< Iter>::value_type>::value
                   >{};

@@ -37,10 +37,13 @@ namespace casual
 
                inline auto options()
                {
-                  return argument::Option( std::tie( color), { "--color"}, "set/unset color")
-                     + argument::Option( std::tie( header), { "--header"}, "set/unset header")
+                  auto bool_completer = []( auto, bool ){
+                     return std::vector< std::string>{ "true", "false"};
+                  };
+                  return argument::Option( std::tie( color), bool_completer, { "--color"}, "set/unset color")
+                     + argument::Option( std::tie( header), bool_completer, { "--header"}, "set/unset header")
                      + argument::Option( std::tie( precision), { "--precision"}, "set number of decimal points used for output")
-                     + argument::Option( std::tie( porcelain), { "--porcelain"}, "easy to parse output format");
+                     + argument::Option( std::tie( porcelain), bool_completer, { "--porcelain"}, "easy to parse output format");
                }
 
             private:

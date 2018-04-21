@@ -32,6 +32,10 @@ namespace casual
    {
       namespace traits
       {
+
+         template <bool B>
+         using bool_constant = std::integral_constant<bool, B>;
+
          template< typename...>
          using void_t = void;
 
@@ -265,7 +269,7 @@ namespace casual
 
 
             template< typename Container, typename Category>
-            struct is_category : std::integral_constant< bool,
+            struct is_category : bool_constant<
                std::is_base_of< Category, category_t< basic_type_t< Container>>>::value> {};
 
             template< typename Container>
@@ -315,7 +319,7 @@ namespace casual
             namespace detail
             {
                template< typename Iter, typename Tag, bool = detect::is_detected< has_category, Iter>::value>
-               struct is_tag : std::integral_constant< bool,
+               struct is_tag : bool_constant<
                   std::is_base_of< Tag, typename iterator::traits< std::remove_reference_t< Iter>>::iterator_category>::value> {};
 
                template< typename Iter, typename Tag>
@@ -327,7 +331,7 @@ namespace casual
             struct is_random_access : detail::is_tag< Iter, std::random_access_iterator_tag> {};
 
             template< typename Iter>
-            struct is_output : std::integral_constant< bool,
+            struct is_output : bool_constant<
                ( 
                   detail::is_tag< Iter, std::output_iterator_tag>::value
                   || 
@@ -351,7 +355,7 @@ namespace casual
          //!  std::is_trivially_copyable is not implemented with gcc 4.8.3
          //!
          template< typename T>
-         struct is_trivially_copyable : std::integral_constant< bool, true> {};
+         struct is_trivially_copyable : bool_constant< true> {};
 
 
 #endif
@@ -387,14 +391,14 @@ namespace casual
 
 #if __cplusplus > 201402L // vector will have nothrow move in c++17
          template< typename T>
-         struct is_movable : std::integral_constant< bool,
+         struct is_movable : bool_constant<
             std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {};
 #else
          //!
          //!  containers and std::string is not noexcept movable with gcc 4.9.x
          //!
          template< typename T>
-         struct is_movable : std::integral_constant< bool,
+         struct is_movable : bool_constant<
             std::is_move_constructible< T>::value && std::is_move_assignable< T>::value> {};
 #endif
 
@@ -407,7 +411,7 @@ namespace casual
          //!
          //! @{
          template< typename T1, typename T2, typename... Args>
-         struct is_same : std::integral_constant< bool, is_same< T1, T2>::value && is_same< T2, Args...>::value>
+         struct is_same : bool_constant< is_same< T1, T2>::value && is_same< T2, Args...>::value>
          {
 
          };
