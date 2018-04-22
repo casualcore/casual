@@ -450,8 +450,8 @@ namespace casual
             //! Runlevel can only "go forward"
             //!
             //! @{
-            inline Runlevel runlevel() const { return m_runlevel;}
-            void runlevel( Runlevel runlevel);
+            inline Runlevel runlevel() const noexcept { return m_runlevel;}
+            void runlevel( Runlevel runlevel) noexcept;
             //! @}
 
             std::vector< state::Batch> bootorder();
@@ -475,20 +475,19 @@ namespace casual
             state::Group& group( state::Group::id_type id);
             const state::Group& group( state::Group::id_type id) const;
 
-            state::Server* server( common::strong::process::id pid);
-            const state::Server* server( common::strong::process::id pid) const;
+            state::Server* server( common::strong::process::id pid) noexcept;
+            const state::Server* server( common::strong::process::id pid) const noexcept;
             state::Server& server( state::Server::id_type id);
             const state::Server& server( state::Server::id_type id) const;
 
-            state::Executable* executable( common::strong::process::id pid);
+            state::Executable* executable( common::strong::process::id pid) noexcept;
             state::Executable& executable( state::Executable::id_type id);
             const state::Executable& executable( state::Executable::id_type id) const;
 
-            common::process::Handle grandchild( common::strong::process::id pid) const;
+            common::process::Handle grandchild( common::strong::process::id pid) const noexcept;
 
 
-            common::process::Handle singleton( const common::Uuid& id) const;
-
+            common::process::Handle singleton( const common::Uuid& id) const noexcept;
 
 
             //!

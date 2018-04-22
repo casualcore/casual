@@ -332,6 +332,9 @@ namespace casual
                //!
                struct ACK : basic_message< Type::service_acknowledge>
                {
+                  ACK() = default;
+                  inline ACK( common::process::Handle process) : process( std::move( process)) {}
+                  
                   common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(

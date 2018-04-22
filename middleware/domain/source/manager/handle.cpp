@@ -1071,11 +1071,8 @@ namespace casual
 
                            try
                            {
-                              message::service::call::ACK ack;
-                              ack.process = common::process::handle();
-
                               auto service_manager = m_state.singleton( common::process::instance::identity::service::manager());
-                              manager::ipc::device().blocking_send( service_manager.queue, ack);
+                              manager::ipc::device().blocking_send( service_manager.queue, message::service::call::ACK{ common::process::handle()});
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {
