@@ -1049,15 +1049,42 @@ namespace casual
                {
                   namespace server
                   {
-                     struct Policy : common::server::handle::policy::call::Admin
+                     using base_type = common::server::handle::policy::call::Admin;
+                     struct Policy : base_type
                      {
                         using common::server::handle::policy::call::Admin::Admin;
+
+                        Policy( common::communication::error::type handler, manager::State& state)
+                           : base_type( std::move( handler)), m_state( state) {}
 
                         void configure( common::server::Arguments& arguments)
                         {
                            // no-op, we'll advertise our services when the broker comes online.
                         }
 
+                        // 
+                        // overload ack so we use domain-manager internal stuff to lookup service-manager
+                        //
+                        void ack()
+                        {
+                           Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
+
+                           try
+                           {
+                              message::service::call::ACK ack;
+                              ack.process = common::process::handle();
+
+                              auto service_manager = m_state.singleton( common::process::instance::identity::service::manager());
+                              manager::ipc::device().blocking_send( service_manager.queue, ack);
+                           }
+                           catch( const exception::system::communication::Unavailable&)
+                           {
+                              common::log::line( log, "service-manager is not online - action: discard sending ACK");
+                           }
+                        }
+
+                     private: 
+                        manager::State& m_state;
                      };
 
                      using Handle = common::server::handle::basic_call< Policy>;
@@ -1087,7 +1114,8 @@ namespace casual
                manager::handle::configuration::Server{ state},
                handle::local::server::Handle{
                   manager::admin::services( state),
-                  ipc::device().error_handler()}
+                  ipc::device().error_handler(), 
+                  state}
 
             };
 
