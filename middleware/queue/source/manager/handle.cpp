@@ -322,6 +322,8 @@ namespace casual
                   {
                      Trace trace{ "handle::domain::discover::Request"};
 
+                     common::log::line( verbose::log, "message: ", message);
+
                      auto reply = common::message::reverse::type( message);
 
                      reply.process = common::process::handle();
@@ -334,6 +336,8 @@ namespace casual
                            reply.queues.emplace_back( queue);
                         }
                      }
+
+                     common::log::line( verbose::log, "reply: ", reply);
 
                      ipc::device().blocking_send( message.process.queue, reply);
                   }
