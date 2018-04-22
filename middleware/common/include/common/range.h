@@ -49,35 +49,35 @@ namespace casual
 
          constexpr platform::size::type size() const { return std::distance( m_first, m_last);}
 
-         constexpr bool empty() const { return m_first == m_last;}
-         constexpr explicit operator bool () const { return ! empty();}
+         constexpr bool empty() const noexcept { return m_first == m_last;}
+         constexpr explicit operator bool () const noexcept { return ! empty();}
 
 
-         constexpr reference operator * () const { return *m_first;}
-         constexpr iterator operator -> () const { return m_first;}
+         constexpr reference operator * () const noexcept { return *m_first;}
+         constexpr iterator operator -> () const noexcept { return m_first;}
 
-         constexpr Range& operator ++ ()
+         constexpr Range& operator ++ () noexcept
          {
             ++m_first;
             return *this;
          }
 
-         constexpr Range operator ++ ( int)
+         constexpr Range operator ++ ( int) noexcept
          {
             Range other{ *this};
             ++m_first;
             return other;
          }
 
-         constexpr iterator begin() const { return m_first;}
-         constexpr iterator end() const { return m_last;}
-         constexpr reverse_iterator rbegin() const { return reverse_iterator( end());}
-         constexpr reverse_iterator rend() const { return reverse_iterator( begin());}
+         constexpr iterator begin() const noexcept { return m_first;}
+         constexpr iterator end() const noexcept { return m_last;}
+         constexpr reverse_iterator rbegin() const noexcept { return reverse_iterator( end());}
+         constexpr reverse_iterator rend() const noexcept { return reverse_iterator( begin());}
 
 
          constexpr Range& advance( difference_type value) { std::advance( m_first, value); return *this;}
 
-         constexpr pointer data() const { return data( m_first, m_last);}
+         constexpr pointer data() const noexcept { return data( m_first, m_last);}
 
          constexpr reference front() { return *m_first;}
          constexpr const reference front() const { return *m_first;}
@@ -93,7 +93,7 @@ namespace casual
 
       private:
 
-         constexpr static pointer data( iterator first, iterator last)
+         constexpr static pointer data( iterator first, iterator last) noexcept
          {
             if( first != last)
             {
