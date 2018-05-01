@@ -34,7 +34,7 @@ namespace casual
             {
 
                template< typename T>
-               using is_native_marshable = std::integral_constant<bool,
+               using is_native_marshable = traits::bool_constant<
                      std::is_arithmetic<T>::value ||
                      ( std::is_array<T>::value && sizeof( typename std::remove_all_extents<T>::type) == 1 ) ||
                      traits::container::is_array< T>::value ||

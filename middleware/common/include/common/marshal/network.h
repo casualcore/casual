@@ -10,6 +10,7 @@
 
 #include "common/marshal/binary.h"
 #include "common/network/byteorder.h"
+#include "common/traits.h"
 
 #include "common/cast.h"
 
@@ -32,7 +33,7 @@ namespace casual
                   // Helper to make sure we only transport byte-arrays
                   //
                   template< typename T>
-                  using is_network_array = std::integral_constant< bool,
+                  using is_network_array = traits::bool_constant<
                         ( std::is_array< typename std::remove_reference< T>::type>::value
                           && sizeof( typename std::remove_all_extents< typename std::remove_reference< T>::type>::type) == 1)
                           || traits::container::is_array< T>::value>;
