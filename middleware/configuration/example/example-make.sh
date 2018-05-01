@@ -3,8 +3,8 @@
 #
 # This is just a temporary helper until we can produce this from the makefile.
 #
-
-CONFIGURATION_PATH=${CASUAL_BUILD_HOME}/middleware/configuration
+REPOSITORY_ROOT=$(git rev-parse --show-toplevel)
+CONFIGURATION_PATH=${REPOSITORY_ROOT}/middleware/configuration
 
 ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --domain-file ${CONFIGURATION_PATH}/example/domain/domain.yaml
 ${CONFIGURATION_PATH}/bin/casual-configuration-example-maker --domain-file ${CONFIGURATION_PATH}/example/domain/domain.json
