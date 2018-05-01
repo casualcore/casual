@@ -418,19 +418,6 @@ namespace casual
                         validate::value::cardinality( key, cardinality(), values);
                         tuple_assign( values, arguments);
                      }
-
-                     std::vector< std::string> complete( range_type values, bool help) const
-                     {
-                        if( help)
-                        {
-                           if( cardinality() == cardinality::zero{}) return {};
-                           if( cardinality() == cardinality::zero_one{}) return { string::compose( '[', reserved::name::suggestions::value(), ']')};
-                           if( cardinality() == cardinality::one{}) return { reserved::name::suggestions::value()};
-                           return { string::compose( reserved::name::suggestions::value(), "...")};
-                        }
-                        return { reserved::name::suggestions::value()};
-                     }
-
                      tuple_type arguments;
                   };
                   
@@ -483,14 +470,25 @@ namespace casual
                      Compl m_completer;
                   };
 
-                  
+                  namespace completer
+                  {
+                     struct Default
+                     {
+                        std::vector< std::string> operator () ( range_type values, bool help) const 
+                        {
+                           if( help)
+                           {
+                              if( cardinality() == cardinality::zero{}) return {};
+                              if( cardinality() == cardinality::zero_one{}) return { string::compose( '[', reserved::name::suggestions::value(), ']')};
+                              if( cardinality() == cardinality::one{}) return { reserved::name::suggestions::value()};
+                              return { string::compose( reserved::name::suggestions::value(), "...")};
+                           }
+                           return { reserved::name::suggestions::value()};
+                        }
+                     };
+                  } // completer
                } // implementation 
 
-               template< typename C>
-               Invoke create( C&& callable)
-               {
-                  return Invoke{ implementation::Invoke< std::decay_t< C>>( std::forward< C>( callable))};                  
-               }
 
                template< typename Call, typename Compl>
                Invoke create( Call&& callable, Compl&& completer)
@@ -498,6 +496,14 @@ namespace casual
                   return Invoke{ implementation::Completion< std::decay_t< Call>, std::decay_t< Compl>>( 
                      std::forward< Call>( callable), std::forward< Compl>( completer))};                  
                }
+
+               template< typename Call>
+               Invoke create( Call&& callable)
+               {
+                  
+                  return create( std::forward< Call>( callable), implementation::completer::Default());
+               }
+
             } // invoke
 
             struct Holder

@@ -42,16 +42,16 @@ namespace casual
 
 
          template< typename T>
-         struct is_pod : public std::integral_constant< bool, std::is_pod< T>::value && ! std::is_class< T>::value && ! std::is_enum< T>::value> {};
+         struct is_pod : public traits::bool_constant< std::is_pod< T>::value && ! std::is_class< T>::value && ! std::is_enum< T>::value> {};
 
          template<>
-         struct is_pod< std::string> : public std::integral_constant< bool, true> {};
+         struct is_pod< std::string> : public traits::bool_constant< true> {};
 
          template<>
-         struct is_pod< std::wstring> : public std::integral_constant< bool, true> {};
+         struct is_pod< std::wstring> : public traits::bool_constant< true> {};
 
          template<>
-         struct is_pod< std::vector< char> > : public std::integral_constant< bool, true> {};
+         struct is_pod< std::vector< char> > : public traits::bool_constant< true> {};
 
 
          template< typename T, typename... Args>
