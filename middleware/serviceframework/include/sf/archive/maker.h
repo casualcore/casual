@@ -26,28 +26,30 @@ namespace casual
       {
          namespace reader
          {
+            struct File 
+            {
+               template< typename C>
+               File( const std::string& name, C&& creator);
+               ~File();
+
+               File( File&&);
+               File& operator = ( File&&);
+
+               template< typename T>  
+               archive::Reader& operator >> ( T&& value)
+               {
+                  return m_reader >> std::forward< T>( value); 
+               }
+
+               inline void validate() { m_reader.validate();}
+
+            private:
+               struct Implementation;
+               sf::move::Pimpl< Implementation> m_implementation; 
+               archive::Reader m_reader;
+            };
             namespace from
             {
-               struct File 
-               {
-                  File( const std::string& name);
-                  ~File();
-
-                  File( File&&);
-                  File& operator = ( File&&);
-
-                  template< typename T>  
-                  archive::Reader& operator >> ( T&& value)
-                  {
-                     return m_reader >> std::forward< T>( value); 
-                  }
-
-               private:
-                  struct Implementation;
-                  sf::move::Pimpl< Implementation> m_implementation; 
-                  archive::Reader m_reader;
-               };
-
                File file( const std::string& name);
 
                //! @{
@@ -62,7 +64,29 @@ namespace casual
 
                archive::Reader buffer( const platform::binary::type& data, std::string name);
             } // from
+
+            namespace consumed
+            {
+               namespace from
+               {
+                  File file( const std::string& name);
+
+                  //! @{
+                  archive::Reader data();
+                  archive::Reader data( std::istream& stream);
+                  //! @}
+
+                  //! @{
+                  archive::Reader name( std::string name);
+                  archive::Reader name( std::istream& stream, std::string name);
+                  //! @}
+
+                  archive::Reader buffer( const platform::binary::type& data, std::string name);
+               } // from
+            } // consumed
          } // reader
+
+
 
 
          namespace writer

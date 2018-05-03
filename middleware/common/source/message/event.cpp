@@ -59,6 +59,7 @@ namespace casual
                            << ", message: " << value.message
                            << ", executable: " << value.executable
                            << ", pid: " << value.pid
+                           << ", details: " << range::make( value.details)
                            << '}';
                   }
 

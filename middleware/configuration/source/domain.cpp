@@ -95,10 +95,13 @@ namespace casual
                {
 
                   //
-                  // Create the reader and deserialize configuration
+                  // Create the archive and deserialize configuration
                   //
-                  auto reader = sf::archive::reader::from::file( file);
-                  reader >> CASUAL_MAKE_NVP( domain);
+                  auto archive = sf::archive::reader::consumed::from::file( file);
+                  archive >> CASUAL_MAKE_NVP( domain);
+
+                  // validate if the user has stuff that we didn't consume
+                  archive.validate();
 
                   finalize( domain);
 

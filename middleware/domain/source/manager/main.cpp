@@ -49,6 +49,19 @@ namespace casual
                domain.start();
 
             }
+            catch( const common::exception::casual::invalid::Configuration& exception)
+            {
+               if( event_queue)
+               {
+                  common::message::event::domain::Error event;
+                  event.message = exception.what();
+                  event.details = exception.details();
+                  event.severity = common::message::event::domain::Error::Severity::fatal;
+
+                  common::communication::ipc::non::blocking::send( event_queue, event);
+               }
+               return casual::common::exception::handle();
+            }
             catch( const common::exception::base& exception)
             {
                if( event_queue)

@@ -59,6 +59,13 @@ namespace casual
             inline bool read( std::string& value, const char* name) { return m_protocol->read( value, name);}
             inline bool read( platform::binary::type& value, const char* name) { return m_protocol->read( value, name);}
 
+            //!
+            //! Validates the 'consumed' archive, if the implementation has a validate member function.
+            //!
+            //! It throws if there are information in the source that is not consumed by the object-model
+            //!
+            inline void validate() { m_protocol->validate();}
+
          private:
 
             struct holder_base
@@ -80,6 +87,8 @@ namespace casual
                virtual bool read( double& value, const char* name) = 0;
                virtual bool read( std::string& value, const char* name) = 0;
                virtual bool read( platform::binary::type& value, const char* name) = 0;
+
+               virtual void validate() = 0;
             };
 
             template< typename P>
@@ -106,7 +115,25 @@ namespace casual
                bool read( std::string& value, const char* name) override { return m_protocol.read( value, name);}
                bool read( platform::binary::type& value, const char* name) override { return m_protocol.read( value, name);}
 
+
+               void validate() override { selective_validate( m_protocol);}
+
             private:
+               template< typename T>
+               using has_validate = decltype( std::declval< T&>().validate());
+
+               template< typename T>
+               static auto selective_validate( T& protocol) -> 
+                  std::enable_if_t< common::traits::detect::is_detected< has_validate, T>::value>
+               {
+                  protocol.validate();
+               }
+               template< typename T>
+               static auto selective_validate( T& protocol) -> 
+                  std::enable_if_t< ! common::traits::detect::is_detected< has_validate, T>::value>
+               {
+               }
+  
                protocol_type m_protocol;
             };
 

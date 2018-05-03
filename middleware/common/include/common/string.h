@@ -73,26 +73,26 @@ namespace casual
          */
 
 
-			std::string join( const std::vector< std::string>& strings);
-         std::string join( const std::vector< std::string>& strings, const std::string& delimiter);
-
-         template< typename T>
-         std::string join( T&& range, const std::string& delimiter)
+         template< typename R>
+			std::string join( R&& range)
          {
-            std::string result;
+            return algorithm::accumulate( range, std::string{});
+         }
+         
 
-            auto current = std::begin( range);
+         template< typename R, typename D>
+         std::string join( R&& range, D&& delimiter)
+         {
+            auto current = range::make( range);
 
-            for( ; current != std::end( range); ++current)
+            if( ! current)
+               return {};
+
+            std::string result = *current;
+            while( ++current)
             {
-               if( current == std::begin( range))
-               {
-                  result = static_cast< const std::string&>( *current);
-               }
-               else
-               {
-                  result += delimiter + static_cast< const std::string&>( *current);
-               }
+               result += delimiter;
+               result += *current;
             }
             return result;
          }

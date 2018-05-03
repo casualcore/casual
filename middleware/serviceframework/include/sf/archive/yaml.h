@@ -25,15 +25,22 @@ namespace casual
          {
 
 
-            archive::Reader reader( const std::string& destination);
-            archive::Reader reader( std::istream& destination);
-            archive::Reader reader( const common::platform::binary::type& destination);
+            archive::Reader reader( const std::string& source);
+            archive::Reader reader( std::istream& source);
+            archive::Reader reader( const common::platform::binary::type& source);
 
             namespace relaxed
             {    
-               archive::Reader reader( const std::string& destination);
-               archive::Reader reader( std::istream& destination);
-               archive::Reader reader( const common::platform::binary::type& destination);
+               archive::Reader reader( const std::string& source);
+               archive::Reader reader( std::istream& source);
+               archive::Reader reader( const common::platform::binary::type& source);
+            }
+
+            namespace consumed
+            {    
+               archive::Reader reader( const std::string& source);
+               archive::Reader reader( std::istream& source);
+               archive::Reader reader( const common::platform::binary::type& source);
             }
 
             archive::Writer writer( std::string& destination);

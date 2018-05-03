@@ -113,6 +113,11 @@ namespace casual
                                        << terminal::color::white << m.pid << ": "
                                        << terminal::color::white << m.message
                                        << '\n';
+
+                                 for( auto& detail : m.details)
+                                 {
+                                    std::cerr << " |- " << detail << '\n';
+                                 }
                               };
 
                               switch( m.severity)
@@ -135,7 +140,6 @@ namespace casual
                                     print_error( m);
                                  }
                               }
-
 
 
                            },

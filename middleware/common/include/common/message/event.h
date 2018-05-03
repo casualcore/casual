@@ -80,6 +80,7 @@ namespace casual
                      std::string message;
                      std::string executable;
                      strong::process::id pid;
+                     std::vector< std::string> details;
 
                      enum class Severity : char
                      {
@@ -93,6 +94,7 @@ namespace casual
                         archive & message;
                         archive & executable;
                         archive & pid;
+                        archive & details;
                         archive & severity;
                      )
 

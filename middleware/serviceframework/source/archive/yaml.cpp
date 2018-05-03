@@ -18,6 +18,8 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <yaml-cpp/yaml.h>
 #include <yaml-cpp/binary.h>
+#include <yaml-cpp/eventhandler.h>
+#include <yaml-cpp/anchor.h>
 #pragma GCC diagnostic pop
 
 
@@ -99,6 +101,85 @@ namespace casual
                         }
                      };
 
+                     namespace canonical
+                     {
+                        struct Parser 
+                        {
+                           auto operator() ( const YAML::Node& document)
+                           {
+                              deduce( document, nullptr);
+                              return std::exchange( m_canonical, {});
+                           }
+
+                        private:
+
+                           void deduce( const YAML::Node& node, const char* name)
+                           {
+                              switch( node.Type())
+                              { 
+                                 case YAML::NodeType::Scalar: scalar( node, name); break;
+                                 case YAML::NodeType::Sequence: sequence( node, name); break;
+                                 case YAML::NodeType::Map: map( node, name); break;
+                                 case YAML::NodeType::Null: /*???*/ break;
+                              }
+                           }
+
+                           void scalar( const YAML::Node& node, const char* name)
+                           {
+                              m_canonical.attribute( name);
+                           }
+
+                           void sequence( const YAML::Node& node, const char* name)
+                           {
+                              start( name);
+
+                              for( auto current = node.begin(); current != node.end(); ++current)
+                              {
+                                 deduce( *current, "element");  
+                              }
+                              
+                              end( name);
+                           }
+
+                           void map( const YAML::Node& node, const char* name)
+                           {
+                              start( name);
+
+                              for( auto current = node.begin(); current != node.end(); ++current)
+                              {
+                                 std::string key;
+                                 current.first() >> key;
+                                 deduce( current.second(), key.data());
+                              }
+                              
+                              end( name);
+                           }
+
+                           void start( const char* name)
+                           {
+                              // take care of the first node which doesn't have a name, and is
+                              // not a composite in an archive sense.
+                              if( name) 
+                                 m_canonical.composite_start( name);
+                           }
+
+                           void end( const char* name)
+                           {
+                              // take care of the first node which doesn't have a name, and is
+                              // not a composite in an archive sense.
+                              if( name)
+                                 m_canonical.composite_end();
+                           }
+
+                           policy::canonical::Representation m_canonical;
+                        };
+
+                        auto parse( const YAML::Node& document)
+                        {
+                           return Parser{}( document);
+                        }
+                        
+                     } // canonical
 
                      class Implementation
                      {
@@ -185,6 +266,11 @@ namespace casual
                            return false;
                         }
 
+                        policy::canonical::Representation canonical()
+                        {
+                           return canonical::parse( m_document);
+                        }
+
                      private:
 
                         bool start( const char* const name)
@@ -253,13 +339,21 @@ namespace casual
                            value.assign( binary.data(), binary.data() + binary.size());
                         }
 
-
-
-                     private:
+                     protected:
                         YAML::Node m_document;
                         std::vector< const YAML::Node*> m_stack;
 
                      };
+
+                     namespace consumed
+                     {
+                        template< typename T>
+                        auto create( T&& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Consumed< Implementation>>( std::forward< T>( source));
+                        }
+
+                     } // consumed
 
                      namespace strict
                      {
@@ -423,6 +517,13 @@ namespace casual
                archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
                archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
                archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
+            }
+
+            namespace consumed
+            {    
+               archive::Reader reader( const std::string& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( std::istream& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::consumed::create( source);}
             }
 
             archive::Writer writer( std::string& destination)

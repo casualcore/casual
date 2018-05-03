@@ -23,6 +23,8 @@
 #include <istream>
 #include <functional>
 
+#include <iostream>
+
 
 namespace casual
 {
@@ -33,17 +35,6 @@ namespace casual
       {
          namespace json
          {
-
-
-
-/*
-            namespace writer
-            {
-               Implementation::Implementation( rapidjson::Value& object, rapidjson::Document::AllocatorType& allocator)
-               : m_allocator( allocator), m_stack{ &object}
-               {}
-            } // writer
-*/
 
             namespace local
             {
@@ -123,6 +114,87 @@ namespace casual
                         else
                            return parse( document, json.data(), json.size());
                      }
+
+                     namespace canonical
+                     {
+                        struct Parser 
+                        {
+                           using Node = rapidjson::Value;
+                           auto operator() ( const Node& document)
+                           {
+                              deduce( document, nullptr);
+                              return std::exchange( m_canonical, {});
+                           }
+
+                        private:
+
+                           void deduce( const Node& node, const char* name)
+                           {
+                              switch( node.GetType())
+                              { 
+                                 case rapidjson::Type::kNumberType: scalar( node, name); break;
+                                 case rapidjson::Type::kStringType: scalar( node, name); break;
+                                 case rapidjson::Type::kTrueType: scalar( node, name); break;
+                                 case rapidjson::Type::kFalseType: scalar( node, name); break;
+                                 case rapidjson::Type::kArrayType: sequence( node, name); break;
+                                 case rapidjson::Type::kObjectType: map( node, name); break;
+                                 case rapidjson::Type::kNullType: /*???*/ break;
+                              }
+                           }
+
+                           void scalar( const Node& node, const char* name)
+                           {
+                              m_canonical.attribute( name);
+                           }
+
+                           void sequence( const Node& node, const char* name)
+                           {
+                              start( name);
+
+                              for( auto current = node.Begin(); current != node.End(); ++current)
+                              {
+                                 deduce( *current, "element");  
+                              }
+                              
+                              end( name);
+                           }
+
+                           void map( const Node& node, const char* name)
+                           {
+                              start( name);
+
+                              for( auto current = node.MemberBegin(); current != node.MemberEnd(); ++current)
+                              {
+                                 deduce( current->value, current->name.GetString());
+                              }
+                              
+                              end( name);
+                           }
+
+                           void start( const char* name)
+                           {
+                              // take care of the first node which doesn't have a name, and is
+                              // not a composite in an archive sense.
+                              if( name) 
+                                 m_canonical.composite_start( name);
+                           }
+
+                           void end( const char* name)
+                           {
+                              // take care of the first node which doesn't have a name, and is
+                              // not a composite in an archive sense.
+                              if( name)
+                                 m_canonical.composite_end();
+                           }
+                           policy::canonical::Representation m_canonical;
+                        };
+
+                        auto parse( const rapidjson::Value& document)
+                        {
+                           return Parser{}( document);
+                        }
+
+                     } // canonical
 
                      class Implementation
                      {
@@ -268,6 +340,12 @@ namespace casual
                         { value = common::transcode::utf8::decode( check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
                         void read( platform::binary::type& value) const
                         { value = common::transcode::base64::decode( check::read( m_stack.back(), &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                     
+                        policy::canonical::Representation canonical()
+                        {
+                           return canonical::parse( m_document);
+                        }
+                     
                      private:
 
                         rapidjson::Document m_document;
@@ -275,6 +353,17 @@ namespace casual
                      };
 
 
+
+
+                     namespace consumed
+                     {
+                        template< typename T>
+                        auto create( T&& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Consumed< Implementation>>( std::forward< T>( source));
+                        }
+
+                     } // consumed
 
 
                      namespace strict
@@ -481,6 +570,13 @@ namespace casual
                archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
                archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
                archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
+            }
+
+            namespace consumed
+            {    
+               archive::Reader reader( const std::string& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( std::istream& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::consumed::create( source);}
             }
 
 

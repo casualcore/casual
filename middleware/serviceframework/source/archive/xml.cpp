@@ -17,6 +17,7 @@
 #include <iterator>
 #include <algorithm>
 
+
 namespace casual
 {
    namespace sf
@@ -107,6 +108,69 @@ namespace casual
                         }
                      };
 
+                     namespace canonical
+                     {
+                        using Node = pugi::xml_node;
+
+                        namespace filter
+                        {
+                           auto children( const Node& node)
+                           {
+                              auto filter_child = []( const auto& child){
+                                 return child.type() == pugi::xml_node_type::node_element;
+                              };
+
+                              return common::algorithm::filter( node.children(), filter_child);
+                           }
+                        } // filter
+
+                        struct Parser 
+                        {
+                           auto operator() ( const Node& document)
+                           {
+                              // take care of the document node
+                              for( auto& child : filter::children( document))
+                              {
+                                 element( child);
+                              }
+                              
+                              return std::exchange( m_canonical, {});
+                           }
+
+                        private:
+
+                           void element( const Node& node)
+                           {
+                              auto children = filter::children( node);
+
+                              if( children)
+                              {
+                                 m_canonical.composite_start( node.name());
+
+                                 for( auto& child : children)
+                                 {
+                                    element( child);
+                                 }
+
+                                 m_canonical.composite_end();
+                              }
+                              else 
+                              {
+                                 // we only add if there is something in it
+                                 if( ! node.text().empty())
+                                    m_canonical.attribute( node.name());
+                              }
+                           }
+                           policy::canonical::Representation m_canonical;
+                        };
+
+                        auto parse( const pugi::xml_node& document)
+                        {
+                           return Parser{}( document);
+                        }
+
+                     } // canonical
+
                      class Implementation
                      {
                      public:
@@ -172,6 +236,11 @@ namespace casual
                            end( name);
 
                            return true;
+                        }
+
+                        policy::canonical::Representation canonical()
+                        {
+                           return canonical::parse( m_document);
                         }
 
                      private:
@@ -244,12 +313,19 @@ namespace casual
 
 
                         pugi::xml_document m_document;
-                        // 'vector' instead of 'stack' to use some algorithms
-                        std::vector<pugi::xml_node> m_stack;
+                        std::vector< pugi::xml_node> m_stack;
 
                      }; // Implementation
 
+                     namespace consumed
+                     {
+                        template< typename T>
+                        auto create( T&& source)
+                        {
+                           return archive::Reader::emplace< archive::policy::Consumed< Implementation>>( std::forward< T>( source));
+                        }
 
+                     } // consumed
 
                      namespace strict
                      {
@@ -440,6 +516,12 @@ namespace casual
                archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
             }
 
+            namespace consumed
+            {    
+               archive::Reader reader( const std::string& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( std::istream& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::consumed::create( source);}
+            }
 
             archive::Writer writer( std::string& destination)
             {

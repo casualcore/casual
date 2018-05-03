@@ -42,6 +42,30 @@ namespace casual
 
          namespace reader
          {
+            struct File::Implementation
+            {
+               Implementation( const std::string& name) : file( name) 
+               {
+                  if( ! file.is_open())
+                  {
+                     throw common::exception::system::invalid::File( name);
+                  }
+               } 
+               std::ifstream file;
+            };
+
+            template< typename C>
+            File::File( const std::string& name, C&& creator)
+               : m_implementation( name), 
+                  m_reader( creator( m_implementation->file, common::file::name::extension( name))) 
+            {
+
+            }
+            
+            File::~File() = default;
+            File::File( File&&) = default;
+            File& File::operator = ( File&&) = default;
+
             namespace from
             {
                namespace local
@@ -114,33 +138,15 @@ namespace casual
                   }
                }
 
-               struct File::Implementation
-               {
-                  Implementation( const std::string& name) : file( name) 
-                  {
-                     if( ! file.is_open())
-                     {
-                        throw common::exception::system::invalid::File( name);
-                     }
-                  } 
-                  std::ifstream file;
-               };
 
-               File::File( const std::string& name) 
-                  : m_implementation( name), 
-                   m_reader( from::name( m_implementation->file, common::file::name::extension( name))) 
-               {
-
-               }
-               File::~File() = default;
-               File::File( File&&) = default;
-               File& File::operator = ( File&&) = default;
 
                File file( const std::string& name)
                {
-                  File result( name);
+                  auto from_name = []( auto& stream, auto&& extension){
+                     return from::name( stream, std::move( extension));
+                  };
 
-                  return result;
+                  return { name, from_name};
                }
 
 
@@ -164,6 +170,71 @@ namespace casual
                   return local::name( data, std::move( name));
                }
             } // from
+
+            namespace consumed
+            {
+               namespace from
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+                        template<typename IO>
+                        archive::Reader name( IO& stream, std::string name)
+                        {
+                           auto make_yaml = []( auto& source){ return archive::yaml::consumed::reader( source);};
+                           auto make_json = []( auto& source){ return archive::json::consumed::reader( source);};
+                           auto make_xml = []( auto& source){ return archive::xml::consumed::reader( source);};
+                           
+                           // note relaxed
+                           auto make_ini = []( auto& source){ return archive::ini::relaxed::reader( source);};
+
+                           static const auto dispatch = std::map< std::string, std::function< archive::Reader( decltype(stream))>>
+                           {
+                              { name::yml, make_yaml}, { name::yaml, make_yaml}, { common::buffer::type::yaml(), make_yaml}, 
+                              { name::jsn, make_json}, { name::json, make_json}, { common::buffer::type::json(), make_json},
+                              { name::xml, make_xml}, { common::buffer::type::xml(), make_xml},
+                              { name::ini, make_ini}, { common::buffer::type::ini(), make_ini},
+                           };
+                           
+                           auto type = common::string::lower( std::move( name));
+                           const auto found = common::algorithm::find( dispatch, type);
+
+                           if( found)
+                           {
+                              return found->second( stream);
+                           }
+
+                           throw exception::Validation{ string::compose( "Could not deduce archive from name: ", type)};
+                        }
+                     } // <unnamed>
+                  } // local
+
+                  File file( const std::string& name)
+                  {
+                     auto from_name = []( auto& stream, auto&& extension){
+                        return from::name( stream, std::move( extension));
+                     };
+
+                     return { name, from_name};
+                  }
+
+                  //! @{
+                  //archive::Reader data();
+                  //archive::Reader data( std::istream& stream);
+                  //! @}
+
+                  //! @{
+                  //archive::Reader name( std::string name);
+                  archive::Reader name( std::istream& stream, std::string name)
+                  {
+                     return local::name( stream, std::move( name));
+                  }
+
+                  //archive::Reader buffer( const platform::binary::type& data, std::string name);
+               } // from
+            } // consumed
+
          } // reader
 
 

@@ -74,6 +74,7 @@ LinkUnittest( 'bin/test-casual-sf',
         Compile( 'unittest/isolated/source/archive/test_ini.cpp'),
         Compile( 'unittest/isolated/source/archive/test_service.cpp'),
         Compile( 'unittest/isolated/source/archive/test_log.cpp'),
+        Compile( 'unittest/isolated/source/archive/test_consumed.cpp'),
         Compile( 'unittest/isolated/source/archive/test_line.cpp'),
     ],
 	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
