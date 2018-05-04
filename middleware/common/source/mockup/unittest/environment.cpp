@@ -29,18 +29,34 @@ namespace casual
       {
          namespace unittest
          {
+            constexpr auto repository_root = "CASUAL_REPOSITORY_ROOT";
+
             struct Environment : public ::testing::Environment
             {
                void SetUp() override
                {
+                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << std::endl;
+
+
+                  if( ! environment::variable::exists( environment::variable::name::home())
+                     && environment::variable::exists( repository_root))
+                  {
+                     environment::variable::set( environment::variable::name::home(), 
+                        environment::variable::get( repository_root) + "/middleware/test/home/bin");
+
+                     common::log::line( 
+                        log::stream::get( "casual.mockup"), 
+                        environment::variable::name::home(), ": ", 
+                        environment::variable::get( environment::variable::name::home()));
+                  }
+                  
                   std::string domain_path = environment::directory::temporary() + "/casual/unittest";
 
                   environment::variable::set( environment::variable::name::domain::home(), domain_path);
 
                   domain::identity( domain::Identity{ "unittest-domain"});
 
-                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << std::endl;
-
+                  
 
                   directory::create( domain_path);
 
