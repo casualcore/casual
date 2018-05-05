@@ -9,8 +9,8 @@
 #define CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <string>
 #include <vector>

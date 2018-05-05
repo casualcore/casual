@@ -5,9 +5,9 @@
 //!
 
 
-#include "sf/platform.h"
+#include "serviceframework/platform.h"
 
-#include "sf/archive/archive.h"
+#include "serviceframework/archive/archive.h"
 
 
 #include "common/process.h"
@@ -15,7 +15,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -105,6 +105,6 @@ namespace casual
 
       } // archive
 
-   } // sf
+   } // serviceframework
 
 } // casual

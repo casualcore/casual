@@ -8,8 +8,8 @@
 #ifndef CASUAL_SERVICE_MANAGER_ADMIN_MANAGERVO_H_
 #define CASUAL_SERVICE_MANAGER_ADMIN_MANAGERVO_H_
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 
 namespace casual
@@ -69,7 +69,7 @@ namespace casual
 
                struct Metric
                {
-                  sf::platform::size::type count = 0;
+                  serviceframework::platform::size::type count = 0;
                   std::chrono::nanoseconds total;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -84,7 +84,7 @@ namespace casual
 
                   struct Local
                   {
-                     sf::strong::process::id pid;
+                     serviceframework::strong::process::id pid;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -94,8 +94,8 @@ namespace casual
 
                   struct Remote
                   {
-                     sf::strong::process::id pid;
-                     sf::platform::size::type hops;
+                     serviceframework::strong::process::id pid;
+                     serviceframework::platform::size::type hops;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
@@ -114,12 +114,12 @@ namespace casual
                std::string name;
                std::chrono::nanoseconds timeout;
                std::string category;
-               sf::platform::size::type transaction = 0;
+               serviceframework::platform::size::type transaction = 0;
 
                service::Metric metrics;
                service::Metric pending;
 
-               sf::platform::size::type remote_invocations = 0;
+               serviceframework::platform::size::type remote_invocations = 0;
                common::platform::time::point::type last;
 
 

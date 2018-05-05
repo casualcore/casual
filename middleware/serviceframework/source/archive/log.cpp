@@ -5,7 +5,7 @@
 //!
 
 
-#include "sf/archive/log.h"
+#include "serviceframework/archive/log.h"
 
 #include "common/transcode.h"
 
@@ -18,7 +18,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
 
       namespace archive
@@ -199,5 +199,5 @@ namespace casual
 
          } // log
       } // archive
-   } // sf
+   } // serviceframework
 } // casual

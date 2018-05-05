@@ -12,7 +12,7 @@
 
 
 #include "common/server/start.h"
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 namespace casual
 {
@@ -42,14 +42,14 @@ namespace casual
          {
             common::service::invoke::Result casual_sf_test1( common::service::invoke::Parameter&& parameter)
             {
-               auto protocol = sf::service::protocol::deduce( std::move( parameter));
+               auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                std::vector< vo::TestVO> values;
                protocol >> CASUAL_MAKE_NVP( values);
 
                std::vector< vo::TestVO> outputValues;
 
-               auto result = sf::service::user( protocol, &implementation::casual_sf_test1, std::move( values), outputValues);
+               auto result = serviceframework::service::user( protocol, &implementation::casual_sf_test1, std::move( values), outputValues);
 
                protocol << CASUAL_MAKE_NVP( result);
                protocol << CASUAL_MAKE_NVP( outputValues);
@@ -59,12 +59,12 @@ namespace casual
 
             common::service::invoke::Result casual_sf_test2( common::service::invoke::Parameter&& parameter)
             {
-               auto protocol = sf::service::protocol::deduce( std::move( parameter));
+               auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                bool someValue;
                protocol >> CASUAL_MAKE_NVP( someValue);
 
-               sf::service::user( protocol, &implementation::casual_sf_test2, someValue);
+               serviceframework::service::user( protocol, &implementation::casual_sf_test2, someValue);
 
                return protocol.finalize();
             }

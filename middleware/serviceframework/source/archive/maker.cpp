@@ -5,13 +5,13 @@
 //!
 
 
-#include "sf/archive/maker.h"
+#include "serviceframework/archive/maker.h"
 
-#include "sf/archive/yaml.h"
-#include "sf/archive/json.h"
-#include "sf/archive/xml.h"
-#include "sf/archive/ini.h"
-#include "sf/archive/log.h"
+#include "serviceframework/archive/yaml.h"
+#include "serviceframework/archive/json.h"
+#include "serviceframework/archive/xml.h"
+#include "serviceframework/archive/ini.h"
+#include "serviceframework/archive/log.h"
 
 #include "common/string.h"
 #include "common/file.h"
@@ -23,7 +23,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -324,7 +324,7 @@ namespace casual
             } // from
          } // writer
       } // archive
-   } // sf
+   } // serviceframework
 } // casual
 
 

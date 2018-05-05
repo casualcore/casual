@@ -15,7 +15,7 @@
 #include "common/server/start.h"
 #include "common/exception/handle.h"
 
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 #include "sql/database.h"
 
@@ -53,7 +53,7 @@ namespace casual
                         vo::Entry vo;
                         vo.setService( row.get< std::string>(0));
                         vo.setParentService( row.get< std::string>( 1));
-                        sf::platform::Uuid callId( row.get< std::string>( 2));
+                        serviceframework::platform::Uuid callId( row.get< std::string>( 2));
                         vo.setCallId( callId);
                         //vo.setTransactionId( local::getValue( *row, "transactionid"));
 
@@ -72,9 +72,9 @@ namespace casual
                   {
                      common::service::invoke::Result metrics( common::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        auto result = sf::service::user( protocol, &local::select);
+                        auto result = serviceframework::service::user( protocol, &local::select);
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();

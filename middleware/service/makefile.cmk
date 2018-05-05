@@ -47,7 +47,7 @@ target = LinkExecutable( 'bin/casual-service-manager',
 	[
      logic_archive,
      'casual-common',
-     'casual-sf',
+     'casual-serviceframework',
      'casual-xatmi',
      'casual-configuration']
    )
@@ -79,13 +79,13 @@ install_bins.append( target)
 
 admin_api_archive = LinkLibrary( 'bin/casual-service-admin-api',
    [ Compile( 'source/manager/admin/api.cpp'),],
-   [ logic_archive, 'casual-common', 'casual-sf', 'casual-xatmi'])
+   [ logic_archive, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
 
 install_libs.append( admin_api_archive)
 
 target = LinkLibrary( 'bin/casual-service-admin-cli',
      [ Compile( 'source/manager/admin/cli.cpp')],
-     [ admin_api_archive, logic_archive, 'casual-common', 'casual-sf', 'casual-xatmi'])
+     [ admin_api_archive, logic_archive, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
  	
  
 install_libs.append( target)
@@ -94,14 +94,14 @@ install_libs.append( target)
  
 LinkUnittest( 'unittest/bin/test-casual-service',
     [
-      Compile( 'unittest/isolated/source/forward/test_cache.cpp'),
-      Compile( 'unittest/isolated/source/manager/test_manager.cpp'),
-      Compile( 'unittest/isolated/source/manager/test_state.cpp'),
+      Compile( 'unittest/source/forward/test_cache.cpp'),
+      Compile( 'unittest/source/manager/test_manager.cpp'),
+      Compile( 'unittest/source/manager/test_state.cpp'),
     ] + forward_objs,
     [
      logic_archive,
      'casual-common', 
-     'casual-sf',
+     'casual-serviceframework',
      'casual-xatmi', 
      'casual-configuration', 
      'casual-mockup-unittest-environment', 

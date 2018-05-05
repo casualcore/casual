@@ -9,7 +9,7 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 
-#include "sf/archive/maker.h"
+#include "serviceframework/archive/maker.h"
 
 namespace casual
 {
@@ -45,7 +45,7 @@ namespace casual
             //
             // Create the reader and deserialize configuration
             //
-            auto reader = sf::archive::reader::from::file( file);
+            auto reader = serviceframework::archive::reader::from::file( file);
 
             reader >> CASUAL_MAKE_NVP( environment);
 

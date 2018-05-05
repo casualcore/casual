@@ -5,14 +5,14 @@
 //!
 
 
-#include "sf/archive/service.h"
+#include "serviceframework/archive/service.h"
 
-#include "sf/platform.h"
+#include "serviceframework/platform.h"
 
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -30,7 +30,7 @@ namespace casual
                         {
                         public:
 
-                           using types_t = std::vector< sf::service::Model::Type>;
+                           using types_t = std::vector< serviceframework::service::Model::Type>;
 
                            Writer( types_t& types) : m_stack{ &types}
                            {
@@ -40,7 +40,7 @@ namespace casual
                            {
                               auto& current = *m_stack.back();
 
-                              current.emplace_back( name, sf::service::model::type::Category::container);
+                              current.emplace_back( name, serviceframework::service::model::type::Category::container);
 
                               m_stack.push_back( &current.back().attribues);
 
@@ -57,7 +57,7 @@ namespace casual
                            {
                               auto& current = *m_stack.back();
 
-                              current.emplace_back( name, sf::service::model::type::Category::composite);
+                              current.emplace_back( name, serviceframework::service::model::type::Category::composite);
 
                               m_stack.push_back( &current.back().attribues);
                            }
@@ -70,7 +70,7 @@ namespace casual
                            template<typename T>
                            void write( T&& value, const char* name)
                            {
-                              m_stack.back()->emplace_back( name, sf::service::model::type::traits< T>::category());
+                              m_stack.back()->emplace_back( name, serviceframework::service::model::type::traits< T>::category());
                            }
 
                         private:
@@ -111,7 +111,7 @@ namespace casual
                
                archive::Reader prepare() { return archive::Reader::emplace< local::implementation::Prepare>();}
                
-               archive::Writer writer( std::vector< sf::service::Model::Type>& types)
+               archive::Writer writer( std::vector< serviceframework::service::Model::Type>& types)
                {
                   return archive::Writer::emplace< local::implementation::Writer>( types);
                }
@@ -119,5 +119,5 @@ namespace casual
             } // describe
          } // service
       } // archive
-   } // sf
+   } // serviceframework
 } // casual

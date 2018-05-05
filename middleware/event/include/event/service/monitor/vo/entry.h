@@ -10,7 +10,7 @@
 
 
 
-#include "sf/pimpl.h"
+#include "serviceframework/pimpl.h"
  
 
 // 
@@ -23,7 +23,7 @@
 //
 namespace casual 
 { 
-   namespace sf 
+   namespace serviceframework 
    { 
       namespace archive 
       {
@@ -35,7 +35,7 @@ namespace casual
     
 //## includes protected section begin [200.10]
 
-#include <sf/platform.h>
+#include <serviceframework/platform.h>
 #include <string>
 
 //## includes protected section end   [200.10]
@@ -84,23 +84,23 @@ namespace casual
                   void setService( std::string value);
 
 
-                  sf::platform::Uuid getCallId() const;
-                  void setCallId( sf::platform::Uuid value);
+                  serviceframework::platform::Uuid getCallId() const;
+                  void setCallId( serviceframework::platform::Uuid value);
 
 
-                  sf::platform::time::point::type getStart() const;
-                  void setStart( sf::platform::time::point::type value);
+                  serviceframework::platform::time::point::type getStart() const;
+                  void setStart( serviceframework::platform::time::point::type value);
 
 
-                  sf::platform::time::point::type getEnd() const;
-                  void setEnd( sf::platform::time::point::type value);
+                  serviceframework::platform::time::point::type getEnd() const;
+                  void setEnd( serviceframework::platform::time::point::type value);
 
 
 
 
-                  void serialize( casual::sf::archive::Reader& archive);
+                  void serialize( casual::serviceframework::archive::Reader& archive);
 
-                  void serialize( casual::sf::archive::Writer& archive) const;
+                  void serialize( casual::serviceframework::archive::Writer& archive) const;
 
                private:
 
@@ -109,7 +109,7 @@ namespace casual
                   //## additional private declarations protected section end   [200.200]
 
                   struct Implementation;
-                  casual::sf::Pimpl< Implementation> pimpl;
+                  casual::serviceframework::Pimpl< Implementation> pimpl;
                };
             } // vo
          } // service

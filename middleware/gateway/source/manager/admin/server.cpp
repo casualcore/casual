@@ -11,7 +11,7 @@
 #include "gateway/transform.h"
 
 
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 
 #include "xatmi.h"
@@ -33,11 +33,11 @@ namespace casual
 
                      common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         manager::admin::vo::State (*function)( const manager::State& state) = &gateway::transform::state;
 
-                        auto result = sf::service::user( protocol, function, state);
+                        auto result = serviceframework::service::user( protocol, function, state);
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();

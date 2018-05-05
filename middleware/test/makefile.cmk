@@ -46,7 +46,7 @@ archive_vo = LinkArchive( 'bin/sf-test-vo',
 target = LinkExecutable( 'bin/test_multicall_client',
 	[
 		Compile( 'source/test_multicall.cpp')
-	], ['casual-common', 'casual-xatmi', 'casual-sf'])
+	], ['casual-common', 'casual-xatmi', 'casual-serviceframework'])
 	
 install_bin.append( target)
 
@@ -56,13 +56,13 @@ install_bin.append( target)
 
 LinkUnittest( 'unittest/bin/test-casual-basic',
     [
-	   Compile( 'unittest/isolated/source/domain/test_basic.cpp'),
-	   Compile( 'unittest/isolated/source/test_yaml_sf_generation.cpp'),
+	   Compile( 'unittest/source/domain/test_basic.cpp'),
+	   Compile( 'unittest/source/test_yaml_sf_generation.cpp'),
 	],
     [ 
 		'casual-mockup-unittest-environment',
 		'casual-common', 
-		'casual-sf', 
+		'casual-serviceframework', 
 		'casual-xatmi', 
 		'yaml-cpp', 
 		'casual-mockup',
@@ -75,13 +75,13 @@ LinkUnittest( 'unittest/bin/test-casual-basic',
 #
 
 
-LinkExecutable('bin/casual-sf-test-server',
+LinkExecutable('bin/casual-serviceframework-test-server',
     [ 
 	   Compile( 'source/sf_testserverserver.cpp'),
 	],
     [
 	  archive_vo,
-     'casual-sf',
+     'casual-serviceframework',
      'casual-common', 
      'casual-xatmi'
     ])

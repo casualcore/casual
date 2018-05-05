@@ -15,9 +15,9 @@
 #include "common/exception/handle.h"
 
 
-#include "sf/service/protocol/call.h"
-#include "sf/archive/log.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/archive/log.h"
+#include "serviceframework/archive/maker.h"
 
 
 namespace casual
@@ -37,7 +37,7 @@ namespace casual
 
                vo::State state()
                {
-                  sf::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
                   auto reply = call( service::name::state());
 
                   vo::State result;
@@ -52,7 +52,7 @@ namespace casual
                {
                   std::vector< vo::resource::Proxy> instances( const std::vector< vo::update::Instances>& instances)
                   {
-                     sf::service::protocol::binary::Call call;
+                     serviceframework::service::protocol::binary::Call call;
 
                      call << CASUAL_MAKE_NVP( instances);
                      auto reply = call( service::name::update::instances());
@@ -309,7 +309,7 @@ namespace casual
                {
                   auto state = call::state();
 
-                  auto debug = sf::archive::log::writer( std::cout);
+                  auto debug = serviceframework::archive::log::writer( std::cout);
 
                   debug << CASUAL_MAKE_NVP( state.pending.requests);
                   debug << CASUAL_MAKE_NVP( state.persistent.requests);
@@ -376,7 +376,7 @@ namespace casual
                void state( const common::optional< std::string>& format)
                {
                   auto state = call::state();
-                  auto archive = sf::archive::writer::from::name( std::cout, format.value_or( ""));
+                  auto archive = serviceframework::archive::writer::from::name( std::cout, format.value_or( ""));
 
                   archive << CASUAL_MAKE_NVP( state);
                }

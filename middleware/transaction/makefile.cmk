@@ -49,7 +49,7 @@ target = LinkExecutable( 'bin/casual-transaction-manager',
     ],
     [ 
       manager_archive, 
-     'casual-sf', 
+     'casual-serviceframework', 
      'casual-common', 
      'casual-configuration', 
      'sqlite3',
@@ -65,7 +65,7 @@ target = LinkLibrary( 'bin/casual-transaction-admin-cli',
     ],
     [ 
       manager_archive, 
-     'casual-sf', 
+     'casual-serviceframework', 
      'casual-common',
      ])
 
@@ -81,7 +81,7 @@ target = LinkLibrary( 'bin/casual-resource-proxy-server',
     Compile( 'source/resource/proxy_server.cpp'),
     Compile( 'source/resource/proxy.cpp'),
    ],
-   [ manager_archive, 'casual-common', 'casual-sf'])
+   [ manager_archive, 'casual-common', 'casual-serviceframework'])
 
 install_lib.append( target)
 
@@ -105,16 +105,16 @@ install_bin.append( target)
  
 LinkUnittest( 'bin/test-casual-transaction',
     [
-        Compile( 'unittest/isolated/source/test_admin.cpp'),
-        Compile( 'unittest/isolated/source/test_configuration.cpp'),
-        Compile( 'unittest/isolated/source/test_log.cpp'),
-        Compile( 'unittest/isolated/source/test_manager.cpp'),
+        Compile( 'unittest/source/test_admin.cpp'),
+        Compile( 'unittest/source/test_configuration.cpp'),
+        Compile( 'unittest/source/test_log.cpp'),
+        Compile( 'unittest/source/test_manager.cpp'),
         
     ],
     [ 
      manager_archive, 
      'casual-common', 
-     'casual-sf', 
+     'casual-serviceframework', 
      'casual-configuration', 
      'sqlite3', 
      'casual-mockup',

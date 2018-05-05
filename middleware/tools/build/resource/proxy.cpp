@@ -16,7 +16,7 @@
 #include "configuration/resource/property.h"
 
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 #include <string>
 #include <iostream>

@@ -5,8 +5,8 @@
 //!
 
 
-#include "sf/archive/json.h"
-#include "sf/archive/policy.h"
+#include "serviceframework/archive/json.h"
+#include "serviceframework/archive/policy.h"
 
 // TODO: Move this to makefile
 #define RAPIDJSON_HAS_STDSTRING 1
@@ -28,7 +28,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
 
       namespace archive
@@ -597,5 +597,5 @@ namespace casual
 
          } // json
       } // archive
-   } // sf
+   } // serviceframework
 } // casual

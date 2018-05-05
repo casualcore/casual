@@ -5,16 +5,16 @@
 //!
 
 
-#include "sf/archive/binary.h"
+#include "serviceframework/archive/binary.h"
 
-#include "sf/archive/policy.h"
+#include "serviceframework/archive/policy.h"
 
 #include "common/memory.h"
 #include "common/network/byteorder.h"
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -197,5 +197,5 @@ namespace casual
 
          } // binary
       } // archive
-   } // sf
+   } // serviceframework
 } // casual

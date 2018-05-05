@@ -20,7 +20,7 @@ LibraryPaths([
 install_lib = []
 install_headers = []
 
-lib_sf = LinkLibrary( 'bin/casual-sf',
+lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
     [
         Compile( 'source/archive/archive.cpp'),
         Compile( 'source/archive/maker.cpp'),
@@ -41,43 +41,43 @@ lib_sf = LinkLibrary( 'bin/casual-sf',
     ],
     ['casual-common', 'casual-xatmi', 'yaml-cpp', 'pugixml'])
 
-install_lib.append( lib_sf)
+install_lib.append( lib_serviceframework)
 
 install_headers += [ 
-      ( 'include/sf/log.h', 'sf'),
-      ( 'include/sf/archive/log.h', 'sf/archive'),
-      ( 'include/sf/namevaluepair.h', 'sf'),
+      ( 'include/serviceframework/log.h', 'serviceframework'),
+      ( 'include/serviceframework/archive/log.h', 'serviceframework/archive'),
+      ( 'include/serviceframework/namevaluepair.h', 'serviceframework'),
 ]
 
 #
 # unittest
 #
 
-LinkUnittest( 'bin/test-casual-sf',
+LinkUnittest( 'bin/test-casual-serviceframework',
 	[
-        Compile( 'unittest/isolated/source/test_namevaluepair.cpp'),
-        Compile( 'unittest/isolated/source/test_traits.cpp'),
-        Compile( 'unittest/isolated/source/test_maker.cpp'),
+        Compile( 'unittest/source/test_namevaluepair.cpp'),
+        Compile( 'unittest/source/test_traits.cpp'),
+        Compile( 'unittest/source/test_maker.cpp'),
         
-        Compile( 'unittest/isolated/source/test_uuid.cpp'),
-        Compile( 'unittest/isolated/source/test_vo.cpp'),
+        Compile( 'unittest/source/test_uuid.cpp'),
+        Compile( 'unittest/source/test_vo.cpp'),
         
-        Compile( 'unittest/isolated/source/service/test_protocol.cpp'),
+        Compile( 'unittest/source/service/test_protocol.cpp'),
         
         # archive stuff
-        Compile( 'unittest/isolated/source/archive/test_archive.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_write_read.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_relaxed_write_read.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_yaml.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_json.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_xml.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_ini.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_service.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_log.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_consumed.cpp'),
-        Compile( 'unittest/isolated/source/archive/test_line.cpp'),
+        Compile( 'unittest/source/archive/test_archive.cpp'),
+        Compile( 'unittest/source/archive/test_write_read.cpp'),
+        Compile( 'unittest/source/archive/test_relaxed_write_read.cpp'),
+        Compile( 'unittest/source/archive/test_yaml.cpp'),
+        Compile( 'unittest/source/archive/test_json.cpp'),
+        Compile( 'unittest/source/archive/test_xml.cpp'),
+        Compile( 'unittest/source/archive/test_ini.cpp'),
+        Compile( 'unittest/source/archive/test_service.cpp'),
+        Compile( 'unittest/source/archive/test_log.cpp'),
+        Compile( 'unittest/source/archive/test_consumed.cpp'),
+        Compile( 'unittest/source/archive/test_line.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
+	[ lib_serviceframework, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
 
 #
 # Install

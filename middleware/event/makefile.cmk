@@ -64,7 +64,7 @@ target = LinkExecutable( 'bin/casual-event-service-monitor-server',
 		archive_vo,
 		common_archive,
 		'casual-common',
-		'casual-sf',
+		'casual-serviceframework',
 		'sqlite3'
 	] )
 
@@ -75,7 +75,7 @@ install_bin.append( target)
 # unittest
 #
 LinkUnittest( 'bin/test-casual-monitor',
-	[ Compile( 'unittest/isolated/source/test_monitor.cpp')],
+	[ Compile( 'unittest/source/test_monitor.cpp')],
 	[
 	archive_vo,
 	'casual-common',

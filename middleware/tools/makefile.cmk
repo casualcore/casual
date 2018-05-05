@@ -32,7 +32,7 @@ common_a = LinkArchive( 'bin/casual-tools-common',
 
 target = LinkExecutable( 'bin/casual-build-server',
    [ Compile( 'build/server.cpp')],
-   [ 'casual-common', 'casual-sf', 'casual-configuration'])
+   [ 'casual-common', 'casual-serviceframework', 'casual-configuration'])
 
 install_bin.append( target)
 
@@ -41,7 +41,7 @@ target = LinkExecutable( 'bin/casual-build-resource-proxy',
    [ 
     common_a,
     'casual-common', 
-    'casual-sf', 
+    'casual-serviceframework', 
     'casual-configuration',
     ])
 

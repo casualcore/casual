@@ -40,7 +40,7 @@ lib_configuration = LinkLibrary( 'bin/casual-configuration',
         Compile( 'source/message/transform.cpp'),
     ],
     ['casual-common',
-    'casual-sf'])
+    'casual-serviceframework'])
 
 
 intall_libs.append( lib_configuration)
@@ -59,19 +59,19 @@ example_archive = LinkArchive( 'bin/casual-configuration-example',
 
 LinkUnittest( 'bin/test-casual-configuration',
    [
-        Compile( 'unittest/isolated/source/test_domain.cpp'),
-        Compile( 'unittest/isolated/source/test_queue.cpp'),
-        Compile( 'unittest/isolated/source/test_gateway.cpp'),
-        Compile( 'unittest/isolated/source/test_message.cpp'),
-        Compile( 'unittest/isolated/source/test_environment.cpp'),
+        Compile( 'unittest/source/test_domain.cpp'),
+        Compile( 'unittest/source/test_queue.cpp'),
+        Compile( 'unittest/source/test_gateway.cpp'),
+        Compile( 'unittest/source/test_message.cpp'),
+        Compile( 'unittest/source/test_environment.cpp'),
         
-        Compile( 'unittest/isolated/source/resource/test_property.cpp'),
-        Compile( 'unittest/isolated/source/build/test_server.cpp'),
+        Compile( 'unittest/source/resource/test_property.cpp'),
+        Compile( 'unittest/source/build/test_server.cpp'),
    ],
    [ 
        example_archive, 
        lib_configuration, 
-       'casual-sf', 
+       'casual-serviceframework', 
        'casual-common', 
        'casual-mockup', 
        'casual-unittest',
@@ -86,7 +86,7 @@ LinkExecutable( 'bin/casual-configuration-example-maker',
     [ 
         Compile( 'source/example/main.cpp'),
    ],          
-   [ example_archive, lib_configuration, 'casual-sf', 'casual-common'])  
+   [ example_archive, lib_configuration, 'casual-serviceframework', 'casual-common'])  
 
 
    

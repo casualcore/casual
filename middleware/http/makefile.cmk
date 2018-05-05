@@ -57,7 +57,7 @@ target = LinkExecutable( 'bin/casual-http-outbound',
     [ 
      common_outbound_archive,
      common_archive,
-     'casual-sf', 
+     'casual-serviceframework', 
      'casual-common', 
      'curl'
      ])
@@ -68,16 +68,16 @@ install_bin.append( target)
 #
 # Unittest
 #
-LinkUnittest( 'unittest/isolated/bin/test-http',
+LinkUnittest( 'unittest/bin/test-http',
    [
-    Compile( 'unittest/isolated/outbound/source/test_model.cpp'),
+    Compile( 'unittest/outbound/source/test_model.cpp'),
    ],
    [ 
       common_outbound_archive, 
       common_archive,
       'casual-mockup',
       'casual-common', 
-      'casual-sf', 
+      'casual-serviceframework', 
       'casual-unittest'
    ])  
    

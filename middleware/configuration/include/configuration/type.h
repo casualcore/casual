@@ -8,11 +8,11 @@
 #ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TYPE_H_
 #define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TYPE_H_
 
-#include "sf/namevaluepair.h"
+#include "serviceframework/namevaluepair.h"
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -20,7 +20,7 @@ namespace casual
          class Writer;
       }
 
-   } // sf
+   } // serviceframework
 
    namespace configuration
    {
@@ -61,17 +61,17 @@ namespace casual
       };
 
       template< typename V>
-      void serialize( sf::archive::Reader& archive, Type< V>& value, const char* name)
+      void serialize( serviceframework::archive::Reader& archive, Type< V>& value, const char* name)
       {
 
       }
 
       template< typename V>
-      void serialize( sf::archive::Writer& archive, Type< V>& value, const char* name)
+      void serialize( serviceframework::archive::Writer& archive, Type< V>& value, const char* name)
       {
          if( value.assigned())
          {
-            archive << sf::makeNameValuePair( name, value.value());
+            archive << serviceframework::makeNameValuePair( name, value.value());
          }
       }
 

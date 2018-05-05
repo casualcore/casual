@@ -10,7 +10,7 @@
 #define SF_TESTPROXY_H_
 
 
-#include <sf/service/protocol/call.h>
+#include <serviceframework/service/protocol/call.h>
 
 //## includes protected section begin [.10]
 #include <string>
@@ -49,8 +49,8 @@ namespace test
          {
          public:
 
-            using Flag = casual::sf::service::protocol::binary::Send::Flag;
-            using Flags = casual::sf::service::protocol::binary::Send::Flags;
+            using Flag = casual::serviceframework::service::protocol::binary::Send::Flag;
+            using Flags = casual::serviceframework::service::protocol::binary::Send::Flags;
 
             SomeService2();
             ~SomeService2();
@@ -61,7 +61,7 @@ namespace test
             class Receive
             {
             public:
-               using receive_type = casual::sf::service::protocol::binary::Send::receive_type;
+               using receive_type = casual::serviceframework::service::protocol::binary::Send::receive_type;
                using Flag = receive_type::Flag;
                using Flags = receive_type::Flags;
 
@@ -89,8 +89,8 @@ namespace test
 
       namespace call
       {
-         using Flag = casual::sf::service::protocol::binary::Call::Flag;
-         using Flags = casual::sf::service::protocol::binary::Call::Flags;
+         using Flag = casual::serviceframework::service::protocol::binary::Call::Flag;
+         using Flags = casual::serviceframework::service::protocol::binary::Call::Flags;
 
          // service name med inledande versal
          // comments genereras h�r.

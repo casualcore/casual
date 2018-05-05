@@ -9,8 +9,8 @@
 #define CASUAL_GATEWAY_MANAGER_ADMIN_VO_H
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include "common/domain.h"
 

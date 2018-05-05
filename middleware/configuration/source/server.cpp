@@ -22,7 +22,7 @@ namespace casual
             namespace
             {
                template< typename T>
-               void assign_if_empty( sf::optional< T>& value, const sf::optional< T>& optional)
+               void assign_if_empty( serviceframework::optional< T>& value, const serviceframework::optional< T>& optional)
                {
                   if( ! value.has_value())
                      value = optional;

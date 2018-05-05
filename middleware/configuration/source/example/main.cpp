@@ -11,8 +11,8 @@
 #include "configuration/example/build/server.h"
 #include "configuration/example/resource/property.h"
 
-#include "sf/namevaluepair.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/maker.h"
 
 
 #include "common/argument.h"
