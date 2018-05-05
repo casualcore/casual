@@ -9,7 +9,7 @@
 
 #include "service/common.h"
 
-#include "sf/service/protocol/call.h"
+#include "serviceframework/service/protocol/call.h"
 
 namespace casual
 {
@@ -27,7 +27,7 @@ namespace casual
                   {
                      Trace trace{ "service::manager::admin::api::state"};
 
-                     sf::service::protocol::binary::Call call;
+                     serviceframework::service::protocol::binary::Call call;
 
                      auto reply = call( service::name::state());
 

@@ -5,13 +5,13 @@
 //!
 
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 
 namespace casual
 {
 
-   namespace sf
+   namespace serviceframework
    {
       namespace log
       {
@@ -33,6 +33,6 @@ namespace casual
       } // trace
 
 
-   } // sf
+   } // serviceframework
 
 } // casual

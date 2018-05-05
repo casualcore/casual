@@ -20,8 +20,8 @@
 #include "common/execute.h"
 
 
-#include "sf/service/protocol/call.h"
-#include "sf/log.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/log.h"
 
 namespace casual
 {
@@ -43,7 +43,7 @@ namespace casual
                } // exception
 
                template< typename M>
-               sf::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
+               serviceframework::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
                   Trace trace( "casual::queue::enqueue");
 
@@ -223,7 +223,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
+         serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
          {
             Trace trace( "casual::queue::enqueue");
 
@@ -324,7 +324,7 @@ namespace casual
                   Payload& operator = ( Payload&&) = default;
 
                   std::string type;
-                  sf::platform::binary::type data;
+                  serviceframework::platform::binary::type data;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -338,7 +338,7 @@ namespace casual
 
             } // reference
 
-            sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
+            serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
             {
                Trace trace{ "casual::queue::xatmi::enqueue"};
 
@@ -498,7 +498,7 @@ namespace casual
 
                for( auto& queue : queues)
                {
-                  sf::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
                   call << CASUAL_MAKE_NVP( queue);
 
                   auto reply = call( manager::admin::service::name::restore());

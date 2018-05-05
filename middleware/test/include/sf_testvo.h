@@ -22,7 +22,7 @@
 //
 namespace casual 
 { 
-   namespace sf 
+   namespace serviceframework 
    { 
       namespace archive 
       {
@@ -79,9 +79,9 @@ public:
 
 
   
-   void serialize( casual::sf::archive::Reader& archive);
+   void serialize( casual::serviceframework::archive::Reader& archive);
   
-   void serialize( casual::sf::archive::Writer& archive) const;
+   void serialize( casual::serviceframework::archive::Writer& archive) const;
 
 private:
 

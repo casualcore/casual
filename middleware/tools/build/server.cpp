@@ -18,7 +18,7 @@
 #include "configuration/build/server.h"
 #include "configuration/resource/property.h"
 
-#include "sf/namevaluepair.h"
+#include "serviceframework/namevaluepair.h"
 #include <vector>
 #include <string>
 #include <iostream>

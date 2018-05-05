@@ -7,7 +7,7 @@
 
 #include "gateway/outbound/routing.h"
 
-#include "sf/platform.h"
+#include "serviceframework/platform.h"
 
 #include "common/chronology.h"
 

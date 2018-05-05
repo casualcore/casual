@@ -11,8 +11,8 @@
 
 #include "common/algorithm.h"
 
-#include "sf/log.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/log.h"
+#include "serviceframework/archive/maker.h"
 
 
 namespace casual

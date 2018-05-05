@@ -5,7 +5,7 @@
 //!
 
 
-#include <sf/archive/archive.h>
+#include <serviceframework/archive/archive.h>
 
 
 //## includes protected section begin [200.20]
@@ -108,12 +108,12 @@ void TestVO::setSomeString( std::string value)
 
 
 
-void TestVO::serialize( casual::sf::archive::Reader& archive)
+void TestVO::serialize( casual::serviceframework::archive::Reader& archive)
 {
     pimpl->serialize( archive);
 }
   
-void TestVO::serialize( casual::sf::archive::Writer& archive) const
+void TestVO::serialize( casual::serviceframework::archive::Writer& archive) const
 {
     pimpl->serialize( archive);
 }

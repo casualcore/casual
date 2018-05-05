@@ -8,7 +8,7 @@
 #ifndef CASUAL_MIDDLEWARE_TOOLS_SERVICE_INCLUDE_DESCRIBE_H_
 #define CASUAL_MIDDLEWARE_TOOLS_SERVICE_INCLUDE_DESCRIBE_H_
 
-#include "sf/service/model.h"
+#include "serviceframework/service/model.h"
 
 
 namespace casual
@@ -19,7 +19,7 @@ namespace casual
       {
          namespace describe
          {
-            std::vector< sf::service::Model> invoke( const std::vector< std::string>& services);   
+            std::vector< serviceframework::service::Model> invoke( const std::vector< std::string>& services);   
          } // describe
       } // service
    } // tools

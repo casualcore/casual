@@ -5,10 +5,10 @@
 //!
 
 
-#include "sf/archive/xml.h"
-#include "sf/archive/policy.h"
+#include "serviceframework/archive/xml.h"
+#include "serviceframework/archive/policy.h"
 
-#include "sf/exception.h"
+#include "serviceframework/exception.h"
 
 #include "common/transcode.h"
 
@@ -20,7 +20,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -541,6 +541,6 @@ namespace casual
          } // xml
 
       } // archive
-   } // sf
+   } // serviceframework
 
 } // casual

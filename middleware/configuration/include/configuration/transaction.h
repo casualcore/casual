@@ -8,8 +8,8 @@
 #ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TRANSACTION_H_
 #define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TRANSACTION_H_
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <string>
 #include <vector>
@@ -24,8 +24,8 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< std::string> key;
-               sf::optional< sf::platform::size::type> instances;
+               serviceframework::optional< std::string> key;
+               serviceframework::optional< serviceframework::platform::size::type> instances;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -43,8 +43,8 @@ namespace casual
             std::string name;
             std::string note;
 
-            sf::optional< std::string> openinfo;
-            sf::optional< std::string> closeinfo;
+            serviceframework::optional< std::string> openinfo;
+            serviceframework::optional< std::string> closeinfo;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -90,7 +90,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & sf::name::value::pair::make( "default", manager_default);
+               archive & serviceframework::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( log);
                archive & CASUAL_MAKE_NVP( resources);
             )

@@ -12,7 +12,7 @@
 #include "common/chronology.h"
 #include "common/exception/handle.h"
 
-#include "sf/service/protocol/call.h"
+#include "serviceframework/service/protocol/call.h"
 
 
 
@@ -94,7 +94,7 @@ void run( Settings settings)
          Transaction transaction( settings, timepoints);
 
 
-         using Send = casual::sf::service::protocol::binary::Send;
+         using Send = casual::serviceframework::service::protocol::binary::Send;
          Send send;
 
          send << CASUAL_MAKE_NVP( settings.argument);
@@ -116,7 +116,7 @@ void run( Settings settings)
             {
                auto result = receive();
             }
-            catch( const casual::sf::exception::Base& exception)
+            catch( const casual::serviceframework::exception::Base& exception)
             {
                std::cerr << exception << '\n';
             }

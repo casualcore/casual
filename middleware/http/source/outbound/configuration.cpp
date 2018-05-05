@@ -15,8 +15,8 @@
 
 #include "common/algorithm.h"
 
-#include "sf/archive/maker.h"
-#include "sf/platform.h"
+#include "serviceframework/archive/maker.h"
+#include "serviceframework/platform.h"
 
 namespace casual
 {
@@ -40,7 +40,7 @@ namespace casual
                      // Create the reader and deserialize configuration
                      //
                      Model http;
-                     auto reader = sf::archive::reader::from::file( file);
+                     auto reader = serviceframework::archive::reader::from::file( file);
                      reader >> CASUAL_MAKE_NVP( http);
 
                      common::log::line( verbose::log, "http: ", http);

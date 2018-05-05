@@ -9,8 +9,8 @@
 #define CONFIGURATION_XA_SWITCH_H_
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <vector>
 #include <string>
@@ -47,7 +47,7 @@ namespace casual
 
             } paths;
 
-            sf::optional< std::string> note;
+            serviceframework::optional< std::string> note;
 
 
             CASUAL_CONST_CORRECT_SERIALIZE

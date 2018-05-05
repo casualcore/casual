@@ -24,7 +24,7 @@
 #include "common/domain.h"
 
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 
 #include <xatmi.h>

@@ -11,8 +11,8 @@
 #include "common/terminal.h"
 #include "common/exception/handle.h"
 
-#include "sf/log.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/log.h"
+#include "serviceframework/archive/maker.h"
 
 #include "service/manager/admin/api.h"
 
@@ -56,25 +56,25 @@ namespace casual
                      namespace cli
                      {
 
-                        const char* type_name( sf::service::model::type::Category category)
+                        const char* type_name( serviceframework::service::model::type::Category category)
                         {
                            switch( category)
                            {
-                              case sf::service::model::type::Category::integer: return "integer";
-                              case sf::service::model::type::Category::boolean: return "boolean";
-                              case sf::service::model::type::Category::character: return "character";
-                              case sf::service::model::type::Category::binary: return "binary";
-                              case sf::service::model::type::Category::string: return "string";
+                              case serviceframework::service::model::type::Category::integer: return "integer";
+                              case serviceframework::service::model::type::Category::boolean: return "boolean";
+                              case serviceframework::service::model::type::Category::character: return "character";
+                              case serviceframework::service::model::type::Category::binary: return "binary";
+                              case serviceframework::service::model::type::Category::string: return "string";
                               default: return "unknown";
                            }
                         }
-                        void types( std::ostream& out, const std::vector< sf::service::Model::Type>& types, std::size_t indent);
+                        void types( std::ostream& out, const std::vector< serviceframework::service::Model::Type>& types, std::size_t indent);
 
-                        void type( std::ostream& out, const sf::service::Model::Type& type, std::size_t indent)
+                        void type( std::ostream& out, const serviceframework::service::Model::Type& type, std::size_t indent)
                         {
                            switch( type.category)
                            {
-                              case sf::service::model::type::Category::container:
+                              case serviceframework::service::model::type::Category::container:
                               {
                                  indentation( out, indent) << common::terminal::color::cyan << "container";
                                  out << " " << type.role << '\n';
@@ -83,7 +83,7 @@ namespace casual
                                  types( out, type.attribues, indent + 1);
                                  break;
                               }
-                              case sf::service::model::type::Category::composite:
+                              case serviceframework::service::model::type::Category::composite:
                               {
                                  indentation( out, indent) << common::terminal::color::cyan << "composite";
                                  out << " " << type.role << '\n';
@@ -102,7 +102,7 @@ namespace casual
 
                         }
 
-                        void types( std::ostream& out, const std::vector< sf::service::Model::Type>& types, std::size_t indent)
+                        void types( std::ostream& out, const std::vector< serviceframework::service::Model::Type>& types, std::size_t indent)
                         {
                            for( auto& type : types)
                            {
@@ -112,7 +112,7 @@ namespace casual
                         }
 
 
-                        void print( std::ostream& out, const sf::service::Model& model)
+                        void print( std::ostream& out, const serviceframework::service::Model& model)
                         {
                            out << common::terminal::color::white << "service: " << model.service << '\n';
 
@@ -140,7 +140,7 @@ namespace casual
                      {
                         if( format)
                         {
-                           auto archive = sf::archive::writer::from::name( std::cout, format.value());
+                           auto archive = serviceframework::archive::writer::from::name( std::cout, format.value());
 
                            archive << CASUAL_MAKE_NVP( model);
                         }

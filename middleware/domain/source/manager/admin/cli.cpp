@@ -18,9 +18,9 @@
 
 #include "common/communication/ipc.h"
 
-#include "sf/service/protocol/call.h"
-#include "sf/archive/maker.h"
-#include "sf/log.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/archive/maker.h"
+#include "serviceframework/log.h"
 
 namespace casual
 {
@@ -213,7 +213,7 @@ namespace casual
 
                   admin::vo::State state()
                   {
-                     sf::service::protocol::binary::Call call;
+                     serviceframework::service::protocol::binary::Call call;
                      auto reply = call( admin::service::name::state());
 
                      admin::vo::State serviceReply;
@@ -226,7 +226,7 @@ namespace casual
 
                   std::vector< admin::vo::scale::Instances> scale_instances( const std::vector< admin::vo::scale::Instances>& instances)
                   {
-                     sf::service::protocol::binary::Call call;
+                     serviceframework::service::protocol::binary::Call call;
                      call << CASUAL_MAKE_NVP( instances);
 
                      auto reply = call( admin::service::name::scale::instances());
@@ -312,7 +312,7 @@ namespace casual
 
                      event::Handler events{ get_alias_mapping()};
 
-                     sf::service::protocol::binary::Call{}( admin::service::name::shutdown());
+                     serviceframework::service::protocol::binary::Call{}( admin::service::name::shutdown());
 
                      events();
                   }
@@ -467,7 +467,7 @@ namespace casual
                   {
                      void configuration()
                      {
-                        sf::service::protocol::binary::Call{}( admin::service::name::configuration::persist());
+                        serviceframework::service::protocol::binary::Call{}( admin::service::name::configuration::persist());
                      }
                   } // persist
 
@@ -475,7 +475,7 @@ namespace casual
                   void state( const common::optional< std::string>& format)
                   {
                      auto state = call::state();
-                     auto archive = sf::archive::writer::from::name( format.value_or( ""));
+                     auto archive = serviceframework::archive::writer::from::name( format.value_or( ""));
 
                      archive << CASUAL_MAKE_NVP( state);
                   }

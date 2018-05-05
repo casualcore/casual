@@ -7,7 +7,7 @@
 
 #include "configuration/example/build/server.h"
 
-#include "sf/archive/maker.h"
+#include "serviceframework/archive/maker.h"
 
 #include <fstream>
 
@@ -53,7 +53,7 @@ namespace casual
 
                void write( const model_type& server, const std::string& name)
                {
-                  auto archive = sf::archive::writer::from::file( name);
+                  auto archive = serviceframework::archive::writer::from::file( name);
                   archive << CASUAL_MAKE_NVP( server);
                }
 

@@ -7,9 +7,9 @@
 #include "service/manager/admin/cli.h"
 
 
-#include "sf/namevaluepair.h"
-#include "sf/archive/maker.h"
-#include "sf/service/protocol/call.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/maker.h"
+#include "serviceframework/service/protocol/call.h"
 
 #include "service/manager/admin/managervo.h"
 #include "service/manager/admin/server.h"
@@ -65,7 +65,7 @@ namespace casual
 
                std::vector< std::string> reset( const std::vector< std::string>& services)
                {
-                  sf::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
                   call << CASUAL_MAKE_NVP( services);
 
                   auto reply = call( admin::service::name::metric::reset());
@@ -89,7 +89,7 @@ namespace casual
             {
                State state;
 
-               sf::service::protocol::binary::Call call;
+               serviceframework::service::protocol::binary::Call call;
                auto reply = call( casual::domain::manager::admin::service::name::state());
 
                reply >> CASUAL_MAKE_NVP( state.domain);
@@ -584,7 +584,7 @@ namespace casual
             {
                auto state = admin::api::state();
 
-               auto archive = sf::archive::writer::from::name( std::cout, format.value_or( ""));
+               auto archive = serviceframework::archive::writer::from::name( std::cout, format.value_or( ""));
                archive << CASUAL_MAKE_NVP( state);
             }
 

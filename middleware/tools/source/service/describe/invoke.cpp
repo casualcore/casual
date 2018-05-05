@@ -8,7 +8,7 @@
 #include "common.h"
 
 
-#include "sf/service/protocol/call.h"
+#include "serviceframework/service/protocol/call.h"
 
 
 #include "common/service/header.h"
@@ -24,7 +24,7 @@ namespace casual
       {
          namespace describe
          {
-            std::vector< sf::service::Model> invoke( const std::vector< std::string>& services)
+            std::vector< serviceframework::service::Model> invoke( const std::vector< std::string>& services)
             {
                Trace trace{ "tools::service::describe::incoke"};
 
@@ -34,10 +34,10 @@ namespace casual
                common::service::header::fields()[ "casual-service-describe"] = "true";
 
                return algorithm::transform( services, []( const std::string& service){
-                  sf::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
                   auto reply = call( service);
 
-                  sf::service::Model model;
+                  serviceframework::service::Model model;
 
                   reply >> CASUAL_MAKE_NVP( model);
 

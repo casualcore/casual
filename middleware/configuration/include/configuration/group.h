@@ -8,8 +8,8 @@
 #ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_GROUP_C_
 #define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_GROUP_C_
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 namespace casual
 {
@@ -26,8 +26,8 @@ namespace casual
             std::string name;
             std::string note;
 
-            sf::optional< std::vector< std::string>> resources;
-            sf::optional< std::vector< std::string>> dependencies;
+            serviceframework::optional< std::vector< std::string>> resources;
+            serviceframework::optional< std::vector< std::string>> dependencies;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (

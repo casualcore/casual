@@ -22,8 +22,8 @@
 #include "configuration/environment.h"
 
 
-#include  "sf/namevaluepair.h"
-#include  "sf/archive/archive.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/archive.h"
 
 #include <unordered_map>
 #include <vector>
@@ -32,7 +32,7 @@
 namespace casual
 {
 
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -50,7 +50,7 @@ namespace casual
             archive << name::value::pair::make( name, value.value());
          }
       } // archive
-   } // sf
+   } // serviceframework
 
    namespace domain
    {
@@ -162,7 +162,7 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( note);
 
                   archive & CASUAL_MAKE_NVP( memberships);
-                  archive & sf::name::value::pair::make(  "environment_variables", environment.variables);
+                  archive & serviceframework::name::value::pair::make(  "environment_variables", environment.variables);
                   archive & CASUAL_MAKE_NVP( restart);
                   archive & CASUAL_MAKE_NVP( restarts);
                )

@@ -8,7 +8,7 @@
 
 #include "sf_testproxy.h"
 
-#include "sf/archive/archive.h"
+#include "serviceframework/archive/archive.h"
 
 
 //## includes protected section begin [.10]
@@ -61,7 +61,7 @@ namespace test
 
          SomeService2::Receive SomeService2::operator() ( const std::string& value, Flags flags)
          {
-            sf::service::protocol::binary::Send send;
+            serviceframework::service::protocol::binary::Send send;
 
             local::someService2::input( send, value);
 
@@ -96,7 +96,7 @@ namespace test
       {
          std::vector< std::string> someService2( const std::string& value, Flags flag)
          {
-            sf::service::protocol::binary::Call call;
+            serviceframework::service::protocol::binary::Call call;
             local::someService2::input( call, value);
 
             auto reply = call( "casual_sf_test2", flag);

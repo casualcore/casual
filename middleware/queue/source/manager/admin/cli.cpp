@@ -20,9 +20,9 @@
 #include "common/execute.h"
 #include "common/exception/handle.h"
 
-#include "sf/service/protocol/call.h"
-#include "sf/archive/maker.h"
-#include "sf/log.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/archive/maker.h"
+#include "serviceframework/log.h"
 
 #include "xatmi.h"
 
@@ -56,7 +56,7 @@ namespace casual
 
          manager::admin::State state()
          {
-            sf::service::protocol::binary::Call call;
+            serviceframework::service::protocol::binary::Call call;
             auto reply = call( manager::admin::service::name::state());
 
             manager::admin::State result;
@@ -67,7 +67,7 @@ namespace casual
 
          std::vector< manager::admin::Message> messages( const std::string& queue)
          {
-            sf::service::protocol::binary::Call call;
+            serviceframework::service::protocol::binary::Call call;
             call << CASUAL_MAKE_NVP( queue);
             auto reply = call( manager::admin::service::name::list_messages());
 
@@ -313,7 +313,7 @@ namespace casual
             {
                auto state = call::state();
 
-               auto archive = sf::archive::writer::from::name( format.value_or( ""));
+               auto archive = serviceframework::archive::writer::from::name( format.value_or( ""));
                archive << CASUAL_MAKE_NVP( state);
             }
          } // <unnamed>

@@ -5,11 +5,11 @@
 //!
 
 
-#include "sf/archive/line.h"
+#include "serviceframework/archive/line.h"
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
 
       namespace archive
@@ -112,5 +112,5 @@ namespace casual
 
          } // log
       } // archive
-   } // sf
+   } // serviceframework
 } // casual

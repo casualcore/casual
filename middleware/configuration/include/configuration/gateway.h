@@ -9,8 +9,8 @@
 #define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_GATEWAY_H_
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <string>
 #include <vector>
@@ -25,8 +25,8 @@ namespace casual
          {
             struct Limit
             {
-               sf::optional< sf::platform::size::type> size;
-               sf::optional< sf::platform::size::type> messages;
+               serviceframework::optional< serviceframework::platform::size::type> size;
+               serviceframework::optional< serviceframework::platform::size::type> messages;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -37,7 +37,7 @@ namespace casual
 
             struct Default
             {
-               sf::optional< Limit> limit;
+               serviceframework::optional< Limit> limit;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -71,9 +71,9 @@ namespace casual
 
             struct Default
             {
-               sf::optional< std::string> type;
-               sf::optional< bool> restart;
-               sf::optional< std::string> address;
+               serviceframework::optional< std::string> type;
+               serviceframework::optional< bool> restart;
+               serviceframework::optional< std::string> address;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -133,7 +133,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & sf::name::value::pair::make( "default", manager_default);
+               archive & serviceframework::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( listeners);
                archive & CASUAL_MAKE_NVP( connections);
             )

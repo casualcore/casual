@@ -5,12 +5,12 @@
 //!
 
 
-#include "sf/archive/yaml.h"
+#include "serviceframework/archive/yaml.h"
 
-#include "sf/archive/policy.h"
+#include "serviceframework/archive/policy.h"
 
-#include "sf/exception.h"
-#include "sf/log.h"
+#include "serviceframework/exception.h"
+#include "serviceframework/log.h"
 
 #include "common/transcode.h"
 
@@ -25,7 +25,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -543,6 +543,6 @@ namespace casual
 
          } // yaml
       } // archive
-   } // sf
+   } // serviceframework
 } // casual
 

@@ -5,16 +5,16 @@
 //!
 
 
-#include "sf/service/protocol.h"
-#include "sf/service/protocol/implementation.h"
+#include "serviceframework/service/protocol.h"
+#include "serviceframework/service/protocol/implementation.h"
 
-#include "sf/exception.h"
-#include "sf/log.h"
+#include "serviceframework/exception.h"
+#include "serviceframework/log.h"
 
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace service
       {
@@ -76,7 +76,7 @@ namespace casual
 
                   return found->second( std::move( parameter));
                }
-               throw sf::exception::Validation( "no suitable protocol was found for type: " + parameter.payload.type);
+               throw serviceframework::exception::Validation( "no suitable protocol was found for type: " + parameter.payload.type);
             }
 
 
@@ -87,5 +87,5 @@ namespace casual
 
          } // protocol
       } // service
-   } // sf
+   } // serviceframework
 } // casual

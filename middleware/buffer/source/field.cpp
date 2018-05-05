@@ -23,8 +23,8 @@
 
 
 
-#include "sf/namevaluepair.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/maker.h"
 
 #include <cstring>
 
@@ -1371,7 +1371,7 @@ namespace casual
 
                      const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
 
-                     auto archive = sf::archive::reader::from::file( file);
+                     auto archive = serviceframework::archive::reader::from::file( file);
                      archive >> CASUAL_MAKE_NVP( groups);
 
                      return groups;
@@ -1496,11 +1496,11 @@ namespace casual
                   {
                      const auto name = "name";
 
-                     archive << sf::name::value::pair::make( name, id_to_name().at( id));
+                     archive << serviceframework::name::value::pair::make( name, id_to_name().at( id));
 
                      const auto value = "value";
 
-                     using sf::name::value::pair::make;
+                     using serviceframework::name::value::pair::make;
 
                      const auto data = occurrence + data_offset;
                      const auto size = occurrence + size_offset;
@@ -1546,7 +1546,7 @@ namespace casual
 
                      casual_field_id_of_name( name.c_str(), &m_id);
 
-                     using sf::name::value::pair::make;
+                     using serviceframework::name::value::pair::make;
 
                      switch( m_id / CASUAL_FIELD_TYPE_BASE)
                      {
@@ -1570,7 +1570,7 @@ namespace casual
                         break;
                      case CASUAL_FIELD_BINARY:
                      default:
-                        archive >> sf::name::value::pair::make( "value", m_value);
+                        archive >> serviceframework::name::value::pair::make( "value", m_value);
                         break;
                      }
                   }
@@ -1611,7 +1611,7 @@ namespace casual
                   void assign( A& archive)
                   {
                      m_value.resize( sizeof( T));
-                     archive >> sf::name::value::pair::make( "value", *reinterpret_cast< T*>( m_value.data()));
+                     archive >> serviceframework::name::value::pair::make( "value", *reinterpret_cast< T*>( m_value.data()));
                   }
 
                   template< typename A>
@@ -1676,7 +1676,7 @@ namespace casual
 
                common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
-               auto archive = sf::archive::writer::from::name( stream, protocol);
+               auto archive = serviceframework::archive::writer::from::name( stream, protocol);
 
                std::vector< write> fields;
 
@@ -1699,7 +1699,7 @@ namespace casual
                {
                   const Trace trace{ "field::internal::serialize in"};
 
-                  auto archive = sf::archive::reader::from::name( stream, protocol);
+                  auto archive = serviceframework::archive::reader::from::name( stream, protocol);
 
                   std::vector< read> fields;
                   archive >> CASUAL_MAKE_NVP( fields);

@@ -9,8 +9,8 @@
 #define CONFIG_QUEUE_H_
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <string>
 #include <vector>
@@ -26,7 +26,7 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< sf::platform::size::type> retries;
+               serviceframework::optional< serviceframework::platform::size::type> retries;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -60,7 +60,7 @@ namespace casual
             Group( std::function<void( Group&)> foreign);
 
             std::string name;
-            sf::optional< std::string> queuebase;
+            serviceframework::optional< std::string> queuebase;
             std::string note;
             std::vector< Queue> queues;
 
@@ -102,7 +102,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & sf::name::value::pair::make( "default", manager_default);
+               archive & serviceframework::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( groups);
             )
 
