@@ -50,7 +50,7 @@ namespace casual
       };
 
 
-      typedef ::testing::Types<
+      using memory_types = ::testing::Types<
             local::Holder< char>,
             local::Holder< int>,
             local::Holder< long>,
@@ -67,7 +67,7 @@ namespace casual
             // tuple is not trivially copyable
             //local::Holder< std::tuple< long, double, char, short, int>, sizeof( std::tuple< long, double, char, short, int>)>,
             local::Holder< local::pod_struct[ 10], sizeof( local::pod_struct) * 10>
-       > memory_types;
+       >;
 
       TYPED_TEST_CASE(casual_common_memory, memory_types);
 

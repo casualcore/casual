@@ -117,7 +117,7 @@ namespace casual
 
                struct Connect : public state::Base
                {
-                  typedef common::message::transaction::resource::connect::Reply message_type;
+                  using message_type = common::message::transaction::resource::connect::Reply;
 
                   using state::Base::Base;
 

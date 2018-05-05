@@ -36,10 +36,7 @@ namespace casual
 
             struct TestHandler
             {
-               TestHandler() = default;
-               //TestHandler( TestHandler&&) = default;
-
-               typedef message::shutdown::Request message_type;
+               using message_type = message::shutdown::Request;
 
                void operator () ( message_type message)
                {
@@ -50,7 +47,6 @@ namespace casual
 
             struct TestMember
             {
-
                void handle( message::server::ping::Request& message)
                {
 

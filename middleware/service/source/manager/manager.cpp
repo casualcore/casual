@@ -41,8 +41,8 @@ namespace casual
 {
    using namespace common;
 
-	namespace service
-	{
+   namespace service
+   {
 
       namespace local
       {
@@ -251,7 +251,7 @@ namespace casual
          }
       }
 
-	} // service
+   } // service
 } // casual
 
 

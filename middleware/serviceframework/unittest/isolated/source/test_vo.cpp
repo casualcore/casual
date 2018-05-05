@@ -14,9 +14,9 @@
 
 namespace casual
 {
-	namespace test
+   namespace test
    {
-	   namespace pimpl
+      namespace pimpl
       {
          class Simple::Implementation
          {
@@ -96,37 +96,37 @@ namespace casual
 
    } // test
 
-	TEST( casual_test_vo, pimpl_Simple_instanciation)
-	{
-	   test::pimpl::Simple simple;
-
-	   simple.setLong( 42);
-
-	   EXPECT_TRUE( simple.getLong() == 42);
-	}
-
-
-	TEST( casual_test_vo, pimpl_Simple_copy_ctor)
+   TEST( casual_test_vo, pimpl_Simple_instanciation)
    {
-	   test::pimpl::Simple first( 42);
+      test::pimpl::Simple simple;
+
+      simple.setLong( 42);
+
+      EXPECT_TRUE( simple.getLong() == 42);
+   }
+
+
+   TEST( casual_test_vo, pimpl_Simple_copy_ctor)
+   {
+      test::pimpl::Simple first( 42);
 
       test::pimpl::Simple second{ first};
 
       EXPECT_TRUE( second.getLong() == 42);
    }
 
-	TEST( casual_test_vo, pimpl_Simple_copy_assignment)
+   TEST( casual_test_vo, pimpl_Simple_copy_assignment)
    {
-	   test::pimpl::Simple first( 42);
+      test::pimpl::Simple first( 42);
 
       test::pimpl::Simple second = first;
 
       EXPECT_TRUE( second.getLong() == 42);
    }
 
-	TEST( casual_test_vo, pimpl_Simple_move_ctor)
+   TEST( casual_test_vo, pimpl_Simple_move_ctor)
    {
-	   test::pimpl::Simple first( 42);
+      test::pimpl::Simple first( 42);
 
       test::pimpl::Simple second{ std::move( first)};
 
@@ -134,7 +134,7 @@ namespace casual
    }
 
 
-	TEST( casual_test_vo, pimpl_Simple_move_assignment)
+   TEST( casual_test_vo, pimpl_Simple_move_assignment)
    {
       test::pimpl::Simple first( 42);
 

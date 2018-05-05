@@ -20,14 +20,14 @@ extern "C" {
 
 struct casual_service_name_mapping
 {
-	tpservice function_pointer;
-	const char* name;
+   tpservice function_pointer;
+   const char* name;
 
-	/* type of service */
-	const char* category;
+   /* type of service */
+   const char* category;
 
-	/* transaction policy */
-	uint64_t transaction;
+   /* transaction policy */
+   uint64_t transaction;
 
 };
 

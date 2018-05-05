@@ -22,59 +22,59 @@
 namespace casual
 {
 
-	namespace common
-	{
-		namespace string
-		{
+   namespace common
+   {
+      namespace string
+      {
 
-			//!
-			//! splits a range
-			//!
-			//! @param line line to be splittet
-			//! @param delimiter the value to use as a splitter
-			//!
-			//! @return the splitted range.
-			//!
-			std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
+         //!
+         //! splits a range
+         //!
+         //! @param line line to be splittet
+         //! @param delimiter the value to use as a splitter
+         //!
+         //! @return the splitted range.
+         //!
+         std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
 
 
-			namespace adjacent
+         namespace adjacent
          {
-	         //!
-	         //! splits a range, and ignores adjacent delimiters
-	         //!
-	         //! @param line line to be splittet
-	         //! @param delimiter the value to use as a splitter
-	         //!
-	         //! @return the splitted range.
-	         //!
-	         std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
+            //!
+            //! splits a range, and ignores adjacent delimiters
+            //!
+            //! @param line line to be splittet
+            //! @param delimiter the value to use as a splitter
+            //!
+            //! @return the splitted range.
+            //!
+            std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
 
          } // adjacent
 
 
-			/*
-			 * regex not implemented in gcc 4.7.2...
-			inline std::vector< std::string> split( const std::string& line, const std::regex& regexp)
+         /*
+          * regex not implemented in gcc 4.7.2...
+         inline std::vector< std::string> split( const std::string& line, const std::regex& regexp)
          {
-			   std::vector< std::string> result;
+            std::vector< std::string> result;
 
-			   std::copy( std::sregex_token_iterator( std::begin( line), std::end( line), regexp, -1),
-			         std::sregex_token_iterator(),
-			         std::back_inserter( result));
+            std::copy( std::sregex_token_iterator( std::begin( line), std::end( line), regexp, -1),
+                  std::sregex_token_iterator(),
+                  std::back_inserter( result));
 
-			   return result;
+            return result;
          }
 
-			inline std::vector< std::string> split( const std::string& line, const std::string& regexp)
+         inline std::vector< std::string> split( const std::string& line, const std::string& regexp)
          {
-			   return split( line, std::regex( regexp));
+            return split( line, std::regex( regexp));
          }
          */
 
 
          template< typename R>
-			std::string join( R&& range)
+         std::string join( R&& range)
          {
             return algorithm::accumulate( range, std::string{});
          }
@@ -97,9 +97,9 @@ namespace casual
             return result;
          }
 
-			std::string trim( const std::string& value);
+         std::string trim( const std::string& value);
 
-			template< typename R>
+         template< typename R>
          auto trim( R&& range) -> common::traits::concrete::type_t< decltype( range)>
          {
             const auto ws = [] (const auto character){ 
@@ -116,7 +116,7 @@ namespace casual
          }
 
 
-			std::string lower( std::string value);
+         std::string lower( std::string value);
 
          std::string upper( std::string value);
 
@@ -132,17 +132,17 @@ namespace casual
          }
 
 /*
-			template< typename T>
-			auto digits( T value) -> std::enable_if_t< std::is_integral< T>::value, platform::size::type>
-			{
-			   platform::size::type result{ 1};
+         template< typename T>
+         auto digits( T value) -> std::enable_if_t< std::is_integral< T>::value, platform::size::type>
+         {
+            platform::size::type result{ 1};
 
-			   while( value /= 10)
-			   {
-			      ++result;
-			   }
-			   return result;
-			}
+            while( value /= 10)
+            {
+               ++result;
+            }
+            return result;
+         }
 */
          namespace detail
          {
@@ -178,33 +178,33 @@ namespace casual
             detail::composer( out, std::forward< Parts>( parts)...);
             return out.str();
          }
-		} // string
+      } // string
 
-		namespace internal
+      namespace internal
       {
-		   template< typename R, typename Enable = void>
-		   struct from_string;
+         template< typename R, typename Enable = void>
+         struct from_string;
 
          template< typename T >
-		   struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
+         struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
          { 
             static T get( const std::string& value) { return std::stol( value);} 
          };
 
          template< typename T >
-		   struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
+         struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
          { 
             static T get( const std::string& value) { return std::stoul( value);} 
          };
 
          template< typename T >
-		   struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
+         struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
          { 
             static T get( const std::string& value) { return std::stod( value);} 
          };
 
          template<>
-		   struct from_string< bool, void>
+         struct from_string< bool, void>
          { 
             static bool get( const std::string& value) 
             {
@@ -214,8 +214,8 @@ namespace casual
             } 
          };
 
-		   template<>
-		   struct from_string< std::string, void> 
+         template<>
+         struct from_string< std::string, void> 
          { 
             static const std::string& get( const std::string& value) { return value;} 
          };
@@ -237,33 +237,33 @@ namespace casual
 
       } // internal
 
-		template< typename R>
-		decltype( auto) from_string( const std::string& value)
-		{
-		   return internal::from_string< std::decay_t< R>>::get( value);
-		}
-
-		template< typename T>
-		decltype( auto) to_string( T&& value)
-		{
-		   return internal::to_string( std::forward< T>( value));
-		}
-
-
-		namespace type
+      template< typename R>
+      decltype( auto) from_string( const std::string& value)
       {
-		   namespace internal
+         return internal::from_string< std::decay_t< R>>::get( value);
+      }
+
+      template< typename T>
+      decltype( auto) to_string( T&& value)
+      {
+         return internal::to_string( std::forward< T>( value));
+      }
+
+
+      namespace type
+      {
+         namespace internal
          {
-		      std::string name( const std::type_info& type);
+            std::string name( const std::type_info& type);
          } // internal
 
-		   template< typename T>
-		   std::string name()
-		   {
-		      return internal::name( typeid( T));
-		   }
+         template< typename T>
+         std::string name()
+         {
+            return internal::name( typeid( T));
+         }
 
-		   template< typename T>
+         template< typename T>
          std::string name( T&& value)
          {
             return internal::name( typeid( value));
@@ -273,7 +273,7 @@ namespace casual
 
 
 
-	} // common
+   } // common
 } // casual
 
 

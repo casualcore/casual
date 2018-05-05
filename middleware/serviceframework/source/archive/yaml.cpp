@@ -384,7 +384,7 @@ namespace casual
 
                      public:
 
-                        typedef YAML::Emitter buffer_type;
+                        using buffer_type = YAML::Emitter;
 
                         Implementation()
                         {

@@ -11,8 +11,8 @@
 
 namespace casual
 {
-	namespace event
-	{
+   namespace event
+   {
       namespace monitor
       {
          TEST( casual_traffic, monitor_empty)
@@ -21,6 +21,6 @@ namespace casual
          }
 
       }
-	}
+   }
 }
 

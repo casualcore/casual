@@ -25,11 +25,11 @@ namespace casual
 { 
    namespace sf 
    { 
-		namespace archive 
-		{
-		   class Reader;
-		   class Writer;
-		}
+      namespace archive 
+      {
+         class Reader;
+         class Writer;
+      }
     }
 }
     

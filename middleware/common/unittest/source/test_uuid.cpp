@@ -17,32 +17,32 @@
 namespace casual
 {
 
-	namespace common
-	{
+   namespace common
+   {
 
-		TEST( casual_common_uuid, two_uuid__expect_unique)
-		{
-		   common::unittest::Trace trace;
-
-			Uuid oneUuid = uuid::make();
-			Uuid anotherUuid = uuid::make();
-
-			EXPECT_FALSE( oneUuid == anotherUuid);
-
-		}
-
-		TEST( casual_common_uuid, one_uuid__expect_equal)
+      TEST( casual_common_uuid, two_uuid__expect_unique)
       {
-		   common::unittest::Trace trace;
+         common::unittest::Trace trace;
+
+         Uuid oneUuid = uuid::make();
+         Uuid anotherUuid = uuid::make();
+
+         EXPECT_FALSE( oneUuid == anotherUuid);
+
+      }
+
+      TEST( casual_common_uuid, one_uuid__expect_equal)
+      {
+         common::unittest::Trace trace;
 
          Uuid oneUuid = uuid::make();
 
          EXPECT_TRUE( oneUuid == oneUuid);
       }
 
-		TEST( casual_common_uuid, two_uuid__expect_equal)
+      TEST( casual_common_uuid, two_uuid__expect_equal)
       {
-		   common::unittest::Trace trace;
+         common::unittest::Trace trace;
 
          Uuid oneUuid = uuid::make();
          Uuid anotherUuid = oneUuid;
@@ -50,27 +50,27 @@ namespace casual
          EXPECT_TRUE( oneUuid == anotherUuid);
       }
 
-		TEST( casual_common_uuid, default_constructed__expect_equal_to_empty)
-		{
-		   common::unittest::Trace trace;
-
-			Uuid oneUuid;
-
-			EXPECT_TRUE( oneUuid == uuid::empty());
-		}
-
-		TEST( casual_common_uuid, getString__expect_32B)
-		{
-		   common::unittest::Trace trace;
-
-			Uuid oneUuid = uuid::make();
-
-			EXPECT_TRUE( uuid::string( oneUuid).size() == 32);
-		}
-
-		TEST( casual_common_uuid, default_constructed__uuid_string__expect_00000000000000000000000000000000)
+      TEST( casual_common_uuid, default_constructed__expect_equal_to_empty)
       {
-		   common::unittest::Trace trace;
+         common::unittest::Trace trace;
+
+         Uuid oneUuid;
+
+         EXPECT_TRUE( oneUuid == uuid::empty());
+      }
+
+      TEST( casual_common_uuid, getString__expect_32B)
+      {
+         common::unittest::Trace trace;
+
+         Uuid oneUuid = uuid::make();
+
+         EXPECT_TRUE( uuid::string( oneUuid).size() == 32);
+      }
+
+      TEST( casual_common_uuid, default_constructed__uuid_string__expect_00000000000000000000000000000000)
+      {
+         common::unittest::Trace trace;
 
          Uuid oneUuid;
 
@@ -111,7 +111,7 @@ namespace casual
 
          EXPECT_TRUE( static_cast< bool>( oneUuid) ) << uuid::string( oneUuid);
       }
-	}
+   }
 
 }
 

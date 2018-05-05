@@ -47,78 +47,78 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, signal::Type signal);
 
 
-			//!
-			//! Throws if there has been a signal received.
-			//! And the signal is NOT blocked in the current
-			//! threads signal mask
-			//!
-			//! @throw subtype to exception::signal::Base
-			//!
-			void handle();
+         //!
+         //! Throws if there has been a signal received.
+         //! And the signal is NOT blocked in the current
+         //! threads signal mask
+         //!
+         //! @throw subtype to exception::signal::Base
+         //!
+         void handle();
 
-			//!
-			//! Clears all pending signals.
-			//!
-			void clear();
+         //!
+         //! Clears all pending signals.
+         //!
+         void clear();
 
 
-			namespace current
+         namespace current
          {
-	         //!
-	         //! @returns the current number of pending signals
-	         //!
-	         //! @note only (?) for unittest
-	         //!
-			   long pending();
+            //!
+            //! @returns the current number of pending signals
+            //!
+            //! @note only (?) for unittest
+            //!
+            long pending();
          } // current
 
 
 
-			namespace timer
-			{
-			   //!
-			   //! Sets a timeout.
-			   //!
-			   //! @param offset when the timer kicks in.
-			   //! @returns previous timeout.
-			   //!
-			   //! @note zero and negative offset will trigger a signal directly
-			   //! @note common::platform::time::unit::min() has special meaning and will not set any
-			   //! timeout and will unset current timeout, if any.
-			   //!
-			   common::platform::time::unit set( common::platform::time::unit offset);
+         namespace timer
+         {
+            //!
+            //! Sets a timeout.
+            //!
+            //! @param offset when the timer kicks in.
+            //! @returns previous timeout.
+            //!
+            //! @note zero and negative offset will trigger a signal directly
+            //! @note common::platform::time::unit::min() has special meaning and will not set any
+            //! timeout and will unset current timeout, if any.
+            //!
+            common::platform::time::unit set( common::platform::time::unit offset);
 
-			   template< typename R, typename P>
-			   common::platform::time::unit set( std::chrono::duration< R, P> offset)
-			   {
-			      return set( std::chrono::duration_cast< common::platform::time::unit>( offset));
-			   }
+            template< typename R, typename P>
+            common::platform::time::unit set( std::chrono::duration< R, P> offset)
+            {
+               return set( std::chrono::duration_cast< common::platform::time::unit>( offset));
+            }
 
-			   //!
-			   //! @return current timeout, common::platform::time::unit::min() if there isn't one
-			   //!
-			   common::platform::time::unit get();
+            //!
+            //! @return current timeout, common::platform::time::unit::min() if there isn't one
+            //!
+            common::platform::time::unit get();
 
             //!
             //! Unset current timeout, if any.
             //!
             //! @return previous timeout, common::platform::time::unit::min() if there wasn't one
             //!
-			   common::platform::time::unit unset();
+            common::platform::time::unit unset();
 
 
-			   //!
-			   //! Sets a scoped timout.
-			   //! dtor will 'reset' previous timeout, if any. Hence enable nested timeouts.
-			   //!
-			   //! @note common::platform::time::unit::min() has special meaning and will not set any
+            //!
+            //! Sets a scoped timout.
+            //! dtor will 'reset' previous timeout, if any. Hence enable nested timeouts.
+            //!
+            //! @note common::platform::time::unit::min() has special meaning and will not set any
             //! timeout and will unset current timeout, if any (that will be reset by dtor)
-			   //!
+            //!
             class Scoped
             {
             public:
 
-			      Scoped( common::platform::time::unit timeout);
+               Scoped( common::platform::time::unit timeout);
                Scoped( common::platform::time::unit timeout, const platform::time::point::type& now);
 
 
@@ -158,17 +158,17 @@ namespace casual
                platform::time::point::type m_old;
             };
 
-			}
+         }
 
 
-			//!
-			//! Sends the signal to the process
-			//!
-			//! @return true if the signal was sent
-			//!
-			bool send( strong::process::id pid, Type signal);
+         //!
+         //! Sends the signal to the process
+         //!
+         //! @return true if the signal was sent
+         //!
+         bool send( strong::process::id pid, Type signal);
 
-			struct Set;
+         struct Set;
          namespace set
          {
             signal::Set filled();
@@ -176,11 +176,11 @@ namespace casual
 
          struct Set
          {
-			   using type = sigset_t;
+            using type = sigset_t;
 
-			   Set();
-			   Set( type set);
-			   Set( std::initializer_list< Type> signals);
+            Set();
+            Set( type set);
+            Set( std::initializer_list< Type> signals);
 
             void add( Type signal);
             void remove( Type signal);
@@ -213,14 +213,14 @@ namespace casual
          Set pending();
 
 
-			namespace set
+         namespace set
          {
-			   using type = typename Set::type;
+            using type = typename Set::type;
 
             //!
             //! @return a filled mask, that is, all signals are represented
             //!
-			   signal::Set filled();
+            signal::Set filled();
 
             //!
             //!
@@ -240,19 +240,19 @@ namespace casual
             //!
             //! @return an empty set, that is, no signals are represented
             //!
-			   signal::Set empty();
+            signal::Set empty();
 
          } // set
 
-			namespace mask
+         namespace mask
          {
-			   //!
-			   //! Sets the current signal mask for current thread
-			   //!
-			   //! @param mask to replace the current mask
-			   //! @return the old mask
-			   //!
-			   signal::Set set( signal::Set mask);
+            //!
+            //! Sets the current signal mask for current thread
+            //!
+            //! @param mask to replace the current mask
+            //! @return the old mask
+            //!
+            signal::Set set( signal::Set mask);
 
             //!
             //! Adds @mask to the current signal mask for current thread
@@ -260,7 +260,7 @@ namespace casual
             //! @param mask to be added to the current mask
             //! @return the old mask
             //!
-			   signal::Set block( signal::Set mask);
+            signal::Set block( signal::Set mask);
 
             //!
             //! Removes @mask from the current signal mask for current thread
@@ -268,33 +268,33 @@ namespace casual
             //! @param mask to be removed from the current mask
             //! @return the old mask
             //!
-			   signal::Set unblock( signal::Set mask);
+            signal::Set unblock( signal::Set mask);
 
             //!
             //! Blocks all signals to current thread
             //!
             //! @return the old mask
             //!
-			   signal::Set block();
+            signal::Set block();
 
 
 
             //!
             //! @return the current mask for current thread
             //!
-			   signal::Set current();
+            signal::Set current();
 
          } // mask
 
-			namespace thread
+         namespace thread
          {
 
 
 
-			   //!
-			   //! Send signal to thread
-			   //!
-			   void send( std::thread& thread, Type signal);
+            //!
+            //! Send signal to thread
+            //!
+            void send( std::thread& thread, Type signal);
 
 
             //!
@@ -308,25 +308,25 @@ namespace casual
             void send( Type signal);
 
 
-			   namespace scope
+            namespace scope
             {
                //!
                //! Resets the signal mask on destruction
                //!
-			      struct Reset
-			      {
-			         Reset( signal::Set mask);
-			         ~Reset();
+               struct Reset
+               {
+                  Reset( signal::Set mask);
+                  ~Reset();
 
-			         Reset( Reset&&) = default;
-			         Reset& operator = ( Reset&&) = default;
+                  Reset( Reset&&) = default;
+                  Reset& operator = ( Reset&&) = default;
 
-			         const signal::Set& previous() const;
+                  const signal::Set& previous() const;
 
                private:
-			         signal::Set m_mask;
+                  signal::Set m_mask;
                   move::Moved m_moved;
-			      };
+               };
 
                //!
                //! Sets the signal mask, and
@@ -364,19 +364,11 @@ namespace casual
                   Unblock( signal::Set mask);
 
                };
-
-
             } // scope
-
-
          } // thread
-
-
-
-		} // signal
-	} // common
+      } // signal
+   } // common
 } // casual
-
 
 
 #endif /* CASUAL_UTILITY_SIGNAL_H_ */

@@ -5,8 +5,6 @@
 //!
 
 
-		
-
 #include <sf/archive/archive.h>
 
 
@@ -127,4 +125,3 @@ void TestVO::serialize( casual::sf::archive::Writer& archive) const
 } // test
 } // casual
 
-	

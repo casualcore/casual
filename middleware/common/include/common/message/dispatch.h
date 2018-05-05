@@ -142,7 +142,7 @@ namespace casual
                {
                public:
 
-                  typedef H handler_type;
+                  using handler_type = H;
 
                   using traits_type = traits::function< H>;
 
@@ -177,7 +177,7 @@ namespace casual
                };
 
 
-               typedef std::map< message_type, std::unique_ptr< base_handler> > handlers_type;
+               using handlers_type = std::map< message_type, std::unique_ptr< base_handler>>;
 
 
                template< typename H>

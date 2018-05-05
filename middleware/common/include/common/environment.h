@@ -20,59 +20,59 @@
 
 namespace casual
 {
-	namespace common
-	{
-		namespace environment
-		{
+   namespace common
+   {
+      namespace environment
+      {
 
-			namespace variable
-			{
+         namespace variable
+         {
 
-			   //!
-			   //! Exposes the mutex that is used to get read and writes to environment variables
-			   //! thread safe.
-			   //!
-			   //! There are a few other places that uses and manipulates environment variables, and
-			   //! we need those to lock and use the same mutex.
-			   //!
-			   //! Known places:
-			   //!
-			   //! - chronology::internal::format  localtime_r uses TZ
-			   //! - process::spawn "forwards" the current environment variables to the child process
-			   //!
-			   //! @return
-			   std::mutex& mutex();
+            //!
+            //! Exposes the mutex that is used to get read and writes to environment variables
+            //! thread safe.
+            //!
+            //! There are a few other places that uses and manipulates environment variables, and
+            //! we need those to lock and use the same mutex.
+            //!
+            //! Known places:
+            //!
+            //! - chronology::internal::format  localtime_r uses TZ
+            //! - process::spawn "forwards" the current environment variables to the child process
+            //!
+            //! @return
+            std::mutex& mutex();
 
-			   bool exists( const char* name);
-				inline bool exists( const std::string& name) { return exists( name.c_str());}
+            bool exists( const char* name);
+            inline bool exists( const std::string& name) { return exists( name.c_str());}
 
 
-				namespace detail
+            namespace detail
             {
-				   inline const char* get_name( const char* name) { return name;}
-				   inline const char* get_name( const std::string& name) { return name.c_str();}
+               inline const char* get_name( const char* name) { return name;}
+               inline const char* get_name( const std::string& name) { return name.c_str();}
 
 
-				   std::string get( const char* name);
-				   std::string get( const char* name, std::string alternative);
+               std::string get( const char* name);
+               std::string get( const char* name, std::string alternative);
 
-				   void set( const char* name, const std::string& value);
+               void set( const char* name, const std::string& value);
 
             } // detail
 
 
-				//!
-				//! @return value of environment variable with @p name
-				//! @throws exception::EnvironmentVariableNotFound if not found
-				//!
-				template< typename String>
-				std::string get( String&& name) { return detail::get( detail::get_name( name));}
+            //!
+            //! @return value of environment variable with @p name
+            //! @throws exception::EnvironmentVariableNotFound if not found
+            //!
+            template< typename String>
+            std::string get( String&& name) { return detail::get( detail::get_name( name));}
 
             //!
             //! @return value of environment variable with @p name or value of alternative if
             //!   variable isn't found
             //!
-				template< typename String>
+            template< typename String>
             std::string get( String&& name, std::string alternative) { return detail::get( detail::get_name( name), std::move( alternative));}
 
 
@@ -112,68 +112,68 @@ namespace casual
                set( name, string);
             }
 
-				namespace process
+            namespace process
             {
-				   common::process::Handle get( const char* name);
-				   inline common::process::Handle get( const std::string& name) { return get( name.c_str());}
+               common::process::Handle get( const char* name);
+               inline common::process::Handle get( const std::string& name) { return get( name.c_str());}
 
-				   void set( const char* name, const common::process::Handle& process);
-				   inline void set( const std::string& name, const common::process::Handle& process) { return set( name.c_str(), process);}
+               void set( const char* name, const common::process::Handle& process);
+               inline void set( const std::string& name, const common::process::Handle& process) { return set( name.c_str(), process);}
 
             } // process
 
-				namespace name
+            namespace name
             {
-				   //!
-				   //! @return variable name representing casual home. Where casual is installed
-				   //!
-				   constexpr auto home() { return "CASUAL_HOME";};
+               //!
+               //! @return variable name representing casual home. Where casual is installed
+               //!
+               constexpr auto home() { return "CASUAL_HOME";};
 
-				   namespace domain
+               namespace domain
                {
-				      constexpr auto home() { return "CASUAL_DOMAIN_HOME";}
-				      constexpr auto id() { return "CASUAL_DOMAIN_ID";}
-				      constexpr auto path() { return "CASUAL_DOMAIN_PATH";}
-				      constexpr auto name() { return "CASUAL_DOMAIN_NAME";}
+                  constexpr auto home() { return "CASUAL_DOMAIN_HOME";}
+                  constexpr auto id() { return "CASUAL_DOMAIN_ID";}
+                  constexpr auto path() { return "CASUAL_DOMAIN_PATH";}
+                  constexpr auto name() { return "CASUAL_DOMAIN_NAME";}
                } // domain
 
-				   namespace log
+               namespace log
                {
-				      constexpr auto path() { return "CASUAL_LOG_PATH";}
+                  constexpr auto path() { return "CASUAL_LOG_PATH";}
                } // log
 
 
                //!
                //! the name of the environment variables that holds ipc queue id:s
                //! @{
-				   namespace ipc
+               namespace ipc
                {
-				      namespace domain
+                  namespace domain
                   {
-				         constexpr auto manager() { return "CASUAL_DOMAIN_MANAGER_PROCESS";}
+                     constexpr auto manager() { return "CASUAL_DOMAIN_MANAGER_PROCESS";}
                   } // domain
 
-				      namespace service
+                  namespace service
                   {
-				         constexpr auto manager() { return "CASUAL_SERVICE_MANAGER_PROCESS";}
+                     constexpr auto manager() { return "CASUAL_SERVICE_MANAGER_PROCESS";}
                   } // service
 
-				      namespace transaction
+                  namespace transaction
                   {
-				         constexpr auto manager() { return "CASUAL_TRANSACTION_MANAGER_PROCESS";}
+                     constexpr auto manager() { return "CASUAL_TRANSACTION_MANAGER_PROCESS";}
                   } // transaction
 
-				      namespace queue
+                  namespace queue
                   {
-				         constexpr auto manager() { return "CASUAL_QUEUE_MANAGER_PROCESS";}
+                     constexpr auto manager() { return "CASUAL_QUEUE_MANAGER_PROCESS";}
                   } // queue
 
-				      namespace gateway
+                  namespace gateway
                   {
-				         constexpr auto manager() { return "CASUAL_GATEWAY_MANAGER_PROCESS";}
+                     constexpr auto manager() { return "CASUAL_GATEWAY_MANAGER_PROCESS";}
                   } // gateway
                } // ipc
-				   //! @}
+               //! @}
 
                namespace terminal
                {
@@ -185,37 +185,37 @@ namespace casual
 
 
             } // name
-			} // variable
+         } // variable
 
-			namespace directory
-			{
-			   //!
-			   //! @return default temp directory
-			   //!
-			   const std::string& temporary();
-
-			   //!
-			   //! @return Home of current domain
-			   //!
-			   const std::string& domain();
-
-			   //!
-			   //! @return Where casual is installed
-			   //!
-			   const std::string& casual();
-			}
-
-			namespace log
+         namespace directory
          {
-			   const std::string& path();
+            //!
+            //! @return default temp directory
+            //!
+            const std::string& temporary();
+
+            //!
+            //! @return Home of current domain
+            //!
+            const std::string& domain();
+
+            //!
+            //! @return Where casual is installed
+            //!
+            const std::string& casual();
+         }
+
+         namespace log
+         {
+            const std::string& path();
          } // log
 
-			namespace domain
+         namespace domain
          {
 
-			   namespace singleton
+            namespace singleton
             {
-			      const std::string& path();
+               const std::string& path();
 
                const std::string& file();
 
@@ -224,17 +224,17 @@ namespace casual
          } // domain
 
 
-			//!
-			//! Parses value for environment variables with format @p ${<variable>}
-			//! and tries to find and replace the variable from environment.
-			//!
-			//! @return possible altered string with regards to environment variables
-			//!
-			std::string string( const std::string& value);
+         //!
+         //! Parses value for environment variables with format @p ${<variable>}
+         //! and tries to find and replace the variable from environment.
+         //!
+         //! @return possible altered string with regards to environment variables
+         //!
+         std::string string( const std::string& value);
 
 
-		} // environment
-	} // common
+      } // environment
+   } // common
 } // casual
 
 

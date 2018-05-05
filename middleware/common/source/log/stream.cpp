@@ -157,7 +157,7 @@ namespace casual
                         m_buffer.clear();
                      }
 
-                     typedef std::string buffer_type;
+                     using buffer_type = std::string;
                      buffer_type m_buffer;
 
                      const std::string m_category;

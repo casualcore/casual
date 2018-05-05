@@ -26,141 +26,144 @@ namespace casual
    {
       namespace order
       {
-         namespace
+
+         using size_type = common::platform::size::type;
+         using const_data_type = common::platform::binary::type::const_pointer;
+         using data_type = common::platform::binary::type::pointer;
+
+         namespace local
          {
-
-            typedef common::platform::size::type size_type;
-            typedef common::platform::binary::type::const_pointer const_data_type;
-            typedef common::platform::binary::type::pointer data_type;
-
-
-            class Buffer : public common::buffer::Buffer
+            namespace
             {
 
-            private:
-
-               decltype(payload.memory.size()) selector = 0;
-
-            public:
-
-
-               using common::buffer::Buffer::Buffer;
-               using size_type = common::platform::binary::size::type;
-
-               void shrink()
+               class Buffer : public common::buffer::Buffer
                {
-                  return payload.memory.shrink_to_fit();
-               }
 
-               size_type capacity() const noexcept
-               {
-                  return payload.memory.capacity();
-               }
+               private:
 
-               void capacity( const decltype(payload.memory.capacity()) value)
-               {
-                  payload.memory.reserve( value);
-               }
+                  decltype(payload.memory.size()) selector = 0;
 
-               size_type utilized() const noexcept
-               {
-                  return payload.memory.size();
-               }
-
-               void utilized( const decltype(payload.memory.size()) value)
-               {
-                  payload.memory.resize( value);
-               }
-
-               size_type consumed() const noexcept
-               {
-                  return selector;
-               }
-
-               void consumed( const decltype(payload.memory.size()) value) noexcept
-               {
-                  selector = value;
-               }
-
-               auto handle() const noexcept
-               {
-                  return payload.memory.data();
-               }
-
-               auto handle() noexcept
-               {
-                  return payload.memory.data();
-               }
+               public:
 
 
-               //!
-               //! Implement Buffer::transport
-               //!
-               size_type transport( const common::platform::binary::size::type user_size) const
-               {
-                  //
-                  // Just ignore user-size all together
-                  //
+                  using common::buffer::Buffer::Buffer;
+                  using size_type = common::platform::binary::size::type;
 
-                  return utilized();
-               }
-
-               //!
-               //! Implement Buffer::reserved
-               //!
-               auto reserved() const
-               {
-                  return capacity();
-               }
-
-            };
-
-
-            class Allocator : public common::buffer::pool::basic_pool<Buffer>
-            {
-            public:
-
-               using types_type = common::buffer::pool::default_pool::types_type;
-
-               static const types_type& types()
-               {
-                  // The types this pool can manage
-                  static const types_type result{ common::buffer::type::combine( CASUAL_ORDER)};
-                  return result;
-               }
-
-               common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
-               {
-                  m_pool.emplace_back( type, 0);
-
-                  // GCC returns null for std::vector::data with capacity zero
-                  m_pool.back().capacity( size ? size : 1);
-
-                  return m_pool.back().handle();
-               }
-
-
-               common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
-               {
-                  const auto result = find( handle);
-
-                  if( size < result->utilized())
+                  void shrink()
                   {
-                     // Allow user to reduce allocation
-                     result->shrink();
-                  }
-                  else
-                  {
-                     // GCC returns null for std::vector::data with size zero
-                     result->capacity( size ? size : 1);
+                     return payload.memory.shrink_to_fit();
                   }
 
-                  return result->handle();
-               }
+                  size_type capacity() const noexcept
+                  {
+                     return payload.memory.capacity();
+                  }
 
-            };
+                  void capacity( const decltype(payload.memory.capacity()) value)
+                  {
+                     payload.memory.reserve( value);
+                  }
 
-         } // <unnamed>
+                  size_type utilized() const noexcept
+                  {
+                     return payload.memory.size();
+                  }
+
+                  void utilized( const decltype(payload.memory.size()) value)
+                  {
+                     payload.memory.resize( value);
+                  }
+
+                  size_type consumed() const noexcept
+                  {
+                     return selector;
+                  }
+
+                  void consumed( const decltype(payload.memory.size()) value) noexcept
+                  {
+                     selector = value;
+                  }
+
+                  auto handle() const noexcept
+                  {
+                     return payload.memory.data();
+                  }
+
+                  auto handle() noexcept
+                  {
+                     return payload.memory.data();
+                  }
+
+
+                  //!
+                  //! Implement Buffer::transport
+                  //!
+                  size_type transport( const common::platform::binary::size::type user_size) const
+                  {
+                     //
+                     // Just ignore user-size all together
+                     //
+
+                     return utilized();
+                  }
+
+                  //!
+                  //! Implement Buffer::reserved
+                  //!
+                  auto reserved() const
+                  {
+                     return capacity();
+                  }
+
+               };
+
+
+               class Allocator : public common::buffer::pool::basic_pool<Buffer>
+               {
+               public:
+
+                  using types_type = common::buffer::pool::default_pool::types_type;
+
+                  static const types_type& types()
+                  {
+                     // The types this pool can manage
+                     static const types_type result{ common::buffer::type::combine( CASUAL_ORDER)};
+                     return result;
+                  }
+
+                  common::platform::buffer::raw::type allocate( const std::string& type, const common::platform::binary::size::type size)
+                  {
+                     m_pool.emplace_back( type, 0);
+
+                     // GCC returns null for std::vector::data with capacity zero
+                     m_pool.back().capacity( size ? size : 1);
+
+                     return m_pool.back().handle();
+                  }
+
+
+                  common::platform::buffer::raw::type reallocate( const common::platform::buffer::raw::immutable::type handle, const common::platform::binary::size::type size)
+                  {
+                     const auto result = find( handle);
+
+                     if( size < result->utilized())
+                     {
+                        // Allow user to reduce allocation
+                        result->shrink();
+                     }
+                     else
+                     {
+                        // GCC returns null for std::vector::data with size zero
+                        result->capacity( size ? size : 1);
+                     }
+
+                     return result->handle();
+                  }
+
+               };
+
+            } // <unnamed>
+         } // local
 
       } // order
    } // buffer
@@ -168,13 +171,13 @@ namespace casual
    //
    // Register and define the type that can be used to get the custom pool
    //
-   template class common::buffer::pool::Registration< buffer::order::Allocator>;
+   template class common::buffer::pool::Registration< buffer::order::local::Allocator>;
 
    namespace buffer
    {
       namespace order
       {
-         using pool_type = common::buffer::pool::Registration< Allocator>;
+         using pool_type = common::buffer::pool::Registration< local::Allocator>;
 
          namespace
          {

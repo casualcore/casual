@@ -221,7 +221,7 @@ namespace casual
          }
 
       } // buffer
-	} // common
+   } // common
 } // casual
 
 

@@ -82,7 +82,7 @@ namespace casual
             }
          } // tx
       } // exception
-	} // common
+   } // common
 } // casual
 
 

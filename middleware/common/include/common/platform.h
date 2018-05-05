@@ -64,21 +64,21 @@ namespace casual
 {
    using namespace std::literals::chrono_literals;
    
-	namespace common
-	{
-		namespace platform
-		{
+   namespace common
+   {
+      namespace platform
+      {
          namespace size
          {
             using type = long;
 
-		      namespace max
+            namespace max
             {
-		         constexpr auto path = PATH_MAX;
+               constexpr auto path = PATH_MAX;
             } // max
          } // size
 
-		   namespace batch
+         namespace batch
          {
 
             namespace transaction
@@ -97,28 +97,28 @@ namespace casual
                constexpr size::type recover = 8;
 
             } // transaction
-	         
+            
 
-	         //!
-	         //! Max number of statistics updates that will be done
-	         //! before persistence store of the updates...
-	         //!
-	         constexpr size::type statistics = 1000;
+            //!
+            //! Max number of statistics updates that will be done
+            //! before persistence store of the updates...
+            //!
+            constexpr size::type statistics = 1000;
 
 
-	         //!
-	         //! Max number of ipc messages consumed from the queue to cache
-	         //! (application memory) during a 'flush'
-	         //!
-	         constexpr size::type flush = 20;
+            //!
+            //! Max number of ipc messages consumed from the queue to cache
+            //! (application memory) during a 'flush'
+            //!
+            constexpr size::type flush = 20;
 
-	         namespace gateway
+            namespace gateway
             {
-	            //!
-	            //! Max number of batched metrics before force
-	            //! send to service-manager
-	            //!
-	            constexpr size::type metrics = 20;
+               //!
+               //! Max number of batched metrics before force
+               //! send to service-manager
+               //!
+               constexpr size::type metrics = 20;
             } // gateway
 
             namespace domain
@@ -162,14 +162,14 @@ namespace casual
 
 
 
-			//
-			// Some os-specific if-defs?
-			//
+         //
+         // Some os-specific if-defs?
+         //
 
 
 
 
-		   namespace ipc
+         namespace ipc
          {
             namespace native
             {
@@ -197,7 +197,7 @@ namespace casual
          } // ipc
 
 
-			namespace tcp
+         namespace tcp
          {
             namespace message
             {
@@ -239,31 +239,31 @@ namespace casual
             } // native
          } // process
 
-			//
-			// uuid
-			//
-			namespace uuid
+         //
+         // uuid
+         //
+         namespace uuid
          {
-			   using type = uuid_t;
+            using type = uuid_t;
          } // uuid
 
-			namespace jump
+         namespace jump
          {
             using buffer = std::jmp_buf;
          } // jump
 
 
-			namespace flag
+         namespace flag
          {
-			   enum class ipc
-			   {
-			      no_wait = IPC_NOWAIT
-			   };
+            enum class ipc
+            {
+               no_wait = IPC_NOWAIT
+            };
 
-			   enum class tcp
-			   {
-			      no_wait = MSG_DONTWAIT
-			   };
+            enum class tcp
+            {
+               no_wait = MSG_DONTWAIT
+            };
 
             enum class msg : int
             {
@@ -282,7 +282,7 @@ namespace casual
 
          } // flags
 
-			namespace signal
+         namespace signal
          {
             namespace native
             {
@@ -291,7 +291,7 @@ namespace casual
          } // signal
 
 
-			namespace resource
+         namespace resource
          {
             namespace native
             {
@@ -301,7 +301,7 @@ namespace casual
             } // native
          } // resource
 
-			namespace binary
+         namespace binary
          {
             using type = std::vector< char>;
 
@@ -317,7 +317,7 @@ namespace casual
 
          } // binary
 
-			namespace buffer
+         namespace buffer
          {
             namespace raw
             {
@@ -343,12 +343,13 @@ namespace casual
          } // buffer
 
 
-			namespace time
+         namespace time
          {
             namespace clock
             {
-               // TODO: change to: typedef std::chrono::steady_clock clock_type;
-               // When clang has to_time_t for steady_clock
+               // 
+               // If we need to_time_t, we need to use system_clock
+               //
                using type = std::chrono::system_clock;
             } // clock
 
@@ -372,10 +373,10 @@ namespace casual
 
 
 
-		} // platform
-	} // common
+      } // platform
+   } // common
 
-	//!
+   //!
    //! Overload for time_type
    //!
    //! @{

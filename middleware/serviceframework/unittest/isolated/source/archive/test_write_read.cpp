@@ -148,8 +148,7 @@ namespace casual
 
       };
 
-
-      typedef ::testing::Types<
+      using archive_types = ::testing::Types<
             holder::basic< holder::policy::json< std::string>>,
             holder::basic< holder::policy::json< common::platform::binary::type>>,
             holder::basic< holder::policy::json< std::stringstream>>,
@@ -171,7 +170,7 @@ namespace casual
             //holder::ini< archive::policy::Strict>,  // cannot handle nested containers yet
             //holder::ini< archive::policy::Relaxed>, // cannot handle nested containers yet
             holder::basic< holder::policy::binary>
-       > archive_types;
+       >;
 
       TYPED_TEST_CASE(casual_sf_archive_write_read, archive_types);
 

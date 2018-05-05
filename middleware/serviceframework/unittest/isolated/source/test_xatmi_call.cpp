@@ -75,16 +75,16 @@ namespace casual
                   }
 
                private:
-                  typedef std::map< int, buffer::Buffer> buffer_holder;
+                  using buffer_holder = std::map< int, buffer::Buffer>;
                   static buffer_holder m_holder;
                };
 
                xatmi_send_receive_mirror::buffer_holder xatmi_send_receive_mirror::m_holder;
                //buffer::Base* xatmi_send_receive_mirror::m_inputBuffer = nullptr;
 
-               typedef service::async::basic_call< service::policy::Binary, xatmi_send_receive_mirror> Async;
+               using Async = service::async::basic_call< service::policy::Binary, xatmi_send_receive_mirror>;
 
-               typedef service::sync::basic_call< service::policy::Binary, mockup::xatmi_call_mirror> Sync;
+               using Sync = service::sync::basic_call< service::policy::Binary, mockup::xatmi_call_mirror>;
 
             //} // <unnamed>
          } // mockup

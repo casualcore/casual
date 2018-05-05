@@ -70,10 +70,10 @@ namespace casual
 namespace casual
 {
 
-	namespace common
-	{
-		namespace signal
-		{
+   namespace common
+   {
+      namespace signal
+      {
          std::ostream& operator << ( std::ostream& out, signal::Type signal)
          {
             const auto value = cast::underlying( signal);
@@ -91,7 +91,7 @@ namespace casual
             return out << value;
          }
 
-		   namespace local
+         namespace local
          {
             namespace
             {
@@ -287,10 +287,10 @@ namespace casual
             } // <unnamed>
          } // local
 
-			void handle()
-			{
-			   local::global_handler.handle();
-			}
+         void handle()
+         {
+            local::global_handler.handle();
+         }
 
          void clear()
          {
@@ -615,7 +615,7 @@ namespace casual
             void send( common::thread::native::type thread, Type signal)
             {
                if( pthread_kill( thread, 0) == 0)
-	       {
+          {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
                   {
                       log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::last::system::error());
@@ -675,8 +675,8 @@ namespace casual
          } // thread
 
 
-		} // signal
-	} // common
+      } // signal
+   } // common
 } // casual
 
 

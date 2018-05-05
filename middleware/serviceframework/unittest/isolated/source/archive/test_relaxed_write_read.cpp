@@ -107,11 +107,11 @@ namespace casual
       };
 
 
-      typedef ::testing::Types<
+      using archive_types = ::testing::Types<
             holder::yaml,
             holder::json,
             holder::xml
-       > archive_types;
+       >;
 
       TYPED_TEST_CASE(casual_sf_relaxed_archive_write_read, archive_types);
 

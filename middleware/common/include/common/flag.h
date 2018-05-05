@@ -15,13 +15,11 @@
 
 #include <initializer_list>
 #include <type_traits>
-//#include <cstdlib>
-
 
 namespace casual
 {
-	namespace common
-	{
+   namespace common
+   {
 
       namespace has
       {
@@ -125,7 +123,7 @@ namespace casual
          underlaying_type m_flags = underlaying_type{};
       };
 
-	} // common
+   } // common
 } // casual
 
 

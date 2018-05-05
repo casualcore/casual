@@ -63,7 +63,7 @@ namespace casual
          } // xatmi
 
       } // exception
-	} // common
+   } // common
 } // casual
 
 

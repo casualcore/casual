@@ -26,9 +26,9 @@
 
 namespace casual
 {
-	namespace service
-	{
-	   namespace local
+   namespace service
+   {
+      namespace local
       {
          namespace
          {
@@ -252,20 +252,20 @@ namespace casual
          }, common::exception::xatmi::service::no::Entry);
       }
 
-		TEST( service_manager, advertise_new_services_current_server)
+      TEST( service_manager, advertise_new_services_current_server)
       {
-		   common::unittest::Trace trace;
+         common::unittest::Trace trace;
 
-		   local::Domain domain;
+         local::Domain domain;
 
-		   common::mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
+         common::mockup::domain::echo::Server server{ { { "service1"}, { "service2"}}};
 
-		   {
-		      auto service = common::service::Lookup{ "service1"}();
-		      EXPECT_TRUE( service.service.name == "service1");
-		      EXPECT_TRUE( service.process == server.process());
-		      EXPECT_TRUE( service.state == decltype( service)::State::idle);
-		   }
+         {
+            auto service = common::service::Lookup{ "service1"}();
+            EXPECT_TRUE( service.service.name == "service1");
+            EXPECT_TRUE( service.process == server.process());
+            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+         }
 
          {
             auto service = common::service::Lookup{ "service2"}();
@@ -277,7 +277,7 @@ namespace casual
       }
 
 
-		TEST( service_manager, unadvertise_service)
+      TEST( service_manager, unadvertise_service)
       {
          common::unittest::Trace trace;
 
@@ -420,5 +420,5 @@ namespace casual
 
       }
 
-	} // service
+   } // service
 } // casual

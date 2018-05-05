@@ -52,9 +52,8 @@ namespace casual
             template< typename P>
             struct basic_call
             {
-               typedef P policy_type;
-
-               typedef message::service::call::callee::Request message_type;
+               using policy_type = P;
+               using message_type = message::service::call::callee::Request;
 
                basic_call( basic_call&&) = default;
                basic_call& operator = ( basic_call&&) = default;

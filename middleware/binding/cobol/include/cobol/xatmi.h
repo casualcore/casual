@@ -194,14 +194,14 @@ extern "C" void TPRECV(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                        struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
-			 struct TPTYPE_REC_s *TPTYPE_REC,
-			 char *DATA_REC,
-			 struct TPSTATUS_REC_s *TPSTATUS_REC);
+          struct TPTYPE_REC_s *TPTYPE_REC,
+          char *DATA_REC,
+          struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPSVCSTART(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
-			   struct TPTYPE_REC_s *TPTYPE_REC,
-			   char* DATA_REC,
-			   struct TPSTATUS_REC_s *TPSTATUS_REC);
+            struct TPTYPE_REC_s *TPTYPE_REC,
+            char* DATA_REC,
+            struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 #endif /* XATMI_COBOL_H */
 
