@@ -20,7 +20,7 @@ LibraryPaths([
 install_lib = []
 install_headers = []
 
-lib_sf = LinkLibrary( 'bin/casual-serviceframework',
+lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
     [
         Compile( 'source/archive/archive.cpp'),
         Compile( 'source/archive/maker.cpp'),
@@ -41,12 +41,12 @@ lib_sf = LinkLibrary( 'bin/casual-serviceframework',
     ],
     ['casual-common', 'casual-xatmi', 'yaml-cpp', 'pugixml'])
 
-install_lib.append( lib_sf)
+install_lib.append( lib_serviceframework)
 
 install_headers += [ 
-      ( 'include/sf/log.h', 'sf'),
-      ( 'include/sf/archive/log.h', 'sf/archive'),
-      ( 'include/sf/namevaluepair.h', 'sf'),
+      ( 'include/serviceframework/log.h', 'serviceframework'),
+      ( 'include/serviceframework/archive/log.h', 'serviceframework/archive'),
+      ( 'include/serviceframework/namevaluepair.h', 'serviceframework'),
 ]
 
 #
@@ -77,7 +77,7 @@ LinkUnittest( 'bin/test-casual-serviceframework',
         Compile( 'unittest/source/archive/test_consumed.cpp'),
         Compile( 'unittest/source/archive/test_line.cpp'),
     ],
-	[ lib_sf, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
+	[ lib_serviceframework, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
 
 #
 # Install
