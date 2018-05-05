@@ -166,8 +166,8 @@ namespace casual
             std::tie( m_resources.dynamic, m_resources.fixed) =
                   algorithm::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
 
-            common::log::category::transaction << "static resources: " << m_resources.fixed << std::endl;
-            common::log::category::transaction << "dynamic resources: " << m_resources.dynamic << std::endl;
+            common::log::category::transaction << "static resources: " << m_resources.fixed << '\n';
+            common::log::category::transaction << "dynamic resources: " << m_resources.dynamic << '\n';
 
 
             //
@@ -299,7 +299,7 @@ namespace casual
                //
                transaction.replied( reply.correlation);
 
-               log::category::transaction << "updated state: " << transaction << std::endl;
+               log::category::transaction << "updated state: " << transaction << '\n';
             }
             else
             {
@@ -343,7 +343,7 @@ namespace casual
                   if( transaction.trid)
                   {
                      log::category::error << "pending replies associated with transaction - action: transaction state to rollback only\n";
-                     log::category::transaction << transaction << std::endl;
+                     log::category::transaction << transaction << '\n';
 
                      transaction.state = Transaction::State::rollback;
                      result.state = message::service::Transaction::State::error;
@@ -728,7 +728,7 @@ namespace casual
                      }
                      case message::transaction::commit::Reply::Stage::error:
                      {
-                        log::category::error << "commit error: " << std::error_code( reply.state) << std::endl;
+                        log::category::error << "commit error: " << std::error_code( reply.state) << '\n';
                         break;
                      }
                   }

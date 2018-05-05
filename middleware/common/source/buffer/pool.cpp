@@ -207,7 +207,7 @@ namespace casual
                   }
                   catch( const exception::base& exception)
                   {
-                     log::category::error << "failed to deallocate inbound buffer - " << exception << std::endl;
+                     log::category::error << "failed to deallocate inbound buffer - " << exception << '\n';
                   }
                }
                algorithm::for_each( m_pools, std::mem_fn( &Base::clear));

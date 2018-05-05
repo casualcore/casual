@@ -101,7 +101,7 @@ namespace casual
             {
                for( auto a : complete.unhandled())
                {
-                  std::cerr << "size: " << a.size() << std::endl;
+                  std::cerr << "size: " << a.size() << '\n';
                }
             }
 
@@ -122,7 +122,7 @@ namespace casual
             {
                for( auto a : complete.unhandled())
                {
-                  std::cerr << "size: " << a.size() << std::endl;
+                  std::cerr << "size: " << a.size() << '\n';
                }
             }
             EXPECT_TRUE( complete.payload == local::payload::get());

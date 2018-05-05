@@ -109,7 +109,7 @@ namespace casual
          common::log::category::information << "transaction manager is on-line - "
                << m_state.resources.size() << " resources - "
                << instances << " instances - boot time: "
-               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
+               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << '\n';
 
       }
 

@@ -180,7 +180,7 @@ namespace casual
       {
          EXPECT_TRUE( F::write_read( value) == value);
          {
-            //std::cerr << std::fixed << "max: " << std::numeric_limits< T>::max() << std::endl;
+            //std::cerr << std::fixed << "max: " << std::numeric_limits< T>::max() << '\n';
             T value = std::numeric_limits< T>::max() - 1;
             EXPECT_TRUE( F::write_read( value) == value);
          }

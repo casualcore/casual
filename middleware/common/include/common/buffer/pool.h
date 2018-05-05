@@ -133,7 +133,7 @@ namespace casual
 
                      payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
 
-                     log::category::buffer << "pool::get - buffer: " << result << std::endl;
+                     log::category::buffer << "pool::get - buffer: " << result << '\n';
 
                      return result;
                   }
@@ -147,7 +147,7 @@ namespace casual
                   {
                      auto buffer = m_pool.release( handle);
 
-                     log::category::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << std::endl;
+                     log::category::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << '\n';
 
                      //
                      // Adjust the buffer size, with regards to the user size

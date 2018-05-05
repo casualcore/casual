@@ -29,9 +29,9 @@ namespace casual
                   {
                      Trace trace{ "service::call"};
 
-                     log::sf << "input: " << input << std::endl;
+                     log::sf << "input: " << input << '\n';
                      output.reset( input.release());
-                     log::sf << "output: " << output << std::endl;
+                     log::sf << "output: " << output << '\n';
                   }
                };
 
@@ -43,7 +43,7 @@ namespace casual
 
                      static int cd = 10;
 
-                     log::sf << "input: " << input << std::endl;
+                     log::sf << "input: " << input << '\n';
 
                      m_holder.emplace( ++cd, buffer::copy( input));
 
@@ -61,7 +61,7 @@ namespace casual
                         output.swap( found->second);
                         m_holder.erase( found);
 
-                        log::sf << "output: " << output << std::endl;
+                        log::sf << "output: " << output << '\n';
 
                         return true;
                      }

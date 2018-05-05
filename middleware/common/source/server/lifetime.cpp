@@ -26,7 +26,7 @@ namespace casual
                {
                   Trace trace{ "common::server::lifetime::soft::shutdown"};
 
-                  log::debug << "servers: " << range::make( servers) << std::endl;
+                  log::debug << "servers: " << range::make( servers) << '\n';
 
                   auto result = process::lifetime::ended();
 
@@ -57,7 +57,7 @@ namespace casual
 
                   algorithm::append( std::get< 0>( algorithm::intersection( terminated, requested)), result);
 
-                  log::debug << "soft off-line: " << range::make( result) << std::endl;
+                  log::debug << "soft off-line: " << range::make( result) << '\n';
 
                   return result;
 
@@ -83,11 +83,11 @@ namespace casual
 
                   auto running = algorithm::difference( origin, result);
 
-                  log::debug << "still on-line: " << range::make( running) << std::endl;
+                  log::debug << "still on-line: " << range::make( running) << '\n';
 
                   algorithm::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
 
-                  log::debug << "hard off-line: " << std::get< 0>( algorithm::intersection( running, result)) << std::endl;
+                  log::debug << "hard off-line: " << std::get< 0>( algorithm::intersection( running, result)) << '\n';
 
                   return result;
 

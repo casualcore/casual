@@ -98,7 +98,7 @@ namespace casual
                         return lookup_inbound( ipc, gateway.queue);
                      }
 
-                     log << "failed to find domain file: " << path << std::endl;
+                     log << "failed to find domain file: " << path << '\n';
 
                      return {};
                   }

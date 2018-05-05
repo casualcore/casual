@@ -156,7 +156,7 @@ namespace casual
                                  break;
                               }
                            }
-                           m_output << std::endl;
+                           m_output << '\n';
                         };
 
                         std::for_each( std::begin( m_buffer), std::end( m_buffer), writer);

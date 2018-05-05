@@ -35,7 +35,7 @@ namespace casual
             {
                void SetUp() override
                {
-                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << std::endl;
+                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << '\n';
 
 
                   if( ! environment::variable::exists( environment::variable::name::home())
@@ -60,8 +60,8 @@ namespace casual
 
                   directory::create( domain_path);
 
-                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
-                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
+                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << '\n';
+                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << '\n';
 
 
                   if( ! directory::create( environment::domain::singleton::path()))

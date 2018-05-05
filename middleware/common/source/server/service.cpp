@@ -190,7 +190,7 @@ namespace casual
                         catch( ...)
                         {
                            exception::handle();
-                           log::category::error << "exception thrown from service: " << argument.service.name << std::endl;
+                           log::category::error << "exception thrown from service: " << argument.service.name << '\n';
                         }
 
                      }

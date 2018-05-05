@@ -58,7 +58,7 @@ namespace casual
             {
                Trace trace( "resource::Instances::operator()");
 
-               log << "update instances for resource: " << proxy << std::endl;
+               log << "update instances for resource: " << proxy << '\n';
 
                auto count = static_cast< long>( proxy.concurency - proxy.instances.size());
 
@@ -106,7 +106,7 @@ namespace casual
                         case state::resource::Proxy::Instance::State::started:
                         {
 
-                           log << "Instance has not register yet. We, kill it...: " << instance << std::endl;
+                           log << "Instance has not register yet. We, kill it...: " << instance << '\n';
 
                            process::lifetime::terminate( { instance.process.pid});
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
@@ -114,12 +114,12 @@ namespace casual
                         }
                         case state::resource::Proxy::Instance::State::shutdown:
                         {
-                           log << "instance already in shutdown state - " << instance << std::endl;
+                           log << "instance already in shutdown state - " << instance << '\n';
                            break;
                         }
                         default:
                         {
-                           log << "shutdown instance: " << instance << std::endl;
+                           log << "shutdown instance: " << instance << '\n';
 
 
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
@@ -130,7 +130,7 @@ namespace casual
                               // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
                               // hope to send it later...
                               //
-                              log::category::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << std::endl;
+                              log::category::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << '\n';
 
                               m_state.persistent.replies.emplace_back( instance.process.queue, message::shutdown::Request{});
                            }

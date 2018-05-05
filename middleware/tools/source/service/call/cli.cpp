@@ -68,7 +68,7 @@ namespace casual
 
                if( result != mappings.end())
                {
-                  std::clog << "assuming type " << result->second << std::endl;
+                  std::clog << "assuming type " << result->second << '\n';
                   return result->second;
                }
             }

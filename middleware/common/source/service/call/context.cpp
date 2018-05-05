@@ -238,7 +238,7 @@ namespace casual
                {
                   prepared.message.service = target.service;
 
-                  log::debug << "async - message: " << prepared.message << std::endl;
+                  log::debug << "async - message: " << prepared.message << '\n';
 
                   communication::ipc::blocking::send( target.process.queue, prepared.message);
                }

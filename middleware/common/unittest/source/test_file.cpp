@@ -206,9 +206,9 @@ namespace casual
          }
          catch( const exception::system::exception& e)
          {
-            std::cerr << typeid( e).name() << std::endl;
-            std::cerr << e << std::endl;
-            std::cerr << exception::system::invalid::File{} << std::endl;
+            std::cerr << typeid( e).name() << '\n';
+            std::cerr << e << '\n';
+            std::cerr << exception::system::invalid::File{} << '\n';
          }
          //EXPECT_THROW({
          //   file::move( path, destination);

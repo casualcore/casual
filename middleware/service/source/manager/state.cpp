@@ -341,7 +341,7 @@ namespace casual
 
                   if( found)
                   {
-                     log << "remove process pid: " << pid << std::endl;
+                     log << "remove process pid: " << pid << '\n';
 
                      for( auto& s : services)
                      {

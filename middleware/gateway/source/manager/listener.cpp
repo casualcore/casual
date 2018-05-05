@@ -57,7 +57,7 @@ namespace casual
 
                         auto socket = listener();
 
-                        log << "socket connect: " << socket << std::endl;
+                        log << "socket connect: " << socket << '\n';
 
                         if( socket)
                         {
@@ -137,7 +137,7 @@ namespace casual
          {
             Trace trace{ "gateway::manager::Listener::shutdown()"};
 
-            log << "shutdown listener: " << *this << std::endl;
+            log << "shutdown listener: " << *this << '\n';
 
             if( m_thread.joinable() && m_state != State::signaled)
             {
@@ -149,7 +149,7 @@ namespace casual
 
          void Listener::event( const message::manager::listener::Event& event)
          {
-            log << "Listener::event event: " << event << std::endl;
+            log << "Listener::event event: " << event << '\n';
 
             if( event.correlation != m_correlation)
             {

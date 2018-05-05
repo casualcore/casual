@@ -217,7 +217,7 @@ namespace casual
       std::map<long,TinyVO> source{ { 1, TinyVO()}, { 2, TinyVO()}, { 3, TinyVO()}};
       //std::map<long,std::string> source{ { 1, "foo"}};
       local::value_to_string( source, ini);
-      std::cout << ini << std::endl;
+      std::cout << ini << '\n';
    }
 */
 

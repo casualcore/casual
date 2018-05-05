@@ -135,7 +135,7 @@ TEST( casual_order_buffer, add_and_get)
       long size;
       const auto result = casual_order_get_binary( buffer, &binary, &size);
       EXPECT_TRUE( result == CASUAL_ORDER_SUCCESS) << result;
-      EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size) << binary << " " << size << std::endl;
+      EXPECT_TRUE( std::string( binary, size) == "Some Data") << std::string( binary, size) << binary << " " << size << '\n';
       EXPECT_TRUE( size == 9);
    }
 

@@ -31,7 +31,7 @@ namespace casual
          expected << gtrid << ':' << gtrid << ':' << transaction::ID::cCasual << ":0:0";
 
 
-         EXPECT_TRUE( stream.str() == expected.str()) << "stream: " << stream.str() << std::endl << "expected: " << expected.str() << std::endl;
+         EXPECT_TRUE( stream.str() == expected.str()) << "stream: " << stream.str() << '\n' << "expected: " << expected.str() << '\n';
       }
 
       TEST( casual_common_transaction_id, generic_string)
@@ -79,7 +79,7 @@ namespace casual
          auto lhs = transaction::ID::create();
          auto rhs = transaction::ID::create();
 
-         EXPECT_TRUE( lhs != rhs) << "lhs: " << lhs << std::endl << "rhs: " << rhs << std::endl;
+         EXPECT_TRUE( lhs != rhs) << "lhs: " << lhs << '\n' << "rhs: " << rhs << '\n';
 
       }
 
@@ -89,7 +89,7 @@ namespace casual
 
          auto trid = transaction::ID::create();
 
-         EXPECT_TRUE( trid.xid == trid.xid) << "trid: " << trid << std::endl;
+         EXPECT_TRUE( trid.xid == trid.xid) << "trid: " << trid << '\n';
       }
 
       TEST( casual_common_transaction_id, owner)
@@ -98,7 +98,7 @@ namespace casual
 
          auto trid = transaction::ID::create();
 
-         EXPECT_TRUE( trid.owner() == process::handle()) << "trid.owner(): " << trid.owner() << std::endl << "process::handle()" << process::handle() << std::endl;
+         EXPECT_TRUE( trid.owner() == process::handle()) << "trid.owner(): " << trid.owner() << '\n' << "process::handle()" << process::handle() << '\n';
 
       }
 
@@ -109,7 +109,7 @@ namespace casual
          auto lhs = transaction::ID::create();
          auto rhs = lhs;
 
-         EXPECT_TRUE( lhs == rhs) << "lhs: " << lhs << std::endl << "rhs: " << rhs << std::endl;
+         EXPECT_TRUE( lhs == rhs) << "lhs: " << lhs << '\n' << "rhs: " << rhs << '\n';
          EXPECT_TRUE( lhs.owner() == rhs.owner());
 
       }

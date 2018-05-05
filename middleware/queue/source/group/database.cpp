@@ -729,7 +729,7 @@ namespace casual
                }
                else
                {
-                  log << "failed to find message with id: " << id << std::endl;
+                  log << "failed to find message with id: " << id << '\n';
                }
             }
 
@@ -740,7 +740,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::restore"};
 
-            log << "queue: " << queue << std::endl;
+            log << "queue: " << queue << '\n';
 
             m_statement.restore.execute( queue.value());
             return m_connection.affected();
@@ -751,7 +751,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::commit"};
 
-            log << "commit xid: " << id << std::endl;
+            log << "commit xid: " << id << '\n';
 
             auto gtrid = common::transaction::global( id);
 
@@ -764,7 +764,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::rollback"};
 
-            log << "rollback xid: " << id << std::endl;
+            log << "rollback xid: " << id << '\n';
 
             auto gtrid = common::transaction::global( id);
 

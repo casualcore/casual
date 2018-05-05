@@ -142,7 +142,7 @@ namespace casual
                            return;
                         }
 
-                        log << "send request - to: " << message.process.queue << " - request: " << request << std::endl;
+                        log << "send request - to: " << message.process.queue << " - request: " << request << '\n';
 
                         if( ! communication::ipc::non::blocking::send( message.process.queue, request))
                         {

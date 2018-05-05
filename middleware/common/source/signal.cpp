@@ -369,7 +369,7 @@ namespace casual
                   //
                   // We send the signal directly
                   //
-                  log::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << std::endl;
+                  log::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << '\n';
                   signal::send( process::id(), signal::Type::alarm);
                   return local::get();
                }

@@ -226,7 +226,7 @@ extern "C" {
    //
    for( auto& service : settings.services)
    {
-      out << "extern void " << service.function << "( TPSVCINFO *serviceInfo);" << std::endl;
+      out << "extern void " << service.function << "( TPSVCINFO *serviceInfo);" << '\n';
    }
 
    out << "\n\n\n";
@@ -236,7 +236,7 @@ extern "C" {
    //
    for( auto& resource : settings.get_resources())
    {
-      out << "extern struct xa_switch_t " << resource.xa_struct_name << ";" << std::endl;
+      out << "extern struct xa_switch_t " << resource.xa_struct_name << ";" << '\n';
    }
 
 
@@ -320,11 +320,11 @@ namespace trace
          {
             if( std::uncaught_exception())
             {
-               std::cerr << m_information << " - failed" << std::endl;
+               std::cerr << m_information << " - failed" << '\n';
             }
             else
             {
-               std::cout << m_information << " - ok" << std::endl;
+               std::cout << m_information << " - ok" << '\n';
             }
          }
 
@@ -381,7 +381,7 @@ void build( const std::string& c_file, const Settings& settings)
 
    if( settings.verbose)
    {
-      std::clog << settings.compiler << " " << common::string::join( arguments, " ") << std::endl;
+      std::clog << settings.compiler << " " << common::string::join( arguments, " ") << '\n';
    }
 
    {
@@ -452,12 +452,12 @@ int main( int argc, char **argv)
    }
    catch( const std::exception& exception)
    {
-      std::cerr << "error: " << exception.what() << std::endl;
+      std::cerr << "error: " << exception.what() << '\n';
       return common::exception::handle();
    }
    catch( ...)
    {
-      std::cerr << "error: unknown" << std::endl;
+      std::cerr << "error: unknown" << '\n';
       return 10;
    }
 

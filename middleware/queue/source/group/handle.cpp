@@ -210,7 +210,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::category::error << exception.what() << std::endl;
+                     common::log::category::error << exception.what() << '\n';
                   }
                }
 
@@ -247,7 +247,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::category::error << exception.what() << std::endl;
+                     common::log::category::error << exception.what() << '\n';
                   }
                   return false;
                }
@@ -333,7 +333,7 @@ namespace casual
                      try
                      {
                         m_state.queuebase.commit( message.trid);
-                        common::log::category::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << std::endl;
+                        common::log::category::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << '\n';
 
                         //
                         // Will try to dequeue pending requests

@@ -154,11 +154,11 @@ int main( int argc, char** argv)
                   {
                      if( std::uncaught_exception())
                      {
-                        std::cerr << m_information << " - failed" << std::endl;
+                        std::cerr << m_information << " - failed" << '\n';
                      }
                      else
                      {
-                        std::cout << m_information << " - ok" << std::endl;
+                        std::cout << m_information << " - ok" << '\n';
                      }
                   }
 
@@ -208,7 +208,7 @@ int main( int argc, char** argv)
 
             if( settings.verbose)
             {
-               std::clog << settings.compiler << " " << common::string::join( arguments, " ") << std::endl;
+               std::clog << settings.compiler << " " << common::string::join( arguments, " ") << '\n';
             }
 
             {
@@ -269,7 +269,7 @@ int main( int argc, char **argv)
 
          if( settings.verbose)
          {
-            std::cout << std::endl << CASUAL_MAKE_NVP( settings);
+            std::cout << '\n' << CASUAL_MAKE_NVP( settings);
          }
 
       }
@@ -281,7 +281,7 @@ int main( int argc, char **argv)
 
       if( settings.verbose)
       {
-         std::cout << std::endl << CASUAL_MAKE_NVP( xa_switch) << std::endl;
+         std::cout << '\n' << CASUAL_MAKE_NVP( xa_switch) << '\n';
       }
 
       if( settings.output.empty())
@@ -314,7 +314,7 @@ int main( int argc, char **argv)
    }
    catch( const common::exception::system::exception& exception)
    {
-      std::cerr << "error: " << exception << std::endl;
+      std::cerr << "error: " << exception << '\n';
       return 1;
    }
    catch( ...)

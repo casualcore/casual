@@ -29,7 +29,7 @@ namespace casual
                   template< typename E> 
                   void log( E&& exception)
                   {
-                     code::stream( exception.type()) << exception << std::endl;
+                     code::stream( exception.type()) << exception << '\n';
                   }
                } // <unnamed>
             } // local

@@ -65,7 +65,7 @@ namespace casual
                         << '|' << execution::service::name()
                         << '|' << category
                         << '|' << message
-                        << std::endl;
+                        << '\n';
                   }
 
                private:
@@ -83,7 +83,7 @@ namespace casual
                         //
                         // We don't want to throw... Or do we?
                         //
-                        std::cerr << process::path() << " - could not open log-file: " << file << std::endl;
+                        std::cerr << process::path() << " - could not open log-file: " << file << '\n';
                         return false;
                      }
                      return true;

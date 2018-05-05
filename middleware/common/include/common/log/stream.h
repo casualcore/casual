@@ -53,23 +53,20 @@ namespace casual
                   template< typename T>
                   Safe& operator << ( T&& value)
                   {
-                     //if( m_stream)
-                        m_stream << std::forward< T>( value);
+                     m_stream << std::forward< T>( value);
 
                      return *this;
                   }
 
-
-                  typedef std::ostream& (&omanip_t)( std::ostream&);
-
                   //!
                   //! Overload for manip-functions...
-                  //! @note Why does not the T&& take these?
                   //!
+
+                  using omanip_t = std::add_pointer_t< std::ostream&( std::ostream&)>;
+
                   Safe& operator << ( omanip_t value)
                   {
-                     //if( m_stream)
-                        m_stream << value;
+                     m_stream << value;
 
                      return *this;
                   }

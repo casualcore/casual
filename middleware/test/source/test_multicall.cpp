@@ -118,7 +118,7 @@ void run( Settings settings)
             }
             catch( const casual::sf::exception::Base& exception)
             {
-               std::cerr << exception << std::endl;
+               std::cerr << exception << '\n';
             }
             catch( ...)
             {
@@ -168,7 +168,7 @@ int main( int argc, char** argv)
          parse( argc, argv);
       }
 
-      std::cout << "argument: " << settings.argument << std::endl;
+      std::cout << "argument: " << settings.argument << '\n';
 
 
       run( settings);

@@ -424,18 +424,18 @@ namespace casual
             {
                if( found->state() != state::resource::Proxy::Instance::State::shutdown)
                {
-                  common::log::category::error << "resource proxy instance died - " << *found << std::endl;
+                  common::log::category::error << "resource proxy instance died - " << *found << '\n';
                }
 
                resource.statistics += found->statistics;
                resource.instances.erase( std::begin( found));
 
-               transaction::log << "remove dead process: " << death << std::endl;
+               transaction::log << "remove dead process: " << death << '\n';
                return;
             }
          }
 
-         common::log::category::warning << "failed to find and remove dead instance: " << death << std::endl;
+         common::log::category::warning << "failed to find and remove dead instance: " << death << '\n';
       }
 
       state::resource::Proxy& State::get_resource( state::resource::id::type rm)

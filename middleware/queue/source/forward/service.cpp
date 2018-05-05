@@ -47,7 +47,7 @@ namespace casual
                   std::move( message.payload.type),
                   std::move( message.payload.data)};
 
-               log << "payload: " << payload << std::endl;
+               log << "payload: " << payload << '\n';
 
                try
                {

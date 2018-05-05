@@ -266,7 +266,7 @@ namespace casual
                tx_commit();
                rollback.release();
 
-               std::cout << id << std::endl;
+               std::cout << id << '\n';
             }
 
             struct Empty : public std::runtime_error
@@ -297,7 +297,7 @@ namespace casual
                         message.front().payload.data.data(),
                         message.front().payload.data.size());
                }
-               std::cout << std::endl;
+               std::cout << '\n';
             }
 
 

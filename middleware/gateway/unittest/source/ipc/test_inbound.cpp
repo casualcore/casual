@@ -74,7 +74,7 @@ namespace casual
                      communication::ipc::blocking::receive( communication::ipc::inbound::device(), reply, inbound.correlation);
                      external = reply.process;
 
-                     log << "external: " << external << std::endl;
+                     log << "external: " << external << '\n';
 
                      //
                      // act as the outbound and send connect

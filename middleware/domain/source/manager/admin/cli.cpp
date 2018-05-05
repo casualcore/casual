@@ -61,7 +61,7 @@ namespace casual
                         common::communication::ipc::inbound::Device::handler_type event_handler{
                            [&]( message::event::process::Spawn& m){
                               group( std::cout) << "spawned: " << terminal::color::yellow << m.alias << " "
-                                    << terminal::color::no_color << range::make( m.pids) << std::endl;
+                                    << terminal::color::no_color << range::make( m.pids) << '\n';
                               for( auto pid : m.pids)
                               {
                                  m_alias_mapping[ pid] = m.alias;
@@ -73,12 +73,12 @@ namespace casual
                               {
                                  case reason_t::core:
                                     group( std::cout) << terminal::color::red << "core: "
-                                          << terminal::color::white << m.state.pid << " " << m_alias_mapping[ m.state.pid] << std::endl;
+                                          << terminal::color::white << m.state.pid << " " << m_alias_mapping[ m.state.pid] << '\n';
                                     break;
                                  default:
                                     group( std::cout) << terminal::color::green << "exit: "
                                        <<  terminal::color::white << m.state.pid
-                                       << " " << terminal::color::yellow << m_alias_mapping[ m.state.pid] << std::endl;
+                                       << " " << terminal::color::yellow << m_alias_mapping[ m.state.pid] << '\n';
                                     break;
                               }
 
@@ -87,20 +87,20 @@ namespace casual
 
                               group( std::cout) << terminal::color::green << "connected: "
                                     <<  terminal::color::white << m.process.pid
-                                    << " " << terminal::color::yellow << m_alias_mapping[ m.process.pid] << std::endl;
+                                    << " " << terminal::color::yellow << m_alias_mapping[ m.process.pid] << '\n';
 
 
                            },
                            []( message::event::domain::boot::Begin& m){
                                  std::cout << "boot domain: " << terminal::color::cyan << m.domain.name << terminal::color::no_color
-                                       << " - id: " << terminal::color::yellow << m.domain.id << std::endl;
+                                       << " - id: " << terminal::color::yellow << m.domain.id << '\n';
                            },
                            []( message::event::domain::boot::End& m){
                               throw event::Done{};
                            },
                            []( message::event::domain::shutdown::Begin& m){
                                  std::cout << "shutdown domain: " << terminal::color::cyan << m.domain.name << terminal::color::no_color
-                                       << " - id: " << terminal::color::yellow << m.domain.id << std::endl;
+                                       << " - id: " << terminal::color::yellow << m.domain.id << '\n';
                            },
                            []( message::event::domain::shutdown::End& m){
                               throw event::Done{};
