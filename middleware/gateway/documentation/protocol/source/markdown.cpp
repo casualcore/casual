@@ -1056,6 +1056,8 @@ Sent to abruptly disconnect the conversation
             {
                static_assert( common::marshal::is_network_normalizing< local::Printer>::value, "not network...");
 
+               common::terminal::output::directive().color = false;
+               
                message_header( std::cout);
                domain_connect( std::cout);
                domain_discovery( std::cout);
