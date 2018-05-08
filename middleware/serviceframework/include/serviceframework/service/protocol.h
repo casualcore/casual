@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_IO_H_
-#define CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_IO_H_
+#pragma once
+
 
 
 #include "serviceframework/archive/archive.h"
@@ -219,4 +219,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_IO_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_FLAG_H_
-#define CASUAL_COMMON_FLAG_H_
+#pragma once
+
 
 #include "common/marshal/marshal.h"
 #include "common/exception/system.h"
@@ -127,4 +127,4 @@ namespace casual
 } // casual
 
 
-#endif /* CASUAL_UTILITY_FLAG_H_ */
+

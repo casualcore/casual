@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef ARCHIVE_BINARY_H_
-#define ARCHIVE_BINARY_H_
+#pragma once
+
 
 
 #include "serviceframework/archive/archive.h"
@@ -31,4 +31,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif /* ARCHIVE_BINARY_H_ */
+

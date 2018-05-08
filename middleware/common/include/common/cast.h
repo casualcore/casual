@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_CAST_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_CAST_H_
+#pragma once
+
 
 #include "common/traits.h"
 
@@ -34,4 +34,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_CAST_H_
+

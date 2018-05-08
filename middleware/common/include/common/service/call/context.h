@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_CALLING_CONTEXT_H_
-#define CASUAL_CALLING_CONTEXT_H_
+#pragma once
+
 
 #include "common/service/call/state.h"
 #include "common/flag/service/call.h"
@@ -105,4 +105,4 @@ namespace casual
 } // casual
 
 
-#endif /* CASUAL_CALLING_CONTEXT_H_ */
+

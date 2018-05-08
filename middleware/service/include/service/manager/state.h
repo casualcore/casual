@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SERVICE_MANAGER_STATE_H_
-#define CASUAL_SERVICE_MANAGER_STATE_H_
+#pragma once
+
 
 
 
@@ -419,4 +419,4 @@ namespace casual
 
 } // casual
 
-#endif // STATE_H_
+

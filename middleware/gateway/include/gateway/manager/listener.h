@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_LISTENER_H_
-#define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_LISTENER_H_
+#pragma once
+
 
 #include "common/communication/tcp.h"
 
@@ -80,4 +80,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_LISTENER_H_
+

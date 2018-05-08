@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef TRANSACTION_MANAGER_MANAGER_H_
-#define TRANSACTION_MANAGER_MANAGER_H_
+#pragma once
+
 
 #include "transaction/manager/state.h"
 
@@ -65,4 +65,4 @@ namespace casual
 
 
 
-#endif /* MONITOR_H_ */
+

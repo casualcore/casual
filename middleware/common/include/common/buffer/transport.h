@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_BUFFER_TRANSPORT_H_
-#define CASUAL_COMMON_BUFFER_TRANSPORT_H_
+#pragma once
+
 
 
 #include "common/buffer/type.h"
@@ -95,4 +95,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // PRE_H_
+

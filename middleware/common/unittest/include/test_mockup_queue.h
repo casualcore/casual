@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_ISOLATEDUNITTTEST_QUEUE_H_
-#define CASUAL_ISOLATEDUNITTTEST_QUEUE_H_
+#pragma once
+
 
 namespace casual
 {
@@ -23,4 +23,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_ISOLATEDUNITTTEST_QUEUE_H_ */
+

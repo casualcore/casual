@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef ARCHIVE_JSON_H_
-#define ARCHIVE_JSON_H_
+#pragma once
+
 
 
 #include "serviceframework/archive/archive.h"
@@ -53,4 +53,4 @@ namespace casual
 
 
 
-#endif /* ARCHIVE_JSAON_H_ */
+

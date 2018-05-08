@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_RANGE_H_
-#define CASUAL_COMMON_RANGE_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/traits.h"
@@ -388,7 +388,3 @@ namespace casual
       } // range
    } // common 
 } // casual 
-
-
-
-#endif

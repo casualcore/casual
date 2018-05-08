@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_SERVICE_MANAGER_ADMIN_CLI_H_
-#define CASUAL_SERVICE_MANAGER_ADMIN_CLI_H_
+#pragma once
+
 
 #include "common/argument.h"
 #include "common/pimpl.h"
@@ -33,5 +33,3 @@ namespace casual
       } // manager  
    } // service
 } // casual
-
-#endif

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_TRAFFIC_INCLUDE_TRAFFIC_COMMON_H_
-#define CASUAL_MIDDLEWARE_TRAFFIC_INCLUDE_TRAFFIC_COMMON_H_
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
@@ -39,4 +39,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_TRAFFIC_INCLUDE_TRAFFIC_COMMON_H_
+

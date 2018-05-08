@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MOCKUP_TRANSFORM_H_
-#define CASUAL_COMMON_MOCKUP_TRANSFORM_H_
+#pragma once
+
 
 
 #include "common/traits.h"
@@ -123,4 +123,4 @@ namespace casual
 
 } // casual
 
-#endif // DISPATCH_H_
+

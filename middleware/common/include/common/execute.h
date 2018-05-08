@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_EXECUTE_H_
-#define CASUAL_COMMON_EXECUTE_H_
+#pragma once
+
 
 
 #include "common/move.h"
@@ -101,5 +101,3 @@ namespace casual
    } // common 
 } // casual 
 
-
-#endif

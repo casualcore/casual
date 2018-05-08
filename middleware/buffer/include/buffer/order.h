@@ -1,12 +1,11 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
+#pragma once
 
-#ifndef CASUAL_ORDER_BUFFER_H_
-#define CASUAL_ORDER_BUFFER_H_
 
 #include <stdbool.h>
 
@@ -74,4 +73,4 @@ int casual_order_get_binary(  const char* buffer, const char** data, long* size)
 }
 #endif
 
-#endif /* CASUAL_ORDER_BUFFER_H_ */
+

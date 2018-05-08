@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_ARGUMENT_EXCEPTION_H_
-#define CASUAL_COMMON_ARGUMENT_EXCEPTION_H_
+#pragma once
+
 
 #include "common/exception/system.h"
 
@@ -54,5 +54,3 @@ namespace casual
    } // common
 
 } // casual
-
-#endif

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_GATEWAY_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_GATEWAY_H_
+#pragma once
+
 
 
 #include "common/message/service.h"
@@ -268,4 +268,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_GATEWAY_H_
+

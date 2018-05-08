@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_TOOLS_DESCRIBE_CLI_H_
-#define CASUAL_TOOLS_DESCRIBE_CLI_H_
+#pragma once
+
 
 #include "common/argument.h"
 #include "common/pimpl.h"
@@ -35,5 +35,3 @@ namespace casual
       } // service
    } // tools
 } // casual
-
-#endif

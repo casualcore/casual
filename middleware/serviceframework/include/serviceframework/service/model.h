@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_SERVICE_MODEL_H_
-#define CASUAL_SF_SERVICE_MODEL_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -138,4 +138,4 @@ namespace casual
 
 } // casual
 
-#endif // MODEL_H_
+

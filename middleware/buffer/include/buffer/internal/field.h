@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_
-#define MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_
+#pragma once
+
 
 #include "common/platform.h"
 
@@ -63,4 +63,4 @@ namespace casual
 
 
 
-#endif /* MIDDLEWARE_BUFFER_INCLUDE_BUFFER_INTERNAL_FIELD_H_ */
+

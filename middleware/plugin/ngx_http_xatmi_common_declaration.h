@@ -1,14 +1,10 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-
-#ifndef NGX_HTTP_XATMI_COMMON_DECLARATION_H_
-#define NGX_HTTP_XATMI_COMMON_DECLARATION_H_
-
-
+#pragma once
 //
 // Unique configuration per request
 //
@@ -25,5 +21,3 @@ typedef struct {
 } ngx_http_xatmi_ctx_t;
 
 
-
-#endif /* NGX_HTTP_XATMI_COMMON_DECLARATION_H_ */

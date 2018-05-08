@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_UTILITY_ENVIRONMENT_H_
-#define CASUAL_UTILITY_ENVIRONMENT_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/uuid.h"
@@ -238,4 +238,4 @@ namespace casual
 } // casual
 
 
-#endif /* CASUAL_UTILITY_ENVIRONMENT_H_ */
+

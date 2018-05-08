@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_HEADER_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_HEADER_H_
+#pragma once
+
 
 
 #include "common/marshal/marshal.h"
@@ -122,4 +122,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_HEADER_H_
+

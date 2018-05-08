@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_BUFFER_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_BUFFER_H_
+#pragma once
+
 
 #include "common/buffer/type.h"
 
@@ -89,4 +89,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_BUFFER_H_
+

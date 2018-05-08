@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_SERVER_SERVICE_H_
-#define CASUAL_COMMON_SERVER_SERVICE_H_
+#pragma once
+
 
 #include "common/service/type.h"
 #include "common/service/invoke.h"
@@ -70,4 +70,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // SERVICE_H_
+

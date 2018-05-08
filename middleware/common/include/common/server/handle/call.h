@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_SERVER_HANDLE_H_
-#define CASUAL_COMMON_SERVER_HANDLE_H_
+#pragma once
+
 
 
 #include "common/server/handle/service.h"
@@ -123,4 +123,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // HANDLE_H_
+

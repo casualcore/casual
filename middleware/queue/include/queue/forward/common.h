@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_FROWARD_COMMON_H_
-#define CASUAL_QUEUE_FROWARD_COMMON_H_
+#pragma once
+
 
 #include "queue/api/message.h"
 
@@ -47,4 +47,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // COMMON_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_TRANSCODE_H_
-#define CASUAL_COMMON_TRANSCODE_H_
+#pragma once
+
 
 
 #include "common/platform.h"
@@ -191,4 +191,4 @@ namespace casual
 } // casual
 
 
-#endif /* TRANSCODING_H_ */
+

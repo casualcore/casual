@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_BROKER_STATE_H_
-#define CASUAL_QUEUE_BROKER_STATE_H_
+#pragma once
+
 
 
 #include "common/communication/ipc.h"
@@ -120,4 +120,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // CASUAL_QUEUE_BROKER_STATE_H_
+

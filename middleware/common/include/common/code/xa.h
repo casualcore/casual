@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_ERROR_CODE_XA_H_
-#define CASUAL_COMMON_ERROR_CODE_XA_H_
+#pragma once
+
 
 #include "xa/code.h"
 #include "common/log/stream.h"
@@ -143,5 +143,3 @@ namespace casual
 #endif // CASUAL_NO_XATMI_UNDEFINE
 
 
-
-#endif

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_PROCESS_H_
-#define CASUAL_COMMON_PROCESS_H_
+#pragma once
+
 
 #include "common/strong/id.h"
 #include "common/file.h"
@@ -427,4 +427,4 @@ namespace casual
 } // casual
 
 
-#endif /* PROCESS_H_ */
+

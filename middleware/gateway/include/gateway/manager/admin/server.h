@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
-#define CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
+#pragma once
+
 
 
 #include "gateway/manager/admin/vo.h"
@@ -41,4 +41,4 @@ namespace casual
 
 } // casual
 
-#endif // SERVER_H_
+

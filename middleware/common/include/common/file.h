@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_UTILITY_FILE_H_
-#define CASUAL_UTILITY_FILE_H_
+#pragma once
+
 
 #include <string>
 
@@ -194,4 +194,4 @@ namespace casual
    } // common
 } // casual
 
-#endif /* CASUAL_UTILITY_FILE_H_ */
+

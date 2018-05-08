@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_TRANSACTION_CONTEXT_H_
-#define CASUAL_COMMON_TRANSACTION_CONTEXT_H_
+#pragma once
+
 
 #include <tx.h>
 
@@ -203,4 +203,4 @@ namespace casual
 
 
 
-#endif /* CONTEXT_H_ */
+

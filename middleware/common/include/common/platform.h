@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_UTILITY_PLATFORM_H_
-#define CASUAL_UTILITY_PLATFORM_H_
+#pragma once
+
 
 
 // ipc
@@ -423,4 +423,4 @@ namespace casual
 #define CASUAL_OPTION_UNUSED
 #endif
 
-#endif /* CASUAL_UTILITY_PLATFORM_H_ */
+

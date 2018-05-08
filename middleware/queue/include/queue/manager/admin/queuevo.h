@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
-#define CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -223,4 +223,4 @@ namespace casual
 
 } // casual
 
-#endif // BROKERVO_H_
+

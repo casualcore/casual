@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_TRAITS_H_
-#define COMMON_TRAITS_H_
+#pragma once
+
 
 #include "common/platform.h"
 
@@ -522,4 +522,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // TRAITS_H_
+

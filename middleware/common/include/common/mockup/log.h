@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_LOG_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_LOG_H_
+#pragma once
+
 
 #include "common/log.h"
 #include "common/log/trace.h"
@@ -31,4 +31,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_LOG_H_
+

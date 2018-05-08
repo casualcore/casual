@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_BROKER_TRANSFORM_H_
-#define CASUAL_BROKER_TRANSFORM_H_
+#pragma once
+
 
 
 #include "service/manager/state.h"
@@ -256,4 +256,4 @@ namespace casual
 } // casual
 
 
-#endif /* CASUAL_BROKER_TRANSFORM_H_ */
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_TRANSACTION_MANAGER_ADMIN_CLI_H_
-#define CASUAL_TRANSACTION_MANAGER_ADMIN_CLI_H_
+#pragma once
+
 
 #include "common/argument.h"
 #include "common/pimpl.h"
@@ -34,5 +34,3 @@ namespace casual
       } // manager  
    } // transaction
 } // casual
-
-#endif

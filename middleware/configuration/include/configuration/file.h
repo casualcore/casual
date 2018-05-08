@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_CONFIG_FILE_H_
-#define CASUAL_CONFIG_FILE_H_
+#pragma once
+
 
 
 #include <string>
@@ -63,4 +63,4 @@ namespace casual
 
 } // casual
 
-#endif // FILE_H_
+

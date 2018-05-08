@@ -4,10 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-
-#ifndef CASUAL_NAMEVALUEPAIR_H
-#define CASUAL_NAMEVALUEPAIR_H
+#pragma once
 
 #include "common/traits.h"
 
@@ -148,8 +145,4 @@ namespace casual
       } \
 
 
-//#define CASUAL_READ_WRITE( )
 
-
-
-#endif

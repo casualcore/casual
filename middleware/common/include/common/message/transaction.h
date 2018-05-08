@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_MESSAGE_TRANSACTION_H_
-#define COMMON_MESSAGE_TRANSACTION_H_
+#pragma once
+
 
 #include "common/message/type.h"
 #include "common/code/xa.h"
@@ -387,4 +387,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // TRANSACTION_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_BUFFER_TYPE_H_
-#define CASUAL_COMMON_BUFFER_TYPE_H_
+#pragma once
+
 
 #include "common/platform.h"
 
@@ -141,4 +141,4 @@ namespace casual
 
 } // casual
 
-#endif // TYPE_H_
+

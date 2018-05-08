@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_BROKER_INCLUDE_BROKER_COMMON_H_
-#define CASUAL_MIDDLEWARE_BROKER_INCLUDE_BROKER_COMMON_H_
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
@@ -37,4 +37,4 @@ namespace casual
    } // service
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_BROKER_INCLUDE_BROKER_COMMON_H_
+

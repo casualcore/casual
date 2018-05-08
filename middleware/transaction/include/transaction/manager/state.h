@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_TRANSACTION_MANAGER_STATE_H_
-#define CASUAL_TRANSACTION_MANAGER_STATE_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/message/transaction.h"
@@ -533,4 +533,4 @@ namespace casual
    } // transaction
 } // casual
 
-#endif // MANAGER_STATE_H_
+

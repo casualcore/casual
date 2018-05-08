@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MOVE_H_
-#define CASUAL_COMMON_MOVE_H_
+#pragma once
+
 
 namespace casual
 {
@@ -54,4 +54,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // MOVE_H_
+

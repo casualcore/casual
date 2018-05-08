@@ -1,19 +1,15 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-
-
-#ifndef CASUAL_XATMI_H_
-#define CASUAL_XATMI_H_
+#pragma once
 
 #include "xatmi/defines.h"
 #include "xatmi/extended.h"
 #include "xatmi/flag.h"
 #include "xatmi/code.h"
-
 
 
 #define CASUAL_XATMI_IMPLEMENTATION 1
@@ -66,5 +62,3 @@ extern void tpsvrdone();
 }
 #endif
 
-
-#endif /* CASUAL_XATMI_H_ */

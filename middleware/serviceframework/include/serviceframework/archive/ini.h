@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_
-#define SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_
+#pragma once
+
 
 #include "serviceframework/archive/archive.h"
 
@@ -46,4 +46,4 @@ namespace casual
 
 
 
-#endif /* SERVICEFRAMEWORK_INCLUDE_SF_ARCHIVE_INI_H_ */
+

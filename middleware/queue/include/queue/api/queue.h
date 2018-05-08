@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_QUEUE_H_
-#define CASUAL_QUEUE_QUEUE_H_
+#pragma once
+
 
 
 #include "queue/api/message.h"
@@ -79,4 +79,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // QUEUE_H_
+

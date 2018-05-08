@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_DELAY_MESSAGE_H_
-#define CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_DELAY_MESSAGE_H_
+#pragma once
+
 
 
 #include "common/message/type.h"
@@ -67,4 +67,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_DELAY_MESSAGE_H_
+

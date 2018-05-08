@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_PLATFORM_H_
-#define CASUAL_SF_PLATFORM_H_
+#pragma once
+
 
 
 #include "common/uuid.h"
@@ -161,4 +161,4 @@ namespace casual
 
 } // casual
 
-#endif // PLATFORM_H_
+

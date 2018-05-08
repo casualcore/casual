@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUALQUEUESERVERDATABASE_H_
-#define CASUALQUEUESERVERDATABASE_H_
+#pragma once
+
 
 #include "sql/database.h"
 
@@ -249,4 +249,4 @@ namespace casual
 
 } // casual
 
-#endif // DATABASE_H_
+

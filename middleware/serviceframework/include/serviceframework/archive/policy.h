@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_ARCHIVE_POLICY_H_
-#define CASUAL_ARCHIVE_POLICY_H_
+#pragma once
+
 
 #include "serviceframework/archive/archive.h"
 #include "serviceframework/exception.h"
@@ -214,5 +214,3 @@ namespace casual
       } // archive
    } // serviceframework
 } // casual
-
-#endif

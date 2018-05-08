@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_INBOUND_CACHE_H_
-#define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_INBOUND_CACHE_H_
+#pragma once
+
 
 #include "common/communication/message.h"
 
@@ -82,4 +82,4 @@ namespace casual
    } // gateway
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_INBOUND_CACHE_H_
+

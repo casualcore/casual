@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_CODE_CASUAL_H_
-#define CASUAL_COMMON_CODE_CASUAL_H_
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/signal.h"
@@ -57,5 +57,3 @@ namespace casual
       } // code
    } // common
 } // casual
-
-#endif

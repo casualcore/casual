@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef QUEUE_BROKER_BROKER_H_
-#define QUEUE_BROKER_BROKER_H_
+#pragma once
+
 
 
 #include "queue/manager/state.h"
@@ -55,4 +55,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // BROKER_H_
+

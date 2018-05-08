@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_API_MESSAGE_H_
-#define CASUAL_QUEUE_API_MESSAGE_H_
+#pragma once
+
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
@@ -185,4 +185,4 @@ namespace casual
 
 } // casual
 
-#endif // MESSAGE_H_
+

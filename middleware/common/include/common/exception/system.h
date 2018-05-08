@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_EXCEPTION_SYSTEM_H_
-#define CASUAL_COMMON_EXCEPTION_SYSTEM_H_
+#pragma once
+
 
 #include "common/code/system.h"
 #include "common/exception/common.h"
@@ -103,5 +103,3 @@ namespace casual
 } // casual
 
 
-
-#endif

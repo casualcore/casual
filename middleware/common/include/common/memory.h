@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_
+#pragma once
+
 
 
 #include "common/algorithm.h"
@@ -172,4 +172,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_
+

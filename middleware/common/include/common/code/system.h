@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_CODE_SYSTEM_H_
-#define CASUAL_COMMON_CODE_SYSTEM_H_
+#pragma once
+
 
 #include <system_error>
 
@@ -43,4 +43,3 @@ namespace casual
    } // common
 } // casual
 
-#endif

@@ -6,7 +6,7 @@
 
 
 #include "xatmi.h"
-#include "xatmi/internal.h"
+#include "xatmi/internal/code.h"
 
 #include "common/service/conversation/context.h"
 #include "common/buffer/pool.h"

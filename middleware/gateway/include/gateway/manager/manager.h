@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_MANAGER_H_
-#define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_MANAGER_H_
+#pragma once
+
 
 
 #include "gateway/manager/state.h"
@@ -47,4 +47,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_MANAGER_MANAGER_H_
+

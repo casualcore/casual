@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_EXECUTION_H_
-#define CASUAL_COMMON_EXECUTION_H_
+#pragma once
+
 
 #include <string>
 
@@ -67,4 +67,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // EXECUTION_H_
+

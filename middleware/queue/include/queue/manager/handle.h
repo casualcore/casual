@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef QUEUE_BROKER_HANDLE_H_
-#define QUEUE_BROKER_HANDLE_H_
+#pragma once
+
 
 #include "queue/manager/manager.h"
 
@@ -157,4 +157,4 @@ namespace casual
 
 } // casual
 
-#endif // HANDLE_H_
+

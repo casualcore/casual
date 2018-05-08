@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_EXCEPTION_COMMON_H_
-#define CASUAL_COMMON_EXCEPTION_COMMON_H_
+#pragma once
+
 
 #include <system_error>
 #include <iosfwd>
@@ -67,4 +67,3 @@ namespace casual
    } // common
 } // casual
 
-#endif

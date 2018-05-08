@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SERVICE_MANAGER_ADMIN_MANAGERVO_H_
-#define CASUAL_SERVICE_MANAGER_ADMIN_MANAGERVO_H_
+#pragma once
+
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
@@ -195,4 +195,4 @@ namespace casual
    } // service
 } // casual
 
-#endif // BROKERVO_H_
+

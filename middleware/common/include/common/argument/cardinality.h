@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_ARGUMENT_CARDINALITY_H_
-#define CASUAL_COMMON_ARGUMENT_CARDINALITY_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/compare.h"
@@ -130,6 +130,3 @@ namespace casual
    } // common
 } // casual
 
-
-
-#endif

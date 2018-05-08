@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_MESSAGE_QUEUE_H_
-#define COMMON_MESSAGE_QUEUE_H_
+#pragma once
+
 
 #include "common/message/type.h"
 #include "common/platform.h"
@@ -601,4 +601,4 @@ namespace casual
 
 } // casual
 
-#endif // QUEUE_H_
+

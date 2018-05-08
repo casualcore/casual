@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef SF_LOG_H_
-#define SF_LOG_H_
+#pragma once
+
 
 #include "common/log/category.h"
 #include "common/log.h"
@@ -115,4 +115,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // SF_LOG_H_
+

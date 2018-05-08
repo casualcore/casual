@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_ROUTING_H_
-#define CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_ROUTING_H_
+#pragma once
+
 
 
 #include "common/uuid.h"
@@ -154,4 +154,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_GATEWAY_INCLUDE_GATEWAY_TASK_H_
+

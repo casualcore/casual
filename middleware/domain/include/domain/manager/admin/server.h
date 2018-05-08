@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
-#define CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
+#pragma once
+
 
 
 
@@ -53,4 +53,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
+

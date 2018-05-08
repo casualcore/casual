@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVER_START_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVER_START_H_
+#pragma once
+
 
 
 #include "common/service/type.h"
@@ -99,4 +99,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVER_START_H_
+

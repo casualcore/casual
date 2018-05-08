@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_TRANSACTION_MANAGER_ADMIN_TRANSACTIONVO_H_
-#define CASUAL_TRANSACTION_MANAGER_ADMIN_TRANSACTIONVO_H_
+#pragma once
+
 
 
 
@@ -284,4 +284,4 @@ namespace casual
 
 } // casual
 
-#endif // TRANSACTIONVO_H_
+

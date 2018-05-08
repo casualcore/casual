@@ -4,9 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#ifndef CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_INTERNAL_H_
-#define CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_INTERNAL_H_
+#pragma once
 
 #include "common/exception/xatmi.h"
 
@@ -54,4 +52,4 @@ namespace casual
    } // xatmi
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_INTERNAL_H_
+

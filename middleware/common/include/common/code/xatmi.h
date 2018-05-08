@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_ERROR_CODE_XATMI_H_
-#define CASUAL_COMMON_ERROR_CODE_XATMI_H_
+#pragma once
+
 
 #include "xatmi/code.h"
 
@@ -99,5 +99,3 @@ namespace casual
 
 #endif // CASUAL_NO_XATMI_UNDEFINE
 
-
-#endif

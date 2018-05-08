@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_STRONG_ID_H_
-#define CASUAL_COMMON_STRONG_ID_H_
+#pragma once
+
 
 #include "common/value/optional.h"
 #include "common/platform.h"
@@ -67,6 +67,3 @@ namespace casual
       } // strong 
    } // common
 } // casual
-
-
-#endif

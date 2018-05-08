@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_TIMEOUT_H_
-#define COMMON_TIMEOUT_H_
+#pragma once
+
 
 
 #include "common/platform.h"
@@ -39,4 +39,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // TIMEOUT_H_
+

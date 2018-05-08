@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_SERVICE_MANAGER_ADMIN_API_H_
-#define CASUAL_SERVICE_MANAGER_ADMIN_API_H_
+#pragma once
+
 
 #include "service/manager/admin/managervo.h"
 
@@ -31,4 +31,3 @@ namespace casual
    } // service
 } // casual
 
-#endif

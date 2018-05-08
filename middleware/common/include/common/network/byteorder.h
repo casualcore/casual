@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_NETWORK_BYTEORDER_H_
-#define CASUAL_COMMON_NETWORK_BYTEORDER_H_
+#pragma once
+
 
 #include "common/platform.h"
 
@@ -137,4 +137,4 @@ namespace casual
    }
 }
 
-#endif /* CASUAL_COMMON_NETWORK_BYTEORDER_H_ */
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_CHRONOLOGY_H_
-#define CASUAL_COMMON_CHRONOLOGY_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/log/stream.h"
@@ -81,4 +81,4 @@ namespace casual
 } // casual
 
 
-#endif // CASUAL_COMMON_CHRONOLOGY_H_
+

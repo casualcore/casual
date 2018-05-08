@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_EXCEPTION_TX_H_
-#define CASUAL_COMMON_EXCEPTION_TX_H_
+#pragma once
+
 
 #include "common/code/tx.h"
 #include "common/exception/common.h"
@@ -58,6 +58,3 @@ namespace casual
    } // common
 } // casual
 
-
-
-#endif

@@ -4,12 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUALTESTVOTESTVO_H
-#define CASUALTESTVOTESTVO_H
-
-
-
-
+#pragma once
  
 
 // 
@@ -101,4 +96,3 @@ private:
 } // casual
 
 
-#endif 

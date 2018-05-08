@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_ARCHIVE_XML_H_
-#define CASUAL_SF_ARCHIVE_XML_H_
+#pragma once
+
 
 #include "serviceframework/archive/archive.h"
 #include "serviceframework/platform.h"
@@ -53,4 +53,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_SF_ARCHIVE_XML_H_ */
+

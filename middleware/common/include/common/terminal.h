@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_TERMINAL_H_
-#define COMMON_TERMINAL_H_
+#pragma once
+
 
 #include "common/move.h"
 #include "common/algorithm.h"
@@ -445,4 +445,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // TERMINAL_H_
+

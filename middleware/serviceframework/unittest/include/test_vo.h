@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef TEST_VO_H_
-#define TEST_VO_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -169,4 +169,4 @@ value:
 
 
 
-#endif /* TEST_VO_H_ */
+

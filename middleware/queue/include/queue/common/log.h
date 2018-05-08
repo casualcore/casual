@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_QUEUE_INCLUDE_QUEUE_COMMON_H_
-#define CASUAL_MIDDLEWARE_QUEUE_INCLUDE_QUEUE_COMMON_H_
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
@@ -36,4 +36,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_QUEUE_INCLUDE_QUEUE_COMMON_H_
+

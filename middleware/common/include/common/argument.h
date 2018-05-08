@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_ARGUMENT_H_
-#define CASUAL_COMMON_ARGUMENT_H_
+#pragma once
+
 
 #include "common/argument/cardinality.h"
 #include "common/argument/exception.h"
@@ -900,5 +900,3 @@ namespace casual
       } // argument
    } // common 
 } // casual 
-
-#endif

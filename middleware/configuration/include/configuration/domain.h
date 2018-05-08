@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CONFIG_DOMAIN_H_
-#define CONFIG_DOMAIN_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -108,4 +108,4 @@ namespace casual
    } // config
 } // casual
 
-#endif // DOMAIN_H_
+

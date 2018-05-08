@@ -6,8 +6,8 @@
 
 
 
-#ifndef SF_TESTPROXY_H_
-#define SF_TESTPROXY_H_
+#pragma once
+
 
 
 #include <serviceframework/service/protocol/call.h>
@@ -140,4 +140,4 @@ namespace test
 
 } // casual
 
-#endif // SF_TESTPROXY_H_
+

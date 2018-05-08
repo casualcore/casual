@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef MESSAGE_DISPATCH_H_
-#define MESSAGE_DISPATCH_H_
+#pragma once
+
 
 #include "common/execution.h"
 #include "common/communication/message.h"
@@ -251,4 +251,4 @@ namespace casual
 } // casual
 
 
-#endif /* MESSAGE_DISPATCH_H_ */
+

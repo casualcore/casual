@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_LOG_TRACE_H_
-#define COMMON_LOG_TRACE_H_
+#pragma once
+
 
 #include "common/log/category.h"
 
@@ -75,4 +75,4 @@ namespace casual
 
 
 
-#endif /* TRACE_H_ */
+

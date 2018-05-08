@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_DESCRIPTOR_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_DESCRIPTOR_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/transaction/id.h"
@@ -152,4 +152,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_DESCRIPTOR_H_
+

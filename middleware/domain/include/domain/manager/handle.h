@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_HANDLE_H_
-#define CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_HANDLE_H_
+#pragma once
+
 
 #include "domain/manager/state.h"
 
@@ -177,4 +177,4 @@ namespace casual
    } // domain
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_HANDLE_H_
+

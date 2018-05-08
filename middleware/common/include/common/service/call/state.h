@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_SERVICE_CALL_STATE_H_
-#define CASUAL_COMMON_SERVICE_CALL_STATE_H_
+#pragma once
+
 
 
 
@@ -92,4 +92,4 @@ namespace casual
 
 } // casual
 
-#endif // STATE_H_
+

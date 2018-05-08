@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_ARCHIVE_H_
-#define CASUAL_SF_ARCHIVE_H_
+#pragma once
+
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/archive/traits.h"
@@ -554,4 +554,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif /* CASUAL_ARCHIVEWRITER_H_ */
+

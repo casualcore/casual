@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_ERRORHANDLER_H_
-#define CASUAL_ERRORHANDLER_H_
+#pragma once
+
 
 #include <iosfwd>
 
@@ -31,4 +31,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_ERRORHANDLER_H_ */
+

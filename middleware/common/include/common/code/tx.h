@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_ERROR_CODE_TX_H_
-#define CASUAL_COMMON_ERROR_CODE_TX_H_
+#pragma once
+
 
 #include "tx/code.h"
 
@@ -93,4 +93,3 @@ namespace std
 #endif // CASUAL_NO_XATMI_UNDEFINE
 
 
-#endif

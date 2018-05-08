@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef RESOURCE_PROXY_H_
-#define RESOURCE_PROXY_H_
+#pragma once
+
 
 #include "transaction/resource/proxy_server.h"
 
@@ -66,4 +66,4 @@ namespace casual
 
 } // casual
 
-#endif // RESOURCE_PROXY_H_
+

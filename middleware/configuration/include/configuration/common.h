@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_COMMON_H_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_COMMON_H_
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
@@ -26,4 +26,4 @@ namespace casual
    } // gateway
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_COMMON_H_
+

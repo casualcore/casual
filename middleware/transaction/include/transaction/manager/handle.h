@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef MANAGER_HANDLE_H_
-#define MANAGER_HANDLE_H_
+#pragma once
+
 
 
 #include "transaction/manager/state.h"
@@ -290,4 +290,4 @@ namespace casual
 } // casual
 
 
-#endif // MANAGER_HANDLE_H_
+

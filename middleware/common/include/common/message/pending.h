@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MESSAGE_PENDING_H_
-#define CASUAL_COMMON_MESSAGE_PENDING_H_
+#pragma once
+
 
 
 #include "common/marshal/binary.h"
@@ -173,4 +173,4 @@ namespace casual
 
 } // casual
 
-#endif // PENDING_H_
+

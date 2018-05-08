@@ -8,8 +8,8 @@
 //! casual
 //!
 
-#ifndef MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_CONFIGURATION_H_
-#define MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_CONFIGURATION_H_
+#pragma once
+
 
 #include "serviceframework/namevaluepair.h"
 #include "common/optional.h"
@@ -118,4 +118,4 @@ namespace casual
 
 
 
-#endif /* MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_CONFIGURATION_H_ */
+

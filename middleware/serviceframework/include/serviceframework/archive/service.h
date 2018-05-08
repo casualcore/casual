@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_ARCHIVE_SERVICE_H_
-#define CASUAL_SF_ARCHIVE_SERVICE_H_
+#pragma once
+
 
 #include "serviceframework/service/model.h"
 #include "serviceframework/archive/archive.h"
@@ -65,4 +65,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif // SERVICE_H_
+

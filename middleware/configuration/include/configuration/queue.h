@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CONFIG_QUEUE_H_
-#define CONFIG_QUEUE_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -128,4 +128,4 @@ namespace casual
    } // config
 } // casual
 
-#endif // QUEUE_H_
+

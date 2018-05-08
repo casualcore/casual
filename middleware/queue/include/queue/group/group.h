@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_QUEUE_GROUP_GROUP_H_
-#define CASUAL_QUEUE_GROUP_GROUP_H_
+#pragma once
+
 
 
 #include "queue/group/database.h"
@@ -82,4 +82,4 @@ namespace casual
 
 } // casual
 
-#endif // QUEUE_H_
+

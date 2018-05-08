@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SERVICE_MANAGER_MANAGER_H_
-#define CASUAL_SERVICE_MANAGER_MANAGER_H_
+#pragma once
+
 
 
 #include "service/manager/state.h"
@@ -48,4 +48,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_BROKER_H_ */
+

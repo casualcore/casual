@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef QUEUE_SERVER_HANDLE_H_
-#define QUEUE_SERVER_HANDLE_H_
+#pragma once
+
 
 #include "queue/group/group.h"
 
@@ -233,4 +233,4 @@ namespace casual
 
 } // casual
 
-#endif // HANDLE_H_
+

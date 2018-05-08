@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_BROKERTRANSFORM_H_
-#define CASUAL_BROKERTRANSFORM_H_
+#pragma once
+
 
 #include "configuration/domain.h"
 #include "service/manager/state.h"
@@ -48,4 +48,4 @@ namespace casual
    } // service
 } // casual
 
-#endif // TRANSFORM_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_DEVICE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_DEVICE_H_
+#pragma once
+
 
 
 #include "common/communication/message.h"
@@ -570,4 +570,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_DEVICE_H_
+

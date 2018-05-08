@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_UTILITY_SIGNAL_H_
-#define CASUAL_UTILITY_SIGNAL_H_
+#pragma once
+
 
 
 #include <cstddef>
@@ -371,4 +371,4 @@ namespace casual
 } // casual
 
 
-#endif /* CASUAL_UTILITY_SIGNAL_H_ */
+

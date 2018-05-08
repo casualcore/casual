@@ -1,13 +1,10 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-
-#ifndef CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_CODE_H_
-#define CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_CODE_H_
-
+#pragma once
 
 #define TPEBADDESC 2
 #define TPEBLOCK 3
@@ -28,4 +25,4 @@
 #define TPEMATCH 23
 
 
-#endif // CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_CODE_H_
+

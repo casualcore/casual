@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_VALUE_OPTIONAL_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_VALUE_OPTIONAL_H_
+#pragma once
+
 
 #include "common/value/id.h"
 
@@ -106,6 +106,3 @@ namespace std
    };
 }
 
-
-
-#endif

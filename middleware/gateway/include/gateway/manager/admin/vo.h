@@ -4,9 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#ifndef CASUAL_GATEWAY_MANAGER_ADMIN_VO_H
-#define CASUAL_GATEWAY_MANAGER_ADMIN_VO_H
+#pragma once
 
 
 #include "serviceframework/namevaluepair.h"
@@ -101,4 +99,4 @@ namespace casual
    } // gateway
 } // casual
 
-#endif // BROKERVO_H_
+

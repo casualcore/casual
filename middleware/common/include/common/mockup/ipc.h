@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef COMMON_MOCKUP_IPC_H_
-#define COMMON_MOCKUP_IPC_H_
+#pragma once
+
 
 //#include "common/ipc.h"
 #include "common/communication/message.h"
@@ -174,4 +174,4 @@ namespace casual
 
 } // casual
 
-#endif // IPC_H_
+

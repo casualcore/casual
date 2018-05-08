@@ -4,10 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUALSTATISTICSMONITORVOMONITORVO_H
-#define CASUALSTATISTICSMONITORVOMONITORVO_H
-
-
+#pragma once
 
 
 #include "serviceframework/pimpl.h"
@@ -118,4 +115,3 @@ namespace casual
 } // casual
 
 
-#endif 

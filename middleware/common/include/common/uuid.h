@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_UUID_H_
-#define CASUAL_COMMON_UUID_H_
+#pragma once
+
 
 #include <uuid/uuid.h>
 
@@ -110,4 +110,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_UTILITY_UUID_H_ */
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef MIDDLEWARE_BUFFER_INCLUDE_BUFFER_COMMON_H_
-#define MIDDLEWARE_BUFFER_INCLUDE_BUFFER_COMMON_H_
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
@@ -36,4 +36,4 @@ namespace casual
 } // casual
 
 
-#endif /* MIDDLEWARE_BUFFER_INCLUDE_BUFFER_COMMON_H_ */
+

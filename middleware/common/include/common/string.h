@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_STRING_H_
-#define CASUAL_COMMON_STRING_H_
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/traits.h"
@@ -278,4 +278,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_COMMON_STRING_H_ */
+

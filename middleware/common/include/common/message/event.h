@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_EVENT_MESSAGE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_EVENT_MESSAGE_H_
+#pragma once
+
 
 #include "common/message/type.h"
 
@@ -249,4 +249,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_EVENT_MESSAGE_H_
+

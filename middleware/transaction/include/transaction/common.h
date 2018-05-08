@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_TRANSACTION_INCLUDE_TRANSACTION_COMMON_H_
-#define CASUAL_MIDDLEWARE_TRANSACTION_INCLUDE_TRANSACTION_COMMON_H_
+#pragma once
+
 
 
 #include "common/log/stream.h"
@@ -39,4 +39,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_TRANSACTION_INCLUDE_TRANSACTION_COMMON_H_
+

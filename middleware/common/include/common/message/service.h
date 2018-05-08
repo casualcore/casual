@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MESSAGE_SERVICE_H_
-#define CASUAL_COMMON_MESSAGE_SERVICE_H_
+#pragma once
+
 
 #include "common/message/type.h"
 #include "common/message/buffer.h"
@@ -406,4 +406,4 @@ namespace casual
 
 } // casual
 
-#endif // SERVICE_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef SF_PIMPL_H_
-#define SF_PIMPL_H_
+#pragma once
+
 
 #include "common/pimpl.h"
 
@@ -29,4 +29,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif // PIMPL_H_
+

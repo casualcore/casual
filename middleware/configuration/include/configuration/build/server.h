@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef SERVICEDEFINITION_H_
-#define SERVICEDEFINITION_H_
+#pragma once
+
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
@@ -114,4 +114,4 @@ namespace casual
 
 } // casual
 
-#endif // SERVICEDEFINITION_H_
+

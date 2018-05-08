@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_FILE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_FILE_H_
+#pragma once
+
 
 #include "common/file.h"
 
@@ -33,4 +33,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MOCKUP_FILE_H_
+

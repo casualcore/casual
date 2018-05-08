@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_INVOKE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_INVOKE_H_
+#pragma once
+
 
 #include "common/buffer/type.h"
 #include "common/flag.h"
@@ -76,4 +76,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_INVOKE_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_TRANSACTION_RESOURCE_H_
-#define CASUAL_COMMON_TRANSACTION_RESOURCE_H_
+#pragma once
+
 
 
 #include "tx.h"
@@ -87,4 +87,4 @@ namespace casual
 
 } // casual
 
-#endif // RESOURCE_H_
+

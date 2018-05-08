@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_ARCHIVE_YAML_POLICY_H_
-#define CASUAL_ARCHIVE_YAML_POLICY_H_
+#pragma once
+
 
 #include "serviceframework/archive/archive.h"
 #include "serviceframework/platform.h"
@@ -54,4 +54,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_ARCHIVE_YAML_POLICY_H_ */
+

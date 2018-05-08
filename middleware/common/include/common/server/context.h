@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SERVER_CONTEXT_H_
-#define CASUAL_SERVER_CONTEXT_H_
+#pragma once
+
 
 
 
@@ -174,4 +174,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_SERVER_CONTEXT_H_ */
+

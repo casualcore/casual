@@ -6,8 +6,8 @@
 
 
 
-#ifndef CASUAL_SF_ARCHIVE_LOG_H_
-#define CASUAL_SF_ARCHIVE_LOG_H_
+#pragma once
+
 
 #include "serviceframework/archive/archive.h"
 #include <iosfwd>
@@ -40,4 +40,4 @@ namespace casual
 
 
 
-#endif /* ARCHIVE_LOGGER_H_ */
+

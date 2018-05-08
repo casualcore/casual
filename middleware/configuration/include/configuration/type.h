@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TYPE_H_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TYPE_H_
+#pragma once
+
 
 #include "serviceframework/namevaluepair.h"
 
@@ -83,4 +83,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIG_TYPE_H_
+

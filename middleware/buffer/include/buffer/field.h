@@ -1,12 +1,10 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-
-#ifndef CASUAL_BUFFER_FIELD_H
-#define CASUAL_BUFFER_FIELD_H
+#pragma once
 
 
 /* used as type with tpalloc */
@@ -193,4 +191,3 @@ int casual_field_free_expression( const void* regex);
 }
 #endif
 
-#endif /* CASUAL_BUFFER_FIELD_H */

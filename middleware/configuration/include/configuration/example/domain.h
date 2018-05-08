@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_EXAMPLE_INCLUDE_MAKER_H_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_EXAMPLE_INCLUDE_MAKER_H_
+#pragma once
+
 
 #include "configuration/domain.h"
 
@@ -29,4 +29,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_EXAMPLE_INCLUDE_MAKER_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef SF_SERVICE_PROTOCOL_IMPLEMENTATION_H_
-#define SF_SERVICE_PROTOCOL_IMPLEMENTATION_H_
+#pragma once
+
 
 #include "serviceframework/service/protocol.h"
 #include "serviceframework/service/model.h"
@@ -199,4 +199,4 @@ namespace casual
 } // casual
 
 
-#endif /* SERVICE_IMPLEMENTATION_H_ */
+

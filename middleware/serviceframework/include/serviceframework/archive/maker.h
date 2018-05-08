@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_ARCHIVE_MAKER_H_
-#define CASUAL_SF_ARCHIVE_MAKER_H_
+#pragma once
+
 
 
 #include "serviceframework/archive/archive.h"
@@ -127,4 +127,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif /* CASUAL_SF_ARCHIVE_MAKER_H_ */
+

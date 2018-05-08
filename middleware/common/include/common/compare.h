@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_COMPARE_H_
-#define CASUAL_COMMON_COMPARE_H_
+#pragma once
+
 
 #include "common/traits.h"
 
@@ -72,6 +72,3 @@ namespace casual
 
    } // common 
 } // casual
-
-
-#endif

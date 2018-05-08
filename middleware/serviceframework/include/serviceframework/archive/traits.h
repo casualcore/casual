@@ -6,8 +6,8 @@
 
 
 
-#ifndef CASUAL_SERVICEFRAMEWORK_ARCHIVE_TRAITS_H_
-#define CASUAL_SERVICEFRAMEWORK_ARCHIVE_TRAITS_H_
+#pragma once
+
 
 
 #include "common/traits.h"
@@ -72,4 +72,3 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif //CASUAL_SERVICEFRAMEWORK_ARCHIVE_TRAITS_H_

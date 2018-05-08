@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_TOOLS_SERVICE_INCLUDE_DESCRIBE_H_
-#define CASUAL_MIDDLEWARE_TOOLS_SERVICE_INCLUDE_DESCRIBE_H_
+#pragma once
+
 
 #include "serviceframework/service/model.h"
 
@@ -25,4 +25,4 @@ namespace casual
    } // tools
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_TOOLS_SERVICE_INCLUDE_DESCRIBE_H_
+

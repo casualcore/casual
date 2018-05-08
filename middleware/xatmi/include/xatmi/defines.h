@@ -1,13 +1,10 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-
-#ifndef CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_DEFINES_H_
-#define CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_DEFINES_H_
-
+#pragma once
 
 #define X_OCTET   "X_OCTET"
 #define X_C_TYPE  "X_C_TYPE"
@@ -24,4 +21,4 @@ struct tpsvcinfo {
 };
 typedef struct tpsvcinfo TPSVCINFO;
 
-#endif // CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_DEFINES_H_
+

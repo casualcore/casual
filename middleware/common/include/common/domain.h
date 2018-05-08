@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_DOMAIN_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_DOMAIN_H_
+#pragma once
+
 
 #include "common/marshal/marshal.h"
 #include "common/uuid.h"
@@ -81,4 +81,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_DOMAIN_H_
+

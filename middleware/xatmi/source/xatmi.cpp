@@ -7,6 +7,8 @@
 
 #include "xatmi.h"
 
+#include "xatmi/internal/code.h"
+
 #include "common/buffer/pool.h"
 #include "common/server/context.h"
 #include "common/platform.h"
@@ -18,8 +20,6 @@
 #include <array>
 #include <stdarg.h>
 
-
-#include "xatmi/internal.h"
 
 
 

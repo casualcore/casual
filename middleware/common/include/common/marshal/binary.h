@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MARSHAL_BINARY_H_
-#define CASUAL_COMMON_MARSHAL_BINARY_H_
+#pragma once
+
 
 
 
@@ -366,4 +366,4 @@ namespace casual
 
 } // casual
 
-#endif // BINARY_H_
+

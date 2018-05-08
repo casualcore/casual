@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_TRANSACTION_MANAGER_LOG_H_
-#define CASUAL_TRANSACTION_MANAGER_LOG_H_
+#pragma once
+
 
 
 #include "sql/database.h"
@@ -146,4 +146,4 @@ namespace casual
 
 } // casual
 
-#endif // LOG_H_
+

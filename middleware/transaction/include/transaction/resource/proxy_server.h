@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef RESOURCE_PROXY_SERVER_H_
-#define RESOURCE_PROXY_SERVER_H_
+#pragma once
+
 
 #include <xatmi/server.h>
 
@@ -32,4 +32,4 @@ int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* 
 }
 #endif
 
-#endif /* RESOURCE_PROXY_SERVER_H_ */
+

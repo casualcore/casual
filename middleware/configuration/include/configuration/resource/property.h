@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CONFIGURATION_XA_SWITCH_H_
-#define CONFIGURATION_XA_SWITCH_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -76,4 +76,4 @@ namespace casual
    } // config
 } // casual
 
-#endif // XA_SWITCH_H_
+

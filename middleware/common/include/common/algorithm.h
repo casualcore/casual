@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_ALGORITHM_H_
-#define CASUAL_COMMON_ALGORITHM_H_
+#pragma once
+
 
 
 #include "common/range.h"
@@ -1078,4 +1078,4 @@ namespace std
 
 
 
-#endif // CASUAL_COMMON_ALGORITHM_H_
+

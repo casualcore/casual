@@ -1,11 +1,10 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-#ifndef CASUAL_XATMI_TX_ERROR_H_
-#define CASUAL_XATMI_TX_ERROR_H_
+#pragma once
 
 
 #define TX_NOT_SUPPORTED   1   /* normal execution */
@@ -26,4 +25,3 @@
 #define TX_HAZARD_NO_BEGIN (TX_HAZARD+TX_NO_BEGIN) /* hazard plus transaction could not be started */
 #define TX_COMMITTED_NO_BEGIN (TX_COMMITTED+TX_NO_BEGIN) /* heuristically committed plus transaction could not be started */
 
-#endif

@@ -1,12 +1,10 @@
-//! 
-//! Copyright (c) 2015, The casual project
-//!
-//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-
-#ifndef CASUAL_XA_CODE_H_
-#define CASUAL_XA_CODE_H_
+#pragma once
 
 /*
  * ax_() return codes (transaction manager reports to resource manager)
@@ -49,4 +47,4 @@
 #define XAER_DUPID   -8    /* the XID already exists */
 #define XAER_OUTSIDE -9    /* resource manager doing work outside global transaction */
 
-#endif
+

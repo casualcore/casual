@@ -4,9 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_GROUP_C_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_GROUP_C_
+#pragma once
 
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/platform.h"
@@ -43,4 +41,3 @@ namespace casual
    } // configuration
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_GROUP_C_

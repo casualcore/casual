@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_SERVER_ARGUMENTS_H_
-#define CASUAL_COMMON_SERVER_ARGUMENTS_H_
+#pragma once
+
 
 #include "common/server/service.h"
 
@@ -41,4 +41,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // ARGUMENTS_H_
+

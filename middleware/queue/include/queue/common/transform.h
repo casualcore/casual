@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_BROKER_ADMIN_TRANSFORM_H_
-#define CASUAL_QUEUE_BROKER_ADMIN_TRANSFORM_H_
+#pragma once
+
 
 #include "queue/manager/admin/queuevo.h"
 #include "queue/api/message.h"
@@ -60,4 +60,4 @@ namespace casual
 
 } // casual
 
-#endif // TRANSFORM_H_
+

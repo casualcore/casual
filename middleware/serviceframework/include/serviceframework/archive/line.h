@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_SF_ARCHIVE_LINE_H_
-#define CASUAL_SF_ARCHIVE_LINE_H_
+#pragma once
+
 
 #include "serviceframework/archive/archive.h"
 #include <iosfwd>
@@ -32,4 +32,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_SF_ARCHIVE_LINE_H_ */
+

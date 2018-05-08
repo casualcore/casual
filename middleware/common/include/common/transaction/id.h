@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_TRANSACTION_ID_H_
-#define CASUAL_COMMON_TRANSACTION_ID_H_
+#pragma once
+
 
 #include <tx.h>
 
@@ -239,4 +239,4 @@ namespace casual
 
 
 
-#endif // TRANSACTION_ID_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
-#define CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
+#pragma once
+
 
 
 #include "serviceframework/namevaluepair.h"
@@ -77,4 +77,4 @@ namespace casual
 
 
 
-#endif /* CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_ */
+

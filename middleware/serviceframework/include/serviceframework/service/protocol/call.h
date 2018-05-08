@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_PROTOCOL_CALL_H_
-#define CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_PROTOCOL_CALL_H_
+#pragma once
+
 
 
 #include "serviceframework/service/call.h"
@@ -190,4 +190,4 @@ namespace casual
    } // serviceframework
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_SERVICEFRAMEWORK_INCLUDE_SF_SERVICE_PROTOCOL_CALL_H_
+

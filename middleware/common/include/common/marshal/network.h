@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MARSHAL_NETWORK_H_
-#define CASUAL_COMMON_MARSHAL_NETWORK_H_
+#pragma once
+
 
 #include "common/marshal/binary.h"
 #include "common/network/byteorder.h"
@@ -150,4 +150,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_COMMON_MARSHAL_NETWORK_H_
+

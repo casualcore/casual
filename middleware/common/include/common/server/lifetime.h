@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_SERVER_LIFETIME_H_
-#define CASUAL_COMMON_SERVER_LIFETIME_H_
+#pragma once
+
 
 #include "common/process.h"
 
@@ -68,4 +68,4 @@ namespace casual
 
 } // casual
 
-#endif // SHUTDOWN_H_
+

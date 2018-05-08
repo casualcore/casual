@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_MOCKUP_DOMAIN_H_
-#define CASUAL_COMMON_MOCKUP_DOMAIN_H_
+#pragma once
+
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/transform.h"
@@ -176,4 +176,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_COMMON_MOCKUP_DOMAIN_H_
+

@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_SF_EXCEPTION_H_
-#define CASUAL_SF_EXCEPTION_H_
+#pragma once
+
 
 
 #include "common/exception/casual.h"
@@ -51,4 +51,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_SF_EXCEPTION_H_ */
+

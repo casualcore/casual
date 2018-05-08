@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_COMMON_BUFFER_POOL_H_
-#define CASUAL_COMMON_BUFFER_POOL_H_
+#pragma once
+
 
 #include "common/buffer/type.h"
 #include "common/platform.h"
@@ -408,4 +408,4 @@ namespace casual
 
 } // casual
 
-#endif // POOL_H_
+

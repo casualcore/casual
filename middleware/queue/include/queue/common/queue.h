@@ -5,8 +5,8 @@
 //!
 
 
-#ifndef CASUAL_QUEUE_COMMON_QUEUE_H_
-#define CASUAL_QUEUE_COMMON_QUEUE_H_
+#pragma once
+
 
 
 #include "common/message/queue.h"
@@ -41,4 +41,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // CASUAL_QUEUE_COMMON_QUEUE_H_
+
