@@ -16,7 +16,7 @@
 
 namespace casual
 {
-   TEST( casual_sf_archive_line, serialize_pod)
+   TEST( serviceframework_archive_line, serialize_pod)
    {
       std::ostringstream out;
    }
@@ -55,12 +55,12 @@ namespace casual
       } // <unnamed>
    } // local
 
-   TEST( casual_sf_archive_line, has_formatter)
+   TEST( serviceframework_archive_line, has_formatter)
    {
       EXPECT_TRUE( common::log::has_formatter< local::Composite>::value);
    }
 
-   TEST( casual_sf_archive_line, serialize_composite)
+   TEST( serviceframework_archive_line, serialize_composite)
    {
       std::ostringstream out;
 

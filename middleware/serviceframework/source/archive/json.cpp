@@ -6,13 +6,14 @@
 
 
 #include "serviceframework/archive/json.h"
-#include "serviceframework/archive/policy.h"
+#include "serviceframework/archive/create.h"
 
 // TODO: Move this to makefile
 #define RAPIDJSON_HAS_STDSTRING 1
 
 #include "common/transcode.h"
 #include "common/functional.h"
+#include "common/buffer/type.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -40,6 +41,8 @@ namespace casual
             {
                namespace
                {
+                  std::vector< std::string> keys() { return { "json", "jsn", common::buffer::type::json()};};
+
                   namespace reader
                   {
                      namespace check
@@ -200,6 +203,8 @@ namespace casual
                      {
                      public:
 
+                        static auto keys() { return local::keys();}
+
                         template< typename... Ts>
                         explicit Implementation( Ts&&... ts) : m_stack{ & reader::parse( m_document, std::forward< Ts>( ts)...)} 
                         {
@@ -352,39 +357,6 @@ namespace casual
                         std::vector<const rapidjson::Value*> m_stack;
                      };
 
-
-
-
-                     namespace consumed
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Consumed< Implementation>>( std::forward< T>( source));
-                        }
-
-                     } // consumed
-
-
-                     namespace strict
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( std::forward< T>( source));
-                        }
-                     } // strict
-
-                     namespace relaxed
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( std::forward< T>( source));
-                        }
-                     } // relaxed
-
-
                   } // reader
                   
                   
@@ -394,6 +366,8 @@ namespace casual
                      {
                      public:
 
+                        static auto keys() { return local::keys();}
+                        
                         explicit Implementation()
                            : m_allocator( m_document.GetAllocator()), m_stack{ &m_document}
                         {
@@ -483,119 +457,104 @@ namespace casual
 
                         const rapidjson::Document& document() const { return m_document;}
 
+                        void flush( platform::binary::type& json)
+                        {
+                           rapidjson::StringBuffer buffer;
+                           rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
+
+                           if( m_document.Accept( writer))
+                           {
+                              json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
+                           }
+                           else
+                           {
+                              //
+                              // TODO: Better
+                              //
+
+                              throw exception::archive::invalid::Document{ "Failed to write document"};
+                           }
+                        }
+
+                        void flush( std::ostream& json)
+                        {
+                           rapidjson::StringBuffer buffer;
+                           rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
+                           if( m_document.Accept( writer))
+                           {
+                              json << buffer.GetString();
+                           }
+                           else
+                           {
+                              //
+                              // TODO: Better
+                              //
+
+                              throw exception::archive::invalid::Document{ "Failed to write document"};
+                           }
+                        }
+
                      private:
+
                         rapidjson::Document m_document;
                         rapidjson::Document::AllocatorType& m_allocator;
                         std::vector< rapidjson::Value*> m_stack;
-                     };
-
-                     void write_flat( const rapidjson::Document& document, std::string& json)
-                     {
-                        rapidjson::StringBuffer buffer;
-                        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
-
-                        if( document.Accept( writer))
-                        {
-                           json = buffer.GetString();
-                        }
-                        else
-                        {
-                           //
-                           // TODO: Better
-                           //
-
-                           throw exception::archive::invalid::Document{ "Failed to write document"};
-                        }
-                     }
-
-                     void write_flat( const rapidjson::Document& document, platform::binary::type& json)
-                     {
-                        rapidjson::StringBuffer buffer;
-                        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
-
-                        if( document.Accept( writer))
-                        {
-                           json.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
-                        }
-                        else
-                        {
-                           //
-                           // TODO: Better
-                           //
-
-                           throw exception::archive::invalid::Document{ "Failed to write document"};
-                        }
-                     }
-
-                     void write_flat( const rapidjson::Document& document, std::ostream& json)
-                     {
-                        rapidjson::StringBuffer buffer;
-                        rapidjson::PrettyWriter<rapidjson::StringBuffer> writer( buffer);
-                        if( document.Accept( writer))
-                        {
-                           json << buffer.GetString();
-                        }
-                        else
-                        {
-                           //
-                           // TODO: Better
-                           //
-
-                           throw exception::archive::invalid::Document{ "Failed to write document"};
-                        }
-                     }
-
-                     template< typename Out> 
-                     struct Holder : Implementation
-                     {
-                        Holder( Out& out) : m_out( out) {}
-
-                        void flush() 
-                        {
-                           write_flat( Implementation::document(), m_out.get());
-                        }
-                        std::reference_wrapper< Out> m_out;
                      };
 
                   } // writer
                } // <unnamed>
             } // local
 
-            archive::Reader reader( const std::string& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( std::istream& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( const common::platform::binary::type& source) { return local::reader::strict::create( source);}
+            namespace strict
+            {
+               archive::Reader reader( const std::string& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+            } // strict
 
             namespace relaxed
             {    
-               archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
-            }
+               archive::Reader reader( const std::string& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+            } // relaxed
 
             namespace consumed
             {    
-               archive::Reader reader( const std::string& source) { return local::reader::consumed::create( source);}
-               archive::Reader reader( std::istream& source) { return local::reader::consumed::create( source);}
-               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::consumed::create( source);}
-            }
-
+               archive::Reader reader( const std::string& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+            } // consumed
 
             archive::Writer writer( std::string& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::string>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( std::ostream& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::ostream>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( common::platform::binary::type& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< common::platform::binary::type>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
          } // json
+
+         namespace create
+         {
+            namespace reader
+            {
+               template struct Registration< json::local::reader::Implementation>;
+            } // writer
+            namespace writer
+            {
+               template struct Registration< json::local::writer::Implementation>;
+            } // writer
+         } // create
+
       } // archive
    } // serviceframework
 } // casual

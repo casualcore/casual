@@ -12,7 +12,7 @@
 #include "configuration/example/resource/property.h"
 
 #include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 
 #include "common/argument.h"

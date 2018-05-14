@@ -36,7 +36,7 @@ namespace casual
             template<typename T>
             void string_to_value( const std::string& string, T& value)
             {
-               auto reader = archive::ini::reader( string);
+               auto reader = archive::ini::strict::reader( string);
                reader >> CASUAL_MAKE_NVP( value);
             }
 
@@ -45,7 +45,7 @@ namespace casual
 
 
 
-      TEST( casual_sf_ini_archive, write_read_string_with_new_line)
+      TEST( serviceframework_ini_archive, write_read_string_with_new_line)
       {
          std::string ini;
          std::string source = "foo\nbar";
@@ -56,7 +56,7 @@ namespace casual
          EXPECT_TRUE( source == target);
       }
 
-      TEST( casual_sf_ini_archive, write_read_boolean)
+      TEST( serviceframework_ini_archive, write_read_boolean)
       {
          std::string ini;
          local::value_to_string( true, ini);
@@ -65,7 +65,7 @@ namespace casual
          EXPECT_TRUE( target == true);
       }
 
-      TEST( casual_sf_ini_archive, write_read_decimal)
+      TEST( serviceframework_ini_archive, write_read_decimal)
       {
          std::string ini;
          float source = 3.14;
@@ -75,7 +75,7 @@ namespace casual
          EXPECT_TRUE( source == target);
       }
 
-      TEST( casual_sf_ini_archive, write_read_container)
+      TEST( serviceframework_ini_archive, write_read_container)
       {
          std::string ini;
          std::vector<long> source{ 1, 3, 5, 7 };
@@ -141,7 +141,7 @@ namespace casual
 
          };
 
-         TEST( casual_sf_ini_archive, write_read_serializable)
+         TEST( serviceframework_ini_archive, write_read_serializable)
          {
             std::string ini;
             SomeVO source;
@@ -179,7 +179,7 @@ namespace casual
          }
 
 
-         TEST( casual_sf_ini_archive, test_control_characters)
+         TEST( serviceframework_ini_archive, test_control_characters)
          {
             std::vector< char> result;
             for( short idx = 0; idx < 255; ++idx)
@@ -210,7 +210,7 @@ namespace casual
          }
       };
 
-      TEST( casual_sf_ini_archive, nested_stuff)
+      TEST( serviceframework_ini_archive, nested_stuff)
       {
          std::string ini;
          //std::vector<std::vector<std::vector<long>>> source{ {{1, 3, 5}, {2, 4, 6, 8}}, {{4, 3, 2}} };

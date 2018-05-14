@@ -40,6 +40,9 @@ namespace casual
                Parameter() = default;
                Parameter( buffer::Payload&& payload) : payload( std::move( payload)) {}
 
+               Parameter( Parameter&&) noexcept = default;
+               Parameter& operator = (Parameter&&) noexcept = default;
+
                Flags flags;
                Service service;
                std::string parent;

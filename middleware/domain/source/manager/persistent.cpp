@@ -10,7 +10,7 @@
 #include "domain/common.h"
 
 #include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 #include "common/environment.h"
 #include "common/exception/handle.h"
@@ -191,18 +191,23 @@ namespace casual
                   Trace trace{ "domain::manager::persistent::state::save"};
 
                   auto persistent = local::persistent( state);
-                  auto archive = serviceframework::archive::writer::from::file( name);
+
+                  common::file::Output file{ name};
+                  auto archive = serviceframework::archive::create::writer::from( file.extension(), file);
+                  
                   archive << CASUAL_MAKE_NVP( persistent);
                }
 
-               State load( const std::string& file)
+               State load( const std::string& name)
                {
                   Trace trace{ "domain::manager::persistent::state::load"};
 
                   State state;
                   auto persistent = local::persistent( state);
 
-                  auto archive = serviceframework::archive::reader::from::file( file);
+                  common::file::Input file{ name};
+                  auto archive = serviceframework::archive::create::reader::relaxed::from( file.extension(), file);
+                  
                   archive >> CASUAL_MAKE_NVP( persistent);
 
                   return state;

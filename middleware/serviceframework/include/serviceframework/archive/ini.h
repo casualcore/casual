@@ -22,17 +22,19 @@ namespace casual
       {
          namespace ini
          {
+            namespace strict
+            {
+               archive::Reader reader( const std::string& source);
+               archive::Reader reader( std::istream& source);
+               archive::Reader reader( const common::platform::binary::type& source);
+            } // strict
+
             namespace relaxed
             {
                archive::Reader reader( const std::string& source);
                archive::Reader reader( std::istream& source);
                archive::Reader reader( const common::platform::binary::type& source);
-            }
-
-            archive::Reader reader( const std::string& source);
-            archive::Reader reader( std::istream& source);
-            archive::Reader reader( const common::platform::binary::type& source);
-
+            } // relaxed
 
             archive::Writer writer( std::string& destination);
             archive::Writer writer( std::ostream& destination);

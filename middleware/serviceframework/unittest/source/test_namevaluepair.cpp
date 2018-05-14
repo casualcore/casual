@@ -14,7 +14,7 @@
 
 namespace casual
 {
-   TEST( casual_sf_NameValuePair, instansiation)
+   TEST( serviceframework_NameValuePair, instansiation)
    {
       long someLong = 10;
 
@@ -24,7 +24,7 @@ namespace casual
       EXPECT_TRUE( nvp.value() == 10);
    }
 
-   TEST( casual_sf_NameValuePair, instantiation_const)
+   TEST( serviceframework_NameValuePair, instantiation_const)
    {
       const long someLong = 10;
 
@@ -38,7 +38,7 @@ namespace casual
       long getLong( long value) { return value;}
    }
 
-   TEST( casual_sf_NameValuePair, instantiation_rvalue)
+   TEST( serviceframework_NameValuePair, instantiation_rvalue)
    {
       EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).name() == std::string( "10L"));
       EXPECT_TRUE( CASUAL_MAKE_NVP( 10L).value() == 10);

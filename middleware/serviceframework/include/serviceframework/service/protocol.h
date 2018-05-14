@@ -67,23 +67,23 @@ namespace casual
             Protocol& operator = ( Protocol&&);
 
 
-            bool call() const { return m_implementaion->call();}
+            bool call() const { return m_implementation->call();}
 
-            protocol::result_type finalize() { return m_implementaion->finalize();}
-            void exception() { m_implementaion->exception();}
-            const std::string& type() const { return m_implementaion->type();}
+            protocol::result_type finalize() { return m_implementation->finalize();}
+            void exception() { m_implementation->exception();}
+            const std::string& type() const { return m_implementation->type();}
 
             template< typename T>
             Protocol& operator >> ( T&& value)
             {
-               serialize( std::forward< T>( value), m_implementaion->input());
+               serialize( std::forward< T>( value), m_implementation->input());
                return *this;
             }
 
             template< typename T>
             Protocol& operator << ( T&& value)
             {
-               serialize( std::forward< T>( value), m_implementaion->output());
+               serialize( std::forward< T>( value), m_implementation->output());
                return *this;
             }
 
@@ -107,7 +107,7 @@ namespace casual
             };
 
             template< typename P>
-            Protocol( std::unique_ptr< P>&& implementation) : m_implementaion( std::move( implementation)) {}
+            Protocol( std::unique_ptr< P>&& implementation) : m_implementation( std::move( implementation)) {}
 
             template< typename Protocol>
             struct Implementation : Base
@@ -141,7 +141,7 @@ namespace casual
                }
             }
 
-            std::unique_ptr< Base> m_implementaion;
+            std::unique_ptr< Base> m_implementation;
 
          };
 

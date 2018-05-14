@@ -23,7 +23,7 @@ namespace casual
       };
    }
 
-   TEST( casual_sf_traits, is_container)
+   TEST( serviceframework_traits, is_container)
    {
       EXPECT_TRUE( serviceframework::traits::container::is_container< std::vector< int>>::value);
       EXPECT_FALSE( serviceframework::traits::container::is_container< Test>::value);

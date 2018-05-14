@@ -7,7 +7,7 @@
 
 #include "common/unittest.h"
 
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 
 namespace casual
@@ -30,7 +30,7 @@ namespace casual
          std::stringstream stream;
 
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             int int_value = 42;
 
             archive << CASUAL_MAKE_NVP( int_value);
@@ -38,7 +38,7 @@ namespace casual
 
 
          EXPECT_NO_THROW({
-            auto archive = archive::reader::consumed::from::name( stream, this->param());
+            auto archive = archive::create::reader::consumed::from( this->param(), stream);
          });
       }
 
@@ -49,14 +49,14 @@ namespace casual
          std::stringstream stream;
 
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             int int_value = 42;
 
             archive << CASUAL_MAKE_NVP( int_value);
          }
 
          EXPECT_THROW({
-            auto archive = archive::reader::consumed::from::name( stream, this->param());
+            auto archive = archive::create::reader::consumed::from( this->param(), stream);
             archive.validate();
          }, common::exception::casual::invalid::Configuration) << "stream: " << stream.str();
       }
@@ -68,14 +68,14 @@ namespace casual
          std::stringstream stream;
 
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             std::vector< int> sequence{ 42, 43};
 
             archive << CASUAL_MAKE_NVP( sequence);
          }
 
          EXPECT_THROW({
-            auto archive = archive::reader::consumed::from::name( stream, this->param());
+            auto archive = archive::create::reader::consumed::from(  this->param(), stream);
             archive.validate();
          }, common::exception::casual::invalid::Configuration) << "stream: " << stream.str();
       }
@@ -106,13 +106,13 @@ namespace casual
          std::stringstream stream;
          
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             local::Composite composite;
             archive << CASUAL_MAKE_NVP( composite);
          }
 
          EXPECT_THROW({
-            auto archive = archive::reader::consumed::from::name( stream, this->param());
+            auto archive = archive::create::reader::consumed::from(  this->param(), stream);
             archive.validate();
          }, common::exception::casual::invalid::Configuration);
       }
@@ -128,13 +128,13 @@ namespace casual
          std::stringstream stream;
 
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             auto& sequence = expected;
 
             archive << CASUAL_MAKE_NVP( sequence);
          }
 
-         auto archive = archive::reader::consumed::from::name( stream, this->param());
+         auto archive = archive::create::reader::consumed::from( this->param(), stream);
 
          std::vector< int> sequence;
 
@@ -156,7 +156,7 @@ namespace casual
          std::stringstream stream;
 
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             local::Composite composite;
             composite.my_long = 42;
             composite.my_string = "foo";
@@ -166,7 +166,7 @@ namespace casual
          }
 
 
-         auto archive = archive::reader::consumed::from::name( stream, this->param());
+         auto archive = archive::create::reader::consumed::from( this->param(), stream);
 
          local::Composite composite;
 
@@ -209,7 +209,7 @@ namespace casual
          std::stringstream stream;
 
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             local::Nested nested;
             nested.my_long = 42;
             nested.composite.my_long = 43;
@@ -221,7 +221,7 @@ namespace casual
          }
 
 
-         auto archive = archive::reader::consumed::from::name( stream, this->param());
+         auto archive = archive::create::reader::consumed::from( this->param(), stream);
 
          local::Nested nested;
 
@@ -303,14 +303,14 @@ namespace casual
          
          // input
          {
-            auto archive = archive::writer::from::name( stream, this->param());
+            auto archive = archive::create::writer::from( this->param(), stream);
             local::input::Composite composite;
             archive << CASUAL_MAKE_NVP( composite);
          }
 
          EXPECT_THROW(
          {
-            auto archive = archive::reader::consumed::from::name( stream, this->param());
+            auto archive = archive::create::reader::consumed::from( this->param(), stream);
             local::structure::Composite composite;
             archive >> CASUAL_MAKE_NVP( composite);
             archive.validate();

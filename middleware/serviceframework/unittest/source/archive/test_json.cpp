@@ -30,7 +30,7 @@ namespace casual
             template< typename T>
             void string_to_strict_value( const std::string& string, T&& value)
             {
-               auto reader = archive::json::reader( string);
+               auto reader = archive::json::strict::reader( string);
                reader >> CASUAL_MAKE_NVP( value);
             }
 
@@ -45,7 +45,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_sf_json_archive, relaxed_read_serializible)
+      TEST( serviceframework_json_archive, relaxed_read_serializible)
       {
          //const std::string json = test::SimpleVO::json();
 
@@ -59,7 +59,7 @@ namespace casual
 
       }
 
-      TEST( casual_sf_json_archive, write_read_vector_long)
+      TEST( serviceframework_json_archive, write_read_vector_long)
       {
          std::string json;
 
@@ -78,7 +78,7 @@ namespace casual
 
       }
 
-      TEST( casual_sf_json_archive, simple_write_read)
+      TEST( serviceframework_json_archive, simple_write_read)
       {
          std::string json;
 
@@ -102,7 +102,7 @@ namespace casual
 
       }
 
-      TEST( casual_sf_json_archive, complex_write_read)
+      TEST( serviceframework_json_archive, complex_write_read)
       {
          std::string json;
 
@@ -125,7 +125,7 @@ namespace casual
       }
 
 
-      TEST( casual_sf_json_archive, load_invalid_document__expecting_exception)
+      TEST( serviceframework_json_archive, load_invalid_document__expecting_exception)
       {
          const std::string json
          {
@@ -140,11 +140,11 @@ namespace casual
 
          EXPECT_THROW
          ({
-            auto reader = archive::json::reader( json);
+            auto reader = archive::json::strict::reader( json);
          }, exception::archive::invalid::Document);
       }
 
-      TEST( casual_sf_json_archive, read_with_invalid_long__expecting_exception)
+      TEST( serviceframework_json_archive, read_with_invalid_long__expecting_exception)
       {
          const std::string json
          {
@@ -171,7 +171,7 @@ namespace casual
 
       }
 
-      TEST( casual_sf_json_archive, read_with_invalid_string__expecting_exception)
+      TEST( serviceframework_json_archive, read_with_invalid_string__expecting_exception)
       {
          const std::string json
          {

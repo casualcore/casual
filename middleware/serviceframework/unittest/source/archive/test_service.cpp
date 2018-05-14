@@ -18,7 +18,7 @@ namespace casual
 {
    namespace serviceframework
    {
-      TEST( casual_sf_service_model, instancesate)
+      TEST( serviceframework_service_model, instancesate)
       {
          service::Model model;
 
@@ -27,7 +27,7 @@ namespace casual
       }
 
 
-      TEST( casual_sf_service_archive, basic_serialization)
+      TEST( serviceframework_service_archive, basic_serialization)
       {
 
          service::Model model;
@@ -47,7 +47,7 @@ namespace casual
          EXPECT_TRUE( model.arguments.input.at( 1).category == service::model::type::Category::integer);
       }
 
-      TEST( casual_sf_service_archive, container_serialization)
+      TEST( serviceframework_service_archive, container_serialization)
       {
 
          service::Model model;
@@ -127,7 +127,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_sf_service_archive, composite_serialization)
+      TEST( serviceframework_service_archive, composite_serialization)
       {
 
          service::Model model;
@@ -163,7 +163,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( casual_sf_service_archive, complex_serialization)
+      TEST( serviceframework_service_archive, complex_serialization)
       {
 
          service::Model model;

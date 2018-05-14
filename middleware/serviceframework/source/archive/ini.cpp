@@ -7,11 +7,12 @@
 
 
 #include "serviceframework/archive/ini.h"
-#include "serviceframework/archive/policy.h"
+#include "serviceframework/archive/create.h"
 
 #include "serviceframework/exception.h"
 
 #include "common/transcode.h"
+#include "common/buffer/type.h"
 
 #include <sstream>
 #include <iterator>
@@ -32,6 +33,8 @@ namespace casual
             {
                namespace
                {
+                  std::vector< std::string> keys() { return { "ini", common::buffer::type::ini()};};
+
                   const std::string magic{ '@' };
 
                   struct tree
@@ -275,7 +278,13 @@ namespace casual
 
                      struct Implementation
                      {
+                        static auto keys() { return local::keys();}
+
+
                         Implementation( tree&& document) : m_document( std::move( document)), m_node_stack{ &m_document} {}
+
+                        template< typename S>
+                        Implementation( S&& source) : Implementation( parse_flat( std::forward< S>( source))) {};
 
                         std::tuple< platform::size::type, bool> container_start( const platform::size::type size, const char* const name)
                         {
@@ -444,29 +453,18 @@ namespace casual
                            value = common::transcode::base64::decode( *m_data_stack.back());
                         }
 
+                        policy::canonical::Representation canonical()
+                        {
+                           return {};
+                        }
+                     private:
+
                         tree m_document;
                         using data = std::string;
                         std::vector<const data*> m_data_stack;
                         std::vector<const tree*> m_node_stack;
                      };
 
-                     namespace relaxed
-                     {
-                        template< typename S>
-                        archive::Reader create( S& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( parse_flat( source));
-                        }
-                     } // relaxed
-
-                     namespace strict
-                     {
-                        template< typename S>
-                        archive::Reader create( S& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( parse_flat( source));
-                        }
-                     } // strict
                   } // reader
 
 
@@ -522,25 +520,12 @@ namespace casual
                            write_flat( child.second, stream, qualified);
                         }
                      }
-
-                     void write_flat( const tree& node, std::string& ini)
-                     {
-                        std::ostringstream stream;
-                        write_flat( node, stream);
-                        ini = stream.str();
-                     }
-
-                     void write_flat( const tree& node, platform::binary::type& ini)
-                     {
-                        std::string buffer;
-                        write_flat( node, buffer);
-                        ini.assign( std::begin( buffer), std::end( buffer));
-                     }
                      
                      class Implementation
                      {
-
                      public:
+
+                        static auto keys() { return local::keys();}
 
                         Implementation() : m_node_stack{ &m_document } {}
 
@@ -598,6 +583,12 @@ namespace casual
                         }
 
                         const tree& document() const { return m_document;}
+
+                        void flush( std::ostream& destination) 
+                        {
+                           write_flat( Implementation::document(), destination);
+                        }
+
                      private:
 
                         template<typename T>
@@ -637,49 +628,53 @@ namespace casual
 
                      }; // Implementation
 
-                     template< typename Out> 
-                     struct Holder : Implementation
-                     {
-                        Holder( Out& out) : m_out( out) {}
-
-                        void flush() 
-                        {
-                           write_flat( Implementation::document(), m_out.get());
-                        }
-                        std::reference_wrapper< Out> m_out;
-                     };
                   } // writer
                } // <unnamed>
             } // local
             
-            namespace relaxed
+            namespace strict
             {
-               archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
-            }
+               archive::Reader reader( const std::string& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+            } // strict
 
-            archive::Reader reader( const std::string& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( std::istream& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( const common::platform::binary::type& source) { return local::reader::strict::create( source);}
-
+            namespace relaxed
+            {    
+               archive::Reader reader( const std::string& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+            } // relaxed
 
             archive::Writer writer( std::string& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::string>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( std::ostream& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::ostream>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( common::platform::binary::type& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< common::platform::binary::type>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
          } // ini
+
+         namespace create
+         {
+            namespace reader
+            {
+               template struct Registration< ini::local::reader::Implementation>;
+            } // writer
+            namespace writer
+            {
+               template struct Registration< ini::local::writer::Implementation>;
+            } // writer
+         } // create
+
       } // archive
    } // serviceframework
 } // casual

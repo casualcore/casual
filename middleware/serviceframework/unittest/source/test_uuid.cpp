@@ -12,7 +12,7 @@
 
 namespace casual
 {
-   TEST( casual_sf_uuid, serialize)
+   TEST( serviceframework_uuid, serialize)
    {
       std::string yaml;
       auto uuid = serviceframework::platform::uuid::make();
@@ -21,7 +21,7 @@ namespace casual
          auto writer = serviceframework::archive::yaml::writer( yaml);
          writer << CASUAL_MAKE_NVP( uuid);
       }
-      auto reader = serviceframework::archive::yaml::reader( yaml);
+      auto reader = serviceframework::archive::yaml::strict::reader( yaml);
       serviceframework::platform::Uuid out;
       reader >> serviceframework::name::value::pair::make( "uuid", out);
 

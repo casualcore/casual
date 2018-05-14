@@ -391,14 +391,9 @@ namespace casual
             };
 
 
-#ifdef __GNUC__
             template< typename P>
-            __attribute__((__unused__)) P& Registration< P>::pool = Holder::instance().registration( P{});
-#else
-            template< typename P>
+            CASUAL_OPTION_UNUSED P& Registration< P>::pool = Holder::instance().registration( P{});
             //[[maybe_unused]] P& Registration< P>::pool = Holder::instance().registration( P{});
-            P& Registration< P>::pool = Holder::instance().registration( P{});
-#endif
 
          } // pool
       } // buffer

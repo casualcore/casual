@@ -29,7 +29,7 @@ namespace casual
             template<typename T>
             void string_to_strict_value( const std::string& string, T&& value)
             {
-               auto reader = archive::yaml::reader( string);
+               auto reader = archive::yaml::strict::reader( string);
                reader >> CASUAL_MAKE_NVP( value);
             }
 
@@ -63,7 +63,7 @@ namespace casual
       } // local
 
 
-      TEST( casual_sf_yaml_archive, read_empty_array_with_no_brackets__expecting_success)
+      TEST( serviceframework_yaml_archive, read_empty_array_with_no_brackets__expecting_success)
       {
 
          const std::string yaml( R"(
@@ -79,7 +79,7 @@ value:
       }
 
 
-      TEST( casual_sf_yaml_archive, relaxed_read_serializable)
+      TEST( serviceframework_yaml_archive, relaxed_read_serializable)
       {
          test::SimpleVO value;
 
@@ -91,7 +91,7 @@ value:
       }
 
 
-      TEST( casual_sf_yaml_archive, strict_read_serializable__gives_ok)
+      TEST( serviceframework_yaml_archive, strict_read_serializable__gives_ok)
       {
          test::SimpleVO value;
 
@@ -102,9 +102,9 @@ value:
          EXPECT_TRUE( value.m_longlong == 1234567890123456789) << "value.someLongLong: " << value.m_longlong;
       }
 
-      TEST( casual_sf_yaml_archive, strict_read_not_in_document__gives_throws)
+      TEST( serviceframework_yaml_archive, strict_read_not_in_document__gives_throws)
       {
-         auto reader = archive::yaml::reader( test::SimpleVO::yaml());
+         auto reader = archive::yaml::strict::reader( test::SimpleVO::yaml());
 
          test::SimpleVO wrongRoleName;
 
@@ -116,7 +116,7 @@ value:
       }
 
 
-      TEST( casual_sf_yaml_archive, write_read_vector_pod)
+      TEST( serviceframework_yaml_archive, write_read_vector_pod)
       {
          std::string yaml;
 
@@ -141,7 +141,7 @@ value:
          EXPECT_TRUE( values.at( 6) == 23);
       }
 
-      TEST( casual_sf_yaml_archive, write_read_vector_serializible)
+      TEST( serviceframework_yaml_archive, write_read_vector_serializible)
       {
          std::string yaml;
 
@@ -174,7 +174,7 @@ value:
 
 
 
-      TEST( casual_sf_yaml_archive, write_read_map_complex)
+      TEST( serviceframework_yaml_archive, write_read_map_complex)
       {
          std::string yaml;
 
@@ -213,7 +213,7 @@ value:
 
       }
 
-      TEST( casual_sf_yaml_archive, write_read_binary)
+      TEST( serviceframework_yaml_archive, write_read_binary)
       {
 
          std::string yaml;
@@ -242,18 +242,17 @@ value:
       }
 
 
-      TEST( casual_sf_yaml_archive, read_invalid_document__expecting_exception)
+      TEST( serviceframework_yaml_archive, read_invalid_document__expecting_exception)
       {
          const std::string yaml{ "   " };
 
          EXPECT_THROW
          ({
-            archive::yaml::reader( yaml);
+            archive::yaml::strict::reader( yaml);
          }, exception::archive::invalid::Document);
-
       }
 
-      TEST( casual_sf_yaml_archive, read_invalid_bool__expecting_exception)
+      TEST( serviceframework_yaml_archive, read_invalid_bool__expecting_exception)
       {
          static std::string yaml
          {

@@ -8,7 +8,7 @@
 
 
 #include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 #include "serviceframework/service/protocol/call.h"
 
 #include "service/manager/admin/managervo.h"
@@ -584,7 +584,7 @@ namespace casual
             {
                auto state = admin::api::state();
 
-               auto archive = serviceframework::archive::writer::from::name( std::cout, format.value_or( ""));
+               auto archive = serviceframework::archive::create::writer::from( format.value_or( ""), std::cout);
                archive << CASUAL_MAKE_NVP( state);
             }
 

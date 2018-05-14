@@ -13,7 +13,7 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 #include "serviceframework/log.h"
 
 #include <algorithm>
@@ -97,7 +97,8 @@ namespace casual
                   //
                   // Create the archive and deserialize configuration
                   //
-                  auto archive = serviceframework::archive::reader::consumed::from::file( file);
+                  common::file::Input stream( file);
+                  auto archive = serviceframework::archive::create::reader::consumed::from( stream.extension(), stream);
                   archive >> CASUAL_MAKE_NVP( domain);
 
                   // validate if the user has stuff that we didn't consume

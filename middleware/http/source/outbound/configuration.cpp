@@ -15,7 +15,7 @@
 
 #include "common/algorithm.h"
 
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 #include "serviceframework/platform.h"
 
 namespace casual
@@ -30,18 +30,21 @@ namespace casual
             {
                namespace
                {
-                  Model get( Model current, const std::string& file)
+                  Model get( Model current, const std::string& name)
                   {
                      Trace trace{ "http::outbound::configuration::local::get"};
 
-                     common::log::line( verbose::log, "file: ", file);
+                     common::log::line( verbose::log, "file: ", name);
 
                      //
                      // Create the reader and deserialize configuration
                      //
                      Model http;
-                     auto reader = serviceframework::archive::reader::from::file( file);
+                     common::file::Input file{ name};
+                     auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
+                     
                      reader >> CASUAL_MAKE_NVP( http);
+                     reader.validate();
 
                      common::log::line( verbose::log, "http: ", http);
 

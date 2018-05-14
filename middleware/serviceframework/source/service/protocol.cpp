@@ -65,7 +65,7 @@ namespace casual
                {
                   if( local::describe( parameter))
                   {
-                     log::sf << "casual-service-describe protocol\n";
+                     common::log::line( log::sf, "casual-service-describe protocol");
 
                      //
                      // service-describe protocol

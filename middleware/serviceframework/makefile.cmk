@@ -23,7 +23,6 @@ install_headers = []
 lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
     [
         Compile( 'source/archive/archive.cpp'),
-        Compile( 'source/archive/maker.cpp'),
         Compile( 'source/archive/json.cpp'),
         Compile( 'source/archive/xml.cpp'),
         Compile( 'source/archive/yaml.cpp'),
@@ -32,6 +31,7 @@ lib_serviceframework = LinkLibrary( 'bin/casual-serviceframework',
         Compile( 'source/archive/binary.cpp'),
         Compile( 'source/archive/service.cpp'),
         Compile( 'source/archive/line.cpp'),
+        Compile( 'source/archive/create.cpp'),
         Compile( 'source/service/protocol.cpp'),
         Compile( 'source/service/protocol/implementation.cpp'),
         Compile( 'source/service/call.cpp'),
@@ -57,7 +57,6 @@ LinkUnittest( 'bin/test-casual-serviceframework',
 	[
         Compile( 'unittest/source/test_namevaluepair.cpp'),
         Compile( 'unittest/source/test_traits.cpp'),
-        Compile( 'unittest/source/test_maker.cpp'),
         
         Compile( 'unittest/source/test_uuid.cpp'),
         Compile( 'unittest/source/test_vo.cpp'),
@@ -76,6 +75,7 @@ LinkUnittest( 'bin/test-casual-serviceframework',
         Compile( 'unittest/source/archive/test_log.cpp'),
         Compile( 'unittest/source/archive/test_consumed.cpp'),
         Compile( 'unittest/source/archive/test_line.cpp'),
+        Compile( 'unittest/source/archive/test_create.cpp'),
     ],
 	[ lib_serviceframework, 'casual-xatmi', 'casual-common', 'casual-mockup', 'casual-unittest', 'yaml-cpp', 'pugixml'])
 

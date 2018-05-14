@@ -6,6 +6,7 @@
 
 
 #include "serviceframework/archive/log.h"
+#include "serviceframework/archive/create.h"
 
 #include "common/transcode.h"
 
@@ -33,6 +34,9 @@ namespace casual
                   class Implementation
                   {
                   public:
+
+                     static std::vector< std::string> keys() { return { "", "log"};}
+
                      Implementation();
                      Implementation( std::ostream& out) : m_output( out) {}
 
@@ -198,6 +202,15 @@ namespace casual
             }
 
          } // log
+
+         namespace create
+         {
+            namespace writer
+            {
+               template struct Registration< log::local::Implementation>;
+            } // writer
+         } // create
+
       } // archive
    } // serviceframework
 } // casual

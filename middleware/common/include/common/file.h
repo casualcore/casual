@@ -7,12 +7,13 @@
 
 #pragma once
 
+#include "common/move.h"
 
 #include <string>
-
 #include <regex>
+#include <fstream>
 
-#include "common/move.h"
+
 
 namespace casual
 {
@@ -21,6 +22,30 @@ namespace casual
    {
       namespace file
       {
+         class Input : public std::ifstream
+         {
+         public:
+            Input( std::string path);
+
+            const std::string& path() const  { return m_path;} 
+            std::string extension() const;
+
+         private:
+            std::string m_path;
+         };
+
+         class Output : public std::ofstream
+         {
+         public:
+            Output( std::string path);
+
+            const std::string& path() const  { return m_path;} 
+            std::string extension() const;
+
+         private:
+            std::string m_path;
+         };
+
          void remove( const std::string& path);
 
          //!

@@ -24,7 +24,7 @@
 
 
 #include "serviceframework/namevaluepair.h"
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 #include <cstring>
 
@@ -1369,9 +1369,9 @@ namespace casual
                   {
                      decltype(fetch_groups()) groups;
 
-                     const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
-
-                     auto archive = serviceframework::archive::reader::from::file( file);
+                     common::file::Input file{ common::environment::variable::get( "CASUAL_FIELD_TABLE")};
+                     auto archive = serviceframework::archive::create::reader::relaxed::from( file.extension(), file);
+                     
                      archive >> CASUAL_MAKE_NVP( groups);
 
                      return groups;
@@ -1676,7 +1676,7 @@ namespace casual
 
                common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
-               auto archive = serviceframework::archive::writer::from::name( stream, protocol);
+               auto archive = serviceframework::archive::create::writer::from( protocol, stream);
 
                std::vector< write> fields;
 
@@ -1699,10 +1699,11 @@ namespace casual
                {
                   const Trace trace{ "field::internal::serialize in"};
 
-                  auto archive = serviceframework::archive::reader::from::name( stream, protocol);
+                  auto archive = serviceframework::archive::create::reader::consumed::from( protocol, stream);
 
                   std::vector< read> fields;
                   archive >> CASUAL_MAKE_NVP( fields);
+                  archive.validate();
 
                   Dispatch dispatch;
 

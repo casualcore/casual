@@ -15,7 +15,7 @@
 
 namespace casual
 {
-   TEST( casual_sf_log_writer, serialize_pod)
+   TEST( serviceframework_log_writer, serialize_pod)
    {
       std::ostringstream out;
       {
@@ -46,7 +46,7 @@ namespace casual
       } // <unnamed>
    } // local
 
-   TEST( casual_sf_log_writer, serialize_composite)
+   TEST( serviceframework_log_writer, serialize_composite)
    {
       std::ostringstream out;
       {

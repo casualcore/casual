@@ -51,7 +51,9 @@ namespace casual
             try
             {
                if( m_protocol)
+               {
                   m_protocol->flush();
+               }
             }
             catch( ...)
             {

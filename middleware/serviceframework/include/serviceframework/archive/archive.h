@@ -15,7 +15,6 @@
 #include "serviceframework/platform.h"
 #include "serviceframework/pimpl.h"
 
-
 #include <utility>
 
 

@@ -11,7 +11,7 @@
 #include "configuration/environment.h"
 #include "configuration/common.h"
 
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 #include "serviceframework/log.h"
 
 #include <fstream>
@@ -70,7 +70,9 @@ namespace casual
             {
                common::file::scoped::Path name{ common::file::name::unique( common::directory::temporary() + "/domain", extension)};
                
-               auto archive = serviceframework::archive::writer::from::file( name);
+               common::file::Output file{ name};
+               auto archive = serviceframework::archive::create::writer::from( file.extension(), file);
+               
                archive << CASUAL_MAKE_NVP( environment);
 
                return name;

@@ -23,11 +23,12 @@ namespace casual
       {
          namespace yaml
          {
-
-
-            archive::Reader reader( const std::string& source);
-            archive::Reader reader( std::istream& source);
-            archive::Reader reader( const common::platform::binary::type& source);
+            namespace strict
+            {
+               archive::Reader reader( const std::string& source);
+               archive::Reader reader( std::istream& source);
+               archive::Reader reader( const common::platform::binary::type& source);              
+            } // strict
 
             namespace relaxed
             {    

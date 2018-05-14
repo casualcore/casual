@@ -19,7 +19,7 @@
 #include "common/communication/ipc.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 #include "serviceframework/log.h"
 
 namespace casual
@@ -475,7 +475,7 @@ namespace casual
                   void state( const common::optional< std::string>& format)
                   {
                      auto state = call::state();
-                     auto archive = serviceframework::archive::writer::from::name( format.value_or( ""));
+                     auto archive = serviceframework::archive::create::writer::from( format.value_or( ""), std::cout);
 
                      archive << CASUAL_MAKE_NVP( state);
                   }

@@ -83,7 +83,7 @@ namespace casual
 
                Yaml::Yaml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( archive::yaml::reader( m_parameter.payload.memory)),
+                    m_reader( archive::yaml::relaxed::reader( m_parameter.payload.memory)),
                     m_writer( archive::yaml::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Yaml::Yaml"};
@@ -114,7 +114,7 @@ namespace casual
 
                Json::Json( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( archive::json::reader( m_parameter.payload.memory)),
+                    m_reader( archive::json::relaxed::reader( m_parameter.payload.memory)),
                     m_writer( archive::json::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Json::Json"};
@@ -147,7 +147,7 @@ namespace casual
 
                Xml::Xml( protocol::parameter_type&& parameter)
                   : Base( std::move( parameter)),
-                    m_reader( archive::xml::reader( m_parameter.payload.memory)),
+                    m_reader( archive::xml::relaxed::reader( m_parameter.payload.memory)),
                     m_writer( archive::xml::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Xml::Xml"};
@@ -180,7 +180,7 @@ namespace casual
 
                Ini::Ini( protocol::parameter_type&& parameter)
                : Base( std::move( parameter)),
-                 m_reader( archive::ini::reader( m_parameter.payload.memory)),
+                 m_reader( archive::ini::relaxed::reader( m_parameter.payload.memory)),
                  m_writer( archive::ini::writer( m_result.payload.memory))
                {
                   Trace trace{ "protocol::Ini::Ini"};

@@ -32,6 +32,27 @@ namespace casual
    {
       namespace file
       {
+   
+         Input::Input( std::string path) : std::ifstream( path), m_path( std::move( path)) 
+         {
+            if( ! is_open())
+            {
+               throw exception::system::invalid::File{ string::compose( "failed to open file: ", m_path)};
+            }
+         }
+
+         std::string Input::extension() const { return file::name::extension( m_path);}
+
+         Output::Output( std::string path) : std::ofstream( path), m_path( std::move( path)) 
+         {
+            if( ! is_open())
+            {
+               throw exception::system::invalid::File{ string::compose( "failed to open file: ", m_path)};
+            }
+         }
+
+         std::string Output::extension() const { return file::name::extension( m_path);}
+
 
          void remove( const std::string& path)
          {
@@ -84,7 +105,7 @@ namespace casual
 
             Path& Path::operator = ( Path&& rhs) noexcept
             {
-               m_path = std::move( rhs.m_path);
+               m_path = std::exchange( rhs.m_path, {});
                return *this;
             }
 
@@ -101,7 +122,7 @@ namespace casual
 
             std::string Path::release()
             {
-               return std::move( m_path);
+               return std::exchange( m_path, {});
             }
 
             std::ostream& operator << ( std::ostream& out, const Path& value)

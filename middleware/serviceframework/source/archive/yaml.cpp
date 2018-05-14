@@ -8,11 +8,13 @@
 #include "serviceframework/archive/yaml.h"
 
 #include "serviceframework/archive/policy.h"
+#include "serviceframework/archive/create.h"
 
 #include "serviceframework/exception.h"
 #include "serviceframework/log.h"
 
 #include "common/transcode.h"
+#include "common/buffer/type.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -35,6 +37,8 @@ namespace casual
             {
                namespace
                {
+                  std::vector< std::string> keys() { return { "yaml", "yml", common::buffer::type::yaml()};};
+
                   namespace reader
                   {
 
@@ -184,6 +188,8 @@ namespace casual
                      class Implementation
                      {
                      public:
+
+                        static auto keys() { return local::keys();}
 
                         template< typename... Ts>
                         Implementation( Ts&&... ts) : m_stack{ &Load{}( m_document, std::forward< Ts>( ts)...)} {}
@@ -344,47 +350,18 @@ namespace casual
                         std::vector< const YAML::Node*> m_stack;
 
                      };
-
-                     namespace consumed
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Consumed< Implementation>>( std::forward< T>( source));
-                        }
-
-                     } // consumed
-
-                     namespace strict
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( std::forward< T>( source));
-                        }
-                     } // strict
-
-                     namespace relaxed
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( std::forward< T>( source));
-                        }
-                     } // relaxed
-
                   } // reader
-
 
                   namespace writer
                   {
 
                      class Implementation
                      {
-
                      public:
 
                         using buffer_type = YAML::Emitter;
+
+                        static auto keys() { return local::keys();}
 
                         Implementation()
                         {
@@ -441,6 +418,19 @@ namespace casual
 
                         const YAML::Emitter& document() const { return m_output;}
 
+                        void flush( std::ostream& yaml)
+                        {
+                           yaml << m_output.c_str();
+                        }
+
+                        void flush( platform::binary::type& yaml)
+                        {
+                           yaml.resize( m_output.size());
+                           common::algorithm::copy(
+                              common::range::make( m_output.c_str(), m_output.size()),
+                              std::begin( yaml));
+                        }
+
                      private:
 
                         template< typename T>
@@ -474,74 +464,58 @@ namespace casual
                         YAML::Emitter m_output;
                      };
 
-                     void write_document( const YAML::Emitter& document, std::ostream& yaml)
-                     {
-                        yaml << document.c_str();
-                     }
-
-                     void write_document( const YAML::Emitter& document, platform::binary::type& yaml)
-                     {
-                        yaml.resize( document.size());
-                        common::algorithm::copy(
-                              common::range::make( document.c_str(), document.size()),
-                              std::begin( yaml));
-                     }
-                     void write_document( const YAML::Emitter& document, std::string& yaml)
-                     {
-                        yaml = document.c_str();
-                     }
-
-                     template< typename Out> 
-                     struct Holder : Implementation
-                     {
-                        Holder( Out& out) : m_out( out) {}
-
-                        void flush() 
-                        {
-                           write_document( Implementation::document(), m_out.get());
-                        }
-
-                        std::reference_wrapper< Out> m_out;
-                     };
                   } // writer
 
                } // <unnamed>
             } // local
-
-            archive::Reader reader( const std::string& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( std::istream& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( const common::platform::binary::type& source) { return local::reader::strict::create( source);}
+            namespace strict
+            {
+               archive::Reader reader( const std::string& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+            } // strict
 
             namespace relaxed
             {    
-               archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
+               archive::Reader reader( const std::string& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
             }
 
             namespace consumed
             {    
-               archive::Reader reader( const std::string& source) { return local::reader::consumed::create( source);}
-               archive::Reader reader( std::istream& source) { return local::reader::consumed::create( source);}
-               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::consumed::create( source);}
+               archive::Reader reader( const std::string& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
             }
 
             archive::Writer writer( std::string& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::string>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( std::ostream& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::ostream>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( common::platform::binary::type& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< common::platform::binary::type>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
          } // yaml
+         namespace create
+         {
+            namespace reader
+            {
+               template struct Registration< yaml::local::reader::Implementation>;
+            } // writer
+            namespace writer
+            {
+               template struct Registration< yaml::local::writer::Implementation>;
+            } // writer
+         } // create
       } // archive
    } // serviceframework
 } // casual

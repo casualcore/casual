@@ -12,7 +12,7 @@
 #include "common/exception/handle.h"
 
 #include "serviceframework/log.h"
-#include "serviceframework/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 #include "service/manager/admin/api.h"
 
@@ -140,8 +140,7 @@ namespace casual
                      {
                         if( format)
                         {
-                           auto archive = serviceframework::archive::writer::from::name( std::cout, format.value());
-
+                           auto archive = serviceframework::archive::create::writer::from( format.value(), std::cout);
                            archive << CASUAL_MAKE_NVP( model);
                         }
                         else

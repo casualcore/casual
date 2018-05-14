@@ -101,7 +101,7 @@ namespace casual
 
 
       template <typename H>
-      struct casual_sf_relaxed_archive_write_read : public ::testing::Test, public H
+      struct serviceframework_relaxed_archive_write_read : public ::testing::Test, public H
       {
 
       };
@@ -113,7 +113,7 @@ namespace casual
             holder::xml
        >;
 
-      TYPED_TEST_CASE(casual_sf_relaxed_archive_write_read, archive_types);
+      TYPED_TEST_CASE( serviceframework_relaxed_archive_write_read, archive_types);
 
 
       namespace local
@@ -198,7 +198,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, simple_vo)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, simple_vo)
       {
          auto result = TestFixture::template write_read< local::vo::simple::Total>( local::vo::simple::Reduced{ "test test"});
 
@@ -207,7 +207,7 @@ namespace casual
       }
 
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, medium_vo)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, medium_vo)
       {
          auto result = TestFixture::template write_read< local::vo::medium::Total>( local::vo::medium::Reduced{ "test", { { "index-0"}, { "index-1"}}});
 
@@ -220,14 +220,14 @@ namespace casual
          EXPECT_TRUE( result.some_set.at( 1).some_long == 42) << CASUAL_MAKE_NVP( result);
       }
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_empty)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, optional_empty)
       {
          auto result = TestFixture::template write_read< local::vo::Optional< int>>( local::vo::Optional< int>{});
 
          EXPECT_TRUE( ! result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
       }
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_has_value)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, optional_has_value)
       {
          auto result = TestFixture::template write_read< local::vo::Optional< std::size_t>>( local::vo::Optional< std::size_t>{ 42l});
 
@@ -235,7 +235,7 @@ namespace casual
       }
 
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_empty_vector)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, optional_empty_vector)
       {
          using optional_type = local::vo::Optional< std::vector< int>>;
 
@@ -244,7 +244,7 @@ namespace casual
          EXPECT_TRUE( ! result.optional_value.has_value()) << CASUAL_MAKE_NVP( result);
       }
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_has_value_vector)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, optional_has_value_vector)
       {
          using optional_type = local::vo::Optional< std::vector< int>>;
 
@@ -255,7 +255,7 @@ namespace casual
          EXPECT_TRUE( result.optional_value == value) << CASUAL_MAKE_NVP( result);
       }
 
-      TYPED_TEST( casual_sf_relaxed_archive_write_read, optional_medium)
+      TYPED_TEST( serviceframework_relaxed_archive_write_read, optional_medium)
       {
          auto result = TestFixture::template write_read<
                local::vo::Optional< local::vo::medium::Total>>(
