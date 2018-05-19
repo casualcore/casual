@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
-#define CASUAL_GATEWAY_MANAGER_ADMIN_SERVER_H_
+
+#pragma once
+
 
 
 #include "gateway/manager/admin/vo.h"
@@ -38,4 +41,4 @@ namespace casual
 
 } // casual
 
-#endif // SERVER_H_
+

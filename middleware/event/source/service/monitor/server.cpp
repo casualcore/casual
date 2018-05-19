@@ -1,18 +1,21 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "event/service/monitor/vo/entry.h"
 
 #include "common/service/invoke.h"
 #include "common/service/type.h"
 #include "common/environment.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/log.h"
 #include "common/server/start.h"
 #include "common/exception/handle.h"
 
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 #include "sql/database.h"
 
@@ -50,7 +53,7 @@ namespace casual
                         vo::Entry vo;
                         vo.setService( row.get< std::string>(0));
                         vo.setParentService( row.get< std::string>( 1));
-                        sf::platform::Uuid callId( row.get< std::string>( 2));
+                        serviceframework::platform::Uuid callId( row.get< std::string>( 2));
                         vo.setCallId( callId);
                         //vo.setTransactionId( local::getValue( *row, "transactionid"));
 
@@ -69,9 +72,9 @@ namespace casual
                   {
                      common::service::invoke::Result metrics( common::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        auto result = sf::service::user( protocol, &local::select);
+                        auto result = serviceframework::service::user( protocol, &local::select);
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();
@@ -89,10 +92,12 @@ namespace casual
                //
 
                {
-                  casual::common::Arguments parser{
-                     { casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", local::database::name)}};
+                  using namespace casual::common::argument;
+                  Parse parse{ "service monitor server",
+                     Option( std::tie( local::database::name), { "-db", "--database"}, "path to monitor database log")
+                  };
 
-                  parser.parse( argc, argv);
+                  parse( argc, argv);
                }
 
                common::server::start( {

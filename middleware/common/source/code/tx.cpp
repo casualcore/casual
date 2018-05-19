@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/code/tx.h"
 #include "common/log/category.h"
@@ -77,6 +80,11 @@ namespace casual
                // rest is errors
                default: return common::log::category::error;
             }
+         }
+
+         std::ostream& operator << ( std::ostream& out, code::tx value)
+         {
+            return out << std::error_code{ value};
          }
 
       } // code

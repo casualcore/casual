@@ -1,12 +1,15 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "configuration/domain.h"
 
 
-#include "sf/namevaluepair.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/create.h"
 
 #include <fstream>
 
@@ -307,7 +310,8 @@ namespace casual
 
          void write( const domain::Manager& domain, const std::string& name)
          {
-            auto archive = sf::archive::writer::from::file( name);
+            common::file::Output file{ name};
+            auto archive = serviceframework::archive::create::writer::from( file.extension(), file);
             archive << CASUAL_MAKE_NVP( domain);
          }
 

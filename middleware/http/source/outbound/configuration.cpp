@@ -1,3 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 //!
 //! casual
 //!
@@ -9,8 +15,8 @@
 
 #include "common/algorithm.h"
 
-#include "sf/archive/maker.h"
-#include "sf/platform.h"
+#include "serviceframework/archive/create.h"
+#include "serviceframework/platform.h"
 
 namespace casual
 {
@@ -24,18 +30,21 @@ namespace casual
             {
                namespace
                {
-                  Model get( Model current, const std::string& file)
+                  Model get( Model current, const std::string& name)
                   {
                      Trace trace{ "http::outbound::configuration::local::get"};
 
-                     common::log::line( verbose::log, "file: ", file);
+                     common::log::line( verbose::log, "file: ", name);
 
                      //
                      // Create the reader and deserialize configuration
                      //
                      Model http;
-                     auto reader = sf::archive::reader::from::file( file);
+                     common::file::Input file{ name};
+                     auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
+                     
                      reader >> CASUAL_MAKE_NVP( http);
+                     reader.validate();
 
                      common::log::line( verbose::log, "http: ", http);
 

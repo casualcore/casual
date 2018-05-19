@@ -129,26 +129,32 @@ We have one inbound and one outbound connection to `domain B
 
 List services
 ```bash
-host:domainA$ casual broker --list-services
-name                     type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote                 
------------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------ 
-casual.example.echo         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
-casual.example.rollback     0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
-casual.example.sink         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0 
+host:domainA$ casual service --list-services
+name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
+---------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
+casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/echo          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  2018-04-11T22:54:02.185
+casual/example/lowercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/rollback      example   join  0.000000  1  0  0.000000  0  0.000000   0   0  2018-04-11T22:54:02.197
+casual/example/sink          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/sleep         example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/terminate     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/uppercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/work          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
 ```
 
 
-`casual.example.echo` and `casual.example.rollback` is advertised from one **local** instance, and no one has requested the services yet.
+`casual/example/echo` and `casual/example/rollback` is advertised from one **local** instance, and no one has requested the services yet.
 
 
 List queus
 ```bash
-host:domainA$ casual queue --list-queues
-name                  count  size  avg  uc  updated                  r  error queue           group   
---------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
-queueA1                   0     0    0   0  2016-11-20T15:17:34.068  0  queueA1.error         domain-A
-queueA1.error             0     0    0   0  2016-11-20T15:17:34.068  0  domain-A.group.error  domain-A
-domain-A.group.error      0     0    0   0  2016-11-20T15:17:34.062  0  domain-A.group.error  domain-A
+host:domainA$ casual queue --list-queues 
+name                  count  size  avg  uc  updated                  r  t  group   
+--------------------  -----  ----  ---  --  -----------------------  -  -  --------
+queueA1                   0     0    0   0  2018-04-11T23:03:47.853  0  q  domain-A
+queueA1.error             0     0    0   0  2018-04-11T23:03:47.853  0  e  domain-A
+domain-A.group.error      0     0    0   0  2018-04-11T23:03:47.848  0  g  domain-A
 ```
 
 #### domain B
@@ -156,11 +162,11 @@ domain-A.group.error      0     0    0   0  2016-11-20T15:17:34.062  0  domain-A
 List connections
 
 ```bash
-host:domainB$ casual gateway --list-connections
-name               id                                bound  pid    queue   type  runlevel  address        
------------------  --------------------------------  -----  -----  ------  ----  --------  ---------------
-md-medium-domainA  653081bee12347029d207e8d131cd68f  out    22375  917517  tcp   online    localhost:7771 
-md-medium-domainA  653081bee12347029d207e8d131cd68f  in     22377  720916  tcp   online    localhost:64496
+host:domainB$ casual gateway --list-connections 
+name               id                                bound  pid    queue     type  runlevel  address        
+-----------------  --------------------------------  -----  -----  --------  ----  --------  ---------------
+md-medium-domainA  0e483f8393da4ebc8da6978a07493213  out    17509  13828096  tcp   online    localhost:7771 
+md-medium-domainA  0e483f8393da4ebc8da6978a07493213  in     17522    655380  tcp   online    localhost:51175
 ```
 
 We have one inbound and one outbound connection to `domain A
@@ -169,25 +175,25 @@ We have one inbound and one outbound connection to `domain A
 List services
 
 ```bash
-host:domainB$ casual broker --list-services
-name                                  type  mode  timeout  requested  local  busy  pending  load   remote
-------------------------------------  ----  ----  -------  ---------  -----  ----  -------  -----  ------
+host:domainB$ casual service --list-services
+name  category  mode  timeout  I  C  AT  P  PAT  RI  RC  last
+----  --------  ----  -------  -  -  --  -  ---  --  --  ----
 ```
 
 
-`casual.example.echo` is not yet known in this domain
+`casual/example/echo` is not yet known in this domain
 
 
 List queus
 ```bash
-host:domainB$ casual queue --list-queues
-name                  count  size  avg  uc  updated                  r  error queue           group   
---------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
-queueB1                   0     0    0   0  2016-11-20T15:17:36.912  0  queueB1.error         domain-B
-queueB2                   0     0    0   0  2016-11-20T15:17:36.914  0  queueB2.error         domain-B
-queueB1.error             0     0    0   0  2016-11-20T15:17:36.912  0  domain-B.group.error  domain-B
-queueB2.error             0     0    0   0  2016-11-20T15:17:36.914  0  domain-B.group.error  domain-B
-domain-B.group.error      0     0    0   0  2016-11-20T15:17:36.904  0  domain-B.group.error  domain-B
+host:domainB$ casual queue --list-queues 
+name                  count  size  avg  uc  updated                  r  t  group   
+--------------------  -----  ----  ---  --  -----------------------  -  -  --------
+queueB1                   0     0    0   0  2018-04-11T23:06:15.916  0  q  domain-B
+queueB1.error             0     0    0   0  2018-04-11T23:06:15.916  0  e  domain-B
+queueB2                   0     0    0   0  2018-04-11T23:06:15.918  0  q  domain-B
+queueB2.error             0     0    0   0  2018-04-11T23:06:15.918  0  e  domain-B
+domain-B.group.error      0     0    0   0  2018-04-11T23:06:15.910  0  g  domain-B
 ```
 
 
@@ -203,36 +209,42 @@ bec3b4b3cccd4f3b89faee970518ab7d
 The message should be enqueued to `queueA1` and then dequeued and rollbacked, hence end up in `queueA1.error` pretty much directly
 
 ```bash
-host:domainA$ casual queue --list-queues
-name                  count  size  avg  uc  updated                  r  error queue           group    
---------------------  -----  ----  ---  --  -----------------------  -  --------------------  --------
-queueA1                   0     0    0   0  2016-12-17T14:45:13.119  0  queueA1.error         domain-A
-queueA1.error             1     6    6   0  2016-12-17T14:42:53.620  0  domain-A.group.error  domain-A
-domain-A.group.error      0     0    0   0  2016-12-17T14:42:53.614  0  domain-A.group.error  domain-A
+host:domainA$ casual queue --list-queues 
+name                  count  size  avg  uc  updated                  r  t  group   
+--------------------  -----  ----  ---  --  -----------------------  -  -  --------
+queueA1                   0     0    0   0  2018-04-11T23:07:25.602  0  q  domain-A
+queueA1.error             1     6    6   0  2018-04-11T23:03:47.853  0  e  domain-A
+domain-A.group.error      0     0    0   0  2018-04-11T23:03:47.848  0  g  domain-A
 ```
 
 
 
-The service `casual.example.echo` should be reqeusted once (the call from remote domain B).
-The service `casual.example.rollback` should be reqeusted once from the forward in this domain.
+The service `casual/example/echo` should be reqeusted once (the call from remote domain B).
+The service `casual/example/rollback` should be reqeusted once from the forward in this domain.
 
 ```bash
-host:domainA$ casual broker --list-services
-name                     type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote
------------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------
-casual.example.echo         0  join   0.0000        1      1  0.0000  0.0002              0         0.0000       0
-casual.example.rollback     0  join   0.0000        1      1  0.0000  0.0002              0         0.0000       0
-casual.example.sink         0  join   0.0000        0      1  0.0000  0.0000              0         0.0000       0
+host:domainA$ casual service --list-services
+name                         category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
+---------------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
+casual/example/conversation  example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/echo          example   join  0.000000  1  1  0.001463  0  0.000000   0   0  2018-04-11T23:07:25.593
+casual/example/lowercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/rollback      example   join  0.000000  1  1  0.001282  0  0.000000   0   0  2018-04-11T23:07:25.608
+casual/example/sink          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/sleep         example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/terminate     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/uppercase     example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
+casual/example/work          example   join  0.000000  1  0  0.000000  0  0.000000   0   0  0000-00-00T00:00:00.000
 ```
 
 
-In `domain B`, `casual.example.echo` should be known with no local instances:
+In `domain B`, `casual/example/echo` should be known with no local instances:
 
 ```bash
-host:domainB$ casual broker --list-services
-name                 type  mode  timeout  invoked  local  load    avg T   tot pending #  avg pending T  remote
--------------------  ----  ----  -------  -------  -----  ------  ------  -------------  -------------  ------
-casual.example.echo     0  join   0.0000        1      0  0.0000  0.0000              0         0.0000       1
+host:domainB$ casual service --list-services
+name                 category  mode  timeout   I  C  AT        P  PAT       RI  RC  last                   
+-------------------  --------  ----  --------  -  -  --------  -  --------  --  --  -----------------------
+casual/example/echo  example   join  0.000000  0  0  0.000000  0  0.000000   1   1  0000-00-00T00:00:00.000
 ```
 
 

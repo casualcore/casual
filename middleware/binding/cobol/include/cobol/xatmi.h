@@ -1,3 +1,9 @@
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
+
 /*
  * X/Open CAE Specification
  * Distributed Transaction Processing:
@@ -6,12 +12,7 @@
  * X/Open Document Number: C506
 */
 
-/*
- * xatmi_cobol.h
-*/
-
-#ifndef XATMI_COBOL_H
-#define XATMI_COBOL_H
+#pragma once
 
 #include <stdlib.h>
 
@@ -194,14 +195,13 @@ extern "C" void TPRECV(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                        struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
-			 struct TPTYPE_REC_s *TPTYPE_REC,
-			 char *DATA_REC,
-			 struct TPSTATUS_REC_s *TPSTATUS_REC);
+          struct TPTYPE_REC_s *TPTYPE_REC,
+          char *DATA_REC,
+          struct TPSTATUS_REC_s *TPSTATUS_REC);
 
 extern "C" void TPSVCSTART(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
-			   struct TPTYPE_REC_s *TPTYPE_REC,
-			   char* DATA_REC,
-			   struct TPSTATUS_REC_s *TPSTATUS_REC);
+            struct TPTYPE_REC_s *TPTYPE_REC,
+            char* DATA_REC,
+            struct TPSTATUS_REC_s *TPSTATUS_REC);
 
-#endif /* XATMI_COBOL_H */
 

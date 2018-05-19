@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/unittest.h"
 
@@ -26,23 +29,39 @@ namespace casual
       {
          namespace unittest
          {
+            constexpr auto repository_root = "CASUAL_REPOSITORY_ROOT";
+
             struct Environment : public ::testing::Environment
             {
                void SetUp() override
                {
+                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << '\n';
+
+
+                  if( ! environment::variable::exists( environment::variable::name::home())
+                     && environment::variable::exists( repository_root))
+                  {
+                     environment::variable::set( environment::variable::name::home(), 
+                        environment::variable::get( repository_root) + "/middleware/test/home/bin");
+
+                     common::log::line( 
+                        log::stream::get( "casual.mockup"), 
+                        environment::variable::name::home(), ": ", 
+                        environment::variable::get( environment::variable::name::home()));
+                  }
+                  
                   std::string domain_path = environment::directory::temporary() + "/casual/unittest";
 
                   environment::variable::set( environment::variable::name::domain::home(), domain_path);
 
                   domain::identity( domain::Identity{ "unittest-domain"});
 
-                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << std::endl;
-
+                  
 
                   directory::create( domain_path);
 
-                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << std::endl;
-                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << std::endl;
+                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << '\n';
+                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << '\n';
 
 
                   if( ! directory::create( environment::domain::singleton::path()))
@@ -51,7 +70,7 @@ namespace casual
                   }
                }
 
-               virtual void TearDown() override
+               void TearDown() override
                {
 
                }
@@ -73,7 +92,6 @@ namespace
 {
    const auto registration CASUAL_OPTION_UNUSED = ::testing::AddGlobalTestEnvironment( new casual::common::mockup::unittest::Environment());
 }
-
 
 
 

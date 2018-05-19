@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/communication/ipc.h"
 #include "common/communication/log.h"
@@ -174,11 +177,11 @@ namespace casual
                               transport.complete_size(),
                               transport);
 
-                        return { std::end( cache) - 1, std::end( cache)};
+                        return cache_range_type{ std::end( cache) - 1, std::end( cache)};
                      }
                   }
 
-                  return {};
+                  return cache_range_type{};
                }
 
                Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags)
@@ -301,9 +304,13 @@ namespace casual
                         {
                            Trace trace{ "ipc::outbound::instance::local::fetch"};
 
+                           log::line( verbose::log, "identity: ", identity, ", environment: ", environment, ", directive: ", directive);
+
                            if( common::environment::variable::exists( environment))
                            {
                               auto process = environment::variable::process::get( environment);
+
+                              log::line( verbose::log, "process: ", process);
 
                               if( communication::ipc::exists( process.queue))
                               {

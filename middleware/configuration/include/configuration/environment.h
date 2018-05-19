@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
-#define CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_
+
+#pragma once
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <string>
 #include <vector>
@@ -74,4 +77,4 @@ namespace casual
 
 
 
-#endif /* CONFIGURATION_INCLUDE_CONFIG_ENVIRONMENT_H_ */
+

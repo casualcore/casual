@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casaul
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_MESSAGE_HANDLE_H_
-#define CASUAL_COMMON_MESSAGE_HANDLE_H_
+
+#pragma once
+
 
 
 #include "common/message/server.h"
@@ -92,4 +95,4 @@ namespace casual
 
 } // casual
 
-#endif // HANDLE_H_
+

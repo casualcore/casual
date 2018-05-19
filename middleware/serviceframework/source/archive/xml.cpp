@@ -1,22 +1,27 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "sf/archive/xml.h"
-#include "sf/archive/policy.h"
 
-#include "sf/exception.h"
+#include "serviceframework/archive/xml.h"
+#include "serviceframework/archive/create.h"
+
+#include "serviceframework/exception.h"
 
 #include "common/transcode.h"
+#include "common/buffer/type.h"
 
 #include <pugixml.hpp>
 
 #include <iterator>
 #include <algorithm>
 
+
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -27,6 +32,10 @@ namespace casual
             {
                namespace
                {
+
+                  std::vector< std::string> keys() { return { "xml", common::buffer::type::xml()};};
+
+
                   //
                   // This implementation uses pugixml 1.2
                   //
@@ -104,16 +113,80 @@ namespace casual
                         }
                      };
 
+                     namespace canonical
+                     {
+                        using Node = pugi::xml_node;
+
+                        namespace filter
+                        {
+                           auto children( const Node& node)
+                           {
+                              auto filter_child = []( const auto& child){
+                                 return child.type() == pugi::xml_node_type::node_element;
+                              };
+
+                              return common::algorithm::filter( node.children(), filter_child);
+                           }
+                        } // filter
+
+                        struct Parser 
+                        {
+                           auto operator() ( const Node& document)
+                           {
+                              // take care of the document node
+                              for( auto& child : filter::children( document))
+                              {
+                                 element( child);
+                              }
+                              
+                              return std::exchange( m_canonical, {});
+                           }
+
+                        private:
+
+                           void element( const Node& node)
+                           {
+                              auto children = filter::children( node);
+
+                              if( children)
+                              {
+                                 m_canonical.composite_start( node.name());
+
+                                 for( auto& child : children)
+                                 {
+                                    element( child);
+                                 }
+
+                                 m_canonical.composite_end();
+                              }
+                              else 
+                              {
+                                 // we only add if there is something in it
+                                 if( ! node.text().empty())
+                                    m_canonical.attribute( node.name());
+                              }
+                           }
+                           policy::canonical::Representation m_canonical;
+                        };
+
+                        auto parse( const pugi::xml_node& document)
+                        {
+                           return Parser{}( document);
+                        }
+
+                     } // canonical
+
                      class Implementation
                      {
                      public:
+
+                        static auto keys() { return local::keys();}
 
                         //!
                         //! @param node Normally a pugi::xml_document
                         //!
                         //! @note Any possible document has to outlive the reader
                         //!
-
                         template< typename... Ts>
                         explicit Implementation( Ts&&... ts) : m_stack{ Load{}( m_document, std::forward< Ts>( ts)...)} {}
 
@@ -169,6 +242,11 @@ namespace casual
                            end( name);
 
                            return true;
+                        }
+
+                        policy::canonical::Representation canonical()
+                        {
+                           return canonical::parse( m_document);
                         }
 
                      private:
@@ -241,31 +319,9 @@ namespace casual
 
 
                         pugi::xml_document m_document;
-                        // 'vector' instead of 'stack' to use some algorithms
-                        std::vector<pugi::xml_node> m_stack;
+                        std::vector< pugi::xml_node> m_stack;
 
                      }; // Implementation
-
-
-
-                     namespace strict
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Strict< Implementation>>( std::forward< T>( source));
-                        }
-                     } // strict
-
-                     namespace relaxed
-                     {
-                        template< typename T>
-                        auto create( T&& source)
-                        {
-                           return archive::Reader::emplace< archive::policy::Relaxed< Implementation>>( std::forward< T>( source));
-                        }
-                     } // relaxed
-
                   } // reader
 
                   namespace writer
@@ -273,8 +329,9 @@ namespace casual
 
                      class Implementation
                      {
-
                      public:
+
+                        static auto keys() { return local::keys();}
 
                         //!
                         //! @param node Normally a pugi::xml_document
@@ -316,7 +373,6 @@ namespace casual
                            end( name);
                         }
 
-
                         template< typename T>
                         void write( const T& value, const char* const name)
                         {
@@ -326,6 +382,11 @@ namespace casual
                         }
 
                         const pugi::xml_document& document() const { return m_document;}
+
+                        void flush( std::ostream& xml)
+                        {
+                           m_document.save( xml, " ");
+                        }
 
                      private:
 
@@ -374,88 +435,66 @@ namespace casual
                            m_stack.back().text().set( common::transcode::base64::encode( value).c_str());
                         }
 
-                     private:
-
                         pugi::xml_document m_document;
                         std::vector< pugi::xml_node> m_stack;
 
                      }; // Implementation
-
-                     void write_document( const pugi::xml_document& document, std::ostream& xml)
-                     {
-                        document.save( xml, " ");
-                     }
-
-                     void write_document( const pugi::xml_document& document, std::string& xml) 
-                     {
-                        //
-                        // The pugi::xml_writer-interface actually seems to be slower
-                        //
-                        //string_writer writer( xml);
-                        //m_document.save( writer, " ");
-                        //
-                        // so we're doin' it in a simpler way instead
-                        //
-
-                        std::ostringstream stream;
-                        document.save( stream, " ");
-                        xml.assign( stream.str());
-                     }
-
-                     void write_document( const pugi::xml_document& document, platform::binary::type& xml)
-                     {
-                        std::ostringstream stream;
-                        document.save( stream, " ");
-                        auto temp = stream.str();
-                        xml.assign( std::begin( temp), std::end( temp));
-                     }
-
-                     template< typename Out> 
-                     struct Holder : Implementation
-                     {
-                        Holder( Out& out) : m_out( out) {}
-
-                        void flush() 
-                        {
-                           write_document( Implementation::document(), m_out.get());
-                        }
-                        std::reference_wrapper< Out> m_out;
-                     };
-
                   } // writer
                } // <unnamed>
             } // local
 
-            archive::Reader reader( const std::string& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( std::istream& source) { return local::reader::strict::create( source);}
-            archive::Reader reader( const common::platform::binary::type& source) { return local::reader::strict::create( source);}
+
+            namespace strict
+            {
+               archive::Reader reader( const std::string& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::strict::create< local::reader::Implementation>( source);}
+            } // strict
 
             namespace relaxed
             {    
-               archive::Reader reader( const std::string& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( std::istream& source) { return local::reader::relaxed::create( source);}
-               archive::Reader reader( const common::platform::binary::type& source) { return local::reader::relaxed::create( source);}
-            }
+               archive::Reader reader( const std::string& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::relaxed::create< local::reader::Implementation>( source);}
+            } // relaxed
 
+            namespace consumed
+            {    
+               archive::Reader reader( const std::string& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( std::istream& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+               archive::Reader reader( const common::platform::binary::type& source) { return create::reader::consumed::create< local::reader::Implementation>( source);}
+            } // consumed
 
             archive::Writer writer( std::string& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::string>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( std::ostream& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< std::ostream>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
 
             archive::Writer writer( common::platform::binary::type& destination)
             {
-               return archive::Writer::emplace< local::writer::Holder< common::platform::binary::type>>( destination);
+               return archive::create::writer::holder< local::writer::Implementation>( destination);
             }
+
 
          } // xml
 
+         namespace create
+         {
+            namespace reader
+            {
+               template struct Registration< xml::local::reader::Implementation>;
+            } // writer
+            namespace writer
+            {
+               template struct Registration< xml::local::writer::Implementation>;
+            } // writer
+         } // create
       } // archive
-   } // sf
+   } // serviceframework
 
 } // casual

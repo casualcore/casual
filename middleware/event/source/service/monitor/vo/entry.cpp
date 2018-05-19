@@ -1,9 +1,15 @@
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
 
-		
+
+      
 
 #include "event/service/monitor/vo/entry.h"
 
-#include <sf/archive/archive.h>
+#include <serviceframework/archive/archive.h>
 
 
 //## includes protected section begin [200.20]
@@ -51,9 +57,9 @@ namespace casual
                   //## additional attributes protected section end   [200.impl.attr.10]
                   std::string parentService;
                   std::string service;
-                  sf::platform::Uuid callId;
-                  sf::platform::time::point::type start;
-                  sf::platform::time::point::type end;
+                  serviceframework::platform::Uuid callId;
+                  serviceframework::platform::time::point::type start;
+                  serviceframework::platform::time::point::type end;
                   //## additional attributes protected section begin [200.impl.attr.20]
                   //## additional attributes protected section end   [200.impl.attr.20]
 
@@ -82,15 +88,15 @@ namespace casual
                {
                   return pimpl->service;
                }
-               sf::platform::Uuid Entry::getCallId() const
+               serviceframework::platform::Uuid Entry::getCallId() const
                {
                   return pimpl->callId;
                }
-               sf::platform::time::point::type Entry::getStart() const
+               serviceframework::platform::time::point::type Entry::getStart() const
                {
                   return pimpl->start;
                }
-               sf::platform::time::point::type Entry::getEnd() const
+               serviceframework::platform::time::point::type Entry::getEnd() const
                {
                   return pimpl->end;
                }
@@ -104,26 +110,26 @@ namespace casual
                {
                   pimpl->service = value;
                }
-               void Entry::setCallId( sf::platform::Uuid value)
+               void Entry::setCallId( serviceframework::platform::Uuid value)
                {
                   pimpl->callId = value;
                }
-               void Entry::setStart( sf::platform::time::point::type value)
+               void Entry::setStart( serviceframework::platform::time::point::type value)
                {
                   pimpl->start = value;
                }
-               void Entry::setEnd( sf::platform::time::point::type value)
+               void Entry::setEnd( serviceframework::platform::time::point::type value)
                {
                   pimpl->end = value;
                }
 
 
-               void Entry::serialize( casual::sf::archive::Reader& archive)
+               void Entry::serialize( casual::serviceframework::archive::Reader& archive)
                {
                    pimpl->serialize( archive);
                }
 
-               void Entry::serialize( casual::sf::archive::Writer& archive) const
+               void Entry::serialize( casual::serviceframework::archive::Writer& archive) const
                {
                    pimpl->serialize( archive);
                }
@@ -135,4 +141,4 @@ namespace casual
    } // traffic
 } // casual
 
-	
+   

@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_EVENT_MESSAGE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_EVENT_MESSAGE_H_
+
+#pragma once
+
 
 #include "common/message/type.h"
 
@@ -77,6 +80,7 @@ namespace casual
                      std::string message;
                      std::string executable;
                      strong::process::id pid;
+                     std::vector< std::string> details;
 
                      enum class Severity : char
                      {
@@ -90,6 +94,7 @@ namespace casual
                         archive & message;
                         archive & executable;
                         archive & pid;
+                        archive & details;
                         archive & severity;
                      )
 
@@ -244,4 +249,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_EVENT_MESSAGE_H_
+

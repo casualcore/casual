@@ -1,15 +1,19 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
+
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/log.h"
 #include "common/marshal/marshal.h"
 #include "common/message/type.h"
 #include "common/communication/ipc.h"
+#include "common/execute.h"
 
 #include <gtest/gtest.h>
 
@@ -43,12 +47,12 @@ namespace casual
             Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::debug << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - in\n";
+               log::line( log::debug, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
             }
             ~Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::debug << "TEST( " << test_info->test_case_name() << "." << test_info->name() << ") - out\n";
+               log::line( log::debug, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - out");
             }
          };
 
@@ -123,8 +127,24 @@ namespace casual
 
          } // domain
 
+         namespace capture
+         {
+            namespace standard
+            {
+               inline auto out( std::ostream& out)
+               {
+                  auto origin = std::cout.rdbuf( out.rdbuf());
+
+                  return execute::scope( [=](){
+                     std::cout.rdbuf( origin);
+                  });
+               }
+
+            } // standard
+         } // capture
+
       } // unittest
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_UNITTEST_H_
+

@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "domain/manager/admin/server.h"
@@ -10,7 +13,7 @@
 #include "domain/transform.h"
 
 
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 #include "xatmi.h"
 
@@ -70,11 +73,11 @@ namespace casual
                   {
                      common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         manager::admin::vo::State (*function)(const manager::State&) = casual::domain::transform::state;
 
-                        auto result = sf::service::user( protocol, function, state);
+                        auto result = serviceframework::service::user( protocol, function, state);
 
                         protocol << CASUAL_MAKE_NVP( result);
 
@@ -84,12 +87,12 @@ namespace casual
 
                      common::service::invoke::Result scale( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         std::vector< vo::scale::Instances> instances;
                         protocol >> CASUAL_MAKE_NVP( instances);
 
-                        auto result = sf::service::user( protocol, &scale::instances, state, instances);
+                        auto result = serviceframework::service::user( protocol, &scale::instances, state, instances);
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();
@@ -98,18 +101,18 @@ namespace casual
 
                      common::service::invoke::Result shutdown( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        sf::service::user( protocol, &handle::shutdown, state);
+                        serviceframework::service::user( protocol, &handle::shutdown, state);
 
                         return protocol.finalize();
                      }
 
                      common::service::invoke::Result persist( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        sf::service::user( protocol,
+                        serviceframework::service::user( protocol,
                               static_cast< void(*)( const manager::State&)>( persistent::state::save),
                               state);
 

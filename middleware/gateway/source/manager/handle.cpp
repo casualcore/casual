@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "gateway/manager/handle.h"
 #include "gateway/manager/admin/server.h"
@@ -81,7 +84,7 @@ namespace casual
                            {
                               if( connection.process)
                               {
-                                 log << "send shutdown to connection: " << connection << std::endl;
+                                 log << "send shutdown to connection: " << connection << '\n';
 
                                  common::message::shutdown::Request request;
                                  request.process = common::process::handle();
@@ -99,7 +102,7 @@ namespace casual
                               }
                               else if( connection.process.pid)
                               {
-                                 log << "terminate connection: " << connection << std::endl;
+                                 log << "terminate connection: " << connection << '\n';
 
                                  // try to fetch handle from domain manager
                                  {
@@ -268,13 +271,13 @@ namespace casual
 
                   if( inbound_found)
                   {
-                     log::category::information << "inbound connection terminated - connection: " << *inbound_found << std::endl;
+                     log::category::information << "inbound connection terminated - connection: " << *inbound_found << '\n';
 
                      state().connections.inbound.erase( std::begin( inbound_found));
                   }
                   else if( outbound_found)
                   {
-                     log::category::information << "outbound connection terminated - connection: " << *outbound_found << std::endl;
+                     log::category::information << "outbound connection terminated - connection: " << *outbound_found << '\n';
 
                      if( outbound_found->restart && state().runlevel == State::Runlevel::online)
                      {

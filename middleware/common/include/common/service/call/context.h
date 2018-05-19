@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_CALLING_CONTEXT_H_
-#define CASUAL_CALLING_CONTEXT_H_
+
+#pragma once
+
 
 #include "common/service/call/state.h"
 #include "common/flag/service/call.h"
@@ -98,8 +101,8 @@ namespace casual
 
          } // call
       } // service
-	} // common
+   } // common
 } // casual
 
 
-#endif /* CASUAL_CALLING_CONTEXT_H_ */
+

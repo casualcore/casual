@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_EXCEPTION_SYSTEM_H_
-#define CASUAL_COMMON_EXCEPTION_SYSTEM_H_
+
+#pragma once
+
 
 #include "common/code/system.h"
 #include "common/exception/common.h"
@@ -35,11 +38,16 @@ namespace casual
 
             namespace communication
             {
+               struct Error : system::exception
+               {
+                  using system::exception::exception;
+               };
+
                namespace no
                {
-                  struct Message : system::exception
+                  struct Message : Error
                   {
-                     using system::exception::exception;
+                     using Error::Error;
                   };
 
                   namespace message 
@@ -53,9 +61,9 @@ namespace casual
                   } // message 
                } // no
 
-               struct Unavailable : system::exception
+               struct Unavailable : Error
                {
-                  using system::exception::exception;
+                  using Error::Error;
                };
 
                namespace unavailable
@@ -73,9 +81,9 @@ namespace casual
                   } // not 
                } // unavailable
 
-               using Refused = system::base< code::system::connection_refused>;
+               using Refused = common::exception::basic_error< Error, code::system::connection_refused>;
 
-               using Protocol = system::base< code::system::protocol_error>;
+               using Protocol = common::exception::basic_error< Error, code::system::protocol_error>;
 
             } // communication
 
@@ -95,5 +103,3 @@ namespace casual
 } // casual
 
 
-
-#endif

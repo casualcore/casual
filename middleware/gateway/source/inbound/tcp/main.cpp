@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "gateway/inbound/gateway.h"
 #include "gateway/common.h"
@@ -8,7 +11,7 @@
 #include "common/communication/tcp.h"
 
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/environment.h"
 
 
@@ -131,12 +134,13 @@ int main( int argc, char **argv)
    {
       casual::gateway::inbound::tcp::Settings settings;
       {
-         casual::common::Arguments parser{{
-            casual::common::argument::directive( { "--descriptor"}, "socket descriptor", settings.descriptor.underlaying()),
-            casual::common::argument::directive( { "--limit-messages"}, "# of concurrent messages", settings.limit.messages),
-            casual::common::argument::directive( { "--limit-size"}, "max size of concurrent messages", settings.limit.size),
-         }};
-         parser.parse( argc, argv);
+         using namespace casual::common::argument;
+         Parse parse{ "tcp inbound",
+            Option( std::tie( settings.descriptor.underlaying()), { "--descriptor"}, "socket descriptor"),
+            Option( std::tie( settings.limit.messages), { "--limit-messages"}, "# of concurrent messages"),
+            Option( std::tie( settings.limit.size), { "--limit-size"}, "max size of concurrent messages")
+         };
+         parse( argc, argv);
       }
 
       casual::gateway::inbound::tcp::Gateway gateway{ std::move( settings)};

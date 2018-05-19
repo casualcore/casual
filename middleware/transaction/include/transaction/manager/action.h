@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef MANAGER_ACTION_H_
-#define MANAGER_ACTION_H_
+
+#pragma once
+
 
 #include "transaction/manager/state.h"
 
@@ -59,4 +62,4 @@ namespace casual
    } // transaction
 } // casual
 
-#endif // MANAGER_ACTION_H_
+

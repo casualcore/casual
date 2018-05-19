@@ -1,11 +1,14 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "gateway/inbound/gateway.h"
 #include "gateway/common.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/environment.h"
 
 
@@ -129,11 +132,13 @@ int main( int argc, char **argv)
    {
       casual::gateway::inbound::ipc::Settings settings;
       {
-         casual::common::Arguments parser{{
-            casual::common::argument::directive( { "--remote-ipc-queue"}, "remote domain ipc queue", settings.ipc),
-            casual::common::argument::directive( { "--correlation"}, "message connect correlation", settings.correlation),
-         }};
-         parser.parse( argc, argv);
+         using namespace casual::common::argument;
+
+         Parse parse{ "inbound ipc",
+            Option( std::tie( settings.ipc), { "--remote-ipc-queue"}, "remote domain ipc queue"),
+            Option( std::tie( settings.correlation), { "--correlation"}, "message connect correlation")
+         };
+         parse( argc, argv);
       }
 
       casual::gateway::inbound::ipc::Gateway gateway{ std::move( settings)};

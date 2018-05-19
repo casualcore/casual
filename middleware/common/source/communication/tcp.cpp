@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/communication/tcp.h"
 #include "common/communication/log.h"
@@ -546,9 +549,9 @@ namespace casual
                         {
                            cache.push_back( std::move( message));
 
-                           return { std::end( cache) - 1, std::end( cache)};
+                           return policy::cache_range_type{ std::end( cache) - 1, std::end( cache)};
                         }
-                        return {};
+                        return policy::cache_range_type{};
                      }
                   } // <unnamed>
                } // local

@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/transaction/transaction.h"
 
@@ -45,7 +48,7 @@ namespace casual
 
          bool Transaction::associated( const Uuid& correlation) const
          {
-            return algorithm::find( m_pending, correlation);
+            return ! algorithm::find( m_pending, correlation).empty();
          }
 
          const std::vector< Uuid>& Transaction::correlations() const

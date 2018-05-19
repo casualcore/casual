@@ -1,14 +1,17 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_QUEUE_QUEUE_H_
-#define CASUAL_QUEUE_QUEUE_H_
+
+#pragma once
+
 
 
 #include "queue/api/message.h"
 
-#include "sf/platform.h"
+#include "serviceframework/platform.h"
 
 
 namespace casual
@@ -17,7 +20,7 @@ namespace casual
    {
       inline namespace v1  {
 
-      sf::platform::Uuid enqueue( const std::string& queue, const Message& message);
+      serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message);
 
       std::vector< Message> dequeue( const std::string& queue);
       std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
@@ -52,7 +55,7 @@ namespace casual
       namespace xatmi
       {
 
-         sf::platform::Uuid enqueue( const std::string& queue, const Message& message);
+         serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message);
 
          std::vector< Message> dequeue( const std::string& queue);
          std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
@@ -64,7 +67,7 @@ namespace casual
          struct Affected
          {
             std::string queue;
-            sf::platform::size::type restored = 0;
+            serviceframework::platform::size::type restored = 0;
          };
 
          std::vector< Affected> queue( const std::vector< std::string>& queues);
@@ -76,4 +79,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // QUEUE_H_
+

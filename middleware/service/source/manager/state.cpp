@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "service/manager/state.h"
 #include "service/transform.h"
@@ -33,7 +36,7 @@ namespace casual
             {
                template< typename M, typename ID>
                auto get( M& map, ID&& id) ->
-                common::traits::enable_if_t< common::traits::container::is_associative< M>::value, decltype( map.at( id))>
+                std::enable_if_t< common::traits::container::is_associative< M>::value, decltype( map.at( id))>
                {
                   auto found = common::algorithm::find( map, id);
 
@@ -46,7 +49,7 @@ namespace casual
 
                template< typename C, typename ID>
                auto get( C& container, ID&& id) ->
-                common::traits::enable_if_t< common::traits::container::is_sequence< C>::value, decltype( *std::begin( container))>
+                std::enable_if_t< common::traits::container::is_sequence< C>::value, decltype( *std::begin( container))>
                {
                   auto found = common::algorithm::find( container, id);
 
@@ -338,7 +341,7 @@ namespace casual
 
                   if( found)
                   {
-                     log << "remove process pid: " << pid << std::endl;
+                     log << "remove process pid: " << pid << '\n';
 
                      for( auto& s : services)
                      {

@@ -1,10 +1,13 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "common/chronology.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/process.h"
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
@@ -102,10 +105,11 @@ namespace casual
                //
                std::string database{"monitor.db"};
                {
-                  casual::common::Arguments parser{
-                     { casual::common::argument::directive( { "-db", "--database"}, "path to monitor database log", database)}};
+                  casual::common::argument::Parse parse{ "service monitor",
+                     casual::common::argument::Option( std::tie( database), { "-db", "--database"}, "path to monitor database log")
+                  };
 
-                  parser.parse( argc, argv);
+                  parse( argc, argv);
                }
 
                //

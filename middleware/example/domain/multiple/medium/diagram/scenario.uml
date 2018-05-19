@@ -20,9 +20,9 @@ end box
 activate AA
 
 group #eeeeee in transaction 
-AA -> GA: enqueue to queueB1
+AA -> GA: enqueue to **queueB1**
 GA -> GB:
-GB -> QB: enqueue to queueB1
+GB -> QB: enqueue to **queueB1**
 activate QB
 QB -> GB: message id
 deactivate QB
@@ -34,9 +34,9 @@ end
 group #eeeeee in transaction
 QB -> SFB: dequeue B1
 activate SFB
-SFB -> GB: call casual.example.echo 
+SFB -> GB: call **casual/example/echo**
 GB -> GA:
-GA -> SA: call casual.example.echo 
+GA -> SA: call **casual/example/echo**
 activate SA
 SA -> GA: reply 
 deactivate SA
@@ -49,9 +49,9 @@ end
 group #eeeeee in transaction
 QB -> QFB: dequeue B2
 activate QFB
-QFB -> GB: enqueue queueA1
+QFB -> GB: enqueue **queueA1**
 GB -> GA
-GA -> QA: enqueue queueA1
+GA -> QA: enqueue **queueA1**
 activate QA
 QA -> GA
 deactivate QA
@@ -65,9 +65,9 @@ group #eeeeee in transaction
 
 QA -> SFA: dequeue A1
 activate SFA
-SFA -> SA: call casual.example.rollback
+SFA -> SA: call **casual/example/rollback**
 activate SA
-SA -> SFA: reply TPFAIL
+SA -> SFA: reply **TPFAIL**
 note right 
    This will rollback the dequeue 
    and move the message to 

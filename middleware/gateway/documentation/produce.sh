@@ -1,7 +1,7 @@
 #!/bin/bash
 
-ROOT=$CASUAL_BUILD_HOME
-GATEWAY=$ROOT/middleware/gateway
+REPOSITORY_ROOT=$(git rev-parse --show-toplevel)
+GATEWAY=$REPOSITORY_ROOT/middleware/gateway
 
 if [[ -z $CASUAL_HOME ]]
 then

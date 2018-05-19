@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_BROKER_INCLUDE_BROKER_COMMON_H_
-#define CASUAL_MIDDLEWARE_BROKER_INCLUDE_BROKER_COMMON_H_
+
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
@@ -34,4 +37,4 @@ namespace casual
    } // service
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_BROKER_INCLUDE_BROKER_COMMON_H_
+

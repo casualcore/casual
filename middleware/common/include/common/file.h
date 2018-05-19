@@ -1,15 +1,19 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_UTILITY_FILE_H_
-#define CASUAL_UTILITY_FILE_H_
 
-#include <string>
-
-#include <regex>
+#pragma once
 
 #include "common/move.h"
+
+#include <string>
+#include <regex>
+#include <fstream>
+
+
 
 namespace casual
 {
@@ -18,6 +22,30 @@ namespace casual
    {
       namespace file
       {
+         class Input : public std::ifstream
+         {
+         public:
+            Input( std::string path);
+
+            const std::string& path() const  { return m_path;} 
+            std::string extension() const;
+
+         private:
+            std::string m_path;
+         };
+
+         class Output : public std::ofstream
+         {
+         public:
+            Output( std::string path);
+
+            const std::string& path() const  { return m_path;} 
+            std::string extension() const;
+
+         private:
+            std::string m_path;
+         };
+
          void remove( const std::string& path);
 
          //!
@@ -191,4 +219,4 @@ namespace casual
    } // common
 } // casual
 
-#endif /* CASUAL_UTILITY_FILE_H_ */
+

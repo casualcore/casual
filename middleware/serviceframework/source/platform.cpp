@@ -1,10 +1,13 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "sf/platform.h"
 
-#include "sf/archive/archive.h"
+#include "serviceframework/platform.h"
+
+#include "serviceframework/archive/archive.h"
 
 
 #include "common/process.h"
@@ -12,7 +15,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -102,6 +105,6 @@ namespace casual
 
       } // archive
 
-   } // sf
+   } // serviceframework
 
 } // casual

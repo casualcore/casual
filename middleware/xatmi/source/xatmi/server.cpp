@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "xatmi/server.h"
 
@@ -27,8 +30,8 @@ namespace local
 {
    namespace
    {
-	   namespace transform
-	   {
+      namespace transform
+      {
 
 
          std::vector< common::server::argument::xatmi::Service> services( struct casual_server_argument& value)
@@ -64,8 +67,8 @@ namespace local
             return result;
          }
 
-	   } // transform
-	} // <unnamed>
+      } // transform
+   } // <unnamed>
 } // local
 
 
@@ -98,12 +101,12 @@ int casual_start_server( casual_server_argument* arguments)
          common::invoke( arguments->server_done);
       }
 
-	}
-	catch( ...)
-	{
-	   return static_cast< int>( casual::common::exception::xatmi::handle());
-	}
-	return 0;
+   }
+   catch( ...)
+   {
+      return static_cast< int>( casual::common::exception::xatmi::handle());
+   }
+   return 0;
 }
 
 

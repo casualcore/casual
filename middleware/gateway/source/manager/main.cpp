@@ -1,11 +1,14 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "gateway/manager/manager.h"
 
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/exception/handle.h"
 
 
@@ -23,12 +26,12 @@ namespace casual
             {
                Settings settings;
                {
-                  casual::common::Arguments parser{
+                  casual::common::argument::Parse parse{
                      R"(
 Responsible for interdomain communications.
-)", {}
+)"
                   };
-                  parser.parse( argc, argv);
+                  parse( argc, argv);
                }
 
                Manager manager{ std::move( settings)};

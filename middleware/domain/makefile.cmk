@@ -49,31 +49,31 @@ target_domain_manager = LinkExecutable( 'bin/casual-domain-manager',
      'casual-common',
      'casual-xatmi',
      'casual-configuration',
-     'casual-sf'
+     'casual-serviceframework'
     ] 
 )
 
 install_bins.append( target_domain_manager)
 
 
-target = LinkExecutable( 'bin/casual-domain-admin',
+target = LinkLibrary( 'bin/casual-domain-admin-cli',
     [
-     Compile( 'source/manager/admin/client.cpp'),
+     Compile( 'source/manager/admin/cli.cpp'),
      ],
     [
      manager_archive,
      'casual-common',
      'casual-xatmi',
-     'casual-sf'
+     'casual-serviceframework'
      ]
 )
 
-Install( target,'$(CASUAL_HOME)/internal/bin')
+install_libs.append( target)
 
 
 target_simple_server = LinkExecutable( 'bin/test-simple-server',
     [
-        Compile( 'unittest/isolated/source/simple_server.cpp'),
+        Compile( 'unittest/source/simple_server.cpp'),
     ],
     [
      'casual-common'
@@ -82,8 +82,8 @@ target_simple_server = LinkExecutable( 'bin/test-simple-server',
 
 target_test_domain = LinkUnittest( 'bin/test-casual-domain', 
     [ 
-        Compile( 'unittest/isolated/source/manager/test_state.cpp'),
-        Compile( 'unittest/isolated/source/manager/test_manager.cpp'),        
+        Compile( 'unittest/source/manager/test_state.cpp'),
+        Compile( 'unittest/source/manager/test_manager.cpp'),        
     ],
     [
       manager_archive,
@@ -91,7 +91,7 @@ target_test_domain = LinkUnittest( 'bin/test-casual-domain',
      'casual-mockup',
      'casual-configuration',
      'casual-mockup-unittest-environment',
-     'casual-sf',
+     'casual-serviceframework',
      'casual-xatmi',
      'casual-unittest',
      'casual-configuration-example',
@@ -128,7 +128,7 @@ target_delay_message = LinkExecutable( 'bin/casual-delay-message',
 
 target_test_delay = LinkUnittest( 'bin/test-casual-domain-delay', 
     [ 
-        Compile( 'unittest/isolated/source/test_delay.cpp'),
+        Compile( 'unittest/source/test_delay.cpp'),
     ],
     [
      message_lib,

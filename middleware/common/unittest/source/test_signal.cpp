@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! caual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 #include "common/unittest.h"
 
 #include "common/signal.h"
@@ -15,10 +18,8 @@ namespace casual
       template< typename E, signal::Type signal>
       struct holder
       {
-         typedef E exception_type;
+         using exception_type = E;
          static signal::Type get_signal() { return signal;}
-         //static const char* getString() { return string;}
-
       };
 
       template <typename H>
@@ -30,7 +31,7 @@ namespace casual
 
 
 
-      typedef ::testing::Types<
+      using signal_type = ::testing::Types<
 
             holder< common::exception::signal::Terminate, signal::Type::interrupt>,
             holder< common::exception::signal::Terminate, signal::Type::quit>,
@@ -43,7 +44,7 @@ namespace casual
             holder< common::exception::signal::child::Terminate, signal::Type::child>,
 
             holder< common::exception::signal::Pipe, signal::Type::pipe>
-       > signal_type;
+       >;
 
       TYPED_TEST_CASE( casual_common_signal_types, signal_type);
 

@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_EXAMPLE_BUILD_SERVER_H_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_EXAMPLE_BUILD_SERVER_H_
+
+#pragma once
+
 
 #include "configuration/build/server.h"
 
@@ -33,4 +36,4 @@ namespace casual
    } // configuration
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_EXAMPLE_RESOURCE_PROPERTY_H_
+

@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include <gtest/gtest.h>
 #include "common/unittest.h"
@@ -34,7 +37,7 @@ namespace casual
                      {
                         connections.push_back( listener());
 
-                        log::debug << "connections: " << range::make( connections) << std::endl;
+                        log::debug << "connections: " << range::make( connections) << '\n';
 
                      }
                   }
@@ -366,14 +369,14 @@ namespace casual
             auto send_message = unittest::random::message( 10 * 1024 * 1024);
             unittest::random::range( send_message.payload);
 
-            std::cerr << "sending outbund " << std::endl;
+            std::cerr << "sending outbund " << '\n';
 
             auto correlation = outbund.blocking_send( send_message);
 
 
             // receive (the echo)
             {
-               std::cerr << "receiving outbund " << std::endl;
+               std::cerr << "receiving outbund " << '\n';
 
                unittest::Message receive_message;
                tcp::inbound::Device tcp{ outbund.connector().socket()};

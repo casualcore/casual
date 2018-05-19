@@ -1,15 +1,18 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "xatmi.h"
 #include "tx.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/chronology.h"
 #include "common/exception/handle.h"
 
-#include "sf/service/protocol/call.h"
+#include "serviceframework/service/protocol/call.h"
 
 
 
@@ -91,7 +94,7 @@ void run( Settings settings)
          Transaction transaction( settings, timepoints);
 
 
-         using Send = casual::sf::service::protocol::binary::Send;
+         using Send = casual::serviceframework::service::protocol::binary::Send;
          Send send;
 
          send << CASUAL_MAKE_NVP( settings.argument);
@@ -113,9 +116,9 @@ void run( Settings settings)
             {
                auto result = receive();
             }
-            catch( const casual::sf::exception::Base& exception)
+            catch( const casual::serviceframework::exception::Base& exception)
             {
-               std::cerr << exception << std::endl;
+               std::cerr << exception << '\n';
             }
             catch( ...)
             {
@@ -152,26 +155,20 @@ int main( int argc, char** argv)
    {
 
       Settings settings;
-
-      casual::common::Arguments parser{{
-            casual::common::argument::directive( { "-s", "--service"}, "service to call", settings.service),
-            casual::common::argument::directive( { "-n", "--number"}, "number of async calls to service", settings.calls),
-            casual::common::argument::directive( { "-a", "--argument"}, "argument to the service", settings.argument),
-            casual::common::argument::directive( { "-t", "--transaction"}, "call within a transaction", settings.transaction),
-            casual::common::argument::directive( { "-r", "--rollback"}, "call within a transaction", settings.rollback),
-            casual::common::argument::directive( { "-i", "--iterations"}, "number of iterations of batch-calls", settings.iterations),
-      }};
-
-
-      parser.parse( argc, argv);
-
-      if( settings.service.empty())
       {
-         std::cerr << "no service provided" << std::endl;
-         return 10;
+         using namespace casual::common::argument;
+         Parse parse{ "some test crap...",
+            Option( std::tie( settings.service), { "-s", "--service"}, "service to call")( cardinality::one{}),
+            Option( std::tie( settings.calls), { "-n", "--number"}, "number of async calls to service"),
+            Option( std::tie( settings.argument), { "-a", "--argument"}, "argument to the service"),
+            Option( std::tie( settings.transaction), { "-t", "--transaction"}, "call within a transaction"),
+            Option( std::tie( settings.rollback), { "-r", "--rollback"}, "call within a transaction"),
+            Option( std::tie( settings.iterations), { "-i", "--iterations"}, "number of iterations of batch-calls"),
+         };
+         parse( argc, argv);
       }
 
-      std::cout << "argument: " << settings.argument << std::endl;
+      std::cout << "argument: " << settings.argument << '\n';
 
 
       run( settings);

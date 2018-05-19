@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! causal
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/mockup/ipc.h"
 #include "common/mockup/log.h"
@@ -194,7 +197,7 @@ namespace casual
                   {
                      Trace trace{ "shutdown_thread"};
 
-                     log << "thread id: " << thread.get_id() << " - ipc id: " << input << std::endl;
+                     log << "thread id: " << thread.get_id() << " - ipc id: " << input << '\n';
 
                      signal::thread::scope::Block block;
 
@@ -208,7 +211,7 @@ namespace casual
                      }
                      catch( const std::exception& exception)
                      {
-                        log << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                        log << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << '\n';
                      }
                      catch( ...)
                      {
@@ -222,7 +225,7 @@ namespace casual
                      }
                      catch( const std::exception& exception)
                      {
-                        log << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << std::endl;
+                        log << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << '\n';
                      }
                   }
 
@@ -341,7 +344,7 @@ namespace casual
 
                   if( ! ( communication::ipc::exists( input) && communication::ipc::exists( output)))
                   {
-                     log::category::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << std::endl;
+                     log::category::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << '\n';
                      return;
                   }
 

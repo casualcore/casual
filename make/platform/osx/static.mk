@@ -12,7 +12,11 @@ endif
 
 COMPILER = $(CXX)
 
-WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wno-missing-declarations -Wno-unused-parameter 
+# clang has false warning for noexcept if there are any throws within, even if we catch all
+#   we add -Wno-exceptions 
+#   TODO: remove as soon as they fix it
+WARNING_DIRECTIVE = -Wall -Wextra -Werror -Wsign-compare -Wuninitialized  -Winit-self -Woverloaded-virtual -Wno-missing-declarations -Wno-unused-parameter -Wno-exceptions
+
 
 #
 # Linkers

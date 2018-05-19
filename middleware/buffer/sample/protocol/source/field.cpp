@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "buffer/field.h"
 
@@ -74,7 +77,7 @@ namespace casual
             long used = 0;
             casual_field_explore_buffer( buffer, &size, &used);
 
-            std::cout << "buffer size: " << size << " - used: " << used << std::endl;
+            std::cout << "buffer size: " << size << " - used: " << used << '\n';
             out.write( buffer, used);
             out.flush();
          }
@@ -120,7 +123,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
             out << "string  | " << FLD_STRING     << "  |      " << value.v_string.size()  << " | " << value.v_string << '\n';
             out << "binary  | " << FLD_BINARY     << "  |      " << value.v_binary.size()  << " | "; out.write( value.v_binary.data(), value.v_binary.size()) ;out << '\n';
 
-            out << std::endl;
+            out << '\n';
 
             out << R"(
 
@@ -140,7 +143,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
             out << "string  | " << encode( FLD_STRING)  << "  |      " << encode( value.v_string.size())   << " | " << value.v_string << '\n';
             out << "binary  | " << encode( FLD_BINARY)  << "  |      " << encode( value.v_binary.size())   << " | "; out.write( value.v_binary.data(), value.v_binary.size()); out << '\n';
 
-            out << std::endl;
+            out << '\n';
          }
 
          int main(int argc, char **argv)

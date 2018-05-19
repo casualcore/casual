@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef QUEUE_BROKER_BROKER_H_
-#define QUEUE_BROKER_BROKER_H_
+
+#pragma once
+
 
 
 #include "queue/manager/state.h"
@@ -52,4 +55,4 @@ namespace casual
    } // queue
 } // casual
 
-#endif // BROKER_H_
+

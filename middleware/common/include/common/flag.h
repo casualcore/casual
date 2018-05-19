@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_FLAG_H_
-#define CASUAL_COMMON_FLAG_H_
+
+#pragma once
+
 
 #include "common/marshal/marshal.h"
 #include "common/exception/system.h"
@@ -12,13 +15,11 @@
 
 #include <initializer_list>
 #include <type_traits>
-//#include <cstdlib>
-
 
 namespace casual
 {
-	namespace common
-	{
+   namespace common
+   {
 
       namespace has
       {
@@ -122,8 +123,8 @@ namespace casual
          underlaying_type m_flags = underlaying_type{};
       };
 
-	} // common
+   } // common
 } // casual
 
 
-#endif /* CASUAL_UTILITY_FLAG_H_ */
+

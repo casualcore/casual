@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_BUFFER_POOL_H_
-#define CASUAL_COMMON_BUFFER_POOL_H_
+
+#pragma once
+
 
 #include "common/buffer/type.h"
 #include "common/platform.h"
@@ -130,7 +133,7 @@ namespace casual
 
                      payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
 
-                     log::category::buffer << "pool::get - buffer: " << result << std::endl;
+                     log::category::buffer << "pool::get - buffer: " << result << '\n';
 
                      return result;
                   }
@@ -144,7 +147,7 @@ namespace casual
                   {
                      auto buffer = m_pool.release( handle);
 
-                     log::category::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << std::endl;
+                     log::category::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << '\n';
 
                      //
                      // Adjust the buffer size, with regards to the user size
@@ -304,7 +307,7 @@ namespace casual
 
                bool manage( platform::buffer::raw::immutable::type handle)
                {
-                  return find( handle);
+                  return ! find( handle).empty();
                }
 
                void deallocate( platform::buffer::raw::immutable::type handle)
@@ -388,14 +391,9 @@ namespace casual
             };
 
 
-#ifdef __GNUC__
             template< typename P>
-            __attribute__((__unused__)) P& Registration< P>::pool = Holder::instance().registration( P{});
-#else
-            template< typename P>
+            CASUAL_OPTION_UNUSED P& Registration< P>::pool = Holder::instance().registration( P{});
             //[[maybe_unused]] P& Registration< P>::pool = Holder::instance().registration( P{});
-            P& Registration< P>::pool = Holder::instance().registration( P{});
-#endif
 
          } // pool
       } // buffer
@@ -405,4 +403,4 @@ namespace casual
 
 } // casual
 
-#endif // POOL_H_
+

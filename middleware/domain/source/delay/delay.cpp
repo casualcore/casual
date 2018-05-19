@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "domain/delay/delay.h"
 #include "domain/delay/message.h"
 #include "domain/common.h"
 
 #include "common/server/handle/call.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
 
@@ -190,10 +193,9 @@ namespace casual
             {
                Settings settings;
                {
-                  casual::common::Arguments parser{{
-
-                  }};
-                  parser.parse( argc, argv);
+                  casual::common::argument::Parse parse{ "delay message"
+                  };
+                  parse( argc, argv);
                }
 
                start( std::move( settings));

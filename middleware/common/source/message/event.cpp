@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/message/event.h"
 
@@ -56,6 +59,7 @@ namespace casual
                            << ", message: " << value.message
                            << ", executable: " << value.executable
                            << ", pid: " << value.pid
+                           << ", details: " << range::make( value.details)
                            << '}';
                   }
 

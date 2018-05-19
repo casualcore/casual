@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_REQUEST_H_
-#define MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_REQUEST_H_
+
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/buffer/type.h"
@@ -39,4 +42,4 @@ namespace casual
 } // casual
 
 
-#endif /* MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_REQUEST_H_ */
+

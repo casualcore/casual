@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "service/manager/manager.h"
 
@@ -21,7 +24,7 @@
 #include "common/domain.h"
 
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 
 #include <xatmi.h>
@@ -38,8 +41,8 @@ namespace casual
 {
    using namespace common;
 
-	namespace service
-	{
+   namespace service
+   {
 
       namespace local
       {
@@ -248,7 +251,7 @@ namespace casual
          }
       }
 
-	} // service
+   } // service
 } // casual
 
 

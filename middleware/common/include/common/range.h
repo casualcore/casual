@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_RANGE_H_
-#define CASUAL_COMMON_RANGE_H_
+
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/traits.h"
@@ -30,61 +33,67 @@ namespace casual
          using difference_type = typename std::iterator_traits< iterator>::difference_type;
          using reverse_iterator = std::reverse_iterator< iterator>;
 
-         Range() = default;
-         Range( iterator first, iterator last) :  m_first( first), m_last( last) {}
+         constexpr Range() = default;
+         explicit constexpr Range( iterator first, iterator last) :  m_first( first), m_last( last) {}
+
 
          template< typename Size, std::enable_if_t< std::is_integral< Size>::value>* dummy = nullptr>
-         Range( iterator first, Size size) : m_first( first), m_last( first + size) {}
+         explicit constexpr Range( iterator first, Size size) : m_first( first), m_last( first + size) {}
+
+         //!
+         //! conversion from Range with convertable iterators
+         //!
+         template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
+         constexpr Range( Range< convertible_iterator> range) :  m_first( range.begin()), m_last( range.end()) {}
 
 
-         platform::size::type size() const { return std::distance( m_first, m_last);}
+         constexpr platform::size::type size() const { return std::distance( m_first, m_last);}
+
+         constexpr bool empty() const noexcept { return m_first == m_last;}
+         constexpr explicit operator bool () const noexcept { return ! empty();}
 
 
-         bool empty() const { return m_first == m_last;}
+         constexpr reference operator * () const noexcept { return *m_first;}
+         constexpr iterator operator -> () const noexcept { return m_first;}
 
-
-         operator bool () const { return ! empty();}
-
-         template<typename T>
-         operator T() const = delete;
-
-
-         reference operator * () const { return *m_first;}
-         iterator operator -> () const { return m_first;}
-
-         Range& operator ++ ()
+         constexpr Range& operator ++ () noexcept
          {
             ++m_first;
             return *this;
          }
 
-         Range operator ++ ( int)
+         constexpr Range operator ++ ( int) noexcept
          {
             Range other{ *this};
             ++m_first;
             return other;
          }
 
-         iterator begin() const { return m_first;}
-         iterator end() const { return m_last;}
-         reverse_iterator rbegin() const { return reverse_iterator( end());}
-         reverse_iterator rend() const { return reverse_iterator( begin());}
+         constexpr iterator begin() const noexcept { return m_first;}
+         constexpr iterator end() const noexcept { return m_last;}
+         constexpr reverse_iterator rbegin() const noexcept { return reverse_iterator( end());}
+         constexpr reverse_iterator rend() const noexcept { return reverse_iterator( begin());}
 
 
-         Range& advance( difference_type value) { std::advance( m_first, value); return *this;}
+         constexpr Range& advance( difference_type value) { std::advance( m_first, value); return *this;}
 
-         pointer data() const { return data( m_first, m_last);}
+         constexpr pointer data() const noexcept { return data( m_first, m_last);}
 
-         reference front() { return *m_first;}
-         const reference front() const { return *m_first;}
+         constexpr reference front() { return *m_first;}
+         constexpr const reference front() const { return *m_first;}
 
-         reference at( const difference_type index) { return at( m_first, m_last, index);}
-         const reference at( const difference_type index) const { return at( m_first, m_last, index);}
+         constexpr reference back() { return *( m_last - 1);}
+         constexpr const reference back() const { return *( m_last - 1);}
+
+         constexpr reference at( const difference_type index) { return at( m_first, m_last, index);}
+         constexpr const reference at( const difference_type index) const { return at( m_first, m_last, index);}
+
+         friend constexpr Range operator + ( Range range, difference_type value) { return Range( range.m_first + value, range.m_last);}
 
 
       private:
 
-         static pointer data( iterator first, iterator last)
+         constexpr static pointer data( iterator first, iterator last) noexcept
          {
             if( first != last)
             {
@@ -93,7 +102,7 @@ namespace casual
             return nullptr;
          }
 
-         static reference at( iterator first, iterator last, const difference_type index)
+         constexpr static reference at( iterator first, iterator last, const difference_type index)
          {
             if( std::distance( first, last) < index) { throw std::out_of_range{ std::to_string( index)};}
 
@@ -274,7 +283,6 @@ namespace casual
 
             template< typename R1, typename R2>
             auto subtract( R1&& lhs, R2&& rhs)
-               -> std::tuple< decltype( range::make( std::forward< R1>( lhs))), decltype( range::make( std::forward< R1>( lhs)))>
             {
                using range_type = range::type_t< R1>;
 
@@ -364,10 +372,19 @@ namespace casual
             return range.back();
          }
 
+         //!
+         //! If @p range has size > 1, shorten range to size 1.
+         //!
+         template< typename R>
+         auto zero_one( R&& range)
+         {
+            if( range)
+               return range::make( std::begin( range), 1);
+
+            return range;
+         }
+
+
       } // range
    } // common 
 } // casual 
-
-
-
-#endif

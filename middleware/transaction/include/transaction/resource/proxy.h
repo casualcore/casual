@@ -1,17 +1,21 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef RESOURCE_PROXY_H_
-#define RESOURCE_PROXY_H_
+
+#pragma once
+
 
 #include "transaction/resource/proxy_server.h"
 
 #include "common/platform.h"
 #include "common/strong/id.h"
+#include "common/transaction/resource.h"
 
 
-#include "sf/namevaluepair.h"
+#include "serviceframework/namevaluepair.h"
 
 namespace casual
 {
@@ -32,36 +36,10 @@ namespace casual
 
             struct State
             {
-               State( Settings&& settings, casual_xa_switch_mapping* switches)
-                  : rm_id( settings.id), 
-                  rm_key( std::move( settings.key)),
-                  rm_openinfo( std::move( settings.openinfo)),
-                  rm_closeinfo( std::move( settings.closeinfo)),
-                  xa_switches( switches)
-               {}
+               State( Settings&& settings, casual_xa_switch_mapping* switches);
 
-               common::strong::resource::id rm_id;
-
-               std::string rm_key;
-               std::string rm_openinfo;
-               std::string rm_closeinfo;
-
-               casual_xa_switch_mapping* xa_switches = nullptr;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-               {
-                  archive & CASUAL_MAKE_NVP( rm_id);
-                  archive & CASUAL_MAKE_NVP( rm_key);
-                  archive & CASUAL_MAKE_NVP( rm_openinfo);
-                  archive & CASUAL_MAKE_NVP( rm_closeinfo);
-               })
-
+               common::transaction::Resource resource;
             };
-
-            namespace validate
-            {
-               void state( const proxy::State& state);
-            } // validate
          } // proxy 
 
 
@@ -88,4 +66,4 @@ namespace casual
 
 } // casual
 
-#endif // RESOURCE_PROXY_H_
+

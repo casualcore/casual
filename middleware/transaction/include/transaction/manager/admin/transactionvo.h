@@ -1,14 +1,17 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_TRANSACTION_MANAGER_ADMIN_TRANSACTIONVO_H_
-#define CASUAL_TRANSACTION_MANAGER_ADMIN_TRANSACTIONVO_H_
+
+#pragma once
 
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 namespace casual
 {
@@ -23,7 +26,7 @@ namespace casual
             common::platform::time::unit min = common::platform::time::unit::max();
             common::platform::time::unit max = common::platform::time::unit{ 0};
             common::platform::time::unit total = common::platform::time::unit{ 0};
-            sf::platform::size::type invoked = 0;
+            serviceframework::platform::size::type invoked = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -113,7 +116,7 @@ namespace casual
                std::string key;
                std::string openinfo;
                std::string closeinfo;
-               sf::platform::size::type concurency;
+               serviceframework::platform::size::type concurency;
                Stats statistics;
 
                std::vector< Instance> instances;
@@ -140,7 +143,7 @@ namespace casual
             struct Request
             {
                resource::id_type resource;
-               sf::platform::Uuid correlation;
+               serviceframework::platform::Uuid correlation;
                long type;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -153,8 +156,8 @@ namespace casual
 
             struct Reply
             {
-               sf::strong::ipc::id queue;
-               sf::platform::Uuid correlation;
+               serviceframework::strong::ipc::id queue;
+               serviceframework::platform::Uuid correlation;
                long type;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -202,8 +205,8 @@ namespace casual
          {
             struct update_t
             {
-               sf::platform::size::type prepare = 0;
-               sf::platform::size::type remove = 0;
+               serviceframework::platform::size::type prepare = 0;
+               serviceframework::platform::size::type remove = 0;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -213,7 +216,7 @@ namespace casual
 
             } update;
 
-            sf::platform::size::type writes = 0;
+            serviceframework::platform::size::type writes = 0;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -257,7 +260,7 @@ namespace casual
             struct Instances
             {
                resource::id_type id;
-               sf::platform::size::type instances;
+               serviceframework::platform::size::type instances;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -281,4 +284,4 @@ namespace casual
 
 } // casual
 
-#endif // TRANSACTIONVO_H_
+

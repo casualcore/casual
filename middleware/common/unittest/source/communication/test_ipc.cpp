@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include <gtest/gtest.h>
 #include "common/unittest.h"
@@ -98,7 +101,7 @@ namespace casual
             {
                for( auto a : complete.unhandled())
                {
-                  std::cerr << "size: " << a.size() << std::endl;
+                  std::cerr << "size: " << a.size() << '\n';
                }
             }
 
@@ -119,7 +122,7 @@ namespace casual
             {
                for( auto a : complete.unhandled())
                {
-                  std::cerr << "size: " << a.size() << std::endl;
+                  std::cerr << "size: " << a.size() << '\n';
                }
             }
             EXPECT_TRUE( complete.payload == local::payload::get());

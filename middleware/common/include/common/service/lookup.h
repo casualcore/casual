@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_SERVICE_LOOKUP_H_
-#define CASUAL_COMMON_SERVICE_LOOKUP_H_
+
+#pragma once
+
 
 #include "common/uuid.h"
 #include "common/message/service.h"
@@ -60,4 +63,4 @@ namespace casual
 
 } // casual
 
-#endif // LOOKUP_H_
+

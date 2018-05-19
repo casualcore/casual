@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/transaction/id.h"
 #include "common/uuid.h"
@@ -213,18 +216,18 @@ namespace casual
 
          xid_range_type global( const xid_type& xid)
          {
-            return { xid.data, xid.data + xid.gtrid_length};
+            return xid_range_type{ xid.data, xid.data + xid.gtrid_length};
          }
 
          xid_range_type branch( const xid_type& xid)
          {
-            return { xid.data + xid.gtrid_length,
+            return xid_range_type{ xid.data + xid.gtrid_length,
                   xid.data + xid.gtrid_length + xid.bqual_length};
          }
 
          xid_range_type data( const xid_type& xid)
          {
-            return { xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
+            return xid_range_type{ xid.data, xid.data + xid.gtrid_length + xid.bqual_length};
          }
 
          bool null( const ID& id)

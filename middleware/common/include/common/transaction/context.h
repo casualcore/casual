@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_TRANSACTION_CONTEXT_H_
-#define CASUAL_COMMON_TRANSACTION_CONTEXT_H_
+
+#pragma once
+
 
 #include <tx.h>
 
@@ -121,7 +124,7 @@ namespace casual
             bool associated( const Uuid& correlation);
 
 
-            void configure( const std::vector< Resource>& resources, std::vector< std::string> names);
+            void configure( const std::vector< resource::Link>& resources, std::vector< std::string> names);
 
 
             //!
@@ -200,4 +203,4 @@ namespace casual
 
 
 
-#endif /* CONTEXT_H_ */
+

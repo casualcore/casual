@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/exception/tx.h"
 #include "common/log/category.h"
@@ -63,23 +66,23 @@ namespace casual
                }
                catch( const common::exception::tx::exception& exception)
                {
-                  code::stream( exception.type()) << exception << std::endl;
+                  log::line( code::stream( exception.type()), exception);
                   return exception.type();
                }
-               catch( const std::system_error& exception)
+               catch( const exception::base& exception)
                {
-                  log::category::error << exception << '\n';
+                  log::line( log::category::error, exception);
                }
                catch( const std::exception& exception)
                {
-                  log::category::error << exception << '\n';
+                  log::line( log::category::error, exception.what());
                }
 
                return code::tx::fail;
             }
          } // tx
       } // exception
-	} // common
+   } // common
 } // casual
 
 

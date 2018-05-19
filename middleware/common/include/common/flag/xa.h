@@ -1,5 +1,10 @@
-#ifndef CASUAL_COMMON_FLAG_XA_
-#define CASUAL_COMMON_FLAG_XA_
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
+#pragma once
 
 #include "xa/flag.h"
 
@@ -78,4 +83,3 @@ namespace casual
 
 #endif // CASUAL_NO_XATMI_UNDEFINE
 
-#endif

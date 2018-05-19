@@ -1,15 +1,18 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "sf/service/call.h"
-#include "sf/log.h"
+
+#include "serviceframework/service/call.h"
+#include "serviceframework/log.h"
 
 
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
       namespace service
       {
@@ -17,7 +20,7 @@ namespace casual
          {
             Result invoke( const std::string& service, const payload_type& paylaod, Flags flags)
             {
-               sf::Trace trace{ "sf::service::call::invoke"};
+               Trace trace{ "sf::service::call::invoke"};
 
                return common::service::call::context().sync( service, paylaod, flags);
             }
@@ -27,7 +30,7 @@ namespace casual
          {
             descriptor_type invoke( const std::string& service, const payload_type& paylaod, Flags flags)
             {
-               sf::Trace trace{ "sf::service::call::send"};
+               Trace trace{ "sf::service::call::send"};
 
                return common::service::call::context().async( service, paylaod, flags);
             }
@@ -38,7 +41,7 @@ namespace casual
          {
             Result invoke( descriptor_type descriptor, Flags flags)
             {
-               sf::Trace trace{ "sf::service::receive::send"};
+               Trace trace{ "sf::service::receive::send"};
 
                return common::service::call::context().reply( descriptor, flags);
             }
@@ -46,5 +49,5 @@ namespace casual
 
 
       } // service
-   } // sf
+   } // serviceframework
 } // casual

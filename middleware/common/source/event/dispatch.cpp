@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/event/dispatch.h"
 
@@ -37,9 +40,9 @@ namespace casual
 
          bool base_dispatch::exists( strong::ipc::id queue) const
          {
-            return algorithm::find_if( m_subscribers, [queue]( auto& s){
+            return ! algorithm::find_if( m_subscribers, [queue]( auto& s){
                return s.queue == queue;
-            });
+            }).empty();
          }
 
 

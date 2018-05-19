@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "service/manager/handle.h"
 #include "service/manager/admin/server.h"
@@ -372,7 +375,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::handle::gateway::Advertise"};
 
-                  log << "message: " << message << '\n';
+                  common::log::line( verbose::log, "message: ", message);
 
                   m_state.update( message);
                }
@@ -383,7 +386,7 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::domain::discover::Request"};
 
-                     verbose::log << "message: " << message << '\n';
+                     common::log::line( verbose::log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
 
@@ -428,6 +431,8 @@ namespace casual
                   void Reply::operator () ( message_type& message)
                   {
                      Trace trace{ "service::manager::handle::gateway::discover::Reply"};
+
+                     common::log::line( verbose::log, "message: ", message);
 
                      auto found = algorithm::find_if( m_state.pending.requests, [&]( const state::service::Pending& p){
                         return p.request.correlation == message.correlation;

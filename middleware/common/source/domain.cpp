@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/domain.h"
 
@@ -100,7 +103,7 @@ namespace casual
                   output << process.queue.value() << '\n';
                   output << process.pid.value() << '\n';
                   output << identity.name << '\n';
-                  output << identity.id << std::endl;
+                  output << identity.id << '\n';
 
                   log::debug << "domain information - id: " << identity << " - process: " << process << '\n';
                }

@@ -1,3 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 #include "common/exception/system.h"
 #include "common/log/category.h"
 
@@ -45,7 +51,7 @@ namespace casual
 
                         default:
                         {
-                           common::log::category::error << code <<  " - throwing a generic exception\n";
+                           log::line( log::category::error, std::make_error_code( code), " - throwing a generic exception");
                            throw system::exception( code, std::forward< Args>( args)...);
                         }
                      }

@@ -1,11 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_CODE_SYSTEM_H_
-#define CASUAL_COMMON_CODE_SYSTEM_H_
 
-#include "common/log/stream.h"
+#pragma once
+
 
 #include <system_error>
 
@@ -13,6 +14,11 @@ namespace casual
 {
    namespace common
    {
+      namespace log
+      {
+         class Stream;
+      } // log
+
       namespace code
       {
 
@@ -37,14 +43,3 @@ namespace casual
    } // common
 } // casual
 
-
-namespace std
-{
-   inline std::ostream& operator << ( std::ostream& out, std::errc value) 
-   { 
-      const auto code = std::make_error_code( value);
-      return out << code  << " - " << code.message();
-   }
-} // std
-
-#endif

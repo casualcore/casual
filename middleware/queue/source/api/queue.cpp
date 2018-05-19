@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
@@ -17,8 +20,8 @@
 #include "common/execute.h"
 
 
-#include "sf/service/protocol/call.h"
-#include "sf/log.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/log.h"
 
 namespace casual
 {
@@ -40,7 +43,7 @@ namespace casual
                } // exception
 
                template< typename M>
-               sf::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
+               serviceframework::platform::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
                   Trace trace( "casual::queue::enqueue");
 
@@ -82,14 +85,16 @@ namespace casual
 
                   common::log::line( verbose::log, "request: ", request);
 
-                  return common::communication::ipc::call( group.process.queue, request).id;
+                  auto id = common::communication::ipc::call( group.process.queue, request).id;
+                  common::log::line( verbose::log, "id: ", id);
 
+                  return id;
                }
 
 
                std::vector< Message> dequeue( const queue::Lookup& lookup, const Selector& selector, bool block = false)
                {
-                  Trace trace{ "casual::queue::dequeue"};
+                  Trace trace{ "casual::queue::local::dequeue"};
 
 
                   auto& transaction = common::transaction::context().current();
@@ -144,6 +149,7 @@ namespace casual
 
                      request.queue = group.queue;
                      request.block = block;
+                     request.name = lookup.name();
                      request.selector.id = selector.id;
                      request.selector.properties = selector.properties;
 
@@ -183,8 +189,6 @@ namespace casual
                         }
                         common::algorithm::transform( reply.message, result, queue::transform::Message{});
 
-
-
                      },
                      [&]( common::message::queue::dequeue::forget::Request& request)
                      {
@@ -197,7 +201,8 @@ namespace casual
                         //
                         forget_blocking.release();
                      },
-                     common::message::handle::Shutdown{}
+                     common::message::handle::Shutdown{},
+                     common::message::handle::ping()
                   );
 
                   handler( ipc.blocking_next());
@@ -209,13 +214,16 @@ namespace casual
                   //
                   forget_blocking.release();
 
+                  if( ! result.empty())
+                     common::log::line( verbose::log, "message: ", result.front());
+
                   return result;
                }
 
             } // <unnamed>
          } // local
 
-         sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
+         serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
          {
             Trace trace( "casual::queue::enqueue");
 
@@ -253,18 +261,25 @@ namespace casual
 
                queue::Lookup lookup( queue);
 
-               return std::move( local::dequeue( lookup, selector, true).at( 0));
+               auto message = local::dequeue( lookup, selector, true);
+
+               if( message.empty())
+                  throw common::exception::system::communication::no::message::Absent{ "failed to get message from queue: " + queue};
+
+               return std::move( message.front());
             }
 
             namespace available
             {
                Message dequeue( const std::string& queue)
                {
-                  return blocking::dequeue( queue, Selector{});
+                  return available::dequeue( queue, Selector{});
                }
 
                Message dequeue( const std::string& queue, const Selector& selector)
                {
+                  Trace trace{ "casual::queue::blocking::available::dequeue"};
+
                   common::process::pattern::Sleep sleep{
                      { std::chrono::milliseconds{ 100}, 10},
                      { std::chrono::seconds{ 2}, 100},
@@ -309,7 +324,7 @@ namespace casual
                   Payload& operator = ( Payload&&) = default;
 
                   std::string type;
-                  sf::platform::binary::type data;
+                  serviceframework::platform::binary::type data;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                   {
@@ -323,7 +338,7 @@ namespace casual
 
             } // reference
 
-            sf::platform::Uuid enqueue( const std::string& queue, const Message& message)
+            serviceframework::platform::Uuid enqueue( const std::string& queue, const Message& message)
             {
                Trace trace{ "casual::queue::xatmi::enqueue"};
 
@@ -483,7 +498,7 @@ namespace casual
 
                for( auto& queue : queues)
                {
-                  sf::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
                   call << CASUAL_MAKE_NVP( queue);
 
                   auto reply = call( manager::admin::service::name::restore());

@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CONFIG_DOMAIN_H_
-#define CONFIG_DOMAIN_H_
+
+#pragma once
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 
 #include "configuration/server.h"
@@ -72,7 +75,7 @@ namespace casual
             CASUAL_CONST_CORRECT_SERIALIZE
             (
                archive & CASUAL_MAKE_NVP( name);
-               archive & sf::name::value::pair::make( "default", manager_default);
+               archive & serviceframework::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( transaction);
                archive & CASUAL_MAKE_NVP( groups);
                archive & CASUAL_MAKE_NVP( servers);
@@ -105,4 +108,4 @@ namespace casual
    } // config
 } // casual
 
-#endif // DOMAIN_H_
+

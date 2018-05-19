@@ -6,11 +6,11 @@ domain:
   name: md-medium-domainB
 
   servers: 
-      # forward from queueB1 to service 'casual.example.echo' (in
+      # forward from queueB1 to service 'casual/example/echo' (in
       # remote domain)  and  write reply to queueB2
     - path: casual-queue-forward-service
       instances: 1
-      arguments: [ --forward, queueB1, casual.example.echo, queueB2]
+      arguments: [ --forward, queueB1, casual/example/echo, queueB2]
 
       # forward messages from queueB2 (in this domain)
       # to queueA1 (in remote domain)

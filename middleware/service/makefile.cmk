@@ -26,6 +26,7 @@ LibraryPaths( [
 
 
 install_bins = []
+install_libs = []
 
 
 
@@ -40,12 +41,13 @@ logic_archive = LinkArchive( 'bin/casual-service-logic',
    ])
 
 
+
 target = LinkExecutable( 'bin/casual-service-manager',
 	[ Compile( 'source/manager/main.cpp')],
 	[
      logic_archive,
      'casual-common',
-     'casual-sf',
+     'casual-serviceframework',
      'casual-xatmi',
      'casual-configuration']
    )
@@ -75,26 +77,31 @@ install_bins.append( target)
 # admin-terminal
 #
 
- 
-target = LinkExecutable( 'bin/casual-service-admin',
-     [ Compile( 'source/manager/admin/client.cpp')],
-     [ logic_archive, 'casual-common', 'casual-sf', 'casual-xatmi'])
+admin_api_archive = LinkLibrary( 'bin/casual-service-admin-api',
+   [ Compile( 'source/manager/admin/api.cpp'),],
+   [ logic_archive, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
+
+install_libs.append( admin_api_archive)
+
+target = LinkLibrary( 'bin/casual-service-admin-cli',
+     [ Compile( 'source/manager/admin/cli.cpp')],
+     [ admin_api_archive, logic_archive, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
  	
  
-Install( target,'$(CASUAL_HOME)/internal/bin')
+install_libs.append( target)
 
 
  
 LinkUnittest( 'unittest/bin/test-casual-service',
     [
-      Compile( 'unittest/isolated/source/forward/test_cache.cpp'),
-      Compile( 'unittest/isolated/source/manager/test_manager.cpp'),
-      Compile( 'unittest/isolated/source/manager/test_state.cpp'),
+      Compile( 'unittest/source/forward/test_cache.cpp'),
+      Compile( 'unittest/source/manager/test_manager.cpp'),
+      Compile( 'unittest/source/manager/test_state.cpp'),
     ] + forward_objs,
     [
      logic_archive,
      'casual-common', 
-     'casual-sf',
+     'casual-serviceframework',
      'casual-xatmi', 
      'casual-configuration', 
      'casual-mockup-unittest-environment', 
@@ -103,12 +110,10 @@ LinkUnittest( 'unittest/bin/test-casual-service',
      ])
 
 
-
-
-
 	
 #
 # Install
 #
 Install( install_bins,'$(CASUAL_HOME)/bin')
+Install( install_libs,'$(CASUAL_HOME)/lib')
 

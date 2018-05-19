@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_SERVICE_H_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_SERVICE_H_
+
+#pragma once
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 namespace casual
 {
@@ -20,7 +23,7 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< std::string> timeout;
+               serviceframework::optional< std::string> timeout;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -38,7 +41,7 @@ namespace casual
             Service( std::function< void(Service&)> foreign);
 
             std::string name;
-            sf::optional< std::vector< std::string>> routes;
+            serviceframework::optional< std::vector< std::string>> routes;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -59,4 +62,4 @@ namespace casual
    } // configuration
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_SERVICE_H_
+

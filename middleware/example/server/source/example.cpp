@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "xatmi.h"
 
@@ -18,6 +21,7 @@ namespace casual
 
          extern "C"
          {
+
             void casual_example_echo( TPSVCINFO* info)
             {
                tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
@@ -56,15 +60,12 @@ namespace casual
                tpreturn( TPFAIL, 0, info->data, info->len, 0);
             }
 
-
             void casual_example_terminate( TPSVCINFO* info)
             {
                std::terminate();
             }
-
-
-
          }
       } // server
    } // example
 } // casual
+

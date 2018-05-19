@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CONFIG_QUEUE_H_
-#define CONFIG_QUEUE_H_
+
+#pragma once
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <string>
 #include <vector>
@@ -23,7 +26,7 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< sf::platform::size::type> retries;
+               serviceframework::optional< serviceframework::platform::size::type> retries;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -57,7 +60,7 @@ namespace casual
             Group( std::function<void( Group&)> foreign);
 
             std::string name;
-            sf::optional< std::string> queuebase;
+            serviceframework::optional< std::string> queuebase;
             std::string note;
             std::vector< Queue> queues;
 
@@ -99,7 +102,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
-               archive & sf::name::value::pair::make( "default", manager_default);
+               archive & serviceframework::name::value::pair::make( "default", manager_default);
                archive & CASUAL_MAKE_NVP( groups);
             )
 
@@ -125,4 +128,4 @@ namespace casual
    } // config
 } // casual
 
-#endif // QUEUE_H_
+

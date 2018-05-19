@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/exception/xa.h"
 #include "common/log/category.h"
@@ -13,6 +16,35 @@ namespace casual
 
       namespace exception
       {
+         namespace local
+         {
+            namespace
+            {
+               namespace handle
+               {
+                  void unexpected() 
+                  {
+                     try
+                     {
+                        throw;
+                     }
+                     catch( const exception::base& exception)
+                     {
+                        log::line( log::category::error, exception);
+                     }
+                     catch( const std::exception& exception)
+                     {
+                        log::line( log::category::error, exception.what());
+                     }
+                     catch( ...)
+                     {
+                        log::line( log::category::error, "unexpected exception");
+                     }
+                  }
+                  
+               } // handle
+            } // <unnamed>
+         } // local
          namespace ax
          {
                   
@@ -28,21 +60,12 @@ namespace casual
                //
                catch( const exception& exception)
                {
-                  code::stream( exception.type()) << exception << std::endl;
+                  log::line( code::stream( exception.type()), exception);
                   return exception.code().value();
-               }
-
-               catch( const std::system_error& exception)
-               {
-                  log::category::error << exception << std::endl;
-               }
-               catch( const std::exception& exception)
-               {
-                  log::category::error << exception << std::endl;
                }
                catch( ...)
                {
-                  log::category::error << " - unexpected exception" << std::endl;
+                  local::handle::unexpected();
                }
 
                return static_cast< int>( code::ax::error);
@@ -64,28 +87,19 @@ namespace casual
                //
                catch( const exception& exception)
                {
-                  code::stream( exception.type()) << exception << std::endl;
+                  log::line( code::stream( exception.type()), exception);
                   return exception.code().value();
-               }
-
-               catch( const std::system_error& exception)
-               {
-                  log::category::error << exception << std::endl;
-               }
-               catch( const std::exception& exception)
-               {
-                  log::category::error << exception << std::endl;
                }
                catch( ...)
                {
-                  log::category::error << " - unexpected exception" << std::endl;
+                  local::handle::unexpected();
                }
 
                return static_cast< int>( code::xa::resource_fail);
             }
          } // xa
       } // exception
-	} // common
+   } // common
 } // casual
 
 

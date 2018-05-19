@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "buffer/field.h"
 #include "buffer/internal/field.h"
@@ -20,8 +23,8 @@
 
 
 
-#include "sf/namevaluepair.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/create.h"
 
 #include <cstring>
 
@@ -1366,9 +1369,9 @@ namespace casual
                   {
                      decltype(fetch_groups()) groups;
 
-                     const auto file = common::environment::variable::get( "CASUAL_FIELD_TABLE");
-
-                     auto archive = sf::archive::reader::from::file( file);
+                     common::file::Input file{ common::environment::variable::get( "CASUAL_FIELD_TABLE")};
+                     auto archive = serviceframework::archive::create::reader::relaxed::from( file.extension(), file);
+                     
                      archive >> CASUAL_MAKE_NVP( groups);
 
                      return groups;
@@ -1396,13 +1399,13 @@ namespace casual
                               else
                               {
                                  // TODO: Much better
-                                 common::log::category::warning << "id for " << field.name << " is invalid" << std::endl;
+                                 common::log::category::warning << "id for " << field.name << " is invalid" << '\n';
                               }
                            }
                            catch( const std::out_of_range&)
                            {
                               // TODO: Much better
-                              common::log::category::warning << "type for " << field.name << " is invalid" << std::endl;
+                              common::log::category::warning << "type for " << field.name << " is invalid" << '\n';
                            }
                         }
                      }
@@ -1424,7 +1427,7 @@ namespace casual
                            if( ! result.emplace( field.name, field.id).second)
                            {
                               // TODO: Much better
-                              common::log::category::warning << "name for " << field.name << " is not unique" << std::endl;
+                              common::log::category::warning << "name for " << field.name << " is not unique" << '\n';
                            }
                         }
                      }
@@ -1450,7 +1453,7 @@ namespace casual
                            if( ! result.emplace( field.id, field.name).second)
                            {
                               // TODO: Much better
-                              common::log::category::warning << "id for " << field.name << " is not unique" << std::endl;
+                              common::log::category::warning << "id for " << field.name << " is not unique" << '\n';
                            }
                         }
                      }
@@ -1493,11 +1496,11 @@ namespace casual
                   {
                      const auto name = "name";
 
-                     archive << sf::name::value::pair::make( name, id_to_name().at( id));
+                     archive << serviceframework::name::value::pair::make( name, id_to_name().at( id));
 
                      const auto value = "value";
 
-                     using sf::name::value::pair::make;
+                     using serviceframework::name::value::pair::make;
 
                      const auto data = occurrence + data_offset;
                      const auto size = occurrence + size_offset;
@@ -1543,7 +1546,7 @@ namespace casual
 
                      casual_field_id_of_name( name.c_str(), &m_id);
 
-                     using sf::name::value::pair::make;
+                     using serviceframework::name::value::pair::make;
 
                      switch( m_id / CASUAL_FIELD_TYPE_BASE)
                      {
@@ -1567,7 +1570,7 @@ namespace casual
                         break;
                      case CASUAL_FIELD_BINARY:
                      default:
-                        archive >> sf::name::value::pair::make( "value", m_value);
+                        archive >> serviceframework::name::value::pair::make( "value", m_value);
                         break;
                      }
                   }
@@ -1608,7 +1611,7 @@ namespace casual
                   void assign( A& archive)
                   {
                      m_value.resize( sizeof( T));
-                     archive >> sf::name::value::pair::make( "value", *reinterpret_cast< T*>( m_value.data()));
+                     archive >> serviceframework::name::value::pair::make( "value", *reinterpret_cast< T*>( m_value.data()));
                   }
 
                   template< typename A>
@@ -1673,7 +1676,7 @@ namespace casual
 
                common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
-               auto archive = sf::archive::writer::from::name( stream, protocol);
+               auto archive = serviceframework::archive::create::writer::from( protocol, stream);
 
                std::vector< write> fields;
 
@@ -1696,10 +1699,11 @@ namespace casual
                {
                   const Trace trace{ "field::internal::serialize in"};
 
-                  auto archive = sf::archive::reader::from::name( stream, protocol);
+                  auto archive = serviceframework::archive::create::reader::consumed::from( protocol, stream);
 
                   std::vector< read> fields;
                   archive >> CASUAL_MAKE_NVP( fields);
+                  archive.validate();
 
                   Dispatch dispatch;
 

@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casaul
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "transaction/resource/proxy_server.h"
@@ -9,17 +12,17 @@
 
 #include "common/exception/handle.h"
 #include "common/exception/signal.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/environment.h"
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 
 
 
 int casual_start_reource_proxy( struct casual_resource_proxy_service_argument* serverArguments)
 {
-   casual::sf::log::error << "deprecated entry point 'casual_start_reource_proxy', please regenerate the resource proxy\n";
+   casual::serviceframework::log::error << "deprecated entry point 'casual_start_reource_proxy', please regenerate the resource proxy\n";
    return casual_start_resource_proxy( serverArguments);
 }
 
@@ -32,14 +35,14 @@ int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* 
       casual::transaction::resource::proxy::Settings settings;
 
       {
-         casual::common::Arguments arguments{ {
-            casual::common::argument::directive( {"-k", "--rm-key"}, "resource key", settings.key),
-            casual::common::argument::directive( {"-o", "--rm-openinfo"}, "open info", settings.openinfo),
-            casual::common::argument::directive( {"-c", "--rm-closeinfo"}, "close info", settings.closeinfo),
-            casual::common::argument::directive( {"-i", "--rm-id"}, "resource id", settings.id),
-         }};
-
-         arguments.parse( serverArguments->argc, serverArguments->argv);
+         using namespace casual::common::argument;
+         Parse parse{ "resource proxy server",
+            Option( std::tie( settings.key), {"-k", "--rm-key"}, "resource key"),
+            Option( std::tie( settings.openinfo), {"-o", "--rm-openinfo"}, "open info"),
+            Option( std::tie( settings.closeinfo), {"-c", "--rm-closeinfo"}, "close info"),
+            Option( std::tie( settings.id), {"-i", "--rm-id"}, "resource id")
+         };
+         parse( serverArguments->argc, serverArguments->argv);
       }
 
       casual::transaction::resource::Proxy proxy( std::move( settings), serverArguments->xaSwitches);

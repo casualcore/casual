@@ -54,7 +54,7 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
     ],
     [ 
      common_archive,
-     'casual-sf', 
+     'casual-serviceframework', 
      'casual-common', 
      'casual-configuration', 
      'casual-xatmi',
@@ -62,17 +62,18 @@ target = LinkExecutable( 'bin/casual-gateway-manager',
 
 install_bin.append( target)
 
-gateway_admin = LinkExecutable( 'bin/casual-gateway-admin',
+target = LinkLibrary( 'bin/casual-gateway-admin-cli',
     [
-      Compile( 'source/manager/admin/client.cpp'),
+      Compile( 'source/manager/admin/cli.cpp'),
     ],
     [
       common_archive,
-      'casual-sf', 
+      'casual-serviceframework', 
       'casual-common', 
     ])
 
-Install( gateway_admin, '$(CASUAL_HOME)/internal/bin')
+install_lib.append( target)
+
 
 
 
@@ -156,7 +157,7 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    ], 
    [ 
        common_archive, 
-       'casual-sf', 
+       'casual-serviceframework', 
        'casual-common', 
        'casual-mockup', 
        'casual-mockup-unittest-environment', 

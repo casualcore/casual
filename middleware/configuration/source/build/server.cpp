@@ -1,10 +1,13 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "configuration/build/server.h"
 
-#include "sf/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 namespace casual
 {
@@ -49,15 +52,19 @@ namespace casual
                }
             } // service
 
-            Server get( const std::string& file)
+            Server get( const std::string& name)
             {
                Server server;
 
                //
                // Create the reader and deserialize configuration
                //
-               auto reader = sf::archive::reader::from::file( file);
+               common::file::Input file{ name};
+               auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
+
                reader >> CASUAL_MAKE_NVP( server);
+
+               reader.validate();
 
                //
                // Complement with default values

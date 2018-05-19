@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "service/forward/cache.h"
@@ -139,7 +142,7 @@ namespace casual
                            return;
                         }
 
-                        log << "send request - to: " << message.process.queue << " - request: " << request << std::endl;
+                        log << "send request - to: " << message.process.queue << " - request: " << request << '\n';
 
                         if( ! communication::ipc::non::blocking::send( message.process.queue, request))
                         {

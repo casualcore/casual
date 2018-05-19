@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_INVOKE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_INVOKE_H_
+
+#pragma once
+
 
 #include "common/buffer/type.h"
 #include "common/flag.h"
@@ -36,6 +39,9 @@ namespace casual
 
                Parameter() = default;
                Parameter( buffer::Payload&& payload) : payload( std::move( payload)) {}
+
+               Parameter( Parameter&&) noexcept = default;
+               Parameter& operator = (Parameter&&) noexcept = default;
 
                Flags flags;
                Service service;
@@ -73,4 +79,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_INVOKE_H_
+

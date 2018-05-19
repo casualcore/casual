@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_DOMAIN_H_
-#define CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_DOMAIN_H_
+
+#pragma once
+
 
 
 #include "domain/manager/state.h"
@@ -21,12 +24,20 @@ namespace casual
 
             std::vector< std::string> configurationfiles;
 
-            common::platform::ipc::native::type event_queue;
             std::vector< std::string> events;
 
             bool bare = false;
             bool no_auto_persist = false;
 
+            inline void event( common::strong::ipc::id::value_type id) 
+            {
+               m_event = common::strong::ipc::id{ id};
+            }
+            auto event() const { return m_event;};
+
+
+         private:
+            common::strong::ipc::id m_event;
          };
 
 
@@ -51,4 +62,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_DOMAIN_H_
+

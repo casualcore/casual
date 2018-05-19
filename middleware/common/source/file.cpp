@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/file.h"
 #include "common/log.h"
@@ -29,6 +32,27 @@ namespace casual
    {
       namespace file
       {
+   
+         Input::Input( std::string path) : std::ifstream( path), m_path( std::move( path)) 
+         {
+            if( ! is_open())
+            {
+               throw exception::system::invalid::File{ string::compose( "failed to open file: ", m_path)};
+            }
+         }
+
+         std::string Input::extension() const { return file::name::extension( m_path);}
+
+         Output::Output( std::string path) : std::ofstream( path), m_path( std::move( path)) 
+         {
+            if( ! is_open())
+            {
+               throw exception::system::invalid::File{ string::compose( "failed to open file: ", m_path)};
+            }
+         }
+
+         std::string Output::extension() const { return file::name::extension( m_path);}
+
 
          void remove( const std::string& path)
          {
@@ -81,7 +105,7 @@ namespace casual
 
             Path& Path::operator = ( Path&& rhs) noexcept
             {
-               m_path = std::move( rhs.m_path);
+               m_path = std::exchange( rhs.m_path, {});
                return *this;
             }
 
@@ -98,7 +122,7 @@ namespace casual
 
             std::string Path::release()
             {
-               return std::move( m_path);
+               return std::exchange( m_path, {});
             }
 
             std::ostream& operator << ( std::ostream& out, const Path& value)
@@ -339,7 +363,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::category::error << "failed to create " << path << " - " << code::last::system::error() << std::endl;
+               log::category::error << "failed to create " << path << " - " << code::last::system::error() << '\n';
                return false;
             }
 
@@ -350,7 +374,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::category::error << "failed to remove " << path << " - " << code::last::system::error() << std::endl;
+               log::category::error << "failed to remove " << path << " - " << code::last::system::error() << '\n';
                return false;
             }
             return true;

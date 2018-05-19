@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "gateway/message.h"
 
@@ -8,7 +11,7 @@
 #include "common/marshal/network.h"
 #include "common/marshal/complete.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/exception/handle.h"
 
 #include <fstream>
@@ -345,13 +348,12 @@ namespace casual
                      std::string basename;
 
                      {
-                        common::Arguments arguments{
-                           {
-                              common::argument::directive( { "-b", "--base"}, "base path for the generated blobs", basename)
-                           }
+                        using namespace casual::common::argument;
+                        Parse parse{ "binary dump examples",
+                           Option( std::tie( basename), { "-b", "--base"}, "base path for the generated blobs")
                         };
 
-                        arguments.parse( argc, argv);
+                        parse( argc, argv);
                      }
 
                      if( common::range::back( basename) != '/')

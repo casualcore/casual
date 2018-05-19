@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "domain/manager/state.h"
 #include "domain/common.h"
@@ -265,8 +268,9 @@ namespace casual
                {
                   found->handle = process;
                   found->state = instance::State::running;
+                  return true;
                }
-               return found;
+               return false;
             }
 
 
@@ -506,7 +510,7 @@ namespace casual
             namespace
             {
                template< typename S>
-               auto server( S& servers, common::strong::process::id pid)
+               auto server( S& servers, common::strong::process::id pid) noexcept
                {
                   return algorithm::find_if( servers, [pid]( const auto& s){
                      return s.instance( pid).handle.pid == pid;
@@ -515,18 +519,17 @@ namespace casual
             } // <unnamed>
          } // local
 
-         state::Server* State::server( common::strong::process::id pid)
+         state::Server* State::server( common::strong::process::id pid) noexcept
          {
             return local::server( servers, pid);
          }
 
-         const state::Server* State::server( common::strong::process::id pid) const
+         const state::Server* State::server( common::strong::process::id pid) const noexcept
          {
             return local::server( servers, pid);
          }
 
-
-         state::Executable* State::executable( common::strong::process::id pid)
+         state::Executable* State::executable( common::strong::process::id pid) noexcept
          {
             return algorithm::find_if( executables, [=]( const auto& e){
                return algorithm::find( e.instances, pid) == true;
@@ -580,7 +583,7 @@ namespace casual
             return local::executable( executables, id);
          }
 
-         common::process::Handle State::grandchild( common::strong::process::id pid) const
+         common::process::Handle State::grandchild( common::strong::process::id pid) const noexcept
          {
             auto found = algorithm::find_if( grandchildren, [=]( auto& v){
                return v.pid == pid;
@@ -592,7 +595,7 @@ namespace casual
             return {};
          }
 
-         common::process::Handle State::singleton( const common::Uuid& id) const
+         common::process::Handle State::singleton( const common::Uuid& id) const noexcept
          {
             auto found = algorithm::find( singletons, id);
             if( found)
@@ -610,7 +613,7 @@ namespace casual
          }
 
 
-         void State::runlevel( Runlevel runlevel)
+         void State::runlevel( Runlevel runlevel) noexcept
          {
             if( runlevel > m_runlevel)
             {

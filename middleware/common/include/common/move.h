@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_MOVE_H_
-#define CASUAL_COMMON_MOVE_H_
+
+#pragma once
+
 
 namespace casual
 {
@@ -51,4 +54,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // MOVE_H_
+

@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "configuration/domain.h"
 #include "configuration/file.h"
@@ -10,8 +13,8 @@
 #include "common/environment.h"
 #include "common/algorithm.h"
 
-#include "sf/archive/maker.h"
-#include "sf/log.h"
+#include "serviceframework/archive/create.h"
+#include "serviceframework/log.h"
 
 #include <algorithm>
 
@@ -92,10 +95,14 @@ namespace casual
                {
 
                   //
-                  // Create the reader and deserialize configuration
+                  // Create the archive and deserialize configuration
                   //
-                  auto reader = sf::archive::reader::from::file( file);
-                  reader >> CASUAL_MAKE_NVP( domain);
+                  common::file::Input stream( file);
+                  auto archive = serviceframework::archive::create::reader::consumed::from( stream.extension(), stream);
+                  archive >> CASUAL_MAKE_NVP( domain);
+
+                  // validate if the user has stuff that we didn't consume
+                  archive.validate();
 
                   finalize( domain);
 

@@ -1,12 +1,15 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef SERVICEDEFINITION_H_
-#define SERVICEDEFINITION_H_
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#pragma once
+
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 #include <algorithm>
 #include <string>
@@ -34,14 +37,14 @@ namespace casual
                   //!
                   //! default is 'auto'
                   //!
-                  sf::optional< std::string> transaction;
+                  serviceframework::optional< std::string> transaction;
 
                   //!
                   //! Arbitrary category.
                   //!
                   //! @attention categories starting with '.' is reserved by casual
                   //!
-                  sf::optional< std::string> category;
+                  serviceframework::optional< std::string> category;
 
                   CASUAL_CONST_CORRECT_SERIALIZE
                   (
@@ -58,7 +61,7 @@ namespace casual
                Service( std::function< void(Service&)> foreign);
 
                std::string name;
-               sf::optional< std::string> function;
+               serviceframework::optional< std::string> function;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
@@ -96,7 +99,7 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & sf::name::value::pair::make( "default", server_default);
+                  archive & serviceframework::name::value::pair::make( "default", server_default);
                   archive & CASUAL_MAKE_NVP( services);
                )
             };
@@ -111,4 +114,4 @@ namespace casual
 
 } // casual
 
-#endif // SERVICEDEFINITION_H_
+

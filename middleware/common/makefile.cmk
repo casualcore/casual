@@ -112,6 +112,7 @@ casual_common_objectfiles = [
     Compile( 'source/code/convert.cpp'),
     
     
+    Compile( 'source/exception/common.cpp'),
     Compile( 'source/exception/system.cpp'),
     Compile( 'source/exception/handle.cpp'),
     Compile( 'source/exception/xa.cpp'),
@@ -134,7 +135,9 @@ casual_common_objectfiles = [
     Compile( 'source/transcode.cpp'),
     Compile( 'source/timeout.cpp'),
     
-    Compile( 'source/arguments.cpp'),
+    #Compile( 'source/arguments.cpp'),
+    Compile( 'source/argument.cpp'),
+    Compile( 'source/argument/cardinality.cpp'),
     Compile( 'source/terminal.cpp'),
 ]
 
@@ -234,7 +237,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_marshal.cpp'),
  
     Compile( 'unittest/source/test_uuid.cpp'),
-    Compile( 'unittest/source/test_arguments.cpp'),
+    #Compile( 'unittest/source/test_arguments.cpp'),
     Compile( 'unittest/source/test_file.cpp'),
     Compile( 'unittest/source/test_process.cpp'),
     Compile( 'unittest/source/test_string.cpp'),
@@ -268,7 +271,7 @@ unittest_objectfiles = [
     
     Compile( 'unittest/source/transaction/test_id.cpp'),
     Compile( 'unittest/source/transaction/test_context.cpp'),
-    
+   
     
     Compile( 'unittest/source/event/test_dispatch.cpp'),
     Compile( 'unittest/source/event/test_listen.cpp'),
@@ -279,6 +282,9 @@ unittest_objectfiles = [
     Compile( 'unittest/source/value/test_id.cpp'),
 
     Compile( 'unittest/source/test_predicate.cpp'),
+    Compile( 'unittest/source/test_functional.cpp'),
+
+    Compile( 'unittest/source/test_argument.cpp'),
 ]
 
 
@@ -297,7 +303,7 @@ target_test_common = LinkUnittest( 'bin/test-casual-common-isolated',
 
 #
 # We execute 'simple_process' from test-casual-common-isolated, so
-# we need to meke sure simple_process is built before
+# we need to make sure simple_process is built before
 #
 Dependencies( target_test_common, [ target_simple_process ]);
 

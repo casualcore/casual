@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/server/start.h"
 
@@ -58,7 +61,7 @@ namespace casual
                         algorithm::transform( services, result.services, transform::Service{});
 
                         algorithm::transform( resources, result.resources, [](argument::transaction::Resource& r){
-                           return transaction::Resource{
+                           return transaction::resource::Link{
                               std::move( r.key),
                               r.xa_switch
                            };

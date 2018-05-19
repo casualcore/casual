@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+
 #include "xatmi.h"
-#include "xatmi/internal.h"
+#include "xatmi/internal/code.h"
 
 #include "common/buffer/pool.h"
 #include "common/service/call/context.h"

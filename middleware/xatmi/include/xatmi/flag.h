@@ -1,9 +1,11 @@
-//!
-//! casual 
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-#ifndef CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_FLAG_H_
-#define CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_FLAG_H_
+#pragma once
+
 
 #define TPFAIL       0x00000001
 #define TPSUCCESS    0x00000002
@@ -28,4 +30,3 @@
 #define TPEV_SENDONLY   0x0020
 
 
-#endif // CASUAL_MIDDLEWARE_XATMI_INCLUDE_XATMI_FLAG_H_

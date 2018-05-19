@@ -1,11 +1,17 @@
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 //!
 //! casual
 //!
 
-#ifndef MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_CONFIGURATION_H_
-#define MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_CONFIGURATION_H_
+#pragma once
 
-#include "sf/namevaluepair.h"
+
+#include "serviceframework/namevaluepair.h"
 #include "common/optional.h"
 
 #include <string>
@@ -90,7 +96,7 @@ namespace casual
                std::vector< Service> services;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  archive & sf::name::value::pair::make( "default", casual_default);
+                  archive & serviceframework::name::value::pair::make( "default", casual_default);
                   archive & CASUAL_MAKE_NVP( services);
                )
 
@@ -112,4 +118,4 @@ namespace casual
 
 
 
-#endif /* MIDDLEWARE_HTTP_INCLUDE_HTTP_OUTBOUND_CONFIGURATION_H_ */
+

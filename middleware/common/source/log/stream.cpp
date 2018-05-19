@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/log/stream.h"
 
@@ -62,7 +65,7 @@ namespace casual
                         << '|' << execution::service::name()
                         << '|' << category
                         << '|' << message
-                        << std::endl;
+                        << '\n';
                   }
 
                private:
@@ -80,7 +83,7 @@ namespace casual
                         //
                         // We don't want to throw... Or do we?
                         //
-                        std::cerr << process::path() << " - could not open log-file: " << file << std::endl;
+                        std::cerr << process::path() << " - could not open log-file: " << file << '\n';
                         return false;
                      }
                      return true;
@@ -154,7 +157,7 @@ namespace casual
                         m_buffer.clear();
                      }
 
-                     typedef std::string buffer_type;
+                     using buffer_type = std::string;
                      buffer_type m_buffer;
 
                      const std::string m_category;

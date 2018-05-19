@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/exception/xatmi.h"
 #include "common/exception/handle.h"
@@ -26,7 +29,7 @@ namespace casual
                   template< typename E> 
                   void log( E&& exception)
                   {
-                     code::stream( exception.type()) << exception << std::endl;
+                     code::stream( exception.type()) << exception << '\n';
                   }
                } // <unnamed>
             } // local
@@ -60,7 +63,7 @@ namespace casual
          } // xatmi
 
       } // exception
-	} // common
+   } // common
 } // casual
 
 

@@ -1,12 +1,15 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_QUEUE_API_MESSAGE_H_
-#define CASUAL_QUEUE_API_MESSAGE_H_
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#pragma once
+
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 
 
@@ -18,7 +21,7 @@ namespace casual
    {
       inline namespace v1  {
 
-      using size_type = sf::platform::size::type;
+      using size_type = serviceframework::platform::size::type;
 
       struct Attributes
       {
@@ -35,7 +38,7 @@ namespace casual
          //!
          //! When the message is available, in absolute time.
          //!
-         sf::platform::time::point::type available = sf::platform::time::point::type::min();
+         serviceframework::platform::time::point::type available = serviceframework::platform::time::point::type::min();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -57,7 +60,7 @@ namespace casual
          //!
          //! If not 'null', the first message that has this particular id is dequeued
          //!
-         sf::platform::Uuid id;
+         serviceframework::platform::Uuid id;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -69,7 +72,7 @@ namespace casual
       struct Payload
       {
          std::string type;
-         sf::platform::binary::type data;
+         serviceframework::platform::binary::type data;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
          {
@@ -182,4 +185,4 @@ namespace casual
 
 } // casual
 
-#endif // MESSAGE_H_
+

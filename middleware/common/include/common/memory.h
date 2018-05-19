@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_
+
+#pragma once
+
 
 
 #include "common/algorithm.h"
@@ -32,7 +35,7 @@ namespace casual
             }
 
             template< typename Iter>
-            struct is_suitable_iterator : std::integral_constant<bool,
+            struct is_suitable_iterator : traits::bool_constant<
                   traits::iterator::is_random_access< Iter>::value
                   && traits::is_trivially_copyable< typename std::iterator_traits< Iter>::value_type>::value
                   >{};
@@ -169,4 +172,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MEMORY_H_
+

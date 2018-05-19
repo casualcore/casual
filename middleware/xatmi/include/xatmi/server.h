@@ -1,9 +1,11 @@
-//!
-//! casual
-//!
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-#ifndef XATMI_SERVER_H_
-#define XATMI_SERVER_H_
+#pragma once
+
 
 #include <xa.h>
 #include <xatmi.h>
@@ -17,14 +19,14 @@ extern "C" {
 
 struct casual_service_name_mapping
 {
-	tpservice function_pointer;
-	const char* name;
+   tpservice function_pointer;
+   const char* name;
 
-	/* type of service */
-	const char* category;
+   /* type of service */
+   const char* category;
 
-	/* transaction policy */
-	uint64_t transaction;
+   /* transaction policy */
+   uint64_t transaction;
 
 };
 
@@ -64,5 +66,3 @@ int casual_start_server( struct casual_server_argument* serverArgument);
 }
 #endif
 
-
-#endif /* XATMI_SERVER_H_ */

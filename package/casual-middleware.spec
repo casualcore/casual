@@ -5,7 +5,7 @@ Summary: Casual Middleware
 Name: casual-middleware
 Version: %{casual_version}
 Release: %{casual_release}%{?dist}
-License: GPL
+License: MIT
 Group: Applications/System
 Source: -
 URL: https://bitbucket.org/casualcore/casual

@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "transaction/manager/admin/server.h"
@@ -13,8 +16,8 @@
 // sf
 //
 
-#include "sf/service/protocol/call.h"
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/service/protocol.h"
 
 
 namespace casual
@@ -32,9 +35,9 @@ namespace casual
 
                   common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, State& state)
                   {
-                     auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                     auto result = sf::service::user( protocol, &transform::state, state);
+                     auto result = serviceframework::service::user( protocol, &transform::state, state);
 
                      protocol << CASUAL_MAKE_NVP( result);
                      return protocol.finalize();
@@ -44,12 +47,12 @@ namespace casual
                   {
                      common::service::invoke::Result instances( common::service::invoke::Parameter&& parameter, State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         std::vector< vo::update::Instances> instances;
                         protocol >> CASUAL_MAKE_NVP( instances);
 
-                        auto result = sf::service::user( protocol, &action::resource::insances, state, std::move( instances));
+                        auto result = serviceframework::service::user( protocol, &action::resource::insances, state, std::move( instances));
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();

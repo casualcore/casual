@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "configuration/gateway.h"
 #include "configuration/common.h"
@@ -8,8 +11,8 @@
 
 #include "common/algorithm.h"
 
-#include "sf/log.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/log.h"
+#include "serviceframework/archive/create.h"
 
 
 namespace casual

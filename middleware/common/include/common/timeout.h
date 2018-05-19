@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef COMMON_TIMEOUT_H_
-#define COMMON_TIMEOUT_H_
+
+#pragma once
+
 
 
 #include "common/platform.h"
@@ -36,4 +39,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // TIMEOUT_H_
+

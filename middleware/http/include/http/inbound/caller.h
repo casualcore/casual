@@ -1,6 +1,12 @@
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-#ifndef HTTP_INBOUND_CALLER_
-#define HTTP_INBOUND_CALLER_
+#pragma once
+
+
 #include <xatmi.h>
 
 #ifdef __cplusplus
@@ -18,8 +24,8 @@ extern "C" {
 
    typedef struct CasualHeaderS
    {
-	   char key[80];
-	   char value[80];
+      char key[80];
+      char value[80];
    } CasualHeader;
 
    typedef struct BufferS
@@ -30,16 +36,16 @@ extern "C" {
 
    typedef struct CasualBufferS
    {
-	   CasualHeader* header;
-	   long headersize;
-	   long context;
-	   char service[XATMI_SERVICE_NAME_LENGTH];
-	   long calldescriptor;
-	   long errorcode;
-	   long format;
-	   char protocol[80];
-	   Buffer payload;
-	   Buffer parameter;
+      CasualHeader* header;
+      long headersize;
+      long context;
+      char service[XATMI_SERVICE_NAME_LENGTH];
+      long calldescriptor;
+      long errorcode;
+      long format;
+      char protocol[80];
+      Buffer payload;
+      Buffer parameter;
    } CasualBuffer;
 
    long casual_xatmi_send( CasualBuffer* data);
@@ -53,6 +59,3 @@ extern "C" {
 }
 #endif
 
-
-
-#endif /* HTTP_INBOUND_CALLER_ */

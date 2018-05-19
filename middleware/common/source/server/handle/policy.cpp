@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/server/handle/policy.h"
 
@@ -38,7 +41,7 @@ namespace casual
                            advertise.process = process::handle();
                            advertise.services = std::move( services);
 
-                           log::debug << "advertise: " << advertise << '\n';
+                           log::line( log::debug, "advertise: ", advertise);
 
                            signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
 
@@ -133,7 +136,7 @@ namespace casual
                   {
                      Trace trace{ "server::handle::policy::Default::reply"};
 
-                     log::debug << "reply: " << message << '\n';
+                     log::line( log::debug, "reply: ", message);
 
                      communication::ipc::blocking::send( id, message);
                   }
@@ -142,7 +145,7 @@ namespace casual
                   {
                      Trace trace{ "server::handle::policy::Default::conversation::reply"};
 
-                     log::debug << "reply: " << message << '\n';
+                     log::line( log::debug, "reply: ", message);
 
                      auto node = message.route.next();
                      communication::ipc::blocking::send( node.address, message);
@@ -162,7 +165,7 @@ namespace casual
                   {
                      Trace trace{ "server::handle::policy::Default::statistics"};
 
-                     log::debug << "event:" << event << '\n';
+                     log::line( log::debug, "event:", event);
 
                      try
                      {
@@ -183,7 +186,7 @@ namespace casual
                         {
                            Trace trace{ "server::handle::policy::local::transaction"};
 
-                           log::debug << "message: " << message << ", service: " << service << '\n';
+                           log::line( log::debug, "message: ", message, ", service: ", service);
 
                            //
                            // We keep track of callers transaction (can be null-trid).
@@ -245,7 +248,7 @@ namespace casual
                   {
                      Trace trace{ "server::handle::policy::local::transaction"};
 
-                     log::debug << "trid: " << trid << " - service: " << service << '\n';
+                     log::line( log::debug, "trid: ", trid, " - service: ", service);
 
                      //
                      // We keep track of callers transaction (can be null-trid).
@@ -337,7 +340,7 @@ namespace casual
                            request.buffer = std::move( forward.parameter.payload);
                            request.service = target.service;
 
-                           log::debug << "policy::Default::forward - request:" << request << std::endl;
+                           log::line( log::debug, "policy::Default::forward - request:", request);
 
                            communication::ipc::blocking::send( target.process.queue, request);
                         }

@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_ALGORITHM_H_
-#define CASUAL_COMMON_ALGORITHM_H_
+
+#pragma once
+
 
 
 #include "common/range.h"
@@ -118,6 +121,26 @@ namespace casual
             return std::forward< R>( range);
          }
 
+         namespace detail
+         {
+            template< typename P, std::enable_if_t< traits::is::iterable< P>::value>* dummy = nullptr>
+            auto pivot( P&& pivot) { return std::begin( pivot);}
+
+            template< typename P, std::enable_if_t< traits::is::iterator< P>::value>* dummy = nullptr>
+            auto pivot( P&& pivot) { return pivot;}
+
+         } // detail
+
+         //!
+         //! Rotates the range based on the pivot.
+         //! @return a tuple of { [begin( range), pivot), pivot, end( range)]}
+         //!
+         template< typename R, typename P>
+         auto rotate( R&& range, P&& pivot)
+         {
+            auto middle = std::rotate( std::begin( range), detail::pivot( pivot), std::end( range));
+            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
+         }
 
          template< typename R, typename C, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
          decltype( auto) sort( R&& range, C compare)
@@ -159,20 +182,6 @@ namespace casual
             return std::is_sorted( std::begin( range), std::end( range), compare);
          }
 
-         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         auto partition( R&& range, P predicate)
-         {
-            auto middle = std::partition( std::begin( range), std::end( range), predicate);
-            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
-         }
-
-
-         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
-         auto stable_partition( R&& range, P predicate)
-         {
-            auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
-            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
-         }
 
          template< typename R, typename OutIter, typename = std::enable_if_t< 
             common::traits::iterator::is_output< OutIter>::value
@@ -562,7 +571,31 @@ namespace casual
          }
 
 
+        template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
+         auto partition( R&& range, P predicate)
+         {
+            auto middle = std::partition( std::begin( range), std::end( range), predicate);
+            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
+         }
 
+
+         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
+         auto stable_partition( R&& range, P predicate)
+         {
+            auto middle = std::stable_partition( std::begin( range), std::end( range), predicate);
+            return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
+         }
+
+         //!
+         //! @return a range that is a sub range of @p range that fullfills @p predicate
+         //!
+         //! same sematics as std::get< 0>( algorithm::partition( range, predicate));
+         //!
+         template< typename R, typename P, typename = std::enable_if_t< common::traits::is::iterable< R>::value>>
+         auto filter( R&& range, P predicate)
+         {
+            return range::make( std::begin( range), std::partition( std::begin( range), std::end( range), predicate));
+         }
 
 
          //!
@@ -1017,13 +1050,13 @@ namespace casual
          template< typename T, typename R>
          bool any( T&& value, R&& range)
          {
-            return algorithm::find( range, value);
+            return ! algorithm::find( range, value).empty();
          }
 
          template< typename T, typename V>
          bool any( T&& value, std::initializer_list< V> range)
          {
-            return algorithm::find( range, value);
+            return ! algorithm::find( range, value).empty();
          }
       } // compare
 
@@ -1045,4 +1078,4 @@ namespace std
 
 
 
-#endif // CASUAL_COMMON_ALGORITHM_H_
+

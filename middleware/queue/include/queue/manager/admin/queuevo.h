@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
-#define CASUAL_QUEUE_BROKER_ADMIN_BROKERVO_H_
+
+#pragma once
 
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 #include "common/domain.h"
 
 
@@ -20,7 +23,7 @@ namespace casual
       {
          namespace admin
          {
-            using size_type = sf::platform::size::type;
+            using size_type = serviceframework::platform::size::type;
 
 
             struct Group
@@ -86,17 +89,17 @@ namespace casual
                };
 
 
-               sf::strong::process::id group;
-               sf::strong::queue::id id;
+               serviceframework::strong::process::id group;
+               serviceframework::strong::queue::id id;
                std::string name;
                Type type;
                size_type retries;
-               sf::strong::queue::id error;
+               serviceframework::strong::queue::id error;
 
                size_type count;
                size_type size;
                size_type uncommitted;
-               sf::platform::time::point::type timestamp;
+               serviceframework::platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
@@ -127,17 +130,17 @@ namespace casual
             {
 
 
-               sf::platform::Uuid id;
-               sf::strong::queue::id queue;
-               sf::strong::queue::id origin;
-               sf::platform::binary::type trid;
+               serviceframework::platform::Uuid id;
+               serviceframework::strong::queue::id queue;
+               serviceframework::strong::queue::id origin;
+               serviceframework::platform::binary::type trid;
                size_type state;
                std::string reply;
                size_type redelivered;
                std::string type;
 
-               sf::platform::time::point::type available;
-               sf::platform::time::point::type timestamp;
+               serviceframework::platform::time::point::type available;
+               serviceframework::platform::time::point::type timestamp;
 
                size_type size;
 
@@ -193,7 +196,7 @@ namespace casual
             {
                struct
                {
-                  sf::strong::queue::id id;
+                  serviceframework::strong::queue::id id;
                   std::string name;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -220,4 +223,4 @@ namespace casual
 
 } // casual
 
-#endif // BROKERVO_H_
+

@@ -1,14 +1,17 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_SERVER_H_
-#define CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_SERVER_H_
+
+#pragma once
+
 
 #include "configuration/environment.h"
 
-#include "sf/namevaluepair.h"
-#include "sf/platform.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/platform.h"
 
 namespace casual
 {
@@ -20,11 +23,11 @@ namespace casual
          {
             struct Default
             {
-               sf::optional< sf::platform::size::type> instances;
-               sf::optional< bool> restart;
-               sf::optional< std::vector< std::string>> memberships;
+               serviceframework::optional< serviceframework::platform::size::type> instances;
+               serviceframework::optional< bool> restart;
+               serviceframework::optional< std::vector< std::string>> memberships;
 
-               sf::optional< Environment> environment;
+               serviceframework::optional< Environment> environment;
 
 
                CASUAL_CONST_CORRECT_SERIALIZE
@@ -44,11 +47,11 @@ namespace casual
             Executable( std::function< void(Executable&)> foreign);
 
             std::string path;
-            sf::optional< std::string> alias;
-            sf::optional< std::string> note;
+            serviceframework::optional< std::string> alias;
+            serviceframework::optional< std::string> note;
 
 
-            sf::optional< std::vector< std::string>> arguments;
+            serviceframework::optional< std::vector< std::string>> arguments;
 
 
             CASUAL_CONST_CORRECT_SERIALIZE
@@ -78,8 +81,8 @@ namespace casual
             Server();
             Server( std::function< void(Server&)> foreign);
 
-            sf::optional< std::vector< std::string>> restrictions;
-            sf::optional< std::vector< std::string>> resources;
+            serviceframework::optional< std::vector< std::string>> restrictions;
+            serviceframework::optional< std::vector< std::string>> resources;
 
             CASUAL_CONST_CORRECT_SERIALIZE
             (
@@ -99,4 +102,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_CONFIGURATION_INCLUDE_CONFIGURATION_SERVER_H_
+

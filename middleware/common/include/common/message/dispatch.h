@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef MESSAGE_DISPATCH_H_
-#define MESSAGE_DISPATCH_H_
+
+#pragma once
+
 
 #include "common/execution.h"
 #include "common/communication/message.h"
@@ -120,7 +123,7 @@ namespace casual
                      }
                      else
                      {
-                        log::category::error << "message_type: " << complete.type << " not recognized - action: discard" << std::endl;
+                        log::category::error << "message_type: " << complete.type << " not recognized - action: discard" << '\n';
                      }
                   }
                   return false;
@@ -139,7 +142,7 @@ namespace casual
                {
                public:
 
-                  typedef H handler_type;
+                  using handler_type = H;
 
                   using traits_type = traits::function< H>;
 
@@ -174,7 +177,7 @@ namespace casual
                };
 
 
-               typedef std::map< message_type, std::unique_ptr< base_handler> > handlers_type;
+               using handlers_type = std::map< message_type, std::unique_ptr< base_handler>>;
 
 
                template< typename H>
@@ -248,4 +251,4 @@ namespace casual
 } // casual
 
 
-#endif /* MESSAGE_DISPATCH_H_ */
+

@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_SERVER_ARGUMENTS_H_
-#define CASUAL_COMMON_SERVER_ARGUMENTS_H_
+
+#pragma once
+
 
 #include "common/server/service.h"
 
@@ -25,17 +28,17 @@ namespace casual
 
             Arguments();
             Arguments( std::vector< Service> services);
-            Arguments( std::vector< Service> services, std::vector< transaction::Resource> resources);
+            Arguments( std::vector< Service> services, std::vector< transaction::resource::Link> resources);
 
             Arguments( Arguments&&);
             Arguments& operator = (Arguments&&);
 
             std::vector< Service> services;
-            std::vector< transaction::Resource> resources;
+            std::vector< transaction::resource::Link> resources;
          };
 
       } // server
    } // common
 } // casual
 
-#endif // ARGUMENTS_H_
+

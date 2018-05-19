@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/environment.h"
 #include "buffer/field.h"
@@ -32,7 +35,7 @@ int main( int argc, char* argv[])
          std::cout << "number: " << (pair.second % CASUAL_FIELD_TYPE_BASE) << '\t';
          std::cout << "type: " << types.at( pair.second / CASUAL_FIELD_TYPE_BASE);
          std::cout << " */";
-         std::cout << std::endl;
+         std::cout << '\n';
       }
 
       return 0;
@@ -40,11 +43,11 @@ int main( int argc, char* argv[])
    }
    catch( const std::exception& e)
    {
-      std::cerr << e.what() << std::endl;
+      std::cerr << e.what() << '\n';
    }
    catch( ...)
    {
-      std::cerr << "Unknown failure" << std::endl;
+      std::cerr << "Unknown failure" << '\n';
    }
 
    return -1;

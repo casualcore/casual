@@ -1,12 +1,15 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "configuration/environment.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 
-#include "sf/archive/maker.h"
+#include "serviceframework/archive/create.h"
 
 namespace casual
 {
@@ -35,16 +38,18 @@ namespace casual
          }
 
 
-         configuration::Environment get( const std::string& file)
+         configuration::Environment get( const std::string& name)
          {
             configuration::Environment environment;
 
             //
             // Create the reader and deserialize configuration
             //
-            auto reader = sf::archive::reader::from::file( file);
+            common::file::Input file{ name};
+            auto reader = serviceframework::archive::create::reader::consumed::from( file.extension(), file);
 
             reader >> CASUAL_MAKE_NVP( environment);
+            reader.validate();
 
             return environment;
          }

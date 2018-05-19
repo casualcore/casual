@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_SERVICE_MANAGER_STATE_H_
-#define CASUAL_SERVICE_MANAGER_STATE_H_
+
+#pragma once
+
 
 
 
@@ -22,7 +25,7 @@
 
 #include "common/exception/system.h"
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 #include <vector>
 #include <string>
@@ -416,4 +419,4 @@ namespace casual
 
 } // casual
 
-#endif // STATE_H_
+

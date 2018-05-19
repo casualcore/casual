@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_MARSHAL_BINARY_H_
-#define CASUAL_COMMON_MARSHAL_BINARY_H_
+
+#pragma once
+
 
 
 
@@ -31,7 +34,7 @@ namespace casual
             {
 
                template< typename T>
-               using is_native_marshable = std::integral_constant<bool,
+               using is_native_marshable = traits::bool_constant<
                      std::is_arithmetic<T>::value ||
                      ( std::is_array<T>::value && sizeof( typename std::remove_all_extents<T>::type) == 1 ) ||
                      traits::container::is_array< T>::value ||
@@ -112,7 +115,7 @@ namespace casual
             private:
 
                template< typename T>
-               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
+               std::enable_if_t< ! detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   using casual::casual_marshal_value;
@@ -120,7 +123,7 @@ namespace casual
                }
 
                template< typename T>
-               traits::enable_if_t< detail::is_native_marshable< T>::value>
+               std::enable_if_t< detail::is_native_marshable< T>::value>
                write( T& value)
                {
                   write_pod( value);
@@ -218,7 +221,7 @@ namespace casual
             private:
 
                template< typename T>
-               traits::enable_if_t< ! detail::is_native_marshable< T>::value>
+               std::enable_if_t< ! detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   using casual::casual_unmarshal_value;
@@ -226,7 +229,7 @@ namespace casual
                }
 
                template< typename T>
-               traits::enable_if_t< detail::is_native_marshable< T>::value>
+               std::enable_if_t< detail::is_native_marshable< T>::value>
                read( T& value)
                {
                   read_pod( value);
@@ -363,4 +366,4 @@ namespace casual
 
 } // casual
 
-#endif // BINARY_H_
+

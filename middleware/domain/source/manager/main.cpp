@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "domain/manager/manager.h"
 
 
 #include "common/exception/handle.h"
-#include "common/arguments.h"
+#include "common/argument.h"
 
 
 namespace casual
@@ -28,25 +31,36 @@ namespace casual
                Settings settings;
 
                {
-                  common::Arguments parser{ {
-                     common::argument::directive( common::argument::cardinality::Any{}, {"-c", "--configuration-files"}, "domain configuration files", settings.configurationfiles),
-                     common::argument::directive( { "--no-auto-persist"}, "domain does not store current state persistent on shutdown", settings.no_auto_persist),
-                     common::argument::directive( {"--bare"}, "do not boot mandatory (broker, TM), mostly for unittest", settings.bare),
+                  common::argument::Parse parse{ "domain manager",
+                     common::argument::Option( std::tie( settings.configurationfiles), { "-c", "--configuration-files"}, "domain configuration files"),
+                     common::argument::Option( [&](){ settings.no_auto_persist = true;}, { "--no-auto-persist"}, "domain does not store current state persistent on shutdown"),
+                     common::argument::Option( [&](){ settings.bare = true;}, { "--bare"}, "do not boot mandatory (broker, TM), mostly for unittest"),
+
+                     common::argument::Option( [&]( common::strong::ipc::id::value_type v){ settings.event( v);}, { "-q", "--event-queue"}, "queue to send events to"),
+                     common::argument::Option( std::tie( settings.events), { "-e", "--events"}, "events to send to the queue (process-spawn|process-exit)"),
+                     };
 
 
-                     common::argument::directive( {"-q", "--event-queue"}, "queue to send events to", settings.event_queue),
-                     common::argument::directive( {"-e", "--events"}, "events to send to the queue (process-spawn|process-exit)", settings.event_queue),
-                     }};
-
-
-                  parser.parse( argc, argv);
-
-                  event_queue = common::strong::ipc::id{ settings.event_queue};
+                  parse( argc, argv);
+                  event_queue = settings.event();
                }
 
                Manager domain( std::move( settings));
                domain.start();
 
+            }
+            catch( const common::exception::casual::invalid::Configuration& exception)
+            {
+               if( event_queue)
+               {
+                  common::message::event::domain::Error event;
+                  event.message = exception.what();
+                  event.details = exception.details();
+                  event.severity = common::message::event::domain::Error::Severity::fatal;
+
+                  common::communication::ipc::non::blocking::send( event_queue, event);
+               }
+               return casual::common::exception::handle();
             }
             catch( const common::exception::base& exception)
             {

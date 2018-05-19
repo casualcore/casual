@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//!  casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "service/manager/admin/server.h"
 #include "service/transform.h"
@@ -8,7 +11,7 @@
 
 #include "common/algorithm.h"
 
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 
 
@@ -27,9 +30,9 @@ namespace casual
 
                   common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                   {
-                     auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                     auto result = sf::service::user( protocol, &transform::state, state);
+                     auto result = serviceframework::service::user( protocol, &transform::state, state);
 
                      protocol << CASUAL_MAKE_NVP( result);
 
@@ -41,12 +44,12 @@ namespace casual
 
                      common::service::invoke::Result reset( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         std::vector< std::string> services;
                         protocol >> CASUAL_MAKE_NVP( services);
 
-                        auto result = sf::service::user( protocol, &manager::State::metric_reset, state, std::move( services));
+                        auto result = serviceframework::service::user( protocol, &manager::State::metric_reset, state, std::move( services));
 
                         protocol << CASUAL_MAKE_NVP( result);
 

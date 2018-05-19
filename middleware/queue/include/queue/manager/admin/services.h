@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_QUEUE_INCLUDE_QUEUE_BROKER_ADMIN_SERVICES_H_
-#define CASUAL_MIDDLEWARE_QUEUE_INCLUDE_QUEUE_BROKER_ADMIN_SERVICES_H_
+
+#pragma once
+
 
 
 namespace casual
@@ -31,4 +34,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_QUEUE_INCLUDE_QUEUE_BROKER_ADMIN_SERVICES_H_
+

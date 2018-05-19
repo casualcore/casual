@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef MANAGER_HANDLE_H_
-#define MANAGER_HANDLE_H_
+
+#pragma once
+
 
 
 #include "transaction/manager/state.h"
@@ -114,7 +117,7 @@ namespace casual
 
                struct Connect : public state::Base
                {
-                  typedef common::message::transaction::resource::connect::Reply message_type;
+                  using message_type = common::message::transaction::resource::connect::Reply;
 
                   using state::Base::Base;
 
@@ -287,4 +290,4 @@ namespace casual
 } // casual
 
 
-#endif // MANAGER_HANDLE_H_
+

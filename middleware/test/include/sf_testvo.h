@@ -1,9 +1,10 @@
-#ifndef CASUALTESTVOTESTVO_H
-#define CASUALTESTVOTESTVO_H
+//! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
 
-
-
-
+#pragma once
  
 
 // 
@@ -16,13 +17,13 @@
 //
 namespace casual 
 { 
-   namespace sf 
+   namespace serviceframework 
    { 
-		namespace archive 
-		{
-		   class Reader;
-		   class Writer;
-		}
+      namespace archive 
+      {
+         class Reader;
+         class Writer;
+      }
     }
 }
     
@@ -73,9 +74,9 @@ public:
 
 
   
-   void serialize( casual::sf::archive::Reader& archive);
+   void serialize( casual::serviceframework::archive::Reader& archive);
   
-   void serialize( casual::sf::archive::Writer& archive) const;
+   void serialize( casual::serviceframework::archive::Writer& archive) const;
 
 private:
 
@@ -95,4 +96,3 @@ private:
 } // casual
 
 
-#endif 

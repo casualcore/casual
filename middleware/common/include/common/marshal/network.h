@@ -1,12 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_MARSHAL_NETWORK_H_
-#define CASUAL_COMMON_MARSHAL_NETWORK_H_
+
+#pragma once
+
 
 #include "common/marshal/binary.h"
 #include "common/network/byteorder.h"
+#include "common/traits.h"
 
 #include "common/cast.h"
 
@@ -29,7 +33,7 @@ namespace casual
                   // Helper to make sure we only transport byte-arrays
                   //
                   template< typename T>
-                  using is_network_array = std::integral_constant< bool,
+                  using is_network_array = traits::bool_constant<
                         ( std::is_array< typename std::remove_reference< T>::type>::value
                           && sizeof( typename std::remove_all_extents< typename std::remove_reference< T>::type>::type) == 1)
                           || traits::container::is_array< T>::value>;
@@ -146,4 +150,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_COMMON_MARSHAL_NETWORK_H_
+

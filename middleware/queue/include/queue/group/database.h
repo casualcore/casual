@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUALQUEUESERVERDATABASE_H_
-#define CASUALQUEUESERVERDATABASE_H_
+
+#pragma once
+
 
 #include "sql/database.h"
 
@@ -246,4 +249,4 @@ namespace casual
 
 } // casual
 
-#endif // DATABASE_H_
+

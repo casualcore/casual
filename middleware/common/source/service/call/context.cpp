@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/service/call/context.h"
 #include "common/service/lookup.h"
@@ -235,7 +238,7 @@ namespace casual
                {
                   prepared.message.service = target.service;
 
-                  log::debug << "async - message: " << prepared.message << std::endl;
+                  log::debug << "async - message: " << prepared.message << '\n';
 
                   communication::ipc::blocking::send( target.process.queue, prepared.message);
                }

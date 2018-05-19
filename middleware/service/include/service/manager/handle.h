@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_BROKER_TRANSFORM_H_
-#define CASUAL_BROKER_TRANSFORM_H_
+
+#pragma once
+
 
 
 #include "service/manager/state.h"
@@ -23,20 +26,15 @@
 namespace casual
 {
 
-	namespace service
-	{
-	   namespace manager
+   namespace service
+   {
+      namespace manager
       {
-
-
-
 
          namespace ipc
          {
             const common::communication::ipc::Helper& device();
          } // ipc
-
-
 
 
          namespace handle
@@ -89,7 +87,7 @@ namespace casual
 
                   struct End: public Base
                   {
-                     typedef common::message::event::subscription::End message_type;
+                     using message_type = common::message::event::subscription::End;
 
                      using Base::Base;
 
@@ -111,7 +109,7 @@ namespace casual
                //!
                struct Advertise : Base
                {
-                  typedef common::message::service::Advertise message_type;
+                  using message_type = common::message::service::Advertise;
 
                   using Base::Base;
 
@@ -196,7 +194,7 @@ namespace casual
             struct ACK : public Base
             {
 
-               typedef common::message::service::call::ACK message_type;
+               using message_type = common::message::service::call::ACK;
 
                using Base::Base;
 
@@ -246,7 +244,7 @@ namespace casual
 
             };
 
-            typedef common::server::handle::basic_call< manager::handle::Policy> Call;
+            using Call = common::server::handle::basic_call< manager::handle::Policy>;
 
 
          } // handle
@@ -254,8 +252,8 @@ namespace casual
          handle::dispatch_type handler( State& state);
 
       } // manager
-	} // service
+   } // service
 } // casual
 
 
-#endif /* CASUAL_BROKER_TRANSFORM_H_ */
+

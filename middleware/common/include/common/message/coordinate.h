@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_COORDINATE_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_COORDINATE_H_
+
+#pragma once
+
 
 
 #include "common/uuid.h"
@@ -174,4 +177,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_MESSAGE_COORDINATE_H_
+

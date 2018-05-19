@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_SERVER_CONTEXT_H_
-#define CASUAL_SERVER_CONTEXT_H_
+
+#pragma once
+
 
 
 
@@ -166,9 +169,9 @@ namespace casual
          inline Context& context() { return Context::instance();}
 
       } // server
-	} // common
+   } // common
 } // casual
 
 
 
-#endif /* CASUAL_SERVER_CONTEXT_H_ */
+

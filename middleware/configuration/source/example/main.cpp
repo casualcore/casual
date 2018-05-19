@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "configuration/domain.h"
 #include "configuration/example/domain.h"
@@ -8,11 +11,11 @@
 #include "configuration/example/build/server.h"
 #include "configuration/example/resource/property.h"
 
-#include "sf/namevaluepair.h"
-#include "sf/archive/maker.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/create.h"
 
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/exception/handle.h"
 
 namespace casual
@@ -69,33 +72,31 @@ namespace casual
             {
                using namespace common::argument;
 
-               common::Arguments argument{
+               Parse parse{
                   R"(
 Produces configuration examples from object models
 
 the output format will be deduced from file extension
 
 )",
-                  {
-                     directive( { "-d", "--domain-file"}, "domain configuration example", &create::domain),
-                     directive( { "-dd", "--default-domain-file"}, "default domain configuration example", &create::default_domain),
+                  Option( &create::domain, { "-d", "--domain-file"}, "domain configuration example"),
+                  Option( &create::default_domain, { "-dd", "--default-domain-file"}, "default domain configuration example"),
 
-                     directive( { "-b", "--build-server-file"}, "build server configuration example", &create::build::server),
-                     directive( { "-db", "--default-build-server-file"}, "default build server configuration example", &create::build::default_server),
+                  Option( &create::build::server, { "-b", "--build-server-file"}, "build server configuration example"),
+                  Option( &create::build::default_server, { "-db", "--default-build-server-file"}, "default build server configuration example"),
 
-                     directive( { "-r", "--resource-property-file"}, "resource property configuration example", &create::resource::property),
-                     directive( { "-dr", "--default-resource-property-file"}, "default resource property configuration example", &create::resource::default_server)
+                  Option( &create::resource::property, { "-r", "--resource-property-file"}, "resource property configuration example"),
+                  Option( &create::resource::default_server, { "-dr", "--default-resource-property-file"}, "default resource property configuration example")
 
-                  }
                };
 
-               argument.parse( argc, argv);
+               parse( argc, argv);
 
                return 0;
             }
             catch( const std::exception& exception)
             {
-               std::cerr << "excption: " << exception.what() << '\n';
+               std::cerr << "exception: " << exception.what() << '\n';
                return 20;
             }
             catch( ...)

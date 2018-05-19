@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "queue/manager/admin/server.h"
 #include "queue/manager/admin/services.h"
@@ -10,7 +13,7 @@
 #include "queue/common/transform.h"
 
 
-#include "sf/service/protocol.h"
+#include "serviceframework/service/protocol.h"
 
 #include "xatmi.h"
 
@@ -29,9 +32,9 @@ namespace casual
                {
                   common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
                   {
-                     auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                     auto result = sf::service::user( protocol, &admin::state, state);
+                     auto result = serviceframework::service::user( protocol, &admin::state, state);
 
                      protocol << CASUAL_MAKE_NVP( result);
                      return protocol.finalize();
@@ -41,12 +44,12 @@ namespace casual
                   {
                      common::service::invoke::Result messages( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
-                        auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                         std::string queue;
                         protocol >> CASUAL_MAKE_NVP( queue);
 
-                        auto result = sf::service::user( protocol, &admin::list_messages, state, queue);
+                        auto result = serviceframework::service::user( protocol, &admin::list_messages, state, queue);
 
                         protocol << CASUAL_MAKE_NVP( result);
                         return protocol.finalize();
@@ -56,12 +59,12 @@ namespace casual
 
                   common::service::invoke::Result restore( common::service::invoke::Parameter&& parameter, manager::State& state)
                   {
-                     auto protocol = sf::service::protocol::deduce( std::move( parameter));
+                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
                      std::string queue;
                      protocol >> CASUAL_MAKE_NVP( queue);
 
-                     auto result = sf::service::user( protocol, &admin::restore, state, queue);
+                     auto result = serviceframework::service::user( protocol, &admin::restore, state, queue);
 
                      protocol << CASUAL_MAKE_NVP( result);
                      return protocol.finalize();

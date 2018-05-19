@@ -1,9 +1,10 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef COMMON_LOG_H
-#define COMMON_LOG_H
+#pragma once
 
 
 
@@ -43,7 +44,3 @@ namespace casual
    } // common
 
 } // casual
-
-
-
-#endif // COMMON_LOG_H

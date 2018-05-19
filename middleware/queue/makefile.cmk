@@ -95,7 +95,7 @@ queue_manager = LinkExecutable( 'bin/casual-queue-manager',
      common,
      'casual-common', 
      'casual-configuration', 
-     'casual-sf', 
+     'casual-serviceframework', 
      'casual-xatmi',
      ])
 
@@ -110,7 +110,7 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
    ],
    [
     common, 
-    'casual-sf', 
+    'casual-serviceframework', 
     'casual-common', 
     ])
 
@@ -144,15 +144,13 @@ install_bin.append( forward_queue)
 #
 # Client
 #
-queue_client = LinkExecutable( 'bin/casual-queue-admin', 
+target = LinkLibrary( 'bin/casual-queue-admin-cli', 
     [
-        Compile( 'source/manager/admin/client.cpp'),
+        Compile( 'source/manager/admin/cli.cpp'),
      ], 
-   [common, queue_api, 'casual-common', 'casual-sf', 'casual-xatmi'])
+   [common, queue_api, 'casual-common', 'casual-serviceframework', 'casual-xatmi'])
  
- 
-Install( queue_client, '$(CASUAL_HOME)/internal/bin')
-
+install_lib.append( target)
 
 
 
@@ -162,10 +160,10 @@ Install( queue_client, '$(CASUAL_HOME)/internal/bin')
 
 test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
-     Compile( 'unittest/isolated/source/test_transform.cpp'),
-     Compile( 'unittest/isolated/source/manager/test_handle.cpp'),
-     Compile( 'unittest/isolated/source/group/test_database.cpp'),
-     Compile( 'unittest/isolated/source/test_queue.cpp'),
+     Compile( 'unittest/source/test_transform.cpp'),
+     Compile( 'unittest/source/manager/test_handle.cpp'),
+     Compile( 'unittest/source/group/test_database.cpp'),
+     Compile( 'unittest/source/test_queue.cpp'),
     ],
     [
      group_archive,
@@ -175,7 +173,7 @@ test_casual_queue = LinkUnittest( 'unittest/bin/test-casual-queue',
      'casual-mockup',
      'casual-mockup-unittest-environment',
      'casual-common',
-     'casual-sf',
+     'casual-serviceframework',
      'casual-configuration',
      'sqlite3',
      'casual-xatmi',

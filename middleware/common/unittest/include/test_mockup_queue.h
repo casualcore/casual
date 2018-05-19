@@ -1,12 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual_isolatedunitttest_queue.h
-//!
-//! Created on: Jul 26, 2012
-//!     Author: Lazan
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_ISOLATEDUNITTTEST_QUEUE_H_
-#define CASUAL_ISOLATEDUNITTTEST_QUEUE_H_
+
+#pragma once
+
 
 namespace casual
 {
@@ -23,4 +23,4 @@ namespace casual
 
 
 
-#endif /* CASUAL_ISOLATEDUNITTTEST_QUEUE_H_ */
+

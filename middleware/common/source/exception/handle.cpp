@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include "common/exception/handle.h"
@@ -10,7 +13,7 @@
 #include "common/exception/casual.h"
 #include "common/exception/tx.h"
 
-#include "common/arguments.h"
+#include "common/argument/exception.h"
 
 #include "common/log/category.h"
 
@@ -29,14 +32,11 @@ namespace casual
                template< typename E>
                int log( const E& exception, std::ostream* out)
                {
-                  if( out)
-                  {
-                     *out << exception << std::endl;
-                  }
-                  else 
-                  {
-                     code::stream( exception.type()) << exception << std::endl;
-                  }
+                  if( ! out)
+                     out = &code::stream( exception.type());
+
+                  log::line( *out, exception);
+
                   return exception.code().value();
                }
 
@@ -79,39 +79,38 @@ namespace casual
                      return local::log( exception, out);
                   }
 
-                  catch( const std::system_error& exception)
+                  catch( const argument::exception::user::Help& exception)
                   {
-                     if( out) 
-                        *out  << exception << std::endl;
-                     else 
-                        common::log::category::error << exception << std::endl;
+                     if( ! out)
+                        log::line( log::category::error, exception.what());
+                  }
+                  catch( const argument::exception::user::bash::Completion& exception)
+                  {
+                     if( ! out)
+                        log::line( log::category::error, exception.what());
                   }
 
-                  catch( const argument::exception::Help& exception)
+                  catch( const exception::base& exception)
                   {
                      if( ! out)
-                        common::log::category::error << exception << std::endl;
-                  }
-                  catch( const argument::exception::bash::Completion& exception)
-                  {
-                     if( ! out)
-                        common::log::category::error << exception << std::endl;
+                        out = &log::category::error;
+
+                     log::line( *out, exception);
                   }
                   
                   catch( const std::exception& exception)
                   {
+                     if( ! out)
+                        out = &log::category::error;
 
-                     if( out) 
-                        *out  << exception << std::endl;
-                     else 
-                        common::log::category::error << exception << std::endl;
+                     log::line( *out, exception.what());
                   }
                   catch( ...)
                   {
-                     if( out) 
-                        *out  << " - unexpected exception" << std::endl;
-                     else 
-                        common::log::category::error << " - unexpected exception" << std::endl;
+                     if( ! out)
+                        out = &log::category::error;
+
+                     log::line( *out, "unexpected exception");
                   }
 
                   return -1;
@@ -130,7 +129,7 @@ namespace casual
          }
 
       } // exception
-	} // common
+   } // common
 } // casual
 
 

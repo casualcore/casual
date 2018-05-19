@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_SERVER_LIFETIME_H_
-#define CASUAL_COMMON_SERVER_LIFETIME_H_
+
+#pragma once
+
 
 #include "common/process.h"
 
@@ -65,4 +68,4 @@ namespace casual
 
 } // casual
 
-#endif // SHUTDOWN_H_
+

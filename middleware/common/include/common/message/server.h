@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef COMMON_MESSAGE_SERVER_H_
-#define COMMON_MESSAGE_SERVER_H_
+
+#pragma once
+
 
 
 #include "common/message/type.h"
@@ -58,4 +61,4 @@ namespace casual
 } // casual
 
 
-#endif // SERVER_H_
+

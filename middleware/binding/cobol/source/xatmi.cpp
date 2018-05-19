@@ -300,7 +300,7 @@ extern "C" void TPDISCON(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
 
 extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                         struct TPTYPE_REC_s *TPTYPE_REC,
-			//struct DATA_REC_s *DATA_REC,
+         //struct DATA_REC_s *DATA_REC,
                         char *DATA_REC,
                         struct TPSTATUS_REC_s *TPSTATUS_REC) {
 
@@ -418,13 +418,13 @@ extern "C" void TPRECV(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                     &data_rec,
                     &len,
                     flags,
-		    &revent)) == -1) {
+          &revent)) == -1) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPRECV --> tprecv: %d\n", tperrno); */
    } else {
       TPSTATUS_REC->TP_STATUS = (int32_t)TPOK;
       if (tperrno == TPEEVENT) {
-	 TPSTATUS_REC->TP_STATUS=(int32_t)TPEEVENT;
+    TPSTATUS_REC->TP_STATUS=(int32_t)TPEEVENT;
          TPSTATUS_REC->TPEVENT = (int32_t)revent;
       }
    }
@@ -508,8 +508,8 @@ extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
    /* will/should exit immediately after the return. C function   */
    /* tpreturn is void.                                           */
    tpreturn(TPSVCRET_REC->TP_RETURN_VAL,    /* int             */
-	    TPSVCRET_REC->APPL_CODE,        /* expands to long */
-	    data_rec,                       /* char *          */
+       TPSVCRET_REC->APPL_CODE,        /* expands to long */
+       data_rec,                       /* char *          */
             TPTYPE_REC->LEN,                /* expands to long */
             flags);                         /* long            */
    return;
@@ -538,9 +538,9 @@ TPSEND
 /* data. I.e. reuse the input data for output, possibly after a   */
 /* tprealloc if a larger buffer is needed for the return data.    */
 void TPSVCSTART(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
-		struct TPTYPE_REC_s *TPTYPE_REC,
-		char* DATA_REC,
-		struct TPSTATUS_REC_s *TPSTATUS_REC) {
+      struct TPTYPE_REC_s *TPTYPE_REC,
+      char* DATA_REC,
+      struct TPSTATUS_REC_s *TPSTATUS_REC) {
    char rec_type[REC_TYPE_LEN + 1];
    char sub_type[SUB_TYPE_LEN + 1];
    char *data_rec;

@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_STATE_H_
-#define CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_STATE_H_
+
+#pragma once
+
 
 #include "domain/manager/task.h"
 
@@ -19,8 +22,8 @@
 #include "configuration/environment.h"
 
 
-#include  "sf/namevaluepair.h"
-#include  "sf/archive/archive.h"
+#include "serviceframework/namevaluepair.h"
+#include "serviceframework/archive/archive.h"
 
 #include <unordered_map>
 #include <vector>
@@ -29,7 +32,7 @@
 namespace casual
 {
 
-   namespace sf
+   namespace serviceframework
    {
       namespace archive
       {
@@ -47,7 +50,7 @@ namespace casual
             archive << name::value::pair::make( name, value.value());
          }
       } // archive
-   } // sf
+   } // serviceframework
 
    namespace domain
    {
@@ -159,7 +162,7 @@ namespace casual
                   archive & CASUAL_MAKE_NVP( note);
 
                   archive & CASUAL_MAKE_NVP( memberships);
-                  archive & sf::name::value::pair::make(  "environment_variables", environment.variables);
+                  archive & serviceframework::name::value::pair::make(  "environment_variables", environment.variables);
                   archive & CASUAL_MAKE_NVP( restart);
                   archive & CASUAL_MAKE_NVP( restarts);
                )
@@ -447,8 +450,8 @@ namespace casual
             //! Runlevel can only "go forward"
             //!
             //! @{
-            inline Runlevel runlevel() const { return m_runlevel;}
-            void runlevel( Runlevel runlevel);
+            inline Runlevel runlevel() const noexcept { return m_runlevel;}
+            void runlevel( Runlevel runlevel) noexcept;
             //! @}
 
             std::vector< state::Batch> bootorder();
@@ -472,20 +475,19 @@ namespace casual
             state::Group& group( state::Group::id_type id);
             const state::Group& group( state::Group::id_type id) const;
 
-            state::Server* server( common::strong::process::id pid);
-            const state::Server* server( common::strong::process::id pid) const;
+            state::Server* server( common::strong::process::id pid) noexcept;
+            const state::Server* server( common::strong::process::id pid) const noexcept;
             state::Server& server( state::Server::id_type id);
             const state::Server& server( state::Server::id_type id) const;
 
-            state::Executable* executable( common::strong::process::id pid);
+            state::Executable* executable( common::strong::process::id pid) noexcept;
             state::Executable& executable( state::Executable::id_type id);
             const state::Executable& executable( state::Executable::id_type id) const;
 
-            common::process::Handle grandchild( common::strong::process::id pid) const;
+            common::process::Handle grandchild( common::strong::process::id pid) const noexcept;
 
 
-            common::process::Handle singleton( const common::Uuid& id) const;
-
+            common::process::Handle singleton( const common::Uuid& id) const noexcept;
 
 
             //!
@@ -528,4 +530,4 @@ namespace casual
    } // domain
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_DOMAIN_INCLUDE_DOMAIN_STATE_H_
+

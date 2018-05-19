@@ -1,9 +1,11 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/environment.h"
 #include "common/file.h"
 #include "common/uuid.h"
@@ -14,7 +16,7 @@
 #include "configuration/resource/property.h"
 
 
-#include "sf/log.h"
+#include "serviceframework/log.h"
 
 #include <string>
 #include <iostream>
@@ -152,11 +154,11 @@ int main( int argc, char** argv)
                   {
                      if( std::uncaught_exception())
                      {
-                        std::cerr << m_information << " - failed" << std::endl;
+                        std::cerr << m_information << " - failed" << '\n';
                      }
                      else
                      {
-                        std::cout << m_information << " - ok" << std::endl;
+                        std::cout << m_information << " - ok" << '\n';
                      }
                   }
 
@@ -206,7 +208,7 @@ int main( int argc, char** argv)
 
             if( settings.verbose)
             {
-               std::clog << settings.compiler << " " << common::string::join( arguments, " ") << std::endl;
+               std::clog << settings.compiler << " " << common::string::join( arguments, " ") << '\n';
             }
 
             {
@@ -248,26 +250,26 @@ int main( int argc, char **argv)
       local::Settings settings;
 
       {
-         using namespace casual::common;
+         using namespace casual::common::argument;
 
-         Arguments handler{ {
-            argument::directive( {"-o", "--output"}, "name of the resulting resource proxy", settings.output),
-            argument::directive( {"-k", "--resource-key"}, "key of the resource", settings.key),
-            argument::directive( {"-c", "--compiler"}, "compiler to use", settings.compiler),
+         Parse parse{ "builds a resource proxy",
+            Option( std::tie( settings.output), { "-o", "--output"}, "name of the resulting resource proxy"),
+            Option( std::tie( settings.key), { "-k", "--resource-key"}, "key of the resource"),
+            Option( std::tie( settings.compiler), { "-c", "--compiler"}, "compiler to use"),
 
-            argument::directive( {"-c", "--compile-directives"}, "additional compile directives", settings.directives.compile),
-            argument::directive( {"-l", "--link-directives"}, "additional link directives", settings.directives.link),
+            Option( std::tie( settings.directives.compile), { "-c", "--compile-directives"}, "additional compile directives"),
+            Option( std::tie( settings.directives.link), { "-l", "--link-directives"}, "additional link directives"),
 
-            argument::directive( {"-p", "--resource-properties"}, "path to resource properties file", settings.properties_file),
-            argument::directive( {"-v", "--verbose"}, "verbose output", settings.verbose),
-            argument::directive( {"-s", "--keep-source"}, "keep the generated source file", settings.keep_source)
-         }};
+            Option( std::tie( settings.properties_file), { "-p", "--resource-properties"}, "path to resource properties file"),
+            Option( std::tie( settings.verbose), { "-v", "--verbose"}, "verbose output"),
+            Option( std::tie( settings.keep_source), { "-s", "--keep-source"}, "keep the generated source file")
+         };
 
-         handler.parse( argc, argv);
+         parse( argc, argv);
 
          if( settings.verbose)
          {
-            std::cout << std::endl << CASUAL_MAKE_NVP( settings);
+            std::cout << '\n' << CASUAL_MAKE_NVP( settings);
          }
 
       }
@@ -279,7 +281,7 @@ int main( int argc, char **argv)
 
       if( settings.verbose)
       {
-         std::cout << std::endl << CASUAL_MAKE_NVP( xa_switch) << std::endl;
+         std::cout << '\n' << CASUAL_MAKE_NVP( xa_switch) << '\n';
       }
 
       if( settings.output.empty())
@@ -312,7 +314,7 @@ int main( int argc, char **argv)
    }
    catch( const common::exception::system::exception& exception)
    {
-      std::cerr << "error: " << exception << std::endl;
+      std::cerr << "error: " << exception << '\n';
       return 1;
    }
    catch( ...)

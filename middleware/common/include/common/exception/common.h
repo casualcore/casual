@@ -1,11 +1,15 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_EXCEPTION_COMMON_H_
-#define CASUAL_COMMON_EXCEPTION_COMMON_H_
+
+#pragma once
+
 
 #include <system_error>
+#include <iosfwd>
 
 namespace casual
 {
@@ -21,7 +25,12 @@ namespace casual
             inline auto make_error_code( std::errc code) { return std::make_error_code( code);}
          } // detail 
 
-         using base = std::system_error;
+         struct base : std::system_error
+         {
+            using std::system_error::system_error;
+
+            friend std::ostream& operator << ( std::ostream& out, const base& value);
+         };
 
          template< typename Enum>
          class base_error : public base
@@ -32,8 +41,8 @@ namespace casual
             base_error( Enum error, const char* message) : base{ detail::make_error_code( error), message} {}
 
             Enum type() const noexcept { return static_cast< Enum>( base::code().value());}
-
          };
+
 
          namespace detail
          {
@@ -51,23 +60,10 @@ namespace casual
             basic_error( const char* message) : base_type{ error, message} {}
 
             constexpr static auto type() noexcept { return error;}
+
          };
 
       } // exception 
    } // common
 } // casual
 
-namespace std
-{
-   inline ostream& operator << ( ostream& out, const system_error& value)
-   {
-      return out << value.code() << ' ' << value.what();
-   }
-
-   inline ostream& operator << ( ostream& out, const exception& value)
-   {
-      return out << value.what();
-   }
-} // std
-
-#endif

@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_CODE_SIGNAL_H_
-#define CASUAL_COMMON_CODE_SIGNAL_H_
+
+#pragma once
+
 
 #include "common/log/stream.h"
 #include "common/signal.h"
@@ -57,4 +60,3 @@ namespace casual
    } // common
 } // casual
 
-#endif

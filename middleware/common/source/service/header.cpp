@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/service/header.h"
 
@@ -58,7 +61,7 @@ namespace casual
 
                bool Fields::exists( const std::string& key) const
                {
-                  return local::find( *this, key);
+                  return ! local::find( *this, key).empty();
                }
 
                const std::string& Fields::at( const std::string& key) const

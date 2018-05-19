@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "transaction/manager/state.h"
 #include "transaction/common.h"
@@ -421,18 +424,18 @@ namespace casual
             {
                if( found->state() != state::resource::Proxy::Instance::State::shutdown)
                {
-                  common::log::category::error << "resource proxy instance died - " << *found << std::endl;
+                  common::log::category::error << "resource proxy instance died - " << *found << '\n';
                }
 
                resource.statistics += found->statistics;
                resource.instances.erase( std::begin( found));
 
-               transaction::log << "remove dead process: " << death << std::endl;
+               transaction::log << "remove dead process: " << death << '\n';
                return;
             }
          }
 
-         common::log::category::warning << "failed to find and remove dead instance: " << death << std::endl;
+         common::log::category::warning << "failed to find and remove dead instance: " << death << '\n';
       }
 
       state::resource::Proxy& State::get_resource( state::resource::id::type rm)
@@ -463,9 +466,9 @@ namespace casual
 
       bool State::remove_instance( common::strong::process::id pid)
       {
-         return common::algorithm::find_if( resources, [pid]( auto& r){
+         return ! common::algorithm::find_if( resources, [pid]( auto& r){
             return r.remove_instance( pid);
-         });
+         }).empty();
       }
 
       State::instance_range State::idle_instance( state::resource::id::type rm)

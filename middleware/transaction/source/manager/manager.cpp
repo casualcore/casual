@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "transaction/manager/manager.h"
 #include "transaction/manager/handle.h"
@@ -106,7 +109,7 @@ namespace casual
          common::log::category::information << "transaction manager is on-line - "
                << m_state.resources.size() << " resources - "
                << instances << " instances - boot time: "
-               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << std::endl;
+               << std::chrono::duration_cast< std::chrono::milliseconds>( end - start).count() << " ms" << '\n';
 
       }
 
@@ -191,10 +194,10 @@ namespace casual
                            // We also do a "busy wait" to try to get more done between each write.
                            //
 
-                           auto count = common::platform::batch::transaction;
+                           auto count = common::platform::batch::transaction::persistence;
 
                            while( ( handler( ipc::device().non_blocking_next()) || --count > 0 ) &&
-                                 state.persistent.replies.size() < common::platform::batch::transaction)
+                                 state.persistent.replies.size() < common::platform::batch::transaction::persistence)
                            {
                               ;
                            }

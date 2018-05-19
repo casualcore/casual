@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include <common/unittest.h>
@@ -33,10 +36,7 @@ namespace casual
 
             struct TestHandler
             {
-               TestHandler() = default;
-               //TestHandler( TestHandler&&) = default;
-
-               typedef message::shutdown::Request message_type;
+               using message_type = message::shutdown::Request;
 
                void operator () ( message_type message)
                {
@@ -47,7 +47,6 @@ namespace casual
 
             struct TestMember
             {
-
                void handle( message::server::ping::Request& message)
                {
 

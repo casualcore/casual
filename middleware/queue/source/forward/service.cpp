@@ -1,13 +1,16 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "queue/forward/common.h"
 #include "queue/common/log.h"
 #include "queue/api/queue.h"
 #include "queue/common/transform.h"
 
-#include "common/arguments.h"
+#include "common/argument.h"
 #include "common/exception/handle.h"
 
 #include "common/buffer/pool.h"
@@ -22,35 +25,16 @@ namespace casual
       {
          struct Settings
          {
+            std::string queue;
+            std::string service;
+            common::optional< std::string> reply;
 
-            struct dispatch_t
-            {
-               dispatch_t( std::string queue, std::string service, std::string reply)
-                  : queue( std::move( queue)), service( std::move( service)), reply( std::move( reply)) {}
-
-               dispatch_t( std::string queue, std::string service)
-                  : dispatch_t( std::move( queue), std::move( service), std::string{}) {}
-
-               std::string queue;
-               std::string service;
-               std::string reply;
-            };
-
-            void setForward( const std::vector< std::string>& values)
-            {
-               switch( values.size())
-               {
-                  case 2: dispatch.emplace_back( values.at( 0), values.at( 1)); break;
-                  case 3: dispatch.emplace_back( values.at( 0), values.at( 1), values.at( 2)); break;
-               }
-            }
-
-            std::vector< dispatch_t> dispatch;
+            auto tie() { return std::tie( queue, service, reply);}
          };
 
          struct Caller
          {
-            Caller( std::string service, std::string reply) : m_service( std::move( service)), m_reply( std::move( reply)) {}
+            Caller( std::string service, common::optional< std::string> reply) : m_service( std::move( service)), m_reply( std::move( reply)) {}
 
             void operator () ( queue::Message&& message)
             {
@@ -63,36 +47,39 @@ namespace casual
                   std::move( message.payload.type),
                   std::move( message.payload.data)};
 
-               log << "payload: " << payload << std::endl;
+               log << "payload: " << payload << '\n';
 
-               auto result = common::service::call::Context::instance().sync( m_service,
-                     payload,
-                     common::service::call::sync::Flag::no_time);
-
-               const auto& replyqueue = m_reply.empty() ? message.attributes.reply : m_reply;
-
-               if( ! replyqueue.empty())
+               try
                {
-                  queue::Message reply;
-                  reply.payload.data = std::move( result.buffer.memory);
-                  reply.payload.type = std::move( result.buffer.type);
-                  queue::enqueue( replyqueue, reply);
+                  auto result = common::service::call::Context::instance().sync( m_service,
+                        payload,
+                        common::service::call::sync::Flag::no_time);
+
+                  const auto& replyqueue = m_reply.value_or( message.attributes.reply);
+
+                  if( ! replyqueue.empty())
+                  {
+                     queue::Message reply;
+                     reply.payload.data = std::move( result.buffer.memory);
+                     reply.payload.type = std::move( result.buffer.type);
+                     queue::enqueue( replyqueue, reply);
+                  }
+               }
+               catch( const common::service::call::Fail& exception)
+               {
+                  common::log::line( queue::log, "service call failed - rollback - ", exception);
                }
             }
 
          private:
             std::string m_service;
-            std::string m_reply;
+            common::optional< std::string> m_reply;
          };
 
          std::vector< forward::Task> tasks( Settings settings)
          {
             std::vector< forward::Task> tasks;
-
-            for( auto& task : settings.dispatch)
-            {
-               tasks.emplace_back( task.queue, Caller{ task.service, task.reply});
-            }
+            tasks.emplace_back( std::move( settings.queue), Caller{ std::move( settings.service), std::move( settings.reply)});
 
             return tasks;
          }
@@ -114,11 +101,11 @@ namespace casual
                Settings settings;
 
                {
-                  common::Arguments parser{ {
-                     common::argument::directive( {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]", &Settings::setForward, settings)
-                  }};
-
-                  parser.parse( argc, argv);
+                  using namespace casual::common::argument;
+                  Parse parse{ "queue forward to service",
+                     Option( settings.tie(), {"-f", "--forward"}, "--forward  <queue> <service> [<reply>]")
+                  };
+                  parse( argc, argv);
                }
 
                start( std::move( settings));

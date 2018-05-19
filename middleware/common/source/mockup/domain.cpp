@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/mockup/domain.h"
 #include "common/mockup/log.h"
@@ -787,7 +790,7 @@ namespace casual
                         {
                            Trace trace{ "mockup::transaction::resource::rollback::Reply - ignore"};
                         },
-                        local::handle::connect::Reply{ "transaction manager"},
+                        local::handle::connect::Reply{ "transaction manager"}
                      };
                   }
                   State m_state;

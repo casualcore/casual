@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_MESSAGE_SERVICE_H_
-#define CASUAL_COMMON_MESSAGE_SERVICE_H_
+
+#pragma once
+
 
 #include "common/message/type.h"
 #include "common/message/buffer.h"
@@ -329,6 +332,9 @@ namespace casual
                //!
                struct ACK : basic_message< Type::service_acknowledge>
                {
+                  ACK() = default;
+                  inline ACK( common::process::Handle process) : process( std::move( process)) {}
+                  
                   common::process::Handle process;
 
                   CASUAL_CONST_CORRECT_MARSHAL(
@@ -400,4 +406,4 @@ namespace casual
 
 } // casual
 
-#endif // SERVICE_H_
+

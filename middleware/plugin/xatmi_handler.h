@@ -1,6 +1,10 @@
+/** 
+ ** Copyright (c) 2015, The casual project
+ **
+ ** This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+ **/
 
-#ifndef MIDDLEWARE_PLUGIN_XAMTI_HANDLER_H_
-#define MIDDLEWARE_PLUGIN_XAMTI_HANDLER_H_
+#pragma once
 
 #include <ngx_config.h>
 #include <ngx_core.h>
@@ -20,4 +24,4 @@ void errorhandler(ngx_http_request_t* r, ngx_http_xatmi_ctx_t* client_context);
 ngx_int_t buffer_size( ngx_int_t value);
 ngx_int_t get_header_length(ngx_http_request_t *r);
 ngx_int_t copy_headers( ngx_http_request_t *r, CasualHeader* headers);
-#endif /* MIDDLEWARE_PLUGIN_XAMTI_HANDLER_H_ */
+

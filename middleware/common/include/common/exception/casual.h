@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_EXCEPTION_CASUAL_H_
-#define CASUAL_COMMON_EXCEPTION_CASUAL_H_
+
+#pragma once
+
 
 #include "common/code/casual.h"
 #include "common/exception/common.h"
@@ -26,7 +29,24 @@ namespace casual
 
             namespace invalid
             {
-               using Configuration = base< code::casual::invalid_configuration>;
+               
+               using configuration_base = base< code::casual::invalid_configuration>;
+               struct Configuration : configuration_base
+               {
+                  using detail_type = std::vector< std::string>;
+                  
+                  Configuration( const std::string& message, detail_type details) 
+                     : configuration_base( message), m_details( std::move( details)) {}
+
+                  Configuration( const std::string& message) : configuration_base( message) {}
+                  
+
+                  inline const detail_type& details() const { return m_details;} 
+                  
+               private:
+                  detail_type m_details;
+               };
+
                using Version = base< code::casual::invalid_version>;
             } // invalid
 
@@ -36,5 +56,3 @@ namespace casual
 } // casual
 
 
-
-#endif

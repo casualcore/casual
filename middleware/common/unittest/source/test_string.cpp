@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 
 #include <common/unittest.h>
@@ -12,7 +15,7 @@ namespace casual
 
    namespace common
    {
-      TEST( casual_common_string, split_bla_bla_bla__gives_3_occurences)
+      TEST( casual_common_string, split_bla_bla_bla__gives_3_occurrences)
       {
          common::unittest::Trace trace;
 
@@ -21,7 +24,7 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 3);
       }
 
-      TEST( casual_common_string, split_bla_bla_bla_with_new_line_delimiter__gives_1_occurence)
+      TEST( casual_common_string, split_bla_bla_bla_with_new_line_delimiter__gives_1_concurrence)
       {
          common::unittest::Trace trace;
 
@@ -30,7 +33,7 @@ namespace casual
          EXPECT_TRUE( splittet.size() == 1);
       }
 
-      TEST( casual_common_string, adjacant_split__bla_bla_bla___gives_3_occurences)
+      TEST( casual_common_string, adjacant_split__bla_bla_bla___gives_3_concurrence)
       {
          common::unittest::Trace trace;
 

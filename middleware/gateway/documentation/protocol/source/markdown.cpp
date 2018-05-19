@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "gateway/message.h"
 
@@ -299,15 +302,15 @@ namespace casual
                namespace format
                {
 
-                  common::terminal::format::formatter< type::Info> type_info()
+                  auto type_info()
                   {
-                     return {
-                        { false, false, true, " | "},
+                     return common::terminal::format::formatter< type::Info>::construct( 
+                        std::string{ " | "},
                         common::terminal::format::column( "role name", []( const type::Info& i) { return i.name.role;}, common::terminal::color::no_color),
                         common::terminal::format::column( "network type", []( const type::Info& i) { return i.network.type;}, common::terminal::color::no_color),
                         common::terminal::format::column( "network size", []( const type::Info& i) { return i.network.size;}, common::terminal::color::no_color, common::terminal::format::Align::right),
-                        common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color),
-                     };
+                        common::terminal::format::column( "description", []( const type::Info& i) { return i.name.description;}, common::terminal::color::no_color)
+                     );
                   }
 
                   template< typename T>
@@ -1053,6 +1056,8 @@ Sent to abruptly disconnect the conversation
             {
                static_assert( common::marshal::is_network_normalizing< local::Printer>::value, "not network...");
 
+               common::terminal::output::directive().color = false;
+               
                message_header( std::cout);
                domain_connect( std::cout);
                domain_discovery( std::cout);

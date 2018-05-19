@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include <gtest/gtest.h>
 #include "common/unittest.h"
@@ -16,8 +19,8 @@
 
 #include "common/message/domain.h"
 
-#include "sf/service/protocol/call.h"
-#include "sf/log.h"
+#include "serviceframework/service/protocol/call.h"
+#include "serviceframework/log.h"
 
 namespace casual
 {
@@ -89,7 +92,7 @@ namespace casual
 
                manager::admin::vo::State state()
                {
-                  sf::service::protocol::binary::Call call;
+                  serviceframework::service::protocol::binary::Call call;
                   auto reply = call( manager::admin::service::name::state());
 
                   manager::admin::vo::State result;

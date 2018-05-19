@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual 
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_DESCRIPTOR_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_DESCRIPTOR_H_
+
+#pragma once
+
 
 #include "common/platform.h"
 #include "common/transaction/id.h"
@@ -70,9 +73,9 @@ namespace casual
 
                bool active() const
                {
-                  return algorithm::find_if( m_descriptors, []( const auto& d){
+                  return ! algorithm::find_if( m_descriptors, []( const auto& d){
                      return d.active;
-                  });
+                  }).empty();
                }
 
                friend std::ostream& operator << ( std::ostream& out, const Holder& value)
@@ -149,4 +152,4 @@ namespace casual
 
 } // casual
 
-#endif // CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_SERVICE_DESCRIPTOR_H_
+

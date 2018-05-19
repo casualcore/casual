@@ -1,8 +1,12 @@
-//!
-//! casual
 //! 
+//! Copyright (c) 2015, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
 
-#include "sf/archive/log.h"
+
+#include "serviceframework/archive/log.h"
+#include "serviceframework/archive/create.h"
 
 #include "common/transcode.h"
 
@@ -15,7 +19,7 @@
 
 namespace casual
 {
-   namespace sf
+   namespace serviceframework
    {
 
       namespace archive
@@ -30,6 +34,9 @@ namespace casual
                   class Implementation
                   {
                   public:
+
+                     static std::vector< std::string> keys() { return { "", "log"};}
+
                      Implementation();
                      Implementation( std::ostream& out) : m_output( out) {}
 
@@ -153,7 +160,7 @@ namespace casual
                                  break;
                               }
                            }
-                           m_output << std::endl;
+                           m_output << '\n';
                         };
 
                         std::for_each( std::begin( m_buffer), std::end( m_buffer), writer);
@@ -195,6 +202,15 @@ namespace casual
             }
 
          } // log
+
+         namespace create
+         {
+            namespace writer
+            {
+               template struct Registration< log::local::Implementation>;
+            } // writer
+         } // create
+
       } // archive
-   } // sf
+   } // serviceframework
 } // casual

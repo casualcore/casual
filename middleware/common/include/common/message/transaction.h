@@ -1,9 +1,12 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef COMMON_MESSAGE_TRANSACTION_H_
-#define COMMON_MESSAGE_TRANSACTION_H_
+
+#pragma once
+
 
 #include "common/message/type.h"
 #include "common/code/xa.h"
@@ -384,4 +387,4 @@ namespace casual
    } // common
 } // casual
 
-#endif // TRANSACTION_H_
+

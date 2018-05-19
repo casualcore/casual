@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "common/signal.h"
 #include "common/platform.h"
@@ -67,10 +70,10 @@ namespace casual
 namespace casual
 {
 
-	namespace common
-	{
-		namespace signal
-		{
+   namespace common
+   {
+      namespace signal
+      {
          std::ostream& operator << ( std::ostream& out, signal::Type signal)
          {
             const auto value = cast::underlying( signal);
@@ -88,7 +91,7 @@ namespace casual
             return out << value;
          }
 
-		   namespace local
+         namespace local
          {
             namespace
             {
@@ -284,10 +287,10 @@ namespace casual
             } // <unnamed>
          } // local
 
-			void handle()
-			{
-			   local::global_handler.handle();
-			}
+         void handle()
+         {
+            local::global_handler.handle();
+         }
 
          void clear()
          {
@@ -366,7 +369,7 @@ namespace casual
                   //
                   // We send the signal directly
                   //
-                  log::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << std::endl;
+                  log::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << '\n';
                   signal::send( process::id(), signal::Type::alarm);
                   return local::get();
                }
@@ -612,7 +615,7 @@ namespace casual
             void send( common::thread::native::type thread, Type signal)
             {
                if( pthread_kill( thread, 0) == 0)
-	       {
+          {
                   if( pthread_kill( thread, cast::underlying( signal)) != 0)
                   {
                       log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::last::system::error());
@@ -672,8 +675,8 @@ namespace casual
          } // thread
 
 
-		} // signal
-	} // common
+      } // signal
+   } // common
 } // casual
 
 

@@ -1,12 +1,14 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_COMMON_ERROR_CODE_TX_H_
-#define CASUAL_COMMON_ERROR_CODE_TX_H_
+
+#pragma once
+
 
 #include "tx/code.h"
-#include "common/log/stream.h"
 
 #include <system_error>
 #include <iosfwd>
@@ -15,6 +17,10 @@ namespace casual
 {
    namespace common
    {
+      namespace log
+      {
+         class Stream;
+      } // log
       namespace code
       {
 
@@ -45,6 +51,7 @@ namespace casual
 
          common::log::Stream& stream( code::tx code);
 
+         std::ostream& operator << ( std::ostream& out, code::tx value);
 
       } // code
 
@@ -57,16 +64,6 @@ namespace std
    struct is_error_code_enum< casual::common::code::tx> : true_type {};
 }
 
-namespace casual
-{
-   namespace common
-   {
-      namespace code
-      {
-         inline std::ostream& operator << ( std::ostream& out, code::tx value) { return out << std::error_code( value);}
-      } // code
-   } // common
-} // casual
 
 //
 // To help prevent missuse of "raw codes"
@@ -96,4 +93,3 @@ namespace casual
 #endif // CASUAL_NO_XATMI_UNDEFINE
 
 
-#endif

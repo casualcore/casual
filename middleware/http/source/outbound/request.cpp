@@ -1,6 +1,9 @@
+//! 
+//! Copyright (c) 2015, The casual project
 //!
-//! casual
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
+
 
 #include "http/outbound/request.h"
 #include "http/common.h"
@@ -263,10 +266,27 @@ namespace casual
 
 
                      auto code = curl_easy_perform( m_handle.get());
-                     if( code != CURLE_OK)
+
+                     switch( code)
                      {
-                        throw common::exception::system::invalid::Argument{ common::string::compose(
-                           "failed to connect - code: ", code, " - message: ", global::error::buffer.data())};
+                        case CURLE_OK:
+                           break;
+                        case CURLE_COULDNT_CONNECT:
+                        {
+                           throw common::exception::system::communication::unavailable::no::Connect{ common::string::compose(
+                              "failed to connect - code: ", code, " - message: ", global::error::buffer.data())};
+                        }
+                        case CURLE_GOT_NOTHING:
+                        case CURLE_RECV_ERROR:
+                        {
+                           throw common::exception::system::communication::no::message::Absent{ common::string::compose(
+                              "failed to receive - code: ", code, " - message: ", global::error::buffer.data())};
+                        }
+                        default:
+                        {
+                           throw common::exception::system::invalid::Argument{ common::string::compose(
+                              "failed to connect - code: ", code, " - message: ", global::error::buffer.data())};
+                        }
                      }
 
                      return transform( std::move( reply));
