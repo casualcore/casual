@@ -1,10 +1,17 @@
 //!
-//! casual
+//! Copyright (c) 2018, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#pragma once
+
+
 #include "common/communication/socket.h"
+#include "common/communication/message.h"
 
 #include "common/uuid.h"
+#include "common/flag.h"
 #include "common/string.h"
 #include "common/environment.h"
 
@@ -18,33 +25,40 @@ namespace casual
          {
             struct Address
             {
-               Uuid key;
-
+               Address( Uuid key) : m_key( std::move( key)) {}
+               Address() : Address{ uuid::make()} {}
+               
                std::string name() const 
                { 
-                  return string::compose( environment::directory::temporary(), '/', key, ".socket");
+                  return string::compose( environment::directory::temporary(), '/', m_key, ".socket");
                }
 
-               static Address create()
-               {
-                  Address result;
-                  result.key = uuid::make();
-                  return result;
-               } 
+            private:
+               Uuid m_key;
             };
 
-            namespace address
+            namespace native
             {
-               Address create()
+               Socket create();
+
+               void bind( const Socket& socket, const Address& address);
+
+               enum class Flag : long
                {
-                  Address result;
-                  result.key = uuid::make();
-                  return result;
-               }
-            } // address
-            
-            
-            Socket connect( const Address& address);
+                  non_blocking = platform::flag::value( platform::flag::tcp::no_wait)
+               };
+
+               void listen( const Socket& socket);
+               Socket accept( const Socket& socket);
+
+               Uuid send( const Socket& socket, const communication::message::Complete& complete, common::Flags< Flag> flags);
+               communication::message::Complete receive( const Socket& socket, common::Flags< Flag> flags);
+
+               
+
+            } // native
+            void connect( const Socket& socket, const Address& address);
+   
 
 
 

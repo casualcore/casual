@@ -163,7 +163,7 @@ namespace casual
          //! Removes cv and references
          //!
          template< typename T>
-         struct basic_type
+         struct remove_cvref
          {
             using type = std::remove_reference_t< std::remove_cv_t< T>>;
          };
@@ -173,7 +173,7 @@ namespace casual
          //! Removes cv and references
          //!
          template< typename T>
-         using basic_type_t = typename basic_type< T>::type;
+         using remove_cvref_t = typename remove_cvref< T>::type;
 
 
 
@@ -190,11 +190,15 @@ namespace casual
                struct sequence : traversable {};
                struct continuous : sequence {};
 
-               struct array : continuous {};
+               
+               struct native_array : continuous {};
+               struct array : native_array {};
 
                struct adaptor : container{};
 
-               struct string : continuous{};
+               struct string_like : continuous {};
+               struct string_array : string_like {};
+               struct string : string_like {};
             } // category
 
             namespace detail
@@ -208,7 +212,7 @@ namespace casual
                template< typename Container, typename Category>
                struct traits : category_traits< Category>
                {
-                  using iterator = decltype( std::begin( std::declval< Container>()));
+                  using iterator = decltype( std::begin( std::declval< Container&>()));
                   using tag = typename std::iterator_traits< iterator>::iterator_category;
                };
 
@@ -223,9 +227,14 @@ namespace casual
             struct traits< std::array< T, size>> : detail::traits< std::array< T, size>, container::category::array>{};
 
             template< typename T, std::size_t size>
-            struct traits< T[ size]> : detail::traits< std::array< T, size>, container::category::array>{};
+            struct traits< T[ size]> : detail::traits< T[ size], container::category::native_array>{};
 
-
+            template< std::size_t size>
+            struct traits< char[ size]> : detail::traits< char[ size], container::category::string_array>{};
+            template< std::size_t size>
+            struct traits< unsigned char[ size]> : detail::traits< unsigned char[ size], container::category::string_array>{};
+            template< std::size_t size>
+            struct traits< signed char[ size]> : detail::traits< signed char[ size], container::category::string_array>{};
 
             template<>
             struct traits< std::string> : detail::traits< std::string, container::category::string>{};
@@ -270,7 +279,7 @@ namespace casual
 
             template< typename Container, typename Category>
             struct is_category : bool_constant<
-               std::is_base_of< Category, category_t< basic_type_t< Container>>>::value> {};
+               std::is_base_of< Category, category_t< remove_cvref_t< Container>>>::value> {};
 
             template< typename Container>
             struct is_container : is_category< Container, category::container> {};
@@ -291,7 +300,8 @@ namespace casual
             struct is_array : is_category< Container, category::array> {};
 
             template< typename Container>
-            struct is_string : is_category< Container, category::string> {};
+            struct is_string : is_category< Container, category::string_like> {};
+
 
          } // container
 
@@ -432,6 +442,25 @@ namespace casual
          {
          };
          //! @}
+
+         /* not needed right now, but could be... 
+         //!
+         //! 
+         //! defines value == true if all types differ, otherwise false
+         //!
+         //! @{
+         template< typename T1, typename T2, typename... Args>
+         struct is_different : bool_constant< is_different< T1, T2>::value && is_different< T2, Args...>::value>
+         {
+
+         };
+
+         template< typename T1, typename T2>
+         struct is_different< T1, T2> : bool_constant< ! std::is_same< T1, T2>::value>
+         {
+         };
+         //! @}
+         */
 
 
          struct unmovable

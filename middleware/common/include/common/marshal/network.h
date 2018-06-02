@@ -41,14 +41,14 @@ namespace casual
 
 
                   template< typename T>
-                  constexpr auto cast( T value) -> typename std::enable_if< ! std::is_enum< T>::value, T>::type
+                  constexpr auto cast( T value) -> std::enable_if_t< ! std::is_enum< T>::value, T>
                   {
                      return value;
                   }
 
 
                   template< typename T>
-                  constexpr auto cast( T value) -> typename std::enable_if< std::is_enum< T>::value, decltype( cast::underlying( value))>::type
+                  constexpr auto cast( T value) -> std::enable_if_t< std::is_enum< T>::value, decltype( cast::underlying( value))>
                   {
                      return common::cast::underlying( value);
                   }
@@ -59,7 +59,7 @@ namespace casual
                {
 
                   template< typename T>
-                  static typename std::enable_if< ! detail::is_network_array< T>::value>::type
+                  static std::enable_if_t< ! detail::is_network_array< T>::value>
                   write( const T& value, platform::binary::type& buffer)
                   {
                      auto net_value = common::network::byteorder::encode( detail::cast( value));
@@ -67,7 +67,7 @@ namespace casual
                   }
 
                   template< typename T>
-                  static typename std::enable_if< detail::is_network_array< T>::value>::type
+                  static std::enable_if_t< detail::is_network_array< T>::value>
                   write( const T& value, platform::binary::type& buffer)
                   {
                      memory::append( value, buffer);

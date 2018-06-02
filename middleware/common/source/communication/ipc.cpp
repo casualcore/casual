@@ -45,7 +45,7 @@ namespace casual
             {
                bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
                {
-                  log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
+                  common::log::line( log, "---> [", id,  "] send transport: ", transport, " - flags: ", flags);
 
                   //
                   // before we might block we check signals.
@@ -66,7 +66,7 @@ namespace casual
                         }
                         case sys::interrupted:
                         {
-                           log << "ipc::native::send - signal received\n";
+                           common::log::line( log, "ipc::native::send - signal received");
                            common::signal::handle();
 
                            //
@@ -116,7 +116,7 @@ namespace casual
 
                         case sys::interrupted:
                         {
-                           log << "ipc::native::receive - signal received\n";
+                           common::log::line( log, "ipc::native::receive - signal received");
 
                            common::signal::handle();
 
@@ -133,13 +133,13 @@ namespace casual
                         }
                         default:
                         {
-                           log << "ipc < [" << id << "] receive failed - transport: " << transport << " - flags: "<< flags << " - " << common::code::last::system::error();
+                           common::log::line( log, "ipc < [", id, "] receive failed - transport: ", transport, " - flags: ", flags, " - ", common::code::last::system::error());
                            exception::system::throw_from_errno( string::compose(  "ipc: ", id));
                         }
                      }
                   }
 
-                  log << "<--- [" << id << "] receive transport: " << transport << " - flags: " << flags << '\n';
+                  common::log::line( log, "<--- [", id, "] receive transport: ", transport, " - flags: ", flags);
 
                   return true;
 
@@ -229,7 +229,7 @@ namespace casual
                   {
                      exception::system::throw_from_errno( "ipc queue create failed");
                   }
-                  log << "queue id: " << m_id << " created\n";
+                  common::log::line( log, "queue id: ", m_id, " created");
                }
 
                Connector::~Connector()
@@ -330,7 +330,7 @@ namespace casual
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {
-                              log << "failed to fetch instance with identity: " << identity << '\n';
+                              common::log::line( log, "failed to fetch instance with identity: ", identity);
                               return {};
                            }
                         }
@@ -406,7 +406,7 @@ namespace casual
                               return process.queue;
                            }
 
-                           log << "failed to locate domain manager via " << environment::variable::name::ipc::domain::manager() << " - trying 'singleton file'\n";
+                           common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager(), " - trying 'singleton file'");
 
                            process = singleton_policy();
 
@@ -587,12 +587,12 @@ namespace casual
                {
                   if( msgctl( id.value(), IPC_RMID, nullptr) == 0)
                   {
-                     log << "queue id: " << id << " removed\n";
+                     common::log::line( log, "queue id: ", id, " removed");
                      return true;
                   }
                   else
                   {
-                     log::category::error << "failed to remove ipc-queue with id: " << id << " - " << common::code::last::system::error() << "\n";
+                     common::log::line( log::category::error, "failed to remove ipc-queue with id: ", id, " - ", common::code::last::system::error());
                   }
                }
                return false;

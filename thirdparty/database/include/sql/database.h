@@ -127,7 +127,7 @@ namespace sql
       }
 
       template< typename T>
-      inline typename std::enable_if< std::is_enum< T>::value, bool>::type
+      inline std::enable_if_t< std::is_enum< T>::value, bool>
       parameter_bind( sqlite3_stmt* statement, int column, T value)
       {
          return parameter_bind( statement, column, static_cast< casual::common::traits::underlying_type_t< T>>( value));
@@ -197,7 +197,7 @@ namespace sql
       }
 
       template< typename T>
-      inline typename std::enable_if< std::is_enum< T>::value, void>::type
+      inline std::enable_if_t< std::is_enum< T>::value, void>
       column_get( sqlite3_stmt* statement, int column, T& value)
       {
          casual::common::traits::underlying_type_t< T> enum_value;

@@ -219,9 +219,18 @@ namespace casual
                constexpr size::type size = 1024 * 16;
 
                static_assert( size <= max::size, "requested tcp message size is to big");
-
             } // message
+
          } // tcp
+
+         namespace communication
+         {
+            namespace domain
+            {
+               //! backlog for listen
+               constexpr int backlog = 10;
+            } // domain
+         } // communication
 
          namespace process
          {

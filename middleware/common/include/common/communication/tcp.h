@@ -109,7 +109,7 @@ namespace casual
             class Listener
             {
             public:
-               Listener( Address adress);
+               Listener( Address address);
 
                Socket operator() () const;
 

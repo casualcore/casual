@@ -1,9 +1,10 @@
 //!
-//! casual
+//! Copyright (c) 2018, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#ifndef CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_SOCKET_H_
-#define CASUAL_MIDDLEWARE_COMMON_INCLUDE_COMMON_COMMUNICATION_SOCKET_H_
+#pragma once
 
 
 #include "common/strong/id.h"
@@ -125,12 +126,3 @@ namespace casual
    } // common
 } // casual
 
-
-
-
-
-
-
-
-
-#endif

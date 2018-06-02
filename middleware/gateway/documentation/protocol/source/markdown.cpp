@@ -103,14 +103,14 @@ namespace casual
 
 
                   template< typename T>
-                  auto network( T&& value) -> typename std::enable_if< ! common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
+                  auto network( T&& value) -> std::enable_if_t< ! common::marshal::binary::network::detail::is_network_array< T>::value, Type>
                   {
                      auto network = common::network::byteorder::encode( common::marshal::binary::network::detail::cast( value));
                      return Type{ name( network), common::memory::size( network)};
                   }
 
                   template< typename T>
-                  auto network( T&& value) -> typename std::enable_if< common::marshal::binary::network::detail::is_network_array< T>::value, Type>::type
+                  auto network( T&& value) -> std::enable_if_t< common::marshal::binary::network::detail::is_network_array< T>::value, Type>
                   {
                      return Type{ "fixed array", static_cast< common::platform::size::type>( common::memory::size( value))};
                   }
@@ -195,7 +195,7 @@ namespace casual
                private:
 
                   template< typename T>
-                  typename std::enable_if< ! common::marshal::binary::detail::is_native_marshable< T>::value>::type
+                  std::enable_if_t< ! common::marshal::binary::detail::is_native_marshable< T>::value>
                   write( T& value)
                   {  
                      using casual::casual_marshal_value;
@@ -203,7 +203,7 @@ namespace casual
                   }
 
                   template< typename T>
-                  typename std::enable_if< common::marshal::binary::detail::is_native_marshable< T>::value>::type
+                  std::enable_if_t< common::marshal::binary::detail::is_native_marshable< T>::value>
                   write( T& value)
                   {
                      write_pod( value);

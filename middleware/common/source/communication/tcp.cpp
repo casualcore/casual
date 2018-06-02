@@ -377,11 +377,10 @@ namespace casual
                Trace trace( "common::communication::tcp::Listener ctor");
 
                //
-               // Could (probably) be set to zero as well (in casual-context)
+               // queuesize could (probably) be set to zero as well (in casual-context)
                //
-               const int queuesize = 5;
 
-               local::socket::check::result( ::listen( m_listener.descriptor().value(), queuesize));
+               local::socket::check::result( ::listen( m_listener.descriptor().value(), platform::communication::domain::backlog));
             }
 
             Socket Listener::operator() () const
@@ -418,7 +417,7 @@ namespace casual
                      {
                         Trace trace{ "tcp::native::local::receive"};
 
-                        log << "descriptor: " << descriptor << ", data: " << static_cast< void*>( first) << ", size: " << last - first << ", flags: " << flags << '\n';
+                        common::log::line( log, "descriptor: ", descriptor, ", data: ", static_cast< void*>( first), ", size: ", last - first, ", flags: ", flags);
 
 
                         while( first != last)

@@ -129,6 +129,7 @@ namespace casual
             };
          };
 
+
          namespace detail
          {
             template< typename S>
@@ -137,13 +138,13 @@ namespace casual
             }
 
             template< typename S, typename T>
-            auto part( S& stream, T&& value) -> std::enable_if_t< has_formatter< std::decay_t< T>>::value>
+            auto part( S& stream, T&& value) -> std::enable_if_t< has_formatter< traits::remove_cvref_t< T>>::value>
             {
-               typename has_formatter< std::decay_t< T>>::formatter{}( stream, std::forward< T>( value));
+               typename has_formatter< traits::remove_cvref_t< T>>::formatter{}( stream, std::forward< T>( value));
             }
 
             template< typename S, typename T>
-            auto part( S& stream, T&& value) -> std::enable_if_t< ! has_formatter< std::decay_t< T>>::value>
+            auto part( S& stream, T&& value) -> std::enable_if_t< ! has_formatter< traits::remove_cvref_t< T>>::value>
             {
                stream << std::forward< T>( value);
             }

@@ -29,7 +29,7 @@ namespace casual
             }
 
             template< typename T>
-            constexpr auto size() -> typename std::enable_if< std::is_array< T>::value, size_type>::type
+            constexpr auto size() -> std::enable_if_t< std::is_array< T>::value, size_type>
             {
                return size< typename std::remove_extent< T>::type>() * std::extent< T>::value;
             }
@@ -67,11 +67,11 @@ namespace casual
             } // detail
 
             template< typename T>
-            typename std::enable_if<
+            std::enable_if_t<
                   ! std::is_pointer< typename std::remove_reference< T>::type>::value
                   && traits::is_trivially_copyable< typename std::remove_reference< T>::type>::value
                   ,
-               typename detail::traits< T>::range>::type
+               typename detail::traits< T>::range>
             make( T& value)
             {
                auto first = reinterpret_cast< typename detail::traits< T>::iterator>( &value);
@@ -80,20 +80,18 @@ namespace casual
          } // range
 
          template< typename Iter>
-         typename std::enable_if< detail::is_suitable_iterator< Iter>::value>::type
+         std::enable_if_t< detail::is_suitable_iterator< Iter>::value>
          set( Range< Iter> destination, int c = 0)
          {
             std::memset( destination.data(), c, destination.size() * memory::size( typename std::iterator_traits< Iter>::value_type{}));
          }
 
          template< typename T>
-         typename std::enable_if< traits::is_trivially_copyable< T>::value>::type
+         std::enable_if_t< traits::is_trivially_copyable< T>::value>
          set( T& value, int c = 0)
          {
             set( range::make( value), c);
          }
-
-
 
 
          template< typename T>
