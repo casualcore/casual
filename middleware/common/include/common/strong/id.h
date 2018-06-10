@@ -75,6 +75,17 @@ namespace casual
             
          } // ipc
 
+         namespace pipe
+         {
+            namespace tag
+            {
+               struct type{};
+            } // tag
+   
+            using id = value::Optional< platform::communication::pipe::native::type, platform::communication::pipe::native::invalid, tag::type>;
+            
+         } // socket
+
       } // strong 
    } // common
 } // casual

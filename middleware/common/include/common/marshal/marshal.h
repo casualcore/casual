@@ -23,6 +23,9 @@
          statement \
    } \
 
+#define CASUAL_MARSHAL( member) \
+archive & member
+
 namespace casual
 {
    template< typename T, typename M>

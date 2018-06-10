@@ -255,7 +255,7 @@ namespace casual
 
                         ~Sender()
                         {
-                           Trace trace{ "mockup ipc::ventually::Sender dtor"};
+                           Trace trace{ "mockup ipc::eventually::Sender dtor"};
 
                            m_queue.terminate();
                            m_sender.join();

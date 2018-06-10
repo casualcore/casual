@@ -221,14 +221,29 @@ namespace casual
                static_assert( size <= max::size, "requested tcp message size is to big");
             } // message
 
+            namespace listen
+            {
+               //! backlog for listen
+               constexpr int backlog = 10;               
+            } // listen
+
          } // tcp
 
          namespace communication
          {
-            namespace domain
+            namespace pipe
             {
-               //! backlog for listen
-               constexpr int backlog = 10;
+               namespace native
+               {
+                  //! @attention do not use directly - use strong::pipe::id
+                  using type = int;
+                  constexpr type invalid = -1;
+               } // native
+
+               namespace transport
+               {
+                  constexpr size::type size = PIPE_BUF; //1024 * 4;
+               } // transport
             } // domain
          } // communication
 

@@ -100,7 +100,7 @@ namespace casual
 
 
                   static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
-                  static_assert( std::is_pod< message_t>::value, "Message has be a POD");
+                  static_assert( std::is_pod< message_t>::value, "Message has to be a POD");
                   //static_assert( sizeof( message_t) - header_size() == max_payload_size(), "something is wrong with padding");
 
 

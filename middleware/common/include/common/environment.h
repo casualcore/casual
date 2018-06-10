@@ -142,6 +142,14 @@ namespace casual
                   constexpr auto path() { return "CASUAL_LOG_PATH";}
                } // log
 
+               
+               namespace transient
+               {
+                  //! where to hold transient files, such as named-pipes.
+                  constexpr auto directory() { return "CASUAL_TRANSIENT_DIRECTORY";}
+               } // transient
+               
+
 
                //!
                //! the name of the environment variables that holds ipc queue id:s
@@ -208,6 +216,13 @@ namespace casual
          namespace log
          {
             const std::string& path();
+         } // log
+
+         namespace transient
+         {
+            //! where to hold transient files, such as named-pipes.
+            //! default: $CASUAL_DOMAIN_HOME/.casual/transient
+            const std::string& directory();
          } // log
 
          namespace domain

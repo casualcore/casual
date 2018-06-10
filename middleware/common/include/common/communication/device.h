@@ -469,6 +469,8 @@ namespace casual
                template< typename... Args>
                Device( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
+               constexpr blocking_policy policy_blocking() const { return blocking_policy{};}
+               constexpr non_blocking_policy policy_non_blocking() const { return non_blocking_policy{};}
 
                connector_type& connector() { return m_connector;}
                const connector_type& connector() const { return m_connector;}

@@ -214,6 +214,31 @@ namespace casual
             }
          } // log
 
+         namespace transient
+         {
+            namespace local
+            {
+               namespace
+               {
+                  std::string directory()
+                  {
+                     if( variable::exists( variable::name::transient::directory()))
+                        return variable::get( variable::name::transient::directory());
+
+                     if( variable::exists( variable::name::domain::home()))
+                        return variable::get( variable::name::domain::home()) + "/.casual/transient";
+
+                     return "./.casual/transient";
+                  }
+               } // <unnamed>
+            } // local
+
+            const std::string& directory()
+            {
+               static const std::string result = local::directory();
+               return result;
+            }
+         } // log
 
          namespace domain
          {

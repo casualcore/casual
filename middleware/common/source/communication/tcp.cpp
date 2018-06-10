@@ -8,6 +8,8 @@
 #include "common/communication/tcp.h"
 #include "common/communication/log.h"
 
+#include "common/result.h"
+
 #include "common/exception/system.h"
 #include "common/exception/handle.h"
 
@@ -48,40 +50,6 @@ namespace casual
                         };
 
                      } // option
-
-                     namespace check
-                     {
-                        void error( common::code::system last_error)
-                        {
-                           using system = common::code::system;
-                           switch( last_error)
-                           {
-                              case system::interrupted:
-                              {
-                                 common::signal::handle();
-
-                                 //
-                                 // we got a signal we don't have a handle for
-                                 // We fall through
-                                 //
-
-                              } // @fallthrough
-                              default:
-                              {
-                                 exception::system::throw_from_errno();
-                              }
-                           }
-                        }
-
-                        auto result( int result)
-                        {
-                           if( result == -1)
-                           {
-                              check::error( common::code::last::system::error());
-                           }
-                           return result;
-                        }
-                     } // check
 
 
                      enum class Flag
@@ -231,7 +199,7 @@ namespace casual
                         //const int flags{ NI_NUMERICHOST | NI_NUMERICSERV};
                         const int flags{ };
 
-                        check::result(
+                        posix::result(
                            getnameinfo(
                               &info, size,
                               host, NI_MAXHOST,
@@ -244,7 +212,7 @@ namespace casual
                      Socket accept( const descriptor_type descriptor)
                      {
                         Socket result{ descriptor_type{
-                              check::result( ::accept( descriptor.value(), nullptr, nullptr))}};
+                              posix::result( ::accept( descriptor.value(), nullptr, nullptr))}};
                         
                         result.set( socket::option::no_delay{});
 
@@ -305,7 +273,7 @@ namespace casual
                      struct sockaddr info{ };
                      socklen_t size = sizeof( info);
 
-                     local::socket::check::result(
+                     posix::result(
                         getsockname(
                            descriptor.value(), &info, &size));
 
@@ -322,7 +290,7 @@ namespace casual
                      struct sockaddr info{ };
                      socklen_t size = sizeof( info);
 
-                     local::socket::check::result(
+                     posix::result(
                         getpeername(
                            descriptor.value(), &info, &size));
 
@@ -380,7 +348,7 @@ namespace casual
                // queuesize could (probably) be set to zero as well (in casual-context)
                //
 
-               local::socket::check::result( ::listen( m_listener.descriptor().value(), platform::communication::domain::backlog));
+               posix::result( ::listen( m_listener.descriptor().value(), platform::tcp::listen::backlog));
             }
 
             Socket Listener::operator() () const
@@ -405,7 +373,7 @@ namespace casual
                      {
                         common::signal::handle();
 
-                        return tcp::local::socket::check::result(
+                        return posix::result(
                               ::send( descriptor.value(), data, size, flags.underlaying()));
                      }
 
@@ -424,7 +392,7 @@ namespace casual
                         {
                            common::signal::handle();
 
-                           const auto bytes = tcp::local::socket::check::result(
+                           const auto bytes = posix::result(
                                  ::recv( descriptor.value(), first, last - first, flags.underlaying()));
 
                            if( bytes == 0)
