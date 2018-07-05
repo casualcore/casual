@@ -99,12 +99,27 @@ namespace casual
                   #endif
                }
 
+
+
+               const Handle& handle()
+               {
+                  static const Handle result{ 
+                     strong::process::id{ getpid()}, 
+                     communication::ipc::inbound::ipc()};
+                  return result;
+               }
+
+
                namespace instantiated
                {
                   std::string& path = local::path();
                   std::string& basename = local::basename();
+                  const Handle& handle = local::handle();
+                  auto pid = handle.pid;
 
                } // instantiated
+
+
 
             } // <unnamed>
          } // local
@@ -122,229 +137,28 @@ namespace casual
 
          strong::process::id id()
          {
-            static const strong::process::id pid{ getpid()};
-            return pid;
+            return local::instantiated::pid;
          }
 
-         Handle handle()
+         const Handle& handle()
          {
-            Handle result{ id(), communication::ipc::inbound::id()};
-
-            return result;
+            return local::instantiated::handle;
          }
-
-         namespace instance
-         {
-            namespace identity
-            {
-               namespace service
-               {
-                  const Uuid& manager()
-                  {
-                     const static Uuid singleton{ "f58e0b181b1b48eb8bba01b3136ed82a"};
-                     return singleton;
-                  }
-               } // service
-
-               namespace forward
-               {
-                  const Uuid& cache()
-                  {
-                     const static Uuid singleton{ "f17d010925644f728d432fa4a6cf5257"};
-                     return singleton;
-                  }
-               } // forward
-
-
-               namespace gateway
-               {
-                  const Uuid& manager()
-                  {
-                     const static Uuid singleton{ "b9624e2f85404480913b06e8d503fce5"};
-                     return singleton;
-                  }
-               } // domain
-
-               namespace queue
-               {
-                  const Uuid& manager()
-                  {
-                     const static Uuid singleton{ "c0c5a19dfc27465299494ad7a5c229cd"};
-                     return singleton;
-                  }
-               } // queue
-
-               namespace traffic
-               {
-                  const Uuid& manager()
-                  {
-                     const static Uuid singleton{ "1aa1ce0e3e254a91b32e9d2ab22a8d31"};
-                     return singleton;
-                  }
-               } // traffic
-
-
-               namespace transaction
-               {
-                  const Uuid& manager()
-                  {
-                     const static Uuid singleton{ "5ec18cd92b2e4c60a927e9b1b68537e7"};
-                     return singleton;
-                  }
-               } // transaction
-
-            } // identity
-
-
-            namespace fetch
-            {
-               namespace local
-               {
-                  namespace
-                  {
-
-                     Handle call( message::domain::process::lookup::Request& request)
-                     {
-                        //
-                        // We create a temporary inbound, so we don't rely on the 'global' inbound
-                        //
-                        communication::ipc::inbound::Device inbound;
-
-                        request.process.pid = common::process::id();
-                        request.process.queue = inbound.connector().id();
-
-                        return communication::ipc::call(
-                              communication::ipc::domain::manager::device(),
-                              request,
-                              communication::ipc::policy::Blocking{},
-                              nullptr,
-                              inbound).process;
-                     }
-                  } // <unnamed>
-               } // local
-
-               std::ostream& operator << ( std::ostream& out, Directive directive)
-               {
-                  switch( directive)
-                  {
-                     case Directive::wait: return out << "wait";
-                     case Directive::direct: return out << "direct";
-                  }
-                  return out << "unknown";
-               }
-
-               Handle handle( const Uuid& identity, Directive directive)
-               {
-                  Trace trace{ "instance::handle::fetch"};
-
-                  log::line( log::debug, "identity: ", identity, ", directive: ", directive);
-
-                  message::domain::process::lookup::Request request;
-                  request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
-                  request.identification = identity;
-
-                  return local::call( request);
-               }
-
-               Handle handle( strong::process::id pid , Directive directive)
-               {
-                  Trace trace{ "instance::handle::fetch (pid)"};
-
-                  log::line( log::debug, "pid: ", pid, ", directive: ", directive);
-
-                  message::domain::process::lookup::Request request;
-                  request.directive = static_cast< message::domain::process::lookup::Request::Directive>( directive);
-                  request.pid = pid;
-
-                  return local::call( request);
-               }
-
-            } // fetch
-
-            namespace local
-            {
-               namespace
-               {
-                  template< typename M>
-                  void connect_reply( M&& message)
-                  {
-                     switch( message.directive)
-                     {
-                        case M::Directive::singleton:
-                        {
-                           log::category::error << "domain-manager denied startup - reason: executable is a singleton - action: terminate\n";
-                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: process is regarded a singleton - action: terminate"};
-                        }
-                        case M::Directive::shutdown:
-                        {
-                           log::category::error << "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate\n";
-                           throw exception::casual::Shutdown{ "domain-manager denied startup - reason: domain-manager is in shutdown mode - action: terminate"};
-                        }
-                        default:
-                        {
-                           break;
-                        }
-                     }
-                  }
-
-                  template< typename M>
-                  void connect( M&& message)
-                  {
-                     signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
-
-                     connect_reply( communication::ipc::call( communication::ipc::domain::manager::device(), message));
-                  }
-
-               } // <unnamed>
-            } // local
-
-            void connect( const Uuid& identity, const Handle& process)
-            {
-               Trace trace{ "process::instance::connect identity"};
-
-               message::domain::process::connect::Request request;
-               request.identification = identity;
-               request.process = process;
-
-               local::connect( request);
-            }
-
-            void connect( const Uuid& identity)
-            {
-               connect( identity, handle());
-            }
-
-            void connect( const Handle& process)
-            {
-               Trace trace{ "process::instance::connect process"};
-
-               message::domain::process::connect::Request request;
-               request.process = process;
-
-               local::connect( request);
-            }
-
-            void connect()
-            {
-               connect( handle());
-            }
-
-         } // instance
 
 
          bool operator == ( const Handle& lhs, const Handle& rhs)
          {
-            return lhs.pid == rhs.pid && lhs.queue == rhs.queue;
+            return lhs.pid == rhs.pid && lhs.ipc == rhs.ipc;
          }
 
          bool operator < ( const Handle& lhs, const Handle& rhs)
          {
-            return std::tie( lhs.pid, lhs.queue) < std::tie( rhs.pid, rhs.queue);
+            return std::tie( lhs.pid, lhs.ipc) < std::tie( rhs.pid, rhs.ipc);
          }
 
          std::ostream& operator << ( std::ostream& out, const Handle& value)
          {
-            return out << "{ pid: " << value.pid << ", queue: " << value.queue << '}';
+            return out << "{ pid: " << value.pid << ", ipc: " << value.ipc << '}';
          }
 
 
@@ -865,7 +679,7 @@ namespace casual
             {
                message::shutdown::Request request;
                request.process = handle();
-               communication::ipc::blocking::send( process.queue, request);
+               communication::ipc::blocking::send( process.ipc, request);
             }
             else if( process.pid)
             {
@@ -880,15 +694,7 @@ namespace casual
 
 
 
-         Handle ping( strong::ipc::id queue)
-         {
-            Trace trace{ "process::ping"};
 
-            message::server::ping::Request request;
-            request.process = process::handle();
-
-            return communication::ipc::call( queue, request).process;
-         }
 
          namespace lifetime
          {

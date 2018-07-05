@@ -34,6 +34,7 @@ namespace casual
 
          enum class Type : platform::signal::native::type
          {
+            none = 0,
             alarm = SIGALRM,
             interrupt = SIGINT,
             kill = SIGKILL,
@@ -47,21 +48,6 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, signal::Type signal);
 
 
-         //!
-         //! Throws if there has been a signal received.
-         //! And the signal is NOT blocked in the current
-         //! threads signal mask
-         //!
-         //! @throw subtype to exception::signal::Base
-         //!
-         void handle();
-
-         //!
-         //! Clears all pending signals.
-         //!
-         void clear();
-
-
          namespace current
          {
             //!
@@ -69,7 +55,7 @@ namespace casual
             //!
             //! @note only (?) for unittest
             //!
-            long pending();
+            platform::size::type pending();
          } // current
 
 
@@ -83,48 +69,48 @@ namespace casual
             //! @returns previous timeout.
             //!
             //! @note zero and negative offset will trigger a signal directly
-            //! @note common::platform::time::unit::min() has special meaning and will not set any
+            //! @note platform::time::unit::min() has special meaning and will not set any
             //! timeout and will unset current timeout, if any.
             //!
-            common::platform::time::unit set( common::platform::time::unit offset);
+            platform::time::unit set( platform::time::unit offset);
 
             template< typename R, typename P>
-            common::platform::time::unit set( std::chrono::duration< R, P> offset)
+            platform::time::unit set( std::chrono::duration< R, P> offset)
             {
-               return set( std::chrono::duration_cast< common::platform::time::unit>( offset));
+               return set( std::chrono::duration_cast< platform::time::unit>( offset));
             }
 
             //!
-            //! @return current timeout, common::platform::time::unit::min() if there isn't one
+            //! @return current timeout, platform::time::unit::min() if there isn't one
             //!
-            common::platform::time::unit get();
+            platform::time::unit get();
 
             //!
             //! Unset current timeout, if any.
             //!
-            //! @return previous timeout, common::platform::time::unit::min() if there wasn't one
+            //! @return previous timeout, platform::time::unit::min() if there wasn't one
             //!
-            common::platform::time::unit unset();
+            platform::time::unit unset();
 
 
             //!
             //! Sets a scoped timout.
             //! dtor will 'reset' previous timeout, if any. Hence enable nested timeouts.
             //!
-            //! @note common::platform::time::unit::min() has special meaning and will not set any
+            //! @note platform::time::unit::min() has special meaning and will not set any
             //! timeout and will unset current timeout, if any (that will be reset by dtor)
             //!
             class Scoped
             {
             public:
 
-               Scoped( common::platform::time::unit timeout);
-               Scoped( common::platform::time::unit timeout, const platform::time::point::type& now);
+               Scoped( platform::time::unit timeout);
+               Scoped( platform::time::unit timeout, const platform::time::point::type& now);
 
 
                template< typename R, typename P>
                Scoped( std::chrono::duration< R, P> timeout)
-                  : Scoped( std::chrono::duration_cast< common::platform::time::unit>( timeout))
+                  : Scoped( std::chrono::duration_cast< platform::time::unit>( timeout))
                {
                }
 
@@ -146,8 +132,8 @@ namespace casual
 
                Deadline( const platform::time::point::type& deadline, const platform::time::point::type& now);
                Deadline( const platform::time::point::type& deadline);
-               Deadline( common::platform::time::unit timeout, const platform::time::point::type& now);
-               Deadline( common::platform::time::unit timeout);
+               Deadline( platform::time::unit timeout, const platform::time::point::type& now);
+               Deadline( platform::time::unit timeout);
                ~Deadline();
 
                Deadline( Deadline&&);
@@ -211,7 +197,6 @@ namespace casual
          //! @return current pending signals that has been blocked
          //!
          Set pending();
-
 
          namespace set
          {
@@ -288,9 +273,6 @@ namespace casual
 
          namespace thread
          {
-
-
-
             //!
             //! Send signal to thread
             //!
@@ -366,6 +348,37 @@ namespace casual
                };
             } // scope
          } // thread
+
+         //! 
+         //! @returns the most prioritized received signal, if any.
+         //!
+         Type received();
+
+         //!
+         //! Throws if there has been a signal received.
+         //! And the signal is NOT blocked in the current
+         //! threads signal mask
+         //!
+         //! @throw subtype to exception::signal::Base
+         //!
+         void handle();
+
+         //!
+         //! Throws if there has been a signal received.
+         //! And the signal is part of the provied signal-sets
+         //!
+         //! @throw subtype to exception::signal::Base
+         //!
+         void handle( signal::Set set);
+
+         //!
+         //! Clears all pending signals.
+         //!
+         void clear();
+
+
+
+
       } // signal
    } // common
 } // casual

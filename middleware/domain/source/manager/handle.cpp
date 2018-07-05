@@ -53,9 +53,9 @@ namespace casual
                   {
                      try
                      {
-                        if( ! manager::ipc::device().non_blocking_send( process.queue, message))
+                        if( ! manager::ipc::device().non_blocking_send( process.ipc, message))
                         {
-                           state.pending.replies.emplace_back( std::forward< M>( message), process.queue);
+                           state.pending.replies.emplace_back( std::forward< M>( message), process.ipc);
                         }
                      }
                      catch( const exception::system::communication::Unavailable&)

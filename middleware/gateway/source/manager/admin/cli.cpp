@@ -79,7 +79,7 @@ namespace casual
             auto format_domain_id = []( const vo& c) { return transcode::hex::encode( c.remote.id.get());};
 
             auto format_pid = []( const vo& c){ return c.process.pid;};
-            auto format_queue = []( const vo& c){ return c.process.queue;};
+            auto format_queue = []( const vo& c){ return c.process.ipc;};
 
             auto format_bound = []( const vo& c)
             {

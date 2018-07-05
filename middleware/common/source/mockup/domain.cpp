@@ -8,6 +8,8 @@
 #include "common/mockup/domain.h"
 #include "common/mockup/log.h"
 
+#include "common/communication/instance.h"
+
 #include "common/environment.h"
 #include "common/message/domain.h"
 #include "common/message/event.h"
@@ -64,7 +66,7 @@ namespace casual
                            message::domain::process::connect::Request request;
                            request.process = replier.process();
 
-                           communication::ipc::blocking::send( communication::ipc::domain::manager::device(), request);
+                           communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), request);
                         }
 
                         void domain( const mockup::ipc::Replier& replier, const Uuid& identity)
@@ -73,7 +75,7 @@ namespace casual
                            request.identification = identity;
                            request.process = replier.process();
 
-                           communication::ipc::blocking::send( communication::ipc::domain::manager::device(), request);
+                           communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), request);
                         }
                      } // connect
                   } // send
@@ -124,7 +126,7 @@ namespace casual
 
                         reply.status = local::reply_error( request.service.name);
 
-                        ipc::eventually::send( request.process.queue, reply);
+                        ipc::eventually::send( request.process.ipc, reply);
                      }
                      else
                      {
@@ -229,7 +231,7 @@ namespace casual
                               auto reply = message::reverse::type( request);
 
                               reply.process = state->process;
-                              reply.recording.nodes.emplace_back( reply.process.queue);
+                              reply.recording.nodes.emplace_back( reply.process.ipc);
                               reply.route = state->route;
 
                               auto node = reply.route.next();
@@ -277,7 +279,7 @@ namespace casual
                      //
                      // Connect to the domain
                      //
-                     domain::local::send::connect::domain( m_replier, process::instance::identity::service::manager());
+                     domain::local::send::connect::domain( m_replier, communication::instance::identity::service::manager);
 
                      //
                      // Set environment variable to make it easier for other processes to
@@ -290,7 +292,7 @@ namespace casual
                      //
                      // Make sure we're up'n running before we let unittest-stuff interact with us...
                      //
-                     process::instance::fetch::handle( process::instance::identity::service::manager());
+                     communication::instance::fetch::handle( communication::instance::identity::service::manager);
                      }
 
                   Implementation() : Implementation( dispatch_type{}) {}
@@ -330,7 +332,7 @@ namespace casual
 
                            log  << "reply: " << reply << '\n';
 
-                           ipc::eventually::send( r.process.queue, reply);
+                           ipc::eventually::send( r.process.ipc, reply);
                         },
                         [&]( message::service::call::ACK& m)
                         {
@@ -349,7 +351,7 @@ namespace casual
                            auto reply = message::reverse::type( m);
                            reply.processes = std::move( m.processes);
 
-                           ipc::eventually::send( m.process.queue, reply);
+                           ipc::eventually::send( m.process.ipc, reply);
                         },
                         [&]( message::service::Advertise& m)
                         {
@@ -387,11 +389,11 @@ namespace casual
                         },
                         [&]( message::event::subscription::Begin& m)
                         {
-                           m_state.traffic_monitors.push_back( m.process.queue);
+                           m_state.traffic_monitors.push_back( m.process.ipc);
                         },
                         [&]( message::event::subscription::End& m)
                         {
-                           algorithm::trim( m_state.traffic_monitors, algorithm::remove( m_state.traffic_monitors, m.process.queue));
+                           algorithm::trim( m_state.traffic_monitors, algorithm::remove( m_state.traffic_monitors, m.process.ipc));
                         },
                         [&]( message::gateway::domain::discover::Request& m)
                         {
@@ -423,7 +425,7 @@ namespace casual
 
                            log << "reply: " << reply << '\n';
 
-                           ipc::eventually::send( m.process.queue, reply);
+                           ipc::eventually::send( m.process.ipc, reply);
 
                         },
                         domain::local::handle::connect::Reply{ "broker"},
@@ -476,6 +478,8 @@ namespace casual
                      {
                         Trace trace{ "mockup domain::process::connect::Request"};
 
+                        common::log::line( log, "message: ", r);
+
                         m_state.executables.push_back( r.process);
 
                         auto reply = message::reverse::type( r);
@@ -490,14 +494,14 @@ namespace casual
                               log  << "mockup process: " << r.process << " is a singleton, and one is already running\n";
                               reply.directive = decltype( reply)::Directive::singleton;
 
-                              ipc::eventually::send( r.process.queue, reply);
+                              ipc::eventually::send( r.process.ipc, reply);
 
                               return;
                            }
                            m_state.singeltons[ r.identification] = r.process;
                         }
 
-                        ipc::eventually::send( r.process.queue, reply);
+                        ipc::eventually::send( r.process.ipc, reply);
 
                         //
                         // Check pending
@@ -511,7 +515,7 @@ namespace casual
 
                                     auto reply = message::reverse::type( p);
                                     reply.process = r.process;
-                                    ipc::eventually::send( p.process.queue, reply);
+                                    ipc::eventually::send( p.process.ipc, reply);
                                     return true;
                                  }
                                  return false;
@@ -525,19 +529,21 @@ namespace casual
                         auto reply = message::reverse::type( r);
                         reply.domain = m_state.configuration;
 
-                        ipc::eventually::send( r.process.queue, reply);
+                        ipc::eventually::send( r.process.ipc, reply);
                      },
                      [&]( common::message::domain::configuration::server::Request& r)
                      {
                         Trace trace{ "mockup common::message::domain::configuration::server::Request"};
 
                         auto reply = message::reverse::type( r);
-                        ipc::eventually::send( r.process.queue, reply);
+                        ipc::eventually::send( r.process.ipc, reply);
                      },
 
                      [&]( common::message::domain::process::lookup::Request& r)
                      {
                         Trace trace{ "mockup domain::process::lookup::Request"};
+
+                        common::log::line( log, "message: ", r);
 
                         auto reply = message::reverse::type( r);
 
@@ -550,7 +556,7 @@ namespace casual
                               log << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
 
                               reply.process = found->second;
-                              ipc::eventually::send( r.process.queue, reply);
+                              ipc::eventually::send( r.process.ipc, reply);
                               return;
                            }
                         }
@@ -565,7 +571,7 @@ namespace casual
 
                               reply.process = *found;
                               log << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
-                              ipc::eventually::send( r.process.queue, reply);
+                              ipc::eventually::send( r.process.ipc, reply);
                               return;
                            }
                         }
@@ -578,12 +584,14 @@ namespace casual
                         }
                         else
                         {
-                           ipc::eventually::send( r.process.queue, reply);
+                           ipc::eventually::send( r.process.ipc, reply);
                         }
                      },
                      [&]( common::message::event::subscription::Begin& m)
                      {
                         Trace trace{ "mockup common::message::event::subscription::Begin"};
+
+                        common::log::line( log, "message: ", m);
 
                         m_state.events.subscription( m);
                      },
@@ -591,17 +599,23 @@ namespace casual
                      {
                         Trace trace{ "mockup common::message::event::subscription::End"};
 
+                        common::log::line( log, "message: ", m);
+
                         m_state.events.subscription( m);
                      },
                      [&]( common::message::event::process::Exit& m)
                      {
                         Trace trace{ "mockup common::message::event::process::Exit"};
 
+                        common::log::line( log, "message: ", m);
+
                         m_state.events( m);
                      },
                      [&]( common::message::event::domain::Error& m)
                      {
                         Trace trace{ "mockup common::message::event::domain::Error"};
+
+                        common::log::line( log, "message: ", m);
 
                         m_state.events( m);
                      },
@@ -684,7 +698,7 @@ namespace casual
                      {
                         for( auto&& involved : extract( message.trid))
                         {
-                           ipc::eventually::send( involved.process.queue, message);
+                           ipc::eventually::send( involved.process.ipc, message);
                         }
                      }
 
@@ -711,7 +725,7 @@ namespace casual
                      //
                      // Connect to the domain
                      //
-                     local::send::connect::domain( m_replier, process::instance::identity::transaction::manager());
+                     local::send::connect::domain( m_replier, communication::instance::identity::transaction::manager);
 
                      //
                      // Set environment variable to make it easier for other processes to
@@ -724,7 +738,7 @@ namespace casual
                      //
                      // Make sure we're up'n running before we let unittest-stuff interact with us...
                      //
-                     process::instance::fetch::handle( process::instance::identity::transaction::manager());
+                     communication::instance::fetch::handle( communication::instance::identity::transaction::manager);
                   }
 
                   dispatch_type default_handler()
@@ -751,10 +765,10 @@ namespace casual
                            reply.stage = common::message::transaction::commit::Reply::Stage::prepare;
                            reply.trid = message.trid;
 
-                           ipc::eventually::send( message.process.queue, reply);
+                           ipc::eventually::send( message.process.ipc, reply);
 
                            reply.stage = common::message::transaction::commit::Reply::Stage::commit;
-                           ipc::eventually::send( message.process.queue, reply);
+                           ipc::eventually::send( message.process.ipc, reply);
                         },
                         [&]( common::message::transaction::rollback::Request& message)
                         {
@@ -774,7 +788,7 @@ namespace casual
                            reply.state = code::tx::ok;;
                            reply.trid = message.trid;
 
-                           ipc::eventually::send( message.process.queue, reply);
+                           ipc::eventually::send( message.process.ipc, reply);
                         },
                         [&]( common::message::transaction::resource::external::Involved& message)
                         {
@@ -821,7 +835,7 @@ namespace casual
                      //
                      // Connect to the domain
                      //
-                     local::send::connect::domain( m_replier, process::instance::identity::queue::manager());
+                     local::send::connect::domain( m_replier, communication::instance::identity::queue::manager);
 
                      //
                      // Set environment variable to make it easier for other processes to
@@ -832,7 +846,7 @@ namespace casual
                      //
                      // Make sure we're up'n running before we let unittest-stuff interact with us...
                      //
-                     process::instance::fetch::handle( process::instance::identity::queue::manager());
+                     communication::instance::fetch::handle( communication::instance::identity::queue::manager);
                   }
 
                   dispatch_type default_handler()
@@ -846,7 +860,7 @@ namespace casual
                            reply.process = m_replier.process();
                            reply.queue = strong::queue::id{ 42};
 
-                           ipc::eventually::send( r.process.queue, reply);
+                           ipc::eventually::send( r.process.ipc, reply);
                         },
                         [&]( message::queue::enqueue::Request& r)
                         {
@@ -861,7 +875,7 @@ namespace casual
 
                            m_queues[ r.name].push( std::move( message));
 
-                           ipc::eventually::send( r.process.queue, reply);
+                           ipc::eventually::send( r.process.ipc, reply);
                         },
                         [&]( message::queue::dequeue::Request& r)
                         {
@@ -877,7 +891,7 @@ namespace casual
                               queue.pop();
                            }
 
-                           ipc::eventually::send( r.process.queue, reply);
+                           ipc::eventually::send( r.process.ipc, reply);
                         }
                      };
                   }
@@ -905,7 +919,7 @@ namespace casual
                      advertise.process = process;
                      advertise.services = std::move( services);
 
-                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), advertise);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
 
                   }
                } // <unnamed>
@@ -969,7 +983,7 @@ namespace casual
                   unadvertise.process = m_replier.process();
                   algorithm::copy( services, std::back_inserter( unadvertise.services));
 
-                  communication::ipc::blocking::send( communication::ipc::service::manager::device(), unadvertise);
+                  communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), unadvertise);
                }
 
                void Server::send_ack() const
@@ -977,7 +991,7 @@ namespace casual
                   message::service::call::ACK message;
                   message.process = process();
 
-                  communication::ipc::blocking::send( communication::ipc::service::manager::device(), message);
+                  communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), message);
                }
 
                process::Handle Server::process() const

@@ -10,6 +10,7 @@
 
 
 #include "common/communication/ipc.h"
+#include "common/communication/select.h"
 
 
 #include "common/process.h"
@@ -318,6 +319,8 @@ namespace casual
                {
                   Trace trace{ "mockup ipc::eventually::send"};
 
+                  log::line( mockup::log, "destination: ", destination);
+
                   auto correlation = complete.correlation;
 
                   local::eventually::Sender::instance().send( destination, std::move( complete));
@@ -329,168 +332,101 @@ namespace casual
             } // eventually
 
 
-
-            class Link::Implementation
+            namespace local
             {
-            public:
-
-               using message_type = communication::ipc::message::Transport;
-               using queue_type = local::Queue< message_type>;
-
-
-               Implementation( id_type input, id_type output)
-                 : input( input), output( output)
+               namespace
                {
-
-                  if( ! ( communication::ipc::exists( input) && communication::ipc::exists( output)))
+                  void link( strong::ipc::id input_id, strong::ipc::id output_id)
                   {
-                     log::category::error << "mockup failed to set up link between [" << input << "] --> [" << output << "]" << '\n';
-                     return;
-                  }
+                     auto input = communication::ipc::native::open::read( input_id);
+                     auto output = communication::ipc::native::open::write( output_id);
 
-                  m_input_worker = std::thread{ []( id_type input, const queue_type& queue)
-                  {
-                     //
-                     // We block all signals.
-                     //
+                     std::deque< communication::ipc::message::Transport> cache;
+
                      signal::thread::scope::Block block;
 
-                     try
+                     using actions_type = std::vector< communication::select::Action>;
+
+                     actions_type read_only;
+                     actions_type read_write;
+
+
+                     const actions_type* actions;
+
+
+                     auto read = communication::select::Action{ communication::select::Action::Direction::read, input.id(), [&]( auto descriptor)
                      {
-                        Trace trace{ "Link::input_worker"};
-
-                        auto terminate = execute::scope( [&](){ queue.terminate();});
-
-                        while( true)
+                        communication::ipc::message::Transport transport;
+                        if( communication::ipc::native::blocking::receive( input, transport))
                         {
-                           message_type transport;
-
-                           communication::ipc::native::receive( input, transport, {});
-
                            if( transport.type() == message::mockup::Disconnect::type())
                            {
-                              log << "mockup link got disconnect message - action: shutdown thread\n";
-                              return;
+                              throw exception::casual::Shutdown{};
                            }
-                           else if( transport.type() == message::mockup::Clear::type())
-                           {
-                              queue.clear();
 
-                              while( communication::ipc::native::receive( input, transport, communication::ipc::native::Flag::non_blocking))
-                                 ;
-
-                              queue.add( std::move( transport));
-
-                           }
-                           else
-                           {
-                              queue.add( std::move( transport));
-                           }
+                           cache.push_back( transport);
+                           actions = &read_write;
                         }
-                     }
-                     catch( ...)
+                     }};
+
+                     auto write = communication::select::Action{ communication::select::Action::Direction::write, output.id(), [&]( auto descriptor)
                      {
-                        exception::handle();
-                     }
-                  }, input, std::ref( m_queue)};
-
-
-                  m_output_worker = std::thread{ []( id_type output, const queue_type& queue)
-                  {
-                     //
-                     // We block all signals.
-                     //
-                     signal::thread::scope::Block block;
-
-                     try
-                     {
-                        Trace trace{ "Link::output_worker"};
-
-                        while( true)
+                        while( ! cache.empty() && communication::ipc::native::non::blocking::send( output, cache.front()))
                         {
-                           auto transport = queue.get();
+                           cache.pop_front();
+                        }
 
-                           if( transport.type() == message::mockup::Clear::type())
-                           {
-                              while( communication::ipc::native::receive( output, transport, communication::ipc::native::Flag::non_blocking))
-                                 ;
-                           }
-                           else
-                           {
-                              communication::ipc::native::send( output, transport, {});
-                           }
+                        actions =  cache.empty() ? &read_only : &read_write;
+                     }};
+
+                     read_only = { read};
+                     read_write = { read, write};
+
+                     actions = &read_only;
+
+                     while( true)
+                     {
+                        try
+                        {
+                           communication::select::block( *actions);
+                        }
+                        catch( ...)
+                        {
+                           exception::handle();
                         }
                      }
-                     catch( ...)
-                     {
-                        exception::handle();
-                     }
-                  }, output, std::ref( m_queue)};
+                  }
+               } // <unnamed>
+            } // local
+
+            struct Collector::Implementation
+            {
+               Implementation() : m_pid( mockup::pid::next())
+               {
+                  Trace trace{ "Collector::Implementation()"};
+
+                  m_worker = std::thread{ &local::link,  m_input.connector().id().ipc(), m_output.connector().id().ipc()};
+
                }
 
                ~Implementation()
                {
-                  Trace trace{ "Link::~Implementation()"};
+                  Trace trace{ "Collector::~Implementation()"};
 
-                  local::shutdown_thread( m_input_worker, input);
-                  m_output_worker.join();
+                  local::shutdown_thread( m_worker, m_input.connector().id().ipc());
+                  m_worker.join();
                }
 
-
-               id_type input;
-               id_type output;
-               queue_type m_queue;
-               std::thread m_input_worker;
-               std::thread m_output_worker;
-
-            };
-
-            Link::Link( id_type input, id_type output)
-               : m_implementation( input, output)
-            {
-               log << "link: " << *this << '\n';
-            }
-
-            Link::~Link() = default;
-
-            Link::Link( Link&&) noexcept = default;
-            Link& Link::operator = ( Link&&) noexcept = default;
-
-            id_type Link::input() const { return m_implementation->input;}
-            id_type Link::output() const { return m_implementation->output;}
-
-            void Link::clear() const
-            {
-               communication::ipc::outbound::Device ipc{ input()};
-               ipc.send( message::mockup::Clear{}, communication::ipc::policy::Blocking{});
-            }
-
-            std::ostream& operator << ( std::ostream& out, const Link& value)
-            {
-               return out << "{ input:" << value.m_implementation->input
-                     << ", output: " << value.m_implementation->output
-                     << '}';
-            }
-
-
-            struct Collector::Implementation
-            {
-               Implementation() : m_link{ m_input.connector().id(), m_output.connector().id()}, m_pid( mockup::pid::next())
-               {
-                  Trace trace{ "Collector::Implementation()"};
-
-               }
 
                void clear()
                {
-                  m_link.clear();
                   m_input.clear();
                   m_output.clear();
                }
 
                communication::ipc::inbound::Device m_input;
                communication::ipc::inbound::Device m_output;
-               Link m_link;
+               std::thread m_worker;
                strong::process::id m_pid;
             };
 
@@ -502,7 +438,7 @@ namespace casual
             }
             Collector::~Collector() = default;
 
-            id_type Collector::input() const { return m_implementation->m_input.connector().id();}
+            id_type Collector::input() const { return m_implementation->m_input.connector().id().ipc();}
             communication::ipc::inbound::Device& Collector::output() const { return m_implementation->m_output;}
 
 
@@ -521,17 +457,15 @@ namespace casual
                return out << "{ process: " << value.process()
                      << ", input:" << value.m_implementation->m_input
                      << ", output: " << value.m_implementation->m_output
-                     << ", link: " << value.m_implementation->m_link
                      << '}';
             }
-
 
             struct Replier::Implementation
             {
                Implementation( communication::ipc::dispatch::Handler&& replier) : process{ mockup::pid::next()}
                {
                   communication::ipc::inbound::Device ipc;
-                  process.queue = ipc.connector().id();
+                  process.ipc = ipc.connector().id().ipc();
 
                   m_thread = std::thread{ &worker_thread, std::move( ipc), std::move( replier), process.pid};
                }
@@ -540,7 +474,7 @@ namespace casual
                {
                   Trace trace{ "Replier::~Implementation()"};
 
-                  local::shutdown_thread( m_thread, process.queue);
+                  local::shutdown_thread( m_thread, process.ipc);
                }
 
                static void worker_thread(
@@ -556,7 +490,7 @@ namespace casual
                      {
                         message::mockup::thread::Process message;
                         message.process.pid = pid;
-                        message.process.queue = ipc.connector().id();
+                        message.process.ipc = ipc.connector().id().ipc();
 
                         replier( marshal::complete( message));
                      }
@@ -596,7 +530,7 @@ namespace casual
 
 
             process::Handle Replier::process() const { return m_implementation->process;}
-            id_type Replier::input() const { return m_implementation->process.queue;}
+            id_type Replier::input() const { return m_implementation->process.ipc;}
 
             std::ostream& operator << ( std::ostream& out, const Replier& value)
             {

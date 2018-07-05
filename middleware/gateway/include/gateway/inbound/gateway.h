@@ -73,7 +73,7 @@ namespace casual
                   // Set 'sender' so we (our main thread) get the reply
                   //
                   message.process = common::process::handle();
-                  blocking::send( common::communication::ipc::transaction::manager::device(), message);
+                  blocking::send( common::communication::instance::outbound::transaction::manager::device(), message);
                }
             };
 
@@ -126,7 +126,7 @@ namespace casual
                      //
                      // Send lookup
                      //
-                     blocking::send( common::communication::ipc::service::manager::device(), request);
+                     blocking::send( common::communication::instance::outbound::service::manager::device(), request);
                   }
                };
 
@@ -150,7 +150,7 @@ namespace casual
                            {
                               try
                               {
-                                 common::communication::ipc::outbound::Device ipc{ message.process.queue};
+                                 common::communication::ipc::outbound::Device ipc{ message.process.ipc};
                                  ipc.put( request, common::communication::ipc::policy::Blocking{});
                               }
                               catch( const common::exception::system::communication::Unavailable&)
@@ -246,7 +246,7 @@ namespace casual
 
                         if( message.process)
                         {
-                           common::communication::ipc::outbound::Device ipc{ message.process.queue};
+                           common::communication::ipc::outbound::Device ipc{ message.process.ipc};
                            ipc.put( request, common::communication::ipc::policy::Blocking{});
                         }
                         else
@@ -501,8 +501,8 @@ namespace casual
 
                         if( ! message.services.empty())
                         {
-                           blocking::send( common::communication::ipc::service::manager::device(), message);
-                           pids.push_back( common::communication::ipc::service::manager::device().connector().process().pid);
+                           blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+                           pids.push_back( common::communication::instance::outbound::service::manager::device().connector().process().pid);
                         }
 
                         if( ! message.queues.empty() &&

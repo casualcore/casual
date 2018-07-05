@@ -8,7 +8,7 @@
 #include "common/event/send.h"
 
 
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/signal.h"
 
 
@@ -36,7 +36,7 @@ namespace casual
                error.executable = process::basename();
                error.pid = process::id();
 
-               communication::ipc::blocking::send( communication::ipc::domain::manager::device(), error);
+               communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), error);
             }
 
          } // error

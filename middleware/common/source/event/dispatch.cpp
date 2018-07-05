@@ -23,7 +23,7 @@ namespace casual
 
             return common::message::pending::Message{
                std::move( complete),
-               algorithm::transform( m_subscribers, std::mem_fn( &common::process::Handle::queue))
+               algorithm::transform( m_subscribers, std::mem_fn( &common::process::Handle::ipc))
             };
          }
 
@@ -38,10 +38,10 @@ namespace casual
             algorithm::erase( m_subscribers, std::get< 1>( split));
          }
 
-         bool base_dispatch::exists( strong::ipc::id queue) const
+         bool base_dispatch::exists( strong::ipc::id ipc) const
          {
-            return ! algorithm::find_if( m_subscribers, [queue]( auto& s){
-               return s.queue == queue;
+            return ! algorithm::find_if( m_subscribers, [ipc]( auto& s){
+               return s.ipc == ipc;
             }).empty();
          }
 

@@ -93,7 +93,7 @@ namespace casual
 
                message.buffer = { buffer::type::binary(), platform::binary::type( 1024)};
                message.service.name = "test_service";
-               message.process.queue = id;
+               message.process.ipc = id;
 
                return message;
             }
@@ -167,7 +167,7 @@ namespace casual
                      auto reply = common::message::reverse::type( request);
                      reply.resources = { "rm1", "rm2"};
 
-                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                     common::mockup::ipc::eventually::send( request.process.ipc, reply);
                   }
                };
 
@@ -197,7 +197,7 @@ namespace casual
                            }
                      };
 
-                     common::mockup::ipc::eventually::send( request.process.queue, reply);
+                     common::mockup::ipc::eventually::send( request.process.ipc, reply);
                   }
                };
             };
@@ -214,7 +214,7 @@ namespace casual
                   message.correlation = uuid::make();
                   message.buffer = { buffer::type::binary(), platform::binary::type( 1024)};
                   message.service.name = std::move( service);
-                  message.process.queue = queue;
+                  message.process.ipc = queue;
                   message.trid = std::move( trid);
 
                   return message;
@@ -238,7 +238,7 @@ namespace casual
                const common::transaction::ID& ongoing()
                {
                   static auto singleton = common::transaction::ID::create(
-                        process::Handle{ strong::process::id( process::handle().pid.value() + 1), process::handle().queue});
+                        process::Handle{ strong::process::id( process::handle().pid.value() + 1), process::handle().ipc});
 
                   return singleton;
                }

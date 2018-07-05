@@ -91,7 +91,7 @@ namespace casual
 
                                  try
                                  {
-                                    communication::ipc::outbound::Device ipc{ connection.process.queue};
+                                    communication::ipc::outbound::Device ipc{ connection.process.ipc};
                                     ipc.send( request, communication::ipc::policy::Blocking{});
                                  }
                                  catch( const exception::system::communication::Unavailable&)
@@ -317,7 +317,7 @@ namespace casual
 
                      std::vector< strong::process::id> requested;
 
-                     auto destination = message.process.queue;
+                     auto destination = message.process.ipc;
 
                      //
                      // Make sure we get the response
@@ -336,7 +336,7 @@ namespace casual
                               //
                               if( outbound.remote != message.domain)
                               {
-                                 if( local::optional::send( outbound.process.queue, message))
+                                 if( local::optional::send( outbound.process.ipc, message))
                                  {
                                     requested.push_back( outbound.process.pid);
                                  }
@@ -377,7 +377,7 @@ namespace casual
                      auto reply = common::message::reverse::type( message);
 
                      auto send_reply = common::execute::scope( [&](){
-                        local::optional::send( message.process.queue, reply);
+                        local::optional::send( message.process.ipc, reply);
                      });
 
 
@@ -475,7 +475,7 @@ namespace casual
                         connection.process.pid = common::process::spawn(
                               common::environment::directory::casual() + "/bin/casual-gateway-inbound-ipc",
                               {
-                                    "--remote-ipc-queue", common::string::compose( message.process.queue),
+                                    "--remote-ipc-queue", common::string::compose( message.process.ipc),
                                     "--correlation", uuid::string( message.correlation),
                               });
 

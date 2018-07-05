@@ -7,7 +7,7 @@
 
 #include "common/service/lookup.h"
 
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/exception/xatmi.h"
 
 namespace casual
@@ -25,7 +25,7 @@ namespace casual
             request.process = process::handle();
             request.context = context;
 
-            m_correlation = communication::ipc::blocking::send( communication::ipc::service::manager::device(), request);
+            m_correlation = communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), request);
          }
 
          Lookup::Lookup( std::string service) : Lookup( std::move( service), Context::regular) {}

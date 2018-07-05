@@ -87,7 +87,7 @@ namespace casual
                   strong::queue::id queue;
                   size_type order = 0;
 
-                  explicit operator bool () const { return ! process.queue.empty();}
+                  explicit operator bool () const { return ! process.ipc.empty();}
 
                   CASUAL_CONST_CORRECT_MARSHAL({
                      archive & process;

@@ -209,7 +209,7 @@ namespace casual
          {
             if( out && id)
             {
-               out << id.xid << ':' << id.m_owner.pid << ':' << id.m_owner.queue;
+               out << id.xid << ':' << id.m_owner.pid;
             }
             return out;
          }

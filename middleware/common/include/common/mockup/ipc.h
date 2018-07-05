@@ -69,34 +69,6 @@ namespace casual
 
 
 
-
-            //!
-            //! Links one queue to another.
-            //!
-            //! Reads transport-messages from input and writes them to
-            //! output. Caches transport if we can't write.
-            //!
-            //! neither of the input and output is owned by an instance of Link
-            //!
-            struct Link
-            {
-               Link( id_type input, id_type output);
-               ~Link();
-
-               Link( Link&&) noexcept;
-               Link& operator = ( Link&&) noexcept;
-
-               id_type input() const;
-               id_type output() const;
-
-               void clear() const;
-
-               friend std::ostream& operator << ( std::ostream& out, const Link& value);
-            private:
-               class Implementation;
-               move::basic_pimpl< Implementation> m_implementation;
-            };
-
             //!
             //! Collects messages from input and put them in output
             //! caches messages if the output is full

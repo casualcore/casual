@@ -77,7 +77,7 @@ namespace casual
 
                   auto group = lookup();
 
-                  if( ! group.process.queue)
+                  if( ! group.process.ipc)
                   {
                      throw common::exception::system::invalid::Argument{ "failed to look up queue"};
                   }
@@ -85,7 +85,7 @@ namespace casual
 
                   common::log::line( verbose::log, "request: ", request);
 
-                  auto id = common::communication::ipc::call( group.process.queue, request).id;
+                  auto id = common::communication::ipc::call( group.process.ipc, request).id;
                   common::log::line( verbose::log, "id: ", id);
 
                   return id;
@@ -119,7 +119,7 @@ namespace casual
 
                      try
                      {
-                        ipc.blocking_send( group.process.queue, request);
+                        ipc.blocking_send( group.process.ipc, request);
 
                         auto handler = ipc.handler(
                            []( common::message::queue::dequeue::forget::Request& request)
@@ -155,7 +155,7 @@ namespace casual
 
                      common::log::line( verbose::log, "request: ", request);
 
-                     return ipc.blocking_send( group.process.queue, request);
+                     return ipc.blocking_send( group.process.ipc, request);
                   };
 
                   auto correlation = send_request();
@@ -428,7 +428,7 @@ namespace casual
 
                request.queue = queue.queue;
 
-               auto reply = common::communication::ipc::call( queue.process.queue, request);
+               auto reply = common::communication::ipc::call( queue.process.ipc, request);
 
                common::algorithm::transform( reply.messages, result, []( common::message::queue::information::Message& m){
 
@@ -471,7 +471,7 @@ namespace casual
                   throw common::exception::system::invalid::Argument{ "not possible to peek a remote queue"};
                }
 
-               auto reply = common::communication::ipc::call( queue.process.queue, request);
+               auto reply = common::communication::ipc::call( queue.process.ipc, request);
 
                common::algorithm::transform( reply.messages , result, []( common::message::queue::dequeue::Reply::Message& m){
                   Message message;

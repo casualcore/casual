@@ -55,7 +55,7 @@ namespace casual
                   }
 
                   //!
-                  //! Overload for manip-functions...
+                  //! Overload for omanip-functions...
                   //!
 
                   using omanip_t = std::add_pointer_t< std::ostream&( std::ostream&)>;
@@ -171,6 +171,7 @@ namespace casual
          void line( std::ostream& stream, Args&&... args)
          {
             write( stream, std::forward< Args>( args)..., '\n');
+            stream.flush(); // todo: configurable?
          } 
       } // log
    } // common

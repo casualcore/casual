@@ -49,12 +49,13 @@ namespace casual
 
       } // uuid
 
+/* todo: remove
 
       Uuid::Uuid()
       {
          memory::set( m_uuid);
       }
-
+*/
       Uuid::Uuid( const uuid_type& uuid)
       {
          uuid_copy( m_uuid, uuid);
@@ -76,18 +77,6 @@ namespace casual
             memory::set( m_uuid);
          }
       }
-
-
-      const Uuid::uuid_type& Uuid::get() const
-      {
-         return m_uuid;
-      }
-
-      Uuid::uuid_type& Uuid::get()
-      {
-         return m_uuid;
-      }
-
 
       void Uuid::copy( uuid_type& uuid) const
       {

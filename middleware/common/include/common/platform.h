@@ -233,19 +233,25 @@ namespace casual
          {
             namespace pipe
             {
-               namespace native
-               {
-                  //! @attention do not use directly - use strong::pipe::id
-                  using type = int;
-                  constexpr type invalid = -1;
-               } // native
-
                namespace transport
                {
                   constexpr size::type size = PIPE_BUF; //1024 * 4;
                } // transport
             } // domain
          } // communication
+
+         namespace file
+         {
+            namespace descriptor
+            {
+               namespace native
+               {
+                  //! @attention do not use directly - use strong::file::descriptor::id
+                  using type = int;
+                  constexpr type invalid = -1;
+               } // native
+            } // descriptor
+         } // file
 
          namespace process
          {

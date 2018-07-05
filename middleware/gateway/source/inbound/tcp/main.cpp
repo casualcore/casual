@@ -119,7 +119,7 @@ namespace casual
 
 
 
-            using Gateway = inbound::Gateway< Policy>;
+            using Gateway = inbound::Gateway< Policy>;   
 
          } // ipc
       } // inbound

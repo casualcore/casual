@@ -16,6 +16,7 @@
 #include "common/message/conversation.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 
 namespace casual
@@ -64,7 +65,7 @@ namespace casual
                         // be the last node (for the route when the other server communicate
                         // with us, in the "reverse" order).
                         //
-                        message.recording.nodes.push_back( { communication::ipc::inbound::id()});
+                        message.recording.nodes.push_back( { communication::ipc::inbound::ipc()});
 
                         auto& transaction = common::transaction::context().current();
 
@@ -258,7 +259,7 @@ namespace casual
                   {
                      message::service::call::ACK ack;
                      ack.process = target.process;
-                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
                   });
 
                if( target.busy())
@@ -277,7 +278,7 @@ namespace casual
 
                   log::debug << "connect - request: " << message << '\n';
 
-                  auto reply = communication::ipc::call( target.process.queue, message);
+                  auto reply = communication::ipc::call( target.process.ipc, message);
 
                   log::debug << "connect - reply: " << reply << '\n';
 
@@ -337,14 +338,22 @@ namespace casual
 
                message::conversation::callee::Send message;
 
-               if( ! communication::ipc::receive::message(
-                     communication::ipc::inbound::device(),
-                     message,
-                     flags & receive::Flag::no_block ?
-                           communication::ipc::receive::Flag::non_blocking : communication::ipc::receive::Flag::blocking,
-                     descriptor.correlation))
+               if( flags.exist( receive::Flag::no_block))
                {
-                  throw common::exception::xatmi::no::Message();
+                  if( ! communication::ipc::non::blocking::receive( 
+                     communication::ipc::inbound::device(), 
+                     message, 
+                     descriptor.correlation))
+                  {
+                     throw common::exception::xatmi::no::Message();
+                  }
+               }
+               else
+               {
+                  communication::ipc::blocking::receive( 
+                     communication::ipc::inbound::device(), 
+                     message, 
+                     descriptor.correlation);
                }
 
                log::debug << "message: " << message << '\n';

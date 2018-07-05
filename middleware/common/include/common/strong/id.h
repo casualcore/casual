@@ -10,6 +10,7 @@
 
 #include "common/value/optional.h"
 #include "common/platform.h"
+#include "common/uuid.h"
 
 namespace casual
 {
@@ -33,9 +34,14 @@ namespace casual
             {
                struct type{};
             } // tag
-   
-            using id = value::Optional< platform::ipc::native::type, platform::ipc::native::invalid, tag::type>;
-            
+
+            struct policy
+            {
+               constexpr static Uuid initialize() noexcept { return {};}
+               constexpr static bool empty( const Uuid& value) noexcept { return value.empty();}
+            };
+
+            using id = value::basic_optional< Uuid, policy>;            
          } // ipc
 
          namespace socket
@@ -75,16 +81,20 @@ namespace casual
             
          } // ipc
 
-         namespace pipe
+         namespace file
          {
-            namespace tag
+            namespace descriptor
             {
-               struct type{};
-            } // tag
-   
-            using id = value::Optional< platform::communication::pipe::native::type, platform::communication::pipe::native::invalid, tag::type>;
+               namespace tag
+               {
+                  struct type{};
+               } // tag
+      
+               using id = value::Optional< platform::file::descriptor::native::type,platform::file::descriptor::native::invalid, tag::type>;
             
-         } // socket
+            } // descriptor
+         } // file
+
 
       } // strong 
    } // common

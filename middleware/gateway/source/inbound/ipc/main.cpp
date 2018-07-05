@@ -79,7 +79,7 @@ namespace casual
                   {
                      Trace trace{ "inbound::ipc::Policy::external_type ctor"};
 
-                     m_process.queue = strong::ipc::id{ settings.ipc};
+                     m_process.ipc = strong::ipc::id{ settings.ipc};
 
                      //
                      // Send the reply
@@ -88,11 +88,11 @@ namespace casual
                         message::ipc::connect::Reply reply;
                         reply.correlation = Uuid{ settings.correlation};
                         reply.process.pid = common::process::id();
-                        reply.process.queue = m_inbound.connector().id();
+                        reply.process.ipc = m_inbound.connector().id();
 
                         log << "reply: " << reply << '\n';
 
-                        communication::ipc::blocking::send( m_process.queue, reply);
+                        communication::ipc::blocking::send( m_process.ipc, reply);
                      }
                   }
 
@@ -106,7 +106,7 @@ namespace casual
 
                   configuration_type configuration() const
                   {
-                     return { m_process.queue};
+                     return { m_process.ipc};
                   }
 
                private:

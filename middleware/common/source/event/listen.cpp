@@ -10,6 +10,8 @@
 #include "common/execute.h"
 #include "common/message/handle.h"
 
+#include "common/communication/instance.h"
+
 namespace casual
 {
    namespace common
@@ -34,7 +36,7 @@ namespace casual
                         return type >= message_type::EVENT_DOMAIN_BASE && type < message_type::EVENT_DOMAIN_BASE_END;}))
                      {
                         communication::ipc::blocking::send(
-                              communication::ipc::domain::manager::optional::device(),
+                              communication::instance::outbound::domain::manager::optional::device(),
                               request);
                      }
                   }
@@ -48,7 +50,7 @@ namespace casual
                         return type >= message_type::EVENT_SERVICE_BASE && type < message_type::EVENT_SERVICE_BASE_END;}))
                      {
                         communication::ipc::blocking::send(
-                              communication::ipc::service::manager::device(),
+                              communication::instance::outbound::service::manager::device(),
                               request);
                      }
                   }
@@ -115,7 +117,7 @@ namespace casual
 
                auto handler = local::standard::handler( std::move( h));
 
-               auto subscription = local::subscription( device.connector().id(), handler.types());
+               auto subscription = local::subscription( device.connector().id().ipc(), handler.types());
 
                while( true)
                {
@@ -130,7 +132,7 @@ namespace casual
 
                auto handler = local::standard::handler( std::move( h));
 
-               auto subscription = local::subscription( device.connector().id(), handler.types());
+               auto subscription = local::subscription( device.connector().id().ipc(), handler.types());
 
                while( true)
                {

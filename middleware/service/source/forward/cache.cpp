@@ -58,13 +58,13 @@ namespace casual
 
                            try
                            {
-                              if( ! communication::ipc::non::blocking::send( message.process.queue, reply))
+                              if( ! communication::ipc::non::blocking::send( message.process.ipc, reply))
                               {
                                  //
                                  // We failed to send reply for some reason (ipc-queue full?)
                                  // we'll try to send it later
                                  //
-                                 state.pending.emplace_back( std::move( reply), message.process.queue);
+                                 state.pending.emplace_back( std::move( reply), message.process.ipc);
 
                                  log << "could not send error reply to process: " << message.process << " - will try later\n";
                               }
@@ -142,15 +142,15 @@ namespace casual
                            return;
                         }
 
-                        log << "send request - to: " << message.process.queue << " - request: " << request << '\n';
+                        log << "send request - to: " << message.process.ipc << " - request: " << request << '\n';
 
-                        if( ! communication::ipc::non::blocking::send( message.process.queue, request))
+                        if( ! communication::ipc::non::blocking::send( message.process.ipc, request))
                         {
                            //
                            // We could not send the call. We put in pending and hope to send it
                            // later
                            //
-                           m_state.pending.emplace_back( request, message.process.queue);
+                           m_state.pending.emplace_back( request, message.process.ipc);
 
                            log << "could not forward call to process: " << message.process << " - will try later\n";
 
@@ -179,7 +179,7 @@ namespace casual
                         request.requested = message.service.name;
                         request.process = process::handle();
 
-                        communication::ipc::blocking::send( communication::ipc::service::manager::device(), request);
+                        communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), request);
                      }
 
                      m_state.reqested[ message.service.name].push_back( std::move( message));

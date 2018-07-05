@@ -280,7 +280,7 @@ namespace casual
                   auto state = local::call::wait::ready::state();
                   algorithm::sort( state.connections);
 
-                  return state.connections.at( 0).process.queue;
+                  return state.connections.at( 0).process.ipc;
                };
 
 

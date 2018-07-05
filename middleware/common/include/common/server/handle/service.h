@@ -83,7 +83,7 @@ namespace casual
                         //
                         // Send reply to caller.
                         //
-                        policy.reply( message.process.queue, reply);
+                        policy.reply( message.process.ipc, reply);
                      }
                   });
 

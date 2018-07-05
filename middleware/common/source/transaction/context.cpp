@@ -9,6 +9,7 @@
 #include "common/service/call/context.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/environment.h"
 #include "common/process.h"
 #include "common/log.h"
@@ -93,7 +94,7 @@ namespace casual
                      request.process = process::handle();
                      request.resources = std::move( names);
 
-                     auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
+                     auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
                      common::algorithm::for_each( reply.resources, []( auto& r){
                         r.openinfo = common::environment::string( r.openinfo);
@@ -243,7 +244,7 @@ namespace casual
 
                common::log::category::transaction << "involved message: " << message << '\n';
 
-               communication::ipc::blocking::send( communication::ipc::transaction::manager::device(), message);
+               communication::ipc::blocking::send( communication::instance::outbound::transaction::manager::device(), message);
             }
          }
 
@@ -688,7 +689,7 @@ namespace casual
                // Get reply
                //
                {
-                  auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
+                  auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
                   //
                   // We could get commit-reply directly in an one-phase-commit
@@ -778,7 +779,7 @@ namespace casual
             request.resources = resources();
             algorithm::append( transaction.resources, request.resources);
 
-            auto reply = communication::ipc::call( communication::ipc::transaction::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
             log::line( log::category::transaction, "rollback reply tx: ", reply.state);
 

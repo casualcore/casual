@@ -100,8 +100,8 @@ namespace casual
 
                if( output)
                {
-                  output << process.queue.value() << '\n';
-                  output << process.pid.value() << '\n';
+                  output << process.ipc << '\n';
+                  output << process.pid << '\n';
                   output << identity.name << '\n';
                   output << identity.id << '\n';
 
@@ -154,7 +154,7 @@ namespace casual
             {
                Trace trace{ "common::domain::singleton::read"};
 
-               log::debug << "path: " << path << "retries: " << retries << '\n';
+               log::line( log::debug, "path: ", path, ", retries: ", retries);
 
                do
                {
@@ -164,9 +164,9 @@ namespace casual
                   {
                      Result result;
                      {
-                        auto queue = result.process.queue.value();
-                        file >> queue;
-                        result.process.queue = strong::ipc::id{ queue};
+                        std::string ipc;
+                        file >> ipc;
+                        result.process.ipc = strong::ipc::id{ ipc};
                         
                         auto pid = result.process.pid.value();
                         file >> pid;

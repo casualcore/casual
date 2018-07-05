@@ -26,7 +26,7 @@ namespace casual
                   template< typename... Args>
                   void throw_from_code( code::system code, Args&&... args)
                   {
-                     switch( code::last::system::error())
+                     switch( code)
                      {
                         using sys = code::system;
 
@@ -78,11 +78,17 @@ namespace casual
             {
                local::throw_from_errno( context);
             }
+            
+            void throw_from_code( code::system code)
+            {
+               local::throw_from_code( code);
+            }
 
             void throw_from_code( int code)
             {
-               local::throw_from_code( static_cast< code::system>( code));
+               throw_from_code( static_cast< code::system>( code));
             }
+
             
          } // system 
       } // exception 

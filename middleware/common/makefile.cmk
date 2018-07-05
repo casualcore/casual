@@ -45,6 +45,9 @@ casual_common_objectfiles = [
 
     Compile( 'source/strong/id.cpp'),
 
+    Compile( 'source/communication/instance.cpp'),
+    Compile( 'source/communication/select.cpp'),
+
     Compile( 'source/server/context.cpp'),
     Compile( 'source/server/lifetime.cpp'),
     Compile( 'source/server/service.cpp'),
@@ -77,9 +80,10 @@ casual_common_objectfiles = [
     Compile( 'source/communication/ipc.cpp'),
     Compile( 'source/communication/socket.cpp'),
     Compile( 'source/communication/tcp.cpp'),
-    Compile( 'source/communication/pipe.cpp'),
+    
     Compile( 'source/communication/message.cpp'),
     Compile( 'source/communication/log.cpp'),
+    
     
     
     Compile( 'source/message/type.cpp'),
@@ -285,7 +289,7 @@ unittest_objectfiles = [
 
     Compile( 'unittest/source/test_argument.cpp'),
 
-    Compile( 'unittest/source/communication/test_pipe.cpp'),
+    #Compile( 'unittest/source/communication/test_pipe.cpp'),
 ]
 
 

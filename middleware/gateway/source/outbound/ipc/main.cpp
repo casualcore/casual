@@ -56,7 +56,7 @@ namespace casual
                      request.directive = common::message::domain::process::lookup::Request::Directive::wait;
                      request.identification = process::instance::identity::gateway::manager();
                      request.process.pid = process::handle().pid;
-                     request.process.queue = ipc.connector().id();
+                     request.process.ipc = ipc.connector().id();
 
                      return communication::ipc::call( broker, request,
                            communication::ipc::policy::Blocking{},
@@ -70,7 +70,7 @@ namespace casual
 
                      message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
-                     request.process.queue = ipc.connector().id();
+                     request.process.ipc = ipc.connector().id();
 
                      log  << "reguest: " << request << '\n';
 
@@ -91,9 +91,9 @@ namespace casual
 
                      auto result = common::domain::singleton::read( path);
 
-                     if( result.process.queue)
+                     if( result.process.ipc)
                      {
-                        auto gateway = lookup_gateway( ipc, result.process.queue);
+                        auto gateway = lookup_gateway( ipc, result.process.ipc);
 
                         return lookup_inbound( ipc, gateway.queue);
                      }
@@ -192,7 +192,7 @@ namespace casual
 
                   configuration_type configuration() const
                   {
-                     return { m_process.queue};
+                     return { m_process.ipc};
                   }
 
                   friend std::ostream& operator << ( std::ostream& out, const external_type& value)

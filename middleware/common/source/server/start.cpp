@@ -7,7 +7,7 @@
 
 #include "common/server/start.h"
 
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/server/handle/call.h"
 #include "common/server/handle/conversation.h"
 #include "common/message/handle.h"
@@ -80,7 +80,7 @@ namespace casual
                      //
                      // Connect to domain
                      //
-                     common::process::instance::connect();
+                     common::communication::instance::connect();
 
                      auto handler = common::communication::ipc::inbound::device().handler(
                         common::server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),

@@ -342,7 +342,7 @@ namespace casual
             common::message::gateway::domain::Advertise remote;
 
             remote.process.pid = common::strong::process::id{ 666};
-            remote.process.queue = common::strong::ipc::id{ 777};
+            remote.process.ipc = common::strong::ipc::id{ 777};
 
             remote.queues.push_back( { "remote-queue"});
 
@@ -397,12 +397,12 @@ namespace casual
                   message.name = lookup.name();
                   message.block = true;
                   message.process.pid = common::process::id();
-                  message.process.queue = ipc.connector().id();
+                  message.process.ipc = ipc.connector().id();
 
                   auto destination = lookup();
                   message.queue = destination.queue;
 
-                  common::communication::ipc::blocking::send( destination.process.queue, message);
+                  common::communication::ipc::blocking::send( destination.process.ipc, message);
                }
             } // blocking
          } // <unnamed>

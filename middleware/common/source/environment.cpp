@@ -143,14 +143,13 @@ namespace casual
                      auto pid = std::get < 0 > ( split);
                      if( common::string::integer( pid))
                      {  
-                        result.pid = strong::process::id{ std::stoi( std::string( std::begin(pid), std::end(pid)))};
+                        result.pid = strong::process::id{ std::stoi( std::string( std::begin( pid), std::end( pid)))};
                      }
 
-                     auto queue = std::get < 1 > ( split);
-                     if( common::string::integer( queue))
+                     auto ipc = std::get< 1>( split);
+                     if( ! ipc.empty())
                      {
-                        result.queue = strong::ipc::id{ 
-                           common::from_string< decltype( result.queue.value())>( std::string( std::begin(queue), std::end(queue)))};
+                        result.ipc = strong::ipc::id{ std::string( std::begin( ipc), std::end( ipc))};
                      }
                   }
 
@@ -159,7 +158,7 @@ namespace casual
 
                void set( const char* variable, const common::process::Handle& process)
                {
-                  variable::set( variable, string::compose( process.pid.value(), '|', process.queue.value()));
+                  variable::set( variable, string::compose( process.pid, '|', process.ipc));
                }
 
             } // process

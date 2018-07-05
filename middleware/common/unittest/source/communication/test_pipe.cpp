@@ -27,7 +27,8 @@ namespace casual
             {
                namespace eventually
                {
-                  auto send( const pipe::Address& address, communication::message::Complete&& complete, platform::size::type count = 1)
+                  template< typename D>
+                  auto send( const D& device, communication::message::Complete&& complete, platform::size::type count = 1)
                   {
                      auto correlation = complete.correlation;
                      auto dispatch = []( const pipe::Address& address, communication::message::Complete&& complete, platform::size::type count)
@@ -45,16 +46,16 @@ namespace casual
                         }
                      };
                      
-                     std::thread{ std::move( dispatch), address, std::move( complete), count}.detach();
+                     std::thread{ std::move( dispatch), device.connector().id().address(), std::move( complete), count}.detach();
 
                      return correlation;
 
                   }
 
-                  template< typename M, typename C = marshal::binary::create::Output>
-                  auto send( const pipe::Address& address, M&& message, platform::size::type count = 1)
+                  template< typename D, typename M, typename C = marshal::binary::create::Output>
+                  auto send( const D& device, M&& message, platform::size::type count = 1)
                   {
-                     return send( address, marshal::complete( std::forward< M>( message)), count);
+                     return send( device, marshal::complete( std::forward< M>( message)), count);
                   }
                } // eventually
 
@@ -77,9 +78,9 @@ namespace casual
          {  
             unittest::Trace trace;
 
-            file::scoped::Path file{ file::name::unique()};
-            auto handle = pipe::native::create( file);
-            EXPECT_TRUE( handle.id());
+            //file::scoped::Path file{ file::name::unique()};
+            //auto handle = pipe::native::create( file);
+            //EXPECT_TRUE( handle.id());
             
          } 
 
@@ -91,7 +92,6 @@ namespace casual
             pipe::inbound::Device device;
             
             EXPECT_TRUE( device.connector().id());
-            EXPECT_TRUE( device.connector().address());
          } 
 
          TEST( common_communication_pipe, send_receive_message)
@@ -108,7 +108,7 @@ namespace casual
                local::Message message;
                message.reply = address;
                
-               correlation = local::eventually::send( device.connector().address(), message);
+               correlation = local::eventually::send( device, message);
             }
 
             // receive
@@ -136,7 +136,7 @@ namespace casual
                message.reply = address;
                message.data = data;
                
-               local::eventually::send( device.connector().address(), message);
+               local::eventually::send( device, message);
             }
 
             // receive
@@ -165,7 +165,7 @@ namespace casual
                local::Message message;
                message.reply = address;
                
-               correlation = local::eventually::send( device.connector().address(), message, count);
+               correlation = local::eventually::send( device, message, count);
             }
 
             // receive
@@ -197,7 +197,7 @@ namespace casual
                message.reply = address;
                message.data = data;
                
-               correlation = local::eventually::send( device.connector().address(), message, count);
+               correlation = local::eventually::send( device, message, count);
             }
 
             // receive
@@ -230,7 +230,7 @@ namespace casual
                local::Message message;
                message.reply = address;
                
-               local::eventually::send( device.connector().address(), message, messages);
+               local::eventually::send( device, message, messages);
             }
 
             // receive
@@ -261,7 +261,7 @@ namespace casual
                local::Message message;
                message.reply = address;
                
-               correlations.push_back( local::eventually::send( device.connector().address(), message, messages));
+               correlations.push_back( local::eventually::send( device, message, messages));
             }
 
             // receive
@@ -296,7 +296,7 @@ namespace casual
                message.reply = address;
                message.data = data;
                
-               local::eventually::send( device.connector().address(), message, messages);
+               local::eventually::send( device, message, messages);
             }
 
             // receive

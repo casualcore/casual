@@ -183,7 +183,7 @@ resources:
                void tm( M&& message)
                {
                   communication::ipc::blocking::send(
-                        common::communication::ipc::transaction::manager::device(), message);
+                        common::communication::instance::outbound::transaction::manager::device(), message);
                }
 
             } // send
@@ -279,7 +279,7 @@ resources:
          request.process = common::process::handle();
          request.resources = { "rm2"};
 
-         auto reply = common::communication::ipc::call( common::communication::ipc::transaction::manager::device(), request);
+         auto reply = common::communication::ipc::call( common::communication::instance::outbound::transaction::manager::device(), request);
 
          ASSERT_TRUE( reply.resources.size() == 1);
          EXPECT_TRUE( reply.resources.at( 0).name == "rm2");

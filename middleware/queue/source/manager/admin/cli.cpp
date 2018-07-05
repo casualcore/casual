@@ -116,7 +116,7 @@ namespace casual
          auto groups()
          {
             auto format_pid = []( const manager::admin::Group& g) { return g.process.pid;};
-            auto format_ipc = []( const manager::admin::Group& g) { return g.process.queue;};
+            auto format_ipc = []( const manager::admin::Group& g) { return g.process.ipc;};
 
             return terminal::format::formatter< manager::admin::Group>::construct(
                terminal::format::column( "name", std::mem_fn( &manager::admin::Group::name), terminal::color::yellow),

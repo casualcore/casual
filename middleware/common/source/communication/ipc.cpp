@@ -1,167 +1,377 @@
-//! 
-//! Copyright (c) 2015, The casual project
+//!
+//! Copyright (c) 2018, The casual project
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/communication/ipc.h"
 #include "common/communication/log.h"
-#include "common/environment.h"
+
+#include "common/result.h"
 #include "common/log.h"
-#include "common/domain.h"
-#include "common/exception/system.h"
+#include "common/signal.h"
+#include "common/environment.h"
+
+#include "common/exception/handle.h"
 
 
-#include <fstream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-#include <sys/msg.h>
 
 namespace casual
 {
    namespace common
    {
-
       namespace communication
       {
          namespace ipc
          {
+            
+            namespace message
+            {
+               static_assert( transport::max_message_size() <= PIPE_BUF, "ipc message size has to be less or equal to 'PIPE_BUF'");
+            } // message
+
+            namespace local
+            {
+               namespace
+               {
+                  namespace signal
+                  {
+                     namespace ignore
+                     {
+                        /*
+                        void pipe()
+                        {
+                           try
+                           {
+                              common::signal::handle();
+                           }
+                           catch( const exception::signal::Pipe&)
+                           {
+                              // no op
+                           }
+                        }
+                        */
+                     } // ignore
+                     void handle() 
+                     {
+                        try
+                        {
+                           common::signal::handle();
+                        }
+                        catch( const exception::signal::Pipe&)
+                        {
+                           throw exception::system::communication::unavailable::Pipe{};
+                        }
+                     }
+                  } // signal
+
+                  namespace open
+                  {
+                     strong::file::descriptor::id write( const std::string& name)
+                     {
+                        Trace trace{ "common::communication::ipc::local::open::write"};
+
+                        log::line( communication::verbose::log, "name: ", name);
+
+                        //return strong::file::descriptor::id{ posix::result( ::open( name.c_str(), O_WRONLY | O_NONBLOCK))};
+                        return strong::file::descriptor::id{ posix::result( ::open( name.c_str(), O_WRONLY))};
+                     }
+
+                     strong::file::descriptor::id read( const std::string& name)
+                     {
+                        Trace trace{ "common::communication::ipc::local::open::read"};
+
+                        log::line( communication::verbose::log, "name: ", name);
+
+                        auto file_descriptor = posix::result( ::open( name.c_str(), O_RDONLY | O_NONBLOCK));
+                        //auto file_descriptor = posix::result( ::open( name.c_str(), O_RDWR));
+                        //auto flags = ::fcntl( file_descriptor, F_GETFL);
+                        //::fcntl( file_descriptor, F_SETFL, flags & ~O_NONBLOCK);
+
+                        return strong::file::descriptor::id{ file_descriptor};
+                     }
+                  } // open
+
+                  strong::file::descriptor::id create( strong::ipc::id ipc)
+                  {
+                     Trace trace{ "common::communication::ipc::local::create"};
+
+                     auto name = file( ipc);
+
+                     // make sure directories exists
+                     directory::create( directory::name::base( name));
+
+                     posix::result( ::mkfifo( name.c_str(), 0660));
+                     
+                     log::line( communication::verbose::log, "created fifo: ", name);
+
+                     return local::open::read( name);
+                  }
+
+                  namespace transport
+                  {
+                     bool send( const Handle& handle, const message::Transport& transport)
+                     {
+                        Trace trace{ "common::communication::ipc::local::transport::send"};
+
+                        common::log::line( log, "---> [", handle.ipc(),  "] send transport: ", transport);
+
+                        posix::result( ::write( 
+                           handle.id().value(), 
+                           transport.data(),
+                           transport.size()));
+
+                        return true;
+                     }
+
+                     bool receive( const Handle& handle, message::Transport& transport)
+                     {
+                        Trace trace{ "common::communication::ipc::local::transport::receive"};
+                        
+                        // read header
+                        auto read = ::read( 
+                           handle.id().value(), 
+                           transport.header_data(),
+                           message::transport::header_size());
+
+                        if( read == 0)
+                           return false;
+                        
+                        if( read == -1)
+                        {
+                           switch( code::last::system::error())
+                           {
+                              case code::system::resource_unavailable_try_again:
+                                 return false;
+                              case code::system::interrupted:
+                                 //local::signal::ignore::pipe();
+                                 local::signal::handle();
+                                 return false;
+                              default: 
+                                 exception::system::throw_from_errno();
+                           }  
+                        }
+                        assert( read == message::transport::header_size());
+
+                        // read payload
+                        read = posix::result( ::read( 
+                           handle.id().value(), 
+                           transport.payload_data(),
+                           transport.payload_size()));
+
+                        assert( read == transport.payload_size());
+
+                        common::log::line( log, "<--- [", handle.ipc(), "] receive transport: ", transport);
+
+                        return true;
+                     }
+                  } // transport
+
+
+               } // <unnamed>
+            } // local
+
             namespace message
             {
                std::ostream& operator << ( std::ostream& out, const Transport& value)
                {
                   return out << "{ type: " << value.type()
-                        << ", correlation: " << uuid::string( value.correlation())
-                        << ", offset: " << value.payload_offset()
-                        << ", payload.size: " << value.payload_size()
-                        << ", complete_size: " << value.complete_size()
-                        << ", header-size: " << transport::header_size()
-                        << ", transport-size: " <<  value.size()
-                        << ", max-size: " << transport::max_message_size() << "}";
+                     << ", correlation: " << uuid::string( value.correlation())
+                     << ", offset: " << value.payload_offset()
+                     << ", payload.size: " << value.payload_size()
+                     << ", complete_size: " << value.complete_size()
+                     << ", header-size: " << transport::header_size()
+                     << ", transport-size: " <<  value.size()
+                     << ", max-size: " << transport::max_message_size() << "}";
                }
             } // message
 
+            Handle::Handle( strong::file::descriptor::id id, strong::ipc::id ipc) : m_id( id), m_ipc( ipc)
+            {
+               log::line( communication::verbose::log, "created handle: ", *this);
+            }
+
+            Handle::Handle( Handle&& other) noexcept 
+               : m_id( std::exchange( other.m_id, {})), 
+                 m_ipc( std::exchange( other.m_ipc, {}))
+            {
+
+            }
+
+            Handle& Handle::operator = ( Handle&& other) noexcept
+            {
+               std::swap( m_id, other.m_id);
+               std::swap( m_ipc, other.m_ipc);
+               return *this;
+            }
+
+            void Handle::blocking() const
+            {
+               auto flags = ::fcntl( m_id.value(), F_GETFL);
+               ::fcntl( m_id.value(), F_SETFL, flags & ~O_NONBLOCK);
+            }
+
+            void Handle::non_blocking() const
+            {
+               auto flags = ::fcntl( m_id.value(), F_GETFL);
+               ::fcntl( m_id.value(), F_SETFL, flags | O_NONBLOCK);
+            }
+
+            Handle::~Handle()
+            {
+               if( m_id)
+               {
+                  log::line( communication::verbose::log, "closing: ", *this);
+                  posix::log::result( ::close( m_id.value()));
+               }
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Handle& rhs)
+            {
+               return out << "{ ipc: " << rhs.m_ipc << ", descriptor: " << rhs.m_id << '}';
+            }
+
+
             namespace native
             {
-               bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags)
+               Handle create( strong::ipc::id ipc)
                {
-                  common::log::line( log, "---> [", id,  "] send transport: ", transport, " - flags: ", flags);
+                  Trace trace{ "common::communication::ipc::native::create"};
 
-                  //
-                  // before we might block we check signals.
-                  //
-                  common::signal::handle();
-
-                  auto result = ::msgsnd( id.value(), &const_cast< message::Transport&>( transport).message, transport.size(), flags.underlaying());
-
-                  if( result == -1)
-                  {
-                     switch( common::code::last::system::error())
-                     {
-                        using sys = common::code::system;
-
-                        case sys::resource_unavailable_try_again:
-                        {
-                           return false;
-                        }
-                        case sys::interrupted:
-                        {
-                           common::log::line( log, "ipc::native::send - signal received");
-                           common::signal::handle();
-
-                           //
-                           // we got a signal we don't have a handle for
-                           // We continue
-                           //
-                           return send( id, transport, flags);
-                        }
-                        case sys::invalid_argument:
-                        {
-                           //if( /* message.size() < MSGMAX  && */ transport.message.header.type != common::message::Type::absent_message)
-                           if( cast::underlying( transport.type()) > 0)
-                           {
-                              //
-                              // The problem is with queue-id. We guess that it has been removed.
-                              //
-                              throw exception::system::communication::unavailable::Removed{ string::compose( "queue unavailable - id: ", id)};
-                           }
-                           // we let it fall through to default
-                        }
-                        // no break
-                        default:
-                        {
-                           exception::system::throw_from_errno( string::compose(  "queue-id: ", id));
-                        }
-                     }
-                  }
-
-                  //log << "---> [" << id << "] send transport: " << transport << " - flags: " << flags << '\n';
-
-                  return true;
-               }
-               bool receive( handle_type id, message::Transport& transport, common::Flags< Flag> flags)
-               {
-                  //
-                  // before we might block we check signals.
-                  //
-                  common::signal::handle();
-
-                  auto result = msgrcv( id.value(), &transport.message, message::transport::max_message_size(), 0, flags.underlaying());
-
-                  if( result == -1)
-                  {
-                     switch( common::code::last::system::error())
-                     {
-                        using sys = common::code::system;
-
-                        case sys::interrupted:
-                        {
-                           common::log::line( log, "ipc::native::receive - signal received");
-
-                           common::signal::handle();
-
-                           //
-                           // we got a signal we don't have a handle for
-                           // We continue
-                           //
-                           return receive( id, transport, flags);
-                        }
-                        case sys::no_message:
-                        case sys::resource_unavailable_try_again:
-                        {
-                           return false;
-                        }
-                        default:
-                        {
-                           common::log::line( log, "ipc < [", id, "] receive failed - transport: ", transport, " - flags: ", flags, " - ", common::code::last::system::error());
-                           exception::system::throw_from_errno( string::compose(  "ipc: ", id));
-                        }
-                     }
-                  }
-
-                  common::log::line( log, "<--- [", id, "] receive transport: ", transport, " - flags: ", flags);
-
-                  return true;
-
+                  return Handle{ local::create( ipc), ipc};                  
                }
 
+               namespace open
+               {
+                  Handle read( strong::ipc::id ipc)
+                  {
+                     Trace trace{ "common::communication::ipc::native::open::read"};
+
+                     return Handle{ local::open::read( file( ipc)), ipc};
+                  }
+                  
+                  Handle write( strong::ipc::id ipc)
+                  {
+                     Trace trace{ "common::communication::ipc::native::open::write"};
+
+                     return Handle{ local::open::write( file( ipc)), ipc};
+                  }
+               } // open
+
+
+               namespace non
+               {
+                  namespace blocking
+                  {
+                     bool send( const Handle& handle, const message::Transport& transport)
+                     {
+                        Trace trace{ "common::communication::ipc::native::non::blocking::send"};
+
+                        log::line( communication::verbose::log, "handle: ", handle);
+
+                        handle.non_blocking();
+                        
+                        // check pending signals
+                        local::signal::handle();
+                        return local::transport::send( handle, transport);
+                     }
+
+                     bool receive( const Handle& handle, message::Transport& transport)
+                     {
+                        Trace trace{ "common::communication::ipc::native::non::blocking::receive"};
+
+                        log::line( communication::verbose::log, "handle: ", handle);
+                        
+                        handle.non_blocking();
+
+                        // check pending signals
+                        local::signal::handle();
+                        return local::transport::receive( handle, transport);
+                     }
+                  } // blocking
+               } // non
+
+               namespace blocking
+               {
+                  bool send( const Handle& handle, const message::Transport& transport)
+                  {
+                     Trace trace{ "common::communication::ipc::native::blocking::send"};
+
+                     log::line( communication::verbose::log, "handle: ", handle);
+
+                     handle.blocking();
+
+                     //fd_set write_descriptors;
+                     //FD_ZERO( &write_descriptors);
+                     //FD_SET( handle.id().value(), &write_descriptors);
+
+                     // block all signals
+                     ////signal::thread::scope::Block block;
+                     
+                     // check pending signals
+                     //signal::handle( block.previous());
+                     local::signal::handle();
+
+                     //posix::result( 
+                     //   ::pselect( handle.id().underlaying() + 1, nullptr, &write_descriptors, nullptr, nullptr, &block.previous().set));
+
+                     return local::transport::send( handle, transport);
+                  }
+                  bool receive( Handle& handle, message::Transport& transport)
+                  {
+                     Trace trace{ "common::communication::ipc::native::blocking::receive"};
+
+                     log::line( communication::verbose::log, "handle: ", handle);
+
+                     handle.blocking();
+
+                     //fd_set read_descriptors;
+                     //FD_ZERO( &read_descriptors);
+                     //FD_SET( handle.id().value(), &read_descriptors);
+
+                     // block all signals
+                     //signal::thread::scope::Block block;
+                     
+                     // check pending signals
+                     //signal::handle( block.previous());
+                     local::signal::handle();
+                     
+                     //posix::result( 
+                        //::pselect( handle.id().value() + 1, &read_descriptors, nullptr, nullptr, nullptr, &block.previous().set));
+
+                     return local::transport::receive( handle, transport);
+                     //while( ! local::transport::receive( handle, transport))
+                     //   ; // no-op
+
+                     //return true;
+                  }
+               } // blocking
+               
             } // native
+
+            std::string file( strong::ipc::id ipc)
+            {
+               return environment::transient::directory() + '/' + uuid::string( ipc.underlaying()) + ".fifo";
+            }
 
             namespace policy
             {
-               cache_range_type receive( handle_type id, cache_type& cache, common::Flags< native::Flag> flags)
+               template< typename C, typename H>
+               cache_range_type receive( C&& callable, H& handle, cache_type& cache)
                {
                   message::Transport transport;
 
-
-                  if( native::receive( id, transport, flags))
+                  if( callable( handle, transport))
                   {
                      auto found = algorithm::find_if( cache,
                            [&]( const auto& m)
                            {
-                              return transport.type() == m.type
-                                    && ! m.complete()
-                                    && transport.message.header.correlation == m.correlation;
+                              return ! m.complete() 
+                                 && transport.message.header.correlation == m.correlation;
                            });
 
                      if( found)
@@ -184,12 +394,12 @@ namespace casual
                   return cache_range_type{};
                }
 
-               Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags)
+               template< typename C>
+               Uuid send( C&& callable, const Handle& handle, const communication::message::Complete& complete)
                {
                   message::Transport transport{ complete.type, complete.size()};
 
                   complete.correlation.copy( transport.correlation());
-
 
                   auto part_begin = std::begin( complete.payload);
 
@@ -198,13 +408,13 @@ namespace casual
                      auto part_end = std::distance( part_begin, std::end( complete.payload)) > message::transport::max_payload_size() ?
                            part_begin + message::transport::max_payload_size() : std::end( complete.payload);
 
-                     transport.assign( part_begin, part_end);
+                     transport.assign( range::make( part_begin, part_end));
                      transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
 
                      //
                      // send the physical message
                      //
-                     if( ! native::send(  id, transport, flags))
+                     if( ! callable( handle, transport))
                      {
                         return uuid::empty();
                      }
@@ -217,404 +427,104 @@ namespace casual
 
                }
 
+
+
+               namespace blocking
+               {
+                  cache_range_type receive( Handle& handle, cache_type& cache)
+                  {
+                     return policy::receive( &native::blocking::receive, handle, cache);
+                  }
+
+                  Uuid send( const Handle& handle, const communication::message::Complete& complete)
+                  {
+                     return policy::send( &native::blocking::send, handle, complete);
+                  }
+               } // blocking
+
+               namespace non
+               {
+                  namespace blocking
+                  {
+                     cache_range_type receive( const Handle& handle, cache_type& cache)
+                     {
+                        return policy::receive( &native::non::blocking::receive, handle, cache);
+                     }
+                     Uuid send( const Handle& handle, const communication::message::Complete& complete)
+                     {
+                        return policy::send( &native::non::blocking::send, handle, complete);
+                     }
+                  } // blocking
+               } // non
             } // policy
 
             namespace inbound
             {
 
-               Connector::Connector()
-                : m_id( msgget( IPC_PRIVATE, IPC_CREAT | 0660))
+               Connector::Connector() 
+                  : m_id( native::create( strong::ipc::id{ uuid::make()}))
+                  ,m_dummy_writer( native::open::write( m_id.ipc()))
                {
-                  if( ! m_id )
-                  {
-                     exception::system::throw_from_errno( "ipc queue create failed");
-                  }
-                  common::log::line( log, "queue id: ", m_id, " created");
                }
 
                Connector::~Connector()
                {
-                  remove( m_id);
+                  try
+                  {
+                     if( m_id)
+                     {
+                        const auto name = file( m_id.ipc());
+                        common::file::remove( name);
+                     }
+                  }
+                  catch( ...)
+                  {
+                     exception::handle();
+                  }
                }
-
-               Connector::Connector( Connector&& rhs) noexcept
-               {
-                  swap( *this, rhs);
-               }
-               Connector& Connector::operator = ( Connector&& rhs) noexcept
-               {
-                  Connector temp{ std::move( rhs)};
-                  swap( *this, temp);
-                  return *this;
-               }
-
-               handle_type Connector::id() const { return m_id;}
 
                std::ostream& operator << ( std::ostream& out, const Connector& rhs)
                {
-                  return out << "{ id: " << rhs.m_id << '}';
+                  return out << "{ id: " << rhs.m_id
+                     << '}';
                }
-
-
-               void swap( Connector& lhs, Connector& rhs)
-               {
-                  using std::swap;
-                  swap( lhs.m_id, rhs.m_id);
-               }
-
 
                Device& device()
                {
                   static Device singleton;
                   return singleton;
                }
-
-               handle_type id()
-               {
-                  return device().connector().id();
-               }
             } // inbound
+
 
             namespace outbound
             {
-               Connector::Connector( handle_type id) : m_id{ id}
-               {}
-
-               Connector::operator handle_type() const { return m_id;}
-
-               Connector::handle_type Connector::id() const { return m_id;}
+               Connector::Connector( strong::ipc::id ipc) : m_id( native::open::write( ipc))
+               {
+               }
 
                std::ostream& operator << ( std::ostream& out, const Connector& rhs)
                {
-                  return out << "{ id: " << rhs.m_id << '}';
+                  return out << "{ id: " << rhs.m_id
+                     << '}';
                }
-
-
-               namespace instance
-               {
-                  namespace local
-                  {
-                     namespace
-                     {
-
-                        process::Handle fetch(
-                              const Uuid& identity,
-                              const std::string& environment,
-                              process::instance::fetch::Directive directive)
-                        {
-                           Trace trace{ "ipc::outbound::instance::local::fetch"};
-
-                           log::line( verbose::log, "identity: ", identity, ", environment: ", environment, ", directive: ", directive);
-
-                           if( common::environment::variable::exists( environment))
-                           {
-                              auto process = environment::variable::process::get( environment);
-
-                              log::line( verbose::log, "process: ", process);
-
-                              if( communication::ipc::exists( process.queue))
-                              {
-                                 return process;
-                              }
-                           }
-
-                           try
-                           {
-                              auto process = process::instance::fetch::handle( identity, directive);
-
-                              if( process && ! environment.empty())
-                              {
-                                 environment::variable::process::set( environment, process);
-                              }
-                              return process;
-                           }
-                           catch( const exception::system::communication::Unavailable&)
-                           {
-                              common::log::line( log, "failed to fetch instance with identity: ", identity);
-                              return {};
-                           }
-                        }
-
-                     } // <unnamed>
-                  } // local
-
-
-                  template< process::instance::fetch::Directive directive>
-                  Connector< directive>::Connector( const Uuid& identity, std::string environment)
-                     : m_process( local::fetch( identity, environment, directive)),
-                       m_identity{ identity}, m_environment{ std::move( environment)}
-                  {
-
-                  }
-
-
-                  template< process::instance::fetch::Directive directive>
-                  void Connector< directive>::reconnect()
-                  {
-                     Trace trace{ "ipc::outbound::instance::Connector::reconnect"};
-
-                     m_process = local::fetch( m_identity, m_environment, directive);
-
-                     if( ! communication::ipc::exists( m_process.queue))
-                     {
-                        auto& instance = *this;
-                        throw exception::system::communication::unavailable::Removed{ 
-                           string::compose( "failed to fetch ipc-queue - is there a domain running? - instance: ", instance)};
-                     }
-                  }
-
-                  template< process::instance::fetch::Directive directive>
-                  std::ostream& operator << ( std::ostream& out, const Connector< directive>& rhs)
-                  {
-                     return out << "{ process: " << rhs.m_process
-                           << ", identity: " << rhs.m_identity
-                           << ", environment: " << rhs.m_environment
-                           << '}';
-                  }
-
-                  template struct Connector< process::instance::fetch::Directive::direct>;
-                  template struct Connector< process::instance::fetch::Directive::wait>;
-
-               } // instance
-
-               namespace domain
-               {
-                  namespace local
-                  {
-                     namespace
-                     {
-
-                        template< typename R>
-                        strong::ipc::id reconnect( R&& singleton_policy)
-                        {
-                           Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
-
-                           auto from_environment = []()
-                                 {
-                                    if( environment::variable::exists( environment::variable::name::ipc::domain::manager()))
-                                    {
-                                       return environment::variable::process::get( environment::variable::name::ipc::domain::manager());
-                                    }
-                                    return process::Handle{};
-                                 };
-
-                           auto process = from_environment();
-
-
-                           if( ipc::exists( process.queue))
-                           {
-                              return process.queue;
-                           }
-
-                           common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager(), " - trying 'singleton file'");
-
-                           process = singleton_policy();
-
-                           if( ! ipc::exists( process.queue))
-                           {
-                              throw exception::system::communication::unavailable::Removed{ "failed to locate domain manager"};
-                           }
-
-                           return process.queue;
-                        }
-
-                     } // <unnamed>
-                  } // local
-
-                  Connector::Connector() : outbound::Connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
-                  {
-
-                  }
-
-                  void Connector::reconnect()
-                  {
-                     Trace trace{ "ipc::outbound::domain::Connector::reconnect"};
-
-                     m_id = local::reconnect( [](){ return common::domain::singleton::read().process;});
-                  }
-
-                  namespace optional
-                  {
-                     Connector::Connector()
-                      : outbound::Connector{ local::reconnect( [](){
-                         return common::domain::singleton::read(
-                               process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
-                         ).process;
-                      })}
-                     {
-
-                     }
-
-                     void Connector::reconnect()
-                     {
-                        m_id = local::reconnect( [](){
-                           return common::domain::singleton::read(
-                                 process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
-                           ).process;
-                        });
-                     }
-                  } // optional
-
-               } // domain
 
             } // outbound
 
 
 
-            namespace service
+
+            bool exists( strong::ipc::id id)
             {
-               namespace manager
-               {
-                  outbound::instance::Device& device()
-                  {
-                     static outbound::instance::Device singelton{
-                        process::instance::identity::service::manager(),
-                        common::environment::variable::name::ipc::service::manager()};
-
-                     return singelton;
-                  }
-
-               } // manager
-            } // service
-
-
-            namespace transaction
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device()
-                  {
-                     static outbound::instance::Device singelton{
-                        process::instance::identity::transaction::manager(),
-                        common::environment::variable::name::ipc::transaction::manager()};
-                     return singelton;
-                  }
-
-               } // manager
-            } // transaction
-
-            namespace gateway
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device()
-                  {
-                     static outbound::instance::Device singelton{
-                        process::instance::identity::gateway::manager(),
-                        environment::variable::name::ipc::gateway::manager()};
-
-                     return singelton;
-                  }
-
-                  namespace optional
-                  {
-                     outbound::instance::optional::Device& device()
-                     {
-                        static outbound::instance::optional::Device singelton{
-                           process::instance::identity::gateway::manager(),
-                           environment::variable::name::ipc::gateway::manager()};
-
-                        return singelton;
-                     }
-                  } // optional
-
-               } // manager
-            } // gateway
-
-            namespace queue
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device()
-                  {
-                     static outbound::instance::Device singelton{
-                        process::instance::identity::queue::manager(),
-                        environment::variable::name::ipc::queue::manager()};
-
-                     return singelton;
-                  }
-
-                  namespace optional
-                  {
-                     outbound::instance::optional::Device& device()
-                     {
-                        static outbound::instance::optional::Device singelton{
-                           process::instance::identity::queue::manager(),
-                           environment::variable::name::ipc::queue::manager()};
-
-                        return singelton;
-                     }
-                  } // optional
-               } // manager
-            } // queue
-
-
-            namespace domain
-            {
-               namespace manager
-               {
-                  outbound::domain::Device& device()
-                  {
-                     static outbound::domain::Device singelton;
-                     return singelton;
-                  }
-
-                  namespace optional
-                  {
-                     outbound::domain::optional::Device& device()
-                     {
-                        static outbound::domain::optional::Device singelton;
-                        return singelton;
-                     }
-                  } // optional
-
-               } // manager
-            } // domain
-
-
-
-
-            bool exists( handle_type id)
-            {
-               struct msqid_ds info;
-
-               return msgctl( id.value(), IPC_STAT, &info) == 0;
+               const auto name = ipc::file( id);
+               return ::access( name.c_str(), F_OK) != -1; 
             }
-
-            bool remove( handle_type id)
-            {
-               if( id)
-               {
-                  if( msgctl( id.value(), IPC_RMID, nullptr) == 0)
-                  {
-                     common::log::line( log, "queue id: ", id, " removed");
-                     return true;
-                  }
-                  else
-                  {
-                     common::log::line( log::category::error, "failed to remove ipc-queue with id: ", id, " - ", common::code::last::system::error());
-                  }
-               }
-               return false;
-            }
-
-            bool remove( const process::Handle& owner)
-            {
-               struct msqid_ds info;
-
-               if( msgctl( owner.queue.value(), IPC_STAT, &info) != 0)
-               {
-                  return false;
-               }
-               if( info.msg_lrpid == owner.pid.value())
-               {
-                  return remove( owner.queue);
-               }
-               return false;
-            }
+/*
+            bool remove( strong::ipc::id id);
+            bool remove( const process::Handle& owner);
+            */
 
          } // ipc
-
       } // communication
    } // common
 } // casual

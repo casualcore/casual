@@ -145,7 +145,7 @@ namespace casual
 
                         return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
                            return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
-                              c.process == process::ping( c.process.queue);
+                              c.process == process::ping( c.process.ipc);
                         });
                      }
 
@@ -249,7 +249,7 @@ namespace casual
                request.service.name = "remote1";
                request.buffer.memory = data;
                
-               common::communication::ipc::blocking::send( state.connections.at( 0).process.queue, request);
+               common::communication::ipc::blocking::send( state.connections.at( 0).process.ipc, request);
             }
 
             common::message::service::call::Reply reply;

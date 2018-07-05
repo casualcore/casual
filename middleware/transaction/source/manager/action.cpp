@@ -124,7 +124,7 @@ namespace casual
 
                            instance.state( state::resource::Proxy::Instance::State::shutdown);
 
-                           if( ! ipc::device().non_blocking_send( instance.process.queue, message::shutdown::Request{}))
+                           if( ! ipc::device().non_blocking_send( instance.process.ipc, message::shutdown::Request{}))
                            {
                               //
                               // We couldn't send shutdown for some reason, we put the message in 'persistent-replies' and
@@ -132,7 +132,7 @@ namespace casual
                               //
                               log::category::warning << "failed to send shutdown to instance: " << instance << " - action: try send it later" << '\n';
 
-                              m_state.persistent.replies.emplace_back( instance.process.queue, message::shutdown::Request{});
+                              m_state.persistent.replies.emplace_back( instance.process.ipc, message::shutdown::Request{});
                            }
                            break;
                         }
@@ -184,7 +184,7 @@ namespace casual
                      {
                         Trace trace{ "transaction::action::resource::instance::request"};
 
-                        if( ipc::device().non_blocking_push( instance.process.queue, message))
+                        if( ipc::device().non_blocking_push( instance.process.ipc, message))
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
                            instance.statistics.roundtrip.start( common::platform::time::clock::type::now());
@@ -227,7 +227,7 @@ namespace casual
                {
                   auto& domain = state.get_external( message.resource);
 
-                  ipc::device().blocking_push( domain.process.queue, message.message);
+                  ipc::device().blocking_push( domain.process.ipc, message.message);
                }
                return true;
             }

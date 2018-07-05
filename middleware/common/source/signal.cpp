@@ -79,6 +79,7 @@ namespace casual
             const auto value = cast::underlying( signal);
             switch( signal)
             {
+               case Type::none: return out << "none";
                case Type::alarm: return out << value << ":alarm";
                case Type::interrupt: return out << value << ":interrupt";
                case Type::kill: return out << value << ":kill";
@@ -152,7 +153,30 @@ namespace casual
                               //
                               if( handler::global_total_pending.load() > 0)
                               {
-                                 handle( signal::mask::current());
+                                 dispatch( signal::mask::current());
+                              }
+                           }
+                        }
+
+                        void handle( signal::Set set)
+                        {
+                           //
+                           // We assume that loading from atomic is cheaper than mutex-lock
+                           //
+
+                           if( handler::global_total_pending.load() > 0)
+                           {
+                              std::lock_guard< std::mutex> lock{ m_mutex};
+
+                              //
+                              // We only allow one thread at a time to actually handle the
+                              // pending signals
+                              //
+                              // We check the total-pending again
+                              //
+                              if( handler::global_total_pending.load() > 0)
+                              {
+                                 dispatch( set);
                               }
                            }
                         }
@@ -172,7 +196,7 @@ namespace casual
 
                      private:
 
-                        void handle( const signal::Set& current)
+                        void dispatch( const signal::Set& current)
                         {
                            m_child.handle( current);
                            m_terminate.handle( current);
@@ -292,6 +316,11 @@ namespace casual
             local::global_handler.handle();
          }
 
+         void handle( signal::Set set)
+         {
+            local::global_handler.handle();
+         }
+
          void clear()
          {
             local::global_handler.clear();
@@ -305,6 +334,12 @@ namespace casual
             }
          } // current
 
+/*
+         Type received()
+         {
+
+         }
+         */
 
          namespace timer
          {
@@ -548,7 +583,7 @@ namespace casual
          Set pending()
          {
             Set result;
-            sigpending( &result.set);
+            ::sigpending( &result.set);
             return result;
          }
 

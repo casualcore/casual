@@ -16,6 +16,7 @@
 #include "common/message/domain.h"
 #include "common/service/lookup.h"
 
+#include "common/communication/instance.h"
 #include "common/communication/ipc.h"
 #include "common/log.h"
 
@@ -59,44 +60,11 @@ namespace casual
             communication::ipc::blocking::receive( instance.output(), request);
 
             EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
+            EXPECT_TRUE( request.process.ipc == communication::ipc::inbound::ipc());
 
          }
       }
 
-
-      TEST( casual_common_mockup, ipc_link_2_Collector__send_one_message)
-      {
-         common::unittest::Trace trace;
-
-         // so we don't hang for ever, if something is wrong...
-         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
-
-         mockup::ipc::Collector source;
-         mockup::ipc::Collector destination;
-
-         //
-         // Link "output" of source to "input" of destination
-         //
-         mockup::ipc::Link link{ source.output().connector().id(), destination.input()};
-
-         {
-            message::service::lookup::Request request;
-            request.requested = "someService";
-            request.process = process::handle();
-
-            communication::ipc::blocking::send( source.input(), request);
-         }
-
-         {
-            message::service::lookup::Request request;
-            communication::ipc::blocking::receive( destination.output(), request);
-
-            EXPECT_TRUE( request.requested == "someService");
-            EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
-
-         }
-      }
 
 
       TEST( casual_common_mockup, ipc_Collector_200_messages)
@@ -138,61 +106,13 @@ namespace casual
                communication::ipc::blocking::receive( instance.output(), request);
 
                EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
-               EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
+               EXPECT_TRUE( request.process.ipc == communication::ipc::inbound::ipc());
             }
          }
       }
 
-      TEST( casual_common_mockup, ipc_link_2_Collector__send_200_messages)
-      {
-         common::unittest::Trace trace;
 
-         // so we don't hang for ever, if something is wrong...
-         common::signal::timer::Scoped timout( std::chrono::seconds( 5));
-
-         mockup::ipc::Collector source;
-         mockup::ipc::Collector destination;
-
-         //
-         // Link "output" of source to "input" of destination
-         //
-         mockup::ipc::Link link{ source.output().connector().id(), destination.input()};
-
-
-         {
-            message::service::lookup::Request request;
-            request.requested = "someService";
-            request.process = process::handle();
-
-            const std::string temp = "service_";
-
-            for( int count = 0; count < 200; ++count)
-            {
-               request.requested = temp + std::to_string( count);
-               communication::ipc::blocking::send( source.input(), request);
-            }
-         }
-
-         {
-            Trace trace( "read( ipc::receive::queue())  200");
-
-            message::service::lookup::Request request;
-
-            const std::string temp = "service_";
-
-            for( int count = 0; count < 200; ++count)
-            {
-               const auto service = temp + std::to_string( count);
-
-               communication::ipc::blocking::receive( destination.output(), request);
-
-               EXPECT_TRUE( request.requested == service) << "want: " << request.requested << " have: " << service;
-               EXPECT_TRUE( request.process.queue == communication::ipc::inbound::id());
-            }
-         }
-      }
-
-      TEST( casual_common_mockup, domain_manager__instanciate)
+      TEST( casual_common_mockup, domain_manager__instantiate)
       {
          common::unittest::Trace trace;
 
@@ -210,7 +130,7 @@ namespace casual
          message::domain::process::connect::Request request;
          request.process = process::handle();
 
-         auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+         auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
          EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
 
@@ -226,7 +146,7 @@ namespace casual
             message::domain::process::connect::Request request;
             request.process = process::handle();
 
-            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
             EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
          }
@@ -236,7 +156,7 @@ namespace casual
             request.process = process::handle();
             request.pid = process::id();
 
-            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
             EXPECT_TRUE( reply.process == process::handle());
          }
@@ -256,7 +176,7 @@ namespace casual
             request.process = process::handle();
             request.identification = identification;
 
-            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
             EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
          }
@@ -266,7 +186,7 @@ namespace casual
             request.process = process::handle();
             request.identification = identification;
 
-            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
             EXPECT_TRUE( reply.process == process::handle());
          }
@@ -287,7 +207,7 @@ namespace casual
             request.directive = message::domain::process::lookup::Request::Directive::wait;
             request.identification = identification;
 
-            return communication::ipc::blocking::send( communication::ipc::domain::manager::device(), request);
+            return communication::ipc::blocking::send( communication::instance::outbound::domain::manager::device(), request);
          };
 
          auto correlation = lookup();
@@ -297,7 +217,7 @@ namespace casual
             request.process = process::handle();
             request.identification = identification;
 
-            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
             EXPECT_TRUE( reply.directive == decltype( reply)::Directive::start);
          }

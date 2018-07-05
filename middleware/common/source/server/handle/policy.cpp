@@ -10,7 +10,7 @@
 #include "common/transaction/context.h"
 #include "common/buffer/pool.h"
 #include "common/service/lookup.h"
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 #include "common/message/domain.h"
 
@@ -45,7 +45,7 @@ namespace casual
 
                            signal::thread::scope::Mask block{ signal::set::filled( signal::Type::terminate, signal::Type::interrupt)};
 
-                           communication::ipc::blocking::send( communication::ipc::service::manager::device(), advertise);
+                           communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
                         }
                      }
 
@@ -98,7 +98,7 @@ namespace casual
                         message::domain::configuration::server::Request request;
                         request.process = process::handle();
 
-                        return communication::ipc::call( communication::ipc::domain::manager::device(), request);
+                        return communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
                      }
 
                   } // <unnamed>
@@ -158,7 +158,7 @@ namespace casual
                      message::service::call::ACK ack;
                      ack.process = process::handle();
 
-                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack);
                   }
 
                   void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
@@ -342,7 +342,7 @@ namespace casual
 
                            log::line( log::debug, "policy::Default::forward - request:", request);
 
-                           communication::ipc::blocking::send( target.process.queue, request);
+                           communication::ipc::blocking::send( target.process.ipc, request);
                         }
 
                      } // <unnamed>
@@ -391,7 +391,7 @@ namespace casual
                      message::service::call::ACK ack;
                      ack.process = common::process::handle();
 
-                     communication::ipc::blocking::send( communication::ipc::service::manager::device(), ack, m_error_handler);
+                     communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), ack, m_error_handler);
                   }
 
 

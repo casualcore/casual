@@ -131,7 +131,7 @@ namespace casual
 
                         auto reply = common::message::reverse::type( request);
                         reply.services.push_back( "service1");
-                        communication::ipc::blocking::send( request.process.queue, reply);
+                        communication::ipc::blocking::send( request.process.ipc, reply);
 
                      }
 

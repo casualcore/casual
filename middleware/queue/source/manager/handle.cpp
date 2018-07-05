@@ -157,7 +157,7 @@ namespace casual
 
 
                   auto send_reply = common::execute::scope( [&](){
-                     local::reply( message.process.queue, reply);
+                     local::reply( message.process.ipc, reply);
                   });
 
                   auto found =  common::algorithm::find( m_state.queues, message.name);
@@ -235,7 +235,7 @@ namespace casual
                         common::log::line( common::log::category::error, "failed to correlate configuration for group - ", group.name);
                      }
 
-                     ipc::device().blocking_send( request.process.queue, reply);
+                     ipc::device().blocking_send( request.process.ipc, reply);
                   }
                   else
                   {
@@ -339,7 +339,7 @@ namespace casual
 
                      common::log::line( verbose::log, "reply: ", reply);
 
-                     ipc::device().blocking_send( message.process.queue, reply);
+                     ipc::device().blocking_send( message.process.ipc, reply);
                   }
 
                   void Reply::operator () ( message_type& message)
@@ -371,7 +371,7 @@ namespace casual
                            reply.queue = queue.queue;
                         }
 
-                        local::reply( request.process.queue, reply);
+                        local::reply( request.process.ipc, reply);
                      }
                      else
                      {

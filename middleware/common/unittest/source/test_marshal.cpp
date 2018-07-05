@@ -119,7 +119,9 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.process.queue = strong::ipc::id{ 666};
+            const auto ipc = strong::ipc::id{ uuid::make()};
+
+            serverConnect.process.ipc = ipc;
 
             traits::concrete::type_t< decltype( serverConnect.services.front())> service;
 
@@ -141,7 +143,7 @@ namespace casual
 
             marshal::complete( complete, result, input_type{});
 
-            EXPECT_TRUE( result.process.queue == strong::ipc::id{ 666}) << result.process.queue;
+            EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
             EXPECT_TRUE( result.services.size() == 3) << result.services.size();
 
          }
@@ -156,7 +158,9 @@ namespace casual
 
             message::service::Advertise serverConnect;
 
-            serverConnect.process.queue = strong::ipc::id{ 666};
+            const auto ipc = strong::ipc::id{ uuid::make()};
+
+            serverConnect.process.ipc = ipc;
 
 
             traits::concrete::type_t< decltype( serverConnect.services.front())> service;
@@ -170,7 +174,7 @@ namespace casual
 
             marshal::complete( complete, result, input_type{});
 
-            EXPECT_TRUE( result.process.queue == strong::ipc::id{ 666}) << result.process.queue;
+            EXPECT_TRUE( result.process.ipc == ipc) << result.process.ipc;
             EXPECT_TRUE( result.services.size() == 10000) << result.services.size();
 
          }

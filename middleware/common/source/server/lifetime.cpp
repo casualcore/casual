@@ -39,7 +39,7 @@ namespace casual
 
                      try
                      {
-                        if( communication::ipc::non::blocking::send( handle.queue, message))
+                        if( communication::ipc::non::blocking::send( handle.ipc, message))
                         {
                            requested.push_back( handle.pid);
                         }

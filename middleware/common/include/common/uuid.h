@@ -25,19 +25,19 @@ namespace casual
          using uuid_type = platform::uuid::type;
 
 
-         Uuid();
-         Uuid( Uuid&&) noexcept = default;
-         Uuid& operator = ( Uuid&&) noexcept = default;
+         constexpr Uuid() = default;
+         constexpr Uuid( Uuid&&) noexcept = default;
+         constexpr Uuid& operator = ( Uuid&&) noexcept = default;
 
-         Uuid( const Uuid&) = default;
-         Uuid& operator = ( const Uuid&) = default;
+         constexpr Uuid( const Uuid&) = default;
+         constexpr Uuid& operator = ( const Uuid&) = default;
 
          Uuid( const uuid_type& uuid);
          Uuid( const std::string& uuid);
 
 
-         const uuid_type& get() const;
-         uuid_type& get();
+         inline const uuid_type& get() const { return m_uuid;}
+         inline uuid_type& get() { return m_uuid;}
 
          //!
          //! Copy to native uuid
@@ -75,11 +75,8 @@ namespace casual
             archive & m_uuid;
          }
 
-
       private:
-
-         uuid_type m_uuid;
-
+         uuid_type m_uuid = {};
       };
 
       namespace uuid

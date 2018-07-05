@@ -27,7 +27,7 @@ namespace casual
             {
                manager::State::Group group;
                group.process.pid = common::strong::process::id{ 1};
-               group.process.queue = common::strong::ipc::id{ 1};
+               group.process.ipc = common::strong::ipc::id{ 1};
                group.name = "group1";
 
                result.groups.push_back( std::move( group));
@@ -37,7 +37,7 @@ namespace casual
             {
                manager::State::Group group;
                group.process.pid = common::strong::process::id{ 2};
-               group.process.queue = common::strong::ipc::id{ 2};
+               group.process.ipc = common::strong::ipc::id{ 2};
                group.name = "group2";
 
                result.groups.push_back( std::move( group));

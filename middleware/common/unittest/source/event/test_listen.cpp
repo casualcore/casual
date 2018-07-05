@@ -26,7 +26,7 @@ namespace casual
          // Make sure we get a shutdown
          //
          {
-            mockup::ipc::eventually::send( communication::ipc::inbound::id(), message::shutdown::Request{});
+            mockup::ipc::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
          }
 
          EXPECT_THROW({
@@ -49,7 +49,7 @@ namespace casual
             event.state.pid = strong::process::id{ 42};
             event.state.reason = process::lifetime::Exit::Reason::core;
 
-            mockup::ipc::eventually::send( communication::ipc::inbound::id(), event);
+            mockup::ipc::eventually::send( communication::ipc::inbound::ipc(), event);
 
          }
 
@@ -57,7 +57,7 @@ namespace casual
          // Make sure we get a shutdown
          //
          {
-            mockup::ipc::eventually::send( communication::ipc::inbound::id(), message::shutdown::Request{});
+            mockup::ipc::eventually::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
          }
 
          

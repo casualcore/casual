@@ -299,7 +299,7 @@ namespace casual
                         //
                         // We got a pending request for this resource, let's oblige
                         //
-                        if( ipc::device().non_blocking_push( instance.process.queue, request->message))
+                        if( ipc::device().non_blocking_push( instance.process.ipc, request->message))
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
 
@@ -932,7 +932,7 @@ namespace casual
                   }
                }
 
-               ipc::optional::send( message.process.queue, reply);
+               ipc::optional::send( message.process.ipc, reply);
             }
 
 

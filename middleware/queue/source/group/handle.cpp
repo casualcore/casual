@@ -38,7 +38,7 @@ namespace casual
                            auto involved = common::message::transaction::resource::external::involved::create( message);
 
                            common::communication::ipc::blocking::send(
-                                 common::communication::ipc::transaction::manager::device(),
+                                 common::communication::instance::outbound::transaction::manager::device(),
                                  involved);
                         }
                      }
@@ -146,7 +146,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.queues = m_state.queuebase.queues();
 
-                     common::communication::ipc::blocking::send( message.process.queue, reply);
+                     common::communication::ipc::blocking::send( message.process.ipc, reply);
                   }
                } // queues
 
@@ -162,7 +162,7 @@ namespace casual
                      reply.process = common::process::handle();
                      reply.messages = m_state.queuebase.messages( message.qid);
 
-                     common::communication::ipc::blocking::send( message.process.queue, reply);
+                     common::communication::ipc::blocking::send( message.process.ipc, reply);
                   }
 
                } // messages
@@ -188,7 +188,7 @@ namespace casual
                      {
                         local::transaction::involved( m_state, message);
 
-                        local::ipc::blocking::send( message.process.queue, reply);
+                        local::ipc::blocking::send( message.process.ipc, reply);
                      }
                      else
                      {
@@ -196,7 +196,7 @@ namespace casual
                         // enqueue is not in transaction, we guarantee atomic enqueue so
                         // we send reply when we're in persistent state
                         //
-                        m_state.persist( std::move( reply), { message.process.queue});
+                        m_state.persist( std::move( reply), { message.process.ipc});
 
                         //
                         // Check if there are any pending request for the current queue (and selector).
@@ -240,7 +240,7 @@ namespace casual
                            local::transaction::involved( state, message);
                         }
 
-                        local::ipc::blocking::send( message.process.queue, reply);
+                        local::ipc::blocking::send( message.process.ipc, reply);
 
                         return true;
                      }
@@ -276,7 +276,7 @@ namespace casual
 
                         auto reply = m_state.queuebase.pending_forget( message);
 
-                        common::communication::ipc::blocking::send( message.process.queue, reply);
+                        common::communication::ipc::blocking::send( message.process.ipc, reply);
                      }
                      catch( ...)
                      {
@@ -296,7 +296,7 @@ namespace casual
                   {
                      Trace trace{ "queue::handle::peek::information::Request"};
 
-                     local::ipc::blocking::send( message.process.queue, m_state.queuebase.peek( message));
+                     local::ipc::blocking::send( message.process.ipc, m_state.queuebase.peek( message));
 
                   }
 
@@ -308,7 +308,7 @@ namespace casual
                   {
                      Trace trace{ "queue::handle::peek::information::Request"};
 
-                     local::ipc::blocking::send( message.process.queue, m_state.queuebase.peek( message));
+                     local::ipc::blocking::send( message.process.ipc, m_state.queuebase.peek( message));
                   }
                } // messages
 
@@ -346,7 +346,7 @@ namespace casual
                         reply.state = common::code::xa::resource_fail;
                      }
 
-                     m_state.persist( std::move( reply), { message.process.queue});
+                     m_state.persist( std::move( reply), { message.process.ipc});
                   }
                }
 
@@ -363,7 +363,7 @@ namespace casual
                      reply.trid = message.trid;
                      reply.state = common::code::xa::ok;
 
-                     local::ipc::blocking::send( common::communication::ipc::transaction::manager::device(), reply);
+                     local::ipc::blocking::send( common::communication::instance::outbound::transaction::manager::device(), reply);
                   }
                }
 
@@ -393,7 +393,7 @@ namespace casual
                         reply.state = common::code::xa::resource_fail;
                      }
 
-                     m_state.persist( std::move( reply), { message.process.queue});
+                     m_state.persist( std::move( reply), { message.process.ipc});
                   }
                }
             } // transaction
@@ -407,7 +407,7 @@ namespace casual
                   auto reply = common::message::reverse::type( message);
 
                   auto send_reply = common::execute::scope( [&](){
-                     local::ipc::blocking::send( message.process.queue, reply);
+                     local::ipc::blocking::send( message.process.ipc, reply);
                   });
 
                   reply.affected = common::algorithm::transform( message.queues, [&]( auto queue){

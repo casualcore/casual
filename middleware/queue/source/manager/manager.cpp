@@ -145,7 +145,7 @@ namespace casual
                {
                   common::message::queue::information::queues::Request request;
                   request.process = common::process::handle();
-                  return ipc::device().blocking_send( group.process.queue, request);
+                  return ipc::device().blocking_send( group.process.ipc, request);
                };
 
             std::vector< common::Uuid> correlations;
@@ -181,7 +181,7 @@ namespace casual
 
                ipc::device().blocking_receive(
                      result,
-                     ipc::device().blocking_send( found->second.front().process.queue, request));
+                     ipc::device().blocking_send( found->second.front().process.ipc, request));
             }
 
             return result;

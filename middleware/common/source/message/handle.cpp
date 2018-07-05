@@ -36,7 +36,7 @@ namespace casual
                reply.process = common::process::handle();
                reply.uuid = common::process::uuid();
 
-               communication::ipc::outbound::Device ipc{ message.process.queue};
+               communication::ipc::outbound::Device ipc{ message.process.ipc};
 
                //
                // We ignore signals

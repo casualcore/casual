@@ -61,7 +61,7 @@ namespace casual
                         common::log::trace::Outcome log_connect{ "resource connect to transaction monitor", log};
 
                         common::communication::ipc::blocking::send(
-                              common::communication::ipc::transaction::manager::device(), reply);
+                              common::communication::instance::outbound::transaction::manager::device(), reply);
                      }
 
                      if( reply.state != common::code::xa::ok)
@@ -100,7 +100,7 @@ namespace casual
                      reply.statistics.end = common::platform::time::clock::type::now();
 
                      common::communication::ipc::blocking::send(
-                           common::communication::ipc::transaction::manager::device(), reply);
+                           common::communication::instance::outbound::transaction::manager::device(), reply);
 
                   }
                };

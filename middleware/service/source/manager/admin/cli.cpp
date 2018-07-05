@@ -430,7 +430,7 @@ namespace casual
                /*
                struct format_queue
                {
-                  strong::ipc::id::type operator () ( const value_type& v) const { return v.process.queue;}
+                  strong::ipc::id::type operator () ( const value_type& v) const { return v.process.ipc;}
                };
                */
 

@@ -166,7 +166,7 @@ namespace casual
                      });
 
 
-                     ipc::device().blocking_send( message.process.queue, reply);
+                     ipc::device().blocking_send( message.process.ipc, reply);
                   }
 
                } // prepare
@@ -233,7 +233,7 @@ namespace casual
                         reply.state = decltype( reply.state)::idle;
                         reply.process = handle;
 
-                        local::optional::send( message.process.queue, reply);
+                        local::optional::send( message.process.ipc, reply);
                      }
                      else if( ! service.instances.active())
                      {
@@ -261,7 +261,7 @@ namespace casual
                               //
                               reply.state = decltype( reply.state)::idle;
 
-                              local::optional::send( message.process.queue, reply);
+                              local::optional::send( message.process.ipc, reply);
 
                               break;
                            }
@@ -286,7 +286,7 @@ namespace casual
                               //
                               reply.state = decltype( reply.state)::busy;
 
-                              if( local::optional::send( message.process.queue, reply))
+                              if( local::optional::send( message.process.ipc, reply))
                               {
                                  //
                                  // All instances are busy, we stack the request
@@ -314,7 +314,7 @@ namespace casual
                         reply.service.name = message.requested;
                         reply.state = decltype( reply.state)::absent;
 
-                        local::optional::send( message.process.queue, reply);
+                        local::optional::send( message.process.ipc, reply);
                      });
 
                      try
@@ -425,7 +425,7 @@ namespace casual
                         }
                      }
 
-                     ipc::device().blocking_send( message.process.queue, reply);
+                     ipc::device().blocking_send( message.process.ipc, reply);
                   }
 
                   void Reply::operator () ( message_type& message)
@@ -459,7 +459,7 @@ namespace casual
                            reply.service.name = pending.request.requested;
                            reply.state = decltype( reply.state)::absent;
 
-                           ipc::device().blocking_send( pending.request.process.queue, reply);
+                           ipc::device().blocking_send( pending.request.process.ipc, reply);
                         }
 
                      }

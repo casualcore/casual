@@ -9,7 +9,7 @@
 #include "common/mockup/log.h"
 
 #include "common/process.h"
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/execute.h"
 
 
@@ -40,19 +40,19 @@ namespace casual
                   common::process::lifetime::terminate( { m_process.pid});
                });
 
-               if( ! m_process.queue)
+               if( ! m_process.ipc)
                {
                   //
                   // Try to get corresponding queue
                   //
-                  m_process.queue = process::instance::fetch::handle( m_process.pid, process::instance::fetch::Directive::direct).queue;
+                  m_process.ipc = communication::instance::fetch::handle( m_process.pid, communication::instance::fetch::Directive::direct).ipc;
                   log << "mockup fetched process: " << m_process << '\n';
                }
 
 
-               if( m_process.queue)
+               if( m_process.ipc)
                {
-                  communication::ipc::blocking::send( m_process.queue, message::shutdown::Request{});
+                  communication::ipc::blocking::send( m_process.ipc, message::shutdown::Request{});
                   common::process::wait( m_process.pid);
                }
                else
@@ -78,7 +78,7 @@ namespace casual
          {
             if( ! m_process)
             {
-               m_process = process::instance::fetch::handle( m_process.pid);
+               m_process = communication::instance::fetch::handle( m_process.pid);
             }
             return m_process;
          }

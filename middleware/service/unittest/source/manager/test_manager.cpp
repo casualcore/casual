@@ -209,7 +209,7 @@ namespace casual
             request.process = common::process::handle();
             request.processes.push_back( server.process());
 
-            auto reply = common::communication::ipc::call( common::communication::ipc::service::manager::device(), request);
+            auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
 
             EXPECT_TRUE( request.processes == reply.processes);
 
@@ -237,7 +237,7 @@ namespace casual
             request.process = common::process::handle();
             request.processes.push_back( server.process());
 
-            auto reply = common::communication::ipc::call( common::communication::ipc::service::manager::device(), request);
+            auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
 
             EXPECT_TRUE( request.processes == reply.processes);
 
@@ -371,8 +371,8 @@ namespace casual
 
             // service-manager will let us think that the service is idle, and send us the queue to the forward-cache
             EXPECT_TRUE( service.state == decltype( service)::State::idle);
-            EXPECT_TRUE( service.process.queue);
-            EXPECT_TRUE( service.process.queue != server.process().queue);
+            EXPECT_TRUE( service.process.ipc);
+            EXPECT_TRUE( service.process.ipc != server.process().queue);
          }
       }
 
@@ -402,7 +402,7 @@ namespace casual
             message.state.reason = common::process::lifetime::Exit::Reason::core;
 
             common::communication::ipc::blocking::send( 
-               common::communication::ipc::service::manager::device(),
+               common::communication::instance::outbound::service::manager::device(),
                message);
          }
 

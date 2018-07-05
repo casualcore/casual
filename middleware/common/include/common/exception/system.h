@@ -96,6 +96,7 @@ namespace casual
             //! @}
 
             void throw_from_code( int code);
+            void throw_from_code( code::system code);
 
          } // system 
       } // exception 

@@ -162,7 +162,7 @@ namespace casual
                               // Notify TM that this "resource" is involved in the transaction
                               //
                               common::communication::ipc::blocking::send(
-                                    common::communication::ipc::transaction::manager::device(),
+                                    common::communication::instance::outbound::transaction::manager::device(),
                                     common::message::transaction::resource::external::involved::create( message));
                            }
 
@@ -207,7 +207,7 @@ namespace casual
                               // Notify TM that this "resource" is involved in the transaction
                               //
                               common::communication::ipc::blocking::send(
-                                    common::communication::ipc::transaction::manager::device(),
+                                    common::communication::instance::outbound::transaction::manager::device(),
                                     common::message::transaction::resource::external::involved::create( message));
                            }
 
@@ -247,7 +247,7 @@ namespace casual
                         // Notify TM that this "resource" is involved in the transaction
                         //
                         common::communication::ipc::blocking::send(
-                              common::communication::ipc::transaction::manager::device(),
+                              common::communication::instance::outbound::transaction::manager::device(),
                               common::message::transaction::resource::external::involved::create( message));
                      }
 
@@ -341,7 +341,7 @@ namespace casual
                               //
                               for( auto& service : advertise.services) { ++service.hops;}
 
-                              ipc::optional::send( common::communication::ipc::service::manager::device(), advertise);
+                              ipc::optional::send( common::communication::instance::outbound::service::manager::device(), advertise);
                            }
 
                            if( ! advertise.queues.empty())
@@ -833,7 +833,7 @@ namespace casual
                         //
                         // Send metrics to service-manager
                         //
-                        common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), metric);
+                        common::communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), metric);
                         metric.services.clear();
                      }
                   }

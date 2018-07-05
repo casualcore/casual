@@ -35,7 +35,7 @@ namespace casual
 
             std::vector< common::process::Handle> m_subscribers;
 
-            bool exists( strong::ipc::id queue) const;
+            bool exists( strong::ipc::id ipc) const;
          };
 
          template< typename Event>
@@ -46,7 +46,7 @@ namespace casual
 
             void subscription( const message::event::subscription::Begin& message)
             {
-               if( ( message.types.empty() || algorithm::find( message.types, Event::type())) && ! exists( message.process.queue))
+               if( ( message.types.empty() || algorithm::find( message.types, Event::type())) && ! exists( message.process.ipc))
                {
                   m_subscribers.push_back( message.process);
                }
@@ -55,7 +55,7 @@ namespace casual
             void subscription( const message::event::subscription::End& message)
             {
                algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [&]( auto& v){
-                  return v.queue == message.process.queue;
+                  return v.ipc == message.process.ipc;
                }));
             }
 
@@ -66,11 +66,11 @@ namespace casual
                }));
             }
 
-            void subscription( strong::ipc::id queue)
+            void subscription( strong::ipc::id ipc)
             {
-               if( ! exists( queue))
+               if( ! exists( ipc))
                {
-                  m_subscribers.emplace_back( 0, queue);
+                  m_subscribers.emplace_back( 0, ipc);
                }
             }
 

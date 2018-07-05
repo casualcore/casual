@@ -81,7 +81,7 @@ namespace casual
                if( settings.event())
                {
                   common::message::event::subscription::Begin request;
-                  request.process.queue = settings.event();
+                  request.process.ipc = settings.event();
                   state.event.subscription( request);
                }
 

@@ -10,6 +10,7 @@
 
 #include "common/strong/id.h"
 #include "common/file.h"
+#include "common/uuid.h"
 
 #include "common/algorithm.h"
 
@@ -52,12 +53,13 @@ namespace casual
             using queue_handle = strong::ipc::id;
 
             Handle() = default;
-            Handle( strong::process::id pid) : pid{ pid} {}
-            Handle( strong::process::id pid, queue_handle queue) : pid( pid),  queue( queue)  {}
+            inline Handle( strong::process::id pid) : pid{ pid} {}
+            inline Handle( strong::process::id pid, strong::ipc::id ipc) : pid( pid),  ipc( std::move( ipc))  {}
 
             strong::process::id pid;
-            queue_handle queue;
 
+            //! unique identifier for this process
+            strong::ipc::id ipc;
 
             friend bool operator == ( const Handle& lhs, const Handle& rhs);
             inline friend bool operator != ( const Handle& lhs, const Handle& rhs) { return !( lhs == rhs);}
@@ -65,6 +67,7 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
 
+            /*
             struct equal
             {
                struct pid
@@ -86,23 +89,24 @@ namespace casual
                   };
                };
             };
+            */
 
             inline explicit operator bool() const
             {
-               return pid && queue;
+               return pid && ipc;
             }
 
             CASUAL_CONST_CORRECT_MARSHAL(
             {
                archive & pid;
-               archive & queue;
+               archive & ipc;
             })
          };
 
          //!
          //! @return the process handle for current process
          //!
-         Handle handle();
+         const Handle& handle();
 
          //!
          //! @return process id (pid) for current process.
@@ -111,81 +115,6 @@ namespace casual
 
          inline strong::process::id id( const Handle& handle) { return handle.pid;}
          inline strong::process::id id( strong::process::id pid) { return pid;}
-
-         namespace instance
-         {
-
-            namespace identity
-            {
-               namespace service
-               {
-                  const Uuid& manager();
-               } // service
-
-               namespace forward
-               {
-                  const Uuid& cache();
-               } // forward
-
-               namespace traffic
-               {
-                  const Uuid& manager();
-               } // traffic
-
-               namespace gateway
-               {
-                  const Uuid& manager();
-               } // domain
-
-               namespace queue
-               {
-                  const Uuid& manager();
-               } // queue
-
-               namespace transaction
-               {
-                  const Uuid& manager();
-               } // transaction
-
-            } // identity
-
-
-
-
-
-            namespace fetch
-            {
-               enum class Directive : char
-               {
-                  wait,
-                  direct
-               };
-
-               std::ostream& operator << ( std::ostream& out, Directive directive);
-
-               Handle handle( const Uuid& identity, Directive directive = Directive::wait);
-
-               //!
-               //! Fetches the handle for a given pid
-               //!
-               //! @param pid
-               //! @param directive if caller waits for the process to register or not
-               //! @return handle to the process
-               //!
-               Handle handle( strong::process::id pid , Directive directive = Directive::wait);
-
-
-            } // fetch
-
-
-
-
-            void connect( const Uuid& identity, const Handle& process);
-            void connect( const Uuid& identity);
-            void connect( const Handle& process);
-            void connect();
-
-         } // instance
 
 
          //!
@@ -326,14 +255,6 @@ namespace casual
 
 
 
-         //!
-         //! ping a server that owns the @p queue
-         //!
-         //! @note will block
-         //!
-         //! @return the process handle
-         //!
-         Handle ping( strong::ipc::id queue);
 
          namespace lifetime
          {

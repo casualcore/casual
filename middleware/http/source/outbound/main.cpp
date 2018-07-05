@@ -78,7 +78,7 @@ namespace casual
                return service;
             });
 
-            common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), message);
+            common::communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
 
          }
 
@@ -131,7 +131,7 @@ namespace casual
                   auto send_reply = common::execute::scope( [&](){
                      if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
                      {
-                        common::communication::ipc::blocking::send( message.process.queue, reply);
+                        common::communication::ipc::blocking::send( message.process.ipc, reply);
                      }
                   });
 
@@ -140,7 +140,7 @@ namespace casual
                      common::message::service::call::ACK ack;
                      ack.correlation = message.correlation;
                      ack.process = common::process::handle();
-                     common::communication::ipc::blocking::send( common::communication::ipc::service::manager::device(), ack);
+                     common::communication::ipc::blocking::send( common::communication::instance::outbound::service::manager::device(), ack);
                   });
 
 

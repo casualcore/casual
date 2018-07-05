@@ -240,7 +240,7 @@ namespace casual
 
                   log::debug << "async - message: " << prepared.message << '\n';
 
-                  communication::ipc::blocking::send( target.process.queue, prepared.message);
+                  communication::ipc::blocking::send( target.process.ipc, prepared.message);
                }
 
                unreserve.release();
@@ -252,15 +252,22 @@ namespace casual
                namespace
                {
                   template< typename... Args>
-                  bool receive( message::service::call::Reply& reply, reply::Flags flags, Args&... args)
+                  bool receive( message::service::call::Reply& reply, reply::Flags flags, Args&&... args)
                   {
-                     return communication::ipc::receive::message(
-                           communication::ipc::inbound::device(),
-                           reply,
-                           flags.exist( reply::Flag::no_block) ?
-                                 communication::ipc::receive::Flag::non_blocking :
-                                 communication::ipc::receive::Flag::blocking,
-                           args...);
+                     if( flags.exist( reply::Flag::no_block))
+                     {
+                        return communication::ipc::non::blocking::receive( 
+                           communication::ipc::inbound::device(), 
+                           reply, 
+                           std::forward< Args>( args)...);
+                     }
+                     else
+                     {
+                        return communication::ipc::blocking::receive( 
+                           communication::ipc::inbound::device(), 
+                           reply, 
+                           std::forward< Args>( args)...);
+                     }
                   }
                } // <unnamed>
             } // local

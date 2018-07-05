@@ -1,45 +1,31 @@
-//! 
-//! Copyright (c) 2015, The casual project
+//!
+//! Copyright (c) 2018, The casual project
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
 
-
-
-#include "common/communication/message.h"
 #include "common/communication/device.h"
 
 #include "common/platform.h"
-
+#include "common/strong/id.h"
+#include "common/uuid.h"
+#include "common/algorithm.h"
+#include "common/memory.h"
 #include "common/flag.h"
+#include "common/file.h"
+
 
 namespace casual
 {
    namespace common
    {
-
       namespace communication
       {
          namespace ipc
          {
             using size_type = platform::size::type;
-
-            //
-            // Forwards
-            //
-            namespace inbound
-            {
-               struct Connector;
-            } // inbound
-
-            namespace outbound
-            {
-               struct Connector;
-            } // inbound
-
 
             namespace message
             {
@@ -47,6 +33,13 @@ namespace casual
                {
                   struct Header
                   {
+                     //!
+                     //! Which logical type of message this transport is carrying
+                     //!
+                     //! @attention has to be the first bytes in the message
+                     //!
+                     common::message::Type type;
+
                      using correlation_type = Uuid::uuid_type;
 
                      //!
@@ -70,7 +63,7 @@ namespace casual
                      std::int64_t complete_size;
                   };
 
-                  constexpr std::int64_t max_message_size() { return platform::ipc::message::size;}
+                  constexpr std::int64_t max_message_size() { return platform::communication::pipe::transport::size;}
                   constexpr std::int64_t header_size() { return sizeof( Header);}
                   constexpr std::int64_t max_payload_size() { return max_message_size() - header_size();}
 
@@ -86,12 +79,6 @@ namespace casual
 
                   struct message_t
                   {
-                     //!
-                     //! Which logical type of message this transport is carrying
-                     //!
-                     //! @attention has to be the first bytes in the message
-                     //!
-                     platform::ipc::message::type type;
 
                      transport::Header header;
                      payload_type payload;
@@ -100,40 +87,26 @@ namespace casual
 
 
                   static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
-                  static_assert( std::is_pod< message_t>::value, "Message has to be a POD");
-                  //static_assert( sizeof( message_t) - header_size() == max_payload_size(), "something is wrong with padding");
+                  static_assert( std::is_trivially_copyable< message_t>::value, "Message has to be trivially copyable");
+                  static_assert( ( transport::header_size() + transport::max_payload_size()) == transport::max_message_size(), "something is wrong with padding");
 
 
                   inline Transport() { memory::set( message);}
 
                   inline Transport( common::message::Type type, size_type complete_size) : Transport()
                   {
-                     Transport::type( type);
+                     message.header.type = type;
                      message.header.complete_size = complete_size;
                   }
-
-                  inline Transport( common::message::Type type) : Transport() { Transport::type( type);}
-
-
-
                   //!
                   //! @return the message type
                   //!
-                  inline common::message::Type type() const { return static_cast< common::message::Type>( message.type);}
-
-                  //!
-                  //! Sets the message type
-                  //!
-                  //! @param type type to set
-                  //!
-                  inline void type( common::message::Type type) { message.type = static_cast< platform::ipc::message::type>( type);}
-
+                  inline common::message::Type type() const { return static_cast< common::message::Type>( message.header.type);}
 
                   inline const_range_type payload() const
                   {
                      return range::make( std::begin( message.payload), message.header.count);
                   }
-
 
                   inline const correlation_type& correlation() const { return message.header.correlation;}
                   inline correlation_type& correlation() { return message.header.correlation;}
@@ -162,6 +135,13 @@ namespace casual
                   inline size_type size() const { return transport::header_size() + payload_size();}
 
 
+                  inline void* data() { return static_cast< void*>( &message);}
+                  inline const void* data() const { return static_cast< const void*>( &message);}
+
+                  inline void* header_data() { return static_cast< void*>( &message.header);}
+                  inline void* payload_data() { return static_cast< void*>( &message.payload);}
+
+
                   //!
                   //! Indication if this transport message is the last of the logical message.
                   //!
@@ -177,13 +157,13 @@ namespace casual
                   auto end() { return begin() + message.header.count;}
                   auto end() const { return begin() + message.header.count;}
 
-                  template< typename Iter>
-                  void assign( Iter first, Iter last)
+                  template< typename R>
+                  void assign( R&& range)
                   {
-                     message.header.count = std::distance( first, last);
-                     assert( first <= last && message.header.count <=  transport::max_payload_size());
+                     message.header.count = range.size();
+                     assert( message.header.count <=  transport::max_payload_size());
 
-                     std::copy( first, last, std::begin( message.payload));
+                     algorithm::copy( range, std::begin( message.payload));
                   }
 
                   friend std::ostream& operator << ( std::ostream& out, const Transport& value);
@@ -195,34 +175,77 @@ namespace casual
             } // message
 
 
-            using handle_type = strong::ipc::id;
 
+            std::string file( strong::ipc::id ipc);
 
+            struct Handle
+            {
 
+               explicit Handle( strong::file::descriptor::id id, strong::ipc::id ipc);
+               Handle( Handle&& other) noexcept;
+               Handle& operator = ( Handle&& other) noexcept;
+               ~Handle();
 
+               inline strong::file::descriptor::id id() const { return m_id;}
+               inline strong::ipc::id ipc() const { return m_ipc;}
+
+               // only exposed to do blocking open after EOF
+               inline void id( strong::file::descriptor::id id) { m_id = id;}
+
+               inline explicit operator bool () const { return ! m_id.empty();}
+
+               void blocking() const;
+               void non_blocking() const;
+               
+               friend std::ostream& operator << ( std::ostream& out, const Handle& rhs);
+            private:
+               strong::file::descriptor::id m_id;
+               strong::ipc::id m_ipc;
+            };
+
+            static_assert( sizeof( Handle) == sizeof( strong::file::descriptor::id) + sizeof( strong::ipc::id), "padding problem");
 
             namespace native
             {
-               enum class Flag : long
+               // creates and open for read
+               Handle create( strong::ipc::id ipc);
+
+               namespace open
                {
-                  non_blocking = platform::flag::value( platform::flag::ipc::no_wait)
-               };
-
-               bool send( handle_type id, const message::Transport& transport, common::Flags< Flag> flags);
-               bool receive( handle_type id, message::Transport& transport, common::Flags< Flag> flags);
+                  Handle read( strong::ipc::id ipc);   
+                  Handle write( strong::ipc::id ipc);                
+               } // open
 
 
+               
+               namespace blocking
+               {
+                  bool send( const Handle& handle, const message::Transport& transport);
+                  bool receive( Handle& handle, message::Transport& transport);
+               } // blocking
 
+               namespace non
+               {
+                  namespace blocking
+                  {
+                     bool send( const Handle& handle, const message::Transport& transport);
+                     bool receive( const Handle& handle, message::Transport& transport);
+                  } // blocking
+               } // non
+    
             } // native
 
 
             namespace policy
             {
                using cache_type = communication::inbound::cache_type;
-               using cache_range_type =  communication::inbound::cache_range_type;
+               using cache_range_type = communication::inbound::cache_range_type;
 
-               cache_range_type receive( handle_type id, cache_type& cache, common::Flags< native::Flag> flags);
-               Uuid send( handle_type id, const communication::message::Complete& complete, common::Flags< native::Flag> flags);
+               namespace blocking
+               {
+                  cache_range_type receive( Handle& handle, cache_type& cache);
+                  Uuid send( const Handle& handle, const communication::message::Complete& complete);
+               } // blocking
 
                struct Blocking
                {
@@ -230,32 +253,36 @@ namespace casual
                   template< typename Connector>
                   cache_range_type receive( Connector&& connector, cache_type& cache)
                   {
-                     return policy::receive( connector.id(), cache, {});
+                     return policy::blocking::receive( connector.id(), cache);
                   }
 
                   template< typename Connector>
                   Uuid send( Connector&& connector, const communication::message::Complete& complete)
                   {
-                     return policy::send( std::forward< Connector>( connector), complete, {});
+                     return policy::blocking::send( connector.id(), complete);
                   }
-
-
                };
 
                namespace non
                {
+                  namespace blocking
+                  {
+                     cache_range_type receive( const Handle& handle, cache_type& cache);
+                     Uuid send( const Handle& handle, const communication::message::Complete& complete);
+                  } // blocking
+
                   struct Blocking
                   {
                      template< typename Connector>
                      cache_range_type receive( Connector&& connector, cache_type& cache)
                      {
-                        return policy::receive( connector.id(), cache, native::Flag::non_blocking);
+                        return policy::non::blocking::receive( connector.id(), cache);
                      }
 
                      template< typename Connector>
                      Uuid send( Connector&& connector, const communication::message::Complete& complete)
                      {
-                        return policy::send( std::forward< Connector>( connector), complete, native::Flag::non_blocking);
+                        return policy::non::blocking::send( connector.id(), complete);
                      }
                   };
 
@@ -268,8 +295,7 @@ namespace casual
             {
                struct Connector
                {
-                  using handle_type = ipc::handle_type;
-                  using transport_type = ipc::message::Transport;
+                  using transport_type = message::Transport;
                   using blocking_policy = policy::Blocking;
                   using non_blocking_policy = policy::non::Blocking;
 
@@ -277,20 +303,16 @@ namespace casual
                   Connector();
                   ~Connector();
 
-                  Connector( const Connector&) = delete;
-                  Connector& operator = ( const Connector&) = delete;
+                  Connector( Connector&&) noexcept = default;
+                  Connector& operator = ( Connector&&) noexcept = default;
 
-                  Connector( Connector&& rhs) noexcept;
-                  Connector& operator = ( Connector&& rhs) noexcept;
-
-                  handle_type id() const;
-
-                  friend void swap( Connector& lhs, Connector& rhs);
+                  inline const Handle& id() const { return m_id;}
+                  inline Handle& id() { return m_id;}
 
                   friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
-
                private:
-                  handle_type m_id;
+                  Handle m_id;
+                  Handle m_dummy_writer;
                };
 
                template< typename S>
@@ -300,31 +322,29 @@ namespace casual
 
 
                Device& device();
-               handle_type id();
-
+               inline Handle& id() { return device().connector().id();}
+               inline strong::ipc::id ipc() { return device().connector().id().ipc();}
             } // inbound
 
             namespace outbound
             {
                struct Connector
                {
-                  using handle_type = ipc::handle_type;
-                  using transport_type = ipc::message::Transport;
+                  using transport_type = message::Transport;
                   using blocking_policy = policy::Blocking;
                   using non_blocking_policy = policy::non::Blocking;
 
-                  Connector( handle_type id);
+                  Connector( strong::ipc::id ipc);
+                  ~Connector() = default;
 
-                  operator handle_type() const;
-
-                  handle_type id() const;
+                  inline const Handle& id() const { return m_id;}
 
                   inline void reconnect() const { throw; }
 
                   friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
 
                protected:
-                  handle_type m_id;
+                  Handle m_id;
                };
 
                template< typename S>
@@ -332,89 +352,20 @@ namespace casual
 
                using Device = communication::outbound::Device< Connector>;
 
-               namespace instance
-               {
-                  template< process::instance::fetch::Directive directive>
-                  struct Connector
-                  {
-                     using handle_type = ipc::handle_type;
-                     using transport_type = ipc::message::Transport;
-                     using blocking_policy = policy::Blocking;
-                     using non_blocking_policy = policy::non::Blocking;
-
-                     Connector( const Uuid& identity, std::string environment);
-
-                     inline operator handle_type() const { return m_process.queue;}
-                     inline handle_type id() const { return m_process.queue;}
-                     inline const common::process::Handle& process() const { return m_process;}
-
-                     void reconnect();
-                    
-                     template< process::instance::fetch::Directive d> 
-                     friend std::ostream& operator << ( std::ostream& out, const Connector< d>& rhs);
-
-                  private:
-                     common::process::Handle m_process;
-                     Uuid m_identity;
-                     std::string m_environment;
-                  };
-
-                  //!
-                  //! Will wait until the instance is online, could block for ever.
-                  //!
-                  using Device = communication::outbound::Device< Connector< process::instance::fetch::Directive::wait>>;
-
-                  namespace optional
-                  {
-
-                     //!
-                     //! Will fail if the instance is offline.
-                     //!
-                     using Device = communication::outbound::Device< Connector< process::instance::fetch::Directive::direct>>;
-
-                  } // optional
-               } // instance
-
-               namespace domain
-               {
-                  struct Connector : outbound::Connector
-                  {
-                     Connector();
-                     void reconnect();
-                  };
-                  using Device = communication::outbound::Device< Connector>;
-
-                  namespace optional
-                  {
-
-                     struct Connector : outbound::Connector
-                     {
-                        Connector();
-                        void reconnect();
-                     };
-
-                     //!
-                     //! Will not wait and try to connect to domain
-                     //!
-                     using Device = communication::outbound::Device< Connector>;
-
-                  } // optional
-               } // domain
-
             } // outbound
 
 
             using error_type = typename outbound::Device::error_type;
 
             template< typename D, typename M, typename P>
-            auto send( D& ipc, M&& message, P&& policy, const error_type& handler = nullptr)
-             -> std::enable_if_t< ! std::is_same< D, ipc::handle_type>::value, Uuid>
+            auto send( D& device, M&& message, P&& policy, const error_type& handler = nullptr)
+             -> std::enable_if_t< ! std::is_same< std::decay_t< D>, strong::ipc::id>::value, Uuid>
             {
-               return ipc.send( message, policy, handler);
+               return device.send( message, policy, handler);
             }
 
             template< typename M, typename P>
-            Uuid send( ipc::handle_type ipc, M&& message, P&& policy, const error_type& handler = nullptr)
+            Uuid send( strong::ipc::id ipc, M&& message, P&& policy, const error_type& handler = nullptr)
             {
                return outbound::Device{ ipc}.send( message, policy, handler);
             }
@@ -426,27 +377,27 @@ namespace casual
                using error_type = typename inbound::Device::error_type;
 
                template< typename S, typename M>
-               bool receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
+               bool receive( inbound::basic_device< S>& device, M& message, const error_type& handler = nullptr)
                {
-                  return ipc.receive( message, policy::Blocking{}, handler);
+                  return device.receive( message, policy::Blocking{}, handler);
                }
 
                template< typename S, typename M>
-               bool receive( inbound::basic_device< S>& ipc, M& message, const Uuid& correlation, const error_type& handler = nullptr)
+               bool receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation, const error_type& handler = nullptr)
                {
-                  return ipc.receive( message, correlation, policy::Blocking{}, handler);
+                  return device.receive( message, correlation, policy::Blocking{}, handler);
                }
 
                template< typename S>
-               inline communication::message::Complete next( inbound::basic_device< S>& ipc, const error_type& handler = nullptr)
+               inline communication::message::Complete next( inbound::basic_device< S>& device, const error_type& handler = nullptr)
                {
-                  return ipc.next( policy::Blocking{}, handler);
+                  return device.next( policy::Blocking{}, handler);
                }
 
                template< typename D, typename M>
-               Uuid send( D&& ipc, M&& message, const error_type& handler = nullptr)
+               Uuid send( D&& device, M&& message, const error_type& handler = nullptr)
                {
-                  return ipc::send( std::forward< D>( ipc), message, policy::Blocking{}, handler);
+                  return ipc::send( std::forward< D>( device), message, policy::Blocking{}, handler);
                }
 
             } // blocking
@@ -458,53 +409,30 @@ namespace casual
                   using error_type = typename inbound::Device::error_type;
 
                   template< typename S, typename M>
-                  bool receive( inbound::basic_device< S>& ipc, M& message, const error_type& handler = nullptr)
+                  bool receive( inbound::basic_device< S>& device, M& message, const error_type& handler = nullptr)
                   {
-                     return ipc.receive( message, policy::non::Blocking{}, handler);
+                     return device.receive( message, policy::non::Blocking{}, handler);
                   }
 
                   template< typename S, typename M>
-                  bool receive( inbound::basic_device< S>& ipc, M& message, const Uuid& correlation, const error_type& handler = nullptr)
+                  bool receive( inbound::basic_device< S>& device, M& message, const Uuid& correlation, const error_type& handler = nullptr)
                   {
-                     return ipc.receive( message, correlation, policy::non::Blocking{}, handler);
+                     return device.receive( message, correlation, policy::non::Blocking{}, handler);
                   }
 
                   template< typename S>
-                  inline communication::message::Complete next( inbound::basic_device< S>& ipc, const error_type& handler = nullptr)
+                  inline communication::message::Complete next( inbound::basic_device< S>& device, const error_type& handler = nullptr)
                   {
-                     return ipc.next( policy::non::Blocking{}, handler);
+                     return device.next( policy::non::Blocking{}, handler);
                   }
 
                   template< typename D, typename M>
-                  Uuid send( D&& ipc, M&& message, const error_type& handler = nullptr)
+                  Uuid send( D&& device, M&& message, const error_type& handler = nullptr)
                   {
-                     return ipc::send( std::forward< D>( ipc), message, policy::non::Blocking{}, handler);
+                     return ipc::send( std::forward< D>( device), message, policy::non::Blocking{}, handler);
                   }
                } // blocking
             } // non
-
-            namespace receive
-            {
-               enum class Flag : char
-               {
-                  blocking,
-                  non_blocking
-               };
-
-               template< typename D, typename M, typename... Args>
-               bool message( D& device, M& message, Flag flag, Args&&... args)
-               {
-                  if( flag == Flag::blocking)
-                  {
-                     return blocking::receive( device, message, std::forward< Args>( args)...);
-                  }
-                  else
-                  {
-                     return non::blocking::receive( device, message, std::forward< Args>( args)...);
-                  }
-               }
-
-            } // receive
 
             template< typename D, typename M, typename Policy = policy::Blocking, typename Device = inbound::Device>
             auto call(
@@ -512,9 +440,9 @@ namespace casual
                   M&& message,
                   Policy&& policy = policy::Blocking{},
                   const error::type& handler = nullptr,
-                  Device& device = ipc::inbound::device())
+                  Device& device = inbound::device())
             {
-               auto correlation = ipc::send( std::forward< D>( destination), message, policy, handler);
+               auto correlation = send( std::forward< D>( destination), message, policy, handler);
 
                auto reply = common::message::reverse::type( std::forward< M>( message));
                device.receive( reply, correlation, policy, handler);
@@ -522,195 +450,11 @@ namespace casual
                return reply;
             }
 
-            namespace service
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device();
-               } // manager
-            } // service
 
-
-            namespace transaction
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device();
-               } // manager
-            } // transaction
-
-            namespace gateway
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device();
-
-
-                  namespace optional
-                  {
-                     //!
-                     //! Can be missing. That is, this will not block
-                     //! until the device is found (the gateway is online)
-                     //!
-                     //! @return device to gateway-manager
-                     //!
-                     outbound::instance::optional::Device& device();
-                  } // optional
-               } // manager
-            } // gateway
-
-            namespace queue
-            {
-               namespace manager
-               {
-                  outbound::instance::Device& device();
-
-                  namespace optional
-                  {
-                     //!
-                     //! Can be missing. That is, this will not block
-                     //! until the device is found (the queue is online)
-                     //!
-                     //! @return device to queue-manager
-                     //!
-                     outbound::instance::optional::Device& device();
-                  } // optional
-
-               } // manager
-            } // queue
-
-
-            namespace domain
-            {
-               namespace manager
-               {
-                  outbound::domain::Device& device();
-
-                  namespace optional
-                  {
-                     outbound::domain::optional::Device& device();
-                  } // optional
-               } // manager
-
-
-
-            } // domain
-
-            bool exists( handle_type id);
-
-            bool remove( handle_type id);
+            bool remove( strong::ipc::id id);
             bool remove( const process::Handle& owner);
 
-
-            //!
-            //! Uses the default inbound::device() for receive, since this is by far the
-            //! most common use case.
-            //!
-            //! Can be instantiated with an error-handler, since we often want to use the same handler
-            //! for every ipc-interaction within a module.
-            //!
-            struct Helper
-            {
-
-               inline Helper( std::function<void()> error_handler)
-                  : m_error_handler{ std::move( error_handler)}{};
-               inline Helper() : Helper( nullptr) {}
-
-
-
-               template< typename... Args>
-               static auto handler( Args&&... args) -> decltype( common::communication::ipc::inbound::device().handler())
-               {
-                  return { std::forward< Args>( args)...};
-               }
-
-               template< typename D, typename M>
-               auto blocking_send( D&& device, M&& message) const
-               {
-                  return common::communication::ipc::blocking::send( std::forward< D>( device), message, m_error_handler);
-               }
-
-               template< typename D, typename M>
-               auto non_blocking_send( D&& device, M&& message) const
-               {
-                  return common::communication::ipc::non::blocking::send( std::forward< D>( device), message, m_error_handler);
-               }
-
-               template< typename M, typename... Args>
-               auto blocking_receive( M& message, Args&&... args) const
-               {
-                  return common::communication::ipc::blocking::receive(
-                        common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);
-               }
-
-               template< typename M, typename... Args>
-               auto non_blocking_receive( M& message, Args&&... args) const
-               {
-                  return common::communication::ipc::non::blocking::receive(
-                        common::communication::ipc::inbound::device(), message, std::forward< Args>( args)..., m_error_handler);
-               }
-
-               template< typename... Args>
-               common::communication::message::Complete next( Args&&... args) const
-               {
-                  return common::communication::ipc::inbound::device().next(
-                        std::forward< Args>( args)...,
-                        m_error_handler);
-               }
-
-               template< typename... Args>
-               common::communication::message::Complete blocking_next( Args&&... args) const
-               {
-                  return common::communication::ipc::inbound::device().next(
-                        std::forward< Args>( args)...,
-                        common::communication::ipc::policy::Blocking{},
-                        m_error_handler);
-               }
-
-               template< typename... Args>
-               common::communication::message::Complete non_blocking_next( Args&&... args) const
-               {
-                  return common::communication::ipc::inbound::device().next(
-                        std::forward< Args>( args)...,
-                        common::communication::ipc::policy::non::Blocking{},
-                        m_error_handler);
-               }
-
-               Uuid blocking_push( outbound::Device ipc, const communication::message::Complete& complete) const
-               {
-                  return ipc.put( complete,
-                        common::communication::ipc::policy::Blocking{},
-                        m_error_handler);
-               }
-
-               Uuid non_blocking_push( outbound::Device ipc, const communication::message::Complete& complete) const
-               {
-                  return ipc.put( complete,
-                        common::communication::ipc::policy::non::Blocking{},
-                        m_error_handler);
-               }
-
-               template< typename D, typename M>
-               auto call( D&& ipc, M&& message) const -> decltype( common::message::reverse::type( std::forward< M>( message)))
-               {
-                  return ipc::call(
-                        std::forward< D>( ipc),
-                        std::forward< M>( message),
-                        common::communication::ipc::policy::Blocking{},
-                        m_error_handler);
-               }
-
-
-               inbound::Device& device() const { return inbound::device();}
-               auto id() const { return inbound::device().connector().id();}
-
-               inline const std::function<void()>& error_handler() const { return m_error_handler;}
-
-
-
-            private:
-               std::function<void()> m_error_handler;
-            };
+            bool exists( strong::ipc::id id);
 
             namespace dispatch
             {
@@ -718,9 +462,6 @@ namespace casual
             } // dispatch
 
          } // ipc
-
       } // communication
    } // common
 } // casual
-
-

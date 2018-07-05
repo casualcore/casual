@@ -106,7 +106,7 @@ namespace casual
                   request.process = common::process::handle();
                   request.queues.push_back( queue.queue);
 
-                  auto reply = manager::ipc::device().call( queue.process.queue, request);
+                  auto reply = manager::ipc::device().call( queue.process.ipc, request);
 
                   if( ! reply.affected.empty())
                   {

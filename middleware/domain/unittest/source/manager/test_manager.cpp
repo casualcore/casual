@@ -466,7 +466,7 @@ domain:
 
                auto reply = message::reverse::type( request);
                reply.processes = std::move( request.processes);
-               communication::ipc::blocking::send( request.process.queue, reply);
+               communication::ipc::blocking::send( request.process.ipc, reply);
             }
          }
 
