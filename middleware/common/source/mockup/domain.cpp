@@ -62,6 +62,7 @@ namespace casual
                      {
                         void domain( const mockup::ipc::Replier& replier)
                         {
+                           Trace trace{ "domain::local::send::connect::domain"};
 
                            message::domain::process::connect::Request request;
                            request.process = replier.process();
@@ -71,6 +72,8 @@ namespace casual
 
                         void domain( const mockup::ipc::Replier& replier, const Uuid& identity)
                         {
+                           Trace trace{ "domain::local::send::connect::domain"};
+
                            message::domain::process::connect::Request request;
                            request.identification = identity;
                            request.process = replier.process();
@@ -110,7 +113,7 @@ namespace casual
                {
                   void operator()( message::service::call::callee::Request& request)
                   {
-                     Trace trace{ "mockup domain::service::Echo"};
+                     Trace trace{ "domain::service::Echo"};
 
                      if( ! request.flags.exist( message::service::call::request::Flag::no_reply))
                      {
@@ -130,7 +133,7 @@ namespace casual
                      }
                      else
                      {
-                        log << "TPNOREPLY was set, no echo\n";
+                        common::log::line( log, "TPNOREPLY was set, no echo");
                      }
                   }
                };
@@ -274,7 +277,7 @@ namespace casual
                   Implementation( dispatch_type&& handler)
                      : m_replier{  default_handler() + std::move( handler)}
                   {
-                     Trace trace{ "mockup domain::Manager::Implementation::Implementation"};
+                     Trace trace{ "mockup domain::service::Manager::Implementation"};
 
                      //
                      // Connect to the domain
@@ -293,7 +296,7 @@ namespace casual
                      // Make sure we're up'n running before we let unittest-stuff interact with us...
                      //
                      communication::instance::fetch::handle( communication::instance::identity::service::manager);
-                     }
+                  }
 
                   Implementation() : Implementation( dispatch_type{}) {}
 

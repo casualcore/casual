@@ -17,15 +17,16 @@ namespace casual
    {
       namespace mockup
       {
-         //!
          //! Log with category 'casual.mockup'
-         //!
          extern common::log::Stream log;
+
+         //! Log with category 'casual.mockup.trace'
+         extern common::log::Stream trace;
 
          struct Trace : common::log::Trace
          {
             template< typename T>
-            Trace( T&& value) : common::log::Trace( std::forward< T>( value), log) {}
+            Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace) {}
          };
       } // mockup
    } // common

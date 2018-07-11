@@ -338,6 +338,8 @@ namespace casual
                {
                   void link( strong::ipc::id input_id, strong::ipc::id output_id)
                   {
+                     Trace trace{ "common::mockup::ipc::local::link"};
+
                      auto input = communication::ipc::native::open::read( input_id);
                      auto output = communication::ipc::native::open::write( output_id);
 
@@ -393,6 +395,7 @@ namespace casual
                         catch( ...)
                         {
                            exception::handle();
+                           return;
                         }
                      }
                   }
@@ -414,7 +417,6 @@ namespace casual
                   Trace trace{ "Collector::~Implementation()"};
 
                   local::shutdown_thread( m_worker, m_input.connector().id().ipc());
-                  m_worker.join();
                }
 
 
@@ -434,7 +436,7 @@ namespace casual
 
             Collector::Collector()
             {
-               log << "collector: " << *this << '\n';
+               common::log::line( log, "collector: ", *this);
             }
             Collector::~Collector() = default;
 
@@ -464,6 +466,8 @@ namespace casual
             {
                Implementation( communication::ipc::dispatch::Handler&& replier) : process{ mockup::pid::next()}
                {
+                  Trace trace{ "Replier::Implementation"};
+
                   communication::ipc::inbound::Device ipc;
                   process.ipc = ipc.connector().id().ipc();
 
@@ -472,7 +476,7 @@ namespace casual
 
                ~Implementation()
                {
-                  Trace trace{ "Replier::~Implementation()"};
+                  Trace trace{ "Replier::~Implementation"};
 
                   local::shutdown_thread( m_thread, process.ipc);
                }
@@ -484,8 +488,12 @@ namespace casual
                {
                   Trace trace{ "Replier::worker_thread"};
 
+                  signal::thread::scope::Block block;
+
                   try
                   {
+                     common::log::line( log, "ipc: ", ipc);
+                     
                      if( algorithm::find( replier.types(), common::message::Type::mockup_need_worker_process))
                      {
                         message::mockup::thread::Process message;
@@ -496,11 +504,11 @@ namespace casual
                      }
 
                      replier.insert( []( message::mockup::Disconnect&){
-                        log << "Replier::worker_thread disconnect\n";
+                        common::log::line( log, "Replier::worker_thread disconnect");
                         throw exception::casual::Shutdown{ "worker_thread disconnect"};
                      });
 
-                     log << "dispatch handler: " << replier << '\n';
+                     common::log::line( log, "dispatch handler: ", replier);
 
                      message::dispatch::blocking::pump( replier, ipc);
                   }

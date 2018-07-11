@@ -16,6 +16,9 @@ namespace casual
       {
 
          common::log::Stream log{ "casual.mockup"};
+
+         common::log::Stream trace{ "casual.mockup.trace"};
+
       } // mockup
    } // common
 } // casual

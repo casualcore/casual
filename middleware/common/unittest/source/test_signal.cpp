@@ -41,9 +41,7 @@ namespace casual
 
             holder< common::exception::signal::Timeout, signal::Type::alarm>,
 
-            holder< common::exception::signal::child::Terminate, signal::Type::child>,
-
-            holder< common::exception::signal::Pipe, signal::Type::pipe>
+            holder< common::exception::signal::child::Terminate, signal::Type::child>
        >;
 
       TYPED_TEST_CASE( casual_common_signal_types, signal_type);

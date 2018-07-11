@@ -25,11 +25,11 @@ namespace casual
                   {
                      if( std::uncaught_exception())
                      {
-                        log::stream::thread::Safe{ m_log} << m_information << " - in*\n";
+                        log::line( m_log, m_information, " - in*");
                      }
                      else
                      {
-                        log::stream::thread::Safe{ m_log} << m_information << " - in\n";
+                        log::line( m_log, m_information, " - in");
                      }
                   }
                }
@@ -40,11 +40,11 @@ namespace casual
                   {
                      if( std::uncaught_exception())
                      {
-                        log::stream::thread::Safe{ m_log} << m_information << " - out*\n";
+                        log::line( m_log, m_information, " - out*");
                      }
                      else
                      {
-                        log::stream::thread::Safe{ m_log} << m_information << " - out\n";
+                        log::line( m_log, m_information, " - out");
                      }
                   }
                }
@@ -56,23 +56,15 @@ namespace casual
                {
                   if( std::uncaught_exception())
                   {
-                     if( m_fail)
-                     {
-                        log::stream::thread::Safe{ m_fail} << m_information << " - fail\n";
-                     }
+                     log::line( m_fail, m_information, " - fail");  
                   }
                   else
                   {
-                     if( m_ok)
-                     {
-                        log::stream::thread::Safe{ m_ok} << m_information << " - ok\n";
-                     }
+                     log::line( m_ok, m_information, " - ok");
                   }
-
                }
-
+               
             } // basic
-
          } // trace
       } // log
    } // common

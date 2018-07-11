@@ -40,22 +40,6 @@ namespace casual
                {
                   namespace signal
                   {
-                     namespace ignore
-                     {
-                        /*
-                        void pipe()
-                        {
-                           try
-                           {
-                              common::signal::handle();
-                           }
-                           catch( const exception::signal::Pipe&)
-                           {
-                              // no op
-                           }
-                        }
-                        */
-                     } // ignore
                      void handle() 
                      {
                         try
@@ -77,8 +61,8 @@ namespace casual
 
                         log::line( communication::verbose::log, "name: ", name);
 
-                        //return strong::file::descriptor::id{ posix::result( ::open( name.c_str(), O_WRONLY | O_NONBLOCK))};
-                        return strong::file::descriptor::id{ posix::result( ::open( name.c_str(), O_WRONLY))};
+                        return strong::file::descriptor::id{ posix::result( ::open( name.c_str(), O_WRONLY | O_NONBLOCK))};
+                        //return strong::file::descriptor::id{ posix::result( ::open( name.c_str(), O_WRONLY))};
                      }
 
                      strong::file::descriptor::id read( const std::string& name)
@@ -148,7 +132,6 @@ namespace casual
                               case code::system::resource_unavailable_try_again:
                                  return false;
                               case code::system::interrupted:
-                                 //local::signal::ignore::pipe();
                                  local::signal::handle();
                                  return false;
                               default: 
@@ -301,7 +284,7 @@ namespace casual
                   {
                      Trace trace{ "common::communication::ipc::native::blocking::send"};
 
-                     log::line( communication::verbose::log, "handle: ", handle);
+                     log::line( communication::verbose::log, "write: ", handle);
 
                      handle.blocking();
 
@@ -325,7 +308,7 @@ namespace casual
                   {
                      Trace trace{ "common::communication::ipc::native::blocking::receive"};
 
-                     log::line( communication::verbose::log, "handle: ", handle);
+                     log::line( communication::verbose::log, "read: ", handle);
 
                      handle.blocking();
 
@@ -465,6 +448,7 @@ namespace casual
                   : m_id( native::create( strong::ipc::id{ uuid::make()}))
                   ,m_dummy_writer( native::open::write( m_id.ipc()))
                {
+                  m_dummy_writer.blocking();
                }
 
                Connector::~Connector()

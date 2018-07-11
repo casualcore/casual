@@ -547,6 +547,10 @@ namespace casual
                         //
                         m_connector.reconnect();
                      }
+                     catch( const exception::signal::Pipe&)
+                     {
+                        m_connector.reconnect();
+                     }
                      catch( ...)
                      {
                         //

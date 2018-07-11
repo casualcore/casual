@@ -45,7 +45,7 @@ namespace casual
                signal::thread::scope::Block block;
                
                // check pending signals
-               signal::handle();
+               signal::handle( block.previous());
 
                // will set previous signal mask atomically
                posix::result( 

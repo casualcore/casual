@@ -45,9 +45,11 @@ namespace casual
                         // no message
                         case sys::no_message: throw system::communication::no::message::Absent( std::forward< Args>( args)...);
 #if EAGAIN != EWOULDBLOCK
-                        case system::operation_would_block: 
+                        case sys::operation_would_block: 
 #endif
                         case sys::resource_unavailable_try_again: throw system::communication::no::message::Resource( std::forward< Args>( args)...);
+
+                        case sys::bad_file_descriptor: throw system::communication::unavailable::File( std::forward< Args>( args)...);
 
                         default:
                         {

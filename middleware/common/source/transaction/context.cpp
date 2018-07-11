@@ -343,8 +343,8 @@ namespace casual
                {
                   if( transaction.trid)
                   {
-                     log::category::error << "pending replies associated with transaction - action: transaction state to rollback only\n";
-                     log::category::transaction << transaction << '\n';
+                     log::line( log::category::error, "pending replies associated with transaction - action: transaction state to rollback only");
+                     log::line( log::category::transaction, transaction);
 
                      transaction.state = Transaction::State::rollback;
                      result.state = message::service::Transaction::State::error;
@@ -455,7 +455,7 @@ namespace casual
 
                if( found)
                {
-                  log::category::transaction << "caller: " << *found << '\n';
+                  log::line( log::category::transaction, "caller: ", *found);
 
                   result.state = transform_state( found->state);
 
@@ -526,7 +526,7 @@ namespace casual
 
          void Context::resource_unregistration( resource::id rmid)
          {
-            Trace trace{ "transaction::Context::resourceUnregistration"};
+            Trace trace{ "transaction::Context::resource_unregistration"};
 
             auto&& transaction = current();
 
@@ -729,7 +729,7 @@ namespace casual
                      }
                      case message::transaction::commit::Reply::Stage::error:
                      {
-                        log::category::error << "commit error: " << std::error_code( reply.state) << '\n';
+                        log::line( log::category::error, "commit error: ", reply.state);
                         break;
                      }
                   }
@@ -976,7 +976,7 @@ namespace casual
                   auto result = r.start( transaction.trid, flags);
                   if( result != code::xa::ok)
                   {
-                     code::stream( result) << "failed to start resource: " << r << " - error: " << std::error_code( result) << '\n';
+                     log::line( code::stream( result), "failed to start resource: ", r, " - error: ", result);
                   }
                };
 
@@ -1000,7 +1000,7 @@ namespace casual
                   auto result = r.end( transaction.trid, flags);
                   if( result != code::xa::ok)
                   {
-                     code::stream( result) << "failed to end resource: " << r << " - error: " << std::error_code( result) << '\n';
+                     log::line( code::stream( result), "failed to end resource: ", r, " - error: ", result);
                   }
                }
                // TODO: throw if some of the rm:s report an error?

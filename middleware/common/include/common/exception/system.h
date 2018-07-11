@@ -74,6 +74,8 @@ namespace casual
                   using Removed = basic< code::system::identifier_removed>;
                   using Reset = basic< code::system::connection_reset>;
                   using Pipe = basic< code::system::broken_pipe>;
+
+                  using File = basic< code::system::bad_file_descriptor>;
                  
                   namespace no 
                   {

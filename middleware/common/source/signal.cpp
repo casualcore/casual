@@ -124,6 +124,21 @@ namespace casual
                         }
                      }
 
+                     template< typename H>
+                     void registration( signal::Type signal, H&& handler, int flags = 0)
+                     {
+                        struct sigaction sa;
+
+                        memory::set( sa);
+                        sa.sa_handler = handler;
+                        sa.sa_flags = flags;
+
+                        if( ::sigaction( cast::underlying( signal), &sa, nullptr) == -1)
+                        {
+                           std::cerr << "failed to register handle for signal: " << signal << " - "  << code::last::system::error() << '\n';
+                           exception::system::throw_from_errno();
+                        }
+                     }
 
                      struct Handle
                      {
@@ -191,10 +206,15 @@ namespace casual
                            m_interrupt.clear();
                            m_alarm.clear();
                            m_user.clear();
-                           m_pipe.clear();
                         }
 
                      private:
+
+                        Handle() 
+                        {
+                           // make sure we ignore sigpipe
+                           local::handler::registration( signal::Type::pipe, SIG_IGN);
+                        }
 
                         void dispatch( const signal::Set& current)
                         {
@@ -204,10 +224,7 @@ namespace casual
                            m_interrupt.handle( current);
                            m_alarm.handle( current);
                            m_user.handle( current);
-                           m_pipe.handle( current);
                         }
-
-                        Handle() = default;
 
 
 
@@ -221,19 +238,7 @@ namespace casual
                               //
                               // Register the signal handler for this signal
                               //
-
-                              struct sigaction sa;
-
-                              memory::set( sa);
-                              sa.sa_handler = &signal_callback< Signal>;
-                              sa.sa_flags = Flags;
-
-                              if( sigaction( cast::underlying( Signal), &sa, nullptr) == -1)
-                              {
-                                 std::cerr << "failed to register handle for signal: " << Signal << " - "  << code::last::system::error() << '\n';
-
-                                 exception::system::throw_from_errno();
-                              }
+                              local::handler::registration( Signal, &signal_callback< Signal>, Flags);
                            }
 
                            basic_handler( const basic_handler&) = delete;
@@ -284,7 +289,6 @@ namespace casual
                         basic_handler< signal::Type::interrupt, exception::signal::Terminate> m_interrupt;
                         basic_handler< signal::Type::alarm, exception::signal::Timeout> m_alarm;
                         basic_handler< signal::Type::user, exception::signal::User> m_user;
-                        basic_handler< signal::Type::pipe, exception::signal::Pipe> m_pipe;
 
                         //
                         // Only for handle

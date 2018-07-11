@@ -132,6 +132,14 @@ namespace casual
 
          namespace detail
          {
+            struct endl
+            {  
+               template< typename S>
+               friend S& operator << ( S& stream, endl)
+               {
+                  return stream << std::endl;
+               }
+            };
             template< typename S>
             void part( S& stream)
             {
@@ -170,8 +178,8 @@ namespace casual
          template< typename... Args>
          void line( std::ostream& stream, Args&&... args)
          {
-            write( stream, std::forward< Args>( args)..., '\n');
-            stream.flush(); // todo: configurable?
+            write( stream, std::forward< Args>( args)..., '\n'); //detail::endl{});
+            //stream.flush(); // todo: configurable?
          } 
       } // log
    } // common

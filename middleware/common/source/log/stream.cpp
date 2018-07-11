@@ -65,7 +65,8 @@ namespace casual
                         << '|' << execution::service::name()
                         << '|' << category
                         << '|' << message
-                        << '\n';
+                        << std::endl;
+                        //<< '\n';
                   }
 
                private:

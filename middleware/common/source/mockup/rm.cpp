@@ -88,18 +88,17 @@ namespace casual
             }
             catch( ...)
             {
-               log << "failed to parse mockup openinfo: " << openinfo << '\n';
-               exception::handle();
+               log::line( log, "failed to parse mockup openinfo: ", openinfo);
             }
 
 
             if( ! state.transactions.all.empty())
             {
-               log::category::error << "xa_open_entry - rmid: " << rmid << " has associated transactions " << range::make( state.transactions.all) << '\n';
+               log::line( log::category::error, "xa_open_entry - rmid: ", rmid, " has associated transactions ", state.transactions.all);
                return XAER_PROTO;
             }
 
-            log << "xa_open_entry - openinfo: " << openinfo << " rmid: " << rmid << " flags: " << flags << '\n';
+            log::line( log, "xa_open_entry - openinfo: ", openinfo, " rmid: ", rmid, " flags: ", flags);
             return state.xa_open_return;
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
@@ -108,7 +107,7 @@ namespace casual
 
             if( ! state.transactions.all.empty())
             {
-               log::category::error << "xa_close_entry - rmid: " << rmid << " has associated transactions " << range::make( state.transactions.all) << '\n';
+               log::line( log::category::error, "xa_close_entry - rmid: ", rmid, " has associated transactions ", state.transactions.all);
                return XAER_PROTO;
             }
             log << "xa_close_entry - closeinfo: " << closeinfo << " rmid: " << rmid << " flags: " << flags << '\n';

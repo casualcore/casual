@@ -177,7 +177,9 @@ target_unittest = LinkLibrary( 'bin/casual-unittest',
 # Mockup stuff, only for unittest
 #
 
-mockup_log = Compile( 'source/mockup/log.cpp')
+lib_mockup_log = LinkLibrary( 'bin/casual-mockup-log',
+      [ Compile( 'source/mockup/log.cpp')],
+      [ common])
 
 mockup = LinkLibrary( 'bin/casual-mockup', 
      [
@@ -186,24 +188,23 @@ mockup = LinkLibrary( 'bin/casual-mockup',
        Compile( 'source/mockup/process.cpp'),
        Compile( 'source/mockup/file.cpp'),
        Compile( 'source/mockup/thread.cpp'),
-       mockup_log
      ],
-     [ common, target_unittest])
+     [ common, lib_mockup_log, target_unittest])
 
 #
 # The mockup-rm, only for testing.
 #
 lib_mockup_rm = LinkLibrary( 'bin/casual-mockup-rm', 
      [
-       Compile( 'source/mockup/rm.cpp'),
-       mockup_log
+       Compile( 'source/mockup/rm.cpp')
      ],
-     [ common])
+     [ common, lib_mockup_log])
 
 #
 # Since we use this in our example-servers we "install it"
 #
 install_libs.append( lib_mockup_rm)
+install_libs.append( lib_mockup_log)
 
 
 mockup_unittest = LinkLibrary( 'bin/casual-mockup-unittest-environment',
@@ -299,11 +300,12 @@ unittest_objectfiles = [
 target_test_common = LinkUnittest( 'bin/test-casual-common-isolated', 
 	unittest_objectfiles,
 	[
-     common,
-     mockup,
-     mockup_unittest,
-     target_unittest,
-     lib_mockup_rm
+      common,
+      mockup,
+      mockup_unittest,
+      target_unittest,
+      lib_mockup_rm,
+      lib_mockup_log
     ])		
 
 #
