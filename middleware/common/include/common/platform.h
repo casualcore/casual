@@ -190,7 +190,7 @@ namespace casual
                //
                // OSX has very tight limits on IPC
                //
-               constexpr size::type size = 1024;
+               constexpr size::type size = 1024 * 1;
 #else
                constexpr size::type size = 1024 * 8;
 #endif
