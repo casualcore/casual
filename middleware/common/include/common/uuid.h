@@ -25,12 +25,12 @@ namespace casual
          using uuid_type = platform::uuid::type;
 
 
-         constexpr Uuid() = default;
-         constexpr Uuid( Uuid&&) noexcept = default;
-         constexpr Uuid& operator = ( Uuid&&) noexcept = default;
+         Uuid() = default;
+         Uuid( Uuid&&) noexcept = default;
+         Uuid& operator = ( Uuid&&) noexcept = default;
 
-         constexpr Uuid( const Uuid&) = default;
-         constexpr Uuid& operator = ( const Uuid&) = default;
+         Uuid( const Uuid&) = default;
+         Uuid& operator = ( const Uuid&) = default;
 
          Uuid( const uuid_type& uuid);
          Uuid( const std::string& uuid);
