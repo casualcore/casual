@@ -17,6 +17,7 @@
 #include "common/exception/casual.h"
 #include "common/exception/handle.h"
 
+#include "common/communication/instance.h"
 
 #include "configuration/domain.h"
 #include "configuration/file.h"
@@ -162,7 +163,7 @@ namespace casual
                      //
                      // Connect to domain
                      //
-                     process::instance::connect( process::instance::identity::transaction::manager());
+                     communication::instance::connect( communication::instance::identity::transaction::manager);
 
 
                      persistent::Writer batchWrite( state.log);

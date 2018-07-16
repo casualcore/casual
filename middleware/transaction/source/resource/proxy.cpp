@@ -17,6 +17,8 @@
 #include "common/event/send.h"
 #include "common/environment.h"
 
+#include "common/communication/instance.h"
+
 #include "serviceframework/log.h"
 
 

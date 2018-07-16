@@ -90,10 +90,6 @@ namespace casual
          Socket::Socket( Socket&&) noexcept = default;
          Socket& Socket::operator =( Socket&&) noexcept = default;
 
-         Socket::operator bool() const noexcept
-         {
-            return ! m_descriptor.empty();
-         }
 
          Socket::descriptor_type Socket::descriptor() const noexcept
          {

@@ -110,8 +110,8 @@ namespace casual
             request.process = requester.process();
             request.name = "queue1";
 
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), request);
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), common::message::shutdown::Request{});
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), request);
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), common::message::shutdown::Request{});
          }
 
          local::handle( state);
@@ -146,8 +146,8 @@ namespace casual
             request.process = requester.process();
             request.name = "absent_qeueue";
 
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), request);
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), common::message::shutdown::Request{});
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), request);
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), common::message::shutdown::Request{});
          }
 
          local::handle( state);
@@ -181,8 +181,8 @@ namespace casual
             advertise.order = 1;
             advertise.queues = { { "queueX" }};;
 
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), advertise);
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), common::message::shutdown::Request{});
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), advertise);
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), common::message::shutdown::Request{});
          }
 
          local::handle( state);
@@ -238,8 +238,8 @@ namespace casual
             advertise.order = 1;
             advertise.queues = { { "queueX" }};;
 
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), advertise);
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), common::message::shutdown::Request{});
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), advertise);
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), common::message::shutdown::Request{});
          }
 
          local::handle( state);

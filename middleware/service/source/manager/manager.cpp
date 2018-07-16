@@ -23,6 +23,7 @@
 #include "common/process.h"
 #include "common/domain.h"
 
+#include "common/communication/instance.h"
 
 #include "serviceframework/log.h"
 
@@ -65,7 +66,7 @@ namespace casual
                   common::message::domain::configuration::Request request;
                   request.process = process::handle();
 
-                  return communication::ipc::call( communication::ipc::domain::manager::device(), request).domain.service;
+                  return communication::ipc::call( communication::instance::outbound::domain::manager::device(), request).domain.service;
                }
 
                void services( manager::State& state, const common::message::domain::configuration::service::Manager& configuration)
@@ -116,8 +117,8 @@ namespace casual
 
                      state.forward.pid = common::process::spawn( forward( settings), {});
 
-                     state.forward = common::process::instance::fetch::handle(
-                           common::process::instance::identity::forward::cache());
+                     state.forward = common::communication::instance::fetch::handle(
+                           common::communication::instance::identity::forward::cache);
 
                      log << "forward: " << state.forward << '\n';
 
@@ -179,7 +180,7 @@ namespace casual
                   //
                   // Connect to domain
                   //
-                  process::instance::connect( process::instance::identity::service::manager());
+                  communication::instance::connect( communication::instance::identity::service::manager);
 
 
                   log << "start message pump\n";

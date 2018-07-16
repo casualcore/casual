@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include "common/value/optional.h"
+#include "common/code/system.h"
+#include "common/signal.h"
+
 namespace casual
 {
    namespace common
@@ -19,6 +23,9 @@ namespace casual
          //!
          int result( int result);
 
+         
+         int result( int result, signal::Set mask);
+
          namespace log
          {
             //!
@@ -26,6 +33,13 @@ namespace casual
             //!
             void result( int result) noexcept;
          } // log
+
+         constexpr auto no_error = static_cast< code::system>( 0);
+
+         using optional_error = value::Optional< code::system, no_error>;
+
+         optional_error error( int result) noexcept;
+
       } // posix
    } // common
 } // casual

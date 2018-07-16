@@ -15,9 +15,10 @@
 #include "configuration/domain.h"
 #include "configuration/message/transform.h"
 
+
 #include "common/environment.h"
 #include "common/exception/handle.h"
-
+#include "common/communication/instance.h"
 
 namespace casual
 {
@@ -62,7 +63,7 @@ namespace casual
 
                   return gateway::transform::state(
                         manager::ipc::device().call(
-                              communication::ipc::domain::manager::device(),
+                              communication::instance::outbound::domain::manager::device(),
                               request).domain);
 
                }
@@ -127,7 +128,7 @@ namespace casual
             //
             // Connect to domain
             //
-            process::instance::connect( process::instance::identity::gateway::manager());
+            communication::instance::connect( communication::instance::identity::gateway::manager);
 
 
             while( true)

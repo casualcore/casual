@@ -17,6 +17,7 @@
 #include "common/execute.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/archive/create.h"
@@ -54,7 +55,7 @@ namespace casual
                            message.process = process::handle();
 
                            communication::ipc::non::blocking::send(
-                                 communication::ipc::domain::manager::optional::device(),
+                                 communication::instance::outbound::domain::manager::optional::device(),
                                  message);
                         });
 
@@ -259,7 +260,7 @@ namespace casual
                         }
 
                         arguments.emplace_back( "--event-queue");
-                        arguments.emplace_back( common::string::compose( common::communication::ipc::inbound::id()));
+                        arguments.emplace_back( common::string::compose( common::communication::ipc::inbound::ipc()));
 
                         return arguments;
                      };
@@ -306,7 +307,7 @@ namespace casual
                         message.process = process::handle();
 
                         communication::ipc::non::blocking::send(
-                              communication::ipc::domain::manager::optional::device(),
+                              communication::instance::outbound::domain::manager::optional::device(),
                               message);
                      }
 

@@ -18,6 +18,8 @@
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 
+#include "common/communication/instance.h"
+
 
 #include <vector>
 #include <string>
@@ -128,7 +130,7 @@ namespace casual
                         message.correlation = instance.correlation();
                         message.status = common::code::xatmi::service_error; 
 
-                        handle::local::eventually::send( state, instance.caller().queue, std::move( message));
+                        handle::local::eventually::send( state, instance.caller().ipc, std::move( message));
                      }
 
                   } // <unnamed>
@@ -329,7 +331,7 @@ namespace casual
                         //
                         // If there is no gateway, this will throw
                         //
-                        ipc::device().blocking_send( communication::ipc::gateway::manager::optional::device(), request);
+                        ipc::device().blocking_send( communication::instance::outbound::gateway::manager::optional::device(), request);
 
                         log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
 

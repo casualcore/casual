@@ -56,7 +56,7 @@ namespace casual
             {
 
                Domain()
-                  : inbound{ communication::ipc::inbound::id()}
+                  : inbound{ communication::ipc::inbound::ipc()}
                {
                   try
                   {
@@ -119,7 +119,7 @@ namespace casual
                      //
                      // Act as the gateway
                      //
-                     process::instance::connect( process::instance::identity::gateway::manager());
+                     communication::instance::connect( communication::instance::identity::gateway::manager());
                   }
 
                } connect_gateway;
@@ -145,7 +145,7 @@ namespace casual
          common::mockup::domain::Manager manager;
 
          EXPECT_NO_THROW({
-            local::Inbound inbound{ communication::ipc::inbound::id()};
+            local::Inbound inbound{ communication::ipc::inbound::ipc()};
          });
 
          communication::ipc::inbound::device().clear();

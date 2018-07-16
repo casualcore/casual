@@ -11,6 +11,7 @@
 #include "common/mockup/process.h"
 #include "common/mockup/file.h"
 #include "common/environment.h"
+#include "common/communication/instance.h"
 
 namespace casual
 {
@@ -20,7 +21,6 @@ namespace casual
    {
       namespace domain
       {
-
          namespace local
          {
             namespace
@@ -47,7 +47,7 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./home/bin/casual-domain-manager", {
-                        "--event-queue", common::string::compose( common::communication::ipc::inbound::id()),
+                        "--event-queue", common::string::compose( common::communication::ipc::inbound::ipc()),
                         "--configuration-files", configuration::names( files),
                         "--no-auto-persist"
                      }}
@@ -98,7 +98,7 @@ domain:
 
             local::Manager manager{ { configuration}};
 
-            EXPECT_TRUE( process::ping( manager.process.handle().queue) == manager.process.handle());
+            EXPECT_TRUE( communication::instance::ping( manager.process.handle().ipc) == manager.process.handle());
          }
 
 

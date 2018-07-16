@@ -16,6 +16,8 @@
 #include "common/server/handle/call.h"
 #include "common/code/convert.h"
 
+#include "common/communication/instance.h"
+
 
 namespace casual
 {
@@ -115,7 +117,7 @@ namespace casual
                         message.trid = request.trid;
                         message.state = code;
 
-                        state.persistent.replies.emplace_back( target.queue, std::move( message));
+                        state.persistent.replies.emplace_back( target.ipc, std::move( message));
                      }
 
                      template< typename R, typename M>
@@ -127,7 +129,7 @@ namespace casual
                      template< typename M>
                      void reply( State& state, M&& message, const common::process::Handle& target)
                      {
-                        state.persistent.replies.emplace_back( target.queue, std::move( message));
+                        state.persistent.replies.emplace_back( target.ipc, std::move( message));
                      }
 
                   } // persistent
@@ -146,7 +148,7 @@ namespace casual
                         message.trid = request.trid;
                         message.state = code;
 
-                        state::pending::Reply reply{ target.queue, message};
+                        state::pending::Reply reply{ target.ipc, message};
 
                         action::persistent::Send send{ m_state};
 
@@ -172,7 +174,7 @@ namespace casual
                   template< typename R>
                   void reply( State& state, R&& message, const common::process::Handle& target)
                   {
-                     state::pending::Reply reply{ target.queue, std::forward< R>( message)};
+                     state::pending::Reply reply{ target.ipc, std::forward< R>( message)};
 
                      action::persistent::Send send{ state};
 
@@ -873,7 +875,7 @@ namespace casual
                //
                if( m_state.remove_instance( message.state.pid))
                {
-                  ipc::device().blocking_send( common::communication::ipc::domain::manager::device(), message);
+                  ipc::device().blocking_send( common::communication::instance::outbound::domain::manager::device(), message);
                   return;
                }
 

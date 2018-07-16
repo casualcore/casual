@@ -15,6 +15,7 @@
 #include "common/message/handle.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 
 namespace casual
@@ -33,7 +34,7 @@ namespace casual
             //
             // Connect to domain
             //
-            process::instance::connect( identification());
+            communication::instance::connect( identification());
 
             message::pump( state);
 
@@ -46,6 +47,8 @@ namespace casual
 
          void State::add( message::Request&& message)
          {
+            Trace trace{ "domain::delay::State::passed"};
+
             Message delay;
             delay.destination = message.destination;
             delay.message = std::move( message.message);
@@ -56,6 +59,8 @@ namespace casual
 
          std::vector< State::Message> State::passed( common::platform::time::point::type time)
          {
+            Trace trace{ "domain::delay::State::passed"};
+
             auto partition = algorithm::partition( m_messages, [=]( const State::Message& m){
                return m.deadline > time;
             });
@@ -70,6 +75,8 @@ namespace casual
 
          common::platform::time::unit State::timeout() const
          {
+            Trace trace{ "domain::delay::State::timeout"};
+
             auto min = algorithm::min( m_messages);
 
             if( min)
@@ -97,12 +104,18 @@ namespace casual
 
                void operator () ( message::Request& message)
                {
+                  Trace trace{ "domain::delay::handle::Request"};
+
+                  log::line( verbose::log, "message: ", message);
+
                   m_state.add( std::move( message));
                }
             };
 
             void timeout( State& state)
             {
+               Trace trace{ "domain::delay::handle::timeout"};
+
                signal::thread::scope::Block block;
 
                for( auto&& message : state.passed())
@@ -113,7 +126,7 @@ namespace casual
 
                      if( ! ipc.put( message.message, communication::ipc::policy::non::Blocking{}))
                      {
-                        log << "failed to send delayed message to ipc: " << message.destination << " - action: try to resend in 500ms\n";
+                        log::line( log, "failed to send delayed message to ipc: ", message.destination, " - action: try to resend in 500ms");
 
                         //
                         // Could not send... We set a new timeout in .5s
@@ -128,7 +141,7 @@ namespace casual
                   }
                   catch( const exception::system::communication::Unavailable&)
                   {
-                     log << "failed to send delayed message to ipc: " << message.destination << " queue is unavailable - action: ignore\n";
+                     log::line( log, "failed to send delayed message to destination: ", message.destination, " queue is unavailable - action: ignore");
                   }
                }
             }
@@ -149,7 +162,6 @@ namespace casual
                      // Timeout has occurred, lets try to send the delayed messages
                      //
                      timeout( m_state);
-
                   }
                }
             };
@@ -162,6 +174,9 @@ namespace casual
             void pump( State& state)
             {
                Trace trace{ "domain::delay::message::pump"};
+
+               // make sure we listen to signals
+               common::signal::mask::unblock( common::signal::set::filled());
 
 
                communication::ipc::Helper ipc{ handle::Timeout{ state}};
@@ -193,8 +208,7 @@ namespace casual
             {
                Settings settings;
                {
-                  casual::common::argument::Parse parse{ "delay message"
-                  };
+                  casual::common::argument::Parse parse{ "delay message"};
                   parse( argc, argv);
                }
 

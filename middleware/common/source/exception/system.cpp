@@ -6,6 +6,7 @@
 
 #include "common/exception/system.h"
 #include "common/log/category.h"
+#include "common/signal.h"
 
 
 #include <cerrno>
@@ -42,6 +43,8 @@ namespace casual
                         case sys::connection_refused: throw system::communication::Refused( std::forward< Args>( args)...);
                         case sys::protocol_error: throw system::communication::Protocol( std::forward< Args>( args)...);
 
+
+
                         // no message
                         case sys::no_message: throw system::communication::no::message::Absent( std::forward< Args>( args)...);
 #if EAGAIN != EWOULDBLOCK
@@ -51,6 +54,12 @@ namespace casual
 
                         case sys::bad_file_descriptor: throw system::communication::unavailable::File( std::forward< Args>( args)...);
 
+                        case sys::interrupted: 
+                        {
+                           signal::handle();
+                           log::line( log::category::error, code, " - interupted but no signal to consume");
+                           throw system::exception( code, std::forward< Args>( args)...);
+                        }
                         default:
                         {
                            log::line( log::category::error, std::make_error_code( code), " - throwing a generic exception");

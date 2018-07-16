@@ -15,7 +15,7 @@ namespace casual
    namespace common
    {
 
-
+/*
       TEST( casual_common_transaction_id, ostream)
       {
          common::unittest::Trace trace;
@@ -52,7 +52,7 @@ namespace casual
          EXPECT_TRUE( trid[ 3].size() == 1);
          EXPECT_TRUE( trid[ 4].size() == 1);
       }
-
+*/
       TEST( casual_common_transaction_id, uuid_constructor)
       {
          common::unittest::Trace trace;

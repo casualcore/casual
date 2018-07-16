@@ -17,7 +17,7 @@
 #include "common/message/handle.h"
 #include "common/event/listen.h"
 
-
+#include "common/communication/instance.h"
 
 
 namespace casual
@@ -190,7 +190,7 @@ namespace casual
                      request.process = common::process::handle();
                      request.queues.push_back(  message.name);
 
-                     if( local::optional::send( common::communication::ipc::gateway::manager::optional::device(), std::move( request)))
+                     if( local::optional::send( common::communication::instance::outbound::gateway::manager::optional::device(), std::move( request)))
                      {
                         m_state.pending.push_back( std::move( message));
 

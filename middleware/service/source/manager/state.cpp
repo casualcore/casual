@@ -322,7 +322,7 @@ namespace casual
          std::vector< common::strong::ipc::id> State::subscribers() const
          {
             return algorithm::transform( events.event< common::message::event::service::Call>().subscribers(), []( auto& v){
-               return v.queue;
+               return v.ipc;
             });
          }
 

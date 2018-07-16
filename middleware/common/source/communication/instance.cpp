@@ -39,7 +39,7 @@ namespace casual
                         communication::ipc::inbound::Device inbound;
 
                         request.process.pid = common::process::id();
-                        request.process.ipc = inbound.connector().id().ipc();
+                        request.process.ipc = inbound.connector().handle().ipc();
 
                         return communication::ipc::call(
                               outbound::domain::manager::device(),
@@ -74,7 +74,6 @@ namespace casual
                   return local::call( request);
                }
 
-
                process::Handle handle( strong::process::id pid , Directive directive)
                {
                   Trace trace{ "common::communication::instance::fetch::handle (pid)"};
@@ -87,7 +86,6 @@ namespace casual
 
                   return local::call( request);
                }
-
 
             } // fetch
 
@@ -131,7 +129,7 @@ namespace casual
 
             void connect( const Uuid& identity, const process::Handle& process)
             {
-               Trace trace{ "process::instance::connect identity"};
+               Trace trace{ "communication::instance::connect identity"};
 
                common::message::domain::process::connect::Request request;
                request.identification = identity;
@@ -147,7 +145,7 @@ namespace casual
 
             void connect( const process::Handle& process)
             {
-               Trace trace{ "process::instance::connect process"};
+               Trace trace{ "communication::instance::connect process"};
 
                common::message::domain::process::connect::Request request;
                request.process = process;
@@ -163,7 +161,7 @@ namespace casual
 
             process::Handle ping( strong::ipc::id queue)
             {
-               Trace trace{ "process::ping"};
+               Trace trace{ "communication::instance::ping"};
 
                common::message::server::ping::Request request;
                request.process = process::handle();
@@ -180,12 +178,12 @@ namespace casual
                      namespace
                      {
 
-                        strong::ipc::id fetch(
+                        process::Handle fetch(
                               const Uuid& identity,
                               const std::string& environment,
                               fetch::Directive directive)
                         {
-                           Trace trace{ "ipc::outbound::instance::local::fetch"};
+                           Trace trace{ "communication::instance::outbound::instance::local::fetch"};
 
                            log::line( verbose::log, "identity: ", identity, ", environment: ", environment, ", directive: ", directive);
 
@@ -197,7 +195,7 @@ namespace casual
 
                               if( ipc::exists( process.ipc))
                               {
-                                 return process.ipc;
+                                 return process;
                               }
                            }
 
@@ -209,7 +207,7 @@ namespace casual
                               {
                                  environment::variable::process::set( environment, process);
                               }
-                              return process.ipc;
+                              return process;
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {
@@ -221,33 +219,42 @@ namespace casual
                      } // <unnamed>
                   } // local
 
+                  std::ostream& operator << ( std::ostream& out, const base_connector& rhs)
+                  {
+                     return out << "{ process: " << rhs.m_process
+                        << ", connector: " << rhs.m_connector
+                        << ", socket: " << rhs.m_socket
+                        << '}';
+                  }
+
 
                   template< fetch::Directive directive>
                   basic_connector< directive>::basic_connector( const Uuid& identity, std::string environment)
-                     : ipc::outbound::Connector( local::fetch( identity, environment, directive)),
+                     : base_connector( local::fetch( identity, environment, directive)),
                        m_identity{ identity}, m_environment{ std::move( environment)}
                   {
-
+                     log::line( log, "instance created - ", m_environment, " ipc: ", m_process.ipc);
+                     log::line( verbose::log, "connector: ", *this);
                   }
 
 
                   template< fetch::Directive directive>
                   void basic_connector< directive>::reconnect()
                   {
-                     Trace trace{ "ipc::outbound::instance::Connector::reconnect"};
+                     Trace trace{ "communication::instance::outbound::Connector::reconnect"};
 
-                     // we need to close what we got
-                     { 
-                        auto sink = std::move( m_id);
-                     }
+                     reset( local::fetch( m_identity, m_environment, directive));
 
-                     m_id = ipc::native::open::write( local::fetch( m_identity, m_environment, directive));
+                     if( ! m_process)
+                        throw common::exception::system::communication::unavailable::Removed{};
+
+                     log::line( verbose::log, "connector: ", *this);
                   }
 
                   template< fetch::Directive directive>
                   std::ostream& operator << ( std::ostream& out, const basic_connector< directive>& rhs)
                   {
-                     return out << "{ id: " << rhs.m_id
+                     return out << "{ destination: " << rhs.m_process.ipc
                            << ", identity: " << rhs.m_identity
                            << ", environment: " << rhs.m_environment
                            << '}';
@@ -355,9 +362,9 @@ namespace casual
                         {
 
                            template< typename R>
-                           strong::ipc::id reconnect( R&& singleton_policy)
+                           process::Handle reconnect( R&& singleton_policy)
                            {
-                              Trace trace{ "common::communication::ipc::outbound::domain::local::reconnect"};
+                              Trace trace{ "communication::instance::outbound::domain::manager::local::reconnect"};
 
                               auto from_environment = []()
                                     {
@@ -373,7 +380,7 @@ namespace casual
 
                               if( ipc::exists( process.ipc))
                               {
-                                 return process.ipc;
+                                 return process;
                               }
 
                               common::log::line( log, "failed to locate domain manager via ", environment::variable::name::ipc::domain::manager(), " - trying 'singleton file'");
@@ -385,29 +392,25 @@ namespace casual
                                  throw exception::system::communication::unavailable::Removed{ "failed to locate domain manager"};
                               }
 
-                              return process.ipc;
+                              return process;
                            }
 
                         } // <unnamed>
                      } // local
 
                      Connector::Connector() 
-                        : ipc::outbound::Connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
+                        : detail::base_connector{ local::reconnect( [](){ return common::domain::singleton::read().process;})}
                      {
-
+                        log::line( verbose::log, "connector: ", *this);
                      }
 
                      void Connector::reconnect()
                      {
-                        Trace trace{ "ipc::outbound::domain::Connector::reconnect"};
+                        Trace trace{ "communication::instance::outbound::domain::manager::Connector::reconnect"};
 
-                        // we need to close what we got
-                        { 
-                           auto sink = std::move( m_id);
-                        }
-                        m_id = ipc::native::open::write( local::reconnect( [](){ return common::domain::singleton::read().process;}));
+                        reset( local::reconnect( [](){ return common::domain::singleton::read().process;}));
 
-                        log::line( log, "id: ", m_id);
+                        log::line( verbose::log, "connector: ", *this);
                      }
 
 
@@ -420,27 +423,26 @@ namespace casual
                      namespace optional
                      {
                         Connector::Connector()
-                        : ipc::outbound::Connector{ local::reconnect( [](){
+                        : detail::base_connector{ local::reconnect( [](){
                            return common::domain::singleton::read(
                                  process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
                            ).process;
                         })}
                         {
-
+                           log::line( verbose::log, "connector: ", *this);
                         }
 
                         void Connector::reconnect()
                         {
-                           // we need to close what we got
-                           { 
-                              auto sink = std::move( m_id);
-                           }
+                           Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};
 
-                           m_id = ipc::native::open::write( local::reconnect( [](){
+                           reset( local::reconnect( [](){
                               return common::domain::singleton::read(
                                     process::pattern::Sleep{ { std::chrono::milliseconds{ 100}, 10}}
                               ).process;
                            }));
+
+                           log::line( verbose::log, "connector: ", *this);
                         }
 
                         Device& device()

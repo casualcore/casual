@@ -155,7 +155,7 @@ namespace casual
 
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
       TEST( casual_gateway_manager_ipc, non_existent_path__configuration)
@@ -168,7 +168,7 @@ namespace casual
 
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
 
@@ -182,7 +182,7 @@ namespace casual
 
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
       }
 
       namespace local
@@ -241,7 +241,7 @@ namespace casual
          //
          // We ping it so we know the gateway is up'n running
          //
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
          auto state = local::online();
 
@@ -275,7 +275,7 @@ namespace casual
                   //
                   // We ping it so we know the gateway is up'n running
                   //
-                  EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+                  EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
 
                   auto state = local::call::wait::ready::state();
                   algorithm::sort( state.connections);

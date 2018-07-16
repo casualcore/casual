@@ -13,6 +13,7 @@
 #include "common/message/handle.h"
 #include "common/exception/handle.h"
 
+#include "common/communication/instance.h"
 
 namespace casual
 {
@@ -80,7 +81,7 @@ namespace casual
                common::message::queue::connect::Request request;
                request.process = common::process::handle();
 
-               common::communication::ipc::blocking::send( common::communication::ipc::queue::manager::device(), request);
+               common::communication::ipc::blocking::send( common::communication::instance::outbound::queue::manager::device(), request);
             }
 
             {
@@ -126,7 +127,7 @@ namespace casual
                   information.process = common::process::handle();
                   information.queues = m_state.queuebase.queues();
 
-                  common::communication::ipc::blocking::send( common::communication::ipc::queue::manager::device(), information);
+                  common::communication::ipc::blocking::send( common::communication::instance::outbound::queue::manager::device(), information);
                }
             }
          }

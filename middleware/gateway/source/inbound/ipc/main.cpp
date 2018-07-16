@@ -25,7 +25,7 @@ namespace casual
          {
             struct Settings
             {
-               platform::ipc::native::type ipc = platform::ipc::native::invalid;
+               strong::ipc::id ipc;
                std::string correlation;
             };
 
@@ -59,7 +59,7 @@ namespace casual
 
                   static std::vector< std::string> address( const outbound_device_type& device)
                   {
-                     return { common::string::compose( device.connector().id())};
+                     return { common::string::compose( device.connector().destination())};
                   }
 
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)
@@ -88,7 +88,7 @@ namespace casual
                         message::ipc::connect::Reply reply;
                         reply.correlation = Uuid{ settings.correlation};
                         reply.process.pid = common::process::id();
-                        reply.process.ipc = m_inbound.connector().id();
+                        reply.process.ipc = m_inbound.connector().handle().ipc();
 
                         log << "reply: " << reply << '\n';
 

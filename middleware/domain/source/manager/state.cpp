@@ -451,7 +451,7 @@ namespace casual
                   //
                   // Try to remove ipc-queue (no-op if it's removed already)
                   //
-                  local::remove::ipc( instance.handle.queue);
+                  local::remove::ipc( instance.handle.ipc);
 
                   if( found->restart && runlevel() == Runlevel::running)
                   {

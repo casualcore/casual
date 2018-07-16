@@ -23,7 +23,7 @@ namespace casual
          int main( int argc, char** argv)
          {
 
-            common::strong::ipc::id event_queue;
+            common::strong::ipc::id event_ipc;
 
             try
             {
@@ -36,13 +36,13 @@ namespace casual
                      common::argument::Option( [&](){ settings.no_auto_persist = true;}, { "--no-auto-persist"}, "domain does not store current state persistent on shutdown"),
                      common::argument::Option( [&](){ settings.bare = true;}, { "--bare"}, "do not boot mandatory (broker, TM), mostly for unittest"),
 
-                     common::argument::Option( [&]( common::strong::ipc::id::value_type v){ settings.event( v);}, { "-q", "--event-queue"}, "queue to send events to"),
+                     common::argument::Option( [&]( std::string v){ settings.event( v);}, { "-q", "--event-queue"}, "queue to send events to"),
                      common::argument::Option( std::tie( settings.events), { "-e", "--events"}, "events to send to the queue (process-spawn|process-exit)"),
                      };
 
 
                   parse( argc, argv);
-                  event_queue = settings.event();
+                  event_ipc = settings.event();
                }
 
                Manager domain( std::move( settings));
@@ -51,26 +51,26 @@ namespace casual
             }
             catch( const common::exception::casual::invalid::Configuration& exception)
             {
-               if( event_queue)
+               if( event_ipc)
                {
                   common::message::event::domain::Error event;
                   event.message = exception.what();
                   event.details = exception.details();
                   event.severity = common::message::event::domain::Error::Severity::fatal;
 
-                  common::communication::ipc::non::blocking::send( event_queue, event);
+                  common::communication::ipc::non::blocking::send( event_ipc, event);
                }
                return casual::common::exception::handle();
             }
             catch( const common::exception::base& exception)
             {
-               if( event_queue)
+               if( event_ipc)
                {
                   common::message::event::domain::Error event;
                   event.message = exception.what();
                   event.severity = common::message::event::domain::Error::Severity::fatal;
 
-                  common::communication::ipc::non::blocking::send( event_queue, event);
+                  common::communication::ipc::non::blocking::send( event_ipc, event);
                }
                return casual::common::exception::handle();
             }

@@ -7,7 +7,7 @@
 
 #include "queue/common/queue.h"
 
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 
 #include "common/message/handle.h"
@@ -35,7 +35,7 @@ namespace casual
       Lookup::Lookup( std::string queue)
          : m_name( std::move( queue)), m_correlation{
             common::communication::ipc::blocking::send(
-                  common::communication::ipc::queue::manager::optional::device(),
+                  common::communication::instance::outbound::queue::manager::optional::device(),
                   local::request( m_name))}
       {
       }

@@ -16,14 +16,14 @@ namespace casual
          {
             namespace
             {
-               void error( common::code::system last_error)
+               void error( common::code::system last_error, signal::Set mask)
                {
                   using system = common::code::system;
                   switch( last_error)
                   {
                      case system::interrupted:
                      {
-                        common::signal::handle();
+                        common::signal::handle( mask);
 
                         //
                         // we got a signal we don't have a handle for
@@ -45,7 +45,16 @@ namespace casual
          {
             if( result == -1)
             {
-               local::error( common::code::last::system::error());
+               local::error( common::code::last::system::error(), signal::mask::current());
+            }
+            return result;
+         }
+
+         int result( int result, signal::Set mask)
+         {
+            if( result == -1)
+            {
+               local::error( common::code::last::system::error(), mask);
             }
             return result;
          }
@@ -62,6 +71,14 @@ namespace casual
 
          } // log
 
+         optional_error error( int result) noexcept
+         {
+            if( result == -1)
+            {
+               return optional_error{ common::code::last::system::error()};
+            }
+            return {};
+         }
       } // posix
    } // common
 } // casual

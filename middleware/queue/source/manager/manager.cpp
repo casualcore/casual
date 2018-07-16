@@ -21,6 +21,8 @@
 #include "common/exception/handle.h"
 #include "common/event/send.h"
 
+#include "common/communication/instance.h"
+
 #include "configuration/message/transform.h"
 #include "configuration/queue.h"
 
@@ -62,7 +64,7 @@ namespace casual
                         request.process = common::process::handle();
 
                         result.configuration = common::communication::ipc::call(
-                           common::communication::ipc::domain::manager::device(), request).domain.queue;
+                           common::communication::instance::outbound::domain::manager::device(), request).domain.queue;
                      }
 
                      return result;
@@ -244,7 +246,7 @@ namespace casual
          //
          // Connect to domain
          //
-         common::process::instance::connect( common::process::instance::identity::queue::manager());
+         common::communication::instance::connect( common::communication::instance::identity::queue::manager);
 
          common::log::line( common::log::category::information, "casual-queue-manager is on-line");
 

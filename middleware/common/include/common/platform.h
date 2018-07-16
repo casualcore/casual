@@ -180,8 +180,11 @@ namespace casual
 
             namespace message
             {
-
                using type = long;
+            }
+
+            namespace transport
+            {
 
 #ifdef __APPLE__
                //
@@ -192,7 +195,7 @@ namespace casual
                constexpr size::type size = 1024 * 8;
 #endif
 
-            } // message
+            } // transport
 
          } // ipc
 
@@ -228,17 +231,6 @@ namespace casual
             } // listen
 
          } // tcp
-
-         namespace communication
-         {
-            namespace pipe
-            {
-               namespace transport
-               {
-                  constexpr size::type size = PIPE_BUF; //1024 * 4;
-               } // transport
-            } // domain
-         } // communication
 
          namespace file
          {

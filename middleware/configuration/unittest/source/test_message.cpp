@@ -25,7 +25,7 @@ namespace casual
 
          {
             configuration::Reply reply;
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), reply);
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), reply);
          }
 
          {
@@ -44,7 +44,7 @@ namespace casual
          {
             configuration::Reply reply;
             reply.domain.name = "test-domain";
-            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::id(), reply);
+            common::mockup::ipc::eventually::send( common::communication::ipc::inbound::ipc(), reply);
          }
 
          {

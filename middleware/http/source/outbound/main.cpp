@@ -11,7 +11,7 @@
 
 #include "common/exception/handle.h"
 #include "common/argument.h"
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 #include "common/message/service.h"
 #include "common/message/handle.h"
@@ -197,7 +197,7 @@ namespace casual
 
          void main( int argc, char **argv)
          {
-            common::process::instance::connect();
+            common::communication::instance::connect();
 
             Settings settings;
             {

@@ -37,7 +37,7 @@ namespace casual
                      event.state = state;
                      event.correlation = correlation;
 
-                     communication::ipc::outbound::Device ipc{ communication::ipc::inbound::id()};
+                     communication::ipc::outbound::Device ipc{ communication::ipc::inbound::ipc()};
                      ipc.send( event, communication::ipc::policy::Blocking{});
                   };
 
@@ -65,7 +65,7 @@ namespace casual
                            message.descriptor = socket.descriptor();
                            message.limit = limit;
 
-                           communication::ipc::blocking::send( communication::ipc::inbound::id(), message);
+                           communication::ipc::blocking::send( communication::ipc::inbound::ipc(), message);
 
                            socket.release();
                         }

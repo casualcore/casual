@@ -180,7 +180,7 @@ namespace casual
                      //
                      // We'll act as the remote gateway our self
                      //
-                     process::instance::connect( process::instance::identity::gateway::manager());
+                     communication::instance::connect( communication::instance::identity::gateway::manager());
                   }
 
                } connect_gateway;
@@ -203,7 +203,7 @@ namespace casual
          // We need to have a domain manager to 'connect the process'
          //
          common::mockup::domain::Manager manager;
-         auto path = local::create_domain_file( communication::ipc::inbound::id());
+         auto path = local::create_domain_file( communication::ipc::inbound::ipc());
 
          EXPECT_NO_THROW({
             local::Outbound outbound{ path};

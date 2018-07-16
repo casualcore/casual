@@ -56,6 +56,7 @@ namespace casual
             common::platform::time::unit string( const std::string& value);
          } // from
 
+
          struct format
          {
             template< typename D>

@@ -8,6 +8,8 @@
 #include "domain/delay/message.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
+#include "common/chronology.h"
 
 namespace casual
 {
@@ -32,8 +34,8 @@ namespace casual
                {
                   common::process::Handle fetch()
                   {
-                     return common::process::instance::fetch::handle(
-                           identification(), common::process::instance::fetch::Directive::wait);
+                     return common::communication::instance::fetch::handle(
+                           identification(), common::communication::instance::fetch::Directive::wait);
                   }
 
                   common::process::Handle& get()
@@ -57,7 +59,7 @@ namespace casual
                   {
                      try
                      {
-                        communication::ipc::blocking::send( local::process::get().queue, request, error_handler);
+                        communication::ipc::blocking::send( local::process::get().ipc, request, error_handler);
                         return;
                      }
                      catch( const exception::system::communication::Unavailable&)
@@ -77,6 +79,15 @@ namespace casual
             void send( const Request& request)
             {
                local::send( request);
+            }
+
+            std::ostream& operator << ( std::ostream& out, const Request& rhs)
+            {
+               out << "{ destination: " << rhs.destination
+                  << ", delay: "; common::chronology::format{}( out, rhs.delay);
+               out << ", message: " << rhs.message
+                  << '}';
+               return out;
             }
 
          } // message

@@ -216,7 +216,7 @@ namespace casual
                            local::handler::registration( signal::Type::pipe, SIG_IGN);
                         }
 
-                        void dispatch( const signal::Set& current)
+                        void dispatch( signal::Set current)
                         {
                            m_child.handle( current);
                            m_terminate.handle( current);
@@ -224,6 +224,8 @@ namespace casual
                            m_interrupt.handle( current);
                            m_alarm.handle( current);
                            m_user.handle( current);
+
+                           log::line( log::debug, "no signal handled with mask: ", current);
                         }
 
 
@@ -258,7 +260,7 @@ namespace casual
                                     //
                                     // Signal is not blocked
                                     //
-                                    log::debug << "signal: handling signal: " << Signal << '\n';
+                                    log::line( log::debug, "signal: handling signal: ", Signal);
 
                                     //
                                     // We've consumed the signal
@@ -322,7 +324,7 @@ namespace casual
 
          void handle( signal::Set set)
          {
-            local::global_handler.handle();
+            local::global_handler.handle( set);
          }
 
          void clear()
@@ -408,7 +410,7 @@ namespace casual
                   //
                   // We send the signal directly
                   //
-                  log::debug << "timer - offset is less than zero: " << offset.count() << " - send alarm directly" << '\n';
+                  log::line( log::debug, "timer - offset is less than zero: ", offset.count(), " - send alarm directly");
                   signal::send( process::id(), signal::Type::alarm);
                   return local::get();
                }

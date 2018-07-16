@@ -117,7 +117,6 @@ namespace casual
                         terminate();
                      }
 
-
                      void terminate() const
                      {
                         lock_type lock{ m_mutex};
@@ -336,61 +335,44 @@ namespace casual
             {
                namespace
                {
-                  void link( strong::ipc::id input_id, strong::ipc::id output_id)
+                  void link( communication::ipc::Handle& input, strong::ipc::id output_id)
                   {
                      Trace trace{ "common::mockup::ipc::local::link"};
 
-                     auto input = communication::ipc::native::open::read( input_id);
-                     auto output = communication::ipc::native::open::write( output_id);
+                     communication::ipc::Address output{ output_id};
 
-                     std::deque< communication::ipc::message::Transport> cache;
+                     auto socket = communication::ipc::native::detail::create::domain::socket();
+
+                     std::deque< communication::ipc::message::Transport> buffer;
 
                      signal::thread::scope::Block block;
-
-                     using actions_type = std::vector< communication::select::Action>;
-
-                     actions_type read_only;
-                     actions_type read_write;
-
-
-                     const actions_type* actions;
-
-
-                     auto read = communication::select::Action{ communication::select::Action::Direction::read, input.id(), [&]( auto descriptor)
-                     {
-                        communication::ipc::message::Transport transport;
-                        if( communication::ipc::native::blocking::receive( input, transport))
-                        {
-                           if( transport.type() == message::mockup::Disconnect::type())
-                           {
-                              throw exception::casual::Shutdown{};
-                           }
-
-                           cache.push_back( transport);
-                           actions = &read_write;
-                        }
-                     }};
-
-                     auto write = communication::select::Action{ communication::select::Action::Direction::write, output.id(), [&]( auto descriptor)
-                     {
-                        while( ! cache.empty() && communication::ipc::native::non::blocking::send( output, cache.front()))
-                        {
-                           cache.pop_front();
-                        }
-
-                        actions =  cache.empty() ? &read_only : &read_write;
-                     }};
-
-                     read_only = { read};
-                     read_write = { read, write};
-
-                     actions = &read_only;
 
                      while( true)
                      {
                         try
                         {
-                           communication::select::block( *actions);
+                           communication::ipc::message::Transport transport;
+
+                           auto flag = buffer.empty() ? communication::ipc::native::Flag::none : communication::ipc::native::Flag::non_blocking;
+
+                           if( communication::ipc::native::receive( input, transport, flag))
+                           {
+                              if( transport.type() == message::mockup::Disconnect::type())
+                              {
+                                 throw exception::casual::Shutdown{};
+                              }
+                              buffer.push_back( transport);
+                           }
+
+                           if( communication::ipc::native::send( socket, output, buffer.front(), communication::ipc::native::Flag::non_blocking))
+                           {
+                              buffer.pop_front();
+                           }
+
+                           if( ! buffer.empty())
+                           {
+                              process::sleep( std::chrono::milliseconds{ 1});
+                           }
                         }
                         catch( ...)
                         {
@@ -408,7 +390,7 @@ namespace casual
                {
                   Trace trace{ "Collector::Implementation()"};
 
-                  m_worker = std::thread{ &local::link,  m_input.connector().id().ipc(), m_output.connector().id().ipc()};
+                  m_worker = std::thread{ &local::link, std::ref( m_input.connector().handle()), m_output.connector().handle().ipc()};
 
                }
 
@@ -416,7 +398,7 @@ namespace casual
                {
                   Trace trace{ "Collector::~Implementation()"};
 
-                  local::shutdown_thread( m_worker, m_input.connector().id().ipc());
+                  local::shutdown_thread( m_worker, m_input.connector().handle().ipc());
                }
 
 
@@ -440,7 +422,7 @@ namespace casual
             }
             Collector::~Collector() = default;
 
-            id_type Collector::input() const { return m_implementation->m_input.connector().id().ipc();}
+            id_type Collector::input() const { return m_implementation->m_input.connector().handle().ipc();}
             communication::ipc::inbound::Device& Collector::output() const { return m_implementation->m_output;}
 
 
@@ -469,7 +451,7 @@ namespace casual
                   Trace trace{ "Replier::Implementation"};
 
                   communication::ipc::inbound::Device ipc;
-                  process.ipc = ipc.connector().id().ipc();
+                  process.ipc = ipc.connector().handle().ipc();
 
                   m_thread = std::thread{ &worker_thread, std::move( ipc), std::move( replier), process.pid};
                }
@@ -498,7 +480,7 @@ namespace casual
                      {
                         message::mockup::thread::Process message;
                         message.process.pid = pid;
-                        message.process.ipc = ipc.connector().id().ipc();
+                        message.process.ipc = ipc.connector().handle().ipc();
 
                         replier( marshal::complete( message));
                      }

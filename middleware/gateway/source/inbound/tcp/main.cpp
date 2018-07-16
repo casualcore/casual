@@ -8,6 +8,7 @@
 #include "gateway/inbound/gateway.h"
 #include "gateway/common.h"
 
+#include "common/communication/instance.h"
 #include "common/communication/tcp.h"
 
 

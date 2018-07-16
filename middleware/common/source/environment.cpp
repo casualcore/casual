@@ -224,17 +224,23 @@ namespace casual
                      if( variable::exists( variable::name::transient::directory()))
                         return variable::get( variable::name::transient::directory());
 
-                     if( variable::exists( variable::name::domain::home()))
-                        return variable::get( variable::name::domain::home()) + "/.casual/transient";
+                     return environment::directory::temporary() + "/casual/transient";
+                  }
 
-                     return "./.casual/transient";
+                  std::string create_directory()
+                  {
+                     auto result = directory();
+                     if( ! common::directory::exists( result))
+                        common::directory::create( result);
+
+                     return result;
                   }
                } // <unnamed>
             } // local
 
             const std::string& directory()
             {
-               static const std::string result = local::directory();
+               static const std::string result = local::create_directory();
                return result;
             }
          } // log

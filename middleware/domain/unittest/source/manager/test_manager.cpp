@@ -24,6 +24,8 @@
 #include "common/event/listen.h"
 #include "common/execute.h"
 
+#include "common/communication/instance.h"
+
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
@@ -64,7 +66,7 @@ namespace casual
                   Manager( const std::vector< std::string>& config)
                    : files( configuration::files( config)),
                      process{ "./bin/casual-domain-manager", {
-                        "--event-queue", common::string::compose( common::communication::ipc::inbound::id()),
+                        "--event-queue", common::string::compose( common::communication::ipc::inbound::ipc()),
                         "--configuration-files", configuration::names( files),
                         "--bare",
                      }}
@@ -74,7 +76,7 @@ namespace casual
                      // Make sure we unregister the event subscription
                      //
                      auto unsubscribe = common::execute::scope( [](){
-                        common::event::unsubscribe( common::process::handle(), {});
+                        common::event::unsubscribe( common::process::handle(), { common::message::Type::event_domain_error});
                      });
 
                      //
@@ -443,7 +445,7 @@ domain:
             // We add/override handler for prepare shutdown and forward to our
             // local ipc queue
             //
-            auto local_queue = communication::ipc::inbound::id();
+            auto local_queue = communication::ipc::inbound::ipc();
 
             mockup::domain::service::Manager service{
                [local_queue]( message::domain::process::prepare::shutdown::Request& m)
@@ -490,12 +492,12 @@ domain:
 
             mockup::ipc::Collector server;
             // We need to register this process to the manager
-            process::instance::connect( process::handle());
+            communication::instance::connect( process::handle());
 
 
             message::domain::configuration::server::Request request;
             request.process = process::handle();
-            auto reply = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+            auto reply = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
 
             ASSERT_TRUE( reply.routes.size() == 1);

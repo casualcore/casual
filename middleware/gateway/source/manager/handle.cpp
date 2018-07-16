@@ -14,7 +14,7 @@
 
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
-
+#include "common/communication/instance.h"
 
 #include "common/environment.h"
 #include "common/process.h"
@@ -106,8 +106,8 @@ namespace casual
 
                                  // try to fetch handle from domain manager
                                  {
-                                    auto handle = common::process::instance::fetch::handle( 
-                                       connection.process.pid, common::process::instance::fetch::Directive::direct);
+                                    auto handle = common::communication::instance::fetch::handle( 
+                                       connection.process.pid, common::communication::instance::fetch::Directive::direct);
 
                                     log << "fetched handle: " << handle << '\n';
 
@@ -264,7 +264,7 @@ namespace casual
                   //
                   // Send the exit notification to domain.
                   //
-                  ipc::device().blocking_send( communication::ipc::domain::manager::device(), message);
+                  ipc::device().blocking_send( communication::instance::outbound::domain::manager::device(), message);
 
                   auto inbound_found = algorithm::find( state().connections.inbound, message.state.pid);
                   auto outbound_found = algorithm::find( state().connections.outbound, message.state.pid);

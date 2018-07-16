@@ -29,7 +29,7 @@ namespace casual
             bool bare = false;
             bool no_auto_persist = false;
 
-            inline void event( common::strong::ipc::id::value_type id) 
+            inline void event( const std::string& id) 
             {
                m_event = common::strong::ipc::id{ id};
             }

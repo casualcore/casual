@@ -17,6 +17,7 @@
 
 #include "common/environment.h"
 #include "common/service/lookup.h"
+#include "common/communication/instance.h"
 
 #include "common/message/domain.h"
 #include "common/message/queue.h"
@@ -45,7 +46,7 @@ namespace casual
                   //
                   // Make sure we're up'n running before we let unittest-stuff interact with us...
                   //
-                  process::instance::fetch::handle( process::instance::identity::gateway::manager());
+                  communication::instance::fetch::handle( communication::instance::identity::gateway::manager);
                }
 
                struct set_environment_t
@@ -145,7 +146,7 @@ namespace casual
 
                         return algorithm::all_of( state.connections, []( const manager::admin::vo::Connection& c){
                            return c.runlevel >= manager::admin::vo::Connection::Runlevel::online &&
-                              c.process == process::ping( c.process.ipc);
+                              c.process == communication::instance::ping( c.process.ipc);
                         });
                      }
 
@@ -184,7 +185,7 @@ namespace casual
 
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
       }
 
 
@@ -196,7 +197,7 @@ namespace casual
 
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
       }
 
       TEST( casual_gateway_manager_tcp, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
@@ -208,7 +209,7 @@ namespace casual
          common::signal::timer::Scoped timer{ std::chrono::milliseconds{ 100}};
 
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
 
          auto state = local::call::wait::ready::state();
 
@@ -229,7 +230,7 @@ namespace casual
          common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
 
          auto state = local::call::wait::ready::state();
 
@@ -296,7 +297,7 @@ namespace casual
 
          common::signal::timer::Scoped timer{ std::chrono::seconds{ 5}};
 
-         EXPECT_TRUE( process::ping( domain.gateway.process.handle().queue) == domain.gateway.process.handle());
+         EXPECT_TRUE( communication::instance::ping( domain.gateway.process.handle().ipc) == domain.gateway.process.handle());
 
 
          auto state = local::call::wait::ready::state();
@@ -322,7 +323,7 @@ namespace casual
             request.message.payload = payload;
 
 
-            auto reply = communication::ipc::call( outbound.queue, request);
+            auto reply = communication::ipc::call( outbound.ipc, request);
             EXPECT_TRUE( ! reply.id.empty());
          }
 
@@ -332,14 +333,12 @@ namespace casual
             request.process = process::handle();
             request.name = "queue1";
 
-            auto reply = communication::ipc::call( outbound.queue, request);
+            auto reply = communication::ipc::call( outbound.ipc, request);
             ASSERT_TRUE( ! reply.message.empty());
             EXPECT_TRUE( reply.message.front().payload == payload);
             EXPECT_TRUE( reply.message.front().type == "json");
          }
-
       }
-
 
    } // gateway
 

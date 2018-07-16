@@ -89,23 +89,51 @@ namespace casual
 
 
             //!
-            //! ping a server that owns the @p queue
+            //! ping a server that owns the @p ipc-id
             //!
             //! @note will block
             //!
             //! @return the process handle
             //!
-            process::Handle ping( strong::ipc::id queue);
+            process::Handle ping( strong::ipc::id ipc);
 
             namespace outbound
             {
                namespace detail
                { 
+                  struct base_connector
+                  {
+                     using blocking_policy = ipc::outbound::Connector::blocking_policy;
+                     using non_blocking_policy = ipc::outbound::Connector::blocking_policy;
+
+                     inline base_connector( process::Handle process)
+                        : m_process{ std::move( process)}, m_connector( m_process.ipc),
+                           m_socket( ipc::native::detail::create::domain::socket()) {}
+
+                     inline const Socket& socket() const { return m_socket;}
+
+                     inline const process::Handle& process() const { return m_process;}
+                     inline const ipc::Address& destination() const { return m_connector.destination();}
+
+                     friend std::ostream& operator << ( std::ostream& out, const base_connector& rhs);
+
+                  protected:
+                     inline void reset( process::Handle process)
+                     {
+                        m_process = std::move( process);
+                        m_connector = ipc::outbound::Connector{ m_process.ipc};
+                     }
+
+                     process::Handle m_process;
+                     ipc::outbound::Connector m_connector;
+                     Socket m_socket;
+                  };
+
                   template< fetch::Directive directive>
-                  struct basic_connector : ipc::outbound::Connector
+                  struct basic_connector : base_connector
                   {
                      basic_connector( const Uuid& identity, std::string environment);
-
+                     
                      void reconnect();
                      
                      template< fetch::Directive d> 
@@ -191,7 +219,7 @@ namespace casual
                {
                   namespace manager
                   {
-                     struct Connector : ipc::outbound::Connector
+                     struct Connector : detail::base_connector
                      {
                         Connector();
                         void reconnect();
@@ -201,7 +229,7 @@ namespace casual
 
                      namespace optional
                      {
-                        struct Connector : ipc::outbound::Connector
+                        struct Connector : detail::base_connector
                         {
                            Connector();
                            void reconnect();

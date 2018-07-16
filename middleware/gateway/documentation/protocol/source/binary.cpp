@@ -26,7 +26,6 @@ namespace casual
          {
             namespace
             {
-
                void write( const common::communication::message::Complete& complete, std::ostream& out)
                {
                   auto header = complete.header();
@@ -53,10 +52,11 @@ namespace casual
 
                common::transaction::ID trid()
                {
+                  
                   return {
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0851"},
                      common::Uuid{ "5b6c1bf6f24b480dbdbcdef54c3a0852"},
-                     common::process::Handle{ common::strong::process::id{ 42}, common::strong::ipc::id{ 42}}
+                     common::process::Handle{ common::strong::process::id{ 42}, common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f1"}}}
                   };
                }
 
@@ -167,8 +167,8 @@ namespace casual
                      message.parent = "parent-service";
                      message.trid = trid();
 
-                     message.recording.nodes.emplace_back( common::strong::ipc::id{ 42});
-                     message.recording.nodes.emplace_back( common::strong::ipc::id{ 4242});
+                     message.recording.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f1"}});
+                     message.recording.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f2"}});
 
                      message.flags = common::flag::service::conversation::connect::Flag::send_only;
                      message.buffer.type = ".json/";
@@ -182,11 +182,11 @@ namespace casual
                      common::message::conversation::connect::Reply message;
                      set_general( message);
 
-                     message.route.nodes.emplace_back( common::strong::ipc::id{ 4242});
-                     message.route.nodes.emplace_back( common::strong::ipc::id{ 42});
+                     message.route.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f2"}});
+                     message.route.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f1"}});
 
-                     message.recording.nodes.emplace_back( common::strong::ipc::id{ 42});
-                     message.recording.nodes.emplace_back( common::strong::ipc::id{ 4242});
+                     message.recording.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f1"}});
+                     message.recording.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f2"}});
 
                      
 
@@ -198,8 +198,8 @@ namespace casual
                      common::message::conversation::callee::Send message;
                      set_general( message);
 
-                     message.route.nodes.emplace_back( common::strong::ipc::id{ 42});
-                     message.route.nodes.emplace_back( common::strong::ipc::id{ 4242});
+                     message.route.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f1"}});
+                     message.route.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f2"}});
 
 
                      message.events = common::flag::service::conversation::Event::send_only;
@@ -219,8 +219,8 @@ namespace casual
                      common::message::conversation::Disconnect message;
                      set_general( message);
 
-                     message.route.nodes.emplace_back( common::strong::ipc::id{ 42});
-                     message.route.nodes.emplace_back( common::strong::ipc::id{ 4242});
+                     message.route.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f1"}});
+                     message.route.nodes.emplace_back( common::strong::ipc::id{ common::Uuid{ "57c9dcf039dc490baba9b957a39c87f2"}});
 
                      message.events = common::flag::service::conversation::Event::send_only;
 

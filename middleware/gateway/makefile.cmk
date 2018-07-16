@@ -106,34 +106,6 @@ target = LinkExecutable( 'bin/casual-gateway-inbound-tcp',
 
 install_bin.append( target)
 
-#
-# The outbound ipc connector
-#
-target = LinkExecutable( 'bin/casual-gateway-outbound-ipc',
-    [
-     Compile( 'source/outbound/ipc/main.cpp'),
-    ],
-    [
-     common_archive, 
-     'casual-common', 
-     ])
-
-install_bin.append( target)
-
-
-#
-# The inbound ipc connector
-#
-target = LinkExecutable( 'bin/casual-gateway-inbound-ipc',
-    [
-     Compile( 'source/inbound/ipc/main.cpp'),
-    ],
-    [
-     common_archive, 
-     'casual-common', 
-     ])
-
-install_bin.append( target)
 
 
 #
@@ -145,9 +117,9 @@ target_unittest = LinkUnittest( 'bin/test-casual-gateway',
         Compile( 'unittest/source/test_inbound_cache.cpp'),
         
         # ipc
-        Compile( 'unittest/source/ipc/test_manager.cpp'),
-        Compile( 'unittest/source/ipc/test_inbound.cpp'),
-        Compile( 'unittest/source/ipc/test_outbound.cpp'),
+        #Compile( 'unittest/source/ipc/test_manager.cpp'),
+        #Compile( 'unittest/source/ipc/test_inbound.cpp'),
+        #Compile( 'unittest/source/ipc/test_outbound.cpp'),
         
         # tcp
         Compile( 'unittest/source/tcp/test_outbound.cpp'),

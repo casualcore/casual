@@ -18,6 +18,8 @@
 #include "common/cast.h"
 #include "common/environment.h"
 
+#include "common/communication/instance.h" 
+
 
 
 namespace casual
@@ -177,11 +179,11 @@ namespace casual
                         return i.handle;
                      });
 
-                     auto service_manager = state.singleton( common::process::instance::identity::service::manager());
+                     auto service_manager = state.singleton( common::communication::instance::identity::service::manager);
 
                      try
                      {
-                        manager::ipc::device().blocking_send( service_manager.queue, prepare);
+                        manager::ipc::device().blocking_send( service_manager.ipc, prepare);
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
@@ -861,9 +863,9 @@ namespace casual
                            Trace trace{ "domain::manager::handle::local::singleton::connect"};
 
                            static const std::map< Uuid, std::function< void(State&, const common::process::Handle&)>> tasks{
-                              { common::process::instance::identity::service::manager(), &broker},
-                              { common::process::instance::identity::transaction::manager(), &tm},
-                              { common::process::instance::identity::queue::manager(), &queue}
+                              { common::communication::instance::identity::service::manager, &broker},
+                              { common::communication::instance::identity::transaction::manager, &tm},
+                              { common::communication::instance::identity::queue::manager, &queue}
                            };
 
                            auto found = algorithm::find( tasks, message.identification);
@@ -1071,8 +1073,8 @@ namespace casual
 
                            try
                            {
-                              auto service_manager = m_state.singleton( common::process::instance::identity::service::manager());
-                              manager::ipc::device().blocking_send( service_manager.queue, message::service::call::ACK{ common::process::handle()});
+                              auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager);
+                              manager::ipc::device().blocking_send( service_manager.ipc, message::service::call::ACK{ common::process::handle()});
                            }
                            catch( const exception::system::communication::Unavailable&)
                            {

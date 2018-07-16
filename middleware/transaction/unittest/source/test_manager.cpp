@@ -34,6 +34,8 @@
 #include "common/transcode.h"
 #include "common/functional.h"
 
+#include "common/communication/instance.h"
+
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/archive/log.h"
 
@@ -68,9 +70,9 @@ namespace casual
                   //
                   // We wait until tm is up
                   //
-                  common::process::ping(
-                        common::process::instance::fetch::handle(
-                              common::process::instance::identity::transaction::manager()).queue);
+                  common::communication::instance::ping(
+                        common::communication::instance::fetch::handle(
+                              common::communication::instance::identity::transaction::manager).ipc);
                }
 
             private:

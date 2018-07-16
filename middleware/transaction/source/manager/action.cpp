@@ -14,7 +14,7 @@
 #include "common/environment.h"
 #include "common/server/handle/call.h"
 #include "common/event/send.h"
-
+#include "common/communication/instance.h"
 
 
 #include "serviceframework/log.h"
@@ -39,7 +39,7 @@ namespace casual
                common::message::domain::configuration::Request request;
                request.process = process::handle();
 
-               auto configuration = communication::ipc::call( communication::ipc::domain::manager::device(), request);
+               auto configuration = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request);
 
 
                //

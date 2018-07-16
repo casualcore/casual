@@ -21,6 +21,7 @@
 
 #include <string>
 
+
 namespace casual
 {
    namespace common
@@ -81,15 +82,6 @@ namespace casual
 
             } // socket
 
-
-
-            //!
-            //! Duplicates the descriptor
-            //!
-            //! @param descriptor to be duplicated
-            //! @return socket that owns the descriptor
-            //!
-            //Socket duplicate( descriptor_type descriptor);
 
             Socket connect( const Address& address);
 

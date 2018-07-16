@@ -54,9 +54,9 @@ namespace casual
 
                      common::message::domain::process::lookup::Request request;
                      request.directive = common::message::domain::process::lookup::Request::Directive::wait;
-                     request.identification = process::instance::identity::gateway::manager();
+                     request.identification = communication::instance::identity::gateway::manager;
                      request.process.pid = process::handle().pid;
-                     request.process.ipc = ipc.connector().id();
+                     request.process.ipc = ipc.connector().handle().ipc();
 
                      return communication::ipc::call( broker, request,
                            communication::ipc::policy::Blocking{},
@@ -70,9 +70,9 @@ namespace casual
 
                      message::ipc::connect::Request request;
                      request.process.pid = process::handle().pid;
-                     request.process.ipc = ipc.connector().id();
+                     request.process.ipc = ipc.connector().handle().ipc();
 
-                     log  << "reguest: " << request << '\n';
+                     log  << "request: " << request << '\n';
 
                      auto reply = communication::ipc::call( gateway, request,
                            communication::ipc::policy::Blocking{},
@@ -95,7 +95,7 @@ namespace casual
                      {
                         auto gateway = lookup_gateway( ipc, result.process.ipc);
 
-                        return lookup_inbound( ipc, gateway.queue);
+                        return lookup_inbound( ipc, gateway.ipc);
                      }
 
                      log << "failed to find domain file: " << path << '\n';
@@ -138,7 +138,7 @@ namespace casual
 
                   static std::vector< std::string> address( const outbound_device_type& device)
                   {
-                     return { common::string::compose( device.connector().id())};
+                     return { common::string::compose( device.connector().destination())};
                   }
 
                   friend std::ostream& operator << ( std::ostream& out, const internal_type& value)

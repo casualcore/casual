@@ -10,6 +10,7 @@
 #include "common/uuid.h"
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
+#include "common/communication/instance.h"
 
 #include <fstream>
 #include <iostream>
@@ -75,7 +76,7 @@ namespace casual
             //
             // connect to domain
             //
-            common::process::instance::connect( common::Uuid{ "c9d132c7249241c8b4085cc399b19714"});
+            common::communication::instance::connect( common::Uuid{ "c9d132c7249241c8b4085cc399b19714"});
 
             {
                Handler handler{ std::move( settings)};

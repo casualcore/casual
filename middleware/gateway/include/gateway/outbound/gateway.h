@@ -24,6 +24,7 @@
 #include "common/message/service.h"
 #include "common/message/transaction.h"
 #include "common/message/conversation.h"
+#include "common/communication/instance.h"
 
 #include "common/flag.h"
 
@@ -288,7 +289,7 @@ namespace casual
                      auto destination = routing.get( reply.correlation);
                      process( reply);
 
-                     ipc::optional::send( destination.destination.queue, reply);
+                     ipc::optional::send( destination.destination.ipc, reply);
                   }
                   catch( const common::exception::system::invalid::Argument&)
                   {
@@ -349,7 +350,7 @@ namespace casual
                               try
                               {
                                  common::communication::ipc::blocking::send(
-                                       common::communication::ipc::queue::manager::optional::device(),
+                                       common::communication::instance::outbound::queue::manager::optional::device(),
                                        advertise);
                               }
                               catch( const common::exception::system::communication::Unavailable&)
@@ -394,7 +395,7 @@ namespace casual
                                  std::move( destination.service),
                                  std::chrono::duration_cast< std::chrono::microseconds>( now - destination.start));
 
-                           ipc::optional::send( destination.destination.queue, reply);
+                           ipc::optional::send( destination.destination.ipc, reply);
                         }
                         catch( const common::exception::system::invalid::Argument&)
                         {
@@ -448,7 +449,7 @@ namespace casual
                //
                // 'connect' to our local domain
                //
-               common::process::instance::connect();
+               common::communication::instance::connect();
 
                m_reply_thread = std::thread{ &reply_thread< S>,
                   std::ref( m_service_routing), std::ref( m_routing), std::forward< S>( settings)};
@@ -613,7 +614,7 @@ namespace casual
                   connect.address = std::move( address);
 
                   common::communication::ipc::blocking::send(
-                     common::communication::ipc::gateway::manager::device(),
+                     common::communication::instance::outbound::gateway::manager::device(),
                      connect);
                }
 
@@ -669,7 +670,7 @@ namespace casual
                request.process = common::process::handle();
 
                common::communication::ipc::blocking::send(
-                     common::communication::ipc::gateway::manager::device(),
+                     common::communication::instance::outbound::gateway::manager::device(),
                      request);
 
                return inbound_message< message::outbound::configuration::Reply>();
@@ -718,7 +719,7 @@ namespace casual
                      try
                      {
 
-                        common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
+                        common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::ipc()};
 
                         message::worker::Disconnect disconnect{ reason};
                         log << "send disconnect: " << disconnect << '\n';
@@ -758,7 +759,7 @@ namespace casual
                      common::marshal::binary::Output marshal{ message.information};
                      marshal << configuration;
 
-                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
+                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), message);
                   }
 
                   auto remote_connect_reply = []( auto& inbound){
@@ -779,7 +780,7 @@ namespace casual
                      //
                      // Forward to main thread
                      //
-                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), reply);
+                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), reply);
 
                      return reply.version;
                   };

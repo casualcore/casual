@@ -25,9 +25,12 @@
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
 
+#include "common/communication/instance.h"
+
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/namevaluepair.h"
 #include "serviceframework/log.h"
+
 
 
 #include <fstream>
@@ -57,7 +60,7 @@ namespace casual
                   //
                   // Make sure we're up'n running before we let unittest-stuff interact with us...
                   //
-                  common::process::instance::fetch::handle( common::process::instance::identity::queue::manager());
+                  common::communication::instance::fetch::handle( common::communication::instance::identity::queue::manager);
                }
 
                auto process() const { return m_process.handle();}
@@ -342,11 +345,11 @@ namespace casual
             common::message::gateway::domain::Advertise remote;
 
             remote.process.pid = common::strong::process::id{ 666};
-            remote.process.ipc = common::strong::ipc::id{ 777};
+            remote.process.ipc = common::strong::ipc::id{ common::uuid::make()};
 
             remote.queues.push_back( { "remote-queue"});
 
-            common::communication::ipc::blocking::send( domain.queue_manager.process().queue, remote);
+            common::communication::ipc::blocking::send( domain.queue_manager.process().ipc, remote);
          }
 
          EXPECT_THROW({
@@ -397,7 +400,7 @@ namespace casual
                   message.name = lookup.name();
                   message.block = true;
                   message.process.pid = common::process::id();
-                  message.process.ipc = ipc.connector().id();
+                  message.process.ipc = ipc.connector().handle().ipc();
 
                   auto destination = lookup();
                   message.queue = destination.queue;

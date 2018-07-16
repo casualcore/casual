@@ -66,7 +66,7 @@ namespace casual
          //
          // Send it to our forward
          //
-         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::id(), request);
+         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::ipc(), request);
 
          {
             message::service::call::Reply reply;
@@ -79,7 +79,7 @@ namespace casual
          }
 
          // make sure we quit
-         communication::ipc::blocking::send( communication::ipc::inbound::id(), message::shutdown::Request{});
+         communication::ipc::blocking::send( communication::ipc::inbound::ipc(), message::shutdown::Request{});
 
          cache_thread.join();
 
@@ -115,7 +115,7 @@ namespace casual
          //
          // Send it to our forward (that will rout it to the ipc-queue that the forward is listening to)
          //
-         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::id(), request);
+         auto correlation = communication::ipc::blocking::send( communication::ipc::inbound::ipc(), request);
 
          {
             //
@@ -132,7 +132,7 @@ namespace casual
          }
 
          // make sure we quit
-         communication::ipc::blocking::send( communication::ipc::inbound::id() , message::shutdown::Request{});
+         communication::ipc::blocking::send( communication::ipc::inbound::ipc() , message::shutdown::Request{});
 
          cache_thread.join();
 

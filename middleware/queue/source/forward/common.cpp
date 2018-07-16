@@ -17,6 +17,7 @@
 #include "common/transaction/context.h"
 #include "common/execute.h"
 
+#include "common/communication/instance.h"
 
 
 #include "tx.h"
@@ -90,7 +91,7 @@ namespace casual
                throw common::exception::system::invalid::Argument{ "only one task is allowed"};
             }
 
-            common::process::instance::connect();
+            common::communication::instance::connect();
          }
 
 

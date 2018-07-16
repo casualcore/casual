@@ -6,6 +6,7 @@
 
 
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/message/handle.h"
 #include "common/exception/handle.h"
 
@@ -19,7 +20,7 @@ namespace casual
          {
             try
             {
-               common::process::instance::connect();
+               common::communication::instance::connect();
 
                auto handler = common::communication::ipc::inbound::device().handler(
                      common::message::handle::Ping{},

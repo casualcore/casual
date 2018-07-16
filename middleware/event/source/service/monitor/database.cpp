@@ -11,6 +11,7 @@
 #include "common/process.h"
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
+#include "common/communication/instance.h"
 
 #include "sql/database.h"
 
@@ -115,7 +116,7 @@ namespace casual
                //
                // connect to domain
                //
-               common::process::instance::connect( common::Uuid{ "8130b1cd7e8842a49e3da91f8913aff7"});
+               common::communication::instance::connect( common::Uuid{ "8130b1cd7e8842a49e3da91f8913aff7"});
 
                {
                   Handler handler{ database};

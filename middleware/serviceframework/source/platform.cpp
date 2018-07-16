@@ -41,7 +41,7 @@ namespace casual
             if( archive.serialtype_start( name))
             {
                archive >> name::value::pair::make( "pid", value.pid);
-               archive >> name::value::pair::make( "queue", value.queue);   
+               archive >> name::value::pair::make( "ipc", value.ipc);   
             }
             archive.serialtype_end( name);
          }
@@ -50,7 +50,7 @@ namespace casual
             archive.serialtype_start( name);
 
             archive << name::value::pair::make( "pid", value.pid);
-            archive << name::value::pair::make( "queue", value.queue);
+            archive << name::value::pair::make( "ipc", value.ipc);   
 
             archive.serialtype_end( name);
          }

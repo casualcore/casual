@@ -41,6 +41,7 @@ namespace casual
                   archive & delay;
                   archive & message;
                })
+               friend std::ostream& operator << ( std::ostream& out, const Request& rhs);
             };
 
             void send( const Request& request);

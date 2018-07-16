@@ -74,7 +74,7 @@ namespace casual
             {
                common::message::domain::process::lookup::Request message;
                message.identification = id;
-               message::send( message, ipc.id(), std::chrono::milliseconds{ 10});
+               message::send( message, ipc.ipc(), std::chrono::milliseconds{ 10});
             }
 
             {
@@ -103,7 +103,7 @@ namespace casual
             {
                common::message::domain::process::lookup::Request message;
                message.identification = id;
-               message::send( message, ipc.id(), std::chrono::milliseconds{ 0});
+               message::send( message, ipc.ipc(), std::chrono::milliseconds{ 0});
             }
 
             auto start = common::platform::time::clock::type::now();

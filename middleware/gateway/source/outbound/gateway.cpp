@@ -8,6 +8,7 @@
 #include "gateway/outbound/gateway.h"
 
 
+
 namespace casual
 {
    namespace gateway
@@ -33,7 +34,7 @@ namespace casual
                            message.correlation = point.correlation;
                            message.state = common::code::xa::resource_fail;
 
-                           ipc::optional::send( point.destination.queue, message);
+                           ipc::optional::send( point.destination.ipc, message);
                         }
                      };
 
@@ -64,7 +65,7 @@ namespace casual
                                  reply.correlation = point.correlation;
                                  reply.status = common::code::xatmi::system;
 
-                                 ipc::optional::send( point.destination.queue, reply);
+                                 ipc::optional::send( point.destination.ipc, reply);
                               }
                            },
                            // domain discover
@@ -75,7 +76,7 @@ namespace casual
 
                                  reply.correlation = point.correlation;
 
-                                 ipc::optional::send( point.destination.queue, reply);
+                                 ipc::optional::send( point.destination.ipc, reply);
                               }
                            },
                            // queue
@@ -86,7 +87,7 @@ namespace casual
 
                                  reply.correlation = point.correlation;
 
-                                 ipc::optional::send( point.destination.queue, reply);
+                                 ipc::optional::send( point.destination.ipc, reply);
                               }
                            },
                            {
@@ -96,7 +97,7 @@ namespace casual
 
                                  reply.correlation = point.correlation;
 
-                                 ipc::optional::send( point.destination.queue, reply);
+                                 ipc::optional::send( point.destination.ipc, reply);
                               }
                            },
                         };

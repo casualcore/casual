@@ -17,7 +17,7 @@
 
 
 #include "common/marshal/complete.h"
-#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/execute.h"
 
 #include "common/message/service.h"
@@ -224,7 +224,7 @@ namespace casual
                      // Send lookup
                      //
 
-                     blocking::send( common::communication::ipc::queue::manager::optional::device(), request);
+                     blocking::send( common::communication::instance::outbound::queue::manager::optional::device(), request);
 
                      //
                      // We could send the lookup, so we won't remove the message from the cache
@@ -321,7 +321,7 @@ namespace casual
                            // empty uuid represent error. TODO: is this enough?
                            reply.id = common::uuid::empty();
 
-                           blocking::send( common::communication::ipc::inbound::id(), reply);
+                           blocking::send( common::communication::ipc::inbound::ipc(), reply);
                         }
                      }
 
@@ -359,7 +359,7 @@ namespace casual
                            // empty uuid represent error. TODO: is this enough?
                            reply.id = common::uuid::empty();
 
-                           blocking::send( common::communication::ipc::inbound::id(), reply);
+                           blocking::send( common::communication::ipc::inbound::ipc(), reply);
                         }
                      }
 
@@ -470,7 +470,7 @@ namespace casual
                            // We forward it to main thread (for async ordering reasons)
                            //
 
-                           blocking::send( common::communication::ipc::inbound::id(), message);
+                           blocking::send( common::communication::ipc::inbound::ipc(), message);
                         }
                      };
                   } // forward
@@ -506,9 +506,9 @@ namespace casual
                         }
 
                         if( ! message.queues.empty() &&
-                              blocking::optional::send( common::communication::ipc::queue::manager::optional::device(), message))
+                              blocking::optional::send( common::communication::instance::outbound::queue::manager::optional::device(), message))
                         {
-                           pids.push_back( common::communication::ipc::queue::manager::optional::device().connector().process().pid);
+                           pids.push_back( common::communication::instance::outbound::queue::manager::optional::device().connector().process().pid);
                         }
 
                         m_discover.add( message.correlation, {}, pids);
@@ -579,7 +579,7 @@ namespace casual
                //
                // 'connect' to our local domain
                //
-               common::process::instance::connect();
+               common::communication::instance::connect();
 
                //
                // Start worker thread
@@ -744,7 +744,7 @@ namespace casual
                   connect.process = common::process::handle();
                   connect.version = version;
                   connect.address = std::move( address);
-                  common::communication::ipc::blocking::send( common::communication::ipc::gateway::manager::device(), connect);
+                  common::communication::ipc::blocking::send( common::communication::instance::outbound::gateway::manager::device(), connect);
                }
 
                return version;
@@ -788,7 +788,7 @@ namespace casual
                      try
                      {
                         common::signal::thread::scope::Block block;
-                        common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::id()};
+                        common::communication::ipc::outbound::Device ipc{ common::communication::ipc::inbound::ipc()};
 
                         message::worker::Disconnect disconnect{ reason};
                         log << "send disconnect: " << disconnect << '\n';
@@ -823,7 +823,7 @@ namespace casual
                         common::marshal::binary::Output marshal{ message.information};
                         marshal << configuration;
                      }
-                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), message);
+                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), message);
                   }
 
                   //
@@ -848,7 +848,7 @@ namespace casual
                      auto version = validate( request.versions);
 
 
-                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::id(), request);
+                     common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), request);
 
                      if( version == version_type::invalid)
                      {

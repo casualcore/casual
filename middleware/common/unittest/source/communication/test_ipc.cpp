@@ -162,7 +162,7 @@ namespace casual
                return ipc::non::blocking::send( id, message);
             };
 
-            auto correlation = send( destination.connector().id().ipc());
+            auto correlation = send( destination.connector().handle().ipc());
 
             common::message::domain::process::lookup::Reply message;
             EXPECT_TRUE( ( ipc::non::blocking::receive( destination, message, correlation)));
@@ -177,19 +177,18 @@ namespace casual
 
             mockup::ipc::eventually::send( ipc::inbound::ipc(), send_message);
 
-
             unittest::Message receive_message;
             {
 
                ipc::message::Transport transport;
-               EXPECT_TRUE( ipc::native::blocking::receive( ipc::inbound::id(), transport));
+               EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
                EXPECT_TRUE( transport.message.header.offset == 0);
                EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
                // we expect no more transports
                {
                   ipc::message::Transport dummy;
-                  EXPECT_FALSE( ipc::native::non::blocking::receive( ipc::inbound::id(), dummy));
+                  EXPECT_FALSE( ipc::native::receive( ipc::inbound::handle(), dummy, ipc::native::Flag::non_blocking));
                }
 
                message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
@@ -212,20 +211,20 @@ namespace casual
             {
 
                ipc::message::Transport transport;
-               EXPECT_TRUE( ipc::native::blocking::receive( ipc::inbound::id(), transport));
+               EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
                EXPECT_TRUE( transport.message.header.offset == 0);
                EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
                message::Complete complete{ transport.type(), transport.correlation(), transport.complete_size(), transport};
 
-               EXPECT_TRUE( ipc::native::blocking::receive( ipc::inbound::id(), transport));
+               EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
                EXPECT_TRUE( transport.message.header.offset == transport.message.header.count);
                EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
 
                // we expect no more transports
                {
                   ipc::message::Transport dummy;
-                  EXPECT_FALSE( ipc::native::non::blocking::receive( ipc::inbound::id(), dummy));
+                  EXPECT_FALSE( ipc::native::receive( ipc::inbound::handle(), dummy, ipc::native::Flag::non_blocking));
                }
                complete.add( transport);
 

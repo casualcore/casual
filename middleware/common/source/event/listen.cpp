@@ -60,6 +60,7 @@ namespace casual
 
                void subscribe( const process::Handle& process, std::vector< message_type> types)
                {
+                  log::line( log::debug, "unsubscribe - process: ", process, ", types: ", types);
 
                   message::event::subscription::Begin request;
 
@@ -117,7 +118,7 @@ namespace casual
 
                auto handler = local::standard::handler( std::move( h));
 
-               auto subscription = local::subscription( device.connector().id().ipc(), handler.types());
+               auto subscription = local::subscription( device.connector().handle().ipc(), handler.types());
 
                while( true)
                {
@@ -132,7 +133,7 @@ namespace casual
 
                auto handler = local::standard::handler( std::move( h));
 
-               auto subscription = local::subscription( device.connector().id().ipc(), handler.types());
+               auto subscription = local::subscription( device.connector().handle().ipc(), handler.types());
 
                while( true)
                {
@@ -154,8 +155,14 @@ namespace casual
 
          void unsubscribe( const process::Handle& process, std::vector< message_type> types)
          {
+            Trace trace{ "common::event::unsubscribe"};
+
+            log::line( log::debug, "unsubscribe - process: ", process, ", types: ", types);
+
             message::event::subscription::End request;
             request.process = process;
+
+            
 
             local::location::domain( request, types);
             local::location::service( request, types);

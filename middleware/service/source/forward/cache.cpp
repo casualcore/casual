@@ -15,6 +15,8 @@
 
 #include "common/server/handle/call.h"
 
+#include "common/communication/instance.h"
+
 #include "common/flag.h"
 
 
@@ -198,7 +200,7 @@ namespace casual
             //
             // Connect to domain
             //
-            process::instance::connect( process::instance::identity::forward::cache());
+            communication::instance::connect( communication::instance::identity::forward::cache);
 
          }
 

@@ -13,6 +13,8 @@
 #include "common/exception/handle.h"
 #include "common/execute.h"
 
+#include "common/communication/instance.h"
+
 namespace casual
 {
 

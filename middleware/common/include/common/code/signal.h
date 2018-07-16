@@ -19,6 +19,7 @@ namespace casual
    {
       namespace code
       {
+         
          enum class signal : int
          {
             //ok = 0,
@@ -31,6 +32,8 @@ namespace casual
             user = cast::underlying( common::signal::Type::user),
             pipe = cast::underlying( common::signal::Type::pipe),
          };
+
+         //using signal = common::signal::Type;
 
          //static_assert( static_cast< int>( signal::ok) == 0, "signal::ok has to be 0");
 
