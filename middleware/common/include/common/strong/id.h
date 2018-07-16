@@ -38,7 +38,7 @@ namespace casual
             struct policy
             {
                constexpr static Uuid initialize() noexcept { return {};}
-               constexpr static bool empty( const Uuid& value) noexcept { return value.empty();}
+               static bool empty( const Uuid& value) noexcept { return value.empty();}
             };
 
             using id = value::basic_optional< Uuid, policy>;            
