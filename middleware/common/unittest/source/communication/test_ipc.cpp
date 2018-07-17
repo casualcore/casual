@@ -379,28 +379,28 @@ namespace casual
             local::test_send( 1024, 100);
          }
 
-         TEST( DISABLE_casual_common_communication_ipc, send_receive_1000_messages__1kB)
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__1kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024, 1000);
          }
 
-         TEST( DISABLE_casual_common_communication_ipc, send_receive_1000_messages__10kB)
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__10kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024 * 10, 1000);
          }
 
-         TEST( DISABLE_casual_common_communication_ipc, send_receive_1000_messages__100kB)
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__100kB)
          {
             common::unittest::Trace trace;
 
             local::test_send( 1024 * 100, 1000);
          }
 
-         TEST( DISABLE_casual_common_communication_ipc, send_receive_10000_messages__100kB)
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_10000_messages__100kB)
          {
             common::unittest::Trace trace;
 

@@ -239,16 +239,22 @@ namespace casual
                };
 
                bool send( const Socket& socket, const Address& destination, const message::Transport& transport, Flag flag);
-               /*
-               inline bool send( const Address& destination, const message::Transport& transport, Flag flag)
-               {
-                  return send( detail::outbound::socket(), destination, transport, flag);
-               }
-               */
-
                bool receive( const Handle& handle, message::Transport& transport, Flag flag);
 
-    
+               namespace blocking
+               {
+                  bool send( const Socket& socket, const Address& destination, const message::Transport& transport);
+                  bool receive( const Handle& handle, message::Transport& transport);
+               } // blocking
+
+               namespace non
+               {
+                  namespace blocking
+                  {
+                     bool send( const Socket& socket, const Address& destination, const message::Transport& transport);
+                     bool receive( const Handle& handle, message::Transport& transport);
+                  } // blocking
+               } // non
             } // native
 
 
@@ -257,8 +263,11 @@ namespace casual
                using cache_type = communication::inbound::cache_type;
                using cache_range_type = communication::inbound::cache_range_type;
 
-               cache_range_type receive( Handle& handle, cache_type& cache, native::Flag flag);
-               Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete, native::Flag flag);
+               namespace blocking
+               {
+                  cache_range_type receive( Handle& handle, cache_type& cache);
+                  Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete);
+               } // blocking
 
 
                struct Blocking
@@ -267,30 +276,36 @@ namespace casual
                   template< typename Connector>
                   cache_range_type receive( Connector&& connector, cache_type& cache)
                   {
-                     return policy::receive( connector.handle(), cache, native::Flag::none);
+                     return policy::blocking::receive( connector.handle(), cache);
                   }
 
                   template< typename Connector>
                   Uuid send( Connector&& connector, const communication::message::Complete& complete)
                   {
-                     return policy::send( connector.socket(), connector.destination(), complete, native::Flag::none);
+                     return policy::blocking::send( connector.socket(), connector.destination(), complete);
                   }
                };
 
                namespace non
                {
+                  namespace blocking
+                  {
+                     cache_range_type receive( Handle& handle, cache_type& cache);
+                     Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete);
+                  } // blocking
+
                   struct Blocking
                   {
                      template< typename Connector>
                      cache_range_type receive( Connector&& connector, cache_type& cache)
                      {
-                        return policy::receive( connector.handle(), cache, native::Flag::non_blocking);
+                        return policy::non::blocking::receive( connector.handle(), cache);
                      }
 
                      template< typename Connector>
                      Uuid send( Connector&& connector, const communication::message::Complete& complete)
                      {
-                        return policy::send( connector.socket(), connector.destination(), complete, native::Flag::non_blocking);
+                        return policy::non::blocking::send( connector.socket(), connector.destination(), complete);
                      }
                   };
 

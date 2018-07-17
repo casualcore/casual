@@ -147,172 +147,327 @@ namespace casual
                   } // outbound
                } // detail
 
+               namespace blocking
+               {
+                  bool send( const Socket& socket, const Address& destination, const message::Transport& transport)
+                  {
+                     Trace trace{ "common::communication::ipc::native::blocking::send"};
+
+                     log::line( verbose::log, "---> blocing send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+
+                     while( true)
+                     {
+                        auto error = posix::error(
+                           ::sendto(
+                              socket.descriptor().value(), 
+                              transport.data(), 
+                              transport.size(),
+                              0, //| cast::underlying( platform::flag::msg::no_signal), 
+                              destination.native_pointer(),
+                              destination.native_size())
+                        );
+
+                        if( ! error)
+                           return true;
+                     
+                        switch( error.value())
+                        {
+                           case code::system::resource_unavailable_try_again:
+                           //TODO: case code::system::operation_would_block: 
+                           {
+                              return false;
+                           }
+                           // This is "only" for BSD/OS X crap handling
+                           case code::system::no_buffer_space:
+                           {
+                              // try again...
+                              break;
+                           }
+                           case code::system::no_such_file_or_directory:
+                              throw exception::system::communication::unavailable::File{};   
+                           default:
+                           {
+                              // will allways throw
+                              exception::system::throw_from_code( error.value());
+                           }
+                        }
+                     }
+                     return true;
+                  }
+
+                  bool receive( const Handle& handle, message::Transport& transport)
+                  {
+                     Trace trace{ "common::communication::ipc::native::blocking::receive"};
+
+                     {
+                        Trace trace{ "common::communication::ipc::native::blocking::receive select"};
+                        
+                        fd_set read;
+                        {
+                           FD_ZERO( &read);
+                           FD_SET( handle.socket().descriptor().value(), &read);
+                        }
+
+                        // block all signals
+                        signal::thread::scope::Block block;
+
+                        log::line( verbose::log, "signal blocked: ", block.previous());
+                        
+                        // check pending signals
+                        signal::handle( block.previous());
+
+                        // will set previous signal mask atomically
+                        posix::result( 
+                           ::pselect( handle.socket().descriptor().value() + 1, &read, nullptr, nullptr, nullptr, &block.previous().set),
+                           block.previous());
+                     }
+
+                     auto result = ::recv(
+                        handle.socket().descriptor().value(),
+                        transport.data(),
+                        message::transport::max_message_size(),
+                        0); // | cast::underlying( platform::flag::msg::no_signal));
+
+                     if( result == -1)
+                     {
+                        return local::check_error();
+                     }
+
+                     log::line( verbose::log, "<--- receive - socket: ", handle, ", transport: ", transport);
+
+                     assert( result == transport.size());
+
+                     return true;
+                  }
+                  
+               } // blocking
+
+               namespace non
+               {
+                  namespace blocking
+                  {
+                     bool send( const Socket& socket, const Address& destination, const message::Transport& transport)
+                     {
+                        Trace trace{ "common::communication::ipc::native::non::blocking::send"};
+
+                        log::line( verbose::log, "---> non blocking end - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+
+                        auto error = posix::error(
+                           ::sendto(
+                              socket.descriptor().value(), 
+                              transport.data(), 
+                              transport.size(),
+                              cast::underlying( Flag::non_blocking), //| cast::underlying( platform::flag::msg::no_signal), 
+                              destination.native_pointer(),
+                              destination.native_size())
+                        );
+
+                        if( ! error)
+                           return true;
+                     
+                        switch( error.value())
+                        {
+                           case code::system::resource_unavailable_try_again:
+                           //TODO: case code::system::operation_would_block: 
+                           {
+                              return false;
+                           }
+                           // This is "only" for BSD/OS X crap handling
+                           case code::system::no_buffer_space:
+                           {
+                              return false;
+                           }
+                           case code::system::no_such_file_or_directory:
+                              throw exception::system::communication::unavailable::File{};   
+                           default:
+                           {
+                              // will allways throw
+                              exception::system::throw_from_code( error.value());
+                           }
+                        }
+                        return true;
+                     }
+
+                     bool receive( const Handle& handle, message::Transport& transport)
+                     {
+                        Trace trace{ "common::communication::ipc::native::non::blocking::receive"};
+
+                        auto result = ::recv(
+                           handle.socket().descriptor().value(),
+                           transport.data(),
+                           message::transport::max_message_size(),
+                           cast::underlying( Flag::non_blocking)); // | cast::underlying( platform::flag::msg::no_signal));
+
+                        if( result == -1)
+                        {
+                           return local::check_error();
+                        }
+
+                        log::line( verbose::log, "<--- non-blocking-receive - socket: ", handle, ", transport: ", transport);
+
+                        assert( result == transport.size());
+
+                        return true;
+                     }
+                  } // blocking
+               } // non
 
                bool send( const Socket& socket, const Address& destination, const message::Transport& transport, Flag flag)
                {
-                  Trace trace{ "common::communication::ipc::native::send"};
-
-                  log::line( verbose::log, "---> send - socket: ", socket, ", destination: ", destination, ", transport: ", transport, ", flags: ", flag);
-
-                  while( true)
-                  {
-                     auto error = posix::error(
-                        ::sendto(
-                           socket.descriptor().value(), 
-                           transport.data(), 
-                           transport.size(),
-                           cast::underlying( flag), //| cast::underlying( platform::flag::msg::no_signal), 
-                           destination.native_pointer(),
-                           destination.native_size())
-                     );
-
-                     if( ! error)
-                        return true;
-                  
-                     switch( error.value())
-                     {
-                        case code::system::resource_unavailable_try_again:
-                        //TODO: case code::system::operation_would_block: 
-                        {
-                           return false;
-                        }
-                        case code::system::no_buffer_space:
-                        {
-                           if( flag == Flag::non_blocking)
-                              return false;
-                           // we try to "wait" for buffer-space
-                           process::sleep( std::chrono::milliseconds{ 1});
-                           // try again...
-                           break;
-                        }
-                        case code::system::no_such_file_or_directory:
-                           throw exception::system::communication::unavailable::File{};   
-                        default:
-                        {
-                           // will allways throw
-                           exception::system::throw_from_code( error.value());
-                        }
-                     }
-                  }
-                  return true;
+                  if( flag == Flag::non_blocking) 
+                     return non::blocking::send( socket, destination, transport);
+                  else
+                     return blocking::send( socket, destination, transport);
                }
 
                bool receive( const Handle& handle, message::Transport& transport, Flag flag)
                {
-                  Trace trace{ "common::communication::ipc::native::receive"};
-
-                  // make sure we can read to the socket...
-                  if( flag != Flag::non_blocking)
-                  {
-                     Trace trace{ "common::communication::ipc::native::receive select"};
-                     
-                     fd_set read;
-                     {
-                        FD_ZERO( &read);
-                        FD_SET( handle.socket().descriptor().value(), &read);
-                     }
-
-                     // block all signals
-                     signal::thread::scope::Block block;
-
-                     log::line( verbose::log, "signal blocked: ", block.previous());
-                     
-                     // check pending signals
-                     signal::handle( block.previous());
-
-                     // will set previous signal mask atomically
-                     posix::result( 
-                        ::pselect( handle.socket().descriptor().value() + 1, &read, nullptr, nullptr, nullptr, &block.previous().set),
-                        block.previous());
-                  }
-
-                  auto result = ::recv(
-                     handle.socket().descriptor().value(),
-                     transport.data(),
-                     message::transport::max_message_size(),
-                     cast::underlying( flag)); // | cast::underlying( platform::flag::msg::no_signal));
-
-                  if( result == -1)
-                  {
-                     return local::check_error();
-                  }
-
-                  log::line( verbose::log, "<--- receive - socket: ", handle, ", transport: ", transport, ", flags: ", flag);
-
-                  assert( result == transport.size());
-
-                  return true;
+                  if( flag == Flag::non_blocking) 
+                     return non::blocking::receive( handle, transport);
+                  else
+                     return blocking::receive( handle, transport);
                }
-
             } // native
 
 
             namespace policy
             {
-               cache_range_type receive( Handle& handle, cache_type& cache, native::Flag flag)
+               namespace blocking
                {
-                  message::Transport transport;
-
-                  if( native::receive( handle, transport, flag))
+                  cache_range_type receive( Handle& handle, cache_type& cache)
                   {
-                     auto found = algorithm::find_if( cache,
-                           [&]( const auto& m)
+                     message::Transport transport;
+
+                     if( native::blocking::receive( handle, transport))
+                     {
+                        auto found = algorithm::find_if( cache,
+                              [&]( const auto& m)
+                              {
+                                 return ! m.complete() 
+                                    && transport.message.header.correlation == m.correlation;
+                              });
+
+                        if( found)
+                        {
+                           found->add( transport);
+                           return found;
+                        }
+                        else
+                        {
+                           cache.emplace_back(
+                                 transport.type(),
+                                 transport.correlation(),
+                                 transport.complete_size(),
+                                 transport);
+
+                           return cache_range_type{ std::end( cache) - 1, std::end( cache)};
+                        }
+                     }
+                     return cache_range_type{};
+                  }
+
+                  Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete)
+                  {
+                     message::Transport transport{ complete.type, complete.size()};
+
+                     complete.correlation.copy( transport.correlation());
+
+                     auto part_begin = std::begin( complete.payload);
+
+                     do
+                     {
+                        auto part_end = std::distance( part_begin, std::end( complete.payload)) > message::transport::max_payload_size() ?
+                              part_begin + message::transport::max_payload_size() : std::end( complete.payload);
+
+                        transport.assign( range::make( part_begin, part_end));
+                        transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
+
+                        //
+                        // send the physical message
+                        //
+                        if( ! native::blocking::send( socket, destination, transport))
+                        {
+                           return uuid::empty();
+                        }
+
+                        part_begin = part_end;
+                     }
+                     while( part_begin != std::end( complete.payload));
+
+                     return complete.correlation;
+                  }
+
+               } // blocking
+
+               namespace non
+               {
+                  namespace blocking
+                  {
+                     cache_range_type receive( Handle& handle, cache_type& cache)
+                     {
+                        message::Transport transport;
+
+                        if( native::non::blocking::receive( handle, transport))
+                        {
+                           auto found = algorithm::find_if( cache,
+                                 [&]( const auto& m)
+                                 {
+                                    return ! m.complete() 
+                                       && transport.message.header.correlation == m.correlation;
+                                 });
+
+                           if( found)
                            {
-                              return ! m.complete() 
-                                 && transport.message.header.correlation == m.correlation;
-                           });
+                              found->add( transport);
+                              return found;
+                           }
+                           else
+                           {
+                              cache.emplace_back(
+                                    transport.type(),
+                                    transport.correlation(),
+                                    transport.complete_size(),
+                                    transport);
 
-                     if( found)
-                     {
-                        found->add( transport);
-                        return found;
-                     }
-                     else
-                     {
-                        cache.emplace_back(
-                              transport.type(),
-                              transport.correlation(),
-                              transport.complete_size(),
-                              transport);
-
-                        return cache_range_type{ std::end( cache) - 1, std::end( cache)};
-                     }
-                  }
-
-                  return cache_range_type{};
-               }
-
-               Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete, native::Flag flag)
-               {
-                  message::Transport transport{ complete.type, complete.size()};
-
-                  complete.correlation.copy( transport.correlation());
-
-                  auto part_begin = std::begin( complete.payload);
-
-                  do
-                  {
-                     auto part_end = std::distance( part_begin, std::end( complete.payload)) > message::transport::max_payload_size() ?
-                           part_begin + message::transport::max_payload_size() : std::end( complete.payload);
-
-                     transport.assign( range::make( part_begin, part_end));
-                     transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
-
-                     //
-                     // send the physical message
-                     //
-                     if( ! native::send( socket, destination, transport, flag))
-                     {
-                        return uuid::empty();
+                              return cache_range_type{ std::end( cache) - 1, std::end( cache)};
+                           }
+                        }
+                        return cache_range_type{};
                      }
 
-                     part_begin = part_end;
-                  }
-                  while( part_begin != std::end( complete.payload));
+                     Uuid send( const Socket& socket, const Address& destination, const communication::message::Complete& complete)
+                     {
+                        message::Transport transport{ complete.type, complete.size()};
 
-                  return complete.correlation;
+                        complete.correlation.copy( transport.correlation());
 
-               }
+                        auto part_begin = std::begin( complete.payload);
+
+                        do
+                        {
+                           auto part_end = std::distance( part_begin, std::end( complete.payload)) > message::transport::max_payload_size() ?
+                                 part_begin + message::transport::max_payload_size() : std::end( complete.payload);
+
+                           transport.assign( range::make( part_begin, part_end));
+                           transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
+
+                           //
+                           // send the physical message
+                           //
+                           if( ! native::non::blocking::send( socket, destination, transport))
+                           {
+                              return uuid::empty();
+                           }
+
+                           part_begin = part_end;
+                        }
+                        while( part_begin != std::end( complete.payload));
+
+                        return complete.correlation;
+                     }
+                  } // blocking
+               } // non
+
 
             } // policy
 

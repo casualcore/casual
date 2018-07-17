@@ -363,8 +363,8 @@ namespace casual
                               }
                               buffer.push_back( transport);
                            }
-
-                           if( communication::ipc::native::send( socket, output, buffer.front(), communication::ipc::native::Flag::non_blocking))
+                           
+                           if( ! buffer.empty() && communication::ipc::native::non::blocking::send( socket, output, buffer.front()))
                            {
                               buffer.pop_front();
                            }

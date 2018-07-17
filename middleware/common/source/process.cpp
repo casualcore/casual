@@ -173,7 +173,6 @@ namespace casual
          {
             log::line( verbose::log, "process::sleep time: ", time);
 
-
             timespec posix_time;
             posix_time.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( time).count();
             posix_time.tv_nsec = std::chrono::duration_cast< std::chrono::nanoseconds>(
