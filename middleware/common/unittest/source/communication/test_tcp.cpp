@@ -387,6 +387,88 @@ namespace casual
             }
          }
 
+         namespace local
+         {
+            namespace
+            {
+               struct Message : common::message::basic_message< common::message::Type::mockup_disconnect>
+               {
+                  Message() = default;
+                  Message( platform::size::type size) 
+                     : payload( common::unittest::random::binary( size)) {}
+                  
+                  platform::size::type index = 0;
+                  platform::binary::type payload;
+
+                  CASUAL_CONST_CORRECT_MARSHAL(
+                  {
+                     base_type::marshal( archive);
+                     archive & index;
+                     archive & payload;
+                  })
+               };
+
+               void send_messages( strong::ipc::id destination, Message message, platform::size::type count)
+               {
+                  for( ; message.index < count; ++message.index)
+                  {
+                     ipc::blocking::send( destination, message);
+                  }
+               };
+
+               void test_send( platform::size::type size, platform::size::type count)
+               {
+                  local::Message origin( size);
+                  
+                  auto sender = std::thread{ &local::send_messages, ipc::inbound::id(), origin, count};
+
+                  local::Message message;
+                  for( auto index = 0; index < count; ++index)
+                  {
+                     ipc::blocking::receive( ipc::inbound::device(), message);
+                     EXPECT_TRUE( message.index == index);
+                     EXPECT_TRUE( message.payload == origin.payload);
+                  }
+
+                  sender.join();
+               }
+            } // <unnamed>
+         } // local
+
+         TEST( casual_common_communication_ipc, send_receive_100_messages__1kB)
+         {
+            common::unittest::Trace trace;
+
+            local::test_send( 1024, 100);
+         }
+
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__1kB)
+         {
+            common::unittest::Trace trace;
+
+            local::test_send( 1024, 1000);
+         }
+
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__10kB)
+         {
+            common::unittest::Trace trace;
+
+            local::test_send( 1024 * 10, 1000);
+         }
+
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_1000_messages__100kB)
+         {
+            common::unittest::Trace trace;
+
+            local::test_send( 1024 * 100, 1000);
+         }
+
+         TEST( DISABLED_casual_common_communication_ipc, send_receive_10000_messages__100kB)
+         {
+            common::unittest::Trace trace;
+
+            local::test_send( 1024 * 100, 10000);
+         }
 
       } // communication
    } // common
