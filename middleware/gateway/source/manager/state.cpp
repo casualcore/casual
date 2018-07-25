@@ -28,16 +28,6 @@ namespace casual
                return lhs.process.pid == rhs;
             }
 
-            std::ostream& operator << ( std::ostream& out, const base_connection::Type& value)
-            {
-               switch( value)
-               {
-                  case base_connection::Type::ipc: { return out << "ipc";}
-                  case base_connection::Type::tcp: { return out << "tcp";}
-                  default: return out << "unknown";
-               }
-            }
-
             std::ostream& operator << ( std::ostream& out, const base_connection::Runlevel& value)
             {
                switch( value)
@@ -68,7 +58,7 @@ namespace casual
             {
                std::ostream& operator << ( std::ostream& out, const Connection& value)
                {
-                  return out << "{ type: " << value.type << ", runlevel: " << value.runlevel << ", process: " << value.process << ", remote: " << value.remote << '}';
+                  return out << "{ runlevel: " << value.runlevel << ", process: " << value.process << ", remote: " << value.remote << '}';
                }
             }
 
@@ -80,13 +70,12 @@ namespace casual
                   runlevel = state::outbound::Connection::Runlevel::absent;
                   remote = common::domain::Identity{};
 
-                  log << "manager::state::outbound::reset: " << *this << '\n';
+                  common::log::line( log, "manager::state::outbound::reset: ", *this);
                }
 
                std::ostream& operator << ( std::ostream& out, const Connection& value)
                {
-                  return out << "{ type: " << value.type
-                        << ", runlevel: " << value.runlevel
+                  return out << "{ runlevel: " << value.runlevel
                         << ", process: " << value.process
                         << ", remote: " << value.remote
                         << ", restart: " << value.restart
@@ -122,27 +111,49 @@ namespace casual
 
          bool State::running() const
          {
-            return algorithm::any_of( listeners, std::mem_fn( &Listener::running))
-               || algorithm::any_of( connections.outbound, std::mem_fn( &state::outbound::Connection::running))
+            return algorithm::any_of( connections.outbound, std::mem_fn( &state::outbound::Connection::running))
                || algorithm::any_of( connections.inbound, std::mem_fn( &state::inbound::Connection::running));
          }
 
-         void State::event( const message::manager::listener::Event& event)
+         void State::add( listen::Entry entry)
          {
-            Trace trace{ "manager::State::event"};
+            Trace trace{ "gateway::manager::State::add"};
 
-            log << "event: " << event << '\n';
+            m_listeners.push_back( std::move( entry));
+            m_descriptors.push_back( m_listeners.back().descriptor());
+            directive.read.add( m_listeners.back().descriptor());
+         }
 
-            auto found = algorithm::find( listeners, event.correlation);
+         void State::remove( common::strong::file::descriptor::id listener)
+         {
+            Trace trace{ "gateway::manager::State::remove"};
+
+
+            auto found = common::algorithm::find_if( m_listeners, [listener]( const listen::Entry& entry) {
+               return entry.descriptor() == listener;
+            });
+
+            if( ! found)
+               throw common::exception::system::invalid::Argument{ common::string::compose( "failed to find descriptor in listeners - descriptor: ", listener)};
+
+
+            m_listeners.erase( std::begin( found));
+            algorithm::trim( m_descriptors, common::algorithm::remove( m_descriptors, listener));
+            directive.read.remove( listener);
+         }
+
+         listen::Connection State::accept( common::strong::file::descriptor::id descriptor)
+         {
+            Trace trace{ "gateway::manager::State::accept"};
+
+            auto found = common::algorithm::find_if( m_listeners, [descriptor]( const listen::Entry& entry) {
+               return entry.descriptor() == descriptor;
+            });
 
             if( found)
-            {
-               found->event( event);
-            }
-            else
-            {
-               throw exception::system::invalid::Argument{ string::compose( "failed to correlate listener to event: ", event)};
-            }
+               return found->accept();
+
+            return {};
          }
 
          void State::Discover::remove( common::strong::process::id pid)
@@ -164,7 +175,7 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const State& value)
          {
             return out << "{ runlevel: " << value.runlevel
-               << ", listeners: " << range::make( value.listeners)
+               << ", listeners: " << range::make( value.listeners())
                << ", outbound: " << range::make( value.connections.outbound)
                << ", inbound: " << range::make( value.connections.inbound)
                << '}';

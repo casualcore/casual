@@ -9,12 +9,13 @@
 
 
 
-#include "gateway/manager/listener.h"
+#include "gateway/manager/listen.h"
 
 #include "common/process.h"
 #include "common/domain.h"
 
 #include "common/communication/tcp.h"
+#include "common/communication/select.h"
 
 #include "common/message/coordinate.h"
 
@@ -31,12 +32,6 @@ namespace casual
             
             struct base_connection
             {
-               enum class Type
-               {
-                  unknown,
-                  ipc,
-                  tcp
-               };
 
                enum class Runlevel
                {
@@ -47,13 +42,18 @@ namespace casual
                   error
                };
 
+               struct Address
+               {
+                  std::string local;
+                  std::string peer;
+               };
+
 
                bool running() const;
 
                common::process::Handle process;
                common::domain::Identity remote;
-               std::vector< std::string> address;
-               Type type = Type::unknown;
+               Address address;
                Runlevel runlevel = Runlevel::absent;
 
 
@@ -64,7 +64,6 @@ namespace casual
                   return rhs == lhs;
                }
 
-               friend std::ostream& operator << ( std::ostream& out, const Type& value);
                friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);
             };
 
@@ -149,10 +148,19 @@ namespace casual
             bool running() const;
 
 
-            void event( const message::manager::listener::Event& event);
+            void add( listen::Entry entry);
+            void remove( common::strong::file::descriptor::id listener);
+            listen::Connection accept( common::strong::file::descriptor::id listener);
 
+
+            inline const std::vector< listen::Entry>& listeners() const { return m_listeners;}
+            inline const std::vector< common::strong::file::descriptor::id>& descriptors() const { return m_descriptors;}
+
+            //void event( const message::manager::listener::Event& event);
+
+            common::communication::select::Directive directive;
             state::Connections connections;
-            std::vector< Listener> listeners;
+            
 
             struct Discover
             {
@@ -165,6 +173,10 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Runlevel& value);
             friend std::ostream& operator << ( std::ostream& out, const State& value);
+
+         private:
+            std::vector< listen::Entry> m_listeners;
+            std::vector< common::strong::file::descriptor::id> m_descriptors;
          };
 
 

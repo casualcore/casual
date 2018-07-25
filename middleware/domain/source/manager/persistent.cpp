@@ -32,6 +32,7 @@ void serialize( serviceframework::archive::Reader& archive, type& value, const c
    } \
 } \
 
+
 namespace casual
 {
    namespace common
@@ -49,7 +50,6 @@ namespace casual
                   )
 
                   CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Connection,
-                     archive & serviceframework::name::value::pair::make( "type", value.type);
                      archive & serviceframework::name::value::pair::make( "restart", value.restart);
                      archive & serviceframework::name::value::pair::make( "address", value.address);
                      archive & serviceframework::name::value::pair::make( "note", value.note);

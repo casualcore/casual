@@ -90,15 +90,6 @@ namespace casual
 
                   struct Connection
                   {
-                     enum class Type : short
-                     {
-                        ipc,
-                        tcp
-                     };
-
-
-
-                     Type type = Type::tcp;
                      bool restart = true;
                      std::string address;
                      std::string note;
@@ -108,7 +99,6 @@ namespace casual
 
                      CASUAL_CONST_CORRECT_MARSHAL
                      (
-                        archive & type;
                         archive & restart;
                         archive & address;
                         archive & note;
@@ -324,7 +314,7 @@ namespace casual
 
                   struct Reply : basic_message< Type::domain_process_connect_reply>
                   {
-                     enum class Directive : char
+                     enum class Directive : short
                      {
                         start,
                         singleton,
@@ -338,6 +328,9 @@ namespace casual
                         base_type::marshal( archive);
                         archive & directive;
                      })
+
+                     friend std::ostream& operator << ( std::ostream& out, const Directive& value);
+                     friend std::ostream& operator << ( std::ostream& out, const Reply& value);
                   };
                   static_assert( traits::is_movable< Reply>::value, "not movable");
 

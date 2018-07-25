@@ -27,18 +27,11 @@ namespace casual
                {
                   struct Connection
                   {
-                     enum class Bound : char
+                     enum class Bound : short
                      {
                         out,
                         in,
                         unknown,
-                     };
-
-                     enum class Type : char
-                     {
-                        unknown,
-                        ipc,
-                        tcp
                      };
 
                      enum class Runlevel : short
@@ -50,22 +43,31 @@ namespace casual
                         error
                      };
 
+                     struct Address
+                     {
+                        std::string local;
+                        std::string peer;
+                        
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                        {
+                           archive & CASUAL_MAKE_NVP( local);
+                           archive & CASUAL_MAKE_NVP( peer);
+                        })
+                     };
+
 
                      Bound bound = Bound::unknown;
-                     Type type = Type::unknown;
                      Runlevel runlevel = Runlevel::absent;
-
 
                      common::process::Handle process;
                      common::domain::Identity remote;
-                     std::vector< std::string> address;
+                     Address address;
 
 
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                      {
                         archive & CASUAL_MAKE_NVP( bound);
-                        archive & CASUAL_MAKE_NVP( type);
                         archive & CASUAL_MAKE_NVP( runlevel);
                         archive & CASUAL_MAKE_NVP( process);
                         archive & CASUAL_MAKE_NVP( remote);
@@ -74,8 +76,8 @@ namespace casual
 
                      friend bool operator < ( const Connection& lhs, const Connection& rhs)
                      {
-                        return std::make_tuple( lhs.remote, lhs.bound, lhs.type, lhs.process)
-                             < std::make_tuple( rhs.remote, rhs.bound, rhs.type, rhs.process);
+                        return std::make_tuple( lhs.remote, lhs.bound, lhs.process)
+                             < std::make_tuple( rhs.remote, rhs.bound, rhs.process);
                      }
 
                   };

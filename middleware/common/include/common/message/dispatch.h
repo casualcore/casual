@@ -37,8 +37,8 @@ namespace casual
 
                basic_handler()  = default;
 
-               basic_handler( basic_handler&&) = default;
-               basic_handler& operator = ( basic_handler&&) = default;
+               basic_handler( basic_handler&&) noexcept = default;
+               basic_handler& operator = ( basic_handler&&) noexcept = default;
 
                template< typename... Args>
                basic_handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
@@ -236,7 +236,7 @@ namespace casual
                template< typename Unmarshal, typename D>
                void pump( basic_handler< Unmarshal>& handler, D& device)
                {
-                  using device_type = typename std::decay< decltype( device)>::type;
+                  using device_type = std::decay_t< decltype( device)>;
 
                   while( true)
                   {

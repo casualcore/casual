@@ -80,37 +80,22 @@ namespace casual
       {
          using size_type = common::platform::size::type;
 
-         namespace manager
+         struct Address
          {
+            std::string local;
+            std::string peer;
 
-            namespace listener
+            CASUAL_CONST_CORRECT_MARSHAL(
             {
-               struct Event : common::message::basic_message< common::message::Type::gateway_manager_listener_event>
-               {
+               archive & local;
+               archive & peer;
+            })
 
-                  enum class State
-                  {
-                     running,
-                     exit,
-                     signal,
-                     error
-                  };
-
-                  State state;
-
-                  CASUAL_CONST_CORRECT_MARSHAL({
-                     base_type::marshal( archive);
-                     archive & state;
-                  })
-
-                  friend std::ostream& operator << ( std::ostream& out, const Event::State& value);
-                  friend std::ostream& operator << ( std::ostream& out, const Event& value);
-               };
-
-            } // listener
-         } // manager
-
-
+            friend std::ostream& operator << ( std::ostream& out, const Address& value)
+            {
+               return out << "{ local: " << value.local << ", peer: " << value.peer << '}';
+            }
+         };
 
 
          template< common::message::Type type>
@@ -119,7 +104,7 @@ namespace casual
             common::process::Handle process;
             common::domain::Identity domain;
             common::message::gateway::domain::protocol::Version version;
-            std::vector< std::string> address;
+            Address address;
 
             CASUAL_CONST_CORRECT_MARSHAL({
                common::message::basic_message< type>::marshal( archive);
@@ -132,7 +117,7 @@ namespace casual
             friend std::ostream& operator << ( std::ostream& out, const basic_connect& value)
             {
                return out << "{ process: " << value.process
-                     << ", address: " << common::range::make( value.address)
+                     << ", address: " << value.address
                      << ", domain: " << value.domain
                      << '}';
             }
@@ -175,51 +160,31 @@ namespace casual
 
          namespace inbound
          {
+            struct Limit
+            {
+               size_type size = 0;
+               size_type messages = 0;
+
+               CASUAL_CONST_CORRECT_MARSHAL(
+                  archive & size;
+                  archive & messages;
+               )
+               friend std::ostream& operator << ( std::ostream& out, const Limit& value);
+            };
+
             using base_connect =  basic_connect< common::message::Type::gateway_inbound_connect>;
             struct Connect : base_connect
             {
             };
          } // inbound
 
-         namespace ipc
-         {
-            namespace connect
-            {
-
-               struct Request : basic_connect< common::message::Type::gateway_ipc_connect_request>
-               {
-                  friend std::ostream& operator << ( std::ostream& out, const Request& value);
-               };
-
-               struct Reply : basic_connect< common::message::Type::gateway_ipc_connect_reply>
-               {
-                  friend std::ostream& operator << ( std::ostream& out, const Reply& value);
-               };
-
-            } // connect
-
-         } // ipc
 
          namespace tcp
          {
-            namespace connect
-            {
-               struct Limit
-               {
-                  size_type size = 0;
-                  size_type messages = 0;
-
-                  CASUAL_CONST_CORRECT_MARSHAL(
-                     archive & size;
-                     archive & messages;
-                  )
-
-               };
-            } // connect
             struct Connect : common::message::basic_message< common::message::Type::gateway_manager_tcp_connect>
             {
                common::strong::socket::id descriptor;
-               connect::Limit limit;
+               inbound::Limit limit;
 
                friend std::ostream& operator << ( std::ostream& out, const Connect& value);
 
@@ -284,9 +249,6 @@ namespace casual
       {
          namespace reverse
          {
-            template<>
-            struct type_traits< casual::gateway::message::ipc::connect::Request> : detail::type< casual::gateway::message::ipc::connect::Reply> {};
-
             template<>
             struct type_traits< casual::gateway::message::outbound::configuration::Request> : detail::type< casual::gateway::message::outbound::configuration::Reply> {};
          } // reverse

@@ -153,7 +153,7 @@ namespace casual
                   {
                      Trace trace{ "common::communication::ipc::native::blocking::send"};
 
-                     log::line( verbose::log, "---> blocing send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+                     log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
 
                      while( true)
                      {
@@ -233,7 +233,7 @@ namespace casual
                         return local::check_error();
                      }
 
-                     log::line( verbose::log, "<--- receive - socket: ", handle, ", transport: ", transport);
+                     log::line( verbose::log, "ipc <--- blocking receive - handle: ", handle, ", transport: ", transport);
 
                      assert( result == transport.size());
 

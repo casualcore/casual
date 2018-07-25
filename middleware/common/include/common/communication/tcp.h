@@ -54,6 +54,8 @@ namespace casual
                Address( Port port);
                Address( Host host, Port port);
 
+               inline operator std::string() { return host + ':' + port;} 
+
 
                friend std::ostream& operator << ( std::ostream& out, const Address& value);
 
@@ -79,6 +81,20 @@ namespace casual
                   Address peer( const Socket& socket);
 
                } // address
+
+               //!
+               //! creates a socket, binds it to `address` and let the OS listen to the socket
+               //! @param address 
+               //! @return socket prepared to use with accept
+               //!
+               Socket listen( const Address& address);
+
+               //!
+               //! performs blocking accept on the `listener`
+               //! @param listener 
+               //! @return the connected socket
+               //!
+               Socket accept( const Socket& listener);
 
             } // socket
 
@@ -193,7 +209,9 @@ namespace casual
                base_connector( base_connector&&) = default;
                base_connector& operator = ( base_connector&&) = default;
 
-               const handle_type& socket() const;
+               inline const handle_type& socket() const { return m_socket;};
+               inline handle_type& socket() { return m_socket;};
+               inline auto descriptor() const { return m_socket.descriptor();}
 
                friend std::ostream& operator << ( std::ostream& out, const base_connector& rhs);
 
@@ -222,6 +240,15 @@ namespace casual
                };
 
                using Device = communication::outbound::Device< Connector,  marshal::binary::network::create::Output>;
+
+               namespace blocking 
+               {
+                  template< typename M> 
+                  auto send( const Socket& socket, M&& message)
+                  {
+                     return native::send( socket, marshal::complete( std::forward< M>( message), marshal::binary::network::create::Output{}), {});
+                  }
+               } // blocking 
             } // outbound
 
 

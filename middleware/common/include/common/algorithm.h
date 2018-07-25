@@ -1005,6 +1005,30 @@ namespace casual
             }
 
          } // sorted
+
+         namespace container
+         {
+            namespace move
+            {
+               namespace detail
+               {
+                  template< typename C> 
+                  C& back( C& container) { return container;}
+
+                  template< typename C, typename T, typename... Ts> 
+                  C& back( C& container, T&& t, Ts&&... ts)
+                  {
+                     container.push_back( std::move( t)); 
+                     return back( container, std::forward< Ts>( ts)...);
+                  }
+               } // detail
+               template< typename C, typename... Ts> 
+               C& back( C& container, Ts&&... ts)
+               {
+                  return detail::back( container, std::forward< Ts>( ts)...);
+               }
+            } // move
+         } // container
       } // algorithm
 
       template< typename Iter>

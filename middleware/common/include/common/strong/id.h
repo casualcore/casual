@@ -44,6 +44,20 @@ namespace casual
             using id = value::basic_optional< Uuid, policy>;            
          } // ipc
 
+         namespace file
+         {
+            namespace descriptor
+            {
+               namespace tag
+               {
+                  struct type{};
+               } // tag
+      
+               using id = value::Optional< platform::file::descriptor::native::type,platform::file::descriptor::native::invalid, tag::type>;
+            
+            } // descriptor
+         } // file
+
          namespace socket
          {
             namespace tag
@@ -51,7 +65,19 @@ namespace casual
                struct type{};
             } // tag
    
-            using id = value::Optional< platform::socket::native::type, platform::socket::native::invalid, tag::type>;
+            //using id = value::Optional< platform::socket::native::type, platform::socket::native::invalid, tag::type>;
+            namespace detail
+            {
+               using base_type = value::Optional< platform::socket::native::type, platform::socket::native::invalid, tag::type>;
+            } // detail
+            
+            struct id : detail::base_type
+            {
+               using detail::base_type::base_type;
+
+               //! implicit conversion to file descriptor
+               operator file::descriptor::id () const { return file::descriptor::id{ value()};}
+            };
             
          } // socket
 
@@ -81,19 +107,7 @@ namespace casual
             
          } // ipc
 
-         namespace file
-         {
-            namespace descriptor
-            {
-               namespace tag
-               {
-                  struct type{};
-               } // tag
-      
-               using id = value::Optional< platform::file::descriptor::native::type,platform::file::descriptor::native::invalid, tag::type>;
-            
-            } // descriptor
-         } // file
+
 
 
       } // strong 

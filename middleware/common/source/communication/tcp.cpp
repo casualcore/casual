@@ -304,6 +304,27 @@ namespace casual
 
                } // address
 
+               Socket listen( const Address& address)
+               {
+                  Trace trace( "common::communication::tcp::socket::listen");
+
+                  auto result = local::socket::local( address);
+
+                  //
+                  // queuesize could (probably) be set to zero as well (in casual-context)
+                  //
+                  posix::result( ::listen( result.descriptor().value(), platform::tcp::listen::backlog));
+
+                  return result;
+               }
+
+               Socket accept( const Socket& listener)
+               {
+                  Trace trace( "common::communication::tcp::socket::accept");
+
+                  return local::socket::accept( listener.descriptor());
+               }
+
             } // socket
 
 
@@ -340,15 +361,8 @@ namespace casual
             } // retry
 
 
-            Listener::Listener( Address address) : m_listener{ local::socket::local( address)}
+            Listener::Listener( Address address) : m_listener{ socket::listen( address)}
             {
-               Trace trace( "common::communication::tcp::Listener ctor");
-
-               //
-               // queuesize could (probably) be set to zero as well (in casual-context)
-               //
-
-               posix::result( ::listen( m_listener.descriptor().value(), platform::tcp::listen::backlog));
             }
 
             Socket Listener::operator() () const
@@ -357,7 +371,7 @@ namespace casual
 
                common::signal::handle();
 
-               return local::socket::accept( m_listener.descriptor());
+               return socket::accept( m_listener);
             }
 
 
@@ -567,12 +581,6 @@ namespace casual
              : m_socket{ socket}
             {
 
-            }
-
-
-            const base_connector::handle_type& base_connector::socket() const
-            {
-               return m_socket;
             }
 
             std::ostream& operator << ( std::ostream& out, const base_connector& rhs)

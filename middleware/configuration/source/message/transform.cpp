@@ -16,7 +16,6 @@ namespace casual
    {
       namespace transform
       {
-
          common::message::domain::configuration::Domain configuration( const configuration::domain::Manager& domain)
          {
             Trace trace{ "configuration::transform domain"};
@@ -92,17 +91,12 @@ namespace casual
 
                   result.note = c.note;
                   result.restart = c.restart.value_or( true);
-                  if( c.type.has_value())
-                     { result.type = c.type.value() == "ipc" ?
-                           common::message::domain::configuration::gateway::Connection::Type::ipc :
-                           common::message::domain::configuration::gateway::Connection::Type::tcp;}
                   result.address = c.address.value_or( "");
                   result.services = c.services;
                   result.queues = c.queues;
 
                   return result;
                });
-
             }
 
             //

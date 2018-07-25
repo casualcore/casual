@@ -251,15 +251,6 @@ namespace casual
                      log::line( verbose::log, "connector: ", *this);
                   }
 
-                  template< fetch::Directive directive>
-                  std::ostream& operator << ( std::ostream& out, const basic_connector< directive>& rhs)
-                  {
-                     return out << "{ destination: " << rhs.m_process.ipc
-                           << ", identity: " << rhs.m_identity
-                           << ", environment: " << rhs.m_environment
-                           << '}';
-                  }
-
                   template struct basic_connector< fetch::Directive::direct>;
                   template struct basic_connector< fetch::Directive::wait>;
                } // detail

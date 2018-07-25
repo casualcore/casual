@@ -331,6 +331,7 @@ namespace casual
 
                   inline const Handle& handle() const { return m_handle;}
                   inline Handle& handle() { return m_handle;}
+                  inline auto descriptor() const { return m_handle.socket().descriptor();}
 
                   friend std::ostream& operator << ( std::ostream& out, const Connector& rhs);
                private:

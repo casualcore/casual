@@ -149,7 +149,7 @@ namespace casual
                   struct Reply : basic_message< Type::gateway_domain_connect_reply>
                   {
                      common::domain::Identity domain;
-                     protocol::Version version;
+                     protocol::Version version = protocol::Version::invalid;
 
                      CASUAL_CONST_CORRECT_MARSHAL(
                      {

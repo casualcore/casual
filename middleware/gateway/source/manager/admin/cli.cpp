@@ -79,7 +79,7 @@ namespace casual
             auto format_domain_id = []( const vo& c) { return transcode::hex::encode( c.remote.id.get());};
 
             auto format_pid = []( const vo& c){ return c.process.pid;};
-            auto format_queue = []( const vo& c){ return c.process.ipc;};
+            auto format_ipc = []( const vo& c){ return c.process.ipc;};
 
             auto format_bound = []( const vo& c)
             {
@@ -87,16 +87,6 @@ namespace casual
                {
                   case vo::Bound::in: return "in";
                   case vo::Bound::out: return "out";
-                  default: return "unknown";
-               }
-            };
-
-            auto format_type = []( const vo& c)
-            {
-               switch( c.type)
-               {
-                  case vo::Type::tcp: return "tcp";
-                  case vo::Type::ipc: return "ipc";
                   default: return "unknown";
                }
             };
@@ -113,9 +103,14 @@ namespace casual
                }
             };
 
-            auto format_address = []( const vo& c)
+            auto format_local_address = []( const vo& c)
             {
-               return string::join( c.address, " ");
+               return c.address.local;
+            };
+
+            auto format_peer_address = []( const vo& c)
+            {
+               return c.address.peer;
             };
 
             return terminal::format::formatter<  manager::admin::vo::Connection>::construct( 
@@ -123,12 +118,11 @@ namespace casual
                terminal::format::column( "id", format_domain_id, terminal::color::blue),
                terminal::format::column( "bound", format_bound, terminal::color::magenta),
                terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
-               terminal::format::column( "queue", format_queue, terminal::color::no_color, terminal::format::Align::right),
-               terminal::format::column( "type", format_type, terminal::color::cyan),
+               terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
                terminal::format::column( "runlevel", format_runlevel, terminal::color::no_color),
-               terminal::format::column( "address", format_address, terminal::color::blue)
+               terminal::format::column( "local", format_local_address, terminal::color::blue),
+               terminal::format::column( "peer", format_peer_address, terminal::color::blue)
             );
-
          }
 
       } // format

@@ -76,6 +76,15 @@ namespace casual
             {
                constexpr auto path = PATH_MAX;
             } // max
+
+            namespace by
+            {
+               namespace value
+               {
+                  //! max size of type suitable for passing by value ("pods" only)
+                  constexpr auto max = 16;
+               } // value
+            } // by
          } // size
 
          namespace batch

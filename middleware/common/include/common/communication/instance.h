@@ -137,7 +137,13 @@ namespace casual
                      void reconnect();
                      
                      template< fetch::Directive d> 
-                     friend std::ostream& operator << ( std::ostream& out, const basic_connector< d>& rhs);
+                     friend std::ostream& operator << ( std::ostream& out, const basic_connector< d>& rhs)
+                     {
+                        return out << "{ destination: " << rhs.m_process.ipc
+                           << ", identity: " << rhs.m_identity
+                           << ", environment: " << rhs.m_environment
+                           << '}';
+                     }
 
                   private:
                      Uuid m_identity;

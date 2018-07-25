@@ -31,12 +31,12 @@ common_archive = LinkArchive( 'bin/casual-gateway-common',
     [
        Compile( 'source/handle.cpp'),
        Compile( 'source/environment.cpp'),
-       Compile( 'source/outbound/routing.cpp'),
-       Compile( 'source/outbound/gateway.cpp'),    
-       Compile( 'source/inbound/cache.cpp'),
+       Compile( 'source/outbound/route.cpp'),
+       Compile( 'source/outbound/error/reply.cpp'),
+       Compile( 'source/inbound/buffer.cpp'),
        Compile( 'source/transform.cpp'),
        Compile( 'source/message.cpp'),
-       Compile( 'source/manager/listener.cpp'),
+       Compile( 'source/manager/listen.cpp'),
        Compile( 'source/common.cpp'),
      ])
         
@@ -76,14 +76,12 @@ install_lib.append( target)
 
 
 
-
-
 #
 # The outbound tcp connector
 #
-target = LinkExecutable( 'bin/casual-gateway-outbound-tcp',
+target = LinkExecutable( 'bin/casual-gateway-outbound',
     [
-     Compile( 'source/outbound/tcp/main.cpp'),
+     Compile( 'source/outbound/main.cpp'),
     ],
     [
      common_archive, 
@@ -95,9 +93,9 @@ install_bin.append( target)
 #
 # The inbound tcp connector
 #
-target = LinkExecutable( 'bin/casual-gateway-inbound-tcp',
+target = LinkExecutable( 'bin/casual-gateway-inbound',
     [
-     Compile( 'source/inbound/tcp/main.cpp'),
+     Compile( 'source/inbound/main.cpp'),
     ],
     [
      common_archive, 
@@ -114,18 +112,8 @@ install_bin.append( target)
 
 target_unittest = LinkUnittest( 'bin/test-casual-gateway',
    [
-        Compile( 'unittest/source/test_inbound_cache.cpp'),
-        
-        # ipc
-        #Compile( 'unittest/source/ipc/test_manager.cpp'),
-        #Compile( 'unittest/source/ipc/test_inbound.cpp'),
-        #Compile( 'unittest/source/ipc/test_outbound.cpp'),
-        
-        # tcp
-        Compile( 'unittest/source/tcp/test_outbound.cpp'),
-        Compile( 'unittest/source/tcp/test_listener.cpp'),
-        Compile( 'unittest/source/tcp/test_manager.cpp'),
-        
+        Compile( 'unittest/source/test_outbound.cpp'),
+        Compile( 'unittest/source/test_manager.cpp'),
    ], 
    [ 
        common_archive, 

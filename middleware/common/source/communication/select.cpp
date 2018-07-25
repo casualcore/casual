@@ -1,5 +1,4 @@
 #include "common/communication/select.h"
-#include "common/communication/log.h"
 
 #include "common/signal.h"
 #include "common/result.h"
@@ -12,72 +11,110 @@ namespace casual
       {
          namespace select
          {
-            void block( const std::vector< Action>& actions)
+            namespace directive
             {
-               Trace trace{ "common::communication::select::block"};
-
-               platform::file::descriptor::native::type max = 0;
-
-               fd_set read;
-               FD_ZERO( &read);
-               fd_set write;
-               FD_ZERO( &write);
-
-               for( const Action& action : actions)
+               Set::Set()
                {
-                  max = std::max( action.descriptor.value(), max);
-                  switch( action.direction)
+                  FD_ZERO( &m_set);
+               }
+          
+               void Set::add( strong::file::descriptor::id descriptor)
+               {
+                  FD_SET( descriptor.value(), &m_set);
+               }
+
+               void Set::remove( strong::file::descriptor::id descriptor)
+               {
+                  FD_CLR( descriptor.value(), &m_set);
+               }
+
+               bool Set::ready( strong::file::descriptor::id descriptor) const
+               {
+                  return FD_ISSET( descriptor.value(), &m_set);
+               }
+  
+            } // directive
+
+
+/*
+            namespace dispatch
+            {
+               namespace detail
+               {      
+                  void pump( const Directive& origin, const std::vector< Dispatch>& readers)
                   {
-                     case Action::Direction::read:
+                     Trace trace{ "common::communication::select::dispatch::block"};
+
+                     while( true)
                      {
-                        FD_SET( action.descriptor.value(), &read);
-                        break;
-                     }
-                     case Action::Direction::write:
-                     {
-                        FD_SET( action.descriptor.value(), &write);
-                        break;
+                        // pselect modifies fd-sets so we need to reinitialize them every time
+                        auto read = origin.read;
+
+                        // multiplex
+                        {
+                           Trace trace{ "common::communication::select::dispatch::block multiplex"};
+
+                           // block all signals, just local in this scope, not when we do the dispatch 
+                           // further down.
+                           signal::thread::scope::Block block;
+
+                           // check pending signals
+                           signal::handle( block.previous());
+
+                           log::line( verbose::log, "pselect - blocked signals: ", block.previous());
+
+                           // will set previous signal mask atomically 
+                           posix::result( 
+                              //::pselect( directive.max().value() + 1, directive.native_read(), nullptr, nullptr, nullptr, &block.previous().set));
+                              ::pselect( FD_SETSIZE, read.native(), nullptr, nullptr, nullptr, &block.previous().set));
+                        }
+
+                        for( const auto& reader : readers)
+                        {
+                           for( auto descriptor : reader.descriptors())
+                           {
+                              if( FD_ISSET( descriptor.value(), read.native()))
+                              {
+                                 reader( descriptor);
+                              }
+                           }
+                        }
                      }
                   }
-               };
+               } // detail
+            } // dispatch
 
-               // block all signals
-               signal::thread::scope::Block block;
-               
-               // check pending signals
-               signal::handle( block.previous());
+*/
 
-               // will set previous signal mask atomically
-               posix::result( 
-                  ::pselect( max + 1, &read, &write, nullptr, nullptr, &block.previous().set));
-               
-               // check which file descriptor can do progress
-               for( const Action& action : actions)
+            namespace dispatch
+            {
+               namespace detail
                {
-                  switch( action.direction)
+                  Directive select( const Directive& directive)
                   {
-                     case Action::Direction::read:
-                     {
-                        if( FD_ISSET( action.descriptor.value(), &read))
-                        {
-                           action.callback( action.descriptor);
-                           // todo: do we want to return?
-                        }
-                        break;
-                     }
-                     case Action::Direction::write:
-                     {
-                        if( FD_ISSET( action.descriptor.value(), &write))
-                        {
-                           action.callback( action.descriptor);
-                           // todo: do we want to return?
-                        }
-                        break;
-                     }
-                  }
-               };
+                     auto result = directive;
 
-            }
+                     Trace trace{ "common::communication::select::dispatch::block multiplex"};
+
+                     // block all signals, just local in this scope, not when we do the dispatch 
+                     // further down.
+                     signal::thread::scope::Block block;
+
+                     // check pending signals
+                     signal::handle( block.previous());
+
+                     log::line( verbose::log, "pselect - blocked signals: ", block.previous());
+
+                     // will set previous signal mask atomically 
+                     posix::result( 
+                        //::pselect( directive.max().value() + 1, directive.native_read(), nullptr, nullptr, nullptr, &block.previous().set));
+                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set));
+
+                     return result;
+                }
+               } // detail
+
+            } // dispatch
 
          } // select
       } // communication

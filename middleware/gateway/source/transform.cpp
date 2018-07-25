@@ -23,18 +23,6 @@ namespace casual
          {
             namespace
             {
-               manager::state::outbound::Connection::Type type( common::message::domain::configuration::gateway::Connection::Type value)
-               {
-                  using connection_type = common::message::domain::configuration::gateway::Connection::Type;
-
-                  switch( value)
-                  {
-                     case connection_type::ipc: return manager::state::outbound::Connection::Type::ipc;
-                     case connection_type::tcp: return manager::state::outbound::Connection::Type::tcp;
-                  }
-
-                  return manager::state::outbound::Connection::Type::unknown;
-               }
 
                struct Connection
                {
@@ -43,8 +31,7 @@ namespace casual
                   {
                      manager::state::outbound::Connection result;
 
-                     result.type = local::type( connection.type);
-                     result.address.push_back( common::environment::string( connection.address));
+                     result.address.local = common::environment::string( connection.address);
                      result.restart = connection.restart;
                      result.services = std::move( connection.services);
                      result.queues = std::move( connection.queues);
@@ -56,11 +43,9 @@ namespace casual
                struct Listener
                {
 
-
-
-                  manager::Listener operator () ( const common::message::domain::configuration::gateway::Listener& value) const
+                  manager::listen::Entry operator () ( const common::message::domain::configuration::gateway::Listener& value) const
                   {
-                     manager::Listener::Limit limit;
+                     manager::listen::Limit limit;
                      {
                         limit.messages = value.limit.messages;
                         limit.size = value.limit.size;
@@ -101,16 +86,14 @@ namespace casual
                         result.process = value.process;
                         result.remote = value.remote;
                         result.runlevel = static_cast< manager::admin::vo::Connection::Runlevel>( value.runlevel);
-                        result.type = static_cast< manager::admin::vo::Connection::Type>( value.type);
-                        result.address = value.address;
+                        result.address.local = value.address.local;
+                        result.address.peer = value.address.peer;
 
                         return result;
                      }
 
                   };
-
                } // vo
-
             } // <unnamed>
          } // local
 
@@ -120,7 +103,11 @@ namespace casual
 
             manager::State state;
 
-            algorithm::transform( configuration.gateway.listeners, state.listeners, local::Listener{});
+            for( auto& listener : configuration.gateway.listeners)
+            {
+               state.add( local::Listener{}( listener));
+            }
+
             algorithm::transform( configuration.gateway.connections, state.connections.outbound, local::Connection{});
 
             //
@@ -133,7 +120,6 @@ namespace casual
                   connection.order = ++order;
                }
             }
-
 
             return state;
          }

@@ -406,6 +406,17 @@ namespace casual
 
          } // expression
 
+         template< typename T>
+         struct is_by_value_friendly : bool_constant< 
+            is_trivially_copyable< remove_cvref_t< T>>::value
+            && sizeof( remove_cvref_t< T>) <= platform::size::by::value::max> {};
+
+
+         template< typename T>
+         struct by_value_or_const_ref : std::conditional< is_by_value_friendly< T>::value, remove_cvref_t< T>, const T&> {};
+
+         template< typename T>
+         using by_value_or_const_ref_t = typename by_value_or_const_ref< T>::type;
 
 
 #if __cplusplus > 201402L // vector will have nothrow move in c++17

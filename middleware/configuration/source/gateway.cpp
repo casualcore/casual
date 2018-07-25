@@ -18,6 +18,7 @@
 namespace casual
 {
    using namespace common;
+   
    namespace configuration
    {
       namespace gateway
@@ -100,7 +101,6 @@ namespace casual
          Connection& operator += ( Connection& lhs, const connection::Default& rhs)
          {
             lhs.restart = common::coalesce( lhs.restart, rhs.restart);
-            lhs.type = common::coalesce( lhs.type, rhs.type);
             lhs.address = common::coalesce( lhs.address, rhs.address);
 
             return lhs;
@@ -110,7 +110,6 @@ namespace casual
          {
             Default::Default()
             {
-               connection.type = std::string( "tcp");
                connection.restart = true;
             }
          } // manager

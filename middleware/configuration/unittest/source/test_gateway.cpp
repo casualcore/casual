@@ -56,7 +56,6 @@ namespace casual
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
          ASSERT_TRUE( ! gateway.connections.empty());
-         ASSERT_TRUE( gateway.connections.at( 0).type.value() == "tcp");
          ASSERT_TRUE( gateway.connections.at( 0).address.value() == "a45.domain.host.org:7779");
          ASSERT_TRUE( gateway.connections.at( 0).services.size() == 2);
       }
@@ -69,13 +68,10 @@ namespace casual
          // serialize and deserialize
          auto gateway = domain::get( { example::temporary( example::domain(), GetParam())}).gateway;
 
-         EXPECT_TRUE( gateway.connections.at( 0).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 0).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
 
-         EXPECT_TRUE( gateway.connections.at( 1).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 1).restart.value() == true) << CASUAL_MAKE_NVP( gateway);
 
-         EXPECT_TRUE( gateway.connections.at( 2).type.value() == "tcp") << CASUAL_MAKE_NVP( gateway);
          EXPECT_TRUE( gateway.connections.at( 2).restart.value() == false) << CASUAL_MAKE_NVP( gateway);
 
       }

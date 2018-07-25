@@ -68,16 +68,13 @@ namespace casual
 
          namespace connection
          {
-
             struct Default
             {
-               serviceframework::optional< std::string> type;
                serviceframework::optional< bool> restart;
                serviceframework::optional< std::string> address;
 
                CASUAL_CONST_CORRECT_SERIALIZE
                (
-                  archive & CASUAL_MAKE_NVP( type);
                   archive & CASUAL_MAKE_NVP( restart);
                   archive & CASUAL_MAKE_NVP( address);
                )

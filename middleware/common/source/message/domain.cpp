@@ -45,6 +45,23 @@ namespace casual
                            << ", process: " << value.process
                            << '}';
                   }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply::Directive& value)
+                  {
+                     switch( value)
+                     {
+                        case Reply::Directive::shutdown: return out << "shutdown";
+                        case Reply::Directive::singleton: return out << "singleton";
+                        case Reply::Directive::start: return out << "start";
+                     }
+                     return out << "unknown!";
+                  }
+
+                  std::ostream& operator << ( std::ostream& out, const Reply& value)
+                  {
+                     return out << "{ directive: " << value.directive
+                           << '}';
+                  }
                } // connect
 
                namespace lookup

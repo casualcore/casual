@@ -41,25 +41,14 @@ namespace casual
 
             struct Base
             {
-               Base( State& state);
-            protected:
-               State& state();
+               inline Base( State& state) : m_state( state) {}
+            
+               inline State& state() { return m_state.get();};
+               inline const State& state() const { return m_state.get();};
+
             private:
                std::reference_wrapper< State> m_state;
             };
-
-            namespace listener
-            {
-
-               struct Event : Base
-               {
-                  using Base::Base;
-                  using message_type = message::manager::listener::Event;
-
-                  void operator () ( message_type& message);
-               };
-
-            } // listener
 
             namespace process
             {
@@ -74,8 +63,6 @@ namespace casual
                   void operator () ( message_type& message);
 
                };
-
-
             } // process
 
             namespace domain
@@ -99,9 +86,6 @@ namespace casual
                   };
 
                } // discovery
-
-
-
             } // domain
 
             namespace outbound
@@ -140,34 +124,22 @@ namespace casual
 
                };
 
-               namespace ipc
-               {
-                  struct Connect : Base
-                  {
-                     using Base::Base;
-                     using message_type = message::ipc::connect::Request;
-
-                     void operator () ( message_type& message);
-
-                  };
-
-               } // ipc
-
-               namespace tcp
-               {
-                  struct Connect : Base
-                  {
-                     using Base::Base;
-                     using message_type = message::tcp::Connect;
-
-                     void operator () ( message_type& message);
-
-                  };
-               } // tcp
-
             } // inbound
 
+            namespace listen
+            {
+               struct Accept : Base
+               {
+                  using Base::Base;
+
+                  using descriptor_type = common::strong::file::descriptor::id;
+
+                  void read( descriptor_type descriptor);
+                  const std::vector< descriptor_type>& descriptors() const;
+               };
+            } // listen
          } // handle
+
 
          common::communication::ipc::dispatch::Handler handler( State& state);
 

@@ -338,7 +338,6 @@ namespace casual
 
                struct Unblock : Reset
                {
-
                   //!
                   //! remove @p mask from the current blocking mask,
                   //! @param mask to be removed from the blocking set

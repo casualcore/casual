@@ -13,32 +13,6 @@ namespace casual
    {
       namespace message
       {
-         namespace manager
-         {
-            namespace listener
-            {
-               std::ostream& operator << ( std::ostream& out, const Event::State& value)
-               {
-                  switch( value)
-                  {
-                     case Event::State::running: return out << "running";
-                     case Event::State::exit: return out << "exit";
-                     case Event::State::signal: return out << "signal";
-                     case Event::State::error: return out << "error";
-                  }
-                  return out;
-               }
-               std::ostream& operator << ( std::ostream& out, const Event& value)
-               {
-                  return out << "{ correlation: " << value.correlation
-                        << ", state: " << value.state
-                        << '}';
-               }
-
-
-            } // listener
-         } // manager
-
          namespace outbound
          {
             namespace configuration
@@ -62,29 +36,19 @@ namespace casual
             } // configuration
          } // outbound
 
-         namespace ipc
+
+         namespace inbound
          {
-            namespace connect
+            std::ostream& operator << ( std::ostream& out, const Limit& value)
             {
+               return out << "{ size: " << value.size
+                  << ", messages: " << value.messages
+                  << '}';
+            }
 
-               std::ostream& operator << ( std::ostream& out, const Request& value)
-               {
-                  return out << "{ process: " << value.process
-                        << '}';
-               }
+         } // inbound
 
-               std::ostream& operator << ( std::ostream& out, const Reply& value)
-               {
-                  return out << "{ process: " << value.process
-                        << '}';
-               }
-
-            } // connect
-
-
-
-         } // ipc
-
+         // todo remove
          namespace tcp
          {
             std::ostream& operator << ( std::ostream& out, const Connect& value)

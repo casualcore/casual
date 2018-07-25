@@ -15,7 +15,7 @@ namespace casual
    namespace common
    {
       
-      TEST( casual_common_value_id, value_by_value)
+      TEST( casual_common_value_id, int_value_by_value)
       {
          common::unittest::Trace trace;
 
@@ -24,7 +24,7 @@ namespace casual
          EXPECT_TRUE( ( ! std::is_lvalue_reference< decltype( id.value())>::value));
       }
 
-      TEST( casual_common_value_id, value_const_ref)
+      TEST( casual_common_value_id, string_value_const_ref)
       {
          common::unittest::Trace trace;
 
@@ -33,6 +33,23 @@ namespace casual
          EXPECT_TRUE( ( std::is_lvalue_reference< decltype( id.value())>::value));
       }
 
+      TEST( casual_common_value_id, array_max_by_value_size__expect_value__by_value)
+      {
+         common::unittest::Trace trace;
+         using type = std::array< char, platform::size::by::value::max>;
+         value::basic_id< type> id;
+         EXPECT_TRUE( ( std::is_same< type, decltype( id.value())>::value));
+         EXPECT_TRUE( ( ! std::is_lvalue_reference< decltype( id.value())>::value));
+      }
+
+      TEST( casual_common_value_id, array_max_by_value_size__plus_1___expect_value__const_ref)
+      {
+         common::unittest::Trace trace;
+         using type = std::array< char, platform::size::by::value::max + 1>;
+         value::basic_id< type> id;
+         EXPECT_TRUE( ( std::is_same< const type&, decltype( id.value())>::value));
+         EXPECT_TRUE( ( std::is_lvalue_reference< decltype( id.value())>::value));
+      }
 
       TEST( casual_common_value_id, custom_initializer)
       {

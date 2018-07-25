@@ -68,6 +68,28 @@ namespace casual
 
                }
 
+               namespace dispatch
+               {
+                  auto inbound( State& state)
+                  {
+                     const auto descriptor = communication::ipc::inbound::handle().socket().descriptor();
+                     state.directive.read.add( descriptor);
+
+                     return communication::select::dispatch::create::reader(
+                        descriptor,
+                        [ handler = manager::handler( state)]( auto active) mutable 
+                        {
+                           handler( ipc::device().blocking_next());
+                        }
+                     );
+                  }
+
+                  auto listeners( State& state)
+                  {
+                     return handle::listen::Accept{ state};
+                  }
+               } // dispatch
+
             } // <unnamed>
          } // local
 
@@ -92,9 +114,7 @@ namespace casual
 
          try
          {
-            //
-            // Shutdown
-            //
+            // make sure we shutdown
             manager::handle::shutdown( m_state);
          }
          catch( ...)
@@ -108,34 +128,20 @@ namespace casual
       {
          Trace trace{ "gateway::Manager::start"};
 
-         //
          // boot outbounds
-         //
          {
-
             manager::handle::boot( m_state);
             m_state.runlevel = manager::State::Runlevel::online;
          }
 
+         auto inbound = manager::local::dispatch::inbound( m_state);
+         auto listeners = manager::local::dispatch::listeners( m_state);
 
-         //
+         // Connect to domain
+         communication::instance::connect( communication::instance::identity::gateway::manager);
+
          // start message pump
-         //
-         {
-
-            auto handler = manager::handler( m_state);
-
-            //
-            // Connect to domain
-            //
-            communication::instance::connect( communication::instance::identity::gateway::manager);
-
-
-            while( true)
-            {
-               handler( manager::ipc::device().blocking_next());
-            }
-         }
+         communication::select::dispatch::pump( m_state.directive, inbound, listeners);
       }
 
 

@@ -25,6 +25,7 @@
 #include "common/log.h"
 
 #include "common/message/type.h"
+#include "common/message/domain.h"
 
 
 #include <thread>
@@ -265,7 +266,6 @@ namespace casual
                      private:
                         Sender() : m_sender{ &worker_thread, std::ref( m_queue)}
                         {
-
                         }
 
                         static void worker_thread( const queue_type& queue)
@@ -305,15 +305,12 @@ namespace casual
                         std::thread m_sender;
                      };
                   } // eventually
-
                } // unnamed
             } // local
 
 
             namespace eventually
             {
-
-
                Uuid send( id_type destination, communication::message::Complete&& complete)
                {
                   Trace trace{ "mockup ipc::eventually::send"};
@@ -326,8 +323,6 @@ namespace casual
 
                   return correlation;
                }
-
-
             } // eventually
 
 
@@ -485,6 +480,13 @@ namespace casual
                         replier( marshal::complete( message));
                      }
 
+                     if( ! algorithm::find( replier.types(), common::message::domain::process::connect::Reply::type()))
+                     {
+                        replier.insert( []( common::message::domain::process::connect::Reply& message){
+                           common::log::line( log, "common::message::domain::process::connect::Reply: ", message);
+                     });
+                     }
+
                      replier.insert( []( message::mockup::Disconnect&){
                         common::log::line( log, "Replier::worker_thread disconnect");
                         throw exception::casual::Shutdown{ "worker_thread disconnect"};
@@ -509,7 +511,7 @@ namespace casual
 
             Replier::Replier( communication::ipc::dispatch::Handler&& replier) : m_implementation{ std::move( replier)}
             {
-               log << "replier: " << *this << '\n';
+               common::log::line( log, "replier: ", *this);
             }
 
             Replier::~Replier() = default;
