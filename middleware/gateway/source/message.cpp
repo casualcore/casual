@@ -33,6 +33,7 @@ namespace casual
                         << ", queues: " << common::range::make( value.queues)
                         << '}';
                }
+
             } // configuration
          } // outbound
 
@@ -45,38 +46,18 @@ namespace casual
                   << ", messages: " << value.messages
                   << '}';
             }
-
          } // inbound
 
-         // todo remove
-         namespace tcp
+         namespace outbound
          {
-            std::ostream& operator << ( std::ostream& out, const Connect& value)
+            namespace connect 
             {
-               return out << "{ descriptor: " << value.descriptor << '}';
-            }
-
-         } // tcp
-
-         namespace worker
-         {
-            std::ostream& operator << ( std::ostream& out, Disconnect::Reason value)
-            {
-               switch( value)
+               std::ostream& operator << ( std::ostream& out, const Done& value)
                {
-                  case Disconnect::Reason::signal: return out << "signal";
-                  case Disconnect::Reason::disconnect: return out << "disconnect";
-                  default: return out << "invalid";
+                  return out << "{ descriptor: " << value.descriptor << '}';
                }
-            }
-            std::ostream& operator << ( std::ostream& out, const Disconnect& value)
-            {
-               return out << "{ reason: " << value.reason << ", remote: " << value.remote << '}';
-            }
-
-
-         } // worker
-
+            } // connect 
+         } // outbound
 
       } // message
 

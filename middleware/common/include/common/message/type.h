@@ -171,16 +171,13 @@ namespace casual
             queue_restore_reply,
 
             GATEWAY_BASE = 7000,
-            gateway_manager_listener_event,
-            gateway_manager_tcp_connect,
             gateway_outbound_configuration_request,
             gateway_outbound_configuration_reply,
             gateway_outbound_connect,
             gateway_inbound_connect,
-            gateway_worker_connect,
-            gateway_worker_disconnect,
-            gateway_ipc_connect_request,
-            gateway_ipc_connect_reply,
+
+            gateway_outbound_connect_done,
+
             gateway_domain_connect_request = GATEWAY_BASE + 200,
             gateway_domain_connect_reply,
             gateway_domain_discover_request = GATEWAY_BASE + 300,

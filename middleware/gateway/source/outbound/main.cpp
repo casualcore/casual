@@ -161,18 +161,18 @@ namespace casual
                         // We're only interested in sig-user
                         common::signal::thread::scope::Mask block{ common::signal::set::filled( common::signal::Type::user)};
 
-                        message::tcp::Connect main_connect;
+                        message::outbound::connect::Done done;
 
                         // we'll use if the descriptor is valid or not do deduce if the
                         // connection was succesfull or not, from the main thread
-                        auto send_connect = execute::scope( [&main_connect]()
+                        auto send_done = execute::scope( [&done]()
                            {
                               try
                               {
                                  common::signal::thread::scope::Block block;
 
-                                 log::line( verbose::log, "send main_connect: ", main_connect);
-                                 common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), main_connect);
+                                 log::line( verbose::log, "send main_connect: ", done);
+                                 common::communication::ipc::blocking::send( common::communication::ipc::inbound::ipc(), done);
                               }
                               catch( ...)
                               {
@@ -241,12 +241,12 @@ namespace casual
                         }
 
                         // we're done, release the responsibility of the socket
-                        // and main_connect will be sent to main thread
-                        main_connect.descriptor = inbound.connector().socket().release();
+                        // and 'done' will be sent to main thread
+                        done.descriptor = inbound.connector().socket().release();
                      }
                      catch( ...)
                      {
-                        // we've already sent the connect to main thread
+                        // we've already sent the connect::Done to main thread
                         common::exception::handle();
                      }
                   };
@@ -262,12 +262,12 @@ namespace casual
                   try
                   {
                      // wait for the connect
-                     auto connect = inbound::message< message::tcp::Connect>();
+                     auto done = inbound::message< message::outbound::connect::Done>();
 
-                     if( ! connect.descriptor)
+                     if( ! done.descriptor)
                         throw exception::system::communication::unavailable::no::Connect{ "failed to connect to remote domain"};
 
-                     return State{ communication::Socket{ connect.descriptor}, settings.order};
+                     return State{ communication::Socket{ done.descriptor}, settings.order};
                   }
                   catch( ...)
                   {

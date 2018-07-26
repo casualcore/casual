@@ -29,7 +29,6 @@ install_headers = []
 
 common_archive = LinkArchive( 'bin/casual-gateway-common',
     [
-       Compile( 'source/handle.cpp'),
        Compile( 'source/environment.cpp'),
        Compile( 'source/outbound/route.cpp'),
        Compile( 'source/outbound/error/reply.cpp'),

@@ -156,6 +156,21 @@ namespace casual
             {
             };
 
+            namespace connect
+            {
+               struct Done : common::message::basic_message< common::message::Type::gateway_outbound_connect_done>
+               {
+                  common::strong::socket::id descriptor;
+
+                  friend std::ostream& operator << ( std::ostream& out, const Done& value);
+
+                  CASUAL_CONST_CORRECT_MARSHAL({
+                     base_type::marshal( archive);
+                     archive & descriptor;
+                  })
+               };
+            } // connect
+
          } // outbound
 
          namespace inbound
@@ -178,68 +193,6 @@ namespace casual
             };
          } // inbound
 
-
-         namespace tcp
-         {
-            struct Connect : common::message::basic_message< common::message::Type::gateway_manager_tcp_connect>
-            {
-               common::strong::socket::id descriptor;
-               inbound::Limit limit;
-
-               friend std::ostream& operator << ( std::ostream& out, const Connect& value);
-
-               CASUAL_CONST_CORRECT_MARSHAL({
-                  base_type::marshal( archive);
-                  archive & descriptor;
-                  archive & limit;
-               })
-            };
-
-         } // tcp
-
-
-         namespace worker
-         {
-
-            struct Connect : common::message::basic_message< common::message::Type::gateway_worker_connect>
-            {
-               common::platform::binary::type information;
-
-               CASUAL_CONST_CORRECT_MARSHAL({
-                  base_type::marshal( archive);
-                  archive & information;
-               })
-
-            };
-
-            struct Disconnect : common::message::basic_message< common::message::Type::gateway_worker_disconnect>
-            {
-               enum class Reason : char
-               {
-                  invalid,
-                  signal,
-                  disconnect
-               };
-
-               Disconnect() = default;
-               Disconnect( Reason reason) : reason( reason) {}
-
-               common::domain::Identity remote;
-               Reason reason = Reason::invalid;
-
-               friend std::ostream& operator << ( std::ostream& out, Reason value);
-               friend std::ostream& operator << ( std::ostream& out, const Disconnect& value);
-
-               CASUAL_CONST_CORRECT_MARSHAL({
-                  base_type::marshal( archive);
-                  archive & remote;
-                  archive & reason;
-               })
-
-            };
-
-
-         } // worker
       } // message
    } // gateway
 
