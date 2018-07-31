@@ -8,6 +8,8 @@
 
 #include "common/unittest.h"
 
+#include "common/log/stream.h"
+
 #include "common/message/coordinate.h"
 #include "common/message/gateway.h"
 
@@ -47,7 +49,6 @@ namespace casual
 
             } // <unnamed>
          } // local
-
 
 
          TEST( common_message_coordinate, instantiation)

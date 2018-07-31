@@ -62,7 +62,7 @@ namespace casual
                      }
                      catch( const exception::system::communication::Unavailable&)
                      {
-                        log << "failed to send message - type: " << common::message::type( message) << " to: " << process << " - action: ignore\n";
+                        log::line( log, "failed to send message - type: ", common::message::type( message), " to: ", process, " - action: ignore");
                      }
                   }
 
@@ -111,7 +111,7 @@ namespace casual
                      }
                      catch( const exception::system::invalid::Argument& e)
                      {
-                        log::category::error << "failed to spawn executable: " << executable << " - " << e << '\n';
+                        log::line( log::category::error, "failed to spawn executable: ", executable, " - ", e);
 
                         common::algorithm::for_each( executable.spawnable(), []( auto& i){
                            i.state = state::instance::State::exit;
@@ -127,7 +127,7 @@ namespace casual
                         }
                      }
 
-                     log::debug << "executable: " << executable <<  '\n';
+                     log::line( verbose::log, "executable: ", executable);
 
                   }
 
@@ -369,7 +369,6 @@ namespace casual
                      common::move::Moved m_moved;
                   };
 
-
                   namespace boot
                   {
                      struct Done : handle::Base
@@ -525,7 +524,7 @@ namespace casual
                //
                // TODO: collect state from sub-managers...
                //
-               if( state.auto_persist)
+               if( state.persist)
                {
                   persistent::state::save( state);
                }
@@ -703,12 +702,12 @@ namespace casual
                         {
                            case common::process::lifetime::Exit::Reason::core:
                            {
-                              log::category::error << "process cored: " << message.state << '\n';
+                              log::line( log::category::error, "process cored: ", message.state);
                               break;
                            }
                            default:
                            {
-                              log::category::information << "process exited: " << message.state << '\n';
+                              log::line( log::category::information, "process exited: ", message.state);
                               break;
                            }
                         }
@@ -768,6 +767,8 @@ namespace casual
 
                         bool operator () ( const common::message::domain::process::lookup::Request& message)
                         {
+                           log::line( verbose::log, "message: ", message);
+
                            using Directive = common::message::domain::process::lookup::Request::Directive;
 
                            auto reply = common::message::reverse::type( message);
@@ -811,7 +812,7 @@ namespace casual
                            else
                            {
                               // invalid
-                              log::category::error << "invalid lookup request: " << '\n';
+                              log::line( log::category::error, "invalid lookup request");
                            }
                            return true;
                         }
@@ -822,6 +823,7 @@ namespace casual
                         void broker( State& state, const common::process::Handle& process)
                         {
                            Trace trace{ "domain::manager::handle::local::singleton::broker"};
+                           
 
                            common::message::service::Advertise message;
                            message.process = common::process::handle();
@@ -901,7 +903,7 @@ namespace casual
 
                      if( found)
                      {
-                        log::category::error << "only one instance is allowed for " << message.identification << '\n';
+                        log::line( log::category::error, "only one instance is allowed for ", message.identification);
                         //
                         // A "singleton" is trying to connect, while we already have one connected
                         //
@@ -953,7 +955,7 @@ namespace casual
                   if( server)
                   {
                      server->connect( message.process);
-                     log << "added process: " << message.process << " to " << *server << '\n';
+                     log::line( log, "added process: ", message.process, " to ", *server);
                   }
                   else 
                   {
@@ -999,6 +1001,8 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::configuration::Domain"};
 
+                  common::log::line( verbose::log, "message: ", message);
+
                   auto reply = common::message::reverse::type( message);
                   reply.domain = state().configuration;
 
@@ -1009,6 +1013,8 @@ namespace casual
                void Server::operator () ( const common::message::domain::configuration::server::Request& message)
                {
                   Trace trace{ "domain::manager::handle::configuration::Server"};
+
+                  common::log::line( verbose::log, "message: ", message);
 
                   auto reply = common::message::reverse::type( message);
 

@@ -329,6 +329,11 @@ namespace casual
                basic_message< type>::marshal( archive);
                archive & process;
             })
+
+            friend std::ostream& operator << ( std::ostream& out, const basic_request& value) 
+            {
+               return out << "{ process: " << value.process << '}';
+            }
          };
 
          template< message::Type type>

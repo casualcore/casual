@@ -30,13 +30,10 @@
 
 #include <xatmi.h>
 
+// std
 #include <fstream>
 #include <algorithm>
 #include <iostream>
-
-
-
-
 
 namespace casual
 {
@@ -44,12 +41,10 @@ namespace casual
 
    namespace service
    {
-
       namespace local
       {
          namespace
          {
-
             namespace configure
             {
                std::string forward( const manager::Settings& settings)
@@ -92,26 +87,20 @@ namespace casual
                {
                   manager::State state;
 
-                  //
                   // Set the process variables so children can communicate with us.
-                  //
                   common::environment::variable::process::set(
                         common::environment::variable::name::ipc::service::manager(),
                         common::process::handle());
 
 
-                  //
                   // Get configuration from domain-manager
-                  //
                   auto configuration = domain();
 
 
                   configure::services( state, configuration);
 
 
-                  //
                   // Start forward
-                  //
                   {
                      Trace trace{ "service::configure spawn forward"};
 
@@ -120,15 +109,13 @@ namespace casual
                      state.forward = common::communication::instance::fetch::handle(
                            common::communication::instance::identity::forward::cache);
 
-                     log << "forward: " << state.forward << '\n';
+                     log::line( log, "forward: ", state.forward);
 
                   }
 
                   return state;
                }
-
             } // configure
-
          } // <unnamed>
       } // local
 
@@ -167,11 +154,9 @@ namespace casual
             {
                void pump( manager::State& state)
                {
-                  //
                   // Prepare message-pump handlers
-                  //
 
-                  log << "prepare message-pump handlers\n";
+                  log::line( log, "prepare message-pump handlers");
 
 
                   auto handler = manager::handler( state);
@@ -183,7 +168,7 @@ namespace casual
                   communication::instance::connect( communication::instance::identity::service::manager);
 
 
-                  log << "start message pump\n";
+                  log::line( log, "start message pump");
 
 
                   while( true)
@@ -197,12 +182,10 @@ namespace casual
                         signal::handle();
                         signal::thread::scope::Block block;
 
-                        //
                         // Send pending replies
-                        //
                         {
 
-                           verbose::log << "pending replies: " << range::make( state.pending.replies) << '\n';
+                           log::line( verbose::log, "pending replies: ", state.pending.replies);
 
                            auto replies = std::exchange( state.pending.replies, {});
 
@@ -215,9 +198,7 @@ namespace casual
                            algorithm::move( remain, state.pending.replies);
                         }
 
-                        //
                         // Take care of service dispatch
-                        //
                         {
                            //
                            // If we've got pending that is 'never' sent, we still want to

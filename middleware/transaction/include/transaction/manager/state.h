@@ -421,7 +421,7 @@ namespace casual
          //!
          //! the persistent transaction log
          //!
-         transaction::Log log;
+         transaction::Log persistent_log;
 
 
          std::map< std::string, configuration::resource::Property> resource_properties;

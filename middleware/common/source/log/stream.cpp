@@ -296,7 +296,7 @@ namespace casual
 
             void write( const std::string& category, const std::string& message)
             {
-               thread::Safe guard{ std::cout};
+               thread::Lock lock;
                local::File::instance().log( category, message);
             }
          } // stream

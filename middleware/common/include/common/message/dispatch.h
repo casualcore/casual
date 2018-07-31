@@ -123,7 +123,7 @@ namespace casual
                      }
                      else
                      {
-                        log::category::error << "message_type: " << complete.type << " not recognized - action: discard" << '\n';
+                        log::line( log::category::error, "message_type: ", complete.type, " not recognized - action: discard");
                      }
                   }
                   return false;

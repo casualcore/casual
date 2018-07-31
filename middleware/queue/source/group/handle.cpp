@@ -17,12 +17,12 @@
 
 namespace casual
 {
+   using namespace common;
 
    namespace queue
    {
       namespace group
       {
-
          namespace handle
          {
 
@@ -80,7 +80,6 @@ namespace casual
                         }
                      }
                   } // pending
-
 
 
                   namespace ipc
@@ -212,7 +211,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::category::error << exception.what() << '\n';
+                     log::line( log::category::error, exception.what());
                   }
                }
 
@@ -249,7 +248,7 @@ namespace casual
                   }
                   catch( const sql::database::exception::Base& exception)
                   {
-                     common::log::category::error << exception.what() << '\n';
+                     log::line( log::category::error, exception.what());
                   }
                   return false;
                }
@@ -335,7 +334,7 @@ namespace casual
                      try
                      {
                         m_state.queuebase.commit( message.trid);
-                        common::log::category::transaction << "committed trid: " << message.trid << " - number of messages: " << m_state.queuebase.affected() << '\n';
+                        log::line( log::category::transaction, "committed trid: ", message.trid, " - number of messages: ", m_state.queuebase.affected());
 
                         //
                         // Will try to dequeue pending requests

@@ -7,6 +7,8 @@
 
 #include "common/message/service.h"
 
+#include "common/chronology.h"
+
 namespace casual
 {
    namespace common
@@ -168,7 +170,27 @@ namespace casual
                }
 
             } // call
-         }
+
+            namespace remote
+            {
+
+               std::ostream& operator << ( std::ostream& out, const Metric::Service& value)
+               {
+                  return out << "{ name: " << value.name
+                     << ", duration: " << chronology::duration( value.duration)
+                     << '}';
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Metric& value)
+               {
+                  return out << "{ process: " << value.process
+                     << ", services: " << range::make( value.services)
+                     << '}';
+               }
+
+      
+            } // remote
+         } // service
       } // message
    } // common
 } // casual

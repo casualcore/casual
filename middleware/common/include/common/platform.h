@@ -175,6 +175,10 @@ namespace casual
          // Some os-specific if-defs?
          //
 
+         namespace character
+         {
+            using type = char;
+         } // character
 
 
 

@@ -4,11 +4,11 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/service/lookup.h"
 
 #include "common/communication/instance.h"
 #include "common/exception/xatmi.h"
+
 
 namespace casual
 {
@@ -47,7 +47,7 @@ namespace casual
             Reply result;
             communication::ipc::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
 
-           verbose::log << "reply: " << result << '\n';
+           log::line( verbose::log, "reply: ", result);
 
             switch( result.state)
             {

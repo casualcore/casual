@@ -9,8 +9,8 @@
 
 
 
-#include "common/algorithm.h"
-
+#include "common/range.h"
+#include "common/traits.h"
 
 namespace casual
 {
@@ -34,116 +34,128 @@ namespace casual
                return size< typename std::remove_extent< T>::type>() * std::extent< T>::value;
             }
 
-            template< typename Iter>
-            struct is_suitable_iterator : traits::bool_constant<
-                  traits::iterator::is_random_access< Iter>::value
-                  && traits::is_trivially_copyable< typename std::iterator_traits< Iter>::value_type>::value
-                  >{};
+            using range_type = Range< platform::binary::type::iterator::pointer>;
+            using const_range_type = Range< platform::binary::type::const_iterator::pointer>;
 
+            namespace range
+            {
+               template< typename T>
+               auto cast( T&& value) -> std::enable_if_t< std::is_const< std::remove_reference_t< T>>::value, const_range_type>
+               {
+                  using pointer = platform::binary::type::const_iterator::pointer;
+                  return const_range_type{ 
+                     reinterpret_cast< pointer>( &value),
+                     detail::size< std::remove_reference_t<T>>()
+                  };
+               }
 
+               template< typename T>
+               auto cast( T&& value) -> std::enable_if_t< ! std::is_const< std::remove_reference_t< T>>::value, range_type>
+               {
+                  using pointer = platform::binary::type::iterator::pointer;
+                  return range_type{ 
+                     reinterpret_cast< pointer>( &value),
+                     detail::size< std::remove_reference_t< T>>()
+                  };
+               }
+            } // range
          } // detail
+
+         namespace range
+         {
+            template< typename T, typename = std::enable_if_t< 
+               std::is_trivially_copyable< traits::remove_cvref_t< T>>::value>>
+            auto cast( T&& value)
+            {
+               return detail::range::cast( std::forward< T>( value));
+            }  
+         } // range
 
 
          template< typename T>
-         constexpr auto size( T&&)
+         constexpr auto size( T&&) -> std::enable_if_t< ! traits::has::size< T>::value, size_type>
          {
             return detail::size< typename std::remove_reference<T>::type>();
          }
 
-
-         namespace range
+         template< typename T>
+         constexpr auto size( T&& value) -> std::enable_if_t< traits::has::size< T>::value, size_type>
          {
-            using range_type = Range< platform::binary::type::iterator::pointer>;
-            using const_range_type = Range< platform::binary::type::const_iterator::pointer>;
+            return value.size();
+         }
 
-            namespace detail
-            {
-               template< typename T>
-               struct traits { using range = range_type; using iterator = range::pointer; };
-
-               template< typename T>
-               struct traits< const T> { using range = const_range_type; using iterator = range::pointer; };
-
-            } // detail
-
-            template< typename T>
-            std::enable_if_t<
-                  ! std::is_pointer< typename std::remove_reference< T>::type>::value
-                  && traits::is_trivially_copyable< typename std::remove_reference< T>::type>::value
-                  ,
-               typename detail::traits< T>::range>
-            make( T& value)
-            {
-               auto first = reinterpret_cast< typename detail::traits< T>::iterator>( &value);
-               return common::range::make( first, memory::size( value));
-            }
-         } // range
-
-         template< typename Iter>
-         std::enable_if_t< detail::is_suitable_iterator< Iter>::value>
-         set( Range< Iter> destination, int c = 0)
+         template< typename D>
+         std::enable_if_t< traits::is::binary::like< D>::value>
+         set( D&& destination, int c = 0)
          {
-            std::memset( destination.data(), c, destination.size() * memory::size( typename std::iterator_traits< Iter>::value_type{}));
+            std::memset( &(*std::begin( destination)), c, size( destination));
          }
 
          template< typename T>
-         std::enable_if_t< traits::is_trivially_copyable< T>::value>
+         std::enable_if_t< 
+            traits::is_trivially_copyable< T>::value
+            && ! traits::is::binary::like< T>::value>
          set( T& value, int c = 0)
          {
-            set( range::make( value), c);
+            set( range::cast( value), c);
          }
 
 
          template< typename T>
-         auto append( const T& value, platform::binary::type& buffer)
+         auto append( T&& value, platform::binary::type& destination)
          {
-            auto first = reinterpret_cast< const unsigned char*>( &value);
+            auto source = range::cast( value);
 
-            buffer.insert(
-                  std::end( buffer),
-                  first,
-                  first + memory::size( value));
+            destination.insert(
+                  std::end( destination),
+                  std::begin( source),
+                  std::end( source));
 
-            return buffer.size();
+            return destination.size();
          }
 
-         template< typename InputIter, typename OutputIter>
-         size_type copy( const Range< InputIter> source, Range< OutputIter> destination)
+         template< typename S, typename D> 
+         std::enable_if_t< 
+            traits::is::binary::like< S>::value 
+            && traits::is::binary::like< D>::value, size_type>
+         copy( S&& source, D&& destination)
          {
-            assert( destination.size() >= source.size());
+            assert( size( destination) >= size( source));
 
             std::copy(
                std::begin( source),
                std::end( source),
                std::begin( destination));
 
-            return source.size();
+            return size( source);
          }
 
-
-         template< typename T, typename Iter>
-         size_type copy( const T& source, Range< Iter> destination)
+         template< typename S, typename D> 
+         std::enable_if_t< 
+            ! traits::is::binary::like< S>::value
+            && std::is_trivially_copyable< S>::value
+            && traits::is::binary::like< D>::value, size_type>
+         copy( S&& source, D&& destination)
          {
-            return copy( range::make( source), destination);
+            return copy( range::cast( source), std::forward< D>( destination));
          }
 
          //!
-         //! Copy from @p std::begin( buffer) + offset into @value
+         //! Copy from @p std::begin( source) + offset into @value
          //!
          //! @param buffer memory
-         //! @param offset where to begin from in the buffer
+         //! @param offset where to begin from in the source
          //! @param value value to be 'assigned'
          //! @return the new offset ( @p offset + memory::size( value) )
          //!
-         template< typename T>
-         size_type copy( const platform::binary::type& buffer, size_type offset, T& value)
+         template< typename S, typename T>
+         size_type copy( S&& source, size_type offset, T& value)
          {
-            assert( common::range::size( buffer) - offset >=  memory::size( value));
+            auto destination = range::cast( value);
+            assert( common::range::size( source) - offset >=  destination.size());
+            auto range = common::range::make( std::begin( source) + offset, destination.size());
 
-            auto source = common::range::make( std::begin( buffer) + offset, memory::size( value));
-            auto destination = memory::range::make( value);
-
-            return offset + copy( source, destination);
+            return offset + copy( range, destination);
          }
 
 

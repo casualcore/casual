@@ -85,7 +85,7 @@ namespace casual
                   state.event.subscription( request);
                }
 
-               state.auto_persist = ! settings.no_auto_persist;
+               state.persist = settings.persist;
 
                return state;
             }

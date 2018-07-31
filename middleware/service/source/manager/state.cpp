@@ -15,8 +15,7 @@
 
 #include "common/process.h"
 
-
-
+// std
 #include <functional>
 
 namespace casual
@@ -27,9 +26,6 @@ namespace casual
 
       namespace manager
       {
-
-
-
          namespace local
          {
             namespace
@@ -144,6 +140,13 @@ namespace casual
                bool operator < ( const Remote& lhs, const Remote& rhs)
                {
                   return lhs.order < rhs.order;
+               }
+
+               std::ostream& operator << ( std::ostream& out, const Remote& value)
+               {
+                  return out << "{ process: " << value.process
+                     << ", order: " << value.order
+                     << '}';
                }
 
                std::ostream& operator << ( std::ostream& out, Local::State value)
@@ -341,7 +344,7 @@ namespace casual
 
                   if( found)
                   {
-                     log << "remove process pid: " << pid << '\n';
+                     log::line( log, "remove process pid: ", pid);
 
                      for( auto& s : services)
                      {
@@ -362,7 +365,7 @@ namespace casual
 
                   if( found)
                   {
-                     log << "process found\n";
+                     log::line( log, "process found: ", found->second);
                      return found->second;
                   }
 
@@ -374,7 +377,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::local::find_or_add service"};
 
-                  log << "service: " << service << '\n';
+                  log::line( log, "service: ", service);
 
                   auto found = algorithm::find( services, service.name);
 
@@ -386,7 +389,7 @@ namespace casual
                      if( found->second.information.transaction != service.transaction)
                         found->second.information.transaction = service.transaction;
 
-                     log << "found: " << found->second << '\n';
+                     log::line( log, "found: ", found->second);
 
                      return found->second;
                   }
@@ -485,8 +488,8 @@ namespace casual
 
             if( ! message.process)
             {
-               common::log::category::error << "invalid process " << message.process << " tries to advertise services - action: ignore\n";
-               log << "message: " << message << '\n';
+               log::line( common::log::category::error, "invalid process ", message.process, " tries to advertise services - action: ignore");
+               log::line( verbose::log, "message: ", message);
                return;
             }
 
@@ -516,7 +519,8 @@ namespace casual
                }
                default:
                {
-                  log::category::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+                  log::line( log::category::error, "failed to deduce gateway advertise directive - action: ignore");
+                  log::line( verbose::log, "message: ", message);
                   break;
                }
             }
@@ -529,8 +533,8 @@ namespace casual
 
             if( ! message.process)
             {
-               common::log::category::error << "invalid remote process " << message.process << " tries to advertise services - action: ignore\n";
-               log << "message: " << message << '\n';
+               log::line( common::log::category::error, "invalid process ", message.process, " tries to advertise services - action: ignore");
+               log::line( verbose::log, "message: ", message);
                return;
             }
 
@@ -563,7 +567,8 @@ namespace casual
                }
                default:
                {
-                  log::category::error << "failed to deduce gateway advertise directive - action: ignore - message: " << message << '\n';
+                  log::line( log::category::error, "failed to deduce gateway advertise directive - action: ignore");
+                  log::line( log::category::verbose::error, "message: ", message);
                }
             }
          }

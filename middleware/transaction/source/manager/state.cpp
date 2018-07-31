@@ -18,18 +18,14 @@
 #include "common/event/send.h"
 
 
-
-
 namespace casual
 {
+   using namespace common;
 
    namespace transaction
    {
       namespace state
       {
-
-
-
          Statistics::Statistics() :  min{ common::platform::time::unit::max()}, max{ 0}, total{ 0}, invoked{ 0}
          {
 
@@ -235,7 +231,7 @@ namespace casual
                auto validate = [&state]( const common::message::domain::configuration::transaction::Resource& r) {
                   if( ! common::algorithm::find( state.resource_properties, r.key))
                   {
-                     common::log::category::error << "failed to correlate resource key '" << r.key << "' - action: skip resource\n";
+                     log::line( log::category::error, "failed to correlate resource key '", r.key, "' - action: skip resource");
 
                      common::event::error::send( "failed to correlate resource key '" + r.key + "'");
                      return false;
@@ -374,7 +370,7 @@ namespace casual
             << '}';
       }
 
-      State::State( std::string database) : log( std::move( database)) {}
+      State::State( std::string database) : persistent_log( std::move( database)) {}
 
 
       bool State::outstanding() const
@@ -424,18 +420,18 @@ namespace casual
             {
                if( found->state() != state::resource::Proxy::Instance::State::shutdown)
                {
-                  common::log::category::error << "resource proxy instance died - " << *found << '\n';
+                  log::line( log::category::error, "resource proxy instance died - ", *found);
                }
 
                resource.statistics += found->statistics;
                resource.instances.erase( std::begin( found));
 
-               transaction::log << "remove dead process: " << death << '\n';
+               log::line( log, "remove dead process: ", death);
                return;
             }
          }
 
-         common::log::category::warning << "failed to find and remove dead instance: " << death << '\n';
+         log::line( log::category::warning, "failed to find and remove dead instance: ", death);
       }
 
       state::resource::Proxy& State::get_resource( state::resource::id::type rm)

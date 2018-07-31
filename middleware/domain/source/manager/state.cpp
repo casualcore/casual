@@ -161,7 +161,7 @@ namespace casual
 
                         algorithm::stable_sort( instances);
 
-                        log::debug << "instances: " << range::make( instances) << '\n';
+                        log::line( log::debug, "instances: ", instances);
 
                      }
 
@@ -430,7 +430,7 @@ namespace casual
 
                if( found)
                {
-                  log << "remove singleton: " << found->second << '\n';
+                  log::line( log, "remove singleton: ", found->second);
                   singletons.erase( std::begin( found));
                }
             }
@@ -447,7 +447,7 @@ namespace casual
                if( found)
                {
                   auto instance = found->remove( pid);
-                  log << "remove server instance: " << instance << '\n';
+                  log::line( log, "remove server instance: ", instance);
                   //
                   // Try to remove ipc-queue (no-op if it's removed already)
                   //
@@ -469,7 +469,7 @@ namespace casual
                if( found)
                {
                   found->remove( pid);
-                  log << "remove executable instance: " << pid << '\n';
+                  log::line( log, "remove executable instance: ", pid);
 
                   if( found->restart && runlevel() == Runlevel::running)
                   {
@@ -488,7 +488,7 @@ namespace casual
 
                if( found)
                {
-                  log << "remove grandchild: " << *found << '\n';
+                  log::line( log, "remove grandchild: ", *found);
                   grandchildren.erase( std::begin( found));
                }
             }
@@ -532,7 +532,7 @@ namespace casual
          state::Executable* State::executable( common::strong::process::id pid) noexcept
          {
             return algorithm::find_if( executables, [=]( const auto& e){
-               return algorithm::find( e.instances, pid) == true;
+               return ! algorithm::find( e.instances, pid).empty();
             }).data();
          }
 

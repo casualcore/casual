@@ -22,11 +22,12 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace queue
    {
       namespace group
       {
-
          namespace local
          {
             namespace
@@ -709,7 +710,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::peek messages"};
 
-            common::log::line( verbose::log, "message: ", request);
+            log::line( verbose::log, "message: ", request);
 
             auto reply = common::message::reverse::type( request);
 
@@ -729,7 +730,7 @@ namespace casual
                }
                else
                {
-                  log << "failed to find message with id: " << id << '\n';
+                  log::line( log, "failed to find message with id: ", id);
                }
             }
 
@@ -740,7 +741,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::restore"};
 
-            log << "queue: " << queue << '\n';
+            log::line( log, "queue: ", queue);
 
             m_statement.restore.execute( queue.value());
             return m_connection.affected();
@@ -751,7 +752,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::commit"};
 
-            log << "commit xid: " << id << '\n';
+            log::line( log, "commit xid: ", id);
 
             auto gtrid = common::transaction::global( id);
 
@@ -764,7 +765,7 @@ namespace casual
          {
             Trace trace{ "queue::Database::rollback"};
 
-            log << "rollback xid: " << id << '\n';
+            log::line( log, "rollback xid: ", id);
 
             auto gtrid = common::transaction::global( id);
 

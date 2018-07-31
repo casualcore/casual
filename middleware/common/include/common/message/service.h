@@ -367,6 +367,7 @@ namespace casual
                         archive & name;
                         archive & duration;
                      })
+                     friend std::ostream& operator << ( std::ostream& out, const Service& value);
                   };
 
                   common::process::Handle process;
@@ -378,6 +379,7 @@ namespace casual
                      archive & process;
                      archive & services;
                   })
+                  friend std::ostream& operator << ( std::ostream& out, const Metric& value);
 
                };
                static_assert( traits::is_movable< Metric>::value, "not movable");

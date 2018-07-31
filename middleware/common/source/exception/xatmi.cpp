@@ -12,12 +12,10 @@
 
 #include "common/exception/system.h"
 
-
 namespace casual
 {
    namespace common
    {
-
       namespace exception
       {
          namespace xatmi
@@ -29,7 +27,7 @@ namespace casual
                   template< typename E> 
                   void log( E&& exception)
                   {
-                     code::stream( exception.type()) << exception << '\n';
+                     log::line( code::stream( exception.type()), exception);
                   }
                } // <unnamed>
             } // local

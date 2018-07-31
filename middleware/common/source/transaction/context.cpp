@@ -23,8 +23,7 @@
 #include "common/message/domain.h"
 #include "common/event/send.h"
 
-
-
+// std
 #include <map>
 #include <algorithm>
 
@@ -32,7 +31,6 @@ namespace casual
 {
    namespace common
    {
-
       namespace transaction
       {
          struct Trace : common::log::Trace
@@ -167,8 +165,8 @@ namespace casual
             std::tie( m_resources.dynamic, m_resources.fixed) =
                   algorithm::partition( m_resources.all, std::mem_fn( &Resource::dynamic));
 
-            common::log::category::transaction << "static resources: " << m_resources.fixed << '\n';
-            common::log::category::transaction << "dynamic resources: " << m_resources.dynamic << '\n';
+            log::line( log::category::transaction, "static resources: ", m_resources.fixed);
+            log::line( log::category::transaction, "dynamic resources: ", m_resources.dynamic);
 
 
             //
@@ -242,7 +240,7 @@ namespace casual
                message.trid = trid;
                message.resources = std::move( resources);
 
-               common::log::category::transaction << "involved message: " << message << '\n';
+               log::line( log::category::transaction, "involved message: ", message);
 
                communication::ipc::blocking::send( communication::instance::outbound::transaction::manager::device(), message);
             }
@@ -300,7 +298,7 @@ namespace casual
                //
                transaction.replied( reply.correlation);
 
-               log::category::transaction << "updated state: " << transaction << '\n';
+               log::line( log::category::transaction, "updated state: ", transaction);
             }
             else
             {
@@ -611,7 +609,7 @@ namespace casual
 
             if( ! algorithm::all_of( results, []( auto r){ return r == code::xa::ok;}))
             {
-               log::category::error << "failed to close one or more resource\n";
+               log::line( log::category::error, "failed to close one or more resource");
             }
          }
 

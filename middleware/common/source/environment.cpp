@@ -11,6 +11,7 @@
 #include "common/algorithm.h"
 #include "common/log.h"
 #include "common/string.h"
+#include "common/view/string.h"
 
 #include <memory>
 
@@ -149,7 +150,7 @@ namespace casual
                      auto ipc = std::get< 1>( split);
                      if( ! ipc.empty())
                      {
-                        result.ipc = strong::ipc::id{ std::string( std::begin( ipc), std::end( ipc))};
+                        result.ipc = strong::ipc::id{ Uuid( ipc)};
                      }
                   }
 
@@ -303,9 +304,9 @@ namespace casual
                };
 
                template< typename R, typename F, typename L>
-               auto split( R&& range, F&& first, L&& last) -> std::vector< Token< decltype( range::make( range))>>
+               auto split( R&& range, F&& first, L&& last) -> std::vector< Token< view::String>>
                {
-                  using token_type = Token< decltype( range::make( range))>;
+                  using token_type = Token< view::String>;
                   std::vector< token_type> result;
 
                   auto splitted = algorithm::divide_first( range, first);
@@ -319,18 +320,15 @@ namespace casual
 
                   if( token)
                   {
-                     //
+
                      // We got a split. Make sure we consume 'first-token'
-                     //
-                     token.advance( range::make( first).size());
+                     token.advance( view::String( first).size());
 
                      splitted = algorithm::divide_first( token, last);
 
                      if( ! std::get< 1>( splitted))
                      {
-                        //
                         // We did not find the 'last-delimiter'
-                        //
                         throw exception::system::invalid::Argument{ 
                            string::compose( "syntax error, such as unbalanced parentheses: ", std::string{ std::begin(range), std::end(range)})};
                      }
@@ -338,7 +336,7 @@ namespace casual
                      result.emplace_back( std::get< 0>( splitted), Type::token);
 
                      auto next = std::get< 1>( splitted);
-                     next.advance( range::make( last).size());
+                     next.advance( view::String( last).size());
 
                      for( auto& value : split( next, first, last))
                      {

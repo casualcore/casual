@@ -494,7 +494,7 @@ namespace casual
                inline Helper() : Helper(nullptr) {}
 
                template< typename... Args>
-               static auto handler( Args&&... args) -> decltype(common::communication::ipc::inbound::device().handler())
+               static auto handler( Args&&... args) -> decltype( common::communication::ipc::inbound::device().handler())
                {
                   return {std::forward<Args>(args)...};
                }
@@ -502,13 +502,13 @@ namespace casual
                template< typename D, typename M>
                auto blocking_send( D&& device, M &&message) const
                {
-                  return common::communication::ipc::blocking::send(std::forward<D>(device), message, m_error_handler);
+                  return common::communication::ipc::blocking::send( std::forward<D>(device), message, m_error_handler);
                }
 
                template< typename D, typename M>
                auto non_blocking_send( D&& device, M &&message) const
                {
-                  return common::communication::ipc::non::blocking::send(std::forward<D>(device), message, m_error_handler);
+                  return common::communication::ipc::non::blocking::send( std::forward<D>(device), message, m_error_handler);
                }
 
                template< typename M, typename... Args>

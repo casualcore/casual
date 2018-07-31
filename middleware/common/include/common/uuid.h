@@ -11,6 +11,8 @@
 #include <uuid/uuid.h>
 
 #include "common/platform.h"
+#include "common/transcode.h"
+#include "common/view/string.h"
 
 #include <string>
 
@@ -18,8 +20,6 @@ namespace casual
 {
    namespace common
    {
-
-
       struct Uuid
       {
          using uuid_type = platform::uuid::type;
@@ -33,7 +33,8 @@ namespace casual
          Uuid& operator = ( const Uuid&) = default;
 
          Uuid( const uuid_type& uuid);
-         Uuid( const std::string& uuid);
+         explicit Uuid( view::String string);
+
 
 
          inline const uuid_type& get() const { return m_uuid;}

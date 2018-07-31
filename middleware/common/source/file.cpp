@@ -14,20 +14,18 @@
 #include "common/memory.h"
 #include "common/string.h"
 
+// std
 #include <cstdio>
-
 #include <fstream>
 
-
+// posix
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-
 namespace casual
 {
-
    namespace common
    {
       namespace file
@@ -60,11 +58,11 @@ namespace casual
             {
                if( std::remove( path.c_str()))
                {
-                  log::category::error << "failed to remove file: " << path << '\n';
+                  log::line( log::category::error, "failed to remove file: ", path);
                }
                else
                {
-                  log::debug << "removed file: " << path << '\n';
+                  log::line( log::debug, "removed file: ", path);
                }
             }
          }
@@ -75,7 +73,7 @@ namespace casual
             {
                exception::system::throw_from_errno( string::compose( "source: ", source, " destination: ", destination));
             }
-            log::debug << "moved file source: " << source << " -> destination: " << destination << '\n';
+            log::line( log::debug, "moved file source: ", source, " -> destination: ", destination);
          }
 
 
@@ -363,7 +361,7 @@ namespace casual
 
             if( mkdir( path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0 && errno != EEXIST)
             {
-               log::category::error << "failed to create " << path << " - " << code::last::system::error() << '\n';
+               log::line( log::category::error, "failed to create ", path, " - ", code::last::system::error());
                return false;
             }
 
@@ -374,7 +372,7 @@ namespace casual
          {
             if( rmdir( path.c_str()) != 0)
             {
-               log::category::error << "failed to remove " << path << " - " << code::last::system::error() << '\n';
+               log::line( log::category::error, "failed to remove ", path, " - ", code::last::system::error());
                return false;
             }
             return true;

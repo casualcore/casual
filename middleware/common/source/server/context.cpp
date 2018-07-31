@@ -22,10 +22,7 @@
 #include "common/log.h"
 
 
-
 #include <algorithm>
-
-
 
 namespace casual
 {
@@ -75,7 +72,7 @@ namespace casual
             m_state.jump.buffer.size = len;
             m_state.jump.forward.service.clear();
 
-            log::debug << "Context::jump_return - jump state: " << m_state.jump << '\n';
+            log::line( log::debug, "Context::jump_return - jump state: ", m_state.jump);
 
             std::longjmp( m_state.jump.environment, state::Jump::Location::c_return);
          }
@@ -90,7 +87,7 @@ namespace casual
 
             m_state.jump.forward.service = service ? service : "";
 
-            log::debug << "Context::forward - jump state: " << m_state.jump << '\n';
+            log::line( log::debug, "Context::forward - jump state: ", m_state.jump);
 
             std::longjmp( m_state.jump.environment, state::Jump::Location::c_forward);
          }
@@ -107,7 +104,7 @@ namespace casual
             if( prospect.name.size() >= XATMI_SERVICE_NAME_LENGTH)
             {
                prospect.name.resize( XATMI_SERVICE_NAME_LENGTH - 1);
-               log::category::warning << "service name '" << service << "' truncated to '" << prospect.name << "'";
+               log::line( log::category::warning, "service name '", service, "' truncated to '", prospect.name, "'");
             }
 
 

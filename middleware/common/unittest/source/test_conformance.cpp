@@ -34,6 +34,25 @@ namespace casual
 {
    namespace common
    {
+      // static test of traits
+
+      static_assert( traits::is_same< traits::remove_cvref_t< char const&>, char>::value, "traits::remove_cvref_t does not work...");
+
+      static_assert( traits::is::string::like< decltype( "some string")>::value, "traits::is::string::like does not work...");
+
+      static_assert( traits::is::string::like< char const (&)[7]>::value, "traits::is::string::like does not work...");
+      static_assert( traits::is::string::like< char[ 20]>::value, "traits::is::string::like does not work...");
+
+      static_assert( ! traits::is::string::like< char* [ 20]>::value, "traits::is::string::like does not work...");
+
+
+      static_assert( traits::is::iterable< char[ 20]>::value, "traits::is::iterable does not work...");
+
+      static_assert( ! traits::is_any< char, unsigned char, signed char>::value, "traits::is_any does not work...");
+      static_assert( traits::is_any< char, unsigned char, signed char, char>::value, "traits::is_any does not work...");
+
+      static_assert( traits::is::tuple< std::pair< int, long>>::value, "traits::is::tuple does not work...");
+
       TEST( casual_common_conformance, struct_with_pod_attributes__is_pod)
       {
          struct POD

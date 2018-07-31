@@ -157,6 +157,8 @@ namespace casual
                   size_type order;
 
                   friend bool operator < ( const Remote& lhs, const Remote& rhs);
+
+                  friend std::ostream& operator << ( std::ostream& out, const Remote& value);
                };
 
             } // instance

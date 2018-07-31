@@ -14,7 +14,7 @@
 
 #include "common/exception/casual.h"
 
-
+// std
 #include <random>
 
 namespace casual
@@ -30,8 +30,6 @@ namespace casual
             Scope::~Scope() { signal::clear();}
 
          } // clean
-
-
 
          namespace local
          {
@@ -152,7 +150,7 @@ namespace casual
                   }
                   catch( const wait_done&)
                   {
-                     log::debug << "domain manager booted\n";
+                     log::line( log::debug, "domain manager booted");
                      // no-op
                   }
                }

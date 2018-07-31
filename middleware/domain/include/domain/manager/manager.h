@@ -7,10 +7,7 @@
 
 #pragma once
 
-
-
 #include "domain/manager/state.h"
-
 
 namespace casual
 {
@@ -18,20 +15,18 @@ namespace casual
    {
       namespace manager
       {
-
          struct Settings
          {
-
             std::vector< std::string> configurationfiles;
 
             std::vector< std::string> events;
 
             bool bare = false;
-            bool no_auto_persist = false;
+            bool persist = false;
 
             inline void event( const std::string& id) 
             {
-               m_event = common::strong::ipc::id{ id};
+               m_event = common::strong::ipc::id{ common::Uuid{ id}};
             }
             auto event() const { return m_event;};
 

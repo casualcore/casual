@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include <gtest/gtest.h>
 #include "common/unittest.h"
 
@@ -14,6 +13,7 @@
 
 #include "common/message/service.h"
 #include "common/mockup/thread.h"
+
 
 namespace casual
 {
@@ -37,7 +37,7 @@ namespace casual
                      {
                         connections.push_back( listener());
 
-                        log::debug << "connections: " << range::make( connections) << '\n';
+                        log::line( log::debug, "connections: ", connections);
 
                      }
                   }

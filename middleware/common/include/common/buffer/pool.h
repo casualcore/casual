@@ -61,7 +61,6 @@ namespace casual
                   virtual Payload release( platform::buffer::raw::immutable::type handle) = 0;
 
                   virtual void clear() = 0;
-
                };
 
                template< typename P>
@@ -133,7 +132,7 @@ namespace casual
 
                      payload::Send result{ buffer.payload, buffer.transport( user_size), buffer.reserved()};
 
-                     log::category::buffer << "pool::get - buffer: " << result << '\n';
+                     log::line( log::category::buffer, "pool::get - buffer: ", result);
 
                      return result;
                   }
@@ -147,7 +146,7 @@ namespace casual
                   {
                      auto buffer = m_pool.release( handle);
 
-                     log::category::buffer << "pool::release - payload: " << buffer.payload << " - transport: " << buffer.transport( user_size) << '\n';
+                     log::line( log::category::buffer, "pool::release - payload: ", buffer.payload, " - transport: ", buffer.transport( user_size));
 
                      //
                      // Adjust the buffer size, with regards to the user size

@@ -21,7 +21,6 @@ namespace casual
    namespace configuration
    {
 
-
       TEST( configuration_environment_fetch, empty_files__expect_none)
       {
          Environment empty;
@@ -156,20 +155,20 @@ namespace casual
          first.variables = local::variables();
          auto first_file = local::serialize( first, GetParam());
 
-         configuration::log << CASUAL_MAKE_NVP( first);
+         common::log::line( configuration::log, CASUAL_MAKE_NVP( first));
 
          Environment second;
          second.variables = local::variables();
          second.files.push_back( first_file);
          auto second_file = local::serialize( second, GetParam());
 
-         configuration::log << CASUAL_MAKE_NVP( second);
+         common::log::line( configuration::log, CASUAL_MAKE_NVP( second));
 
          Environment third;
          third.variables = local::variables();
          third.files.push_back( second_file);
 
-         configuration::log << CASUAL_MAKE_NVP( third);
+         common::log::line( configuration::log, CASUAL_MAKE_NVP( third));
 
 
          auto expected = first.variables;

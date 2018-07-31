@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/domain.h"
 
 #include "common/environment.h"
@@ -12,6 +11,7 @@
 #include "common/exception/system.h"
 #include "common/string.h"
 
+// std
 #include <fstream>
 
 namespace casual
@@ -60,7 +60,7 @@ namespace casual
                Identity& identity()
                {
                   static Identity id{
-                     environment::variable::get( environment::variable::name::domain::id(), "00000000000000000000000000000000"),
+                     Uuid{ environment::variable::get( environment::variable::name::domain::id(), "00000000000000000000000000000000")},
                      environment::variable::get( environment::variable::name::domain::name(), "")};
                   return id;
 
@@ -105,7 +105,7 @@ namespace casual
                   output << identity.name << '\n';
                   output << identity.id << '\n';
 
-                  log::debug << "domain information - id: " << identity << " - process: " << process << '\n';
+                  log::line( log::debug, "domain information - id: ", identity, " - process: ", process);
                }
                else
                {
@@ -117,7 +117,7 @@ namespace casual
                {
                   auto content = singleton::read( path);
 
-                  log::debug << "domain: " << content << '\n';
+                  log::line( log::debug, "domain: ", content);
 
                   //
                   // There is potentially a running casual-domain already - abort
@@ -166,7 +166,7 @@ namespace casual
                      {
                         std::string ipc;
                         file >> ipc;
-                        result.process.ipc = strong::ipc::id{ ipc};
+                        result.process.ipc = strong::ipc::id{ Uuid{ ipc}};
                         
                         auto pid = result.process.pid.value();
                         file >> pid;
@@ -181,7 +181,7 @@ namespace casual
                      environment::variable::process::set( environment::variable::name::ipc::domain::manager(), result.process);
                      common::domain::identity( result.identity);
 
-                     log::debug << "domain information - id: " << result.identity << ", process: " << result.process << '\n';
+                     log::line( log::debug, "domain information - id: ", result.identity, ", process: ", result.process);
 
                      return result;
                   }

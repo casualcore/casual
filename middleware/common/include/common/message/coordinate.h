@@ -8,9 +8,8 @@
 #pragma once
 
 
-
-#include "common/uuid.h"
 #include "common/process.h"
+#include "common/stream.h"
 
 #include <vector>
 
@@ -50,7 +49,7 @@ namespace casual
 
                   friend std::ostream& operator << ( std::ostream& out, const Message& value)
                   {
-                     return out << "{ pids: " << range::make( value.m_pids)
+                     return out << "{ pids: " << value.m_pids
                         << '}';
                   }
 
@@ -59,7 +58,6 @@ namespace casual
                };
 
             } // policy
-
          } // coordinate
 
          template< typename Policy, typename MP = coordinate::policy::Message>
@@ -70,7 +68,7 @@ namespace casual
             using message_policy_type = MP;
 
             template< typename... Args>
-            Coordinate( Args&&... args) : m_policy{ std::forward< Args>( args)...} {}
+            explicit Coordinate( Args&&... args) : m_policy{ std::forward< Args>( args)...} {}
 
 
             template< typename... Requested>
@@ -84,7 +82,7 @@ namespace casual
 
                if( m_messages.back().policy.done())
                {
-                  m_policy.send( m_messages.back().queue, m_messages.back().message);
+                  m_policy.send( m_messages.back().ipc, m_messages.back().message);
                   m_messages.pop_back();
                }
             }
@@ -98,18 +96,13 @@ namespace casual
 
                if( found && found->policy.consume( message.process.pid))
                {
-                  //
                   // Accumulate message
-                  //
                   m_policy.accumulate( found->message, std::forward< Reply>( message));
-
 
                   if( found->policy.done())
                   {
-                     //
                      // We're done, send reply...
-                     //
-                     m_policy.send( found->queue, found->message);
+                     m_policy.send( found->ipc, found->message);
                      m_messages.erase( std::begin( found));
                   }
 
@@ -123,7 +116,7 @@ namespace casual
                algorithm::trim( m_messages, algorithm::remove_if( m_messages, [=]( holder_type& h){
                   if( h.policy.consume( pid) && h.policy.done())
                   {
-                     m_policy.send( h.queue, h.message);
+                     m_policy.send( h.ipc, h.message);
                      return true;
                   }
                   return false;
@@ -137,7 +130,7 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Coordinate& value)
             {
-               return out << "{ messages: " << range::make( value.m_messages)
+               return out << "{ messages: " << value.m_messages
                   << '}';
             }
 
@@ -146,21 +139,21 @@ namespace casual
             struct holder_type
             {
                template< typename... Args>
-               holder_type( strong::ipc::id queue, const Uuid& correlation, Args&&... args)
-                  : queue{ queue}, policy{ std::forward< Args>( args)...}
+               holder_type( strong::ipc::id ipc, const Uuid& correlation, Args&&... args)
+                  : ipc{ ipc}, policy{ std::forward< Args>( args)...}
                {
                   message.correlation = correlation;
                }
 
                bool done() const { return policy.done();}
 
-               strong::ipc::id queue;
+               strong::ipc::id ipc;
                message_policy_type policy;
                message_type message;
 
-               friend std::ostream& operator << ( std::ostream& out, const holder_type& value)
+               inline friend std::ostream& operator << ( std::ostream& out, const holder_type& value)
                {
-                  return out << "{ queue: " << value.queue
+                  return out << "{ ipc: " << value.ipc
                      << ", message: " << value.message
                      << ", policy: " << value.policy
                      << '}';

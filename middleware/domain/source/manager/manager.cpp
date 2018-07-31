@@ -100,7 +100,7 @@ namespace casual
 
                                  auto& pending = state.pending.replies;
 
-                                 log << "pending replies: " << range::make( pending) << '\n';
+                                 log::line( log, "pending replies: ", pending);
 
                                  algorithm::trim( pending, algorithm::remove_if( pending,
                                        common::message::pending::sender(

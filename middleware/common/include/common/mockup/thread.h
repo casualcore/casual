@@ -31,7 +31,7 @@ namespace casual
             Thread( Args&&... args)
                : m_thread{ std::forward< Args>( args)...}
             {
-               log << "mockup::Thread ctor - thread: " << m_thread.get_id() << '\n';
+               log::line( log, "mockup::Thread ctor - thread: ", m_thread.get_id());
             }
 
             Thread( Thread&&) noexcept;

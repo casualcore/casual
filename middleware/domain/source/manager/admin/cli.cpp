@@ -259,7 +259,7 @@ namespace casual
                            algorithm::copy( files, std::back_inserter( arguments));
                         }
 
-                        arguments.emplace_back( "--event-queue");
+                        arguments.emplace_back( "--event-ipc");
                         arguments.emplace_back( common::string::compose( common::communication::ipc::inbound::ipc()));
 
                         return arguments;

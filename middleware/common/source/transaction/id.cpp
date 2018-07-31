@@ -42,9 +42,11 @@ std::ostream& operator << ( std::ostream& out, const XID& xid)
 {
    if( out && ! casual::common::transaction::null( xid))
    {
-      out << casual::common::transcode::hex::encode( xid.data, xid.data + xid.gtrid_length) << ':'
-          << casual::common::transcode::hex::encode( xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length)
-          << ':' << xid.formatID;
+      casual::common::transcode::hex::encode( out, xid.data, xid.data + xid.gtrid_length);
+      out  << ':';
+      casual::common::transcode::hex::encode( out, xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length);
+      out << ':' << xid.formatID;
+
    }
    return out;
 }

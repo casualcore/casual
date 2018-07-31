@@ -43,7 +43,6 @@ namespace casual
                }
             };
             return ipc;
-
          }
 
          namespace
@@ -63,8 +62,7 @@ namespace casual
                   }
                }
 
-         } // optional
-
+            } // optional
          } //
       } // ipc
 
@@ -74,7 +72,6 @@ namespace casual
          {
             namespace
             {
-
                namespace transform
                {
 
@@ -206,7 +203,6 @@ namespace casual
 
                   namespace resource
                   {
-
                      namespace persistent
                      {
                         template< typename M, typename F>
@@ -232,7 +228,6 @@ namespace casual
                               state.persistent.requests.push_back( std::move( request));
                            });
                         }
-
                      } // persistent
 
 
@@ -252,9 +247,7 @@ namespace casual
 
                         common::log::line( verbose::log, "resources: ", resources);
 
-                        //
                         // Update state on transaction-resources
-                        //
                         common::algorithm::for_each(
                            resources,
                            Transaction::Resource::update::stage( new_stage));
@@ -298,9 +291,7 @@ namespace casual
 
                      if( request)
                      {
-                        //
                         // We got a pending request for this resource, let's oblige
-                        //
                         if( ipc::device().non_blocking_push( instance.process.ipc, request->message))
                         {
                            instance.state( state::resource::Proxy::Instance::State::busy);
@@ -345,9 +336,7 @@ namespace casual
                      common::algorithm::trim( transaction.resources, common::algorithm::unique( common::algorithm::sort( transaction.resources)));
 
                      common::log::line( log, "involved: ", transaction);
-
                   }
-
                } // resource
 
                namespace transaction
@@ -355,9 +344,7 @@ namespace casual
                   template< typename M>
                   auto find_or_add( State& state, M&& message) -> decltype( common::range::make( state.transactions))
                   {
-                     //
                      // Find the transaction
-                     //
                      auto found = common::algorithm::find( state.transactions, message.trid);
 
                      if( found)
@@ -388,9 +375,7 @@ namespace casual
 
                         using reply_type = common::message::transaction::commit::Reply;
 
-                        //
                         // Normalize all the resources return-state
-                        //
                         auto result = transaction.results();
 
                         switch( result)
@@ -405,11 +390,9 @@ namespace casual
                               // Read-only optimization. We can send the reply directly and
                               // discard the transaction
                               //
-                              state.log.remove( transaction.trid);
+                              state.persistent_log.remove( transaction.trid);
 
-                              //
                               // Send reply
-                              //
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
@@ -419,23 +402,17 @@ namespace casual
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
                               }
 
-                              //
                               // Indicate that wrapper should remove the transaction from state
-                              //
                               return true;
                            }
                            case xa::ok:
                            {
                               common::log::line( log, result, " prepare completed - ", transaction);
 
-                              //
                               // Prepare has gone ok. Log state
-                              //
-                              state.log.prepare( transaction.trid);
+                              state.persistent_log.prepare( transaction.trid);
 
-                              //
                               // prepare send reply. Will be sent after persistent write to file
-                              //
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
@@ -445,9 +422,7 @@ namespace casual
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
 
-                              //
                               // All XA_OK is to be committed, send commit to all
-                              //
 
                               //
                               // We only want to send to resources that has reported ok, and is in prepared state
@@ -482,9 +457,7 @@ namespace casual
                         }
 
 
-                        //
                         // Transaction is not done
-                        //
                         return false;
                      }
 
@@ -494,9 +467,7 @@ namespace casual
 
                         using reply_type = common::message::transaction::commit::Reply;
 
-                        //
                         // Normalize all the resources return-state
-                        //
                         auto result = transaction.results();
 
                         switch( result)
@@ -529,26 +500,20 @@ namespace casual
                                  local::send::persistent::reply( state, std::move( reply), transaction.trid.owner());
                               }
 
-                              //
                               // Remove transaction
-                              //
-                              state.log.remove( message.trid);
+                              state.persistent_log.remove( message.trid);
                               return true;
                            }
                            default:
                            {
-                              //
                               // Something has gone wrong.
-                              //
                               common::log::line( common::log::category::error, result, " commit gone wrong for: ", transaction.trid);
                               common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
                               
 
-                              //
                               // prepare send reply. Will be sent after persistent write to file.
                               //
                               // TOOD: we do have to save the state of the transaction?
-                              //
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
@@ -570,9 +535,7 @@ namespace casual
 
                         using reply_type = common::message::transaction::rollback::Reply;
 
-                        //
                         // Normalize all the resources return-state
-                        //
                         auto result = transaction.results();
 
                         switch( result)
@@ -585,9 +548,7 @@ namespace casual
                            {
                               common::log::line( log, result, " rollback completed ", transaction.trid);
 
-                              //
                               // Send reply
-                              //
                               {
                                  auto reply = local::transform::message< reply_type>( message);
                                  reply.correlation = transaction.correlation;
@@ -596,10 +557,8 @@ namespace casual
                                  local::send::reply( state, std::move( reply), transaction.trid.owner());
                               }
 
-                              //
                               // Remove transaction
-                              //
-                              state.log.remove( message.trid);
+                              state.persistent_log.remove( message.trid);
                               return true;
                            }
                            default:
@@ -761,11 +720,9 @@ namespace casual
                                        // Read-only optimization. We can send the reply directly and
                                        // discard the transaction
                                        //
-                                       state.log.remove( transaction.trid);
+                                       state.persistent_log.remove( transaction.trid);
 
-                                       //
                                        // Send reply
-                                       //
                                        {
                                           auto reply = local::transform::message< reply_type>( message);
                                           reply.correlation = transaction.correlation;
@@ -775,24 +732,17 @@ namespace casual
                                           local::send::reply( state, std::move( reply), transaction.trid.owner());
                                        }
 
-                                       //
                                        // Indicate that wrapper should remove the transaction from state
-                                       //
                                        return true;
                                     }
                                     case xa::ok:
                                     {
                                        common::log::line( log, result, " prepare completed - ", transaction);
 
-                                       //
                                        // Prepare has gone ok. Log state
-                                       //
-                                       state.log.prepare( transaction.trid);
+                                       state.persistent_log.prepare( transaction.trid);
 
-
-                                       //
                                        // All XA_OK is to be committed, send commit to all
-                                       //
 
                                        //
                                        // We only want to send to resources that has reported ok, and is in prepared state
@@ -811,9 +761,7 @@ namespace casual
                                     }
                                     default:
                                     {
-                                       //
                                        // Something has gone wrong.
-                                       //
                                        common::log::line( common::log::category::error, result, " prepare failed for: ", transaction.trid, " - action: rollback");
                                        common::log::line( common::log::category::error, "transaction: ", transaction);
 
@@ -835,9 +783,7 @@ namespace casual
 
                                  using reply_type = common::message::transaction::resource::commit::Reply;
 
-                                 //
                                  // Send reply
-                                 //
                                  {
                                     auto reply = local::transform::message< reply_type>( message);
                                     reply.correlation = transaction.correlation;
@@ -870,18 +816,14 @@ namespace casual
 
                Trace trace{ "transaction::handle::process::Exit"};
 
-               //
                // Check if it's a resource proxy instance
-               //
                if( m_state.remove_instance( message.state.pid))
                {
                   ipc::device().blocking_send( common::communication::instance::outbound::domain::manager::device(), message);
                   return;
                }
 
-               //
                // Check if the now dead process is owner to any transactions, if so, roll'em back...
-               //
                std::vector< common::transaction::ID> trids;
 
                for( auto& trans : m_state.transactions)
@@ -900,9 +842,7 @@ namespace casual
                   request.process = common::process::handle();
                   request.trid = trid;
 
-                  //
                   // This could change the state, that's why we don't do it directly in the loop above.
-                  //
                   handle::Rollback{ m_state}( request);
                }
             }
@@ -972,9 +912,7 @@ namespace casual
 
                   }
 
-                  //
                   // Find the transaction
-                  //
                   auto found = common::algorithm::find( m_state.transactions, message.trid);
 
                   if( found)
@@ -987,11 +925,10 @@ namespace casual
 
                      if( resource)
                      {
-                        //
                         // We found all the stuff
-                        //
 
-                        // check if we
+                        // check if we're done
+
                         resource->set_result( message.state);
 
                         if( resource->done())
@@ -1007,16 +944,13 @@ namespace casual
                         //  let the real handler handle the message
                         if( m_handler( message, transaction))
                         {
-                           //
                            // We remove the transaction from our state
-                           //
                            m_state.transactions.erase( std::begin( found));
                         }
                      }
                      else
                      {
                         // TODO: what to do? We have previously sent a prepare request, why do we not find the resource?
-
                         common::log::line( common::log::category::error, "failed to locate resource: ", message.resource, " for trid: ", message.trid, " - action: discard?");
                      }
 
@@ -1091,14 +1025,10 @@ namespace casual
 
                   common::log::line( log, "message: ", message);
 
-                  //
                   // Are we in a prepared state?
-                  //
                   if( transaction.stage() < Transaction::Resource::Stage::prepare_replied)
                   {
-                     //
                      // If not, we wait for more replies...
-                     //
                      return false;
                   }
 
@@ -1114,14 +1044,10 @@ namespace casual
 
                   common::log::line( log, "message: ", message);
 
-                  //
                   // Are we in a committed state?
-                  //
                   if( transaction.stage() < Transaction::Resource::Stage::commit_replied)
                   {
-                     //
                      // If not, we wait for more replies...
-                     //
                      return false;
                   }
 
@@ -1135,9 +1061,7 @@ namespace casual
 
                   common::log::line( log, "message: ", message);
 
-                  //
                   // Are we in a rolled back stage?
-                  //
                   if( transaction.stage() < Transaction::Resource::Stage::rollback_replied)
                   {
                      return false;
@@ -1195,9 +1119,7 @@ namespace casual
             auto location = local::transaction::find_or_add( m_state, message);
             auto& transaction = *location;
 
-            //
             // Make sure we add the involved resources from the commit message (if any)
-            //
             local::resource::involved( m_state, transaction, message);
 
             
@@ -1214,16 +1136,10 @@ namespace casual
                }
             }
 
-            //
             // Local normal commit phase
-            //
             transaction.implementation = local::implementation::Local::instance();
 
-
-            //
             // Only the owner of the transaction can fiddle with the transaction ?
-            //
-
 
             switch( transaction.resources.size())
             {
@@ -1231,14 +1147,11 @@ namespace casual
                {
                   common::log::line( log, transaction.trid, " no resources involved: ");
 
-                  //
                   // We can remove this transaction
-                  //
                   m_state.transactions.erase( std::begin( location));
 
-                  //
+
                   // Send reply
-                  //
                   {
                      auto reply = local::transform::reply( message);
                      //reply.state = common::code::xa::read_only;
@@ -1252,14 +1165,10 @@ namespace casual
                }
                case 1:
                {
-                  //
                   // Only one resource involved, we do a one-phase-commit optimization.
-                  //
                   common::log::line( log, transaction.trid, " only one resource involved");
 
-                  //
                   // Keep the correlation so we can send correct reply
-                  //
                   transaction.correlation = message.correlation;
 
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
@@ -1274,14 +1183,10 @@ namespace casual
                }
                default:
                {
-                  //
                   // Keep the correlation so we can send correct reply
-                  //
                   transaction.correlation = message.correlation;
 
-                  //
                   // More than one resource involved, we do the prepare stage
-                  //
                   common::log::line( log, transaction.trid, " more than one resource involved");
 
                   local::send::resource::request< common::message::transaction::resource::prepare::Request>(
@@ -1308,28 +1213,20 @@ namespace casual
             auto location = local::transaction::find_or_add( m_state, message);
             auto& transaction = *location;
 
-            //
             // Local normal rollback phase
-            //
             transaction.implementation = local::implementation::Local::instance();
 
-            //
             // Make sure we add the involved resources from the rollback message (if any)
-            //
             local::resource::involved( m_state, transaction, message);
 
             if( transaction.resources.empty())
             {
                common::log::line( log, transaction.trid, " no resources involved");
 
-               //
                // We can remove this transaction.
-               //
                m_state.transactions.erase( std::begin( location));
 
-               //
                // Send reply
-               //
                {
                   auto reply = local::transform::reply( message);
                   reply.state = common::code::tx::ok;
@@ -1341,9 +1238,7 @@ namespace casual
             {
                common::log::line( log, transaction.trid, " resources involved");
 
-               //
                // Keep the correlation so we can send correct reply
-               //
                transaction.correlation = message.correlation;
 
                local::send::resource::request< common::message::transaction::resource::rollback::Request>(
@@ -1411,19 +1306,14 @@ namespace casual
 
                common::log::line( log, "message: ", message);
 
-               //
                // Find the transaction
-               //
                auto found = common::algorithm::find( m_state.transactions, message.trid);
-
 
                if( found)
                {
                   if( handle( message, *found) == Directive::remove_transaction)
                   {
-                     //
                      // We remove the transaction
-                     //
                      m_state.transactions.erase( std::begin( found));
                   }
                }
@@ -1534,26 +1424,20 @@ namespace casual
 
                common::log::line( log, "message: ", message);
 
-               //
                // Find the transaction
-               //
                auto found = common::algorithm::find( m_state.transactions, message.trid);
 
                if( found)
                {
                   if( Commit::handle( message, *found) == Directive::remove_transaction)
                   {
-                     //
                      // We remove the transaction
-                     //
                      m_state.transactions.erase( std::begin( found));
                   }
                }
                else
                {
-                  //
                   // It has to be a one phase commit optimization.
-                  //
                   if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
@@ -1580,9 +1464,7 @@ namespace casual
 
                if( transaction.implementation)
                {
-                  //
                   // We've completed the prepare stage, now it's time for the commit stage
-                  //
 
                   local::send::resource::request< common::message::transaction::resource::commit::Request>(
                      m_state,
@@ -1594,9 +1476,7 @@ namespace casual
                }
                else
                {
-                  //
                   // It has to be a one phase commit optimization.
-                  //
                   if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
                   {
                      auto reply = local::transform::reply( message);
@@ -1654,19 +1534,14 @@ namespace casual
 
                common::log::line( log, "message: ", message);
 
-
-               //
                // Find the transaction
-               //
                auto found = common::algorithm::find( m_state.transactions, message.trid);
 
                if( found)
                {
                   if( Rollback::handle( message, *found) == Directive::remove_transaction)
                   {
-                     //
                      // We remove the transaction
-                     //
                      m_state.transactions.erase( std::begin( found));
                   }
                }

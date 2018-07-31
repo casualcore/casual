@@ -11,6 +11,8 @@
 #include "common/platform.h"
 #include "common/traits.h"
 #include "common/algorithm.h"
+#include "common/stream.h"
+#include "common/view/string.h"
 
 #include <string>
 #include <locale>
@@ -18,6 +20,8 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
+
+#include <cstdlib>
 
 namespace casual
 {
@@ -97,10 +101,8 @@ namespace casual
             return result;
          }
 
-         std::string trim( const std::string& value);
-
          template< typename R>
-         auto trim( R&& range) -> common::traits::concrete::type_t< decltype( range)>
+         auto trim( R&& range) -> traits::remove_cvref_t< decltype( range)>
          {
             const auto ws = [] (const auto character){ 
                return std::isspace( character, std::locale::classic()); 
@@ -112,7 +114,7 @@ namespace casual
             for( ; last != first && ws( *( last -1)); --last)
                ;
 
-            return common::traits::concrete::type_t< decltype( range)>{ first, last};
+            return traits::remove_cvref_t< decltype( range)>{ first, last};
          }
 
 
@@ -123,50 +125,13 @@ namespace casual
          template< typename R>
          bool integer( R&& value)
          {
-            auto range = range::make( value);
+            view::String view( value);
             
-            if( range.empty())
+            if( view.empty())
                return false;
 
-            return algorithm::includes( "0123456789", range);
+            return algorithm::includes( "0123456789", view);
          }
-
-/*
-         template< typename T>
-         auto digits( T value) -> std::enable_if_t< std::is_integral< T>::value, platform::size::type>
-         {
-            platform::size::type result{ 1};
-
-            while( value /= 10)
-            {
-               ++result;
-            }
-            return result;
-         }
-*/
-         namespace detail
-         {
-            template< typename T>
-            inline void write( std::ostream& out, const T& value) 
-            {
-               out << value;
-            }
-
-            template< typename T>
-            inline void write( std::ostream& out, const std::vector< T>& value) 
-            {
-               out << range::make( value);
-            }
-
-            inline void composer( std::ostream& out) {}
-
-            template< typename Part, typename... Parts>
-            inline void composer( std::ostream& out, Part&& part, Parts&&... parts)
-            {
-               write( out, part);
-               composer( out, std::forward< Parts>( parts)...);
-            }
-         } // detail
 
          //!
          //! composes a string from several parts, using the stream operator
@@ -175,42 +140,49 @@ namespace casual
          inline std::string compose( Parts&&... parts)
          {
             std::ostringstream out;
-            detail::composer( out, std::forward< Parts>( parts)...);
+            stream::write( out, std::forward< Parts>( parts)...);
             return out.str();
          }
       } // string
 
-      namespace internal
+      namespace detail
       {
+         template< typename F, typename... Base> 
+         auto c_wrapper( view::String value, F&& function, Base... base)
+         {
+            char* end = nullptr;
+            return function( std::begin( value), &end, std::forward< Base>( base)...);
+         }
+
          template< typename R, typename Enable = void>
          struct from_string;
 
          template< typename T >
          struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  std::is_signed< T>::value>>
          { 
-            static T get( const std::string& value) { return std::stol( value);} 
+            static T get( view::String value) { return c_wrapper( value, ::strtol, 10);} 
          };
 
          template< typename T >
          struct from_string< T, std::enable_if_t< std::is_integral< T>::value &&  ! std::is_signed< T>::value>>
          { 
-            static T get( const std::string& value) { return std::stoul( value);} 
+            static T get( view::String value) { return c_wrapper( value, ::strtoul, 10);} 
          };
 
          template< typename T >
          struct from_string< T, std::enable_if_t< std::is_floating_point< T>::value>>
          { 
-            static T get( const std::string& value) { return std::stod( value);} 
+            static T get( view::String value) { return c_wrapper( value, ::strtod);} 
          };
 
          template<>
          struct from_string< bool, void>
          { 
-            static bool get( const std::string& value) 
+            static bool get( view::String value) 
             {
                if( value == "true") return true; 
                if( value == "false") return false; 
-               return std::stoi( value);
+               return ! ( value == "0");
             } 
          };
 
@@ -218,6 +190,7 @@ namespace casual
          struct from_string< std::string, void> 
          { 
             static const std::string& get( const std::string& value) { return value;} 
+            static std::string get( view::String value) { return { std::begin( value), std::end( value)};} 
          };
 
 
@@ -235,18 +208,18 @@ namespace casual
 
 
 
-      } // internal
+      } // detail
 
-      template< typename R>
-      decltype( auto) from_string( const std::string& value)
+      template< typename R, typename T>
+      decltype( auto) from_string( T&& value)
       {
-         return internal::from_string< std::decay_t< R>>::get( value);
+         return detail::from_string< std::decay_t< R>>::get( value);
       }
 
       template< typename T>
       decltype( auto) to_string( T&& value)
       {
-         return internal::to_string( std::forward< T>( value));
+         return detail::to_string( std::forward< T>( value));
       }
 
 

@@ -4,17 +4,14 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/server/handle/service.h"
 
 #include "common/server/context.h"
 #include "common/service/conversation/context.h"
 #include "common/buffer/pool.h"
 
-
 namespace casual
 {
-
    namespace common
    {
       namespace server
@@ -86,7 +83,7 @@ namespace casual
                   {
                      Trace trace{ "server::handle::service::complement::reply"};
 
-                     log::debug << "result: " << result << '\n';
+                     log::line( log::debug, "result: ", result);
 
                      reply.code = result.code;
                      reply.buffer = std::move( result.payload);
@@ -102,7 +99,7 @@ namespace casual
                         reply.status = code::xatmi::service_fail;
                      }
 
-                     log::debug << "reply: " << reply << '\n';
+                     log::line( log::debug, "reply: ", reply);
                   }
 
 
@@ -110,7 +107,7 @@ namespace casual
                   {
                      Trace trace{ "server::handle::service::complement::reply"};
 
-                     log::debug << "result: " << result << '\n';
+                     log::line( log::debug, "result: ", result);
 
                      if( result.transaction == common::service::invoke::Result::Transaction::commit)
                      {
@@ -125,7 +122,7 @@ namespace casual
 
                      reply.buffer = std::move( result.payload);
 
-                     log::debug << "reply: " << reply << '\n';
+                     log::line( log::debug, "reply: ", reply);
                   }
 
                } // complement

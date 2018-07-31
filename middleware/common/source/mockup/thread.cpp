@@ -27,7 +27,7 @@ namespace casual
          {
             try
             {
-               log << "mockup::Thread dtor - thread: " << m_thread.get_id() << '\n';
+               log::line( log, "mockup::Thread dtor - thread: ", m_thread.get_id());
 
                if( m_thread.joinable())
                {

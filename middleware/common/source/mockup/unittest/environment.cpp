@@ -16,13 +16,12 @@
 
 #include "common/mockup/ipc.h"
 
-
+// std
 #include <iostream>
 #include <fstream>
 
 namespace casual
 {
-
    namespace common
    {
       namespace mockup
@@ -35,7 +34,7 @@ namespace casual
             {
                void SetUp() override
                {
-                  log::stream::get( "casual.mockup") << "mockup::unittest::Environment::SetUp" << '\n';
+                  log::line( log::stream::get( "casual.mockup"), "mockup::unittest::Environment::SetUp");
 
 
                   if( ! environment::variable::exists( environment::variable::name::home())
@@ -60,13 +59,13 @@ namespace casual
 
                   directory::create( domain_path);
 
-                  log::stream::get( "casual.mockup") << environment::variable::name::domain::home() << " set to: " << environment::variable::get( environment::variable::name::domain::home()) << '\n';
-                  log::stream::get( "casual.mockup")  << "environment::directory::domain(): " <<  environment::directory::domain() << '\n';
+                  log::line( log::stream::get( "casual.mockup"), environment::variable::name::domain::home(), " set to: ", environment::variable::get( environment::variable::name::domain::home()));
+                  log::line( log::stream::get( "casual.mockup"), "environment::directory::domain(): ", environment::directory::domain());
 
 
                   if( ! directory::create( environment::domain::singleton::path()))
                   {
-                     log::stream::get( "error") << "failed to create domain singleton directory\n";
+                     log::line( log::stream::get( "error"), "failed to create domain singleton directory");
                   }
                }
 

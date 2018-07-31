@@ -62,6 +62,8 @@ namespace casual
             
             explicit constexpr operator bool () const { return ! empty();}
 
+            constexpr bool has_value() const { return empty();}
+
             constexpr void clear() noexcept { this->m_value = policy_type::initialize();}
 
             

@@ -28,21 +28,21 @@
 
 #include <cstring>
 
+// std
 #include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
-
 #include <algorithm>
 #include <iterator>
-
 #include <regex>
-
 #include <iostream>
 #include <sstream>
 
 namespace casual
 {
+   using namespace common;
+
    namespace buffer
    {
       namespace field
@@ -50,7 +50,6 @@ namespace casual
 
          namespace
          {
-
             using item_type = long;
             using size_type = common::platform::binary::size::type;
             using const_data_type = common::platform::binary::type::const_pointer;
@@ -215,7 +214,7 @@ namespace casual
    //
    // Register and define the type that can be used to get the custom pool
    //
-   template class common::buffer::pool::Registration< buffer::field::Allocator>;
+   template class common::buffer::pool::Registration< casual::buffer::field::Allocator>;
 
 
    namespace buffer
@@ -340,7 +339,7 @@ namespace casual
                   if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   {
 
-                     casual::buffer::verbose::log << "buffer::field::add::data: invalid argument - id: " << id << " - type: " << type << '\n';
+                     log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
                      return CASUAL_FIELD_INVALID_ARGUMENT;
                   }
 
@@ -974,7 +973,7 @@ int casual_field_occurrences_of_id( const char* const buffer, const long id, lon
       return casual::buffer::field::explore::count( buffer, id, *occurrences);
    }
 
-   casual::buffer::verbose::log << "casual_field_occurrences_of_id: invalid argument - id: " << id << " - occurrences: " << occurrences << '\n';
+   casual::common::log::line( casual::buffer::verbose::log, "casual_field_occurrences_of_id: invalid argument - id: ", id, " - occurrences: ", occurrences);
    return CASUAL_FIELD_INVALID_ARGUMENT;
 }
 
@@ -1141,10 +1140,9 @@ int casual_field_get_value( const char* const buffer, const long id, const long 
    {
       if( *count < size)
       {
-         casual::buffer::verbose::log << "casual_field_get_value: invalid argument - id: " << id
-            << " - index: " << index << " - count: " << *count
-            << " - size: " << size
-            << '\n';
+         casual::common::log::line( casual::buffer::verbose::log, "casual_field_get_value: invalid argument - id: ", id, 
+            " - index: ", index, " - count: ", *count,
+            " - size: ", size);
          return CASUAL_FIELD_INVALID_ARGUMENT;
       }
 
@@ -1399,13 +1397,13 @@ namespace casual
                               else
                               {
                                  // TODO: Much better
-                                 common::log::category::warning << "id for " << field.name << " is invalid" << '\n';
+                                 log::line( log::category::warning, "id for ", field.name, " is invalid");
                               }
                            }
                            catch( const std::out_of_range&)
                            {
                               // TODO: Much better
-                              common::log::category::warning << "type for " << field.name << " is invalid" << '\n';
+                              log::line( log::category::warning, "type for ", field.name, " is invalid");
                            }
                         }
                      }
@@ -1427,7 +1425,7 @@ namespace casual
                            if( ! result.emplace( field.name, field.id).second)
                            {
                               // TODO: Much better
-                              common::log::category::warning << "name for " << field.name << " is not unique" << '\n';
+                              log::line( log::category::warning, "name for ", field.name, " is not unique");
                            }
                         }
                      }
@@ -1453,7 +1451,7 @@ namespace casual
                            if( ! result.emplace( field.id, field.name).second)
                            {
                               // TODO: Much better
-                              common::log::category::warning << "id for " << field.name << " is not unique" << '\n';
+                              log::line( log::category::warning, "id for ", field.name, " is not unique");
                            }
                         }
                      }
@@ -1799,7 +1797,7 @@ int casual_field_type_of_id( const long id, int* const type)
       case CASUAL_FIELD_BINARY:
          break;
       default:
-         casual::buffer::verbose::log << "invalid argument - id: " << id << '\n';
+         casual::common::log::line( casual::buffer::verbose::log, "invalid argument - id: ", id);
          return CASUAL_FIELD_INVALID_ARGUMENT;
    }
 

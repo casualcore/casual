@@ -528,6 +528,28 @@ namespace casual
             }
          }
 
+         //!
+         //! 
+         //! applies `functor` on all occurencies, and call `interleave` between each
+         //!
+         template< typename R, typename F, typename I>
+         decltype( auto) for_each_interleave( R&& range, F&& functor, I&& interleave)
+         {
+            if( ! range::empty( range))
+            {
+               auto current = std::begin( range);
+               functor( *current++);
+
+               while( current != std::end( range))
+               {
+                  interleave();
+                  functor( *current++);
+               }
+            }
+
+            return std::forward< R>( range);
+         }
+
 
          //!
          //! associate container specialization
@@ -847,45 +869,6 @@ namespace casual
             return std::count_if( std::begin( range), std::end( range), predicate);
          }
 
-
-         template< typename Stream, typename Range, typename D>
-         Stream& print( Stream& out, Range&& range, D&& delimeter)
-         {
-            auto values = range::make( range);
-
-            if( values.empty())
-               return out;
-
-            out << *values;
-            ++values;
-
-            for( auto& value : values)
-            {
-               out << delimeter << value;
-            }
-            return out;
-         }
-
-         template< typename Stream, typename Range, typename D, typename F>
-         Stream& print( Stream& out, Range&& range,  D&& delimeter, F&& functor)
-         {
-            auto values = range::make( range);
-
-            if( values.empty())
-               return out;
-
-            functor( out, *values);
-            ++values;
-
-            for( auto& value : values)
-            {
-               out << delimeter;
-               functor( out, value);
-            }
-            return out;
-         }
-      
-
          namespace numeric
          {
             template< typename R, typename T>
@@ -893,9 +876,7 @@ namespace casual
             {
                std::iota( std::begin( range), std::end( range), value);
             }
-
          } // numeric
-
 
          namespace sorted
          {
@@ -1031,44 +1012,6 @@ namespace casual
          } // container
       } // algorithm
 
-      template< typename Iter>
-      std::ostream& operator << ( std::ostream& out, Range< Iter> range)
-      {
-         if( out)
-         {
-            out << "[";
-            algorithm::print( out, range, ',') << ']';
-         }
-         return out;
-      }
-
-      template< typename Iter1, typename Iter2>
-      bool operator == ( const Range< Iter1>& lhs, const Range< Iter2>& rhs)
-      {
-         return algorithm::equal( lhs, rhs);
-      }
-
-      template< typename Iter, typename C,
-         std::enable_if_t< common::traits::container::is_container< std::remove_reference_t< C>>::value>* dummy = nullptr>
-      bool operator == ( const Range< Iter>& lhs, const C& rhs)
-      {
-         return algorithm::equal( lhs, rhs);
-      }
-
-      template< typename C, typename Iter,
-         std::enable_if_t< common::traits::container::is_container< std::remove_reference_t< C>>::value>* dummy = nullptr>
-      bool operator == ( C& lhs, const Range< Iter>& rhs)
-      {
-         return algorithm::equal( lhs, rhs);
-      }
-
-      template< typename Iter>
-      bool operator == ( const Range< Iter>& lhs, bool rhs)
-      {
-         return static_cast< bool>( lhs) ==  rhs;
-      }
-
-
       namespace compare
       {
          template< typename T, typename R>
@@ -1087,17 +1030,6 @@ namespace casual
 
    } // common
 } // casual
-
-namespace std
-{
-   template< typename Enum>
-   enable_if_t< is_enum< Enum>::value, ostream&>
-   operator << ( ostream& out, Enum value)
-   {
-     return out << casual::common::cast::underlying( value);
-   }
-
-} // std
 
 
 

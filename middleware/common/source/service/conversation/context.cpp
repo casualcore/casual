@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/service/conversation/context.h"
 #include "common/service/lookup.h"
 
@@ -18,10 +17,8 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 
-
 namespace casual
 {
-
    namespace common
    {
       namespace service
@@ -127,7 +124,7 @@ namespace casual
                      {
                         Trace trace{ "common::service::conversation::local::validate::send"};
 
-                        log::debug << "descriptor: " << descriptor << '\n';
+                        log::line( log::debug, "descriptor: ", descriptor);
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::send)
                         {
@@ -139,7 +136,7 @@ namespace casual
                      {
                         Trace trace{ "common::service::conversation::local::validate::receive"};
 
-                        log::debug << "descriptor: " << descriptor << '\n';
+                        log::line( log::debug, "descriptor: ", descriptor);
 
                         if( descriptor.duplex != state::descriptor::Information::Duplex::receive)
                         {
@@ -151,7 +148,7 @@ namespace casual
                      {
                         Trace trace{ "common::service::conversation::local::validate::diconnect"};
 
-                        log::debug << "descriptor: " << descriptor << '\n';
+                        log::line( log::debug, "descriptor: ", descriptor);
 
                         if( ! descriptor.initiator)
                         {
@@ -204,8 +201,7 @@ namespace casual
             {
                if( pending())
                {
-                  log::category::error << "pending conversations: " << m_state.descriptors << '\n';
-
+                  log::line( log::category::error, "pending conversations: ", m_state.descriptors);
                }
             }
 
@@ -221,14 +217,14 @@ namespace casual
 
                service::Lookup lookup{ service};
 
-               log::debug << "service: " << service << " buffer: " << buffer << " flags: " << flags << '\n';
+               log::line( log::debug, "service: ", service, " buffer: ", buffer, " flags: ", flags);
 
 
                auto start = platform::time::clock::type::now();
 
                auto& descriptor = local::prepare::descriptor( m_state, flags);
 
-               log::debug << "descriptor: " << descriptor << '\n';
+               log::line( log::debug, "descriptor: ", descriptor);
 
                //
                // If some thing goes wrong we unreserve the descriptor
@@ -276,11 +272,11 @@ namespace casual
                {
                   message.service = target.service;
 
-                  log::debug << "connect - request: " << message << '\n';
+                  log::line( log::debug, "connect - request: ", message);
 
                   auto reply = communication::ipc::call( target.process.ipc, message);
 
-                  log::debug << "connect - reply: " << reply << '\n';
+                  log::line( log::debug, "connect - reply: ", reply);
 
                   descriptor.route = std::move( reply.recording);
                }
@@ -356,7 +352,7 @@ namespace casual
                      descriptor.correlation);
                }
 
-               log::debug << "message: " << message << '\n';
+               log::line( verbose::log, "message: ", message);
 
                receive::Result result;
                result.buffer = std::move( message.buffer);

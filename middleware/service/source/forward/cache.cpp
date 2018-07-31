@@ -19,7 +19,6 @@
 
 #include "common/flag.h"
 
-
 namespace casual
 {
    using namespace common;
@@ -28,7 +27,6 @@ namespace casual
    {
       namespace forward
       {
-
          namespace handle
          {
             struct base
@@ -68,7 +66,7 @@ namespace casual
                                  //
                                  state.pending.emplace_back( std::move( reply), message.process.ipc);
 
-                                 log << "could not send error reply to process: " << message.process << " - will try later\n";
+                                 log::line( log, "could not send error reply to process: ", message.process, " - will try later");
                               }
                            }
                            catch( const exception::system::communication::Unavailable&)
@@ -76,7 +74,7 @@ namespace casual
                               //
                               // No-op, we just drop the message
                               //
-                              log << "could not send error reply to process: " << message.process << " - queue unavailable - action: ignore\n";
+                              log::line( log, "could not send error reply to process: ", message.process, " - queue unavailable - action: ignore");
                            }
                         }
                      }
@@ -105,11 +103,11 @@ namespace casual
                      {
                         Trace trace{ "service::forward::handle::service::name::Lookup::handle"};
 
-                        log << "service lookup reply received - message: " << message << '\n';
+                        log::line( log, "service lookup reply received - message: ", message);
 
                         if( message.state == message::service::lookup::Reply::State::busy)
                         {
-                           log << "service is busy - action: wait for idle\n";
+                           log::line( log, "service is busy - action: wait for idle");
                            return;
                         }
 
@@ -117,7 +115,7 @@ namespace casual
 
                         if( pending_queue.empty())
                         {
-                           log::category::error << "service lookup reply for a service '" << message.service.name << "' has no registered call - action: discard\n";
+                           log::line( log::category::error, "service lookup reply for a service '", message.service.name, "' has no registered call - action: discard");
                            return;
                         }
 
@@ -140,11 +138,11 @@ namespace casual
 
                         if( message.state == message::service::lookup::Reply::State::absent)
                         {
-                           log::category::error << "service '" << message.service.name << "' has no entry - action: send error reply\n";
+                           log::line( log::category::error, "service '", message.service.name, "' has no entry - action: send error reply");
                            return;
                         }
 
-                        log << "send request - to: " << message.process.ipc << " - request: " << request << '\n';
+                        log::line( log, "send request - to: ", message.process.ipc, " - request: ", request);
 
                         if( ! communication::ipc::non::blocking::send( message.process.ipc, request))
                         {
@@ -154,7 +152,7 @@ namespace casual
                            //
                            m_state.pending.emplace_back( request, message.process.ipc);
 
-                           log << "could not forward call to process: " << message.process << " - will try later\n";
+                           log::line( log, "could not forward call to process: ", message.process, " - will try later");
 
                         }
                         error_reply.release();
@@ -171,7 +169,7 @@ namespace casual
                   {
                      Trace trace{ "service::forward::handle::service::Call::operator()"};
 
-                     log << "call request received for service: " << message.service << " from: " << message.process << '\n';
+                     log::line( log, "call request received for service: ", message.service, " from: ", message.process);
 
                      //
                      // lookup service

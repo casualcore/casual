@@ -53,7 +53,6 @@ namespace casual
             Directive& directive();
 
 
-
          } // output
 
          struct color_t
@@ -178,18 +177,25 @@ namespace casual
                {
                   if( output::directive().header)
                   {
+                     auto print_delimiter = [&](){
+                        out << m_delimiter;
+                     };
+
                      out << std::setfill( ' ');
                      {
-                        algorithm::print( out, m_columns, m_delimiter, []( std::ostream& out, const column_holder& c){
+                        auto print_name = [&out]( const column_holder& c){
                            out << std::left << std::setw( c.width()) << c.name();
-                        });
+                        };
+
+                        algorithm::for_each_interleave( m_columns, print_name, print_delimiter);
                         out << '\n';
                      }
 
                      {
-                        algorithm::print( out, m_columns, m_delimiter, []( std::ostream& out, const column_holder& c){
+                        auto print_row = [&out]( const column_holder& c){
                            out << std::string( c.width(), '-');
-                        });
+                        };
+                        algorithm::for_each_interleave( m_columns, print_row, print_delimiter);
                         out << '\n';
                      }
                   }
@@ -204,9 +210,15 @@ namespace casual
                   {
                      for( auto& row : rows)
                      {
-                        algorithm::print( out,  m_columns, '|', [&]( std::ostream& out, const column_holder& c){
+                        auto print_delimiter = [&out](){
+                           out << '|';
+                        };
+
+                        auto print_column = [&out,&row]( const column_holder& c){
                            c.print( out, row, false, false);
-                        });
+                        };
+
+                        algorithm::for_each_interleave( m_columns, print_column, print_delimiter);
                         out << '\n';
                      }
                   }
@@ -214,9 +226,15 @@ namespace casual
                   {
                      for( auto& row : rows)
                      {
-                        algorithm::print( out,  m_columns, m_delimiter, [&]( std::ostream& out, const column_holder& c){
+                        auto print_delimiter = [&](){
+                           out << m_delimiter;
+                        };
+
+                        auto print_column = [&out,&row]( const column_holder& c){
                            c.print( out, row, output::directive().color);
-                        });
+                        };
+
+                        algorithm::for_each_interleave( m_columns, print_column, print_delimiter);
                         out << '\n';
                      }
                   }

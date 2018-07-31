@@ -33,7 +33,7 @@ namespace casual
 
                void operator () ( message_type& message)
                {
-                  log::debug << "discard message: " << message.type() << '\n';
+                  log::line( log::debug, "discard message: ", message.type());
                }
             };
 

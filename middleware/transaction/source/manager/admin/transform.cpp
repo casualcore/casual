@@ -16,7 +16,6 @@ namespace casual
    {
       namespace transform
       {
-
          vo::Statistics Statistics::operator () ( const state::Statistics& value) const
          {
             vo::Statistics result;
@@ -29,7 +28,6 @@ namespace casual
             return result;
          }
 
-
          vo::Stats Stats::operator () ( const state::Stats& value) const
          {
             vo::Stats result;
@@ -39,8 +37,6 @@ namespace casual
 
             return result;
          }
-
-
 
          struct Transaction
          {
@@ -165,7 +161,7 @@ namespace casual
             common::algorithm::transform( state.persistent.requests, result.persistent.requests, transform::pending::Request{});
             common::algorithm::transform( state.persistent.replies, result.persistent.replies, transform::pending::Reply{});
 
-            result.log = transform::log( state.log.stats());
+            result.log = transform::log( state.persistent_log.stats());
 
             return result;
          }

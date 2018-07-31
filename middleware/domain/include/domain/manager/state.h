@@ -517,7 +517,7 @@ namespace casual
             )
 
             bool mandatory_prepare = true;
-            bool auto_persist = true;
+            bool persist = true;
 
          private:
             Runlevel m_runlevel = Runlevel::startup;

@@ -10,7 +10,7 @@ IncludePaths( [
     '../transaction/include',
     '../../thirdparty/database/include',
     '$(CASUAL_OPTIONAL_INCLUDE_PATHS)',
-    ]);
+    ])
 
 
 LibraryPaths( [ 
@@ -22,7 +22,7 @@ LibraryPaths( [
         '../buffer/bin',
         '../xatmi/bin',
         '$(CASUAL_OPTIONAL_LIBRARY_PATHS)',
-    ]);
+    ])
     
 
 
@@ -106,7 +106,8 @@ install_bin.append( queue_manager)
 
 queue_api = LinkLibrary( 'bin/casual-queue-api', 
    [
-       Compile( 'source/api/queue.cpp')
+       Compile( 'source/api/queue.cpp'),
+       Compile( 'source/api/message.cpp')
    ],
    [
     common, 
@@ -114,7 +115,7 @@ queue_api = LinkLibrary( 'bin/casual-queue-api',
     'casual-common', 
     ])
 
-install_lib.append( queue_api);
+install_lib.append( queue_api)
 
 
 

@@ -49,33 +49,14 @@ namespace casual
 
       } // uuid
 
-/* todo: remove
-
-      Uuid::Uuid()
-      {
-         memory::set( m_uuid);
-      }
-*/
       Uuid::Uuid( const uuid_type& uuid)
       {
          uuid_copy( m_uuid, uuid);
       }
 
-      Uuid::Uuid( const std::string& uuid)
+      Uuid::Uuid( view::String string)
       {
-         if( ! uuid.empty())
-         {
-            if( uuid.size() !=  sizeof( uuid_type) * 2)
-            {
-               throw exception::system::invalid::Argument{ string::compose( "invalid uuid string representation: ", uuid)};
-            }
-
-            transcode::hex::decode( uuid, m_uuid);
-         }
-         else
-         {
-            memory::set( m_uuid);
-         }
+         transcode::hex::decode( string, m_uuid);
       }
 
       void Uuid::copy( uuid_type& uuid) const

@@ -34,16 +34,11 @@
 #include <atomic>
 #include <fstream>
 
-// TODO:
-#include <iostream>
-
 
 namespace casual
 {
-
    namespace common
    {
-
       namespace communication
       {
          namespace message
@@ -70,11 +65,8 @@ namespace casual
          } // message
       } // communication
 
-
-
       namespace mockup
       {
-
          namespace pid
          {
             strong::process::id next()
@@ -82,16 +74,10 @@ namespace casual
                static auto pid = process::id().value() + 1000;
                return strong::process::id{ ++pid};
             }
-
          } // pid
-
 
          namespace ipc
          {
-
-
-
-
             namespace local
             {
                namespace
@@ -198,7 +184,7 @@ namespace casual
                   {
                      Trace trace{ "shutdown_thread"};
 
-                     log << "thread id: " << thread.get_id() << " - ipc id: " << input << '\n';
+                     log::line( log, "thread id: ", thread.get_id(), " - ipc id: ", input);
 
                      signal::thread::scope::Block block;
 
@@ -212,7 +198,7 @@ namespace casual
                      }
                      catch( const std::exception& exception)
                      {
-                        log << "mockup - failed to send disconnect to thread: " << thread.get_id() << " - " << exception.what() << '\n';
+                        log::line( log, "mockup - failed to send disconnect to thread: ", thread.get_id(), " - ", exception.what());
                      }
                      catch( ...)
                      {
@@ -226,7 +212,7 @@ namespace casual
                      }
                      catch( const std::exception& exception)
                      {
-                        log << "mockup - failed to join thread: " << thread.get_id() << " - " << exception.what() << '\n';
+                        log::line( log, "mockup - failed to join thread: ", thread.get_id(), " - ", exception.what());
                      }
                   }
 
@@ -285,7 +271,7 @@ namespace casual
 
                                  try
                                  {
-                                    log::debug << "mockup ipc::eventually::Sender::worker_thread ipc.put\n";
+                                    log::line( log::debug, "mockup ipc::eventually::Sender::worker_thread ipc.put");
 
                                     ipc.put( message.message, communication::ipc::policy::Blocking{});
                                  }

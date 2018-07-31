@@ -20,10 +20,9 @@
 
 #include "common/communication/instance.h"
 
-
+// std
 #include <vector>
 #include <string>
-
 
 namespace casual
 {
@@ -74,20 +73,20 @@ namespace casual
                      {
                         Trace trace{ "service::manager::handle::local::eventually::send"};
 
-                        verbose::log << "message: " << message << '\n';
+                        log::line( verbose::log, "message: ", message);
 
                         try
                         {
                            if( ! ipc::device().non_blocking_send( device, message))
                            {
-                              log << "non blocking send failed - action: try later\n";
+                              log::line( log, "non blocking send failed - action: try later");
 
                               state.pending.replies.emplace_back( std::forward< M>( message), device);
                            }
                         }
                         catch( const common::exception::system::communication::Unavailable&)
                         {
-                           log << "destination unavailable - " << device << '\n';
+                           log::line( log, "destination unavailable - ", device);
                         }
 
                      }
@@ -121,10 +120,10 @@ namespace casual
                      {
                         Trace trace{ "service::manager::handle::process::local::service_call_error_reply"};
 
-                        common::log::category::error << "callee terminated with pending reply to caller - callee: " 
-                           << instance.process.pid << " - caller: " << instance.caller().pid << '\n';
+                        log::line( common::log::category::error, "callee terminated with pending reply to caller - callee: ", 
+                           instance.process.pid, " - caller: ", instance.caller().pid);
 
-                        common::log::category::verbose::error << "instance: " << instance << '\n';
+                        log::line( common::log::category::verbose::error, "instance: ", instance);
 
                         common::message::service::call::Reply message;
                         message.correlation = instance.correlation();
@@ -140,7 +139,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::handle::process::Exit"};
 
-                  verbose::log << "message: " << message << '\n';
+                  log::line( verbose::log, "message: ", message);
 
                   //
                   // we need to check if the dead process has anyone wating for a reply
@@ -158,6 +157,8 @@ namespace casual
                   void Shutdown::operator () ( common::message::domain::process::prepare::shutdown::Request& message)
                   {
                      Trace trace{ "service::manager::handle::process::prepare::Shutdown"};
+
+                     log::line( verbose::log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
                      reply.process = common::process::handle();
@@ -184,12 +185,16 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::event::subscription::Begin"};
 
+                     log::line( verbose::log, "message: ", message);
+
                      m_state.events.subscription( message);
                   }
 
                   void End::operator () ( message_type& message)
                   {
                      Trace trace{ "service::manager::handle::event::subscription::End"};
+
+                     log::line( verbose::log, "message: ", message);
 
                      m_state.events.subscription( message);
                   }
@@ -206,7 +211,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::handle::Advertise"};
 
-                  log << "message: " << message << '\n';
+                  log::line( verbose::log, "message: ", message);
 
                   m_state.update( message);
                }
@@ -218,7 +223,7 @@ namespace casual
 
                   auto now = platform::time::clock::type::now();
 
-                  verbose::log << "message: " << message << '\n';
+                  log::line( verbose::log, "message: ", message);
 
                   try
                   {
@@ -283,16 +288,12 @@ namespace casual
                            }
                            default:
                            {
-                              //
                               // send busy-message to caller, to set timeouts and stuff
-                              //
                               reply.state = decltype( reply.state)::busy;
 
                               if( local::optional::send( message.process.ipc, reply))
                               {
-                                 //
                                  // All instances are busy, we stack the request
-                                 //
                                  m_state.pending.requests.emplace_back( std::move( message), now);
                               }
 
@@ -306,7 +307,7 @@ namespace casual
 
                      auto send_reply = execute::scope( [&](){
 
-                        log << "no instances found for service: " << message.requested << '\n';
+                        log::line( log, "no instances found for service: ", message.requested);
 
                         //
                         // Server (queue) that hosts the requested service is not found.
@@ -328,12 +329,10 @@ namespace casual
                         request.process = common::process::handle();
                         request.services.push_back( message.requested);
 
-                        //
                         // If there is no gateway, this will throw
-                        //
                         ipc::device().blocking_send( communication::instance::outbound::gateway::manager::optional::device(), request);
 
-                        log << "no instances found for service: " << message.requested << " - action: ask neighbor domains\n";
+                        log::line( log, "no instances found for service: ", message.requested, " - action: ask neighbor domains");
 
                         m_state.pending.requests.emplace_back( std::move( message), now);
 
@@ -351,6 +350,8 @@ namespace casual
                   void Metric::operator () ( common::message::service::remote::Metric& message)
                   {
                      Trace trace{ "service::manager::handle::service::remote::Metric"};
+
+                     log::line( verbose::log, "message: ", message);
 
                      auto now = platform::time::clock::type::now();
 
@@ -407,9 +408,7 @@ namespace casual
                         {
                            if( ! service->instances.local.empty())
                            {
-                              //
                               // Service is local
-                              //
                               reply.services.emplace_back(
                                     service->information.name,
                                     service->information.category,
@@ -467,7 +466,7 @@ namespace casual
                      }
                      else
                      {
-                        log << "failed to correlate pending request - assume it has been consumed by a recent started local server\n";
+                        log::line( log, "failed to correlate pending request - assume it has been consumed by a recent started local server");
                      }
                   }
 
@@ -481,15 +480,13 @@ namespace casual
             {
                Trace trace{ "service::manager::handle::ACK"};
 
-               verbose::log << "message: " << message << '\n';
+               log::line( verbose::log, "message: ", message);
 
                try
                {
                   auto now = platform::time::clock::type::now();
 
-                  //
                   // This message can only come from a local instance
-                  //
                   auto& instance = m_state.local( message.process.pid);
                   auto service = instance.unreserve( now);
 
@@ -505,7 +502,7 @@ namespace casual
 
                      if( pending)
                      {
-                        verbose::log << "found pendig: " << *pending << '\n';
+                        log::line( verbose::log, "found pendig: ", *pending);
 
                         //
                         // We now know that there are one idle server that has advertised the
@@ -515,21 +512,17 @@ namespace casual
                         service::Lookup lookup( m_state);
                         lookup( pending->request);
 
-                        //
                         // add pending metrics
-                        //
                         service->pending.add( now - pending->when);
 
-                        //
                         // Remove pending
-                        //
                         m_state.pending.requests.erase( std::begin( pending));
                      }
                   }
                }
                catch( const state::exception::Missing&)
                {
-                  common::log::category::error << "failed to find instance on ACK - indicate inconsistency - action: ignore\n";
+                  log::line( log::category::error, "failed to find instance on ACK - indicate inconsistency - action: ignore");
                }
             }
 
@@ -577,9 +570,7 @@ namespace casual
 
             void Policy::statistics( common::strong::ipc::id, common::message::event::service::Call&)
             {
-               //
                // We don't collect statistics for the service-manager
-               //
             }
 
          } // handle

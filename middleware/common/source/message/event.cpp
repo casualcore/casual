@@ -6,6 +6,8 @@
 
 
 #include "common/message/event.h"
+#include "common/log/stream.h"
+#include "common/chronology.h"
 
 
 namespace casual
@@ -25,7 +27,7 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Begin& value)
                   {
                      return out << "{ process: " << value.process
-                           << ", types: " << range::make( value.types)
+                           << ", types: " << value.types
                            << '}';
                   }
 
@@ -59,7 +61,7 @@ namespace casual
                            << ", message: " << value.message
                            << ", executable: " << value.executable
                            << ", pid: " << value.pid
-                           << ", details: " << range::make( value.details)
+                           << ", details: " << value.details
                            << '}';
                   }
 
@@ -73,7 +75,7 @@ namespace casual
                   std::ostream& operator << ( std::ostream& out, const Spawn& value)
                   {
                      return out << "{ path: " << value.path
-                           << ", pids: " << range::make( value.pids)
+                           << ", pids: " << value.pids
                            << '}';
                   }
 
@@ -95,8 +97,8 @@ namespace casual
                      return out << "{ process: " << value.process
                            << ", service: " << value.service
                            << ", parent: " << value.parent
-                           << ", start: " << std::chrono::duration_cast< common::platform::time::unit>( value.start.time_since_epoch()).count()
-                           << ", end: " << std::chrono::duration_cast< common::platform::time::unit>( value.end.time_since_epoch()).count()
+                           << ", start: " << chronology::duration( std::chrono::duration_cast< common::platform::time::unit>( value.start.time_since_epoch()))
+                           << ", end: " << chronology::duration( std::chrono::duration_cast< common::platform::time::unit>( value.end.time_since_epoch()))
                            << '}';
                   }
                }

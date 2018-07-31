@@ -39,40 +39,54 @@ namespace casual
          template< typename...>
          using void_t = void;
 
+         template< typename...>
+         using try_to_instantiate = void;
+
          namespace detect
          {
             //
             // Taken pretty much straight of from N4502
             //
 
-            // primary template handles all types not supporting the archetypal Op:
-            template< typename Default 
-               , typename // always void; supplied externally
+            namespace detail
+            {
+               
+               // primary template handles all types not supporting the archetypal Op:
+               template< typename Default 
+                  , typename // always void; supplied externally
+                  , template< typename...> class Op
+                  , typename... Args>
+               struct detector
+               {
+                  using value_t = std::false_type;
+                  using type = Default;
+               };
+
+               // the specialization recognizes and handles only types supporting Op:
+               template< typename Default
                , template< typename...> class Op
-               , typename... Args>
-            struct detector
-            {
-               using value_t = std::false_type;
-               using type = Default;
-            };
+               , typename... Args
+               >
+               struct detector<Default, void_t<Op<Args...>>, Op, Args...>
+               {
+                  using value_t = std::true_type;
+                  using type = Op<Args...>;
+               };
 
-            // the specialization recognizes and handles only types supporting Op:
-            template< typename Default
-            , template< typename...> class Op
-            , typename... Args
-            >
-            struct detector<Default, void_t<Op<Args...>>, Op, Args...>
-            {
-               using value_t = std::true_type;
-               using type = Op<Args...>;
-            };
+            } // detail
 
             template< template<class...> class Op, class... Args >
-            using is_detected = typename detector<void, void, Op, Args...>::value_t;
+            using is_detected = typename detail::detector<void, void, Op, Args...>::value_t;
 
             template< template<class...> class Op, class... Args >
-            using detected_t = typename detector<void, void, Op, Args...>::type;
-         }
+            using detected_t = typename detail::detector<void, void, Op, Args...>::type;
+
+            template< typename Default, template<class...> class Op, class... Args>
+            using detected_or = detail::detector< Default, void, Op, Args...>;
+
+            template< typename Default, template<class...> class Op, class... Args>
+            using detected_or_t = typename detail::detector< Default, void, Op, Args...>::type;
+         } // detect
 
          template< typename... Args>
          struct pack{};
@@ -165,7 +179,7 @@ namespace casual
          template< typename T>
          struct remove_cvref
          {
-            using type = std::remove_reference_t< std::remove_cv_t< T>>;
+            using type = std::remove_cv_t< std::remove_reference_t< T>>;
          };
 
 
@@ -454,6 +468,22 @@ namespace casual
          };
          //! @}
 
+         //!
+         //! Answer the question if T is the same type as any of the options
+         //! 
+         //! @{
+         template< typename T, typename Option, typename... Options>
+         struct is_any : bool_constant< is_same< T, Option>::value || is_any< T, Options...>::value>
+         {
+
+         };
+
+         template< typename T, typename Option>
+         struct is_any< T, Option> : std::is_same< T, Option>
+         {
+         };
+         //! @}
+
          /* not needed right now, but could be... 
          //!
          //! 
@@ -490,45 +520,95 @@ namespace casual
 
          namespace is
          {
-            template< typename T> 
-            using detail_function = decltype( function< T>::arguments());
-            template< typename T>
-            using function = detect::is_detected< detail_function, T>;
+            namespace detail
+            {
+               template< typename T> 
+               using function = decltype( function< T>::arguments());
+
+               template< typename T>
+                using tuple = decltype( std::tuple_size< T>::value);
+
+               template< typename T> 
+               using optional = decltype( std::declval< T&>().has_value());
+
+               template< typename T>
+               using iterable = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
+
+               //template< typename T> 
+               //using iterator_value_t = detect::detected_or_t< decltype( std::begin( std::declval< T&>()))
+
+               template< typename T>
+               using iterator_value = decltype( *std::begin( std::declval< T&>()));
+               
+            } // detail
 
             template< typename T>
-            using detail_tuple = decltype( std::tuple_size< T>::value);
+            using function = detect::is_detected< detail::function, T>;
+
+
+
+
             template< typename T>
-            using tuple = detect::is_detected< detail_tuple, T>;
+            using tuple = detect::is_detected< detail::tuple, T>;
 
             static_assert( is::tuple< std::tuple< int, int>>::value, "");
             static_assert( ! is::tuple< int>::value, "");
 
-            template< typename T> 
-            using detail_optional = decltype( std::declval< T&>().has_value());
 
             template< typename T>
-            using optional_like = detect::is_detected< detail_optional, T>;
+            using optional_like = detect::is_detected< detail::optional, T>;
 
 
             template< typename T>
-            using begin_end_existing = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
-
-            template< typename T>
-            using iterable = detect::is_detected< begin_end_existing, T>;
+            using iterable = detect::is_detected< detail::iterable, T>;
 
             template< typename T>
             using iterator = detect::is_detected< traits::iterator::has_category, T>;
+            
+            template< typename T>
+            using char_type = bool_constant< is_any< 
+               remove_cvref_t< T>, char, unsigned char, signed char>::value>;
+
+            namespace string
+            {
+               template< typename T>
+               using like = bool_constant< is::iterable< T>::value 
+                  && is::char_type< decltype( *std::begin( std::declval< T&>()))>::value>;
+
+               template< typename T>
+               using iterator = bool_constant< is::iterator< T>::value 
+                  && is::char_type< decltype( *std::declval< T>())>::value>;
+            } // string
+
+            namespace binary
+            {
+               template< typename T>
+               using value = char_type< T>;
+
+               template< typename T>
+               using iterator = bool_constant< is::iterator< T>::value 
+                  && is::binary::value< decltype( *std::declval< T>())>::value>;
+
+               template< typename T>
+               using like = bool_constant< is::iterable< T>::value 
+                  && is::binary::value< detect::detected_t< detail::iterator_value, T>>::value>;
+            } // binary
+
 
 
             namespace reverse
             {
-               template< typename T>
-               using has_rbegin_rend = std::tuple< decltype( std::declval< T&>().rbegin()), decltype( std::declval< T&>().rend())>;
+               namespace detail
+               {
+                  template< typename T>
+                  using iterable = std::tuple< decltype( std::declval< T&>().rbegin()), decltype( std::declval< T&>().rend())>;                  
+               } // detail
+
 
                template< typename T>
-               using iterable = detect::is_detected< has_rbegin_rend, T>;
+               using iterable = detect::is_detected< detail::iterable, T>;
             }
-         }
+         } // is
 
          namespace member
          {
@@ -567,6 +647,15 @@ namespace casual
             template< typename T, typename A>
             using serialize = detect::is_detected< member::has_serialize, T, A>;
 
+            namespace detail
+            {
+               template< typename T> 
+               using ostream_stream_operator = decltype( std::declval< std::ostream&>() << std::declval< T&>()); 
+            } // detail
+
+
+            template< typename T>
+            using ostream_stream_operator = detect::is_detected< detail::ostream_stream_operator, T>;
          }
 
       } // traits

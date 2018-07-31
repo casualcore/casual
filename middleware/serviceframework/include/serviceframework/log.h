@@ -84,7 +84,7 @@ namespace casual
 
    namespace common
    {
-      namespace log
+      namespace stream
       {
          namespace detail
          {
@@ -111,7 +111,7 @@ namespace casual
             };
          };
          
-      } // log
+      } // stream
    } // common
 } // casual
 

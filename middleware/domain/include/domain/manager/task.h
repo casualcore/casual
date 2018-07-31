@@ -20,13 +20,9 @@ namespace casual
 {
    namespace domain
    {
-
       namespace manager
       {
-
          struct State;
-
-
 
          struct Task
          {
@@ -119,7 +115,7 @@ namespace casual
 
                   m_tasks.push_back( std::forward< T>( task));
 
-                  domain::log << "added task: " << m_tasks.back() << '\n';
+                  common::log::line( domain::log, "added task: ", m_tasks.back());
 
                   if( m_tasks.size() == 1)
                   {

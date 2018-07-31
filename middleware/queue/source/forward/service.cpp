@@ -19,6 +19,8 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace queue
    {
       namespace forward
@@ -40,6 +42,8 @@ namespace casual
             {
                Trace trace{ "queue::forward::Caller::operator()"};
 
+               log::line( verbose::log, "message: ", message);
+
                //
                // Prepare the xatmi-buffer
                //
@@ -47,7 +51,7 @@ namespace casual
                   std::move( message.payload.type),
                   std::move( message.payload.data)};
 
-               log << "payload: " << payload << '\n';
+               log::line( log, "payload: ", payload);
 
                try
                {

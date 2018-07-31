@@ -9,6 +9,7 @@
 
 
 #include "common/memory.h"
+#include "common/log/stream.h"
 
 namespace casual
 {
@@ -138,8 +139,7 @@ namespace casual
 
          EXPECT_TRUE( original.size() == memory::size( current_type));
          EXPECT_TRUE( copied.size() == memory::size( current_type));
-         EXPECT_TRUE( original == copied) << "original: " << range::make( original) << " - copied: " << range::make( copied);
+         EXPECT_TRUE( original == copied); //<< "original: " << range::make( original) << " - copied: " << range::make( copied);
       }
    } // common
-
 } // casual

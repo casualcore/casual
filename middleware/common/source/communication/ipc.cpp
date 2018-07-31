@@ -250,7 +250,7 @@ namespace casual
                      {
                         Trace trace{ "common::communication::ipc::native::non::blocking::send"};
 
-                        log::line( verbose::log, "---> non blocking end - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+                        log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
 
                         auto error = posix::error(
                            ::sendto(

@@ -34,17 +34,21 @@ namespace casual
          using reverse_iterator = std::reverse_iterator< iterator>;
 
          constexpr Range() = default;
-         explicit constexpr Range( iterator first, iterator last) :  m_first( first), m_last( last) {}
+
+         template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
+         explicit constexpr Range( convertible_iterator first, convertible_iterator last) :  m_first( first), m_last( last) {}
 
 
-         template< typename Size, std::enable_if_t< std::is_integral< Size>::value>* dummy = nullptr>
-         explicit constexpr Range( iterator first, Size size) : m_first( first), m_last( first + size) {}
+         template< typename convertible_iterator, typename Size, std::enable_if_t< 
+            std::is_convertible< convertible_iterator, iterator>::value
+            && std::is_integral< Size>::value >* dummy = nullptr>
+         explicit constexpr Range( convertible_iterator first, Size size) : m_first( first), m_last( first + size) {}
 
          //!
          //! conversion from Range with convertable iterators
          //!
          template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
-         constexpr Range( Range< convertible_iterator> range) :  m_first( range.begin()), m_last( range.end()) {}
+         constexpr Range( Range< convertible_iterator> range) :  m_first( std::begin( range)), m_last( std::end( range)) {}
 
 
          constexpr platform::size::type size() const { return std::distance( m_first, m_last);}
@@ -90,8 +94,34 @@ namespace casual
 
          friend constexpr Range operator + ( Range range, difference_type value) { return Range( range.m_first + value, range.m_last);}
 
+         friend constexpr bool operator == ( const Range& lhs, const Range& rhs) 
+         {
+            return equal( lhs, rhs);
+         };
+         friend constexpr bool operator != ( const Range& lhs, const Range& rhs) { return !( lhs == rhs);}
+
+         template< typename C,
+            std::enable_if_t< 
+               traits::is::iterable< C>::value 
+               && ! traits::container::is_string< C>::value>* dummy = nullptr>
+         friend constexpr bool operator == ( const Range& lhs, const C& rhs)
+         {
+            return equal( lhs, rhs);
+         }
+
+         template< typename C,
+            std::enable_if_t< 
+               traits::is::iterable< C>::value 
+               && ! traits::container::is_string< C>::value>* dummy = nullptr>
+         friend constexpr bool operator == ( C& lhs, const Range< Iter>& rhs)
+         {
+            return equal( lhs, rhs);
+         }
 
       private:
+
+         template< typename L, typename R> 
+         constexpr static bool equal( L&& lhs, R&& rhs) { return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), std::end( rhs));}
 
          constexpr static pointer data( iterator first, iterator last) noexcept
          {
@@ -113,6 +143,8 @@ namespace casual
          iterator m_first = iterator{};
          iterator m_last = iterator{};
       };
+
+
 
       //!
       //! This is not intended to be a serious attempt at a range-library
@@ -150,13 +182,10 @@ namespace casual
                using type = category::fixed;
             };            
 
-
-
             template< typename T>
             using tag_t = typename tag< T>::type; 
 
-
-         }
+         } // category
 
          template< typename Iter, typename = std::enable_if_t< common::traits::is::iterator< Iter>::value>>
          Range< Iter> make( Iter first, Iter last)
@@ -178,32 +207,21 @@ namespace casual
             return make( std::begin( container), std::end( container));
          }
 
-         //!
-         //! specialization for literal strings
-         //!
-         //! @attention omits the null terminator
-         //!
-         //! @param container
-         //! @return
-         template< std::size_t size>
-         auto make( const char (&container)[ size])
-         {
-            return make( std::begin( container), size - 1);
-         }
-
-
          template< typename C, typename = std::enable_if_t<std::is_lvalue_reference< C>::value && common::traits::is::reverse::iterable< C>::value>>
          auto make_reverse( C&& container)
          {
             return make( container.rbegin(), container.rend());
          }
 
-
          template< typename Iter>
          constexpr Range< Iter> make( Range< Iter> range)
          {
             return range;
          }
+
+         template< std::size_t size>
+         auto make( const char (&container)[ size]) = delete;
+         auto make( const char*) = delete;
 
          template< typename C>
          struct traits
@@ -383,8 +401,7 @@ namespace casual
 
             return range;
          }
-
-
       } // range
+
    } // common 
 } // casual 

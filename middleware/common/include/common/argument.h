@@ -14,6 +14,7 @@
 #include "common/algorithm.h"
 #include "common/functional.h"
 
+#include "common/view/string.h"
 #include "common/string.h"
 #include "common/compare.h"
 
@@ -30,7 +31,7 @@ namespace casual
    {
       namespace argument
       {
-         using range_type = range::type_t< std::vector< std::string>>;
+         using range_type = range::type_t< std::vector< view::String>>;
          using size_type = platform::size::type;
 
 
@@ -51,7 +52,7 @@ namespace casual
 
          namespace exception
          {  
-            void correlation( const std::string& key);
+            void correlation( view::String key);
          } // exception
 
 
@@ -60,11 +61,11 @@ namespace casual
 
             namespace validate
             {
-               void cardinality( const std::string& key, const Cardinality& cardinality, size_type value);
+               void cardinality( view::String key, const Cardinality& cardinality, size_type value);
 
                namespace value
                {
-                  void cardinality( const std::string& key, const Cardinality& cardinality, range_type values);
+                  void cardinality( view::String key, const Cardinality& cardinality, range_type values);
                } // value
 
             } // validate
@@ -86,14 +87,14 @@ namespace casual
                   return *this;
                }
                
-               void invoke( const std::string& key, range_type values) { m_callable->invoke( key, values);}
+               void invoke( view::String key, range_type values) { m_callable->invoke( key, values);}
                std::vector< std::string> complete( range_type values, bool help) const { return m_callable->complete( values, help);}
                Cardinality cardinality() const { return m_callable->cardinality();}
 
             private:
                struct base 
                {
-                  virtual void invoke( const std::string& key, range_type values) = 0;
+                  virtual void invoke( view::String key, range_type values) = 0;
                   virtual std::vector< std::string> complete( range_type values, bool help) const = 0;
                   virtual Cardinality cardinality() const = 0;
                   virtual std::unique_ptr< base> copy() const = 0;
@@ -104,7 +105,7 @@ namespace casual
                {
                   model( C callable) : m_callable( std::move( callable)) {}
 
-                  void invoke( const std::string& key, range_type values) override { m_callable.invoke( key, values);}
+                  void invoke( view::String key, range_type values) override { m_callable.invoke( key, values);}
                   std::vector< std::string> complete( range_type values, bool help) const override { return m_callable.complete( values, help);}
 
                   Cardinality cardinality() const override { return m_callable.cardinality();}
@@ -140,7 +141,7 @@ namespace casual
             {
                Invoked( Invoke invocable) : invocable( std::move( invocable)) {}
                Invoke invocable;
-               std::string key;
+               view::String key;
                std::string parent;
                range_type values;
                size_type invoked;
@@ -173,13 +174,13 @@ namespace casual
                //!     the _handler_ to have different semantics for the two.
                //! 
                //! @{
-               inline bool has( const std::string& key) const { return m_handler->has( key);}
-               inline bool next( const std::string& key) const { return m_handler->next( key);}
+               inline bool has( view::String key) const { return m_handler->has( key);}
+               inline bool next( view::String key) const { return m_handler->next( key);}
                //! @}
 
-               inline void invoke( const std::string& key, range_type values) { m_handler->invoke( key, values);}
+               inline void invoke( view::String key, range_type values) { m_handler->invoke( key, values);}
                
-               inline detail::Invoked completion( const std::string& key, range_type values) { return m_handler->completion( key, values);}
+               inline detail::Invoked completion( view::String key, range_type values) { return m_handler->completion( key, values);}
 
 
                inline const std::vector< std::string>& keys() const { return m_handler->keys();} 
@@ -193,10 +194,10 @@ namespace casual
             private:
                struct base 
                {
-                  virtual bool has( const std::string& key) const = 0;
-                  virtual bool next( const std::string& key) const = 0;
-                  virtual void invoke( const std::string& key, range_type values) = 0;
-                  virtual detail::Invoked completion( const std::string& key, range_type values) = 0;
+                  virtual bool has( view::String key) const = 0;
+                  virtual bool next( view::String key) const = 0;
+                  virtual void invoke( view::String key, range_type values) = 0;
+                  virtual detail::Invoked completion( view::String, range_type values) = 0;
 
                   virtual const std::vector< std::string>& keys() const  = 0;
                   virtual const std::string& description() const = 0;
@@ -213,10 +214,10 @@ namespace casual
                {
                   model( H handler) : m_handler( std::move( handler)) {}
 
-                  bool has( const std::string& key) const override { return m_handler.has( key);}
-                  bool next( const std::string& key) const override { return m_handler.next( key);}
-                  void invoke( const std::string& key, range_type values) override { m_handler.invoke( key, values);}
-                  detail::Invoked completion( const std::string& key, range_type values) override { return m_handler.completion( key, values);}
+                  bool has( view::String key) const override { return m_handler.has( key);}
+                  bool next( view::String key) const override { return m_handler.next( key);}
+                  void invoke( view::String key, range_type values) override { m_handler.invoke( key, values);}
+                  detail::Invoked completion( view::String key, range_type values) override { return m_handler.completion( key, values);}
 
                   inline const std::vector< std::string>& keys() const override { return m_handler.keys();} 
                   inline const std::string& description() const override { return m_handler.description();} 
@@ -413,7 +414,7 @@ namespace casual
                         return tuple_cardinality( arguments);
                      }
 
-                     void assign( const std::string& key, range_type values) 
+                     void assign( view::String key, range_type values) 
                      { 
                         validate::value::cardinality( key, cardinality(), values);
                         tuple_assign( values, arguments);
@@ -432,7 +433,7 @@ namespace casual
                      
                      Invoke( C callable) : m_callable( std::move( callable)) {}
 
-                     void invoke( const std::string& key, range_type values) 
+                     void invoke( view::String key, range_type values) 
                      { 
                         base_type::assign( key, values); 
                         common::apply( m_callable, base_type::arguments);
@@ -451,7 +452,7 @@ namespace casual
                      using base_type = value_holder< T>;
                      using base_type::base_type;
 
-                     void invoke( const std::string& key, range_type values) { base_type::assign( key, values); }
+                     void invoke( view::String key, range_type values) { base_type::assign( key, values); }
                   };
 
                   template< typename Call, typename Compl> 
@@ -518,24 +519,24 @@ namespace casual
                } 
                
 
-               inline bool has( const std::string& key) const
+               inline bool has( view::String key) const
                {
                   return ! algorithm::find_if( m_handlers, [&key]( const auto& h){ return h.has( key);}).empty();
                }
 
-               inline bool next( const std::string& key) const
+               inline bool next( view::String key) const
                {
                   return ! algorithm::find_if( m_handlers, [&key]( const auto& h){ return h.next( key);}).empty();
                }
 
-               detail::Invoked completion( const std::string& key, range_type values)
+               detail::Invoked completion( view::String key, range_type values)
                {
                   return apply( [&key, values]( auto& found){ 
                      return found.completion( key, values);
                   }, key);
                }
 
-               inline void invoke( const std::string& key, range_type values)
+               inline void invoke( view::String key, range_type values)
                {
                   apply( [&key, values]( auto& found){ 
                      found.invoke( key, values);
@@ -565,7 +566,7 @@ namespace casual
                Holder() = default;
 
                template< typename A>
-               auto apply( A&& applier, const std::string& key) -> decltype( applier( std::declval< detail::Handler&>()))
+               auto apply( A&& applier, view::String key) -> decltype( applier( std::declval< detail::Handler&>()))
                {
                   auto found = algorithm::find_if( m_handlers, [&key]( const auto& h){ return h.has( key);});
 
@@ -610,7 +611,7 @@ namespace casual
                      throw exception::invalid::Argument{ "at least one option 'key' has to be provided"};
                }
 
-               inline bool has( const std::string& key) const
+               inline bool has( view::String key) const
                {
                   return ! algorithm::find( keys(), key).empty();
                }
@@ -629,7 +630,7 @@ namespace casual
             {
 
                template< typename I>
-               inline void invoke( I&& invocable, const std::string& key, range_type values) 
+               inline void invoke( I&& invocable, view::String key, range_type values) 
                { 
                   validate::cardinality( key, m_cardinality, m_invoked + 1);
                   invocable.invoke( key, values);
@@ -647,7 +648,7 @@ namespace casual
                   return result;
                }
 
-               inline void validate( const std::string& key) const 
+               inline void validate( view::String key) const 
                { 
                   validate::cardinality( key, m_cardinality, m_invoked);
                }
@@ -697,9 +698,9 @@ namespace casual
                m_invocable( detail::invoke::create( std::forward< I>( invocable), std::forward< C>( completer))) 
             {}
 
-            inline bool next( const std::string& key) const { return has( key);}
+            inline bool next( view::String key) const { return has( key);}
 
-            inline void invoke( const std::string& key, range_type values) 
+            inline void invoke( view::String key, range_type values) 
             { 
                assert( has( key));
                m_cardinality.invoke( m_invocable, key, values);
@@ -722,7 +723,7 @@ namespace casual
                return detail::Holder::construct( *this, std::move( rhs));
             }
 
-            detail::Invoked completion( const std::string& key, range_type values)
+            detail::Invoked completion( view::String key, range_type values)
             {
                detail::Invoked result{ m_invocable};
                result.values = values;
@@ -761,16 +762,16 @@ namespace casual
             {}
 
 
-            inline bool has( const std::string& key) const
+            inline bool has( view::String key) const
             {
                return m_invoke_content ? m_content.has( key) : basic_keys::has( key);
             }
-            inline bool next( const std::string& key) const
+            inline bool next( view::String key) const
             {
                return m_content.has( key) || basic_keys::has( key);
             }
 
-            inline void invoke( const std::string& key, range_type values) 
+            inline void invoke( view::String key, range_type values) 
             { 
                if( ! m_invoke_content)
                {
@@ -783,7 +784,7 @@ namespace casual
                }
             }
 
-            detail::Invoked completion( const std::string& key, range_type values)
+            detail::Invoked completion( view::String key, range_type values)
             {
                if( ! m_invoke_content)
                {
@@ -864,14 +865,15 @@ namespace casual
             void operator() ( int argc, char* argv[])
             {
                assert( argc > 0);
-               basic_parse::operator()( algorithm::transform( range::make( argv + 1, argv + argc), []( const auto c){
-                  return std::string( c);
-               }));
+
+               std::vector< view::String> range(  argv + 1, argv + argc);
+               basic_parse::operator()( range::make( range));
             }
 
             void operator() ( std::vector< std::string> arguments)
             {
-               basic_parse::operator()( range::make( arguments));
+               std::vector< view::String> range( std::begin( arguments), std::end( arguments));
+               basic_parse::operator()( range::make( range));
             }
 
             void operator() ( range_type arguments)

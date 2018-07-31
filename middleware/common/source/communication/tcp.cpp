@@ -15,13 +15,11 @@
 
 #include "common/log.h"
 
-
-
+// posix
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
-
 
 namespace casual
 {
@@ -31,7 +29,6 @@ namespace casual
       {
          namespace tcp
          {
-
             namespace local
             {
                namespace
@@ -466,7 +463,7 @@ namespace casual
                         local_send( socket.descriptor(), complete.payload.data(), complete.payload.data() + complete.payload.size(), flags);
                      }
 
-                     log << "tcp send ---> socket: " << socket << ", complete: " << complete << '\n';
+                     log::line( log, "tcp send ---> socket: ", socket, ", complete: ", complete);
 
                      return complete.correlation;
                   }
@@ -508,7 +505,7 @@ namespace casual
                      // make sure we always block when we wait for the payload.
                      local::receive( socket.descriptor(), message.payload.data(), message.payload.data() + message.payload.size(), flags - Flag::non_blocking);
 
-                     log << "tcp receive <---- socket: " << socket << " , complete: " << message << '\n';
+                     log::line( log, "tcp receive <---- socket: ", socket, " , complete: ", message);
 
                      return message;
                   }

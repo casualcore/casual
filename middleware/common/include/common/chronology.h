@@ -9,7 +9,7 @@
 
 
 #include "common/platform.h"
-#include "common/log/stream.h"
+#include "common/stream.h"
 
 #include <string>
 #include <chrono>
@@ -66,16 +66,22 @@ namespace casual
             }
          };
 
+         template< typename D>
+         std::string duration( D&& duration) 
+         { 
+            return std::to_string( duration.count()) + unit::string( duration);
+         }
+
       } // chronology
 
-      namespace log
+      namespace stream
       {
          template< typename R, typename P>
          struct has_formatter< std::chrono::duration< R, P>> : std::true_type
          {
             using formatter = chronology::format;
          };
-      } // log
+      } // stream
 
 
    } // common

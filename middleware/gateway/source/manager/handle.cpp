@@ -84,7 +84,7 @@ namespace casual
                            {
                               if( connection.process)
                               {
-                                 log << "send shutdown to connection: " << connection << '\n';
+                                 log::line( log, "send shutdown to connection: ", connection);
 
                                  common::message::shutdown::Request request;
                                  request.process = common::process::handle();
@@ -102,14 +102,14 @@ namespace casual
                               }
                               else if( connection.process.pid)
                               {
-                                 log << "terminate connection: " << connection << '\n';
+                                 log::line( log, "terminate connection: ", connection);
 
                                  // try to fetch handle from domain manager
                                  {
                                     auto handle = common::communication::instance::fetch::handle( 
                                        connection.process.pid, common::communication::instance::fetch::Directive::direct);
 
-                                    log << "fetched handle: " << handle << '\n';
+                                    log::line( log, "fetched handle: ", handle);
 
                                     if( handle)
                                     {
@@ -140,7 +140,6 @@ namespace casual
                      {
                         Trace trace{ "gateway::manager::handle::local::Boot"};
 
-
                         if( connection.runlevel == manager::state::outbound::Connection::Runlevel::absent)
                         {
                            try
@@ -160,7 +159,7 @@ namespace casual
                         }
                         else
                         {
-                           log::category::error << "boot connection: " << connection << " - wrong runlevel - action: ignore\n";
+                           log::line( log::category::error, "boot connection: ", connection, " - wrong runlevel - action: ignore");
                         }
                      }
 
@@ -354,7 +353,7 @@ namespace casual
                      }
                      else
                      {
-                        common::log::category::error << "failed to find connection for outbound::configuration::Request" << message << '\n';
+                        log::line( common::log::category::error, "failed to find connection for outbound::configuration::Request: ", message);
                      }
                   }
 
@@ -382,12 +381,12 @@ namespace casual
                      }
                      else
                      {
-                        log::category::error << "outbound connected is in wrong state: " << *found << " - action: discard\n";
+                        log::line( log::category::error, "outbound connected is in wrong state: ", *found, " - action: discard");
                      }
                   }
                   else
                   {
-                     log::category::error << "unknown outbound connected " << message << " - action: discard\n";
+                     log::line( log::category::error, "unknown outbound connected ", message, " - action: discard");
                   }
                }
             } // outbound
@@ -416,7 +415,7 @@ namespace casual
                   }
                   else
                   {
-                     log::category::error << "unknown inbound connected " << message << " - action: discard\n";
+                     log::line( log::category::error, "unknown inbound connected ", message, " - action: discard");
                   }
                }
             } // inbound

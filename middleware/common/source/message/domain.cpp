@@ -6,6 +6,7 @@
 
 
 #include "common/message/domain.h"
+#include "common/log/stream.h"
 
 namespace casual
 {
@@ -90,24 +91,20 @@ namespace casual
                      std::ostream& operator << ( std::ostream& out, const Request& value)
                      {
                         return out << "{ process: " << value.process
-                              << ", processes: " << range::make( value.processes)
+                              << ", processes: " << value.processes
                               << '}';
                      }
 
                      std::ostream& operator << ( std::ostream& out, const Reply& value)
                      {
                         return out << "{ process: " << value.process
-                              << ", processes: " << range::make( value.processes)
+                              << ", processes: " << value.processes
                               << '}';
                      }
                   } // shutdown
                } // prepare
-
             } // process
-
          } // domain
-
       } // message
    } // common
-
 } // casual

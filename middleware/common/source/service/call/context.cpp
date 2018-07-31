@@ -26,9 +26,7 @@
 
 #include "xatmi.h"
 
-//
 // std
-//
 #include <algorithm>
 #include <cassert>
 
@@ -44,7 +42,6 @@ namespace casual
             {
                namespace
                {
-
                   namespace queue
                   {
                      struct Policy
@@ -134,7 +131,7 @@ namespace casual
                         //
                         if( flags.exist( async::Flag::no_reply))
                         {
-                           log::debug << "no_reply - no descriptor reservation\n";
+                           log::line( log::debug, "no_reply - no descriptor reservation");
 
                            //
                            // No reply, hence no descriptor and no transaction (we validated this before)
@@ -143,7 +140,7 @@ namespace casual
                         }
                         else
                         {
-                           log::debug << "descriptor reservation - flags: " << flags << '\n';
+                           log::line( log::debug, "descriptor reservation - flags: ", flags);
 
                            auto& descriptor = state.pending.reserve( message.correlation);
 
@@ -185,7 +182,7 @@ namespace casual
             {
                Trace trace( "service::call::Context::async");
 
-               log::debug << "service: " << service << ", buffer: " << buffer << " flags: " << flags << '\n';
+               log::line( log::debug, "service: ", service, ", buffer: ", buffer, " flags: ", flags);
 
                service::Lookup lookup( service, local::validate::flags( flags));
 
@@ -238,7 +235,7 @@ namespace casual
                {
                   prepared.message.service = target.service;
 
-                  log::debug << "async - message: " << prepared.message << '\n';
+                  log::line( log::debug, "async - message: ", prepared.message);
 
                   communication::ipc::blocking::send( target.process.ipc, prepared.message);
                }
@@ -276,7 +273,7 @@ namespace casual
             {
                Trace trace( "calling::Context::reply");
 
-               log::debug << "descriptor: " << descriptor << " flags: " << flags << '\n';
+               log::line( log::debug, "descriptor: ", descriptor, " flags: ", flags);
 
                //
                // TODO: validate input...

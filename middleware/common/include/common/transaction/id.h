@@ -13,6 +13,7 @@
 
 #include "common/uuid.h"
 
+#include "common/view/binary.h"
 #include "common/algorithm.h"
 #include "common/process.h"
 
@@ -31,7 +32,7 @@ bool operator != ( const XID& lhs, const XID& rhs);
 //! @}
 
 //!
-//! Global stream opaerator for XID
+//! Global stream operator for XID
 //!
 std::ostream& operator << ( std::ostream& out, const XID& xid);
 
@@ -43,9 +44,7 @@ namespace casual
       {
          using xid_type = XID;
 
-         using xid_range_type = decltype( range::make( std::declval< const xid_type&>().data));
-
-
+         using xid_range_type = decltype( view::binary::make( std::declval< const xid_type&>().data));
 
          class ID
          {

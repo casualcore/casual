@@ -26,9 +26,10 @@ namespace std
       return stream;
    }
 }
-
 namespace casual
 {
+   using namespace common;
+
    namespace http
    {
       namespace inbound
@@ -88,7 +89,7 @@ namespace casual
                   if ( buffer.back() == ',') buffer.pop_back();
                   buffer.push_back('}');
 
-                  http::verbose::log << "parameters: " << std::string( buffer.begin(), buffer.end()) << '\n';
+                  log::line( verbose::log, "parameters: ", std::string( buffer.begin(), buffer.end()));
                   return buffer;
                }
 
@@ -116,7 +117,7 @@ namespace casual
                   std::copy( root.begin(), root.end(), std::back_inserter( buffer));
                   buffer.push_back('>');
 
-                  http::verbose::log << "parameters: " << std::string( buffer.begin(), buffer.end()) << '\n';
+                  log::line( verbose::log, "parameters: ", std::string( buffer.begin(), buffer.end()));
                   return buffer;
                }
             }
@@ -276,8 +277,8 @@ namespace casual
                const auto& protocol = transport->protocol;
                const auto& service = transport->service;
 
-               http::verbose::log << "protocol: " << protocol << '\n';
-               http::verbose::log << "service: " << service << '\n';
+               log::line( verbose::log, "protocol: ", protocol);
+               log::line( verbose::log, "service: ", service);
 
                transport->context = cTPACALL;
 
@@ -293,7 +294,7 @@ namespace casual
                   // Handle parameter
                   //
                   const auto& parameters = parameter::copy( transport->parameter);
-                  http::verbose::log << "parameters: " << parameters;
+                  log::line( verbose::log, "parameters: ", parameters);
 
                   //
                   // Handle buffer
@@ -325,9 +326,9 @@ namespace casual
                const auto descriptor = transport->calldescriptor;
                const auto& service = transport->service;
 
-               http::verbose::log << "protocol: " << protocol << '\n';
-               http::verbose::log << "service: " << service << '\n';
-               http::verbose::log << "descriptor: " << descriptor << '\n';
+               log::line( verbose::log, "protocol: ", protocol);
+               log::line( verbose::log, "service: ", service);
+               log::line( verbose::log, "descriptor: ", descriptor);
 
                transport->context = cTPGETRPLY;
 
@@ -367,9 +368,10 @@ namespace casual
                const auto descriptor = transport->calldescriptor;
                const auto& service = transport->service;
 
-               http::verbose::log << "protocol: " << protocol << '\n';
-               http::verbose::log << "service: " << service << '\n';
-               http::verbose::log << "descriptor: " << descriptor << '\n';
+               log::line( verbose::log, "protocol: ", protocol);
+               log::line( verbose::log, "service: ", service);
+               log::line( verbose::log, "descriptor: ", descriptor);
+
 
                transport->context = cTPGETRPLY;
 

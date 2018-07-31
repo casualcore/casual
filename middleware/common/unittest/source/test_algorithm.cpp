@@ -46,63 +46,44 @@ namespace casual
          EXPECT_TRUE( empty.size() == 0);
       }
 
-      TEST( casual_common_algorithm_range, make_from_string_literal__expect_no_null_termination)
-      {
-         common::unittest::Trace trace;
-
-         {
-            auto range = range::make( "1");
-            EXPECT_TRUE( range.size() == 1);
-         }
-         {
-            auto range = range::make( "12");
-            EXPECT_TRUE( range.size() == 2);
-         }
-         {
-            auto range = range::make( "123");
-            EXPECT_TRUE( range.size() == 3);
-         }
-      }
-
-
-      TEST( casual_common_algorithm_range, list_container)
+      TEST( casual_common_algorithm_equal, list_container)
       {
          common::unittest::Trace trace;
 
          std::list< int> container{ 1, 2, 3, 4, 5};
 
          auto range = range::make( container);
-         EXPECT_TRUE( range == container);
+         EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_range, deque_container)
+      TEST( casual_common_algorithm_equal, deque_container)
       {
          common::unittest::Trace trace;
 
          std::deque< int> container{ 1, 2, 3, 4, 5};
 
          auto range = range::make( container);
-         EXPECT_TRUE( range == container);
+         EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_range, array_container)
+      TEST( casual_common_algorithm_equal, array_container)
       {
          common::unittest::Trace trace;
 
          std::array< int, 5> container = {{ 1, 2, 3, 4, 5}};
 
          auto range = range::make( container);
-         EXPECT_TRUE( range == container);
+         EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( casual_common_algorithm_range, c_array_container)
+      TEST( casual_common_algorithm_equal, c_array_container)
       {
          common::unittest::Trace trace;
 
          int container[] = { 1, 2, 3, 4, 5};
 
          auto range = range::make( container);
-         EXPECT_TRUE( range == container);
+         EXPECT_TRUE( algorithm::equal( range, container));
       }
 
       TEST( casual_common_algorithm_position, overlap)
@@ -445,8 +426,8 @@ namespace casual
 
          auto split = algorithm::intersection( range, lookup);
 
-         EXPECT_TRUE( algorithm::sort( std::get< 0>( split)) == algorithm::sort( lookup)) << std::get< 0>( split);
-         EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
+         EXPECT_TRUE( algorithm::equal( algorithm::sort( std::get< 0>( split)), algorithm::sort( lookup))) << std::get< 0>( split);
+         EXPECT_TRUE( algorithm::equal( std::get< 1>( split), ( std::vector< int>{ 9, 7, 8, 6})));
       }
 
       namespace local
@@ -490,8 +471,8 @@ namespace casual
 
          auto split = algorithm::intersection( range, lookup, []( const A& a, const B& b){ return a.value == b.value;});
 
-         EXPECT_TRUE( algorithm::sort( std::get< 0>( split)) == algorithm::sort( lookup));// << std::get< 0>( split);
-         EXPECT_TRUE( std::get< 1>( split) == ( std::vector< int>{ 9, 7, 8, 6}));
+         EXPECT_TRUE( algorithm::equal( algorithm::sort( std::get< 0>( split)), algorithm::sort( lookup)));// << std::get< 0>( split);
+         EXPECT_TRUE( algorithm::equal( std::get< 1>( split), ( std::vector< int>{ 9, 7, 8, 6})));
       }
 
 

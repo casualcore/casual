@@ -275,22 +275,26 @@ namespace casual
 
             namespace detail
             {
-               std::string encode( const void* data, platform::size::type bytes)
+               std::string encode( const char* first, const char* last)
                {
+                  auto bytes = last - first;
                   std::string result( bytes * 2, 0);
-
-                  auto first = static_cast< const char*>( data);
-                  auto last = first + bytes;
 
                   local::encode( first, last, result.begin());
 
                   return result;
                }
 
-               void decode( const std::string& value, void* data)
+               void encode( std::ostream& out, const char* first, const char* last)
                {
-                  local::decode( std::begin( value), std::end( value), static_cast< std::uint8_t*>( data));
+                  local::encode( first, last, std::ostream_iterator< const char>( out));
                }
+
+               void decode(const char* first, const char* last, char* data)
+               {
+                  local::decode( first, last, data);
+               }
+               
 
             } // detail
 

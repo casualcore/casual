@@ -10,6 +10,8 @@
 
 
 #include "common/platform.h"
+#include "common/traits.h"
+#include "common/range.h"
 
 #include <string>
 
@@ -131,8 +133,9 @@ namespace casual
          {
             namespace detail
             {
-               std::string encode( const void* data, platform::size::type bytes);
-               void decode( const std::string& value, void* data);
+               std::string encode( const char* first, const char* last);
+               void encode( std::ostream& out, const char* first, const char* last);
+               void decode( const char* first, const char* last, char* data);
             } // detail
 
 
@@ -144,9 +147,20 @@ namespace casual
             //! @return hex-encoded string of [first, last)
             //!
             template< typename Iter>
-            std::string encode( Iter first, Iter last)
+            std::enable_if_t< traits::is::binary::iterator< Iter>::value, std::string>
+            encode( Iter first, Iter last)
             {
-               return detail::encode( &(*first), last - first);
+               auto cast = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));}; 
+               return detail::encode( cast( first), cast( last));
+            }
+
+            template< typename Iter>
+            std::enable_if_t< traits::is::binary::iterator< Iter>::value, std::ostream&>
+            encode( std::ostream& out, Iter first, Iter last)
+            {
+               auto cast = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));}; 
+               detail::encode( out, cast( first), cast( last));
+               return out;
             }
 
             //!
@@ -171,15 +185,35 @@ namespace casual
             platform::binary::type decode( const std::string& value);
 
 
+            template< typename Source, typename Iter>
+            std::enable_if_t< 
+               traits::is::string::like< Source>::value
+               && traits::is::binary::iterator< Iter>::value
+            >
+            decode( Source&& source, Iter first, Iter last)
+            {
+               auto size = last - first;
+               assert( range::size( source) <= ( size * 2) + 1);
+
+               auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
+               auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
+               detail::decode( cast_source( std::begin( source)), cast_source( std::end( source)), cast_target( first));
+            }
+
+
             //!
             //! decode hex-string to a binary representation
             //!
             //! @return binary representation of @p value
             //!
-            template< typename C>
-            void decode( const std::string& value, C&& container)
+            template< typename Source, typename Target>
+            std::enable_if_t< 
+               traits::is::string::like< Source>::value
+               && traits::is::binary::like< Target>::value
+            >
+            decode( Source&& source, Target&& target)
             {
-               return detail::decode( value, &( *std::begin( container)));
+               decode( std::forward< Source>( source), std::begin( target), std::end( target));
             }
 
 

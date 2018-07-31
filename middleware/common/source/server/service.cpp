@@ -16,7 +16,6 @@
 #include "common/exception/handle.h"
 
 
-
 namespace casual
 {
    namespace common
@@ -157,7 +156,7 @@ namespace casual
                            }
                            case state::Jump::Location::c_forward:
                            {
-                              log::debug << "user called tpforward\n";
+                              log::line( log::debug, "user called tpforward");
 
                               throw transform::forward( state.jump);
                            }
@@ -167,7 +166,7 @@ namespace casual
                            }
                            case state::Jump::Location::c_return:
                            {
-                              log::debug << "user called tpreturn\n";
+                              log::line( log::debug, "user called tpreturn");
 
                               return transform::result( state.jump);
                            }
@@ -190,7 +189,7 @@ namespace casual
                         catch( ...)
                         {
                            exception::handle();
-                           log::category::error << "exception thrown from service: " << argument.service.name << '\n';
+                           log::line( log::category::error, "exception thrown from service: ", argument.service.name);
                         }
 
                      }

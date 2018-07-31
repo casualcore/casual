@@ -14,20 +14,21 @@
 #include "common/transcode.h"
 #include "common/buffer/type.h"
 
+
 #include <curl/curl.h>
 
 namespace casual
 {
+   using namespace common;
+
    namespace http
    {
       namespace request
       {
-
          namespace local
          {
             namespace
             {
-
                namespace global
                {
                   namespace error
@@ -48,7 +49,7 @@ namespace casual
                      template< typename H, typename Directive, typename Data>
                      void option( H&& handle, Directive directive, Data&& data)
                      {
-                        http::verbose::log << "directive: " << directive << " - data: " << data << '\n';
+                        log::line( http::verbose::log, "directive: ", directive, " - data: ", data);
 
                         auto code = curl_easy_setopt( handle.get(), directive, std::forward< Data>( data));
 
@@ -223,7 +224,7 @@ namespace casual
                         throw std::runtime_error{ "failed to initialize curl connection"};
                      }
 
-                     http::verbose::log << "handle @" << m_handle.get() << '\n';
+                     log::line( http::verbose::log, "handle @", m_handle.get());
 
                      curl::set::option( m_handle, CURLOPT_ERRORBUFFER, global::error::buffer.data());
                      curl::set::option( m_handle, CURLOPT_URL, url.data());
@@ -231,7 +232,7 @@ namespace casual
                      curl::set::option( m_handle, CURLOPT_FAILONERROR, 1L);
 
 
-                     http::verbose::log << "header: " << common::range::make( header) << '\n';
+                     log::line( http::verbose::log, "header: ", header);
 
                      for( auto& field : header)
                      {
@@ -255,9 +256,7 @@ namespace casual
                         curl::set::option( m_handle, CURLOPT_HTTPHEADER, m_header.get());
                      }
 
-                     //
                      // Set reply-headers-stuff
-                     //
                      {
                         curl::set::option( m_handle, CURLOPT_HEADERFUNCTION, &curl::callback::header);
                         curl::set::option( m_handle, CURLOPT_HEADERDATA, &reply.header);
@@ -301,9 +300,7 @@ namespace casual
 
                      auto view = transcode( payload);
 
-                     //
                      // set read-payload-stuff
-                     //
                      {
                         curl::set::option( m_handle, CURLOPT_POSTFIELDSIZE_LARGE , view.size());
                         curl::set::option( m_handle, CURLOPT_READFUNCTION, &curl::callback::request::payload);
@@ -364,7 +361,7 @@ namespace casual
 
                      auto content = reply.header.at( "content-type", "");
 
-                     verbose::log << "content: " << content << '\n';
+                     log::line( verbose::log, "content: ",  content);
 
                      auto type = protocol::convert::to::buffer( content);
 
@@ -376,8 +373,8 @@ namespace casual
                      }
                      else
                      {
-                        common::log::category::error << "failed to find a transcoder for buffertype: " << type << '\n';
-                        verbose::log << "header: " << common::range::make( reply.header) << '\n';
+                        log::line( common::log::category::error, "failed to find a transcoder for buffertype: ", type);
+                        log::line( verbose::log, "header: ", reply.header);
                         return transcode_none( std::move( reply), common::buffer::type::x_octet());
                      }
                   }
@@ -390,12 +387,12 @@ namespace casual
                      auto add_content_header = [&]( const std::string& buffertype){
                         auto content = protocol::convert::from::buffer( buffertype);
 
-                        verbose::log << "content: " << content << '\n';
+                        log::line( verbose::log, "content: ", content);
 
                         if( ! content.empty())
                         {
                            auto header = "content-type: " + content;
-                           verbose::log << "header: " << header << '\n';
+                           log::line( verbose::log, "header: ", header);
                            m_header.reset( curl_slist_append( m_header.release(), header.c_str()));
                         }
                      };
@@ -446,13 +443,13 @@ namespace casual
 
                      if( found)
                      {
-                        verbose::log << "found transcoder for: " << found->first << '\n';
+                        log::line( verbose::log, "found transcoder for: ", found->first);
                         return found->second( payload);
                      }
                      else
                      {
-                        common::log::category::warning << "failed to find a transcoder for buffertype: " << payload.payload().type << '\n';
-                        verbose::log << "payload: " << payload.payload() << '\n';
+                        log::line( common::log::category::warning, "failed to find a transcoder for buffertype: ", payload.payload().type);
+                        log::line( verbose::log, "payload: ", payload.payload());
                         return transcode_none( payload);
                      }
                   }

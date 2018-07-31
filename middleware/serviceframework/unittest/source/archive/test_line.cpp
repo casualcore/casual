@@ -57,7 +57,7 @@ namespace casual
 
    TEST( serviceframework_archive_line, has_formatter)
    {
-      EXPECT_TRUE( common::log::has_formatter< local::Composite>::value);
+      EXPECT_TRUE( common::stream::has_formatter< local::Composite>::value);
    }
 
    TEST( serviceframework_archive_line, serialize_composite)

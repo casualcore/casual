@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/service/header.h"
 
 #include "common/algorithm.h"
@@ -116,7 +115,7 @@ namespace casual
 
                void fields( header::Fields header)
                {
-                  log::debug << "header: " << range::make( header) << '\n';
+                  log::line( verbose::log, "header: ", header);
                   fields() = std::move( header);
                }
 

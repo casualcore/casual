@@ -85,7 +85,6 @@ namespace casual
 
                namespace queue
                {
-
                   CASUAL_CUSTOMIZATION_POINT_SERIALIZE( Queue,
                         archive & serviceframework::name::value::pair::make( "name", value.name);
                         archive & serviceframework::name::value::pair::make( "note", value.note);
@@ -135,6 +134,7 @@ namespace casual
       } // message
    } // common
 
+   using namespace common;
 
    namespace domain
    {
@@ -240,8 +240,8 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::exception::handle();
-                     common::log::category::information << "failed to locate persistent file - using default state\n";
+                     exception::handle();
+                     log::line( log::category::information, "failed to locate persistent file - using default state");
                   }
                   return {};
                }
@@ -256,8 +256,8 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::exception::handle();
-                     common::log::category::information << "failed to locate persistent file during save - ignore\n";
+                     exception::handle();
+                     log::line( log::category::information, "failed to locate persistent file during save - ignore");
                   }
                }
 

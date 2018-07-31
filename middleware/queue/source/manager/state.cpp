@@ -12,6 +12,8 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace queue
    {
       namespace manager
@@ -78,6 +80,9 @@ namespace casual
                })).empty();
             });
 
+            log::line( log, "queues: ", queues);
+
+            /*
             if( log)
             {
                log << "queues: [";
@@ -88,6 +93,7 @@ namespace casual
                }
                log << "]\n";
             }
+            */
 
          }
 

@@ -12,14 +12,12 @@
 #include "common/communication/instance.h"
 #include "common/execute.h"
 
-
 namespace casual
 {
    namespace common
    {
       namespace mockup
       {
-
          Process::Process( const std::string& executable, const std::vector< std::string>& arguments)
          {
             Trace trace{ "common::mockup::Process::Process()"};
@@ -46,7 +44,7 @@ namespace casual
                   // Try to get corresponding queue
                   //
                   m_process.ipc = communication::instance::fetch::handle( m_process.pid, communication::instance::fetch::Directive::direct).ipc;
-                  log << "mockup fetched process: " << m_process << '\n';
+                  log::line( log, "mockup fetched process: ", m_process);
                }
 
 

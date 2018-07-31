@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/buffer/pool.h"
 #include "common/algorithm.h"
 #include "common/exception/xatmi.h"
@@ -12,10 +11,8 @@
 
 #include <functional>
 
-
 namespace casual
 {
-
    namespace common
    {
       namespace buffer
@@ -62,7 +59,7 @@ namespace casual
 
                if( log::category::buffer)
                {
-                  log::category::buffer << "allocate type: " << type << " size: " << size << " @" << static_cast< const void*>( buffer) << '\n';
+                  log::line( log::category::buffer, "allocate type: ", type, " size: ", size, " @", static_cast< const void*>( buffer));
                }
                return buffer;
             }
@@ -73,8 +70,8 @@ namespace casual
 
                if( log::category::buffer)
                {
-                  log::category::buffer << "reallocate size: " << size
-                        << " from @" << static_cast< const void*>( handle) << " to " << static_cast< const void*>( buffer) << '\n';
+                  log::line( log::category::buffer, "reallocate size: ", size, 
+                     " from @", static_cast< const void*>( handle), " to ", static_cast< const void*>( buffer));
                }
 
                if( handle == m_inbound)
@@ -94,7 +91,7 @@ namespace casual
             {
                Trace trace{ "buffer::pool::deallocate"};
 
-               log::category::buffer << "deallocate @" << static_cast< const void*>( handle) << '\n';
+               log::line( log::category::buffer, "deallocate @", static_cast< const void*>( handle));
 
                //
                // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
@@ -127,8 +124,8 @@ namespace casual
 
                using return_type = std::tuple< platform::buffer::raw::type, platform::buffer::raw::size::type>;
 
-               log::category::buffer << "insert type: " << payload.type << " size: " << payload.memory.size()
-                     << " @" << static_cast< const void*>( payload.memory.data()) << '\n';
+               log::line( log::category::buffer, "insert type: ", payload.type, " size: ", payload.memory.size(), 
+                  " @", static_cast< const void*>( payload.memory.data()));
 
                if( payload.null())
                {
@@ -174,7 +171,7 @@ namespace casual
 
                if( m_inbound == handle) m_inbound = nullptr;
 
-               log::category::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+               log::line( log::category::buffer, "release type: ", result.type, " size: ", result.memory.size(), " @", static_cast< const void*>( result.memory.data()));
 
                return result;
             }
@@ -190,7 +187,7 @@ namespace casual
 
                if( m_inbound == handle) m_inbound = nullptr;
 
-               log::category::buffer << "release type: " << result.type << " size: " << result.memory.size() << " @" << static_cast< const void*>( result.memory.data()) << '\n';
+               log::line( log::category::buffer, "release type: ", result.type, " size: ", result.memory.size(), " @", static_cast< const void*>( result.memory.data()));
 
                return result;
             }
@@ -207,7 +204,7 @@ namespace casual
                   }
                   catch( const exception::base& exception)
                   {
-                     log::category::error << "failed to deallocate inbound buffer - " << exception << '\n';
+                     log::line( log::category::error, "failed to deallocate inbound buffer - ", exception);
                   }
                }
                algorithm::for_each( m_pools, std::mem_fn( &Base::clear));

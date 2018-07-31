@@ -24,11 +24,9 @@ namespace casual
             {
                namespace
                {
-                  
                   namespace implementation
                   {
                      using size_type = common::platform::size::type;
-
 
                      class Writer 
                      {
@@ -75,7 +73,7 @@ namespace casual
                         template< typename T>
                         void store( const T& value)
                         {
-                           append( common::memory::range::make( value));
+                           append( common::memory::range::cast( value));
                         }
 
                         void store( const platform::binary::type& value)
@@ -153,7 +151,7 @@ namespace casual
                         template< typename T>
                         void load( T& value)
                         {
-                           consume( common::memory::range::make( value));
+                           consume( common::memory::range::cast( value));
                         }
 
                         void load( std::string& value)

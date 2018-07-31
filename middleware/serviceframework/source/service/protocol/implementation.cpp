@@ -15,6 +15,7 @@
 
 namespace casual
 {
+
    namespace serviceframework
    {
       namespace service
@@ -23,7 +24,6 @@ namespace casual
          {
             namespace implementation
             {
-
                Base::Base( protocol::parameter_type&& parameter)
                   : m_parameter( std::move( parameter))
                {
@@ -42,7 +42,7 @@ namespace casual
                {
                   Trace trace{ "protocol::Base::finalize"};
 
-                  log::sf << "result: " << m_result << '\n';
+                  common::log::line( log::sf, "result: ", m_result);
 
                   return std::move( m_result);
                }

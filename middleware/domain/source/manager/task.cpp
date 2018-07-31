@@ -9,6 +9,7 @@
 #include "domain/common.h"
 
 
+#include "common/stream.h"
 #include "common/algorithm.h"
 
 namespace casual
@@ -54,18 +55,18 @@ namespace casual
 
                   if( ! m_tasks.front().started())
                   {
-                     log << "task start: " << m_tasks.front() << '\n';
+                     log::line( log, "task start: ", m_tasks.front());
                      m_tasks.front().start();
                   }
 
                   if( m_tasks.front().done())
                   {
-                     log << "task done: " << m_tasks.front() << '\n';
+                     log::line( log, "task done: ", m_tasks.front());
                      m_tasks.pop_front();
                   }
                   else
                   {
-                     log << "task NOT done: " << m_tasks.front() << '\n';
+                     log::line( log, "task NOT done: ", m_tasks.front());
                      return;
                   }
                }
@@ -74,7 +75,7 @@ namespace casual
 
             std::ostream& operator << ( std::ostream& out, const Queue& queue)
             {
-               return out << "{ tasks: " << range::make( queue.m_tasks) << '}';
+               return out << "{ tasks: " << queue.m_tasks << '}';
             }
 
          } // task

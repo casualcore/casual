@@ -22,6 +22,8 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace queue
    {
       namespace manager
@@ -103,7 +105,7 @@ namespace casual
                   {
                      if( ! optional::send( std::forward< D>( device), std::forward< M>( message)))
                      {
-                        common::log::category::error << "device [" << device << "] unavailable for reply - action: ignore\n";
+                        log::line( log::category::error, "device [", device, "] unavailable for reply - action: ignore");
                      }
                   }
 
@@ -164,7 +166,7 @@ namespace casual
 
                   if( found && ! found->second.empty())
                   {
-                     log << "queue found: " << common::range::make( found->second) << '\n';
+                     log::line( log, "queue found: ", found->second);
 
                      auto& queue = found->second.front();
                      reply.queue = queue.queue;
@@ -194,7 +196,7 @@ namespace casual
                      {
                         m_state.pending.push_back( std::move( message));
 
-                        log << "pending request added to pending: " << common::range::make( m_state.pending) << '\n';
+                        log::line( log, "pending request added to pending: " , m_state.pending);
 
                         //
                         // We don't send reply, we'll do it when we get the reply from the gateway.
@@ -284,7 +286,7 @@ namespace casual
                {
                   Trace trace{ "handle::domain::Advertise"};
 
-                  log << "message: " << message << '\n';
+                  log::line( verbose::log, "message: ", message);
 
                   m_state.update( message);
 
@@ -307,7 +309,7 @@ namespace casual
                      common::algorithm::move( std::get< 1>( split), pending);
                      common::algorithm::trim( m_state.pending, std::get< 0>( split));
 
-                     log << "pending to lookup: " << common::range::make( pending) << '\n';
+                     log::line( log, "pending to lookup: ", pending);
 
                      common::algorithm::for_each( pending, [&]( auto& pending){
                         lookup::Request{ m_state}( pending);
@@ -346,6 +348,8 @@ namespace casual
                   {
                      Trace trace{ "handle::domain::discover::Reply"};
 
+                     common::log::line( verbose::log, "message: ", message);
+
                      //
                      // outbound has already advertised the queues (if any), so we have that handled
                      // check if there are any pending lookups for this reply
@@ -375,7 +379,7 @@ namespace casual
                      }
                      else
                      {
-                        log << "no pending was found for discovery reply: " << message << '\n';
+                        log::line( log, "no pending was found for discovery reply");
                      }
                   }
                } // discover

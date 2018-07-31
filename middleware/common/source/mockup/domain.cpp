@@ -21,7 +21,7 @@
 
 #include "common/flag.h"
 
-
+// std
 #include <fstream>
 
 namespace casual
@@ -30,8 +30,6 @@ namespace casual
    {
       namespace mockup
       {
-
-
          namespace domain
          {
             namespace local
@@ -48,7 +46,7 @@ namespace casual
 
                            void operator () ( message::domain::process::connect::Reply& r)
                            {
-                              log << "mockup " << information << " - connected to the domain\n";
+                              log::line( log, information, " - connected to the domain");
                            }
 
                            std::string information;
@@ -172,12 +170,12 @@ namespace casual
 
                            state->process = message.process;
 
-                           log << "process: " << state->process << '\n';
+                           log::line( log,  "process: ", state->process);
                         },
                         [=]( message::conversation::connect::callee::Request& request){
                            Trace trace{ "message::conversation::connect::callee::Request"};
 
-                           log << "message: " << request << '\n';
+                           log::line( log,  "message: ", request);
 
                            state->route = request.recording;
 
@@ -186,7 +184,7 @@ namespace casual
                            // emulate errors from the service
                            const auto error = service::local::reply_error( request.service.name);
 
-                           log << "mockup: error based on service name: " << error << '\n';
+                           log::line( log,  "mockup: error based on service name: ", error);
 
                            if( request.flags & flag::service::conversation::connect::Flag::receive_only)
                            {
@@ -207,7 +205,7 @@ namespace casual
 
                               auto node = message.route.next();
 
-                              log << "send request: " << message << '\n';
+                              log::line( log,  "send request: ", message);
 
                               ipc::eventually::send( node.address, message);
                            }
@@ -239,7 +237,7 @@ namespace casual
 
                               auto node = reply.route.next();
 
-                              log << "send connect reply: " << reply << '\n';
+                              log::line( log,  "send connect reply: ", reply);
 
                               ipc::eventually::send( node.address, reply);
                            }
@@ -247,7 +245,7 @@ namespace casual
                         [=]( message::conversation::callee::Send& request){
                            Trace trace{ "message::conversation::send::callee::Request"};
 
-                           log << "message: " << request << '\n';
+                           log::line( log,  "message: ", request);
 
                            if( request.events & flag::service::conversation::Event::send_only)
                            {
@@ -262,7 +260,7 @@ namespace casual
                         [=]( message::conversation::Disconnect& message){
                            Trace trace{ "mockup message::conversation::Disconnect"};
 
-                           log << "message: " << message << '\n';
+                           log::line( log,  "message: ", message);
                         }
 
                      };
@@ -315,7 +313,7 @@ namespace casual
                         {
                            Trace trace{ "mockup service::lookup::Request"};
 
-                           log  << "request: " << r << '\n';
+                           log::line( log, "request: ", r);
 
                            auto reply = message::reverse::type( r);
 
@@ -333,7 +331,7 @@ namespace casual
                               reply.state = decltype( reply)::State::absent;
                            }
 
-                           log  << "reply: " << reply << '\n';
+                           log::line( log ,"reply: ", reply);
 
                            ipc::eventually::send( r.process.ipc, reply);
                         },
@@ -360,7 +358,7 @@ namespace casual
                         {
                            Trace trace{ "mockup service::Advertise"};
 
-                           log  << "message: " << m << '\n';
+                           log::line( log, "message: ", m);
 
                            for( auto& service : m.services)
                            {
@@ -370,13 +368,13 @@ namespace casual
                               lookup.service.transaction = service.transaction;
                               lookup.process = m.process;
                            }
-                           //log << "services: " << range::make( m_state.services) << '\n';
+                           //log, "services: ", range::make( m_state.services));
                         },
                         [&]( message::gateway::domain::Advertise& m)
                         {
                            Trace trace{ "mockup gateway::domain::service::Advertise"};
 
-                           log  << "message: " << m << '\n';
+                           log::line( log, "message: ", m);
 
 
                            for( auto& service : m.services)
@@ -388,7 +386,7 @@ namespace casual
                               lookup.process = m.process;
                            }
 
-                           //log << "services: " << range::make( m_state.services) << '\n';
+                           //log, "services: ", range::make( m_state.services));
                         },
                         [&]( message::event::subscription::Begin& m)
                         {
@@ -402,7 +400,7 @@ namespace casual
                         {
                            Trace trace{ "mockup gateway::domain::discover::Request"};
 
-                           log << "request: " << m << '\n';
+                           log::line( log, "request: ", m);
 
                            auto reply = message::reverse::type( m);
 
@@ -426,7 +424,7 @@ namespace casual
                               }
                            }
 
-                           log << "reply: " << reply << '\n';
+                           log::line( log,  "reply: ", reply);
 
                            ipc::eventually::send( m.process.ipc, reply);
 
@@ -441,9 +439,7 @@ namespace casual
 
                };
 
-
                Manager::Manager() = default;
-
 
                Manager::Manager( dispatch_type&& handler)
                   : m_implementation{ std::move( handler)}
@@ -494,7 +490,7 @@ namespace casual
 
                            if( found && found->second != r.process)
                            {
-                              log  << "mockup process: " << r.process << " is a singleton, and one is already running\n";
+                              log::line( log, "mockup process: ", r.process, " is a singleton, and one is already running");
                               reply.directive = decltype( reply)::Directive::singleton;
 
                               ipc::eventually::send( r.process.ipc, reply);
@@ -514,7 +510,7 @@ namespace casual
                                  if( ( p.identification && p.identification == r.identification)
                                        || ( p.pid && p.pid == r.process.pid))
                                  {
-                                    log << "mockup found pending: " << p << " for connected process: " << r.process << "\n";
+                                    log::line( log, "mockup found pending: ", p, " for connected process: ", r.process);
 
                                     auto reply = message::reverse::type( p);
                                     reply.process = r.process;
@@ -556,7 +552,7 @@ namespace casual
 
                            if( found)
                            {
-                              log << "mockup - lockup for identity: " << r.identification << ", process: " << found->second << '\n';
+                              log::line( log,  "mockup - lockup for identity: ", r.identification, ", process: ", found->second);
 
                               reply.process = found->second;
                               ipc::eventually::send( r.process.ipc, reply);
@@ -573,7 +569,7 @@ namespace casual
                            {
 
                               reply.process = *found;
-                              log << "mockup - lockup for pid: " << r.pid << ", process: " << reply.process << '\n';
+                              log::line( log,  "mockup - lockup for pid: ", r.pid, ", process: ", reply.process);
                               ipc::eventually::send( r.process.ipc, reply);
                               return;
                            }
@@ -582,7 +578,7 @@ namespace casual
                         // not found
                         if( r.directive == common::message::domain::process::lookup::Request::Directive::wait)
                         {
-                           log << "mockup - lockup wait with request: " << r << '\n';
+                           log::line( log,  "mockup - lockup wait with request: ", r);
                            m_state.pending.push_back( std::move( r));
                         }
                         else

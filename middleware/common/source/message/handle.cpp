@@ -18,18 +18,16 @@ namespace casual
          namespace handle
          {
 
-
-
             void Shutdown::operator () ( message_type& message)
             {
-               log::debug << "shutdown received from: " << message.process << '\n';
+               log::line( log::debug, "shutdown received from: ", message.process);
 
                throw exception::casual::Shutdown{};
             }
 
             void Ping::operator () ( server::ping::Request& message)
             {
-               log::debug << "pinged by process: " << message.process << '\n';
+               log::line( log::debug, "pinged by process: ", message.process);
 
                server::ping::Reply reply;
                reply.correlation = message.correlation;
@@ -48,7 +46,7 @@ namespace casual
                }
                catch( const common::exception::system::communication::Unavailable&)
                {
-                  log::debug << "queue unavailable: " << message.process << " - action: ignore\n";
+                  log::line( log::debug, "queue unavailable: ",  message.process, " - action: ignore");
                }
             }
 

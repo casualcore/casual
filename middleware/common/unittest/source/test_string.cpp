@@ -9,6 +9,7 @@
 #include <common/unittest.h>
 
 #include "common/string.h"
+#include "common/view/string.h"
 
 namespace casual
 {
@@ -163,24 +164,24 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto trimmed = string::trim( "  1 2 3 4 5   ");
+         auto trimmed = string::trim( view::String( "  1 2 3 4 5   "));
 
          EXPECT_TRUE( trimmed.size() == 9);
          EXPECT_TRUE( trimmed.at( 0) == '1');
          EXPECT_TRUE( trimmed.at( 8) == '5');
 
-         auto empty = string::trim( "   ");
+         auto empty = string::trim( view::String( "   "));
          EXPECT_TRUE( empty.empty());
 
-         auto hello = string::trim( "\n hello \t  ");
-         EXPECT_TRUE( hello == "hello");
+         auto hello = string::trim( view::String( "\n hello \t  "));
+         EXPECT_TRUE( hello == "hello") << "hello: '" << hello << "'";
       }
 
       TEST( casual_common_string, trim_range)
       {
          common::unittest::Trace trace;
 
-         auto trimmed = string::trim( range::make( "  1 2 3 4 5   "));
+         auto trimmed = string::trim( view::String( "  1 2 3 4 5   "));
 
          EXPECT_TRUE( trimmed.size() == 9) << "trimmed: " << trimmed;
          EXPECT_TRUE( trimmed.at( 0) == '1');
@@ -191,7 +192,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto trimmed = string::trim( range::make( ""));
+         auto trimmed = string::trim( view::String( ""));
 
          EXPECT_TRUE( trimmed.size() == 0) << "trimmed: " << trimmed;
       }
@@ -201,15 +202,15 @@ namespace casual
          common::unittest::Trace trace;
 
          {
-            auto trimmed = string::trim( range::make( " "));
+            auto trimmed = string::trim( view::String( " "));
             EXPECT_TRUE( trimmed.empty()) << "trimmed: " << trimmed;
          }
          {
-            auto trimmed = string::trim( range::make( "       "));
+            auto trimmed = string::trim( view::String( "       "));
             EXPECT_TRUE( trimmed.empty()) << "trimmed: " << trimmed;
          }
          {
-            auto trimmed = string::trim( range::make( "                       "));
+            auto trimmed = string::trim( view::String( "                       "));
             EXPECT_TRUE( trimmed.empty()) << "trimmed: " << trimmed;
          }
       }
@@ -219,7 +220,7 @@ namespace casual
          common::unittest::Trace trace;
 
          {
-            auto trimmed = string::trim( range::make( "a  "));
+            auto trimmed = string::trim( view::String( "a  "));
             EXPECT_TRUE( trimmed.size() == 1) << "trimmed: " << trimmed;
          }
       }
@@ -229,7 +230,7 @@ namespace casual
          common::unittest::Trace trace;
 
          {
-            auto trimmed = string::trim( range::make( "          a"));
+            auto trimmed = string::trim( view::String( "          a"));
             EXPECT_TRUE( trimmed.size() == 1) << "trimmed: " << trimmed;
          }
       }

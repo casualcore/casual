@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/server/handle/conversation.h"
 #include "common/server/handle/service.h"
 #include "common/server/handle/policy.h"
@@ -12,7 +11,6 @@
 #include "common/service/conversation/context.h"
 
 #include "common/execute.h"
-
 
 namespace casual
 {
@@ -27,7 +25,7 @@ namespace casual
             {
                Trace trace{ "server::Conversation::operator()"};
 
-               log::debug << "message: " << message << '\n';
+               log::line( verbose::log, "message: ", message);
 
                try
                {

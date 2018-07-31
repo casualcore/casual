@@ -425,20 +425,20 @@ namespace casual
                                        }
                                        catch( const common::exception::system::communication::Unavailable&)
                                        {
-                                          common::log::category::error << "server: " << message.process << " has been terminated during interdomain call - action: reply with TPESVCERR\n";
+                                          log::line( common::log::category::error, "server: ", message.process, " has been terminated during interdomain call - action: reply with TPESVCERR");
                                           send_error_reply( message);
                                        }
                                        break;
                                     }
                                     case message_type::State::absent:
                                     {
-                                       common::log::category::error << "service: " << message.service << " is not handled by this domain (any more) - action: reply with TPESVCERR\n";
+                                       log::line( common::log::category::error, "service: ", message.service, " is not handled by this domain (any more) - action: reply with TPESVCERR");
                                        send_error_reply( message);
                                        break;
                                     }
                                     default:
                                     {
-                                       common::log::category::error << "unexpected state on lookup reply: " << message << " - action: drop message\n";
+                                       log::line( common::log::category::error, "unexpected state on lookup reply: ", message, " - action: drop message");
                                        break;
                                     }
                                  }

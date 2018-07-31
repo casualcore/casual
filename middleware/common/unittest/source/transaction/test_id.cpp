@@ -139,7 +139,7 @@ namespace casual
          char char_gtrid[ sizeof( Uuid::uuid_type)];
          algorithm::copy( gtrid.get(), std::begin( char_gtrid));
 
-         EXPECT_TRUE( algorithm::equal( char_gtrid, transaction::global( id))) << "global: " << transaction::global( id) << " - char_gtrid: " << range::make( char_gtrid);
+         EXPECT_TRUE( algorithm::equal( char_gtrid, transaction::global( id))) << "global: " << transaction::global( id) << " - char_gtrid: " << view::binary::make( char_gtrid);
          EXPECT_TRUE( algorithm::equal( char_gtrid, transaction::global( id.xid)));
 
       }
@@ -155,7 +155,7 @@ namespace casual
          char char_bqual[ sizeof( Uuid::uuid_type)];
          algorithm::copy( bqual.get(), std::begin( char_bqual));
 
-         EXPECT_TRUE( algorithm::equal( char_bqual, transaction::branch( id))) << "branch: " << transaction::branch( id) << " - char_gtrid: " << range::make( char_bqual);
+         EXPECT_TRUE( algorithm::equal( char_bqual, transaction::branch( id))) << "branch: " << transaction::branch( id) << " - char_gtrid: " << view::binary::make( char_bqual);
          EXPECT_TRUE( algorithm::equal( char_bqual, transaction::branch( id.xid)));
       }
 

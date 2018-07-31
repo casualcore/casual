@@ -6,9 +6,13 @@
 
 #pragma once
 
+#include "common/stream.h"
 #include "common/platform.h"
 #include "common/traits.h"
 #include "common/range.h"
+#include "common/cast.h"
+#include "common/functional.h"
+#include "common/algorithm.h"
 
 
 #include <string>
@@ -38,40 +42,6 @@ namespace casual
                   std::unique_lock< std::mutex> m_lock;
                   static std::mutex m_mutex;
                };
-
-               class Safe : public Lock
-               {
-               public:
-                  inline Safe( std::ostream& stream) : m_stream( stream) {}
-                  Safe( Safe&&) = default;
-
-
-                  template< typename T>
-                  Safe& operator << ( T&& value)
-                  {
-                     m_stream << std::forward< T>( value);
-
-                     return *this;
-                  }
-
-                  //!
-                  //! Overload for omanip-functions...
-                  //!
-
-                  using omanip_t = std::add_pointer_t< std::ostream&( std::ostream&)>;
-
-                  Safe& operator << ( omanip_t value)
-                  {
-                     m_stream << value;
-
-                     return *this;
-                  }
-
-               private:
-                  std::ostream& m_stream;
-               };
-
-
             } // thread
 
             //!
@@ -99,60 +69,23 @@ namespace casual
 
             Stream( std::string category);
 
-
+            //!
+            //! deleted - use streams only with common::log::line or common::log::write
+            //!
             template< typename T>
-            stream::thread::Safe operator << ( T&& value)
-            {
-               stream::thread::Safe proxy{ *this};
-               proxy << std::forward< T>( value);
-               return proxy;
-            }
-         };
-
-         template< typename T, typename Enable = void>
-         struct has_formatter : std::false_type{};
-
-         //!
-         //! Specialization for containers, to log ranges
-         //!
-         template< typename C> 
-         struct has_formatter< C, std::enable_if_t< traits::container::is_sequence< C>::value && ! traits::container::is_string< C>::value>> 
-            : std::true_type
-         {
-            struct formatter
-            {
-               template< typename R>
-               void operator () ( std::ostream& out, R&& range) const
-               { 
-                  out << range::make( range);
-               }
-            };
+            Stream& operator << ( T&& value) = delete;
          };
 
 
          namespace detail
          {
-            struct endl
-            {  
-               template< typename S>
-               friend S& operator << ( S& stream, endl)
-               {
-                  return stream << std::endl;
-               }
-            };
             template< typename S>
             void part( S& stream)
             {
             }
 
             template< typename S, typename T>
-            auto part( S& stream, T&& value) -> std::enable_if_t< has_formatter< traits::remove_cvref_t< T>>::value>
-            {
-               typename has_formatter< traits::remove_cvref_t< T>>::formatter{}( stream, std::forward< T>( value));
-            }
-
-            template< typename S, typename T>
-            auto part( S& stream, T&& value) -> std::enable_if_t< ! has_formatter< traits::remove_cvref_t< T>>::value>
+            void part( S& stream, T&& value)
             {
                stream << std::forward< T>( value);
             }
@@ -178,10 +111,16 @@ namespace casual
          template< typename... Args>
          void line( std::ostream& stream, Args&&... args)
          {
-            write( stream, std::forward< Args>( args)..., '\n'); //detail::endl{});
-            //stream.flush(); // todo: configurable?
+            if( stream)
+            {
+               stream::thread::Lock lock;
+               detail::part( stream, std::forward< Args>( args)..., '\n');
+            }
          } 
+
       } // log
    } // common
 } // casual
+
+
 

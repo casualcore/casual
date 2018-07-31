@@ -6,6 +6,7 @@
 
 
 #include "common/transaction/transaction.h"
+#include "common/log/stream.h"
 
 #include <ostream>
 
