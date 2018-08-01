@@ -16,4 +16,7 @@ BUILDSERVER = casual-build-server -c $(EXECUTABLE_LINKER)
 BUILDCLIENT = CC='$(EXECUTABLE_LINKER)' $(CASUALMAKE_PATH)/bin/buildclient -v
 
 
+compiler-version: 
+	@$(COMPILER) --version
+
 
