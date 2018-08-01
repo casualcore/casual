@@ -354,9 +354,10 @@ namespace casual
                                     log::line( verbose::log, "state.service.route: ", state.service.route);
                                  }
 
-                                 if( state.metric.services.size() >= common::platform::batch::gateway::metrics)
+                                 // send service metrics if we don't have any more in-flight call request (this one
+                                 // was the last, or only) OR we've accumulated enough metrics for a batch update
+                                 if( state.service.route.empty() || state.metric.services.size() >= common::platform::batch::gateway::metrics)
                                  {
-                                    // Send metrics to service-manager
                                     blocking::send( common::communication::instance::outbound::service::manager::device(), state.metric);
                                     state.metric.services.clear();
                                  }

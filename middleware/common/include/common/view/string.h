@@ -31,9 +31,14 @@ namespace casual
          {
             using base_type = Range< const string::value::type*>;
 
-            constexpr String() noexcept = default;
-            constexpr String(const String&) noexcept = default;
-            constexpr String& operator = ( const String&) noexcept = default;
+            // some versions of g++ doesn't like constexpr for ctors and stuff, we don't really need it so...
+            // constexpr String() noexcept = default;
+            // constexpr String(const String&) noexcept = default;
+            // constexpr String& operator = ( const String&) noexcept = default;
+            
+            String() noexcept = default;
+            String( const String&) noexcept = default;
+            String& operator = ( const String&) noexcept = default;
 
             constexpr String( const string::value::type* string, platform::size::type count)
                : base_type( string, count) {}

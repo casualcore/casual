@@ -60,6 +60,8 @@ namespace casual
                   return m_points;
                }
 
+               bool empty() const { return m_points.empty();}
+
                friend std::ostream& operator << ( std::ostream& out, const basic_routing& value)
                {
                   return out << "{ points: " << common::range::make( value.m_points)
