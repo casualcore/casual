@@ -100,11 +100,16 @@ namespace casual
                }
 
 
+               namespace instantiated
+               {
+                  auto pid = strong::process::id{ ::getpid()};
+                  
+               } // instantiated
 
                const Handle& handle()
                {
                   static const Handle result{ 
-                     strong::process::id{ getpid()}, 
+                     instantiated::pid, 
                      communication::ipc::inbound::ipc()};
                   return result;
                }
@@ -114,9 +119,7 @@ namespace casual
                {
                   std::string& path = local::path();
                   std::string& basename = local::basename();
-                  const Handle& handle = local::handle();
-                  auto pid = handle.pid;
-
+                  //const Handle& handle = local::handle();
                } // instantiated
 
 
@@ -142,7 +145,7 @@ namespace casual
 
          const Handle& handle()
          {
-            return local::instantiated::handle;
+            return local::handle();
          }
 
 

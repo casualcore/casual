@@ -42,7 +42,7 @@ namespace casual
                      return result;
                   }
 
-                  using range_type = range::traits< common::platform::binary::type>;
+                  using range_type = range::type_t< common::platform::binary::type>;
 
                   std::vector< ipc::message::Transport> parts( std::size_t size, common::message::Type type, const common::platform::binary::type& payload = get())
                   {

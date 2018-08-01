@@ -219,16 +219,6 @@ namespace casual
             return range;
          }
 
-         template< std::size_t size>
-         auto make( const char (&container)[ size]) = delete;
-         auto make( const char*) = delete;
-
-         template< typename C>
-         struct traits
-         {
-            using type = decltype( make( C().begin(), C().end()));
-         };
-
          template< typename C>
          struct type_traits
          {

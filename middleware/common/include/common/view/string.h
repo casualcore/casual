@@ -35,7 +35,6 @@ namespace casual
             constexpr String(const String&) noexcept = default;
             constexpr String& operator = ( const String&) noexcept = default;
 
-
             constexpr String( const string::value::type* string, platform::size::type count)
                : base_type( string, count) {}
 

@@ -34,8 +34,23 @@ namespace casual
             {
                void SetUp() override
                {
-                  log::line( log::stream::get( "casual.mockup"), "mockup::unittest::Environment::SetUp");
+                  // make sure we've got the paths and stuff set up before we log any thing
+                  {
+                     std::string domain_path = environment::directory::temporary() + "/casual/unittest";
 
+                     environment::variable::set( environment::variable::name::domain::home(), domain_path);
+
+                     domain::identity( domain::Identity{ "unittest-domain"});
+
+                     directory::create( domain_path);
+                  }
+
+                  auto& stream = log::stream::get( "casual.mockup");
+
+                  log::line( stream, "mockup::unittest::Environment::SetUp");
+
+                  log::line( stream, environment::variable::name::domain::home(), " set to: ", environment::variable::get( environment::variable::name::domain::home()));
+                  log::line( stream, "environment::directory::domain(): ", environment::directory::domain());
 
                   if( ! environment::variable::exists( environment::variable::name::home())
                      && environment::variable::exists( repository_root))
@@ -44,24 +59,10 @@ namespace casual
                         environment::variable::get( repository_root) + "/middleware/test/home/bin");
 
                      common::log::line( 
-                        log::stream::get( "casual.mockup"), 
+                        stream, 
                         environment::variable::name::home(), ": ", 
                         environment::variable::get( environment::variable::name::home()));
                   }
-                  
-                  std::string domain_path = environment::directory::temporary() + "/casual/unittest";
-
-                  environment::variable::set( environment::variable::name::domain::home(), domain_path);
-
-                  domain::identity( domain::Identity{ "unittest-domain"});
-
-                  
-
-                  directory::create( domain_path);
-
-                  log::line( log::stream::get( "casual.mockup"), environment::variable::name::domain::home(), " set to: ", environment::variable::get( environment::variable::name::domain::home()));
-                  log::line( log::stream::get( "casual.mockup"), "environment::directory::domain(): ", environment::directory::domain());
-
 
                   if( ! directory::create( environment::domain::singleton::path()))
                   {
@@ -73,13 +74,7 @@ namespace casual
                {
 
                }
-
-            private:
-
             };
-
-
-
 
          } // unittest
       } // mockup

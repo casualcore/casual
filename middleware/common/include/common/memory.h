@@ -12,6 +12,8 @@
 #include "common/range.h"
 #include "common/traits.h"
 
+#include <memory>
+
 namespace casual
 {
    namespace common
