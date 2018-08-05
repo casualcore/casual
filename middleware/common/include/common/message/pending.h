@@ -10,6 +10,7 @@
 
 
 #include "common/marshal/binary.h"
+#include "common/process.h"
 #include "common/communication/ipc.h"
 
 namespace casual
@@ -26,8 +27,9 @@ namespace casual
             //!
             struct Message
             {
-               using targets_type = std::vector< strong::ipc::id>;
-               using target_type = strong::ipc::id;
+               using target_type = common::process::Handle;
+               using targets_type = std::vector< target_type>;
+               
 
                enum class Targets
                {
@@ -53,14 +55,16 @@ namespace casual
                {
                }
 
-               Message( communication::message::Complete&& complete, targets_type&& targets, Targets task);
-               Message( communication::message::Complete&& complete, targets_type&& targets);
+               Message( communication::message::Complete&& complete, targets_type targets, Targets task);
+               Message( communication::message::Complete&& complete, targets_type targets);
 
                Message( Message&&);
                Message& operator = ( Message&&);
 
                bool sent() const;
                explicit operator bool () const;
+
+               void remove( const target_type& target);
 
 
                friend std::ostream& operator << ( std::ostream& out, const Message& value);
@@ -85,11 +89,11 @@ namespace casual
             template< typename P>
             bool send( Message& message, P&& policy, const communication::error::type& handler = nullptr)
             {
-               auto send = [&]( strong::ipc::id ipc)
+               auto send = [&]( const common::process::Handle& process)
                      {
                         try
                         {
-                           communication::ipc::outbound::Device device{ ipc};
+                           communication::ipc::outbound::Device device{ process.ipc};
                            return static_cast< bool>( device.put( message.complete, policy, handler));
                         }
                         catch( const exception::system::communication::Unavailable&)
@@ -100,8 +104,7 @@ namespace casual
 
                if( message.task == Message::Targets::all)
                {
-                  message.targets = range::to_vector(
-                        algorithm::remove_if( message.targets, send));
+                  algorithm::trim( message.targets, algorithm::remove_if( message.targets, send));
                }
                else
                {

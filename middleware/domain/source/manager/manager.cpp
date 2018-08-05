@@ -84,17 +84,12 @@ namespace casual
                         {
                            if( state.pending.replies.empty())
                            {
-                              //
                               // We can block
-                              //
                               handler( manager::ipc::device().blocking_next());
                            }
                            else
                            {
-
-                              //
                               // Take care of pending replies
-                              //
                               {
                                  signal::thread::scope::Block block;
 

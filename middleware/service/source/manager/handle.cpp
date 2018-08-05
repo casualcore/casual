@@ -68,6 +68,29 @@ namespace casual
 
                   namespace eventually
                   {
+                     namespace detail
+                     {
+                        namespace get
+                        {
+                           template< typename D>
+                           using is_process =  std::is_same< traits::remove_cvref_t< D>, common::process::Handle>;
+
+                           template< typename D>
+                           std::enable_if_t< is_process< D>::value, const common::process::Handle&>
+                           process( D&& device) { return device;} 
+
+                           template< typename D> 
+                           std::enable_if_t< ! is_process< D>::value, const common::process::Handle&>
+                           process( D&& device) { return device.connector().process();}
+
+                           template< typename P, typename = std::enable_if_t< is_process< P>::value, strong::ipc::id>>
+                           decltype( auto) device( P&& process) { return process.ipc;}
+                           
+                           template< typename D, typename = std::enable_if_t< ! is_process< D>::value>>
+                           decltype( auto) process( D&& device) { return std::forward< D>( device);}
+
+                        } // get
+                     } // detail
                      template< typename D, typename M>
                      void send( State& state, D&& device, M&& message)
                      {
@@ -77,11 +100,11 @@ namespace casual
 
                         try
                         {
-                           if( ! ipc::device().non_blocking_send( device, message))
+                           if( ! communication::ipc::non::blocking::send( detail::get::device( device), message, ipc::device().error_handler()))
                            {
                               log::line( log, "non blocking send failed - action: try later");
 
-                              state.pending.replies.emplace_back( std::forward< M>( message), device);
+                              state.pending.replies.emplace_back( std::forward< M>( message), detail::get::process( device));
                            }
                         }
                         catch( const common::exception::system::communication::Unavailable&)
@@ -129,7 +152,7 @@ namespace casual
                         message.correlation = instance.correlation();
                         message.status = common::code::xatmi::service_error; 
 
-                        handle::local::eventually::send( state, instance.caller().ipc, std::move( message));
+                        handle::local::eventually::send( state, instance.caller(), std::move( message));
                      }
 
                   } // <unnamed>

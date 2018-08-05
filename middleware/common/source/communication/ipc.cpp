@@ -155,6 +155,7 @@ namespace casual
 
                      log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
 
+                     // The loop is is "only" for BSD/OS X crap handling
                      while( true)
                      {
                         auto error = posix::error(
@@ -291,6 +292,9 @@ namespace casual
                      bool receive( const Handle& handle, message::Transport& transport)
                      {
                         Trace trace{ "common::communication::ipc::native::non::blocking::receive"};
+
+                        // check pending signals
+                        signal::handle();
 
                         auto result = ::recv(
                            handle.socket().descriptor().value(),

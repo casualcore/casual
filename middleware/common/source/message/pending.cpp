@@ -7,7 +7,6 @@
 
 #include "common/message/pending.h"
 
-
 namespace casual
 {
    namespace common
@@ -16,16 +15,14 @@ namespace casual
       {
          namespace pending
          {
-            Message::Message( communication::message::Complete&& complete, targets_type&& targets, Targets task)
+            Message::Message( communication::message::Complete&& complete, targets_type targets, Targets task)
                : targets( std::move( targets)), complete( std::move( complete)), task( task)
             {
-
             }
 
-            Message::Message( communication::message::Complete&& complete, targets_type&& targets)
+            Message::Message( communication::message::Complete&& complete, targets_type targets)
              : Message{ std::move( complete), std::move( targets), Targets::all}
             {
-
             }
 
             Message::Message( Message&&) = default;
@@ -39,6 +36,11 @@ namespace casual
             Message::operator bool () const
             {
                return sent();
+            }
+
+            void Message::remove( const target_type& target)
+            {
+               algorithm::trim( targets, algorithm::remove( targets, target));
             }
 
             std::ostream& operator << ( std::ostream& out, const Message& value)

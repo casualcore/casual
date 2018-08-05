@@ -23,8 +23,7 @@ namespace casual
 
             return common::message::pending::Message{
                std::move( complete),
-               algorithm::transform( m_subscribers, std::mem_fn( &common::process::Handle::ipc))
-            };
+               m_subscribers};
          }
 
          void base_dispatch::remove( strong::process::id pid)

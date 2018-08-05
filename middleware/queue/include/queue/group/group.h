@@ -45,7 +45,7 @@ namespace casual
 
 
             template< typename M>
-            void persist( M&& message, std::vector< common::strong::ipc::id> destinations)
+            void persist( M&& message, std::vector< common::process::Handle> destinations)
             {
                persistent.emplace_back( std::forward< M>( message), std::move( destinations));
             }

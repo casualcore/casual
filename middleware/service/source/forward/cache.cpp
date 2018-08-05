@@ -64,7 +64,7 @@ namespace casual
                                  // We failed to send reply for some reason (ipc-queue full?)
                                  // we'll try to send it later
                                  //
-                                 state.pending.emplace_back( std::move( reply), message.process.ipc);
+                                 state.pending.emplace_back( std::move( reply), message.process);
 
                                  log::line( log, "could not send error reply to process: ", message.process, " - will try later");
                               }
@@ -150,7 +150,7 @@ namespace casual
                            // We could not send the call. We put in pending and hope to send it
                            // later
                            //
-                           m_state.pending.emplace_back( request, message.process.ipc);
+                           m_state.pending.emplace_back( request, message.process);
 
                            log::line( log, "could not forward call to process: ", message.process, " - will try later");
 

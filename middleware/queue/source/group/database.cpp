@@ -834,7 +834,7 @@ namespace casual
                   forget.process = common::process::handle();
                   forget.queue = pending.queue;
 
-                  return common::message::pending::Message{ std::move( forget), pending.process.ipc};
+                  return common::message::pending::Message{ std::move( forget), pending.process};
             });
             
          }

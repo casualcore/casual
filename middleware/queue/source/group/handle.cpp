@@ -197,7 +197,7 @@ namespace casual
                         // enqueue is not in transaction, we guarantee atomic enqueue so
                         // we send reply when we're in persistent state
                         //
-                        m_state.persist( std::move( reply), { message.process.ipc});
+                        m_state.persist( std::move( reply), { message.process});
 
                         //
                         // Check if there are any pending request for the current queue (and selector).
@@ -347,7 +347,7 @@ namespace casual
                         reply.state = common::code::xa::resource_fail;
                      }
 
-                     m_state.persist( std::move( reply), { message.process.ipc});
+                     m_state.persist( std::move( reply), { message.process});
                   }
                }
 
@@ -394,7 +394,7 @@ namespace casual
                         reply.state = common::code::xa::resource_fail;
                      }
 
-                     m_state.persist( std::move( reply), { message.process.ipc});
+                     m_state.persist( std::move( reply), { message.process});
                   }
                }
             } // transaction

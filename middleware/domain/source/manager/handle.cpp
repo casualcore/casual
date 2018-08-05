@@ -57,7 +57,7 @@ namespace casual
                      {
                         if( ! manager::ipc::device().non_blocking_send( process.ipc, message))
                         {
-                           state.pending.replies.emplace_back( std::forward< M>( message), process.ipc);
+                           state.pending.replies.emplace_back( std::forward< M>( message), process);
                         }
                      }
                      catch( const exception::system::communication::Unavailable&)
@@ -140,9 +140,7 @@ namespace casual
                      if( ! shutdownable)
                         return;
 
-                     //
                      // We only want child signals
-                     //
                      signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
 
@@ -162,9 +160,7 @@ namespace casual
                      if( ! shutdownable)
                         return;
 
-                     //
                      // We only want child signals
-                     //
                      signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
 
@@ -521,9 +517,7 @@ namespace casual
 
                state.runlevel( State::Runlevel::shutdown);
 
-               //
                // TODO: collect state from sub-managers...
-               //
                if( state.persist)
                {
                   persistent::state::save( state);
@@ -536,9 +530,7 @@ namespace casual
                   manager::local::ipc::send( state, state.event( event));
                }
 
-               //
                // Make sure we remove our self so we don't try to shutdown
-               //
                algorithm::for_each( state.servers, [&]( auto& s){
                   if( s.id == state.manager_id)
                   {
@@ -668,6 +660,13 @@ namespace casual
 
                      state().event.subscription( message);
 
+                     // remove possible pending events for the removed subscriber 
+                     algorithm::trim( state().pending.replies, algorithm::remove_if( state().pending.replies, [&message]( message::pending::Message& m)
+                     {
+                        m.remove( message.process);
+                        return m.sent();
+                     }));
+
                      common::log::line( log, "event: ", state().event);
                   }
 
@@ -679,10 +678,8 @@ namespace casual
                   {
                      Trace trace{ "domain::manager::handle::event::process::exit"};
 
-                     //
                      // We put a dead process event on our own ipc device, that
                      // will be handled later on.
-                     //
                      common::message::event::process::Exit event{ exit};
                      communication::ipc::inbound::device().push( std::move( event));
                   }
@@ -693,9 +690,7 @@ namespace casual
 
                      if( message.state.deceased())
                      {
-                        //
                         // We don't want to handle any signals in this task
-                        //
                         signal::thread::scope::Block block;
 
                         switch( message.state.reason)
@@ -903,16 +898,14 @@ namespace casual
 
                      if( found)
                      {
-                        log::line( log::category::error, "only one instance is allowed for ", message.identification);
-                        //
                         // A "singleton" is trying to connect, while we already have one connected
-                        //
+
+                        log::line( log::category::error, "only one instance is allowed for ", message.identification);
+
 
                         reply.directive = decltype( reply)::Directive::singleton;
 
-                        //
                         // Adjust configured instances to correspond to reality...
-                        //
                         {
                            auto server = state().server( message.process.pid);
 
@@ -1070,9 +1063,7 @@ namespace casual
                            // no-op, we'll advertise our services when the broker comes online.
                         }
 
-                        // 
                         // overload ack so we use domain-manager internal stuff to lookup service-manager
-                        //
                         void ack()
                         {
                            Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
