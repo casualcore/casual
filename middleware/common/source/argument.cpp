@@ -26,7 +26,7 @@ namespace casual
                {
                   using range_type = range::type_t< std::vector< detail::Representation>>;
 
-                  range_type find( range_type scope, view::String key)
+                  range_type find( range_type scope, const std::string& key)
                   {
                      auto found = algorithm::find_if( scope, [&]( auto& s){
                         return ! algorithm::find( s.keys, key).empty();
@@ -408,9 +408,9 @@ namespace casual
 
          namespace exception
          {  
-            void correlation( view::String key)
+            void correlation( const std::string& key)
             {
-               throw invalid::Argument{ string::compose( "failed to correlate option ", key)};
+               throw invalid::Argument{ "failed to correlate option " + key};
             }
 
          } // exception
@@ -438,7 +438,7 @@ namespace casual
 
             namespace validate
             {
-               void cardinality( view::String key, const Cardinality& cardinality, size_type value)
+               void cardinality( const std::string& key, const Cardinality& cardinality, size_type value)
                {
                   if( ! cardinality.valid( value))
                      throw exception::invalid::Argument{ string::compose( "cardinality not satisfied for option: ", key)};
@@ -446,7 +446,7 @@ namespace casual
 
                namespace value
                {
-                  void cardinality( view::String key, const Cardinality& cardinality, range_type values)
+                  void cardinality( const std::string& key, const Cardinality& cardinality, range_type values)
                   {
                      if( ! cardinality.valid( values.size()))
                         throw exception::invalid::Argument{ 
