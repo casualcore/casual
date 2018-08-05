@@ -244,6 +244,10 @@ namespace casual
                         // and 'done' will be sent to main thread
                         done.descriptor = inbound.connector().socket().release();
                      }
+                     catch( const exception::signal::User&)
+                     {
+                        // we've been asked to shutdown from the main thread.
+                     }
                      catch( ...)
                      {
                         // we've already sent the connect::Done to main thread

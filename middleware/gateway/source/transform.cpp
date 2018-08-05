@@ -31,7 +31,7 @@ namespace casual
                   {
                      manager::state::outbound::Connection result;
 
-                     result.address.local = common::environment::string( connection.address);
+                     result.address.peer = common::environment::string( connection.address);
                      result.restart = connection.restart;
                      result.services = std::move( connection.services);
                      result.queues = std::move( connection.queues);

@@ -129,10 +129,7 @@ namespace casual
          Trace trace{ "gateway::Manager::start"};
 
          // boot outbounds
-         {
-            manager::handle::boot( m_state);
-            m_state.runlevel = manager::State::Runlevel::online;
-         }
+         manager::handle::boot( m_state);
 
          auto inbound = manager::local::dispatch::inbound( m_state);
          auto listeners = manager::local::dispatch::listeners( m_state);
@@ -140,8 +137,14 @@ namespace casual
          // Connect to domain
          communication::instance::connect( communication::instance::identity::gateway::manager);
 
+         m_state.runlevel = manager::State::Runlevel::online;
+
+         log::line( log::category::information, "casual-gateway-manager is online");
+
+
          // start message pump
-         communication::select::dispatch::pump( m_state.directive, inbound, listeners);
+         communication::select::dispatch::pump( m_state.directive, inbound, listeners, 
+            manager::handle::select::Error{ m_state});
       }
 
 

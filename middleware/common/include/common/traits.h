@@ -503,6 +503,15 @@ namespace casual
          //! @}
          */
 
+         template< template< typename> class Predicate, typename T, typename... Ts>
+         struct any_of : bool_constant< Predicate< T>::value || any_of< Predicate, Ts...>::value>
+         {
+         };
+
+         template< template< typename> class Predicate, typename T>
+         struct any_of< Predicate, T> : bool_constant< Predicate< T>::value>
+         {
+         };
 
          struct unmovable
          {

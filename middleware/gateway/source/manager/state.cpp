@@ -69,6 +69,7 @@ namespace casual
                   process = common::process::Handle{};
                   runlevel = state::outbound::Connection::Runlevel::absent;
                   remote = common::domain::Identity{};
+                  address.local.clear();
 
                   common::log::line( log, "manager::state::outbound::reset: ", *this);
                }

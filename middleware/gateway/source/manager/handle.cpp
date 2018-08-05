@@ -146,7 +146,7 @@ namespace casual
                            {
                               connection.process.pid = common::process::spawn(
                                     local::executable( connection),
-                                    { "--address", connection.address.local,
+                                    { "--address", connection.address.peer,
                                       "--order", std::to_string( connection.order)});
 
                               connection.runlevel = manager::state::outbound::Connection::Runlevel::connecting;
@@ -204,6 +204,7 @@ namespace casual
             }
 
 
+
             namespace process
             {
 
@@ -233,13 +234,15 @@ namespace casual
 
                   if( inbound_found)
                   {
-                     log::line( log::category::information, "inbound connection terminated - connection: ", *inbound_found);
+                     log::line( log::category::information, "inbound connection terminated");
+                     log::line( verbose::log, "connection: ", *inbound_found);
 
                      state().connections.inbound.erase( std::begin( inbound_found));
                   }
                   else if( outbound_found)
                   {
-                     log::line( log::category::information, "outbound connection terminated - connection: ", *outbound_found);
+                     log::line( log::category::information, "outbound connection terminated");
+                     log::line( verbose::log, "connection: ", *outbound_found);
 
                      if( outbound_found->restart && state().runlevel == State::Runlevel::online)
                      {
@@ -265,6 +268,29 @@ namespace casual
 
             } // process
 
+            namespace select
+            {
+
+               void Error::operator () ()
+               {
+                  Trace trace{ "gateway::manager::handle::select::Error"};
+
+                  try
+                  {
+                     throw;
+                  }
+                  catch( const exception::signal::child::Terminate& exception)
+                  {
+                     auto terminated = common::process::lifetime::ended();
+                     for( auto& exit : terminated)
+                     {
+                        common::message::event::process::Exit event{ exit};
+                        process::Exit::operator()( event);
+                     }
+                  }
+               }
+
+            } // select
 
             namespace domain
             {

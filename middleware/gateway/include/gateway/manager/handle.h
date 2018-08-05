@@ -50,6 +50,8 @@ namespace casual
                std::reference_wrapper< State> m_state;
             };
 
+
+
             namespace process
             {
 
@@ -64,6 +66,16 @@ namespace casual
 
                };
             } // process
+
+            namespace select
+            {
+               struct Error : process::Exit
+               {
+                  using process::Exit::Exit;
+
+                  void operator () ();
+               };
+            } // select
 
             namespace domain
             {

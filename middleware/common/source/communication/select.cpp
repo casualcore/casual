@@ -35,57 +35,6 @@ namespace casual
   
             } // directive
 
-
-/*
-            namespace dispatch
-            {
-               namespace detail
-               {      
-                  void pump( const Directive& origin, const std::vector< Dispatch>& readers)
-                  {
-                     Trace trace{ "common::communication::select::dispatch::block"};
-
-                     while( true)
-                     {
-                        // pselect modifies fd-sets so we need to reinitialize them every time
-                        auto read = origin.read;
-
-                        // multiplex
-                        {
-                           Trace trace{ "common::communication::select::dispatch::block multiplex"};
-
-                           // block all signals, just local in this scope, not when we do the dispatch 
-                           // further down.
-                           signal::thread::scope::Block block;
-
-                           // check pending signals
-                           signal::handle( block.previous());
-
-                           log::line( verbose::log, "pselect - blocked signals: ", block.previous());
-
-                           // will set previous signal mask atomically 
-                           posix::result( 
-                              //::pselect( directive.max().value() + 1, directive.native_read(), nullptr, nullptr, nullptr, &block.previous().set));
-                              ::pselect( FD_SETSIZE, read.native(), nullptr, nullptr, nullptr, &block.previous().set));
-                        }
-
-                        for( const auto& reader : readers)
-                        {
-                           for( auto descriptor : reader.descriptors())
-                           {
-                              if( FD_ISSET( descriptor.value(), read.native()))
-                              {
-                                 reader( descriptor);
-                              }
-                           }
-                        }
-                     }
-                  }
-               } // detail
-            } // dispatch
-
-*/
-
             namespace dispatch
             {
                namespace detail
@@ -105,10 +54,12 @@ namespace casual
 
                      log::line( verbose::log, "pselect - blocked signals: ", block.previous());
 
-                     // will set previous signal mask atomically 
+                    
                      posix::result( 
-                        //::pselect( directive.max().value() + 1, directive.native_read(), nullptr, nullptr, nullptr, &block.previous().set));
-                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set));
+                         // will set previous signal mask atomically 
+                        ::pselect( FD_SETSIZE, result.read.native(), nullptr, nullptr, nullptr, &block.previous().set),
+                        // we need to pass previous set to be able to dispatch on signals
+                        block.previous().set);
 
                      return result;
                 }
