@@ -41,6 +41,10 @@ namespace casual
 
                      }
                   }
+                  catch( const exception::signal::exception& exception)
+                  {
+                     log::line( log::debug, "got signal: ", exception);
+                  }
                   catch( ...)
                   {
                      exception::handle();
@@ -86,11 +90,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::simple_server, adress};
+            mockup::Thread server{ &local::simple_server, address};
 
-            auto socket = tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}});
+            auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
 
             EXPECT_TRUE( local::boolean( socket));
          }
@@ -100,15 +104,15 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::simple_server, adress};
+            mockup::Thread server{ &local::simple_server, address};
 
             std::vector< tcp::Socket> connections;
 
             for( int count = 0; count < 10; ++count)
             {
-               connections.push_back( tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}}));
+               connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
             }
 
             for( auto& s : connections)
@@ -171,11 +175,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
-            auto socket = tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}});
+            auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
 
             EXPECT_TRUE( local::boolean( socket));
 
@@ -204,15 +208,15 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
             std::vector< tcp::Socket> connections( 10);
 
             for( auto& socket : connections)
             {
-               socket = tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}});
+               socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
                EXPECT_TRUE( local::boolean( socket));
             }
 
@@ -244,11 +248,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
 
             auto send = [&](){
@@ -280,11 +284,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 10 * 1024);
 
@@ -306,11 +310,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 100 * 1024);
 
@@ -332,11 +336,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
             auto send_message = unittest::random::message( 1024 * 1024);;
 
@@ -359,11 +363,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            const auto adress = local::address();
+            const auto address = local::address();
 
-            mockup::Thread server{ &local::echo::server, adress};
+            mockup::Thread server{ &local::echo::server, address};
 
-            tcp::outbound::Device outbund{ tcp::retry::connect( adress, { { std::chrono::milliseconds{ 1}, 0}})};
+            tcp::outbound::Device outbund{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
 
 
             auto send_message = unittest::random::message( 10 * 1024 * 1024);

@@ -677,20 +677,31 @@ namespace casual
 
                      namespace create
                      {
+                        using handler_type = typename communication::ipc::inbound::Device::handler_type;
+                        struct Dispatch
+                        {
+                           Dispatch( State& state) : m_handler( internal::handler( state)) 
+                           {
+                              state.directive.read.add( communication::ipc::inbound::handle().socket().descriptor());
+                           }
+                           auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
+
+                           void operator () ( strong::file::descriptor::id descriptor)
+                           {
+                              consume();
+                           }
+
+                           bool consume()
+                           {
+                              auto& device = common::communication::ipc::inbound::device();  
+                              return m_handler( device.next( device.policy_non_blocking()));
+                           } 
+                           handler_type m_handler;
+                        };
+
                         auto dispatch( State& state)
                         {
-                           const auto descriptor = communication::ipc::inbound::handle().socket().descriptor();
-                           state.directive.read.add( descriptor);
-
-                           return communication::select::dispatch::create::reader(
-                              descriptor,
-                              [handler = internal::handler( state)]( auto active) mutable
-                              {
-                                 auto& device = common::communication::ipc::inbound::device();  
-                                 handler( device.next( device.policy_non_blocking()));
-                              }
-                           );
-
+                           return Dispatch( state);
                         }
                      } // create
 

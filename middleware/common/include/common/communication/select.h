@@ -48,19 +48,17 @@ namespace casual
             {
                namespace detail
                {
-                  template< typename D, typename C> 
+                  template< typename C> 
                   struct basic_reader 
                   {
-                     using descriptors_type = D;
-
-                     basic_reader( descriptors_type descriptor, C&& callback)
+                     basic_reader( strong::file::descriptor::id descriptor, C&& callback)
                         : m_descriptor( std::move( descriptor)), m_callback( std::move( callback)) {}
 
                      inline void read( strong::file::descriptor::id descriptor) { m_callback( descriptor);}
-                     inline descriptors_type descriptor() const { return m_descriptor;}
+                     inline strong::file::descriptor::id descriptor() const { return m_descriptor;}
 
                   private:
-                     descriptors_type m_descriptor;
+                     strong::file::descriptor::id m_descriptor;
                      C m_callback;
                   };
 
@@ -77,7 +75,10 @@ namespace casual
                         using descriptor = decltype( std::declval< T&>().descriptor()); 
 
                         template< typename T>
-                        using descriptors = decltype( std::declval< T&>().descriptors());                     
+                        using descriptors = decltype( std::declval< T&>().descriptors());
+
+                        template< typename T>
+                        using consume = decltype( std::declval< T&>().consume());                   
                      } // detail
 
                      template< typename T>
@@ -88,23 +89,26 @@ namespace casual
 
                      template< typename T>
                      using descriptors = traits::detect::is_detected< detail::descriptors, T>;
+
+                     template< typename T>
+                     using consume = traits::detect::is_detected< detail::consume, T>;
                   } // has
 
                   namespace descriptor
                   {
                      template< typename H, typename F> 
                      std::enable_if_t< has::descriptor< H>::value>
-                     dispatch( const Directive& directive, H& handler, F&& functor)
+                     dispatch( H& handler, F&& functor)
                      {
-                        functor( directive, handler, handler.descriptor());
+                        functor( handler, handler.descriptor());
                      }
                      
                      template< typename H, typename F> 
                      std::enable_if_t< has::descriptors< H>::value>
-                     dispatch( const Directive& directive, H& handler, F&& functor)
+                     dispatch( H& handler, F&& functor)
                      {
                         for( auto descriptor : handler.descriptors())
-                           functor( directive, handler, descriptor);
+                           functor( handler, descriptor);
                      }
                   } // descriptor
                   
@@ -119,7 +123,7 @@ namespace casual
                      std::enable_if_t< has::read< H>::value>
                      dispatch( const Directive& directive, H& handler)
                      {
-                        descriptor::dispatch( directive, handler, []( auto& directive, auto& handler, auto descriptor)
+                        descriptor::dispatch( handler, [&directive]( auto& handler, auto descriptor)
                         {
                            if( directive.read.ready( descriptor))
                            {
@@ -193,39 +197,72 @@ namespace casual
                      iterate( read, holders...);
                   }
 
+                  namespace consume
+                  {
+                     template< typename H> 
+                     std::enable_if_t< ! has::consume< H>::value, bool>
+                     handle( H& handler) { return false;}
 
+                     template< typename H>
+                     std::enable_if_t< has::consume< H>::value, bool>
+                     handle( H& handler)
+                     {
+                        return handler.consume();
+                     }
+
+                     constexpr bool dispatch() { return false;}
+
+                     template< typename H, typename... Hs> 
+                     bool dispatch( H& handler, Hs&... handlers)
+                     {
+                        return handle( handler) || dispatch( handlers...);
+                     }
+                  } // consume
 
                } // detail
 
                namespace create
                {
-                  template< typename D, typename C>
-                  auto reader( D&& descriptors, C&& callback)
+                  template< typename C>
+                  auto reader( strong::file::descriptor::id descriptor, C&& callback)
                   {
-                     return detail::basic_reader< std::decay_t< D>, std::decay_t< C>>{ std::forward< D>( descriptors), std::forward< C>( callback)};
+                     return detail::basic_reader< std::decay_t< C>>{ descriptor, std::forward< C>( callback)};
                   }
                } // create
 
                template< typename... Ts>  
-               void pump( const Directive& directive, Ts&&... holders)
+               void pump( const Directive& directive, Ts&&... handlers)
                {
                   while( true)
                   {
                      try
                      {
+                        // make sure we try to consume from the handlers before
+                        // we might block forever. Handlers could have cached messages
+                        // that wont be triggered via multiplexing on file descriptors
+                        while( detail::consume::dispatch( handlers...))
+                           ; // no-op.
+
                         auto result = detail::select( directive);
-                        detail::dispatch( result, holders...);
+                        detail::dispatch( result, handlers...);
                      }
                      catch( ...)
                      {
-                        if( ! detail::error::dispatch( holders...))
+                        if( ! detail::error::dispatch( handlers...))
                            throw;
                      }
-
                   }
                }
             } // dispatch
 
+            namespace block
+            {
+               //!
+               //! block until descriptor is ready for read.
+               //!
+               void read( strong::file::descriptor::id descriptor);
+
+            } // block
          } // select
       } // communication
    } // common

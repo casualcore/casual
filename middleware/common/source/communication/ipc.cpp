@@ -6,6 +6,7 @@
 
 #include "common/communication/ipc.h"
 #include "common/communication/log.h"
+#include "common/communication/select.h"
 
 #include "common/result.h"
 #include "common/log.h"
@@ -109,7 +110,9 @@ namespace casual
                         switch( error)
                         {
                            case code::system::resource_unavailable_try_again:
-                           //TODO: case code::system::operation_would_block: 
+#if EAGAIN != EWOULDBLOCK
+                           case code::system::operation_would_block: 
+#endif
                            {
                               // return false
                               break;
@@ -153,9 +156,7 @@ namespace casual
                   {
                      Trace trace{ "common::communication::ipc::native::blocking::send"};
 
-                     log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
-
-                     // The loop is is "only" for BSD/OS X crap handling
+                     // The loop is "only" for BSD/OS X crap handling
                      while( true)
                      {
                         auto error = posix::error(
@@ -169,12 +170,19 @@ namespace casual
                         );
 
                         if( ! error)
+                        {
+                           log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                            return true;
+                        }
                      
                         switch( error.value())
                         {
+                           log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
+
                            case code::system::resource_unavailable_try_again:
-                           //TODO: case code::system::operation_would_block: 
+#if EAGAIN != EWOULDBLOCK
+                           case code::system::operation_would_block: 
+#endif
                            {
                               return false;
                            }
@@ -200,28 +208,7 @@ namespace casual
                   {
                      Trace trace{ "common::communication::ipc::native::blocking::receive"};
 
-                     {
-                        Trace trace{ "common::communication::ipc::native::blocking::receive select"};
-                        
-                        fd_set read;
-                        {
-                           FD_ZERO( &read);
-                           FD_SET( handle.socket().descriptor().value(), &read);
-                        }
-
-                        // block all signals
-                        signal::thread::scope::Block block;
-
-                        log::line( verbose::log, "signal blocked: ", block.previous());
-                        
-                        // check pending signals
-                        signal::handle( block.previous());
-
-                        // will set previous signal mask atomically
-                        posix::result( 
-                           ::pselect( handle.socket().descriptor().value() + 1, &read, nullptr, nullptr, nullptr, &block.previous().set),
-                           block.previous());
-                     }
+                     select::block::read( handle.socket().descriptor());
 
                      auto result = ::recv(
                         handle.socket().descriptor().value(),
@@ -247,11 +234,41 @@ namespace casual
                {
                   namespace blocking
                   {
+                     namespace local
+                     {
+                        namespace
+                        {
+                           namespace handle
+                           {
+                              bool error( code::system error)
+                              {
+                                 switch( error)
+                                 {
+                                    case code::system::resource_unavailable_try_again:
+#if EAGAIN != EWOULDBLOCK
+                                    case code::system::operation_would_block: 
+#endif
+                                    case code::system::no_buffer_space:
+                                    {
+                                       // return false;
+                                       break;
+                                    }
+                                    case code::system::no_such_file_or_directory:
+                                       throw exception::system::communication::unavailable::File{};   
+                                    default:
+                                    {
+                                       // will allways throw
+                                       exception::system::throw_from_code( error);
+                                    }
+                                 }
+                                 return false;
+                              } 
+                           } // handle
+                        } // <unnamed>
+                     } // local
                      bool send( const Socket& socket, const Address& destination, const message::Transport& transport)
                      {
                         Trace trace{ "common::communication::ipc::native::non::blocking::send"};
-
-                        log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
 
                         auto error = posix::error(
                            ::sendto(
@@ -264,27 +281,14 @@ namespace casual
                         );
 
                         if( ! error)
-                           return true;
-                     
-                        switch( error.value())
                         {
-                           case code::system::resource_unavailable_try_again:
-                           //TODO: case code::system::operation_would_block: 
-                           {
-                              return false;
-                           }
-                           // This is "only" for BSD/OS X crap handling
-                           case code::system::no_buffer_space:
-                           {
-                              return false;
-                           }
-                           case code::system::no_such_file_or_directory:
-                              throw exception::system::communication::unavailable::File{};   
-                           default:
-                           {
-                              // will allways throw
-                              exception::system::throw_from_code( error.value());
-                           }
+                           log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+                           return true;
+                        }
+                        else 
+                        {
+                           log::line( verbose::log, "---> non blocking send ", error, " - destination: ", destination);
+                           return local::handle::error( error.value());
                         }
                         return true;
                      }
@@ -304,10 +308,13 @@ namespace casual
 
                         if( result == -1)
                         {
-                           return local::check_error();
+                           auto error = code::last::system::error();
+
+                           log::line( verbose::log, "<--- non blocking receive - error: ", error, " - handle: " , handle);
+                           return local::handle::error( error);
                         }
 
-                        log::line( verbose::log, "<--- non-blocking-receive - socket: ", handle, ", transport: ", transport);
+                        log::line( verbose::log, "<--- non-blocking-receive - handle: ", handle, ", transport: ", transport);
 
                         assert( result == transport.size());
 

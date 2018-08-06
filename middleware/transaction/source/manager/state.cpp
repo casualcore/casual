@@ -179,15 +179,12 @@ namespace casual
 
                      static id::type base_id;
                      
-                     --base_id.front();
+                     --base_id.underlaying();
                      state.externals.emplace_back( process, base_id);
                      return state.externals.back().id;
                   }
-
                } // proxy
-
             } // external
-
          } // resource
 
          void configure( State& state, const common::message::domain::configuration::Reply& configuration)

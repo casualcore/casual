@@ -47,13 +47,3 @@ namespace std
    struct is_error_code_enum< casual::common::code::casual> : true_type {};
 }
 
-namespace casual
-{
-   namespace common
-   {
-      namespace code
-      {
-         inline std::ostream& operator << ( std::ostream& out, code::casual value) { return out << std::error_code( value);}
-      } // code
-   } // common
-} // casual

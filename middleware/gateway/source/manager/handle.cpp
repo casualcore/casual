@@ -75,9 +75,7 @@ namespace casual
                         {
                            Trace trace{ "gateway::manager::handle::local::shutdown::Connection"};
 
-                           //
                            // We only want to handle terminate during this
-                           //
                            common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::terminate)};
 
                            if( connection.running())
@@ -173,9 +171,7 @@ namespace casual
             {
                Trace trace{ "gateway::manager::handle::shutdown"};
 
-               //
                // We only want to handle child-signals during this stage
-               //
                common::signal::thread::scope::Mask mask{ signal::set::filled( signal::Type::child)};
 
                state.runlevel = State::Runlevel::shutdown;
@@ -212,10 +208,8 @@ namespace casual
                {
                   Trace trace{ "gateway::manager::handle::process::exit"};
 
-                  //
                   // We put a dead process event on our own ipc device, that
                   // will be handled later on.
-                  //
                   common::message::event::process::Exit event{ exit};
                   communication::ipc::inbound::device().push( std::move( event));
                }
@@ -224,9 +218,7 @@ namespace casual
                {
                   Trace trace{ "gateway::manager::handle::process::Exit"};
 
-                  //
                   // Send the exit notification to domain.
-                  //
                   ipc::device().blocking_send( communication::instance::outbound::domain::manager::device(), message);
 
                   auto inbound_found = algorithm::find( state().connections.inbound, message.state.pid);
@@ -254,9 +246,7 @@ namespace casual
                         state().connections.outbound.erase( std::begin( outbound_found));
                      }
 
-                     //
                      // remove discover coordination, if any.
-                     //
                      state().discover.remove( message.state.pid);
 
                   }
@@ -307,21 +297,14 @@ namespace casual
 
                      auto destination = message.process.ipc;
 
-                     //
                      // Make sure we get the response
-                     //
                      message.process = common::process::handle();
 
-                     //
                      // Forward the request to all outbound connections
-                     //
 
                      auto send_request = [&]( const state::outbound::Connection& outbound)
                            {
-
-                              //
                               // We don't send to the same domain that is the requester.
-                              //
                               if( outbound.remote != message.domain)
                               {
                                  if( local::optional::send( outbound.process.ipc, message))
@@ -342,9 +325,7 @@ namespace casual
 
                      log::line( verbose::log, "message: ", message);
 
-                     //
                      // Accumulate the reply, might trigger a accumulated reply to the requester
-                     //
                      state().discover.outbound.accumulate( message);
                   }
 
@@ -434,10 +415,6 @@ namespace casual
                      found->address.local = message.address.local;
                      found->address.peer = message.address.peer;
                      found->runlevel = state::inbound::Connection::Runlevel::online;
-
-                     //
-                     // It will soon arrive a discovery message, where we can pick up domain-id and such.
-                     //
                   }
                   else
                   {

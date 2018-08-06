@@ -66,7 +66,7 @@ namespace casual
 
             constexpr void clear() noexcept { this->m_value = policy_type::initialize();}
 
-            
+            /*
             constexpr decltype( auto) front() const { return this->value();}
             constexpr T& front() { return this->m_value;}
          
@@ -75,12 +75,13 @@ namespace casual
             constexpr value_type* operator -> () { return &this->m_value;}
             constexpr const value_type& operator * () const&  { return this->m_value;}
             constexpr value_type& operator * () & { return this->m_value;}
-
+            */
+/*
             constexpr iterator begin() { return &this->m_value;}
             constexpr iterator end() { return empty() ? begin() : begin() + 1;}
             constexpr const_iterator begin() const { return &this->m_value;}
             constexpr const_iterator end() const { return empty() ? begin() : begin() + 1;}
-
+*/
             inline friend std::ostream& operator << ( std::ostream& out, const basic_optional& optional) { return stream_type::print( out, ! optional.empty(), optional.value());}
          };
 
@@ -103,7 +104,7 @@ namespace std
 
      auto operator()( const option_type& value) const
      {
-       return std::hash< typename option_type::value_type>{}( *value);
+         return std::hash< typename option_type::value_type>{}( value.value());
      }
    };
 }

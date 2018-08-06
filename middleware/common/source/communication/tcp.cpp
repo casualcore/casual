@@ -7,6 +7,7 @@
 
 #include "common/communication/tcp.h"
 #include "common/communication/log.h"
+#include "common/communication/select.h"
 
 #include "common/result.h"
 
@@ -366,7 +367,8 @@ namespace casual
             {
                Trace trace( "common::communication::tcp::Listener::operator()");
 
-               common::signal::handle();
+               // make sure we "safely" block and wait for a connection
+               communication::select::block::read( m_listener.descriptor());
 
                return socket::accept( m_listener);
             }

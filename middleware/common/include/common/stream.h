@@ -85,18 +85,49 @@ namespace casual
          //! Specialization for enum
          template< typename C> 
          struct has_formatter< C, std::enable_if_t< 
-            std::is_enum< C>::value>>
+            std::is_enum< C>::value && ! std::is_error_code_enum< C>::value && ! std::is_error_condition_enum< C>::value>>
             : std::true_type
          {
             struct formatter
             {
-               template< typename Enum>
-               void operator () ( std::ostream& out, Enum value) const
+               void operator () ( std::ostream& out, C value) const
                {
                   out << cast::underlying( value);
                }
             };
          };
+
+         //! Specialization for error code
+         template< typename C> 
+         struct has_formatter< C, std::enable_if_t< 
+            std::is_error_code_enum< C>::value>>
+            : std::true_type
+         {
+            struct formatter
+            {
+               void operator () ( std::ostream& out, C value) const
+               {
+                  out << std::error_code( value);
+               }
+            };
+         };
+
+         //! Specialization for error condition
+         template< typename C> 
+         struct has_formatter< C, std::enable_if_t< 
+            std::is_error_condition_enum< C>::value>>
+            : std::true_type
+         {
+            struct formatter
+            {
+               void operator () ( std::ostream& out, C value) const
+               {
+                  auto condition = std::error_condition( value);
+                  out << condition.category().name() << ':' << condition.value() << " - " << condition.message();
+               }
+            };
+         };
+
 
          namespace detail
          {
@@ -136,10 +167,10 @@ namespace std
    // customization point 'casual::common::log::has_formatter', so we roll with it...
    template< typename T> 
    enable_if_t< casual::common::stream::has_formatter< casual::common::traits::remove_cvref_t< T>>::value, ostream&>
-   operator << ( ostream& out, const T& value)
+   operator << ( ostream& out, T&& value)
    {
       using namespace casual::common;
-      typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, value);
+      typename stream::has_formatter< traits::remove_cvref_t< T>>::formatter{}( out, std::forward< T>( value));
       return out;
    }
    

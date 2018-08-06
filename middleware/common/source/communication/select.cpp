@@ -43,7 +43,7 @@ namespace casual
                   {
                      auto result = directive;
 
-                     Trace trace{ "common::communication::select::dispatch::block multiplex"};
+                     Trace trace{ "common::communication::select::dispatch::detail::select"};
 
                      // block all signals, just local in this scope, not when we do the dispatch 
                      // further down.
@@ -66,6 +66,16 @@ namespace casual
                } // detail
 
             } // dispatch
+
+            namespace block
+            {
+               void read( strong::file::descriptor::id descriptor)
+               {
+                  Directive directive;
+                  directive.read.add( descriptor);
+                  dispatch::detail::select( directive);
+               }
+            } // block
 
          } // select
       } // communication

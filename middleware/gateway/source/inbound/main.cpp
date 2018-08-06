@@ -382,22 +382,97 @@ namespace casual
                         } // discover
                      } // domain
 
-                     template< typename M>
-                     struct basic_transaction_request
-                     {
-                        using message_type = M;
 
-                        void operator() ( message_type& message)
+                     namespace transaction
+                     {
+                        namespace resource
                         {
-                           // Set 'sender' so we get the reply
-                           message.process = common::process::handle();
-                           blocking::send( common::communication::instance::outbound::transaction::manager::device(), message);
+                           template< typename M>
+                           struct basic_request
+                           {
+                              using message_type = M;
+
+                              void operator() ( message_type& message)
+                              {
+                                 // Set 'sender' so we get the reply
+                                 message.process = common::process::handle();
+                                 blocking::send( common::communication::instance::outbound::transaction::manager::device(), message);
+                              }
+                           };
+
+                           namespace prepare
+                           {
+                              using Request = basic_request< common::message::transaction::resource::prepare::Request>;
+                           } // prepare
+                           namespace commit
+                           {
+                              using Request = basic_request< common::message::transaction::resource::commit::Request>;
+                           } // commit
+                           namespace rollback
+                           {
+                              using Request = basic_request< common::message::transaction::resource::rollback::Request>;
+                           } // commit
+                        } // resource
+                     } // transaction
+
+                     auto handler( State& state)
+                     {
+                        return state.external.inbound.handler(
+                              
+                           // service call
+                           call::Request{ state},
+
+                           // queue
+                           queue::enqueue::Request{ state},
+                           queue::dequeue::Request{ state},
+
+                           // domain discover
+                           domain::discover::Request{ state},
+
+                           // transaction
+                           transaction::resource::prepare::Request{},
+                           transaction::resource::commit::Request{},
+                           transaction::resource::rollback::Request{}
+                        );
+                     }
+
+                     namespace create
+                     {
+                        auto dispatch( State& state)
+                        {
+                           const auto descriptor = state.external.inbound.connector().descriptor();
+                           state.directive.read.add( descriptor);
+
+                           return communication::select::dispatch::create::reader(
+                              descriptor,
+                              [&device = state.external.inbound, handler = external::handler( state)]( auto active) mutable
+                              {
+                                 handler( device.next( device.policy_non_blocking()));
+                              }
+                           );
                         }
-                     };
+                     } // create
                   } // external
 
                   namespace internal
                   {
+                     template< typename M>
+                     struct basic_forward : state::Base
+                     {
+                        using state::Base::Base;
+
+                        using message_type = M;
+
+                        void operator() ( message_type& message)
+                        {
+                           Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
+
+                           common::log::line( verbose::log, "forward message: ", message);
+
+                           m_state.external.send( message);
+                        }
+                     };
+
                      namespace call
                      {
                         namespace lookup
@@ -455,6 +530,9 @@ namespace casual
                            };
 
                         } // lookup
+
+                        using Reply = basic_forward< common::message::service::call::Reply>;
+
                      } // call
 
                      namespace queue
@@ -519,6 +597,16 @@ namespace casual
 
                            };
                         } // lookup
+
+                        namespace dequeue
+                        {
+                           using Reply = basic_forward< common::message::queue::dequeue::Reply>;
+                        } // dequeue
+
+                        namespace enqueue
+                        {
+                           using Reply = basic_forward< common::message::queue::enqueue::Reply>;
+                        } // enqueue
                      } // queue
 
                      namespace domain
@@ -547,96 +635,82 @@ namespace casual
                         } // discover
                      } // domain
 
-                     template< typename M>
-                     struct basic_forward : state::Base
+
+                     namespace transaction
                      {
-                        using state::Base::Base;
-
-                        using message_type = M;
-
-                        void operator() ( message_type& message)
+                        namespace resource
                         {
-                           Trace trace{ "gateway::inbound::handle::basic_forward::operator()"};
-
-                           common::log::line( verbose::log, "forward message: ", message);
-
-                           m_state.external.send( message);
-                        }
-                     };
-
-                  } // internal
-
-                  namespace create
-                  {
-                     auto external( State& state)
-                     {
-                        const auto descriptor = state.external.inbound.connector().socket().descriptor();
-                        state.directive.read.add( descriptor);
-
-                        auto handler = state.external.inbound.handler(
-                              
-                           // service call
-                           external::call::Request{ state},
-
-                           // queue
-                           external::queue::enqueue::Request{ state},
-                           external::queue::dequeue::Request{ state},
-
-                           // domain discover
-                           external::domain::discover::Request{ state},
-
-                           // transaction
-                           external::basic_transaction_request< common::message::transaction::resource::prepare::Request>{},
-                           external::basic_transaction_request< common::message::transaction::resource::commit::Request>{},
-                           external::basic_transaction_request< common::message::transaction::resource::rollback::Request>{}
-                        );
-                        
-                        return communication::select::dispatch::create::reader(
-                           descriptor,
-                           [&device = state.external.inbound, handler = std::move( handler)]( auto active) mutable 
+                           namespace prepare
                            {
-                              handler( device.next( device.policy_non_blocking()));
-                           }
-                        );
-                     }
+                              using Reply = basic_forward< common::message::transaction::resource::prepare::Reply>;
+                           } // prepare
+                           namespace commit
+                           {
+                              using Reply = basic_forward< common::message::transaction::resource::commit::Reply>;
+                           } // commit
+                           namespace rollback
+                           {
+                              using Reply = basic_forward< common::message::transaction::resource::rollback::Reply>;
+                           } // commit
+                        } // resource
+                     } // transaction
 
-                     auto internal( State& state)
+                     auto handler( State& state)
                      {
-                        const auto descriptor = communication::ipc::inbound::handle().socket().descriptor();
-                        state.directive.read.add( descriptor);
-
-                        auto handler = common::communication::ipc::inbound::device().handler(
+                        return common::communication::ipc::inbound::device().handler(
    
                            common::message::handle::Shutdown{},
                            common::message::handle::ping(),
 
                            // service call
-                           internal::call::lookup::Reply{ state},
-                           internal::basic_forward< common::message::service::call::Reply>( state),
+                           call::lookup::Reply{ state},
+                           call::Reply( state),
 
                            // queue
-                           internal::queue::lookup::Reply{ state},
-                           internal::basic_forward< common::message::queue::dequeue::Reply>( state),
-                           internal::basic_forward< common::message::queue::enqueue::Reply>( state),
+                           queue::lookup::Reply{ state},
+                           queue::dequeue::Reply( state),
+                           queue::enqueue::Reply( state),
 
                            // transaction
-                           internal::basic_forward< common::message::transaction::resource::prepare::Reply>( state),
-                           internal::basic_forward< common::message::transaction::resource::commit::Reply>( state),
-                           internal::basic_forward< common::message::transaction::resource::rollback::Reply>( state),
+                           transaction::resource::prepare::Reply( state),
+                           transaction::resource::commit::Reply( state),
+                           transaction::resource::rollback::Reply( state),
 
                            // domain discovery
-                           internal::domain::discover::Reply{ state}
-                        );
-
-                        return communication::select::dispatch::create::reader(
-                           descriptor,
-                           [&device = common::communication::ipc::inbound::device(), handler = std::move( handler)]( auto active) mutable 
-                           {
-                              handler( device.next( device.policy_non_blocking()));
-                           }
+                           domain::discover::Reply{ state}
                         );
                      }
-                  } // create
+                     namespace create
+                     {
+                        using handler_type = typename communication::ipc::inbound::Device::handler_type;
+                        struct Dispatch
+                        {
+                           Dispatch( State& state) : m_handler( internal::handler( state)) 
+                           {
+                              state.directive.read.add( communication::ipc::inbound::handle().socket().descriptor());
+                           }
+                           
+                           auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
+
+                           void operator () ( strong::file::descriptor::id descriptor)
+                           {
+                              consume();
+                           }
+
+                           bool consume()
+                           {
+                              auto& device = common::communication::ipc::inbound::device();  
+                              return m_handler( device.next( device.policy_non_blocking()));
+                           } 
+                           handler_type m_handler;
+                        };
+
+                        auto dispatch( State& state)
+                        {
+                           return Dispatch( state);
+                        }
+                     } // create
+                  } // internal
                } // handle
 
                void connect( State& state)
@@ -718,8 +792,8 @@ namespace casual
                   // start the message dispatch
                   communication::select::dispatch::pump( 
                      state.directive, 
-                     handle::create::internal( state),
-                     handle::create::external( state)
+                     handle::internal::create::dispatch( state),
+                     handle::external::create::dispatch( state)
                   );
                }
 

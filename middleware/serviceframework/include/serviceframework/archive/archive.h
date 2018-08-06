@@ -504,7 +504,7 @@ namespace casual
          std::enable_if_t< std::is_enum< T >::value>
          serialize( Writer& archive, const T& value, const char* const name)
          {
-            serialize( archive, static_cast< typename std::underlying_type< T>::type>( value), name);
+            serialize( archive, static_cast< std::underlying_type_t< T>>( value), name);
          }
 
 

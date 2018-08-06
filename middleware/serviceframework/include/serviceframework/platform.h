@@ -146,13 +146,13 @@ namespace casual
          template< typename T, typename P, typename S>
          void serialize( Reader& archive, common::value::basic_optional< T, P, S>& value, const char* name)
          {
-            serialize( archive, value.front(), name);
+            serialize( archive, value.underlaying(), name);
          }
 
          template< typename T, typename P, typename S>
          void serialize( Writer& archive, const common::value::basic_optional< T, P, S>& value, const char* name)
          {
-            serialize( archive, value.front(), name);
+            serialize( archive, value.value(), name);
          }
 
 

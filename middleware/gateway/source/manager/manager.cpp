@@ -37,11 +37,8 @@ namespace casual
                {
                   Trace trace{ "gateway::manager::local::connect"};
 
-
-                  //
                   // Set environment variable to make it easier for connections to get in
                   // touch with us
-                  //
                   common::environment::variable::process::set(
                         common::environment::variable::name::ipc::gateway::manager(),
                         process::handle());
@@ -54,10 +51,7 @@ namespace casual
                                  configuration::domain::get( { settings.configuration})));
                   }
 
-
-                  //
                   // Ask domain manager for configuration
-                  //
                   common::message::domain::configuration::Request request;
                   request.process = process::handle();
 
@@ -70,18 +64,31 @@ namespace casual
 
                namespace dispatch
                {
+                  using handler_type = typename communication::ipc::inbound::Device::handler_type;
+                  struct Inbound
+                  {
+                     Inbound( State& state) : m_handler( manager::handler( state)) 
+                     {
+                        state.directive.read.add( communication::ipc::inbound::handle().socket().descriptor());
+                     }
+                     
+                     auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
+
+                     void operator () ( strong::file::descriptor::id descriptor)
+                     {
+                        consume();
+                     }
+
+                     bool consume()
+                     {
+                        return m_handler( ipc::device().non_blocking_next());
+                     } 
+                     handler_type m_handler;
+                  };
+
                   auto inbound( State& state)
                   {
-                     const auto descriptor = communication::ipc::inbound::handle().socket().descriptor();
-                     state.directive.read.add( descriptor);
-
-                     return communication::select::dispatch::create::reader(
-                        descriptor,
-                        [ handler = manager::handler( state)]( auto active) mutable 
-                        {
-                           handler( ipc::device().blocking_next());
-                        }
-                     );
+                     return Inbound( state);
                   }
 
                   auto listeners( State& state)
@@ -89,23 +96,15 @@ namespace casual
                      return handle::listen::Accept{ state};
                   }
                } // dispatch
-
             } // <unnamed>
          } // local
-
       } // manager
-
-
-
-
 
 
       Manager::Manager( manager::Settings settings)
         : m_state{ manager::local::configure( std::move( settings))}
       {
          Trace trace{ "gateway::Manager::Manager"};
-
-
       }
 
       Manager::~Manager()
