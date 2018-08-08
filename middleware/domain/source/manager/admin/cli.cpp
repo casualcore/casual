@@ -256,7 +256,7 @@ namespace casual
                               throw exception::system::invalid::File{ string::compose( "at least one file does not exist - files: ", files)};
                            }
                            arguments.emplace_back( "--configuration-files");
-                           algorithm::copy( files, std::back_inserter( arguments));
+                           algorithm::append( files, arguments);
                         }
 
                         arguments.emplace_back( "--event-ipc");

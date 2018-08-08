@@ -53,7 +53,7 @@ namespace casual
             using queue_handle = strong::ipc::id;
 
             Handle() = default;
-            inline Handle( strong::process::id pid) : pid{ pid} {}
+            inline explicit Handle( strong::process::id pid) : pid{ pid} {}
             inline Handle( strong::process::id pid, strong::ipc::id ipc) : pid( pid),  ipc( std::move( ipc))  {}
 
             strong::process::id pid;
@@ -67,29 +67,11 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Handle& value);
 
-            /*
-            struct equal
-            {
-               struct pid
-               {
-                  pid( strong::process::id pid) : m_pid( pid) {}
-                  bool operator() ( const Handle& lhs) { return lhs.pid == m_pid;}
-               private:
-                  strong::process::id m_pid;
-               };
-            };
-
-            struct order
-            {
-               struct pid
-               {
-                  struct Ascending
-                  {
-                     bool operator() ( const Handle& lhs, const Handle& rhs) { return lhs.pid < rhs.pid;}
-                  };
-               };
-            };
-            */
+            //! extended equality
+            inline friend bool operator == ( const Handle& lhs, const strong::process::id& rhs) { return lhs.pid == rhs;}
+            inline friend bool operator == ( const strong::process::id& lhs, const Handle& rhs) { return rhs == lhs;}
+            inline friend bool operator == ( const Handle& lhs, const strong::ipc::id& rhs) { return lhs.ipc == rhs;}
+            inline friend bool operator == ( const strong::ipc::id& lhs, const Handle& rhs) { return rhs == lhs;}
 
             inline explicit operator bool() const
             {

@@ -31,6 +31,19 @@ namespace casual
          }
       }
 
+      TEST( casual_common_process, handle_equality)
+      {
+         common::unittest::Trace trace;
+
+         auto handle = process::handle();
+
+         EXPECT_TRUE( handle);
+         EXPECT_TRUE( handle == handle.pid);
+         EXPECT_TRUE( handle.pid == handle);
+         EXPECT_TRUE( handle == handle.ipc);
+         EXPECT_TRUE( handle.ipc == handle);
+      }
+
       TEST( casual_common_process, spawn_one_process)
       {
          common::unittest::Trace trace;

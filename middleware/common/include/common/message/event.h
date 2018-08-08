@@ -237,14 +237,26 @@ namespace casual
 
             } // service
 
+
+
          } // event
 
-         namespace reverse
+         namespace is
          {
-            //template<>
-            //struct type_traits< event::message::subscribe::Request> : detail::type< event::message::subscribe::Reply> {};
-
-         } // reverse
+            namespace event
+            {
+               template< typename M>
+               constexpr bool message( M&& message)
+               {
+                  return type( message) > Type::EVENT_BASE && type( message) < Type::EVENT_BASE_END; 
+               }
+               struct Message 
+               {
+                  template< typename M>
+                  constexpr bool operator () ( M&& message) { return is::event::message( message);}
+               };
+            } // event
+         } // is
       } // message
    } // common
 } // casual

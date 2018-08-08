@@ -345,22 +345,23 @@ namespace casual
                         return algorithm::all_of( m_batch.servers, [&]( auto id){
                            auto& server = this->state().server( id);
                            return algorithm::all_of( server.instances, []( auto& i){
-                              return i.state != state::Server::state_type::running
-                                    && i.state != state::Server::state_type::scale_in;
+                              return ! i.handle.pid;
                            });
                         }) && algorithm::all_of( m_batch.executables, [&]( auto id){
                            auto& server = this->state().executable( id);
                            return algorithm::all_of( server.instances, []( auto& i){
-                              return i.state != state::Server::state_type::running
-                                    && i.state != state::Server::state_type::scale_in;
+                              return ! i.handle;
                            });
                         });
                      }
 
                      friend std::ostream& operator << ( std::ostream& out, const Shutdown& value)
                      {
-                        return out << "{ done: " << value.done() << ", batch: " << value.m_batch << '}';
+                        out << "{ done: " << value.done() << ", batch: ";
+                        value.m_batch.log( out, value.state());
+                        return out << '}';
                      }
+
                   private:
                      common::move::Moved m_moved;
                   };
@@ -660,13 +661,17 @@ namespace casual
 
                      state().event.subscription( message);
 
-                     // remove possible pending events for the removed subscriber 
-                     algorithm::trim( state().pending.replies, algorithm::remove_if( state().pending.replies, [&message]( message::pending::Message& m)
+                     // remove possible pending events for the removed subscriber
                      {
-                        m.remove( message.process);
-                        return m.sent();
-                     }));
+                        auto predicate = [&message]( message::pending::Message& m){
+                           if( message::is::event::message( m))
+                              m.remove( message.process.ipc);
+                           return m.sent();
+                        };
 
+                        algorithm::trim( state().pending.replies, algorithm::remove_if( state().pending.replies, predicate));
+                     }
+ 
                      common::log::line( log, "event: ", state().event);
                   }
 
@@ -707,7 +712,7 @@ namespace casual
                            }
                         }
 
-                        auto restarts = state().exited( message.state.pid);
+                        auto restarts = state().remove( message.state.pid);
 
                         if( std::get< 0>( restarts)) scale::instances( state(), *std::get< 0>( restarts));
                         if( std::get< 1>( restarts)) scale::instances( state(), *std::get< 1>( restarts));
@@ -762,6 +767,8 @@ namespace casual
 
                         bool operator () ( const common::message::domain::process::lookup::Request& message)
                         {
+                           Trace trace{ "domain::manager::handle::process::local::Lookup"};
+
                            log::line( verbose::log, "message: ", message);
 
                            using Directive = common::message::domain::process::lookup::Request::Directive;
@@ -974,8 +981,6 @@ namespace casual
                void Lookup::operator () ( const common::message::domain::process::lookup::Request& message)
                {
                   Trace trace{ "domain::manager::handle::process::Lookup"};
-
-                  common::log::line( verbose::log, "message: ", message);
 
                   if( ! local::Lookup{ state()}( message))
                   {

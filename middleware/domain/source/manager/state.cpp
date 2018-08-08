@@ -23,16 +23,16 @@ namespace casual
          {
             namespace
             {
-               namespace remove
+               namespace ipc
                {
-                  void ipc( strong::ipc::id ipc)
+                  void remove( strong::ipc::id ipc)
                   {
                      if( communication::ipc::exists( ipc))
                      {
                         communication::ipc::remove( ipc);
                      }
                   }
-               } // remove
+               } // ipc
 
 
                template< typename T>
@@ -41,10 +41,10 @@ namespace casual
                   out << "id: " << value.id
                      << ", alias: " << value.alias
                      << ", path: " << value.path
-                     << ", arguments: " << range::make( value.arguments)
+                     << ", arguments: " << value.arguments
                      << ", restart: " << value.restart
-                     << ", memberships: " << range::make( value.memberships)
-                     << ", instances: " << range::make( value.instances);
+                     << ", memberships: " << value.memberships
+                     << ", instances: " << value.instances;
                }
 
             } // <unnamed>
@@ -58,8 +58,8 @@ namespace casual
             {
                return out << "{ id: " << value.id
                      << ", name: " << value.name
-                     << ", dependencies: " << range::make( value.dependencies)
-                     << ", resources: " << range::make( value.resources)
+                     << ", dependencies: " << value.dependencies
+                     << ", resources: " << value.resources
                      << '}';
             }
 
@@ -119,6 +119,8 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::state::local::scale"};
 
+                        log::line( verbose::log, "instances: ", instances);
+
                         using state_type = typename I::value_type::state_type;
 
                         auto split = algorithm::stable_partition( instances, []( auto& i){
@@ -161,7 +163,7 @@ namespace casual
 
                         algorithm::stable_sort( instances);
 
-                        log::line( log::debug, "instances: ", instances);
+                        log::line( verbose::log, "instances: ", instances);
 
                      }
 
@@ -190,9 +192,11 @@ namespace casual
                local::instance::scale( instances, count);
             }
 
-            void Executable::remove( pid_type instance)
+            void Executable::remove( pid_type pid)
             {
-               auto found = algorithm::find( instances, instance);
+               Trace trace{ "domain::manager::state::Executable::remove"};
+
+               auto found = algorithm::find( instances, pid);
 
                if( found)
                {
@@ -200,10 +204,12 @@ namespace casual
 
                   if( state == state_type::scale_in)
                   {
+                     log::line( verbose::log, "remove: ", *found);
                      instances.erase( std::begin( found));
                   }
                   else
                   {
+                     log::line( verbose::log, "reset: ", *found);
                      found->handle = common::strong::process::id{};
                      found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
                   }
@@ -233,28 +239,33 @@ namespace casual
 
             Server::instance_type Server::remove( common::strong::process::id pid)
             {
-               auto found = algorithm::find_if( instances, [pid]( auto& p){
-                  return p.handle.pid == pid;
-               });
+               Trace trace{ "domain::manager::state::Server::remove"};
 
-               instance_type result;
+               auto found = algorithm::find( instances, pid);
 
-               if( found)
+               if( ! found)
                {
-                  result = *found;
-
-                  auto const state = found->state;
-
-                  if( state == state_type::scale_in)
-                  {
-                     instances.erase( std::begin( found));
-                  }
-                  else
-                  {
-                     found->handle = common::process::Handle{};
-                     found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
-                  }
+                  log::line( log, "failed to find server - pid: ", pid);
+                  log::line( verbose::log, "instances: ", instances);
+                  return {};
                }
+ 
+               auto result = *found;
+
+               auto const state = found->state;
+
+               if( state == state_type::scale_in)
+               {
+                  log::line( verbose::log, "remove: ", *found);
+                  instances.erase( std::begin( found));
+               }
+               else
+               {
+                  log::line( verbose::log, "reset: ", *found);
+                  found->handle = common::process::Handle{};
+                  found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+               }
+               
                return result;
             }
 
@@ -299,8 +310,8 @@ namespace casual
             {
                out << "{ ";
                manager::local::print_executables( out, value);
-               return out << ", resources: " << range::make( value.resources)
-                  << ", restrictions: " << range::make( value.restrictions)
+               return out << ", resources: " << value.resources
+                  << ", restrictions: " << value.restrictions
                   << '}';
             }
 
@@ -312,12 +323,31 @@ namespace casual
 
             Batch::Batch( Group::id_type group) : group( group) {}
 
+            void Batch::log( std::ostream& out, const State& state) const
+            {
+               out << "{ group: " << group;
+
+               auto delimiter = [&out](){ out << ", ";};
+
+               out << ", servers: [";
+               algorithm::for_each_interleave( servers, [&out,&state]( auto id){
+                  out << state.server( id);
+               }, delimiter);
+
+               out << "], executables: [";
+               algorithm::for_each_interleave( executables, [&out,&state]( auto id){
+                  out << state.executable( id);
+               }, delimiter);
+
+               out << "]}";
+            }
+
 
             std::ostream& operator << ( std::ostream& out, const Batch& value)
             {
                return out << "{ group: " << value.group
-                     << ", servers: " << range::make( value.servers)
-                     << ", executables: " << range::make( value.executables)
+                     << ", servers: " << value.servers
+                     << ", executables: " << value.executables
                      << '}';
             }
 
@@ -334,7 +364,7 @@ namespace casual
                      std::vector< state::Batch> result;
 
                      std::vector< std::reference_wrapper< const state::Group>> groups;
-                     algorithm::copy( state.groups, std::back_inserter( groups));
+                     algorithm::append( state.groups, groups);
                      algorithm::stable_sort( groups, state::Group::boot::Order{});
 
                      std::vector< std::reference_wrapper< state::Server>> server_wrappers;
@@ -370,7 +400,7 @@ namespace casual
                            });
 
                            algorithm::transform( std::get< 0>( slice), output, []( auto& e){
-                              common::traits::concrete::type_t< decltype( range::front( output))> result;
+                              common::traits::iterable::value_t< decltype( output)> result;
                               result = e.get().id;
                               return result;
                            });
@@ -391,7 +421,6 @@ namespace casual
                   }
                } // order
 
-
             } // <unnamed>
          } // local
 
@@ -410,22 +439,31 @@ namespace casual
          }
 
 
-
-         std::tuple< state::Server*, state::Executable*> State::exited( common::strong::process::id pid)
+         std::tuple< state::Server*, state::Executable*> State::remove( common::strong::process::id pid)
          {
-            Trace trace{ "domain::manager::State::exited"};
+            Trace trace{ "domain::manager::State::remove pid"};
 
-            //
-            // Vi remove from event listeners if one of them has died
-            //
+            // We remove from event listeners if one of them has died
             event.remove( pid);
 
-            //
+            // We remove from pending 
+            {
+               algorithm::trim( pending.replies, algorithm::remove_if( pending.replies, [pid]( message::pending::Message& m)
+               {
+                  m.remove( pid);
+                  return m.sent();
+               }));
+
+               algorithm::trim( pending.lookup, algorithm::remove_if( pending.lookup, [pid]( auto& m)
+               {
+                  return m.process == pid;
+               }));
+            }
+
             // Remove from singletons
-            //
             {
                auto found = algorithm::find_if( singletons, [pid]( auto& v){
-                  return v.second.pid == pid;
+                  return v.second == pid;
                });
 
                if( found)
@@ -435,12 +473,9 @@ namespace casual
                }
             }
 
-
             using result_type = std::tuple< state::Server*, state::Executable*>;
 
-            //
             // Check if it's a server
-            //
             {
                auto found = server( pid);
 
@@ -448,10 +483,9 @@ namespace casual
                {
                   auto instance = found->remove( pid);
                   log::line( log, "remove server instance: ", instance);
-                  //
+
                   // Try to remove ipc-queue (no-op if it's removed already)
-                  //
-                  local::remove::ipc( instance.handle.ipc);
+                  local::ipc::remove( instance.handle.ipc);
 
                   if( found->restart && runlevel() == Runlevel::running)
                   {
@@ -460,9 +494,7 @@ namespace casual
                }
             }
 
-            //
             // Find and remove from executable
-            //
             {
                auto found = executable( pid);
 
@@ -478,9 +510,7 @@ namespace casual
                }
             }
 
-            //
             // check if it's a grandchild
-            //
             {
                auto found = algorithm::find_if( grandchildren, [=]( const auto& v){
                   return v.pid == pid;
@@ -495,6 +525,7 @@ namespace casual
 
             return result_type{};
          }
+
 
          std::vector< std::string> State::variables( const state::Process& process)
          {
@@ -645,8 +676,8 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const State& state)
          {
-            return out << "{ groups: " << range::make( state.groups)
-               << ", executables: " << range::make( state.executables)
+            return out << "{ groups: " << state.groups
+               << ", executables: " << state.executables
                << ", tasks: " << state.tasks
                   << '}';
          }

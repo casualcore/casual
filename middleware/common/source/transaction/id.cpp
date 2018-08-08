@@ -65,29 +65,29 @@ namespace casual
             namespace
             {
 
-               void casual_xid( const Uuid& gtrid, const Uuid& bqual, XID& xid )
+               void casual_xid( Uuid gtrid, Uuid bqual, XID& xid )
                {
                   xid.formatID = ID::Format::cCasual;
 
                   xid.gtrid_length = memory::size( bqual.get());
                   xid.bqual_length = xid.gtrid_length;
 
-                  memory::copy( gtrid.get(), range::make( xid.data, xid.data + xid.gtrid_length));
-                  memory::copy( bqual.get(), range::make( xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length));
+                  algorithm::copy( gtrid.get(), xid.data);
+                  algorithm::copy( bqual.get(), xid.data + xid.gtrid_length);
                }
-
 
             } // <unnamed>
          } // local
 
-
-         ID::ID() : ID( process::Handle{})
+         ID::ID() noexcept
          {
+            xid.formatID = Format::cNull;
          }
 
-         ID::ID( process::Handle owner) : m_owner( std::move( owner))
+
+
+         ID::ID( const process::Handle& owner) : m_owner( std::move( owner))
          {
-            memory::set( xid);
             xid.formatID = Format::cNull;
          }
 
@@ -96,7 +96,7 @@ namespace casual
          }
 
 
-         ID::ID( const Uuid& gtrid, const Uuid& bqual, process::Handle owner) : m_owner( std::move( owner))
+         ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
          {
             local::casual_xid( gtrid, bqual, xid);
          }
@@ -118,24 +118,10 @@ namespace casual
             return *this;
          }
 
-         ID::ID( const ID& rhs)
+
+         ID ID::create( const process::Handle& owner)
          {
-            xid = rhs.xid;
-            m_owner = rhs.m_owner;
-         }
-
-         ID& ID::operator = ( const ID& rhs)
-         {
-            xid = rhs.xid;
-            m_owner = rhs.m_owner;
-            return *this;
-         }
-
-
-
-         ID ID::create( process::Handle owner)
-         {
-            return ID( uuid::make(), uuid::make(), std::move( owner));
+            return ID( uuid::make(), uuid::make(), owner);
          }
 
          ID ID::create()
@@ -150,11 +136,9 @@ namespace casual
 
             if( result)
             {
-               auto branch = range::make(
-                     result.xid.data + result.xid.gtrid_length,
-                     result.xid.data + result.xid.gtrid_length + result.xid.bqual_length);
+               auto uuid = uuid::make();
 
-               memory::copy( uuid::make(), branch);
+               algorithm::copy( uuid.get(), result.xid.data + result.xid.gtrid_length);
             }
             return result;
          }

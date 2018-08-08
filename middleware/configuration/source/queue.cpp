@@ -143,7 +143,7 @@ namespace casual
 
                      for( auto& group : manager.groups)
                      {
-                        common::algorithm::copy( group.queues, std::back_inserter( queues));
+                        common::algorithm::append( group.queues, queues);
                      }
 
                      if( common::algorithm::adjacent_find( common::algorithm::sort( queues)))

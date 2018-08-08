@@ -229,6 +229,7 @@ unittest_objectfiles = [
     Compile( 'unittest/source/test_conformance.cpp'),  
     
     Compile( 'unittest/source/test_algorithm.cpp'),
+    Compile( 'unittest/source/test_range.cpp'),
     Compile( 'unittest/source/test_execute.cpp'),
     
     Compile( 'unittest/source/test_memory.cpp'),

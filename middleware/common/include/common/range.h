@@ -144,6 +144,8 @@ namespace casual
          iterator m_last = iterator{};
       };
 
+      static_assert( ! std::is_trivial< Range< int*>>::value, "trivially copyable");
+
 
 
       //!

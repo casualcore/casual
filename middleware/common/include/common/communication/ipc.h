@@ -87,7 +87,7 @@ namespace casual
                      transport::Header header;
                      payload_type payload;
 
-                  } message;
+                  } message{}; // note the {} which initialize the memory to 0:s
 
 
                   static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
@@ -95,9 +95,9 @@ namespace casual
                   static_assert( ( transport::header_size() + transport::max_payload_size()) == transport::max_message_size(), "something is wrong with padding");
 
 
-                  inline Transport() { memory::set( message);}
+                  inline Transport() = default;
 
-                  inline Transport( common::message::Type type, size_type complete_size) : Transport()
+                  inline Transport( common::message::Type type, size_type complete_size)
                   {
                      message.header.type = type;
                      message.header.complete_size = complete_size;

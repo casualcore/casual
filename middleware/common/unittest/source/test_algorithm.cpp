@@ -377,6 +377,30 @@ namespace casual
 
 
 
+      TEST( casual_common_algorithm, copy_empty)
+      {
+         common::unittest::Trace trace;
+
+         const std::string source;
+         std::string target;
+
+         algorithm::copy( source, target);
+
+         EXPECT_TRUE( target.empty()) << target;
+      }
+
+      TEST( casual_common_algorithm, copy_string_to_existing_string__expect_overwrite)
+      {
+         common::unittest::Trace trace;
+
+         const std::string source = "foo-bar";
+         std::string target = "xxx";
+
+         algorithm::copy( source, target);
+
+         EXPECT_TRUE( target == source) << target;
+      }
+
       TEST( casual_common_algorithm, copy_max__source_shorter_than_target)
       {
          common::unittest::Trace trace;
@@ -400,6 +424,19 @@ namespace casual
          algorithm::copy_max( source, source.size(), std::back_inserter( target));
 
          EXPECT_TRUE( source == target) << target;
+      }
+
+      TEST( casual_common_algorithm, copy_max_range__source_equal_to_target)
+      {
+         common::unittest::Trace trace;
+
+         const std::string source = "1234567";
+         std::string target;
+         target.resize( source.size());
+
+         algorithm::copy_max( source, target);
+
+         EXPECT_TRUE( source == target) << "\nsource: '" << source << "'\ntarget: '" << target << "'";
 
       }
 
@@ -413,9 +450,20 @@ namespace casual
          algorithm::copy_max( source, 4, std::back_inserter( target));
 
          EXPECT_TRUE( target == "1234") << target;
-
       }
 
+      TEST( casual_common_algorithm, copy_max__range__source_longer_than_target)
+      {
+         common::unittest::Trace trace;
+
+         const std::string source = "1234567";
+         std::string target;
+         target.resize( 4);
+
+         algorithm::copy_max( source, target);
+
+         EXPECT_TRUE( target == "1234") << "\nsource: '" << source << "'\ntarget: '" << target << "'";
+      }
 
       TEST( casual_common_algorithm, intersection)
       {

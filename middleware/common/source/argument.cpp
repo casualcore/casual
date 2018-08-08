@@ -327,7 +327,7 @@ namespace casual
                         }
 
                      }
-                     algorithm::copy( options, result);
+                     algorithm::append( options, result);
                      return std::tuple< invoked_range, std::vector< Mapper>>{ range::make( std::begin( unused), std::end( invoked)), std::move( result)};
                   }
 

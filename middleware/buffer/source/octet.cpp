@@ -169,13 +169,9 @@ namespace casual
                {
                   auto& buffer = pool_type::pool.get( *handle);
 
-                  buffer.payload.memory.resize( size);
-
-                  *handle = buffer.payload.memory.data();
-
-                  casual::common::memory::copy(
+                  *handle = casual::common::algorithm::copy(
                      casual::common::range::make( data, size),
-                     casual::common::range::make( buffer.payload.memory));
+                     buffer.payload.memory).data();
 
                }
                catch( ...)

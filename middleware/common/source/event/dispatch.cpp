@@ -26,25 +26,6 @@ namespace casual
                m_subscribers};
          }
 
-         void base_dispatch::remove( strong::process::id pid)
-         {
-            Trace trace{ "common::event::base_dispatch::remove"};
-
-            auto split = algorithm::partition( m_subscribers, [pid]( const auto& p){
-               return p.pid != pid;
-            });
-
-            algorithm::erase( m_subscribers, std::get< 1>( split));
-         }
-
-         bool base_dispatch::exists( strong::ipc::id ipc) const
-         {
-            return ! algorithm::find_if( m_subscribers, [ipc]( auto& s){
-               return s.ipc == ipc;
-            }).empty();
-         }
-
-
       } // event
    } // common
 } // casual

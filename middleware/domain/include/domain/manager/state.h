@@ -198,7 +198,7 @@ namespace casual
                   policy_type::spawned( pid, *this);
                }
 
-               friend bool operator == ( const Instance& lhs, const handle_type& rhs) { return lhs.handle == rhs;}
+               friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
                friend bool operator < ( const Instance& lhs, const Instance& rhs) { return lhs.state < rhs.state;}
 
 
@@ -340,6 +340,8 @@ namespace casual
                std::vector< Executable::id_type> executables;
                std::vector< Server::id_type> servers;
 
+               void log( std::ostream& out, const State& state) const;
+
                friend std::ostream& operator << ( std::ostream& out, const Batch& value);
             };
             static_assert( common::traits::is_movable< Batch>::value, "not movable");
@@ -463,7 +465,7 @@ namespace casual
             //! @param pid
             //! @return pointer to Server and Executable which is not null if we gonna restart them.
             //!
-            std::tuple< state::Server*, state::Executable*> exited( common::strong::process::id pid);
+            std::tuple< state::Server*, state::Executable*> remove( common::strong::process::id pid);
 
             //!
             //! @return environment variables for the process, including global/default variables

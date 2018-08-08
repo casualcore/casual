@@ -125,8 +125,8 @@ namespace casual
             {
                std::vector< Instance> result;
 
-               algorithm::copy( state.instances.local, std::back_inserter( result));
-               algorithm::copy( state.instances.remote, std::back_inserter( result));
+               algorithm::append( state.instances.local, result);
+               algorithm::append( state.instances.remote, result);
 
                return result;
             }

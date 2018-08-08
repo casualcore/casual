@@ -106,6 +106,8 @@ namespace casual
             EVENT_SERVICE_BASE = 4200,
             event_service_call = EVENT_SERVICE_BASE,
             EVENT_SERVICE_BASE_END,
+            
+            EVENT_BASE_END,
 
 
 

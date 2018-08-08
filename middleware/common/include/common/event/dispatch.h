@@ -35,7 +35,13 @@ namespace casual
 
             std::vector< common::process::Handle> m_subscribers;
 
-            bool exists( strong::ipc::id ipc) const;
+            template< typename ID>
+            bool exists( ID id) const
+            {
+               return ! algorithm::find_if( m_subscribers, [id]( auto& process){
+                  return process == id;
+               }).empty();
+            }
          };
 
          template< typename Event>
@@ -59,10 +65,12 @@ namespace casual
                }));
             }
 
-            void remove( strong::process::id pid)
+            //! remove subscribers with pid or ipc
+            template< typename ID>
+            void remove( ID id)
             {
-               algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [pid]( auto& v){
-                  return pid == v.pid;
+               algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [id]( auto& process){
+                  return process == id;
                }));
             }
 

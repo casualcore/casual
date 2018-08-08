@@ -96,8 +96,8 @@ namespace casual
                         {
                            Trace trace{ "gateway::inbound::handle::domain::discover::coordinate::Policy::accumulate"};
 
-                           common::algorithm::copy( reply.services, std::back_inserter( message.services));
-                           common::algorithm::copy( reply.queues, std::back_inserter( message.queues));
+                           common::algorithm::append( reply.services, message.services);
+                           common::algorithm::append( reply.queues, message.queues);
 
                            common::log::line( verbose::log, "message: ", message);
                            common::log::line( verbose::log, "reply: ", reply);
@@ -689,7 +689,7 @@ namespace casual
                            {
                               state.directive.read.add( communication::ipc::inbound::handle().socket().descriptor());
                            }
-                           
+
                            auto descriptor() const { return communication::ipc::inbound::handle().socket().descriptor();}
 
                            void operator () ( strong::file::descriptor::id descriptor)

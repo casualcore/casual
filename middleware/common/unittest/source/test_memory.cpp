@@ -83,14 +83,14 @@ namespace casual
 
       }
 
-      TYPED_TEST( casual_common_memory, set)
+      TYPED_TEST( casual_common_memory, clear)
       {
          common::unittest::Trace trace;
 
          typename TestFixture::type current_type;
 
-         memory::set( current_type);
-
+         memory::clear( current_type);
+         
          auto first = reinterpret_cast< std::uint8_t*>( &current_type);
 
          EXPECT_TRUE( std::all_of( first, first + memory::size( current_type), []( std::uint8_t v){
@@ -98,20 +98,6 @@ namespace casual
          }));
       }
 
-      TYPED_TEST( casual_common_memory, set_6)
-      {
-         common::unittest::Trace trace;
-
-         typename TestFixture::type current_type;
-
-         memory::set( current_type, 6);
-
-         auto first = reinterpret_cast< std::uint8_t*>( &current_type);
-
-         EXPECT_TRUE( std::all_of( first, first + memory::size( current_type), []( std::uint8_t v){
-            return v == 6;
-         }));
-      }
 
       TYPED_TEST( casual_common_memory, copy)
       {
@@ -125,7 +111,7 @@ namespace casual
 
          //
          // make sure we don't have the same values in memory as before
-         memory::set( current_type, 6);
+         memory::clear( current_type);
 
          //
          // copy back to current type

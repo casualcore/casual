@@ -413,7 +413,7 @@ namespace casual
 
                               if( found)
                               {
-                                 traits::concrete::type_t< decltype( reply.services.front())> service;
+                                 traits::iterable::value_t< decltype( reply.services)> service;
 
                                  service.name = found->second.service.name;
                                  service.timeout = found->second.service.timeout;
@@ -980,7 +980,7 @@ namespace casual
                   message::service::Advertise unadvertise;
                   unadvertise.directive = message::service::Advertise::Directive::remove;
                   unadvertise.process = m_replier.process();
-                  algorithm::copy( services, std::back_inserter( unadvertise.services));
+                  algorithm::copy( services, unadvertise.services);
 
                   communication::ipc::blocking::send( communication::instance::outbound::service::manager::device(), unadvertise);
                }

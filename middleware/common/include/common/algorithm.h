@@ -183,6 +183,7 @@ namespace casual
          }
 
 
+
          template< typename R, typename OutIter, typename = std::enable_if_t< 
             common::traits::iterator::is_output< OutIter>::value
             && common::traits::is::iterable< R>::value>>
@@ -191,14 +192,43 @@ namespace casual
             return std::copy( std::begin( range), std::end( range), output);
          }
 
-         template< typename R, typename Out, typename = std::enable_if_t< 
-            common::traits::has::push_back< Out>::value
-            && common::traits::is::iterable< R>::value>>
+         namespace detail
+         {
+            template< typename T>
+            constexpr auto is_resize_copy = traits::has::resize< T>::value &&
+               std::is_default_constructible< traits::remove_cvref_t< traits::iterable::value_t< T>>>::value;
+         } // detail
+
+         //!
+         //! copy `range` to `output`
+         //!
+         //! @attention the possible content in `output` is truncated and overwritten
+         //! 
+         //! @return output
+         //! @{
+         template< typename R, typename Out, typename std::enable_if_t< 
+            detail::is_resize_copy< Out>
+            && common::traits::is::iterable< R>::value, int> = 0>
          decltype( auto) copy( R&& range, Out&& output)
          {
+            auto size = std::distance( std::begin( range), std::end( range));
+            output.resize( size);
+            std::copy( std::begin( range), std::end( range), std::begin( output));
+            return std::forward< Out>( output);
+         }
+
+         template< typename R, typename Out, typename std::enable_if_t< 
+            ! detail::is_resize_copy< Out> && traits::has::push_back< Out>::value
+            && common::traits::is::iterable< R>::value, int> = 0>
+         decltype( auto) copy( R&& range, Out&& output)
+         {
+            output.clear();
             std::copy( std::begin( range), std::end( range), std::back_inserter( output));
             return std::forward< Out>( output);
          }
+         //! @}
+
+
 
          template< typename R, typename OutIter, typename P, typename = std::enable_if_t< 
             common::traits::iterator::is_output< OutIter>::value
@@ -208,41 +238,34 @@ namespace casual
             return std::copy_if( std::begin( range), std::end( range), output, predicate);
          }
 
-         template< typename Range, typename Container, typename = std::enable_if_t< 
-            common::traits::has::insert< Container>::value
-            && common::traits::is::iterable< Range>::value>>
-         Container& append( Range&& source, Container& destination)
+
+         //!
+         //! appends `range` to `output`.
+         //! 
+         //! @return output
+         //! @{
+         template< typename R, typename Out, typename std::enable_if_t< 
+            detail::is_resize_copy< Out>
+            && common::traits::is::iterable< R>::value, int> = 0>
+         decltype( auto) append( R&& range, Out&& output)
          {
-            destination.insert( std::end( destination), std::begin( source), std::end( source));
-            return destination;
+            auto size = std::distance( std::begin( range), std::end( range));
+            output.resize( output.size() + size);
+            std::copy( std::begin( range), std::end( range), std::end( output) - size);
+            return std::forward< Out>( output);
          }
 
-
-
-
-         //!
-         //! Copies from @p source to @p destination
-         //!   size of destination dictates the maximum that will be
-         //!   copied
-         //!
-         //! @param source
-         //! @param destination sets the maximum what will be copied
-         //!
-         template< typename Range1, typename Range2>
-         void copy_max( Range1&& source, Range2&& destination)
+         template< typename R, typename Out, typename std::enable_if_t< 
+            ! detail::is_resize_copy< Out> && traits::has::push_back< Out>::value
+            && common::traits::is::iterable< R>::value, int> = 0>
+         decltype( auto) append( R&& range, Out&& output)
          {
-            auto max = range::size( destination);
-            auto wanted = range::size( source);
-
-            if( wanted <= max)
-            {
-               copy( source, destination);
-            }
-            else
-            {
-               std::copy_n( std::begin( source), max, std::begin( destination));
-            }
+            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
+            return std::forward< Out>( output);
          }
+         //! @}
+
+
 
          template< typename R, typename Iter>
          void copy_max( R&& range, platform::size::type size, Iter output)
@@ -255,6 +278,20 @@ namespace casual
             {
                std::copy_n( std::begin( range), size, output);
             }
+         }
+
+         //!
+         //! Copies from @p source to @p destination
+         //!   size of destination dictates the maximum that will be
+         //!   copied
+         //!
+         //! @param source
+         //! @param destination sets the maximum what will be copied
+         //!
+         template< typename Range1, typename Range2>
+         void copy_max( Range1&& source, Range2&& destination)
+         {
+            copy_max( source, range::size( destination), std::begin( destination));
          }
 
          template< typename R, typename C>

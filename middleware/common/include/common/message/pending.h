@@ -61,10 +61,13 @@ namespace casual
                Message( Message&&);
                Message& operator = ( Message&&);
 
+               auto type() const noexcept { return complete.type;}
+
                bool sent() const;
                explicit operator bool () const;
 
-               void remove( const target_type& target);
+               void remove( strong::ipc::id ipc);
+               void remove( strong::process::id pid);
 
 
                friend std::ostream& operator << ( std::ostream& out, const Message& value);

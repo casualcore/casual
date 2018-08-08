@@ -212,15 +212,9 @@ namespace casual
 
                   const auto count = std::strlen( value) + 1;
 
-                  if( count > buffer.payload.memory.size())
-                  {
-                     buffer.payload.memory.resize( count);
-                     *handle = buffer.payload.memory.data();
-                  }
-
-                  casual::common::memory::copy(
+                  *handle = casual::common::algorithm::copy(
                      casual::common::range::make( value, count),
-                     casual::common::range::make( buffer.payload.memory));
+                     buffer.payload.memory).data();
 
                }
                catch( ...)

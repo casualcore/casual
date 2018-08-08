@@ -127,9 +127,8 @@ namespace casual
                      template< typename H>
                      void registration( signal::Type signal, H&& handler, int flags = 0)
                      {
-                        struct sigaction sa;
+                        struct sigaction sa = {};
 
-                        memory::set( sa);
                         sa.sa_handler = handler;
                         sa.sa_flags = flags;
 
@@ -434,8 +433,7 @@ namespace casual
 
             common::platform::time::unit unset()
             {
-               itimerval value;
-               memory::set( value);
+               itimerval value = {};
 
                return local::set( value);
             }

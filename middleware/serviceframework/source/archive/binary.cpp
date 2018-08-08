@@ -58,40 +58,30 @@ namespace casual
                            store( std::forward< T>( value));
                         }
                      private:
-                        template< typename Range>
-                        void append( Range source)
+                        template< typename T>
+                        void append( const T& value)
                         {
-                           auto current_size = size();
-
-                           memory().resize( current_size + source.size());
-
-                           auto destination = common::range::make( std::begin( memory()) + current_size, source.size());
-
-                           common::memory::copy( source, destination);
+                           common::memory::append( value, memory());
                         }
 
                         template< typename T>
                         void store( const T& value)
                         {
-                           append( common::memory::range::cast( value));
+                           append( value);
                         }
 
                         void store( const platform::binary::type& value)
                         {
-                           //
-                           // TODO: Write the size as some-common_size_type
-                           //
-                           store( value.size());
-                           append( common::range::make( value));
+                           // Write the size as size_type
+                           store( common::range::size( value));
+                           common::algorithm::append( value, memory());
                         }
 
                         void store( const std::string& value)
                         {
-                           //
-                           // TODO: Write the size as some-common_size_type
-                           //
+                           // Write the size as size_type
                            store( value.size());
-                           append( common::range::make( value));
+                           common::algorithm::append( value, memory());
                         }
 
                         inline size_type size() const { return m_memory.get().size();}
@@ -135,39 +125,32 @@ namespace casual
 
                      private:
 
-                        template< typename Range>
-                        void consume( Range destination)
-                        {
-                           if( m_offset + destination.size() > size())
-                           {
-                              throw exception::Validation( "Attempt to read out of bounds  ro: " + std::to_string( m_offset) + " size: " + std::to_string( size()));
-                           }
-
-                           auto source = common::range::make( std::begin( memory()) + m_offset, destination.size());
-
-                           m_offset += common::memory::copy( source, destination);
-                        }
 
                         template< typename T>
                         void load( T& value)
                         {
-                           consume( common::memory::range::cast( value));
+                           m_offset = common::memory::copy( memory(), m_offset, value);
+                        }
+
+                        template< typename T> 
+                        void load_container( T& value) 
+                        {
+                           size_type size{};
+                           load( size);
+
+                           auto source = common::range::make( std::begin( memory()) + m_offset, size);
+                           common::algorithm::copy( source, value);
+                           m_offset += size;
                         }
 
                         void load( std::string& value)
                         {
-                           size_type size = value.size();
-                           load( size);
-                           value.resize( size);
-                           consume( common::range::make( value));
+                           load_container( value);
                         }
 
                         void load( platform::binary::type& value)
                         {
-                           size_type size = value.size();
-                           load( size);
-                           value.resize( size);
-                           consume( common::range::make( value));
+                           load_container( value);
                         }
 
                         size_type m_offset = 0;

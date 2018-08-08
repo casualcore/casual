@@ -123,7 +123,7 @@ namespace casual
 
             serverConnect.process.ipc = ipc;
 
-            traits::concrete::type_t< decltype( serverConnect.services.front())> service;
+            traits::iterable::value_t< decltype( serverConnect.services)> service;
 
             //message::Service service;
 
@@ -163,7 +163,7 @@ namespace casual
             serverConnect.process.ipc = ipc;
 
 
-            traits::concrete::type_t< decltype( serverConnect.services.front())> service;
+            traits::iterable::value_t< decltype( serverConnect.services)> service;
 
             service.name = "service1";
             serverConnect.services.resize( 10000, service);

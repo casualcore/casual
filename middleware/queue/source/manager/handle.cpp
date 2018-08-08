@@ -304,7 +304,7 @@ namespace casual
                            return q.name == p.name;});
                      });
 
-                     common::traits::concrete::type_t< decltype( m_state.pending)> pending;
+                     common::traits::remove_cvref_t< decltype( m_state.pending)> pending;
 
                      common::algorithm::move( std::get< 1>( split), pending);
                      common::algorithm::trim( m_state.pending, std::get< 0>( split));

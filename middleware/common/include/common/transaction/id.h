@@ -60,14 +60,14 @@ namespace casual
             //! Creates a new unique transaction id, global and branch
             //!
             static ID create();
-            static ID create( process::Handle owner);
+            static ID create( const process::Handle& owner);
 
 
             //!
             //! Initialize with null-xid
             //! @{
-            ID();
-            ID( process::Handle owner);
+            ID() noexcept;
+            ID( const process::Handle& owner);
             //! @}
 
             explicit ID( const xid_type& xid);
@@ -79,15 +79,15 @@ namespace casual
             //!
             //! @note not likely to be used other than unittesting
             //!
-            ID( const Uuid& gtrid, const Uuid& bqual, process::Handle owner);
+            ID( Uuid gtrid, Uuid bqual, const process::Handle& owner);
 
 
             ID( ID&&) noexcept;
             ID& operator = ( ID&&) noexcept;
 
 
-            ID( const ID&);
-            ID& operator = ( const ID&);
+            ID( const ID&) noexcept = default;
+            ID& operator = ( const ID&) noexcept = default;
 
 
 
@@ -146,7 +146,7 @@ namespace casual
             //! We need to have access to the xid to communicate via xa and such,
             //! no reason to keep it private and have getters..
             //!
-            xid_type xid;
+            xid_type xid{};
 
 
             friend std::ostream& operator << ( std::ostream& out, const ID& id);

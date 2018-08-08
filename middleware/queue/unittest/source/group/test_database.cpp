@@ -47,7 +47,7 @@ namespace casual
                result.message.reply = "someQueue";
                result.message.type = common::buffer::type::binary();
 
-               common::algorithm::copy( common::uuid::string( common::uuid::make()), std::back_inserter(result.message.payload));
+               common::algorithm::copy( common::uuid::string( common::uuid::make()), result.message.payload);
 
 
                result.message.available = std::chrono::time_point_cast< std::chrono::microseconds>( common::platform::time::clock::type::now());

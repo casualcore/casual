@@ -232,7 +232,7 @@ namespace casual
                   {
                      while( first != last)
                      {
-                        auto hex = []( decltype( *first) value){
+                        auto hex = []( auto value){
                            if( value < 10)
                            {
                               return value + 48;

@@ -280,16 +280,12 @@ namespace casual
                               destination.native_size())
                         );
 
-                        if( ! error)
+                        if( error)
                         {
-                           log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
-                           return true;
-                        }
-                        else 
-                        {
-                           log::line( verbose::log, "---> non blocking send ", error, " - destination: ", destination);
                            return local::handle::error( error.value());
                         }
+
+                        log::line( verbose::log, "---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                         return true;
                      }
 
@@ -308,10 +304,7 @@ namespace casual
 
                         if( result == -1)
                         {
-                           auto error = code::last::system::error();
-
-                           log::line( verbose::log, "<--- non blocking receive - error: ", error, " - handle: " , handle);
-                           return local::handle::error( error);
+                           return local::handle::error( code::last::system::error());
                         }
 
                         log::line( verbose::log, "<--- non-blocking-receive - handle: ", handle, ", transport: ", transport);

@@ -38,9 +38,14 @@ namespace casual
                return sent();
             }
 
-            void Message::remove( const target_type& target)
+            void Message::remove( strong::ipc::id ipc)
             {
-               algorithm::trim( targets, algorithm::remove( targets, target));
+               algorithm::trim( targets, algorithm::remove( targets, ipc));
+            }
+
+            void Message::remove( strong::process::id pid)
+            {
+               algorithm::trim( targets, algorithm::remove( targets, pid));
             }
 
             std::ostream& operator << ( std::ostream& out, const Message& value)

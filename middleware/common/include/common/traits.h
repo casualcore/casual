@@ -379,19 +379,8 @@ namespace casual
          };
 
 
-#if __GNUC__ > 4 || __clang_major__ > 4
-
          template< typename T>
          using is_trivially_copyable = std::is_trivially_copyable< T>;
-#else
-         //!
-         //!  std::is_trivially_copyable is not implemented with gcc 4.8.3
-         //!
-         template< typename T>
-         struct is_trivially_copyable : bool_constant< true> {};
-
-
-#endif
 
          //!
          //! SFINAE friendly underlying_type
@@ -407,18 +396,16 @@ namespace casual
          using underlying_type_t = typename underlying_type< T>::type;
          //! @}
 
+/*
          namespace concrete
          {
-            template< typename T>
-            using type_t = typename std::remove_cv< typename std::remove_reference< T>::type>::type;
-
             template< typename E>
-            constexpr auto type( E&& expression) -> type_t< decltype( std::forward< E>( expression))>
+            constexpr auto type( E&& expression) -> remove_cvref_t< decltype( std::forward< E>( expression))>
             {
                return {};
             }
-
          } // expression
+         */
 
          template< typename T>
          struct is_by_value_friendly : bool_constant< 
@@ -527,6 +514,58 @@ namespace casual
             uncopyable& operator = ( const uncopyable&) = delete;
          };
 
+
+         namespace has
+         {
+            namespace detail
+            {
+               template< typename T>
+               using size = decltype( std::declval< T&>().size());
+
+               template< typename T>
+               using resize = decltype( std::declval< T&>().resize( size< T>()));
+
+               template< typename T>
+               using empty = decltype( std::declval< T&>().empty());
+
+               template< typename T>
+               using insert = decltype( std::declval< T&>().insert( std::begin( std::declval< T&>()), std::begin( std::declval< T&>()), std::begin( std::declval< T&>())));
+
+               template< typename T>
+               using push_back = decltype( std::declval< T&>().push_back( *std::begin( std::declval< T&>())));
+
+               template< typename T, typename A>
+               using serialize = decltype( std::declval< T&>().serialize( std::declval< A&>()));
+
+               template< typename T> 
+               using ostream_stream_operator = decltype( std::declval< std::ostream&>() << std::declval< T&>());
+
+            } // detail
+
+            template< typename T>
+            using size = detect::is_detected< detail::size, T>;
+
+            template< typename T>
+            using resize = detect::is_detected< detail::resize, T>;
+
+            template< typename T>
+            using empty = detect::is_detected< detail::empty, T>;
+
+
+            template< typename T>
+            using insert = detect::is_detected< detail::insert, T>;
+
+
+            template< typename T>
+            using push_back = detect::is_detected< detail::push_back, T>;
+
+            template< typename T, typename A>
+            using serialize = detect::is_detected< detail::serialize, T, A>;
+
+            template< typename T>
+            using ostream_stream_operator = detect::is_detected< detail::ostream_stream_operator, T>;
+         } // has
+
          namespace is
          {
             namespace detail
@@ -543,9 +582,6 @@ namespace casual
                template< typename T>
                using iterable = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
 
-               //template< typename T> 
-               //using iterator_value_t = detect::detected_or_t< decltype( std::begin( std::declval< T&>()))
-
                template< typename T>
                using iterator_value = decltype( *std::begin( std::declval< T&>()));
                
@@ -553,8 +589,6 @@ namespace casual
 
             template< typename T>
             using function = detect::is_detected< detail::function, T>;
-
-
 
 
             template< typename T>
@@ -603,8 +637,6 @@ namespace casual
                   && is::binary::value< detect::detected_t< detail::iterator_value, T>>::value>;
             } // binary
 
-
-
             namespace reverse
             {
                namespace detail
@@ -613,59 +645,23 @@ namespace casual
                   using iterable = std::tuple< decltype( std::declval< T&>().rbegin()), decltype( std::declval< T&>().rend())>;                  
                } // detail
 
-
                template< typename T>
                using iterable = detect::is_detected< detail::iterable, T>;
-            }
+            } // reverse
          } // is
 
-         namespace member
+         namespace iterable
          {
-            template< typename T>
-            using has_size = decltype( std::declval< T&>().size());
-
-            template< typename T>
-            using has_empty = decltype( std::declval< T&>().empty());
-
-            template< typename T>
-            using has_insert = decltype( std::declval< T&>().insert( std::begin( std::declval< T&>()), std::begin( std::declval< T&>()), std::begin( std::declval< T&>())));
-
-            template< typename T>
-            using has_push_back = decltype( std::declval< T&>().push_back( *std::begin( std::declval< T&>())));
-
-            template< typename T, typename A>
-            using has_serialize = decltype( std::declval< T&>().serialize( std::declval< A&>()));
-         }
-
-         namespace has
-         {
-            template< typename T>
-            using size = detect::is_detected< member::has_size, T>;
-
-            template< typename T>
-            using empty = detect::is_detected< member::has_empty, T>;
-
-
-            template< typename T>
-            using insert = detect::is_detected< member::has_insert, T>;
-
-
-            template< typename T>
-            using push_back = detect::is_detected< member::has_push_back, T>;
-
-            template< typename T, typename A>
-            using serialize = detect::is_detected< member::has_serialize, T, A>;
-
             namespace detail
             {
+               
                template< typename T> 
-               using ostream_stream_operator = decltype( std::declval< std::ostream&>() << std::declval< T&>()); 
+               using type = remove_cvref_t< decltype( *( std::begin( std::declval< T&>())))>;
             } // detail
 
-
-            template< typename T>
-            using ostream_stream_operator = detect::is_detected< detail::ostream_stream_operator, T>;
-         }
+            template< typename T> 
+            using value_t = detect::detected_t< detail::type, T>;
+         } // iterable
 
       } // traits
    } // common

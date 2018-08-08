@@ -80,7 +80,7 @@ namespace casual
                         //
                         // Before we call the user function we have to add the buffer to the "buffer-pool"
                         //
-                        memory::copy( range::make( argument.service.name), range::make( result.name));
+                        algorithm::copy_max( argument.service.name, range::make( result.name));
 
                         result.len = argument.payload.memory.size();
                         result.cd = argument.descriptor;
