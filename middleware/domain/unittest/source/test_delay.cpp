@@ -88,7 +88,7 @@ namespace casual
 
          }
 
-         TEST( casual_domain_delay, send_delayed_message__0ms__expect_to_receive_within_10ms)
+         TEST( casual_domain_delay, send_delayed_message__0ms__expect_to_receive_within_100ms)
          {
             common::unittest::Trace trace;
 
@@ -113,7 +113,7 @@ namespace casual
                ipc.blocking_receive( message);
 
                EXPECT_TRUE( message.identification == id);
-               EXPECT_TRUE( common::platform::time::clock::type::now() - start < std::chrono::milliseconds{ 10});
+               EXPECT_TRUE( common::platform::time::clock::type::now() - start < std::chrono::milliseconds{ 100});
 
             }
 
