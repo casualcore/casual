@@ -415,7 +415,7 @@ namespace casual
 
 #if __cplusplus > 201402L // vector will have nothrow move in c++17
          template< typename T>
-         using is_movable = is_nothrow_movable;
+         using is_movable = is_nothrow_movable< T>;
          
 #else
          //!

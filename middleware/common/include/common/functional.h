@@ -15,6 +15,11 @@ namespace casual
    namespace common
    {
 
+#if __cplusplus >= 201703L
+      using std::apply;
+      using std::invoke;
+#else 
+
       namespace detail
       {
 
@@ -51,9 +56,6 @@ namespace casual
          return detail::invoke_implementation( std::forward< F>( function), std::forward< Args>( args)...);
       }
 
-
-
-
       namespace detail 
       {
          template< typename C, typename Tuple, std::size_t... I>
@@ -63,10 +65,8 @@ namespace casual
          }
       } // detail
 
-      //!
-      //!
+
       //! @note "inspired" by cppreference.com 
-      //! 
       template< typename C, typename Tuple>
       constexpr decltype( auto) apply( C&& callable, Tuple&& t)
       {
@@ -74,6 +74,7 @@ namespace casual
             std::forward< C>( callable), std::forward<Tuple>( t),
             std::make_index_sequence< std::tuple_size< std::remove_reference_t< Tuple>>::value>{});
       }
+#endif
 
    } // common
 } // casual

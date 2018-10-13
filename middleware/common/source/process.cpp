@@ -319,6 +319,8 @@ namespace casual
 
                namespace C
                {
+                  constexpr auto string_data = []( auto& v){ return v.data();};
+
                   std::vector< const char*> environment( std::vector< std::string>& environment)
                   {
                      std::vector< const char*> result;
@@ -328,7 +330,7 @@ namespace casual
                         std::begin( environment),
                         std::end( environment),
                         std::begin( result),
-                        std::mem_fn( &std::string::data));
+                        C::string_data);
 
                      result.push_back( nullptr);
 
@@ -345,7 +347,7 @@ namespace casual
                      c_arguments.push_back( path.c_str());
 
 
-                     algorithm::transform( arguments, c_arguments, std::mem_fn( &std::string::data));
+                     algorithm::transform( arguments, c_arguments, C::string_data);
 
                      //
                      // Null end
